@@ -45,20 +45,23 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 		Version: netcap.Version,
 	}
 
+	var (
+		// create buffered writer that writes into the file handle
+		bWriter = bufio.NewWriter(f)
+		// create gzip writer that writes into the buffered writer
+		gWriter = gzip.NewWriter(bWriter)
+	)
+
 	// add file header
-	err = delimited.NewWriter(f).PutProto(encoder.NewHeader(b.MessageType, conf))
+	err = delimited.NewWriter(gWriter).PutProto(encoder.NewHeader(b.MessageType, conf))
 	if err != nil {
 		fmt.Println("failed to write header")
 		panic(err)
 	}
 
-	// create buffered writer that writes into the file handle
-	bWriter := bufio.NewWriter(f)
-
 	return &AuditRecordHandle{
 		bWriter: bWriter,
-		// create gzip writer that writes into the buffered writer
-		gWriter: gzip.NewWriter(bWriter),
+		gWriter: gWriter,
 		f:       f,
 	}
 }
