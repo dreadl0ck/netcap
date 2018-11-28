@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="767 348 457 170" width="457" height="170">
+  <defs>
+    <font-face font-family="Futura" font-size="99" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Futura" font-size="35" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.9.2 
+    <dc:date>2018-11-15 20:13:00 +0000</dc:date>
+  </metadata>
+  <g id="Canvas_1" fill-opacity="1" stroke="none" stroke-opacity="1" fill="none" stroke-dasharray="none">
+    <title>Canvas 1</title>
+    <g id="Canvas_1: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_3">
+        <text transform="translate(772 353.01506)" fill="black">
+          <tspan font-family="Futura" font-size="99" font-weight="700" fill="black" x="16.9365" y="103">NETCAP </tspan>
+        </text>
+      </g>
+      <g id="Graphic_2">
+        <text transform="translate(783 466.4592)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="500" fill="black" x=".30395508" y="36">Traffic Analysis Framework</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>

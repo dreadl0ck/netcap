@@ -1,0 +1,50 @@
+# ________ ____  __ __  ______     
+#  \___   // __ \|  |  \/  ___/    
+#   /    /\  ___/|  |  /\___ \    
+#  /_____ \\___  >____//____  >  
+#        \/    \/           \/  
+#                    Build System
+#                          v0.8.4
+#
+
+autoFormat: false
+colors: true
+passCommandsToShell: true
+webInterface: false
+interactive: true
+debug: false
+projectNamePrompt: true
+recursionDepth: 1
+historyLimit: 20
+codeSnippetScope: 15
+portWebPanel: 8080
+portGlueServer: 0
+historyFile: true
+exitOnInterrupt: true
+disableTimestamps: false
+printBuiltins: false
+makefileOverview: false
+stopOnError: true
+dumpScriptOnError: true
+colorProfile: dark
+dateFormat: 02-01-2006
+todoFilePath: TODO.md
+editor: micro
+colorProfiles:
+  dark:
+    Text: cyan
+    Prompt: blue
+    CmdOutput: light+h
+    CmdName: blue
+    CmdFields: yellow
+    CmdArgs: white+h
+    CmdArgType: green
+  light:
+    Text: white
+    Prompt: yellow
+    CmdOutput: white+h
+    CmdName: red
+    CmdFields: blue
+    CmdArgs: cyan
+    CmdArgType: green
+languages: []

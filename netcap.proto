@@ -1,0 +1,853 @@
+/*
+ *                        / |
+ *  _______    ______   _10 |_     _______   ______    ______
+ * /     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
+ * 0010100 /|/011010 /|101010/   /0101010/  001010  |/100110  |
+ * 01 |  00 |00    00 |  10 | __ 00 |       /    10 |00 |  01 |
+ * 10 |  01 |01001010/   00 |/  |01 \_____ /0101000 |00 |__10/|
+ * 10 |  00 |00/    / |  10  00/ 00/    / |00    00 |00/   00/
+ * 00/   10/  0101000/    0010/   0010010/  0010100/ 1010100/
+ *                                                   00 |
+ *                                                   00 |
+ *                                                   00/
+ * NETCAP - Network Capture Toolkit
+ * Copyright (c) 2017 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+// netcap uses proto v3 syntax
+syntax = "proto3";
+
+// generated protocol buffer code will be put into the "types" package
+package types;
+
+// Caveats:
+// - there are no uint8 and uint16 types in protobuf:
+//     The non-fixed integer types use variable length encoding 
+//     use int32 for 16 bit and 8 bit integers and let the variable-length-encoding part take care of not sending the bytes you're not using
+//     –> the mu type is too short 
+// - strings have to be encoded in utf-8, otherwise encoding to proto will fail
+
+/*
+ *  Enums for Netcap Types
+ *  Due to the C++ scoping implemented by the proto compiler,
+ *  enum names cannot be the same as the corresponding message type.
+ *  Solution: add NC_ Prefix to each entry. NC stands for NetCap.
+ *  Constants will follow this naming scheme Type_NC_<Record>
+ *  Example: Type_NC_TCP
+ */
+
+enum Type {
+    NC_Header                      = 0;
+    NC_Batch                       = 1;
+    NC_Flow                        = 2;
+    NC_Connection                  = 3;
+    NC_LinkFlow                    = 4;
+    NC_NetworkFlow                 = 5;
+    NC_TransportFlow               = 6;
+    NC_Ethernet                    = 7;
+    NC_ARP                         = 8;
+    NC_Dot1Q                       = 9;
+    NC_Dot11                       = 10;
+    NC_Dot11QOS                    = 11;
+    NC_Dot11HTControl              = 12;
+    NC_Dot11HTControlVHT           = 13;
+    NC_Dot11HTControlHT            = 14;
+    NC_Dot11HTControlMFB           = 15;
+    NC_Dot11LinkAdapationControl   = 16;
+    NC_Dot11ASEL                   = 17;
+    NC_LinkLayerDiscovery          = 18;
+    NC_LLDPChassisID               = 19;
+    NC_LLDPPortID                  = 20;
+    NC_LinkLayerDiscoveryValue     = 21;
+    NC_EthernetCTP                 = 22;
+    NC_EthernetCTPReply            = 23;
+    NC_LinkLayerDiscoveryInfo      = 24;
+    NC_LLDPSysCapabilities         = 25;
+    NC_LLDPCapabilities            = 26;
+    NC_LLDPMgmtAddress             = 27;
+    NC_LLDPOrgSpecificTLV          = 28;
+    NC_IPv4                        = 29;
+    NC_IPv4Option                  = 30;
+    NC_IPv6                        = 31;
+    NC_ICMPv4                      = 32;
+    NC_ICMPv6                      = 33;
+    NC_ICMPv6NeighborAdvertisement = 34;
+    NC_ICMPv6RouterAdvertisement   = 35;
+    NC_ICMPv6Option                = 36;
+    NC_UDP                         = 37;
+    NC_TCP                         = 38;
+    NC_TCPOption                   = 39;
+    NC_SCTP                        = 40;
+    NC_DNS                         = 41;
+    NC_DNSResourceRecord           = 42;
+    NC_DNSSOA                      = 43;
+    NC_DNSSRV                      = 44;
+    NC_DNSMX                       = 45;
+    NC_DNSQuestion                 = 46;
+    NC_DHCPv4                      = 47;
+    NC_DHCPOption                  = 48;
+    NC_DHCPv6                      = 49;
+    NC_DHCPv6Option                = 50;
+    NC_LLC                         = 51;
+    NC_NTP                         = 52;
+    NC_SIP                         = 53;
+    NC_IGMP                        = 54;
+    NC_IGMPv3GroupRecord           = 55;
+    NC_IPv6HopByHop                = 56;
+    NC_IPv6HopByHopOption          = 57;
+    NC_IPv6HopByHopOptionAlignment = 58;
+    NC_SNAP                        = 59;
+    NC_ICMPv6Echo                  = 60;
+    NC_ICMPv6NeighborSolicitation  = 61;
+    NC_ICMPv6RouterSolicitation    = 62;
+    NC_HTTP                        = 63;
+    NC_TLSClientHello              = 64;
+}
+
+/*
+ * Netcap File Header
+ * First Record in every .ncap file
+ * Stores meta information
+ */
+
+message Header {
+    string Created     = 1; // Timestamp of creation date
+    string InputSource = 2; // interface name or name of dumpfile
+    Type   Type        = 3; // netcap data type
+    string Version     = 4; // Netcap version string
+}
+
+
+/*
+ * Data Batch
+ * Used for sending data from sensor to collector
+ */
+
+message Batch {
+    string ClientID    = 1; // unique client identifier
+    Type   MessageType = 2; // netcap data type
+    int32  Size        = 3; // data size in bytes
+    bytes  Data        = 4; // actual data, (serialized protocol buffers)
+}
+
+/*
+ * Network Flows
+ */
+
+// a flow is identified by its network layer and transport layer flows separated by a colon
+// format: <networkFlow>:<tranportFlow>
+// e.g: 172.16.11.104->201.11.212.81:2673->1511
+message Flow {
+    string TimestampFirst     = 1;
+    string LinkProto          = 2;
+    string NetworkProto       = 3;
+    string TransportProto     = 4;
+    string ApplicationProto   = 5;
+    string SrcMAC             = 6;
+    string DstMAC             = 7;
+    string SrcIP              = 8;
+    string SrcPort            = 9;
+    string DstIP              = 10;
+    string DstPort            = 11;
+    int32  Size               = 12; // total bytes transferred
+    int32  AppPayloadSize     = 13; // size of application layer payload
+    int32  NumPackets         = 14;
+    string UID                = 15;
+    string TimestampLast      = 16;
+    int64  Duration           = 17;
+}
+
+// a connection has the following attributes:
+// Mac <-> Mac bidirectional Mac
+// IP <-> IP bisdirectional IP
+// Port <-> Port bidirectional Port
+message Connection {
+    string TimestampFirst     = 1;
+    string LinkProto          = 2;
+    string NetworkProto       = 3;
+    string TransportProto     = 4;
+    string ApplicationProto   = 5;
+    string SrcMAC             = 6;
+    string DstMAC             = 7;
+    string SrcIP              = 8;
+    string SrcPort            = 9;
+    string DstIP              = 10;
+    string DstPort            = 11;
+    int32  Size               = 12; // total bytes transferred
+    int32  AppPayloadSize     = 13; // size of application layer payload
+    int32  NumPackets         = 14;
+    string UID                = 15;
+    string TimestampLast      = 16;
+    int64  Duration           = 17;
+}
+
+message LinkFlow {
+    string TimestampFirst = 1;
+    string TimestampLast  = 2;
+    string Proto          = 3;
+    string SrcMAC         = 4;
+    string DstMAC         = 5;
+    int64  Size           = 6;
+    int64  NumPackets     = 7;
+    uint64 UID            = 8;
+    int64  Duration       = 9;
+}
+
+message NetworkFlow {
+    string TimestampFirst = 1;
+    string TimestampLast  = 2;
+    string Proto          = 3;
+    string SrcIP          = 4;
+    string DstIP          = 5;
+    int64  Size           = 6;
+    int64  NumPackets     = 7;
+    uint64 UID            = 8;
+    int64  Duration       = 9;
+}
+
+message TransportFlow {
+    string TimestampFirst  = 1;
+    string TimestampLast   = 2;
+    string Proto           = 3;
+    int32  SrcPort         = 4;
+    int32  DstPort         = 5;
+    int64  Size            = 6;
+    int64  NumPackets      = 7;
+    uint64 UID             = 8;
+    int64  Duration        = 9;
+}
+
+/*
+ * Protocols
+ * ---------
+ */
+
+/*
+ * Link Layer
+ */
+
+message Ethernet {
+    string Timestamp      = 1;
+    string SrcMAC         = 2;
+    string DstMAC         = 3;
+    int32  EthernetType   = 4;
+    double PayloadEntropy = 5;
+    int32  PayloadSize    = 6;
+}
+
+message ARP {
+    string Timestamp         = 1;
+    int32 AddrType           = 2;
+    int32 Protocol           = 3;
+    int32  HwAddressSize     = 4;
+    int32  ProtAddressSize   = 5;
+    int32 Operation          = 6;
+    bytes  SrcHwAddress   = 7;
+    bytes  SrcProtAddress = 8;
+    bytes  DstHwAddress      = 9;
+    bytes  DstProtAddress    = 10;
+}
+
+// Dot1Q is the packet layer for 802.1Q VLAN headers.
+message Dot1Q {
+    string Timestamp     = 1;
+    int32 Priority       = 2;
+    bool DropEligible    = 3;
+    int32 VLANIdentifier = 4;
+    int32 Type           = 5;
+}
+
+// Dot11 provides an IEEE 802.11 base packet header. 
+// See http://standards.ieee.org/findstds/standard/802.11-2012.html for excruciating detail.
+message Dot11 {
+    string Timestamp         = 1;
+    int32 Type               = 2;
+    int32 Proto              = 3;
+    int32 Flags              = 4;
+    int32 DurationID         = 5;
+    string Address1          = 6;
+    string Address2          = 7;
+    string Address3          = 8;
+    string Address4          = 9;
+    int32 SequenceNumber     = 10;
+    int32 FragmentNumber     = 11;
+    uint32 Checksum          = 12;
+    Dot11QOS QOS             = 13;
+    Dot11HTControl HTControl = 14;
+}
+
+message Dot11QOS {
+    int32 TID       = 1; /* Traffic IDentifier */
+    bool  EOSP      = 2; /* End of service period */
+    int32 AckPolicy = 3;
+    int32 TXOP      = 4;
+}
+
+message Dot11HTControl {
+    bool ACConstraint = 1;
+    bool RDGMorePPDU  = 2;
+
+    Dot11HTControlVHT VHT = 3;
+    Dot11HTControlHT  HT  = 4;
+}
+
+message Dot11HTControlVHT {
+    bool  MRQ             = 1;
+    bool  UnsolicitedMFB  = 2;
+    int32 MSI             = 3;
+    Dot11HTControlMFB MFB = 4;
+    int32 CompressedMSI   = 5;
+    bool  STBCIndication  = 6;
+    int32 MFSI            = 7;
+    int32 GID             = 8;
+    int32 CodingType      = 9;
+    bool  FbTXBeamformed  = 10;
+}
+
+message Dot11HTControlHT {
+    Dot11LinkAdapationControl LinkAdapationControl = 1;
+    int32 CalibrationPosition = 2;
+    int32 CalibrationSequence = 3;
+    int32 CSISteering         = 4;
+    bool NDPAnnouncement      = 5;
+    bool DEI                  = 6;
+}
+
+message Dot11HTControlMFB {
+    int32 NumSTS = 1;
+    int32 VHTMCS = 2;
+    int32 BW     = 3;
+    int32 SNR    = 4;
+}
+
+message Dot11LinkAdapationControl {
+    bool  TRQ      = 1;
+    bool  MRQ      = 2;
+    int32 MSI      = 3;
+    int32 MFSI     = 4;
+    int32 MFB      = 6;
+    Dot11ASEL ASEL = 5;
+}
+
+message Dot11ASEL {
+    int32 Command = 1;
+    int32 Data    = 2;
+}
+
+message LinkLayerDiscovery {
+    string Timestamp        = 1;
+    LLDPChassisID ChassisID = 2;
+    LLDPPortID PortID       = 3;
+    int32 TTL               = 4;
+    repeated LinkLayerDiscoveryValue Values    = 5;
+}
+
+message LLDPChassisID {
+    int32 Subtype = 1; // byte
+    bytes ID      = 2;
+}
+
+message LLDPPortID {
+    int32 Subtype = 1; // byte
+    bytes ID      = 2;
+}
+
+message LinkLayerDiscoveryValue {
+    int32 Type   = 1; //  byte
+    int32 Length = 2;
+    bytes Value  = 3;
+}
+
+message EthernetCTP {
+    string Timestamp = 1;
+    int32 SkipCount  = 2;
+}
+
+message EthernetCTPReply {
+    string Timestamp    = 1;
+    int32 Function      = 2;
+    int32 ReceiptNumber = 3;
+    bytes Data          = 4;
+}
+
+message LinkLayerDiscoveryInfo {
+    string Timestamp       = 1;
+    string PortDescription = 2;
+    string SysName         = 3;
+    string SysDescription  = 4;
+    LLDPSysCapabilities SysCapabilities      = 5;
+    LLDPMgmtAddress MgmtAddress              = 6;
+    repeated LLDPOrgSpecificTLV OrgTLVs      = 7;      // Private TLVs
+    repeated LinkLayerDiscoveryValue Unknown = 8; // undecoded TLVs
+}
+
+message LLDPSysCapabilities {
+    LLDPCapabilities SystemCap  = 1;
+    LLDPCapabilities EnabledCap = 2;
+}
+
+message LLDPCapabilities {
+    bool Other       = 1;
+    bool Repeater    = 2;
+    bool Bridge      = 3;
+    bool WLANAP      = 4;
+    bool Router      = 5;
+    bool Phone       = 6;
+    bool DocSis      = 7;
+    bool StationOnly = 8;
+    bool CVLAN       = 9;
+    bool SVLAN       = 10;
+    bool TMPR        = 11;
+}
+
+message LLDPMgmtAddress {
+    int32  Subtype          = 1; // byte
+    bytes  Address          = 2;
+    int32  InterfaceSubtype = 3; // byte
+    uint32 InterfaceNumber  = 4;
+    string OID              = 5;
+}
+
+message LLDPOrgSpecificTLV {
+    uint32 OUI     = 1;
+    int32  SubType = 2;
+    bytes  Info    = 3;
+}
+
+/*
+ *  Network Layer
+ */
+
+message IPv4 {
+    string  Timestamp     = 1;
+    int32  Version        = 2;
+    int32  IHL            = 3;
+    int32  TOS            = 4;
+    int32  Length         = 5;
+    int32  Id             = 6;
+    int32  Flags          = 7;
+    int32  FragOffset     = 8;
+    int32  TTL            = 9;
+    int32  Protocol       = 10;
+    int32  Checksum       = 11;
+    string SrcIP          = 12;
+    string DstIP          = 13;
+    bytes  Padding        = 14;
+
+    repeated IPv4Option Options = 15;
+    double PayloadEntropy = 16;
+    int32  PayloadSize    = 17;
+}
+
+message IPv4Option {
+    int32 OptionType   = 1;
+    int32 OptionLength = 2;
+    bytes OptionData   = 3;
+}
+
+message IPv6 {
+    string  Timestamp     = 1;
+    int32  Version        = 2;
+    int32  TrafficClass   = 3;
+    uint32 FlowLabel      = 4;
+    int32  Length         = 5;
+    int32  NextHeader     = 6;
+    int32  HopLimit       = 7;
+    string  SrcIP         = 8;
+    string  DstIP         = 9;
+    double PayloadEntropy = 10;
+    int32  PayloadSize    = 11;
+    IPv6HopByHop HopByHop = 12;
+}
+
+message ICMPv4 {
+    string Timestamp = 1;
+    int32 TypeCode   = 2;
+    int32 Checksum   = 3;
+    int32 Id         = 4;
+    int32 Seq        = 5;
+}
+
+message ICMPv6 {
+    string Timestamp = 1;
+    int32 TypeCode   = 2;
+    int32 Checksum   = 3;
+}
+
+message ICMPv6NeighborAdvertisement {
+    string Timestamp              = 1;
+    int32 Flags                   = 2;
+    string TargetAddress          = 3;
+    repeated ICMPv6Option Options = 4;
+}
+
+message ICMPv6RouterAdvertisement {
+    string Timestamp              = 1;
+    int32 HopLimit                = 2;
+    int32 Flags                   = 3;
+    int32 RouterLifetime          = 4;
+    uint32 ReachableTime          = 5;
+    uint32 RetransTimer           = 6;
+    repeated ICMPv6Option Options = 7;
+}
+
+message ICMPv6Option {
+    int32 Type = 1;
+    bytes Data = 2;
+}
+
+/*
+ * Transport Layer
+ */
+
+message UDP {
+    string Timestamp      = 1;
+    int32  SrcPort        = 2;
+    int32  DstPort        = 3;
+	int32  Length         = 4;
+    int32  Checksum       = 5;
+    double PayloadEntropy = 6;
+    int32  PayloadSize    = 7;
+}
+
+message TCP {
+    string  Timestamp = 1;
+    int32  SrcPort    = 2;
+    int32  DstPort    = 3;
+    uint32 SeqNum     = 4;
+    uint32 AckNum     = 5;                         
+    int32  DataOffset = 6;
+    bool   FIN        = 7;
+    bool   SYN        = 8;
+    bool   RST        = 9;
+    bool   PSH        = 10;
+    bool   ACK        = 11;
+    bool   URG        = 12;
+    bool   ECE        = 13;
+    bool   CWR        = 14;
+    bool   NS         = 15;
+    int32  Window     = 16;
+    int32  Checksum   = 17;
+    int32  Urgent     = 18;
+    bytes  Padding    = 19;
+
+    repeated TCPOption Options = 20;
+    double   PayloadEntropy    = 21;
+    int32    PayloadSize       = 22;
+}
+
+message TCPOption {
+    int32 OptionType   = 1;
+    int32 OptionLength = 2;
+    bytes OptionData   = 3;
+}
+
+message SCTP {
+    string Timestamp       = 1;
+    uint32 SrcPort         = 2;
+    uint32 DstPort         = 3;
+    uint32 VerificationTag = 4;
+    uint32 Checksum        = 5;
+}
+
+/*
+ * Application Layer
+ */
+
+message DNS {
+    string Timestamp = 1;
+
+	// Header fields
+	int32 ID      = 2;
+	bool   QR     = 3;
+	int32  OpCode = 4;
+
+	bool   AA = 5; // Authoritative answer
+	bool   TC = 6; // Truncated
+	bool   RD = 7; // Recursion desired
+	bool   RA = 8; // Recursion available
+	int32  Z  = 9; // Reserved for future use
+
+	int32  ResponseCode = 10;
+	int32 QDCount       = 11; // Number of questions to expect
+	int32 ANCount       = 12; // Number of answers to expect
+	int32 NSCount       = 13; // Number of authorities to expect
+	int32 ARCount       = 14; // Number of additional records to expect
+
+	// Entries
+	repeated DNSQuestion       Questions   = 15;
+	repeated DNSResourceRecord Answers     = 16;
+	repeated DNSResourceRecord Authorities = 17;
+    repeated DNSResourceRecord Additionals = 18;
+}
+
+message DNSResourceRecord {
+	// Header
+	bytes  Name  = 1;
+	int32  Type  = 2;
+	int32  Class = 3;
+	uint32 TTL   = 4;
+
+	// RDATA Raw Values
+	int32 DataLength = 5;
+	bytes Data       = 6;
+
+	// RDATA Decoded Values
+	string  IP          = 7;
+    bytes  NS           = 8;
+    bytes  CNAME        = 9;
+    bytes  PTR          = 10;
+	DNSSOA SOA          = 11;
+	DNSSRV SRV          = 12;
+    DNSMX  MX           = 13;
+	repeated bytes TXTs = 14;
+}
+
+// DNSSOA is a Start of Authority record. 
+// Each domain requires a SOA record at the cutover where a domain is delegated from its parent.
+message DNSSOA {
+    bytes  MName   = 1;
+    bytes  RName   = 2;
+    uint32 Serial  = 3;
+    uint32 Refresh = 4;
+    uint32 Retry   = 5;
+    uint32 Expire  = 6;
+    uint32 Minimum = 7;
+}
+
+// DNSSRV is a Service record, defining a location (hostname/port) of a server/service.
+message DNSSRV {
+    int32 Priority = 1;
+    int32 Weight   = 2;
+    int32 Port     = 3;
+    bytes  Name    = 4;
+}
+
+// DNSMX is a mail exchange record, defining a mail server for a recipient's domain.
+message DNSMX {
+    int32 Preference = 1;
+    bytes Name       = 2;
+}
+
+// DNSQuestion wraps a single request (question) within a DNS query.
+message DNSQuestion {
+    bytes Name  = 1;
+    int32 Type  = 2;
+    int32 Class = 3;
+}
+
+message DHCPv4 {
+    string Timestamp             = 1;
+    int32 Operation              = 2;
+    int32 HardwareType           = 3;
+    int32 HardwareLen            = 4;
+    int32 HardwareOpts           = 5;
+    uint32 Xid                   = 6;
+    int32 Secs                   = 7;
+    int32 Flags                  = 8;
+    string ClientIP              = 9;
+    string YourClientIP          = 10;
+    string NextServerIP          = 11;
+    string RelayAgentIP          = 12;
+    string ClientHWAddr          = 13;
+    bytes ServerName             = 14;
+    bytes File                   = 15;
+    repeated DHCPOption Options  = 16;
+}
+
+message DHCPOption {
+    int32 Type   = 1;
+    int32 Length = 2;
+    bytes Data   = 3;
+}
+
+message DHCPv6 {
+    string Timestamp              = 1;
+    int32 MsgType                 = 2;
+    int32 HopCount                = 3;
+    string LinkAddr               = 4;
+    string PeerAddr               = 5;
+    bytes TransactionID           = 6;
+    repeated DHCPv6Option Options = 7;
+}
+
+message DHCPv6Option {
+    int32 Code   = 1;
+    int32 Length = 2;
+    bytes Data   = 3;
+}
+
+// LLC is the layer used for 802.2 Logical Link Control headers. 
+// See http://standards.ieee.org/getieee802/download/802.2-1998.pdf
+message LLC {
+    string Timestamp = 1;
+    int32 DSAP       = 2;
+    bool  IG         = 3;  // true means group, false means individual
+    int32 SSAP       = 4;
+    bool  CR         = 5;  // true means response, false means command
+    int32 Control    = 6;
+}
+
+message NTP {
+    string Timestamp          = 1;
+    int32  LeapIndicator      = 2;  // [0,3]. Indicates whether leap second(s) is to be added.
+    int32  Version            = 3;  // [0,7]. Version of the NTP protocol.
+    int32  Mode               = 4;  // [0,7]. Mode.
+    int32  Stratum            = 5;  // [0,255]. Stratum of time server in the server tree.
+    int32  Poll               = 6;  // [-128,127]. The maximum interval between successive messages, in log2 seconds.
+    int32  Precision          = 7;  // [-128,127]. The precision of the system clock, in log2 seconds.
+    uint32 RootDelay          = 8;  // [0,2^32-1]. Total round trip delay to the reference clock in seconds times 2^16.
+    uint32 RootDispersion     = 9;  // [0,2^32-1]. Total dispersion to the reference clock, in seconds times 2^16.
+    uint32 ReferenceID        = 10;  // ID code of reference clock [0,2^32-1].
+    uint64 ReferenceTimestamp = 11; // Most recent timestamp from the reference clock.
+    uint64 OriginTimestamp    = 12; // Local time when request was sent from local host.
+    uint64 ReceiveTimestamp   = 13; // Local time (on server) that request arrived at server host.
+    uint64 TransmitTimestamp  = 14; // Local time (on server) that request departed server host.
+
+    bytes ExtensionBytes      = 15;  // Just put extensions in a byte slice.
+}
+
+// The Session Initiation Protocol (SIP) is a signalling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications
+message SIP {
+    string Timestamp        = 1;
+    // Base information
+    int32 Version           = 2;
+    int32 Method            = 3;
+    //map[string][]string Headers
+    repeated string Headers = 4;
+
+    // Response
+    bool IsResponse        = 5;
+    int32 ResponseCode     = 6;
+    string ResponseStatus  = 7;
+}
+
+message IGMP {
+    string Timestamp                 = 1;
+    int32 Type                       = 2;
+    uint64 MaxResponseTime           = 3;
+    int32 Checksum                   = 4;
+    bytes GroupAddress               = 5;
+    bool SupressRouterProcessing     = 6;
+    int32 RobustnessValue            = 7;
+    uint64 IntervalTime              = 8;
+    repeated string SourceAddresses  = 9;
+    int32 NumberOfGroupRecords       = 10;
+    int32 NumberOfSources            = 11;
+    repeated IGMPv3GroupRecord GroupRecords = 12;
+    int32 Version                    = 13;
+}
+
+message IGMPv3GroupRecord {
+    int32           Type             = 1;  
+    int32           AuxDataLen       = 2; // this should always be 0 as per IGMPv3 spec.
+    int32           NumberOfSources  = 3;  
+    string          MulticastAddress = 4;  
+    repeated string SourceAddresses  = 5;
+}
+
+message IPv6HopByHop {
+    string Timestamp                    = 1;
+    repeated IPv6HopByHopOption Options = 2;
+}
+
+message IPv6HopByHopOption {
+    int32 OptionType                            = 1;
+    int32 OptionLength                          = 2;
+	int32 ActualLength                          = 3;
+	bytes OptionData                            = 4;
+	IPv6HopByHopOptionAlignment OptionAlignment = 5;
+}
+
+message IPv6HopByHopOptionAlignment {
+    int32 One = 1;
+    int32 Two = 2;
+}
+
+// SNAP is used inside LLC. See http://standards.ieee.org/getieee802/download/802-2001.pdf. From http://en.wikipedia.org/wiki/Subnetwork_Access_Protocol:
+// "[T]he Subnetwork Access Protocol (SNAP) is a mechanism for multiplexing,
+// on networks using IEEE 802.2 LLC, more protocols than can be distinguished
+// by the 8-bit 802.2 Service Access Point (SAP) fields."
+message SNAP {
+    string Timestamp = 1;
+    bytes OrganizationalCode = 2;
+    int32 Type = 3;
+}
+
+message ICMPv6Echo {
+    string Timestamp = 1;
+    int32 Identifier = 2;
+    int32 SeqNumber  = 3;
+}
+
+message ICMPv6NeighborSolicitation {
+    string Timestamp = 1;
+    string TargetAddress = 2;
+    repeated ICMPv6Option Options = 3;
+}
+
+message ICMPv6RouterSolicitation {
+    string Timestamp              = 1;
+    repeated ICMPv6Option Options = 2;
+}
+
+// HTTP
+
+message HTTP {
+    string Timestamp           = 1;
+    string Proto               = 2;
+    string Method              = 3;
+	string Host                = 4;
+	string UserAgent           = 5;
+	string Referer             = 6;
+	repeated string ReqCookies = 7;
+	int32  ReqContentLength    = 8;
+    string URL                 = 9;
+    int32  ResContentLength    = 10;
+    string ContentType         = 11;
+    int32  StatusCode          = 12;
+    string SrcIP               = 13;
+    string DstIP               = 14;
+}
+
+// TLS Client Hello
+
+message TLSClientHello {
+    string Timestamp                  = 1;
+    int32  Type                       = 2;
+    int32  Version                    = 3;
+    int32  MessageLen                 = 4;
+    int32  HandshakeType              = 5;
+	uint32 HandshakeLen               = 6;
+	int32  HandshakeVersion           = 7;
+	bytes  Random                     = 8;
+	uint32 SessionIDLen               = 9;
+	bytes  SessionID                  = 10;
+	int32  CipherSuiteLen             = 11;
+	int32  ExtensionLen               = 12;
+	string SNI                        = 13;
+	bool   OSCP                       = 14;
+	repeated int32 CipherSuites       = 15;
+	repeated int32 CompressMethods    = 16;
+	repeated int32 SignatureAlgs      = 17;
+	repeated int32 SupportedGroups    = 18;
+	repeated int32 SupportedPoints    = 19;
+	repeated string ALPNs             = 20;
+    //map[Extension]uint16 // [Type]Length Extensions
+    string Ja3                        = 21;
+    string SrcIP                      = 22;
+    string DstIP                      = 23;
+    string SrcMAC                     = 24;
+    string DstMAC                     = 25;
+    int32 SrcPort                     = 26;
+    int32 DstPort                     = 27;
+}
+
