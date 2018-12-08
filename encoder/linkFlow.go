@@ -37,7 +37,7 @@ var (
 	linkFlows               int64
 )
 
-var LinkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", func(d *CustomEncoder) error {
+var linkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", func(d *CustomEncoder) error {
 	linkFlowEncoderInstance = d
 	return nil
 }, func(p gopacket.Packet) proto.Message {

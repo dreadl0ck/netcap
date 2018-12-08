@@ -70,7 +70,7 @@ func (c ConnectionID) String() string {
 	return strconv.FormatUint(c.LinkFlowID, 10) + strconv.FormatUint(c.NetworkFlowID, 10) + strconv.FormatUint(c.TransportFlowID, 10)
 }
 
-var ConnectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connection", func(d *CustomEncoder) error {
+var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connection", func(d *CustomEncoder) error {
 	connEncoderInstance = d
 	return nil
 }, func(p gopacket.Packet) proto.Message {

@@ -31,13 +31,13 @@ import (
 var (
 	CustomEncoders     = []*CustomEncoder{}
 	customEncoderSlice = []*CustomEncoder{
-		TLSEncoder,
-		LinkFlowEncoder,
-		NetworkFlowEncoder,
-		TransportFlowEncoder,
-		HTTPEncoder,
-		FlowEncoder,
-		ConnectionEncoder,
+		tlsEncoder,
+		linkFlowEncoder,
+		networkFlowEncoder,
+		transportFlowEncoder,
+		httpEncoder,
+		flowEncoder,
+		connectionEncoder,
 	}
 )
 

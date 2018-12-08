@@ -139,7 +139,7 @@ func DecodeHTTP(packet gopacket.Packet) {
 	}
 }
 
-var HTTPEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *CustomEncoder) error {
+var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *CustomEncoder) error {
 
 	if *debug {
 		outputLevel = 2

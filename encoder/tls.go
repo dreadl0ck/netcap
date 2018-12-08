@@ -66,7 +66,7 @@ func ExtractTLSHandShake(tcp *layers.TCP) (*tlsx.ClientHello, bool) {
 	return nil, false
 }
 
-var TLSEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, func(p gopacket.Packet) proto.Message {
+var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, func(p gopacket.Packet) proto.Message {
 
 	if tl := p.TransportLayer(); tl != nil {
 		if tl.LayerType() == layers.LayerTypeTCP {

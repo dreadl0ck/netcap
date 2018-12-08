@@ -1,7 +1,5 @@
 # TODOs
 
-- private encoder CreateFuncs?
-- layerEncoderSlice -> rename to Initializers
 - add ascii cast
 - README
 

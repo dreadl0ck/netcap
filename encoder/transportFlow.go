@@ -39,7 +39,7 @@ var (
 	transportFlows               int64
 )
 
-var TransportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "TransportFlow", func(d *CustomEncoder) error {
+var transportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "TransportFlow", func(d *CustomEncoder) error {
 	transportFlowEncoderInstance = d
 	return nil
 }, func(p gopacket.Packet) proto.Message {

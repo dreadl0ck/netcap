@@ -135,13 +135,13 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 				continue
 			}
 
-			if HTTPEncoder.csv {
-				_, err := HTTPEncoder.csvWriter.WriteRecord(h)
+			if httpEncoder.csv {
+				_, err := httpEncoder.csvWriter.WriteRecord(h)
 				if err != nil {
 					errorMap.Inc(err.Error())
 				}
 			} else {
-				err := HTTPEncoder.aWriter.PutProto(h)
+				err := httpEncoder.aWriter.PutProto(h)
 				if err != nil {
 					errorMap.Inc(err.Error())
 				}
@@ -161,13 +161,13 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 				h := &types.HTTP{}
 				setRequest(h, req)
 
-				if HTTPEncoder.csv {
-					_, err := HTTPEncoder.csvWriter.WriteRecord(h)
+				if httpEncoder.csv {
+					_, err := httpEncoder.csvWriter.WriteRecord(h)
 					if err != nil {
 						errorMap.Inc(err.Error())
 					}
 				} else {
-					err := HTTPEncoder.aWriter.PutProto(h)
+					err := httpEncoder.aWriter.PutProto(h)
 					if err != nil {
 						errorMap.Inc(err.Error())
 					}

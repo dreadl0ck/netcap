@@ -38,7 +38,7 @@ var (
 	netFlows                   int64
 )
 
-var NetworkFlowEncoder = CreateCustomEncoder(types.Type_NC_NetworkFlow, "NetworkFlow", func(d *CustomEncoder) error {
+var networkFlowEncoder = CreateCustomEncoder(types.Type_NC_NetworkFlow, "NetworkFlow", func(d *CustomEncoder) error {
 	networkFlowEncoderInstance = d
 	return nil
 }, func(p gopacket.Packet) proto.Message {
