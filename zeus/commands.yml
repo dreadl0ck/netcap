@@ -53,7 +53,7 @@ commands:
         
     cloc:
         description: count lines of code
-        exec: cloc --exclude-ext pb.go,py,rb cmd sensor server label types collector encoder netcap.go reader.go
+        exec: cloc --exclude-ext pb.go,py,rb cmd sensor server label types utils collector encoder netcap.go reader.go utils.go
 
     gen-proto:
         description: generate protocol buffers
