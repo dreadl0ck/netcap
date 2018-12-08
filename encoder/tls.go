@@ -81,6 +81,7 @@ var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, f
 					signatureAlgs   []int32
 					supportedGroups []int32
 					supportedPoints []int32
+					extensions      []int32
 				)
 				for _, v := range hello.CipherSuites {
 					cipherSuites = append(cipherSuites, int32(v))
@@ -97,13 +98,15 @@ var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, f
 				for _, v := range hello.SupportedPoints {
 					supportedPoints = append(supportedPoints, int32(v))
 				}
+				for _, v := range hello.AllExtensions {
+					extensions = append(extensions, int32(v))
+				}
 
 				var (
 					srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
 					dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
 				)
 
-				// TODO Extensions
 				return &types.TLSClientHello{
 					Timestamp:        utils.TimeToString(p.Metadata().Timestamp),
 					Type:             int32(hello.Type),
@@ -132,6 +135,7 @@ var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, f
 					DstMAC:           p.LinkLayer().LinkFlow().Dst().String(),
 					SrcPort:          int32(srcPort),
 					DstPort:          int32(dstPort),
+					Extensions:       extensions,
 				}
 			}
 		}

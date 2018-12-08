@@ -849,5 +849,6 @@ message TLSClientHello {
     string DstMAC                     = 25;
     int32 SrcPort                     = 26;
     int32 DstPort                     = 27;
+    repeated int32 Extensions         = 28;
 }
 

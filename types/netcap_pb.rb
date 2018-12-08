@@ -594,6 +594,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :DstMAC, :string, 25
     optional :SrcPort, :int32, 26
     optional :DstPort, :int32, 27
+    repeated :Extensions, :int32, 28
   end
   add_enum "types.Type" do
     value :NC_Header, 0
