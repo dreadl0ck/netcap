@@ -11,6 +11,9 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
+# this file contains experiments on reading netcap data in python
+# unfinished, needs some love
+
 from google.protobuf.internal.decoder import _DecodeVarint32
 import gzip
 import struct

@@ -1,12 +1,11 @@
 # TODOs
 
-- comments, code cleanup, renaming
 - add ascii cast
 - README
 
 Benchmarks:
 - add benchmarks writing through channels vs mutex
-- add benchmarks: Concatenating Strings
+- add benchmarks: Concatenating Strings Builder vs byte slices etc
 
 ## Sensor
 
@@ -30,10 +29,10 @@ Future Development:
 - robustness testing / pentest
 - performance assessment + optimizations
 
-- how many unmatched alerts?
-- switch to intelligence from eve.json for labeling
+- labeling: how many unmatched alerts?
+- labeling: switch to intelligence from eve.json
+
 - json output
-- check if there are spots left where using a strings.Builder makes sense
 - display custom encoder stats in final view: add stats func to custom encoder and call them on destroy
 - TCP stream reassembly: make App Layer decoding configurable, to allow extension for other layer 7 protos (SMTP, FTP etc)
 - flag sort output by timestamp (func in utils)
@@ -45,6 +44,6 @@ Future Development:
 - pprof & memprof tests
 - use unique maps for each worker and merge to prevent synced maps?
 - integrate HASSH
-- plugins?
+- netcap plugins?
 - integrate labeling function for YARA
 - go-dpi classifiers?
