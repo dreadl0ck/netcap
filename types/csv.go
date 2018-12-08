@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 
 	proto "github.com/golang/protobuf/proto"
@@ -26,9 +25,13 @@ import (
 
 var (
 	selection []int
-	UTC       bool
+
+	// UTC allows to print timestamp in the utc format
+	UTC bool
 )
 
+// CSV ensures that the type can be converted to comma separated values
+// and provides access to the timestamp of the audit record
 type CSV interface {
 
 	// returns CSV values
@@ -37,10 +40,11 @@ type CSV interface {
 	// returns CSV header fields
 	CSVHeader() []string
 
-	// used for labeling
+	// used to retrieve the timestamp of the audit record for labeling
 	NetcapTimestamp() string
 }
 
+// selectFields returns an array with the inidices of the desired fields for selection
 func selectFields(all []string, selection string) (s []int) {
 
 	var (
@@ -67,16 +71,18 @@ func selectFields(all []string, selection string) (s []int) {
 	return s
 }
 
+// Select takes a proto.Message and sets the selection on the package level
 func Select(msg proto.Message, vals string) {
 	if vals != "" && vals != " " {
 		if p, ok := msg.(CSV); ok {
 			selection = selectFields(p.CSVHeader(), vals)
 		} else {
-			log.Fatal("netcap type does not implement the netcap.ToCSV interface!")
+			log.Fatal("netcap type does not implement the types.CSV interface!")
 		}
 	}
 }
 
+// filter applies a selection if configured
 func filter(in []string) []string {
 	if len(selection) == 0 {
 		return in
@@ -86,9 +92,4 @@ func filter(in []string) []string {
 		r[i] = in[v]
 	}
 	return r
-}
-
-// pad the input up to the given number of space characters
-func pad(v interface{}, length int) string {
-	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", fmt.Sprint(v))
 }

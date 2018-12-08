@@ -1,7 +1,7 @@
 # TODOs
 
 - comments, code cleanup, renaming
-- ascii cast
+- add ascii cast
 - README
 
 Benchmarks:
@@ -11,7 +11,6 @@ Benchmarks:
 ## Sensor
 
 - client reuse conn?
-- don't write packets to disk option -> export
 - implement data export to elastic stack / influx 
 
 ## new protos
