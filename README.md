@@ -2,6 +2,10 @@
   <img src="graphics/svg/Netcap-Logo.svg" width="100%" height="144">
 </a>
 
+<br>
+<br>
+<br>
+
 The **Netcap** (NETwork CAPture) framework efficiently converts a stream of network packets into highly accessible type-safe structured data that represent specific protocols or custom abstractions.
 These audit records can be stored on disk or exchanged over the network,
 and are well suited as a data source for machine learning algorithms.
@@ -34,6 +38,8 @@ Core design goals of Netcap include:
 
 The following graphic shows a high level architecture overview:
 
+<br>
 <img src="graphics/svg/Netcap.svg" width="100%" height="100%">
+<br>
 
 Netcap files have the file extension **.ncap** or **.ncap.gz** if compressed with gzip and contain serialized protocol buffers of one type.  Naming of each file happens according to the naming in the gopacket library:  a short uppercase letter representation for common protocols, anda camel case version full word version for less common protocols.  Audit records are modeled as protocol buffers.  Each file contains a header that specifies which type of audit records is inside the file, what version of Netcap was used to generate it, what input source was used and what time it was created.  Each audit record should be tagged with the timestamp the packet was seen,  in the format seconds.microseconds.  Output is written to a file that represents each data structure from the protocol buffers definition, i.e. TCP.ncap,UDP.ncap.  For this purpose, the audit records are written as length delimited records into the file
