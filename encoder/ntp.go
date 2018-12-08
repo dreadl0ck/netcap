@@ -19,7 +19,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var NTPEncoder = CreateLayerEncoder(types.Type_NC_NTP, layers.LayerTypeNTP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var ntpEncoder = CreateLayerEncoder(types.Type_NC_NTP, layers.LayerTypeNTP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if ntp, ok := layer.(*layers.NTP); ok {
 		return &types.NTP{
 			Timestamp:          timestamp,

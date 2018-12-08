@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var ICMPv6RouterAdvertisementEncoder = CreateLayerEncoder(
+var icmpv6RouterAdvertisementEncoder = CreateLayerEncoder(
 	types.Type_NC_ICMPv6RouterAdvertisement,
 	layers.LayerTypeICMPv6RouterAdvertisement,
 	func(layer gopacket.Layer, timestamp string) proto.Message {

@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var LLCEncoder = CreateLayerEncoder(
+var llcEncoder = CreateLayerEncoder(
 	types.Type_NC_LLC,
 	layers.LayerTypeLLC,
 	func(layer gopacket.Layer, timestamp string) proto.Message {

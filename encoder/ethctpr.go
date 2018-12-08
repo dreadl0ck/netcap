@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var EthernetCTPReplyEncoder = CreateLayerEncoder(types.Type_NC_EthernetCTPReply, layers.LayerTypeEthernetCTPReply, func(layer gopacket.Layer, timestamp string) proto.Message {
+var ethernetCTPReplyEncoder = CreateLayerEncoder(types.Type_NC_EthernetCTPReply, layers.LayerTypeEthernetCTPReply, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if ethctpr, ok := layer.(*layers.EthernetCTPReply); ok {
 		return &types.EthernetCTPReply{
 			Timestamp:     timestamp,

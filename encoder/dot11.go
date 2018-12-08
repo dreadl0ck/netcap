@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var Dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11, func(layer gopacket.Layer, timestamp string) proto.Message {
+var dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if dot11, ok := layer.(*layers.Dot11); ok {
 		var qos *types.Dot11QOS
 		var htcontrol *types.Dot11HTControl

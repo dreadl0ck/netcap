@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var ICMPv6NeighborSolicitationEncoder = CreateLayerEncoder(
+var icmpv6NeighborSolicitationEncoder = CreateLayerEncoder(
 	types.Type_NC_ICMPv6NeighborSolicitation,
 	layers.LayerTypeICMPv6NeighborSolicitation,
 	func(layer gopacket.Layer, timestamp string) proto.Message {

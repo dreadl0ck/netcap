@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var TCPEncoder = CreateLayerEncoder(types.Type_NC_TCP, layers.LayerTypeTCP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var tcpEncoder = CreateLayerEncoder(types.Type_NC_TCP, layers.LayerTypeTCP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if tcp, ok := layer.(*layers.TCP); ok {
 		var opts []*types.TCPOption
 		for _, o := range tcp.Options {

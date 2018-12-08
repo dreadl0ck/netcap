@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var ICMPv4Encoder = CreateLayerEncoder(types.Type_NC_ICMPv4, layers.LayerTypeICMPv4, func(layer gopacket.Layer, timestamp string) proto.Message {
+var icmpv4Encoder = CreateLayerEncoder(types.Type_NC_ICMPv4, layers.LayerTypeICMPv4, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if icmp4, ok := layer.(*layers.ICMPv4); ok {
 		return &types.ICMPv4{
 			Timestamp: timestamp,

@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var DHCPv6Encoder = CreateLayerEncoder(types.Type_NC_DHCPv6, layers.LayerTypeDHCPv6, func(layer gopacket.Layer, timestamp string) proto.Message {
+var dhcpv6Encoder = CreateLayerEncoder(types.Type_NC_DHCPv6, layers.LayerTypeDHCPv6, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if dhcp6, ok := layer.(*layers.DHCPv6); ok {
 
 		var opts []*types.DHCPv6Option

@@ -22,7 +22,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var SIPEncoder = CreateLayerEncoder(types.Type_NC_SIP, layers.LayerTypeSIP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var sipEncoder = CreateLayerEncoder(types.Type_NC_SIP, layers.LayerTypeSIP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if sip, ok := layer.(*layers.SIP); ok {
 		headers := []string{}
 		for k, v := range sip.Headers {

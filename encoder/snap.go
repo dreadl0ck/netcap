@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var SNAPEncoder = CreateLayerEncoder(types.Type_NC_SNAP, layers.LayerTypeSNAP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var snapEncoder = CreateLayerEncoder(types.Type_NC_SNAP, layers.LayerTypeSNAP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if snap, ok := layer.(*layers.SNAP); ok {
 		return &types.SNAP{
 			Timestamp:          timestamp,

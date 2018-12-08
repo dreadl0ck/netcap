@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var UDPEncoder = CreateLayerEncoder(types.Type_NC_UDP, layers.LayerTypeUDP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var udpEncoder = CreateLayerEncoder(types.Type_NC_UDP, layers.LayerTypeUDP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if udp, ok := layer.(*layers.UDP); ok {
 		return &types.UDP{
 			Timestamp:      timestamp,

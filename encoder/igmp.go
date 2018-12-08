@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var IGMPEncoder = CreateLayerEncoder(
+var igmpEncoder = CreateLayerEncoder(
 	types.Type_NC_IGMP,
 	layers.LayerTypeIGMP,
 	func(layer gopacket.Layer, timestamp string) proto.Message {

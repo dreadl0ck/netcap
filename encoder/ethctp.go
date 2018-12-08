@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var EthernetCTPEncoder = CreateLayerEncoder(types.Type_NC_EthernetCTP, layers.LayerTypeEthernetCTP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var ethernetCTPEncoder = CreateLayerEncoder(types.Type_NC_EthernetCTP, layers.LayerTypeEthernetCTP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if ethctp, ok := layer.(*layers.EthernetCTP); ok {
 		return &types.EthernetCTP{
 			Timestamp: timestamp,

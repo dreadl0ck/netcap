@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var LinkLayerDiscoveryEncoder = CreateLayerEncoder(
+var linkLayerDiscoveryEncoder = CreateLayerEncoder(
 	types.Type_NC_LinkLayerDiscovery,
 	layers.LayerTypeLinkLayerDiscovery,
 	func(layer gopacket.Layer, timestamp string) proto.Message {

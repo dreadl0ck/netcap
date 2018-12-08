@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var DNSEncoder = CreateLayerEncoder(types.Type_NC_DNS, layers.LayerTypeDNS, func(layer gopacket.Layer, timestamp string) proto.Message {
+var dnsEncoder = CreateLayerEncoder(types.Type_NC_DNS, layers.LayerTypeDNS, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if dns, ok := layer.(*layers.DNS); ok {
 		var questions []*types.DNSQuestion
 		for _, q := range dns.Questions {

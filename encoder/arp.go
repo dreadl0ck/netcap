@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var ARPEncoder = CreateLayerEncoder(types.Type_NC_ARP, layers.LayerTypeARP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var arpEncoder = CreateLayerEncoder(types.Type_NC_ARP, layers.LayerTypeARP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if arp, ok := layer.(*layers.ARP); ok {
 		return &types.ARP{
 			Timestamp:       timestamp,

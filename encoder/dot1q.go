@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var Dot1QEncoder = CreateLayerEncoder(types.Type_NC_Dot1Q, layers.LayerTypeDot1Q, func(layer gopacket.Layer, timestamp string) proto.Message {
+var dot1QEncoder = CreateLayerEncoder(types.Type_NC_Dot1Q, layers.LayerTypeDot1Q, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if dot1q, ok := layer.(*layers.Dot1Q); ok {
 		return &types.Dot1Q{
 			Timestamp:      timestamp,

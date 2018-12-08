@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var ICMPv6NeighborAdvertisementEncoder = CreateLayerEncoder(types.Type_NC_ICMPv6NeighborAdvertisement, layers.LayerTypeICMPv6NeighborAdvertisement, func(layer gopacket.Layer, timestamp string) proto.Message {
+var icmpv6NeighborAdvertisementEncoder = CreateLayerEncoder(types.Type_NC_ICMPv6NeighborAdvertisement, layers.LayerTypeICMPv6NeighborAdvertisement, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if icmp6na, ok := layer.(*layers.ICMPv6NeighborAdvertisement); ok {
 		var opts []*types.ICMPv6Option
 		for _, o := range icmp6na.Options {

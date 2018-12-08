@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var IPv4Encoder = CreateLayerEncoder(
+var ipv4Encoder = CreateLayerEncoder(
 	types.Type_NC_IPv4,
 	layers.LayerTypeIPv4,
 	func(layer gopacket.Layer, timestamp string) proto.Message {

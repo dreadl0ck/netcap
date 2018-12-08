@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var IPv6HopByHopEncoder = CreateLayerEncoder(
+var ipv6HopByHopEncoder = CreateLayerEncoder(
 	types.Type_NC_IPv6HopByHop,
 	layers.LayerTypeIPv6HopByHop,
 	func(layer gopacket.Layer, timestamp string) proto.Message {

@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var LinkLayerDiscoveryInfoEncoder = CreateLayerEncoder(types.Type_NC_LinkLayerDiscoveryInfo, layers.LayerTypeLinkLayerDiscoveryInfo, func(layer gopacket.Layer, timestamp string) proto.Message {
+var linkLayerDiscoveryInfoEncoder = CreateLayerEncoder(types.Type_NC_LinkLayerDiscoveryInfo, layers.LayerTypeLinkLayerDiscoveryInfo, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if lldi, ok := layer.(*layers.LinkLayerDiscoveryInfo); ok {
 		var (
 			tlvs          []*types.LLDPOrgSpecificTLV

@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var SCTPEncoder = CreateLayerEncoder(types.Type_NC_SCTP, layers.LayerTypeSCTP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var sctpEncoder = CreateLayerEncoder(types.Type_NC_SCTP, layers.LayerTypeSCTP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if sctp, ok := layer.(*layers.SCTP); ok {
 		return &types.SCTP{
 			Timestamp:       timestamp,
