@@ -29,7 +29,11 @@ import (
 )
 
 var (
-	CustomEncoders     = []*CustomEncoder{}
+	// CustomEncoders slice contains initialized encoders at runtime
+	// for usage from other packages
+	CustomEncoders = []*CustomEncoder{}
+
+	// contains all available custom encoders
 	customEncoderSlice = []*CustomEncoder{
 		tlsEncoder,
 		linkFlowEncoder,
@@ -42,8 +46,10 @@ var (
 )
 
 type (
+	// CustomEncoderHandler takes a gopacket.Packet and returns a proto.Message
 	CustomEncoderHandler = func(p gopacket.Packet) proto.Message
 
+	// CustomEncoder implements custom logic to decode data from a gopacket.Packet
 	CustomEncoder struct {
 
 		// public fields

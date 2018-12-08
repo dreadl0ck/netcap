@@ -34,9 +34,10 @@ import (
 
 var (
 	// LayerEncoders map contains initialized encoders at runtime
+	// for usage from other packages
 	LayerEncoders = map[gopacket.LayerType]*LayerEncoder{}
 
-	// contains all available encoders
+	// contains all available layer encoders
 	layerEncoderSlice = []*LayerEncoder{
 		tcpEncoder,
 		udpEncoder,
