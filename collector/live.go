@@ -1,7 +1,7 @@
 // +build darwin
 
 /*
- * NETCAP - Network Capture Toolkit
+ * NETCAP - Traffic Analysis Framework
  * Copyright (c) 2017 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
