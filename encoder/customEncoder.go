@@ -46,11 +46,11 @@ type (
 
 	CustomEncoder struct {
 
-		// Public
+		// public fields
 		Name string
 		Type types.Type
 
-		// Private
+		// private fields
 		file      *os.File
 		bWriter   *bufio.Writer
 		gWriter   *gzip.Writer
@@ -63,7 +63,7 @@ type (
 		postinit func(*CustomEncoder) error
 		deinit   func(*CustomEncoder) error
 
-		// Config
+		// configuration
 		compress bool
 		buffer   bool
 		csv      bool
@@ -71,50 +71,67 @@ type (
 	}
 )
 
+// package level init
 func init() {
+	// collect all names for custom encoders on startup
 	for _, e := range customEncoderSlice {
 		allEncoderNames[e.Name] = struct{}{}
 	}
-	for _, e := range layerEncoderSlice {
-		allEncoderNames[e.Layer.String()] = struct{}{}
-	}
 }
 
+// InitCustomEncoders initializes all custom encoders
 func InitCustomEncoders(c Config) {
 
 	var (
-		in        = strings.Split(c.IncludeEncoders, ",")
-		ex        = strings.Split(c.ExcludeEncoders, ",")
-		inMap     = make(map[string]bool)
+		// values from command-line flags
+		in = strings.Split(c.IncludeEncoders, ",")
+		ex = strings.Split(c.ExcludeEncoders, ",")
+
+		// include map
+		inMap = make(map[string]bool)
+
+		// new selection
 		selection []*CustomEncoder
 	)
 
+	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" {
 
+		// iterate over includes
 		for _, name := range in {
 			if name != "" {
+
 				// check if proto exists
 				if _, ok := allEncoderNames[name]; !ok {
 					invalidProto(name)
 				}
+
+				// add to include map
 				inMap[name] = true
 			}
 		}
 
+		// iterate over custom encoders and collect those that are named in the includeMap
 		for _, e := range customEncoderSlice {
 			if _, ok := inMap[e.Name]; ok {
 				selection = append(selection, e)
 			}
 		}
+
+		// update custom encoders to new selection
 		customEncoderSlice = selection
 	}
 
+	// iterate over excluded encoders
 	for _, name := range ex {
 		if name != "" {
+
 			// check if proto exists
 			if _, ok := allEncoderNames[name]; !ok {
 				invalidProto(name)
 			}
+
+			// remove named encoder from customEncoderSlice
 			for i, e := range customEncoderSlice {
 				if name == e.Name {
 					// remove encoder
@@ -125,9 +142,13 @@ func InitCustomEncoders(c Config) {
 		}
 	}
 
+	// initialize encoders
 	for _, e := range customEncoderSlice {
+
 		// fmt.Println("init custom encoder", d.name)
 		e.Init(c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
+
+		// call postinit func if set
 		if e.postinit != nil {
 			err := e.postinit(e)
 			if err != nil {
@@ -149,11 +170,13 @@ func InitCustomEncoders(c Config) {
 			}
 		}
 
+		// append to custom encoders slice
 		CustomEncoders = append(CustomEncoders, e)
 	}
 	fmt.Println("initialized", len(CustomEncoders), "custom encoders | buffer size:", BlockSize)
 }
 
+// CreateCustomEncoder returns a new CustomEncoder instance
 func CreateCustomEncoder(t types.Type, name string, postinit func(*CustomEncoder) error, handler CustomEncoderHandler, deinit func(*CustomEncoder) error) *CustomEncoder {
 	return &CustomEncoder{
 		Name:     name,
@@ -178,6 +201,7 @@ func (d *CustomEncoder) Encode(p gopacket.Packet) error {
 	return nil
 }
 
+// Init initializes and configures the encoder
 func (d *CustomEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
 
 	d.compress = compress
@@ -256,6 +280,7 @@ func (d *CustomEncoder) Init(buffer, compress, csv bool, out string, writeChan b
 	d.aWriter = NewAtomicDelimitedWriter(d.dWriter)
 }
 
+// Destroy closes and flushes all writers and calls deinit if set
 func (d *CustomEncoder) Destroy() (name string, size int64) {
 	if d.deinit != nil {
 		err := d.deinit(d)
@@ -272,6 +297,7 @@ func (d *CustomEncoder) Destroy() (name string, size int64) {
 	return CloseFile(d.out, d.file, d.Name)
 }
 
+// GetChan returns a channel to receive serialized protobuf data from the encoder
 func (d *CustomEncoder) GetChan() <-chan []byte {
 	return d.cWriter.Chan()
 }

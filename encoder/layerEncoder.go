@@ -74,14 +74,14 @@ type (
 	// LayerEncoderHandler is the handler function for a layer encoder
 	LayerEncoderHandler = func(layer gopacket.Layer, timestamp string) proto.Message
 
-	// LayerEncoder represents a encoder for the gopacket.Layer type
+	// LayerEncoder represents an encoder for the gopacket.Layer type
 	LayerEncoder struct {
 
-		// Public
+		// public fields
 		Layer gopacket.LayerType
 		Type  types.Type
 
-		// Private
+		// private fields
 		file      *os.File
 		bWriter   *bufio.Writer
 		gWriter   *gzip.Writer
@@ -91,7 +91,7 @@ type (
 		cWriter   *chanWriter
 		csvWriter *csvWriter
 
-		// Config
+		// configuration
 		compress bool
 		csv      bool
 		buffer   bool
@@ -106,12 +106,18 @@ type (
 // package level init
 func init() {
 
+	// collect all names for layer encoders on startup
+	for _, e := range layerEncoderSlice {
+		allEncoderNames[e.Layer.String()] = struct{}{}
+	}
+
 	// get system block size for use as the buffer size of the buffered Writers
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs("/", &stat); err != nil {
 		panic(err)
 	}
 
+	// set block size
 	BlockSize = int(stat.Bsize)
 }
 
@@ -119,38 +125,55 @@ func init() {
 func InitLayerEncoders(c Config) {
 
 	var (
-		in        = strings.Split(c.IncludeEncoders, ",")
-		ex        = strings.Split(c.ExcludeEncoders, ",")
-		inMap     = make(map[string]bool)
+		// values from command-line flags
+		in = strings.Split(c.IncludeEncoders, ",")
+		ex = strings.Split(c.ExcludeEncoders, ",")
+
+		// include map
+		inMap = make(map[string]bool)
+
+		// new selection
 		selection []*LayerEncoder
 	)
 
+	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" {
 
+		// iterate over includes
 		for _, name := range in {
 			if name != "" {
+
 				// check if proto exists
 				if _, ok := allEncoderNames[name]; !ok {
 					invalidProto(name)
 				}
+
+				// add to include map
 				inMap[name] = true
 			}
 		}
 
+		// iterate over layer encoders and collect those that are named in the includeMap
 		for _, e := range layerEncoderSlice {
 			if _, ok := inMap[e.Layer.String()]; ok {
 				selection = append(selection, e)
 			}
 		}
+
+		// update layer encoders to new selection
 		layerEncoderSlice = selection
 	}
 
+	// iterate over excluded encoders
 	for _, name := range ex {
 		if name != "" {
+
 			// check if proto exists
 			if _, ok := allEncoderNames[name]; !ok {
 				invalidProto(name)
 			}
+
+			// remove named encoder from layerEncoderSlice
 			for i, e := range layerEncoderSlice {
 				if name == e.Layer.String() {
 					// remove encoder
@@ -161,6 +184,7 @@ func InitLayerEncoders(c Config) {
 		}
 	}
 
+	// initialize encoders
 	for _, e := range layerEncoderSlice {
 
 		// fmt.Println("init", d.layer)
@@ -180,14 +204,11 @@ func InitLayerEncoders(c Config) {
 			}
 		}
 
+		// add to layer encoders map
 		LayerEncoders[e.Layer] = e
 	}
 	fmt.Println("initialized", len(LayerEncoders), "layer encoders | buffer size:", BlockSize)
 }
-
-/*
- *	LayerEncoder Public
- */
 
 // CreateLayerEncoder returns a new LayerEncoder instance
 func CreateLayerEncoder(nt types.Type, lt gopacket.LayerType, handler LayerEncoderHandler) *LayerEncoder {
@@ -303,7 +324,7 @@ func (d *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bo
 	d.aWriter = NewAtomicDelimitedWriter(d.dWriter)
 }
 
-// GetChan returns a channel to receive serialized protobuf data from
+// GetChan returns a channel to receive serialized protobuf data from the encoder
 func (d *LayerEncoder) GetChan() <-chan []byte {
 	return d.cWriter.Chan()
 }

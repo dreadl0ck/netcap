@@ -1,17 +1,16 @@
 # TODOs
 
+- comments, code cleanup, renaming
+- ascii cast
+- README
+
 Benchmarks:
 - add benchmarks writing through channels vs mutex
-- add benchmarks: 5.5  Concatenating Strings
-
-- comments, code cleanup, renaming
-- golang: propose linting after error until end of current function?
+- add benchmarks: Concatenating Strings
 
 ## Sensor
 
-- TEST: gzip data on disk
 - client reuse conn?
-
 - don't write packets to disk option -> export
 - implement data export to elastic stack / influx 
 
@@ -24,6 +23,13 @@ Benchmarks:
 - Fragment
 
 # future
+
+Future Development:
+- scale to multi instance architecture
+- increase protocol coverage + USB support
+- data exporters + visualization dashboards / VR etc
+- robustness testing / pentest
+- performance assessment + optimizations
 
 - how many unmatched alerts?
 - switch to intelligence from eve.json for labeling
