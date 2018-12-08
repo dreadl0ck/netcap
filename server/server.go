@@ -14,7 +14,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -41,51 +40,12 @@ var (
 	flagPrivKey    = flag.String("privkey", "", "path to the hex encoded server private key")
 	flagAddr       = flag.String("addr", "127.0.0.1:1335", "specify an adress and port to listen for incoming traffic")
 
+	files = make(map[string]*AuditRecordHandle)
+
 	// not configurable at the moment
 	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")
 	// flagBuffer     = flag.Bool("buf", true, "buffer data before writing to disk")
 )
-
-func main() {
-
-	flag.Parse()
-
-	if *flagGenKeypair {
-		pub, priv, err := cryptoutils.GenerateKeypair()
-		if err != nil {
-			panic(err)
-		}
-
-		pubFile, err := os.Create("pub.key")
-		if err != nil {
-			panic(err)
-		}
-		pubFile.WriteString(hex.EncodeToString(pub[:]))
-
-		err = pubFile.Close()
-		if err != nil {
-			panic(err)
-		}
-
-		privFile, err := os.Create("priv.key")
-		if err != nil {
-			panic(err)
-		}
-
-		privFile.WriteString(hex.EncodeToString(priv[:]))
-
-		err = privFile.Close()
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println("wrote keys")
-		return
-	}
-
-	ctx := context.Background()
-	log.Fatal(server(ctx, *flagAddr))
-}
 
 // maxBufferSize specifies the size of the buffers that
 // are used to temporarily hold data from the UDP packets
@@ -95,18 +55,55 @@ const (
 	timeout       = 1 * time.Minute
 )
 
-// AuditRecordHandle wraps a file handle of a netcap audit record file
-// contains the original file handle and writers to compress and buffer the data
-type AuditRecordHandle struct {
-	gWriter *gzip.Writer
-	bWriter *bufio.Writer
-	f       *os.File
+func main() {
+
+	flag.Parse()
+
+	if *flagGenKeypair {
+
+		// generate a new keypair
+		pub, priv, err := cryptoutils.GenerateKeypair()
+		if err != nil {
+			panic(err)
+		}
+
+		// write public key to file on disk
+		pubFile, err := os.Create("pub.key")
+		if err != nil {
+			panic(err)
+		}
+		pubFile.WriteString(hex.EncodeToString(pub[:]))
+
+		// close file handle
+		err = pubFile.Close()
+		if err != nil {
+			panic(err)
+		}
+
+		// write private key to file on disk
+		privFile, err := os.Create("priv.key")
+		if err != nil {
+			panic(err)
+		}
+		privFile.WriteString(hex.EncodeToString(priv[:]))
+
+		// close file handle
+		err = privFile.Close()
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("wrote keys")
+		return
+	}
+
+	// serve
+	ctx := context.Background()
+	log.Fatal(udpServer(ctx, *flagAddr))
 }
 
-var files = make(map[string]*AuditRecordHandle)
-
-// server wraps all the UDP echo server functionality.
-func server(ctx context.Context, address string) (err error) {
+// udpServer implements a simple UDP server
+func udpServer(ctx context.Context, address string) (err error) {
 
 	// ListenPacket provides us a wrapper around ListenUDP so that
 	// we don't need to call `net.ResolveUDPAddr` and then subsequentially
@@ -132,12 +129,13 @@ func server(ctx context.Context, address string) (err error) {
 	// run cleanup on signals
 	handleSignals()
 
-	// read private key
+	// read private key file contents
 	privKeyContents, err := ioutil.ReadFile(*flagPrivKey)
 	if err != nil {
 		panic(err)
 	}
 
+	// hex decode private key
 	var serverPrivKey [cryptoutils.KeySize]byte
 	_, err = hex.Decode(serverPrivKey[:], privKeyContents)
 	if err != nil {
@@ -165,11 +163,13 @@ func server(ctx context.Context, address string) (err error) {
 			}
 
 			fmt.Printf("packet-received: bytes=%d from=%s\n", n, addr.String())
+
+			// create a copy of the data to allow reusing the buffer for the next incoming packet
 			var copyBuf = make([]byte, n)
 			copy(copyBuf, buffer[:n])
 			buf := bytes.NewBuffer(copyBuf)
 
-			// spawn a new goroutine to handle packet
+			// spawn a new goroutine to handle packet data
 			go func() {
 
 				// trim off the public key of the peer
@@ -189,13 +189,15 @@ func server(ctx context.Context, address string) (err error) {
 
 				var decryptedBuf = bytes.NewBuffer(decrypted)
 
-				// decompress
+				// create a new gzipped reader
 				gr, err := gzip.NewReader(decryptedBuf)
 				if err != nil {
 					fmt.Println(hex.Dump(decryptedBuf.Bytes()))
 					fmt.Println("gzip error", err)
 					return
 				}
+
+				// read data
 				c, err := ioutil.ReadAll(gr)
 				if err == io.EOF || err == io.ErrUnexpectedEOF {
 					fmt.Println("failed to decompress batch", err)
@@ -205,12 +207,17 @@ func server(ctx context.Context, address string) (err error) {
 					fmt.Println("gzip error", err)
 					return
 				}
+
+				// close reader
 				err = gr.Close()
 				if err != nil {
 					panic(err)
 				}
 
+				// init new batch
 				b := new(types.Batch)
+
+				// unmarshal batch data
 				err = proto.Unmarshal(c, b)
 				if err == io.EOF || err == io.ErrUnexpectedEOF {
 					fmt.Println("failed to unmarshal batch", err)
@@ -221,9 +228,10 @@ func server(ctx context.Context, address string) (err error) {
 
 				fmt.Println("decoded batch", b.MessageType, "from client", b.ClientID)
 
-				protocol := strings.TrimPrefix(b.MessageType.String(), "NC_")
-
-				path := filepath.Join(b.ClientID, protocol+".ncap.gz")
+				var (
+					protocol = strings.TrimPrefix(b.MessageType.String(), "NC_")
+					path     = filepath.Join(b.ClientID, protocol+".ncap.gz")
+				)
 				if a, ok := files[path]; ok {
 					_, err := a.gWriter.Write(b.Data)
 					if err != nil {
@@ -233,45 +241,6 @@ func server(ctx context.Context, address string) (err error) {
 					files[path] = NewAuditRecordHandle(b, path)
 				}
 			}()
-
-			// print batch data as CSV
-			// dReader := delimited.NewReader(bytes.NewBuffer(b.Data))
-			// var packet proto.Message = new(types.TCP)
-
-			// for {
-			// 	err := dReader.NextProto(packet)
-			// 	if err == io.EOF || err == io.ErrUnexpectedEOF {
-			// 		fmt.Println("EOF")
-			// 		break
-			// 	} else if err != nil {
-			// 		panic(err)
-			// 	}
-
-			// 	if p, ok := packet.(types.CSV); ok {
-			// 		fmt.Println(strings.Join(p.CSVRecord(), ","))
-			// 	}
-			// }
-
-			// // Setting a deadline for the `write` operation allows us to not block
-			// // for longer than a specific timeout.
-			// //
-			// // In the case of a write operation, that'd mean waiting for the send
-			// // queue to be freed enough so that we are able to proceed.
-			// deadline := time.Now().Add(timeout)
-			// err = pc.SetWriteDeadline(deadline)
-			// if err != nil {
-			// 	doneChan <- err
-			// 	return
-			// }
-
-			// // Write the packet's contents back to the client.
-			// n, err = pc.WriteTo(buffer[:n], addr)
-			// if err != nil {
-			// 	doneChan <- err
-			// 	return
-			// }
-
-			// fmt.Printf("packet-written: bytes=%d to=%s\n", n, addr.String())
 		}
 	}()
 

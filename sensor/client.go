@@ -20,9 +20,9 @@ import (
 	"net"
 )
 
-// client wraps the whole functionality of a UDP client that sends
+// sendUDP wraps the whole functionality of a UDP client that sends
 // a message and currently does not wait for a reply
-func client(ctx context.Context, address string, reader io.Reader) (err error) {
+func sendUDP(ctx context.Context, address string, reader io.Reader) (err error) {
 
 	// in case a hostname is specified
 	// resolve the UDP address so that we can make use of DialUDP
@@ -62,27 +62,6 @@ func client(ctx context.Context, address string, reader io.Reader) (err error) {
 		fmt.Printf("packet-written: bytes=%d\n", n)
 
 		// dont wait for a reply for now
-		// buffer := make([]byte, maxBufferSize)
-
-		// // Set a deadline for the ReadOperation so that we don't
-		// // wait forever for a server that might not respond on
-		// // a resonable amount of time.
-		// deadline := time.Now().Add(timeout)
-		// err = conn.SetReadDeadline(deadline)
-		// if err != nil {
-		// 	doneChan <- err
-		// 	return
-		// }
-
-		// nRead, addr, err := conn.ReadFrom(buffer)
-		// if err != nil {
-		// 	doneChan <- err
-		// 	return
-		// }
-
-		// fmt.Printf("packet-received: bytes=%d from=%s\n",
-		// 	nRead, addr.String())
-
 		doneChan <- nil
 	}()
 

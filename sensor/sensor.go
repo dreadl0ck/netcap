@@ -34,7 +34,6 @@ import (
 
 // maxBufferSize specifies the size of the buffers that
 // are used to temporarily hold data from the UDP packets
-// that we receive.
 const (
 	maxBufferSize = 10 * 1024
 	timeout       = 1 * time.Minute
@@ -61,18 +60,22 @@ var (
 
 func main() {
 
+	// parse command-line flags
 	flag.Parse()
 
+	// no server public key specified - no party
 	if *flagServerPubKey == "" {
 		fmt.Println("need public key of server")
 		os.Exit(1)
 	}
 
+	// read server public key contents from file
 	pubKeyContents, err := ioutil.ReadFile(*flagServerPubKey)
 	if err != nil {
 		panic(err)
 	}
 
+	// decode server public key
 	var serverPubKey [cryptoutils.KeySize]byte
 	_, err = hex.Decode(serverPubKey[:], pubKeyContents)
 	if err != nil {
@@ -84,6 +87,7 @@ func main() {
 		return
 	}
 
+	// create keypair
 	pub, priv, err := cryptoutils.GenerateKeypair()
 	if err != nil {
 		panic(err)
@@ -98,7 +102,7 @@ func main() {
 		Promisc:             *flagPromiscMode,
 		SnapLen:             *flagSnapLen,
 		EncoderConfig: encoder.Config{
-			// needs to be disabled
+			// needs to be disabled for batch mode
 			Buffer:          false,
 			Compression:     false,
 			CSV:             false,
@@ -113,12 +117,19 @@ func main() {
 		},
 	})
 
+	// initialize batching
 	chans, handle := c.InitBatching(*flagMaxSize, *flagBPF, *flagInterface)
+
+	// close handle on exit
 	defer handle.Close()
 
+	// get client id
+	// currently the user name is used for this
+	// TODO: generate a unique numerical identifier instead
 	var userName = os.Getenv("USER")
 	fmt.Println("\n["+userName+"] got", len(chans), "channels")
 
+	// iterate over encoder channels
 	for _, bi := range chans {
 
 		// create a copy of loop variable
@@ -130,9 +141,7 @@ func main() {
 		// handle channel goroutine
 		go func() {
 
-			var (
-				leftOverBuf []byte
-			)
+			var leftOverBuf []byte
 
 			// send data loop
 			for {
@@ -142,12 +151,17 @@ func main() {
 					size []byte
 				)
 
+				// set clientID and messageType
 				b.ClientID = userName
 				b.MessageType = info.Type
 
+				// if there is buffered data left over
 				if len(leftOverBuf) > 0 {
+					// add to current batch
 					b.Data = append(b.Data, leftOverBuf...)
 					b.Size = int32(len(leftOverBuf))
+
+					// reset leftover buffer
 					leftOverBuf = make([]byte, 0)
 				}
 
@@ -162,61 +176,81 @@ func main() {
 
 							fmt.Println("got", len(data), "bytes of type", info.Type, "expected", size)
 
+							// calculate new size
 							newSize := int32(len(size)+len(data)) + b.Size
+
+							// if the new size would exceed the maximum size
 							if newSize > int32(*flagMaxSize) {
 								// buffer and break from loop
 								leftOverBuf = append(size, data...)
 								goto send
 							}
+
+							// collect data
 							b.Data = append(b.Data, append(size, data...)...)
+
+							// update batch size
 							b.Size = newSize
 
+							// reset size slice
 							size = []byte{}
 							continue
 						}
 
 						// received a size as varint
 						fmt.Println("got size", data, "for type", info.Type)
+
+						// set the size value
 						size = data
 					}
 				}
 
-			send:
+			send: // send batch to collection server
 
 				fmt.Println("\nBatch done!", b.Size, len(b.Data), b.ClientID, b.MessageType)
 
+				// marshal batch
 				d, err := proto.Marshal(b)
 				if err != nil {
 					panic(err)
 				}
 
-				// compress
+				// compress data
 				var buf bytes.Buffer
 				gw := gzip.NewWriter(&buf)
 				_, err = gw.Write(d)
 				if err != nil {
 					panic(err)
 				}
+
+				// flush compressed writer
 				err = gw.Flush()
 				if err != nil {
 					panic(err)
 				}
+
+				// close compressed writer
 				err = gw.Close()
 				if err != nil {
 					panic(err)
 				}
 
+				// encrypt payload
 				encData, err := cryptoutils.AsymmetricEncrypt(buf.Bytes(), &serverPubKey, priv)
 				if err != nil {
 					panic(err)
 				}
 
+				// create a buffer for the encrypted bytes
 				var encB bytes.Buffer
+
+				// write public key
 				encB.Write(pub[:])
+				// write encrypted data
 				encB.Write(encData)
 
 				// send to server
-				err = client(context.Background(), *flagAddr, &encB)
+				err = sendUDP(context.Background(), *flagAddr, &encB)
 				if err != nil {
 					panic(err)
 				}
@@ -224,45 +258,7 @@ func main() {
 		}()
 	}
 
+	// wait until the end of time
 	wait := make(chan bool)
 	<-wait
-
-	// for {
-	// 	batch, err := c.CollectBatch(*flagProto, *flagMaxSize, *flagBPF, *flagInterface)
-	// 	if err == io.EOF {
-	// 		fmt.Println("EOF")
-	// 		break
-	// 	} else if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	fmt.Println("\nBatch done!", batch.Size, len(batch.Data), batch.ClientID, batch.MessageType)
-
-	// 	d, err := proto.Marshal(batch)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	// compress
-	// 	var buf bytes.Buffer
-	// 	gw := gzip.NewWriter(&buf)
-	// 	_, err = gw.Write(d)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	err = gw.Flush()
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	err = gw.Close()
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	// send to server
-	// 	err = client(context.Background(), "127.0.0.1:1335", &buf)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// }
 }
