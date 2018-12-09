@@ -23,9 +23,7 @@ The name **Netcap** was chosen to be simple and descriptive.
 The command-line tool was designed with usability and readability in mind,
 and displays progress when parsing dump files.
 
-In the following, Netcap's design goals and high level concepts will be presented, along with a specification.
-
-Core design goals of Netcap include:
+## Design Goals
 
 - memory safety when parsing untrusted input
 - ease of extension
@@ -44,4 +42,58 @@ The following graphic shows a high level architecture overview:
 
 Packets are fetched from an input source (offline dump file or live from an interface) and distributed via round-robin to a pool of workers. Each worker dissects all layers of a packet and writes the generated protobuf audit records to the corresponding file. By default, the data is compressed with gzip to save storage space and buffered to avoid an overhead due to excessive syscalls for writing data to disk.
 
+## Specification
+
 Netcap files have the file extension **.ncap** or **.ncap.gz** if compressed with gzip and contain serialized protocol buffers of one type.  Naming of each file happens according to the naming in the gopacket library:  a short uppercase letter representation for common protocols, anda camel case version full word version for less common protocols.  Audit records are modeled as protocol buffers.  Each file contains a header that specifies which type of audit records is inside the file, what version of Netcap was used to generate it, what input source was used and what time it was created.  Each audit record should be tagged with the timestamp the packet was seen,  in the format seconds.microseconds.  Output is written to a file that represents each data structure from the protocol buffers definition, i.e. TCP.ncap,UDP.ncap.  For this purpose, the audit records are written as length delimited records into the file
+
+## Quickstart
+
+Read traffic live from interface, stop with Ctrl-C (SIGINT): 
+
+    $ netcap -iface eth0
+
+Read traffic from a dump file (supports PCAP or PCAPNG):
+
+    $ netcap -r traffic.pcap
+
+Read a netcap dumpfile and print to stdout as CSV:
+
+    $ netcap -r TCP.ncap.gz
+
+Show the available fields for a specific Netcap dump file: 
+
+    $ netcap -fields -r TCP.ncap.gz
+
+Print only selected fields and output as CSV:
+
+    $ netcap -in TCP.ncap.gz -select Timestamp,SrcPort,DstPort
+
+Save CSV output to file:
+
+    $ netcap -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv
+
+Print output separated with tabs:
+
+    $ netcap -r TPC.ncap.gz -tsv
+
+Run with 24 workers and disable gzip compression and buffering:
+
+    $ netcap -workers 24 -buf false -comp false -in traffic.pcapng
+
+Parse pcap and write all data to output directory (will be created if it does not exist):
+
+    $ netcap -r traffic.pcap -out traffic_ncap
+
+Convert timestamps to UTC:
+
+    $ netcap -r TCP.ncap.gz -select Timestamp,SrcPort,Dstport -utc
+
+## Tests
+
+To execute the unit tests, run the followig from the project root:
+
+    go test -v -bench=. ./...
+
+## License
+
+GPLv3
