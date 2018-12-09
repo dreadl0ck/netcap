@@ -18,7 +18,7 @@ Currently, the thesis serves as documentation until the wiki is ready.
 The project won the 2nd Place at Kaspersky Labs SecurITCup 2018 in Budapest.
 
 **Netcap** uses Google's Protocol Buffers to encode its output, which allows accessing it across a wide range of programming languages.
-Alternatively, output can be emitted as comma separated values (\gls{csv}), which is a common input format for data analysis tools and systems.
+Alternatively, output can be emitted as comma separated values, which is a common input format for data analysis tools and systems.
 The tool is extensible and provides multiple ways of adding support for new protocols, 
 while implementing the parsing logic in a memory safe way.
 It provides high dimensional data about observed traffic and allows the researcher to focus on experimenting with novel approaches for detecting malicious behavior in network environments,
