@@ -26,7 +26,7 @@ instead of fiddling with data collection mechanisms and post processing steps.
 It has a concurrent design that makes use of multi-core architectures.
 The name **Netcap** was chosen to be simple and descriptive.
 The command-line tool was designed with usability and readability in mind,
-and displays progress when parsing dump files.
+and displays progress when processing packets.
 
 ## Design Goals
 
