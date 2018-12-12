@@ -71,7 +71,7 @@ Show the available fields for a specific Netcap dump file:
 
 Print only selected fields and output as CSV:
 
-    $ netcap -in TCP.ncap.gz -select Timestamp,SrcPort,DstPort
+    $ netcap -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort
 
 Save CSV output to file:
 
@@ -83,7 +83,7 @@ Print output separated with tabs:
 
 Run with 24 workers and disable gzip compression and buffering:
 
-    $ netcap -workers 24 -buf false -comp false -in traffic.pcapng
+    $ netcap -workers 24 -buf false -comp false -r traffic.pcapng
 
 Parse pcap and write all data to output directory (will be created if it does not exist):
 
