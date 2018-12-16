@@ -75,6 +75,8 @@ func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 				progress.Increment()
 			}
 
+			var finalLabel string
+
 			// The HTTP summary structure is treated like a bidirectional flow
 			// since an alert can either refer to the HTTP request or the response
 			// additionally one of the involved ports must be 80
@@ -97,12 +99,31 @@ func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 
 					// fmt.Println("DEBUG: http label match, http TS", http.Timestamp, "alert TS", a.Timestamp)
 
+					if CollectLabels {
+						// only if it is not already part of the label
+						if !strings.Contains(finalLabel, a.Classification) {
+							if finalLabel == "" {
+								finalLabel = a.Classification
+							} else {
+								finalLabel += " | " + a.Classification
+							}
+						}
+						continue
+					}
+
 					// add label
 					f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
 
 					goto read
 				}
+			}
+
+			if len(finalLabel) != 0 {
+				// add final label
+				f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + finalLabel + "\n")
+				labelsTotal++
+				goto read
 			}
 
 			// label as normal

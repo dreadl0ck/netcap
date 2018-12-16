@@ -31,14 +31,21 @@ commands:
         description: clean up to prepare for build
         exec: rm -rf bin/*
     
-    # perform install
+    # perform full install
     install:
+        description: install to $PATH
+        buildNumber: true
+        help: Install the application to the default system location
+        exec: zeus install-netcap && zeus install-netlabel
+    
+    # install netcap lib and commandline tool
+    install-netcap:
         description: install to $PATH
         buildNumber: true
         help: Install the application to the default system location
         exec: go build -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
 
-    # perform install
+    # install netlabel commandline tool
     install-netlabel:
         description: install to $PATH
         buildNumber: true
@@ -68,6 +75,7 @@ commands:
         description: install to $PATH
         help: Install the netcap server to the default system location
         exec: go build -o $(go env GOPATH)/bin/netcap-server -i github.com/dreadl0ck/netcap/server
+
     build-tf-neural:
         language: bash
         description: build tensorflow python script from jupyter notebook

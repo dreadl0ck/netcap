@@ -89,6 +89,8 @@ func TLS(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 				progress.Increment()
 			}
 
+			var finalLabel string
+
 			// this labels the TLS audit record as malicious
 			// if ANY packet of the birectional connection initiated by the TLS handshake was classified as malicious
 			for _, a := range alerts {
@@ -111,12 +113,31 @@ func TLS(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 					// AND destination port must either be source or destination of alert
 					(int32(a.DstPort) == tls.SrcPort || int32(a.DstPort) == tls.DstPort) {
 
+					if CollectLabels {
+						// only if it is not already part of the label
+						if !strings.Contains(finalLabel, a.Classification) {
+							if finalLabel == "" {
+								finalLabel = a.Classification
+							} else {
+								finalLabel += " | " + a.Classification
+							}
+						}
+						continue
+					}
+
 					// add label
 					f.WriteString(strings.Join(tls.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
 
 					goto read
 				}
+			}
+
+			if len(finalLabel) != 0 {
+				// add final label
+				f.WriteString(strings.Join(tls.CSVRecord(), separator) + separator + finalLabel + "\n")
+				labelsTotal++
+				goto read
 			}
 
 			// label as normal

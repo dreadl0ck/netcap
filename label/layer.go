@@ -15,6 +15,7 @@ package label
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,7 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"gopkg.in/cheggaaa/pb.v1"
+	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
 var CollectLabels bool
@@ -92,6 +93,7 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 			// e.g: there are two alerts for the same timestamp with different classifications
 			// they label will then contain both separated by a pipe symbol
 			if CollectLabels {
+
 				var label string
 
 				// check if flow has a source or destination adress matching an alert
@@ -103,12 +105,20 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 
 						// only if it is not already part of the label
 						if !strings.Contains(label, a.Classification) {
-							label += " | " + a.Classification
+							if label == "" {
+								label = a.Classification
+							} else {
+								label += " | " + a.Classification
+							}
 						}
 					}
 				}
 
-				if label != "" {
+				if len(label) != 0 {
+					if strings.HasPrefix(label, " |") {
+						log.Fatal("BULLSHIT:", label)
+					}
+
 					// add label
 					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + label + "\n")
 					labelsTotal++

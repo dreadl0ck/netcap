@@ -89,6 +89,8 @@ func UDP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 				progress.Increment()
 			}
 
+			var finalLabel string
+
 			// Unidirectional UDP packets
 			// checks if packet has a source or destination port matching an alert
 			for _, a := range alerts {
@@ -105,12 +107,30 @@ func UDP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 					// AND source port must match
 					a.SrcPort == int(udp.SrcPort) {
 
+					if CollectLabels {
+						// only if it is not already part of the label
+						if !strings.Contains(finalLabel, a.Classification) {
+							if finalLabel == "" {
+								finalLabel = a.Classification
+							} else {
+								finalLabel += " | " + a.Classification
+							}
+						}
+						continue
+					}
+
 					// add label
 					f.WriteString(strings.Join(udp.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
-
 					goto read
 				}
+			}
+
+			if len(finalLabel) != 0 {
+				// add final label
+				f.WriteString(strings.Join(udp.CSVRecord(), separator) + separator + finalLabel + "\n")
+				labelsTotal++
+				goto read
 			}
 
 			// label as normal

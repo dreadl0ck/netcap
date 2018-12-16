@@ -331,8 +331,23 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 
 			// use attack description instead of classification for labeling
 			if useDescription {
+
+				// check if attack class was excluded prior to flipping
+				if excluded[a.Classification] {
+					continue
+				}
+
+				// attack class is not excluded
+				// now replace classification with description as requested
 				a.Classification = a.Description
 			}
+
+			// ensure no alerts with empty classification are collected
+			if a.Classification == "" || a.Classification == " " {
+				continue
+			}
+
+			// count total occurrences of classification
 			ClassificationMap[a.Classification]++
 
 			// check if excluded
@@ -373,7 +388,8 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 
 		os.Exit(1)
 	}
-	fmt.Println(len(duplicates), "alerts ignored")
+
+	fmt.Println(len(duplicates), "alerts ignored in labelMap")
 
 	return labelMap, arr
 }

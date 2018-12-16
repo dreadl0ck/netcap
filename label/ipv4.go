@@ -89,6 +89,8 @@ func IPv4(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 				progress.Increment()
 			}
 
+			var finalLabel string
+
 			// Unidirectional IPv4 packets
 			// checks if packet has a source or destination ip matching an alert
 			for _, a := range alerts {
@@ -105,12 +107,31 @@ func IPv4(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 					// AND source ip must match
 					a.SrcIP == ip4.SrcIP {
 
+					if CollectLabels {
+						// only if it is not already part of the label
+						if !strings.Contains(finalLabel, a.Classification) {
+							if finalLabel == "" {
+								finalLabel = a.Classification
+							} else {
+								finalLabel += " | " + a.Classification
+							}
+						}
+						continue
+					}
+
 					// add label
 					f.WriteString(strings.Join(ip4.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
 
 					goto read
 				}
+			}
+
+			if len(finalLabel) != 0 {
+				// add final label
+				f.WriteString(strings.Join(ip4.CSVRecord(), separator) + separator + finalLabel + "\n")
+				labelsTotal++
+				goto read
 			}
 
 			// label as normal

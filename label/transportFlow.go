@@ -88,6 +88,8 @@ func TransportFlow(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, out
 				progress.Increment()
 			}
 
+			var finalLabel string
+
 			// check if flow has a source or destination adress matching an alert
 			// if not label it as normal
 			for _, a := range alerts {
@@ -113,12 +115,31 @@ func TransportFlow(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, out
 					// AND flow destination port must either be source or destination of alert
 					(flow.DstPort == int32(a.SrcPort) || flow.DstPort == int32(a.DstPort)) {
 
+					if CollectLabels {
+						// only if it is not already part of the label
+						if !strings.Contains(finalLabel, a.Classification) {
+							if finalLabel == "" {
+								finalLabel = a.Classification
+							} else {
+								finalLabel += " | " + a.Classification
+							}
+						}
+						continue
+					}
+
 					// add label
 					f.WriteString(strings.Join(flow.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
 
 					goto read
 				}
+			}
+
+			if len(finalLabel) != 0 {
+				// add final label
+				f.WriteString(strings.Join(flow.CSVRecord(), separator) + separator + finalLabel + "\n")
+				labelsTotal++
+				goto read
 			}
 
 			// label as normal
