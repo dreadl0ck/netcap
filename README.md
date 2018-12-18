@@ -13,7 +13,7 @@ Since parsing of untrusted input can be dangerous and network data is potentiall
 implementation was performed in a programming language that provides a garbage collected memory safe runtime.
 
 It was developed for a series of experiments in my bachelor thesis: "Implementation and evaluation of secure and scalable anomaly-based network intrusion detection".
-Currently, the thesis serves as documentation until the wiki is ready.
+Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository.
 
 The project won the 2nd Place at Kaspersky Labs SecurITCup 2018 in Budapest.
 
@@ -98,6 +98,124 @@ Convert timestamps to UTC:
 To execute the unit tests, run the followig from the project root:
 
     go test -v -bench=. ./...
+
+## Audit Records
+
+### Supported Protocols
+
+| Name                        | Layer       | Description                |
+| --------------------------- | ----------- | -------------------------- |
+| Ethernet                    | Link        | IEEE 802.3 Ethernet Protocol               |
+| ARP                         | Link        | Address Resolution Procotol               |
+| Dot1Q                       | Link        | IEEE 802.1Q, virtual LANs on an Ethernet network               |
+| Dot11                       | Link        | IEEE 802.11 Wireless LAN               |
+| LinkLayerDiscovery          | Link        | IEEE 802.1AB Station and Media Access Control Connectivity Discovery               |
+| EthernetCTP                 | Link        | diagnostic protocol included in the Xerox Ethernet II specification               |
+| EthernetCTPReply            | Link        | reply to an ethernet ctp packet               |
+| LinkLayerDiscoveryInfo      | Link        | decoded details for a set of LinkLayerDiscoveryValues               |
+| LLC                         | Link        | IEEE 802.2 LLC               |
+| SNAP                        | Link        | mechanism for multiplexing, on networks using IEEE 802.2 LLC               |
+| IPv4                        | Network     | Internet Protocol version 4               |
+| IPv6                        | Network     | Internet Protocol version 6              |
+| IPv6HopByHop                | Network     | IPv6 Hop-by-Hop Header               |
+| IGMP                        | Network     | Internet Group Management Protocol               |
+| ICMPv4                      | Network     | Internet Control Message Protocol v4               |
+| ICMPv6                      | Network     | Internet Control Message Protocol v6               |
+| ICMPv6NeighborAdvertisement | Network     | Neighbor Discovery Protocol               |
+| ICMPv6RouterAdvertisement   | Network     | Neighbor Discovery Protocol               |
+| ICMPv6Echo                  | Network     | Neighbor Discovery Protocol               |
+| ICMPv6NeighborSolicitation  | Network     | Neighbor Discovery Protocol               |
+| ICMPv6RouterSolicitation    | Network     | Neighbor Discovery Protocol               |
+| UDP                         | Transport   | User Datagram Protocol               |
+| TCP                         | Transport   | Transmission Control Protocol               |
+| SCTP                        | Transport   | Stream Control Transmission Protocol               |
+| DNS                         | Application | Domain Name System               |
+| DHCPv4                      | Application | Dynamic Host Configuration version 4               |
+| DHCPv6                      | Application | Dynamic Host Configuration version 6               |
+| NTP                         | Application | Network Time Protocol               |
+| SIP                         | Application | Session Initiation Protocol               |
+| HTTP                        | Application | Hypertext Transfer Protocol              |
+
+### Protocol Sub Structure Types
+
+| Name                        | Description               |
+| --------------------------- | ------------------------- |
+| Dot11QOS                    | IEEE 802.11 Quality Of Service              |
+| Dot11HTControl              | IEEE 802.11 HTC information              |
+| Dot11HTControlVHT           | IEEE 802.11 HTC information              |
+| Dot11HTControlHT            | IEEE 802.11 HTC information              |
+| Dot11HTControlMFB           | IEEE 802.11 HTC information              |
+| Dot11LinkAdapationControl   | IEEE 802.11 HTC information              |
+| Dot11ASEL                   | IEEE 802.11 HTC information              |
+| LLDPChassisID               | Link Layer Discovery Protocol information              |
+| LLDPPortID                  | Link Layer Discovery Protocol information              |
+| LinkLayerDiscoveryValue     | Link Layer Discovery Protocol information              |
+| LLDPSysCapabilities         | Link Layer Discovery Protocol information              |
+| LLDPCapabilities            | Link Layer Discovery Protocol information              |
+| LLDPMgmtAddress             | Link Layer Discovery Protocol information              |
+| LLDPOrgSpecificTLV          | Link Layer Discovery Protocol information              |
+| IPv4Option                  | IPv4 option              |
+| ICMPv6Option                | ICMPv6 option              |
+| TCPOption                   | TCP option              |
+| DNSResourceRecord           | Domain Name System resource record              |
+| DNSSOA                      | Domain Name System start of authority record              |
+| DNSSRV                      | Domain Name System service record              |
+| DNSMX                       | Mail exchange record              |
+| DNSQuestion                 | Domain Name System request for a single domain              |
+| DHCPOption                  | DHCP v4 option              |
+| DHCPv6Option                | DHCP v6 option              |
+| IGMPv3GroupRecord           | IGMPv3 group records for a membership report              |
+| IPv6HopByHopOption          | IPv6 hop by hop extension TLV option              |
+| IPv6HopByHopOptionAlignment | Hop By Hop Option Alignment             |
+
+
+## Available Fields
+
+### Layer Encoders
+
+| Layer                         | NumFields | Fields               |
+| ----------------------------- | ---------- | -------------------- |
+| TCP                           | 22        | Timestamp, SrcPort, DstPort, SeqNum, AckNum, DataOffset, FIN, SYN, RST, PSH, ACK, URG, ECE, CWR, NS, Window, Checksum, Urgent, Padding, Options, PayloadEntropy, PayloadSize             |
+| UDP                           |  7        | Timestamp, SrcPort, DstPort, Length, Checksum, PayloadEntropy, PayloadSize             |
+| IPv4                          | 17        | Timestamp, Version, IHL, TOS, Length, Id, Flags, FragOffset, TTL, Protocol, Checksum, SrcIP, DstIP, Padding, Options, PayloadEntropy, PayloadSize             |
+| IPv6                          | 12        | Timestamp, Version, TrafficClass, FlowLabel, Length, NextHeader, HopLimit, SrcIP, DstIP, PayloadEntropy, PayloadSize, HopByHop             |
+| DHCPv4                        | 16        | Timestamp, Operation, HardwareType, HardwareLen, HardwareOpts, Xid, Secs, Flags, ClientIP, YourClientIP, NextServerIP, RelayAgentIP, ClientHWAddr, ServerName, File, Options             |
+| DHCPv6                        |  7        | Timestamp, MsgType, HopCount, LinkAddr, PeerAddr, TransactionID, Options             |
+| ICMPv4                        |  5        | Timestamp, TypeCode, Checksum, Id, Seq             |
+| ICMPv6                        |  3        | Timestamp, TypeCode, Checksum             |
+| ICMPv6Echo                    |  3        | Timestamp, Identifier, SeqNumber             |
+| ICMPv6NeighborSolicitation    |  3        | Timestamp, TargetAddress, Options             |
+| ICMPv6RouterSolicitation      |  2        | Timestamp, Options             |
+| DNS                           | 18        | Timestamp, ID, QR, OpCode, AA, TC, RD, RA, Z, ResponseCode, QDCount, ANCount, NSCount, ARCount, Questions, Answers, Authorities, Additionals             |
+| ARP                           | 10        | Timestamp, AddrType, Protocol, HwAddressSize, ProtAddressSize, Operation, SrcHwAddress, SrcProtAddress, DstHwAddress, DstProtAddress             |
+| Ethernet                      |  6        | Timestamp, SrcMAC, DstMAC, EthernetType, PayloadEntropy, PayloadSize             |
+| Dot1Q                         |  5        | Timestamp, Priority, DropEligible, VLANIdentifier, Type             |
+| Dot11                         | 14        | Timestamp, Type, Proto, Flags, DurationID, Address1, Address2, Address3, Address4, SequenceNumber, FragmentNumber, Checksum, QOS, HTControl             |
+| NTP                           | 15        | Timestamp, LeapIndicator, Version, Mode, Stratum, Poll, Precision, RootDelay, RootDispersion, ReferenceID, ReferenceTimestamp, OriginTimestamp, ReceiveTimestamp, TransmitTimestamp, ExtensionBytes             |
+| SIP                           |  3        | Timestamp, OrganizationalCode, Type             |
+| IGMP                          | 13        | Timestamp, Type, MaxResponseTime, Checksum, GroupAddress, SupressRouterProcessing, RobustnessValue, IntervalTime, SourceAddresses, NumberOfGroupRecords, NumberOfSources, GroupRecords, Version             |
+| LLC                           |  6        | Timestamp, DSAP, IG, SSAP, CR, Control             |
+| IPv6HopByHop                  |  2        | Timestamp, Options             |
+| SCTP                          |  5        | Timestamp, SrcPort, DstPort, VerificationTag, Checksum             |
+| SNAP                          |  3        | Timestamp, OrganizationalCode, Type             |
+| LinkLayerDiscovery            |  5        | Timestamp, ChassisID, PortID, TTL, Values             |
+| ICMPv6NeighborAdvertisement   |  4        | Timestamp, Flags, TargetAddress, Options             |
+| ICMPv6RouterAdvertisement     |  7        | Timestamp, HopLimit, Flags, RouterLifetime, ReachableTime, RetransTimer, Options             |
+| EthernetCTP                   |  2        | Timestamp, SkipCount             |
+| EthernetCTPReply              |  4        | Timestamp, Function, ReceiptNumber, Data             |
+| LinkLayerDiscoveryInfo        |  8        | Timestamp, PortDescription, SysName, SysDescription, SysCapabilities, MgmtAddress, OrgTLVs, Unknown             |
+
+### Custom Encoders
+
+| Name                        | NumFields  |  Fields   |
+| --------- | ---------| --------- |
+| TLS                         |  27        | Timestamp, Type, Version, MessageLen, HandshakeType, HandshakeLen, HandshakeVersion, Random, SessionIDLen, SessionID, CipherSuiteLen, ExtensionLen, SNI, OSCP, CipherSuites, CompressMethods, SignatureAlgs, SupportedGroups, SupportedPoints, ALPNs, Ja3, SrcIP, DstIP, SrcMAC, DStMAC, SrcPort, DstPort |
+| LinkFlow                    |  9         | TimestampFirst, TimestampLast, Proto, SrcMAC, DstMAC, Size, NumPackets, UID, Duration |
+| NetworkFlow                 |  9         | TimestampFirst, TimestampLast, Proto, SrcIP, DstIP, Size, NumPackets, UID, Duration |
+| TransportFlow               |  9         | TimestampFirst, TimestampLast, Proto, SrcPort, DstPort, Size, NumPackets, UID, Duration |
+| HTTP                        |  14        | Timestamp, Proto, Method, Host, UserAgent, Referer, ReqCookies, ReqContentLength, URL, ResContentLength, ContentType, StatusCode, SrcIP, DstIP |
+| Flow                        |  17        | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, Size, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
+| Connection                  |  17        | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, Size, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 
 ## License
 
