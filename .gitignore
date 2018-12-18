@@ -5,7 +5,6 @@ pcaps
 *.pcapng
 *.ncap*
 zeus/.history
-mied18.pdf
 zeus/dumps
 priv.key
 pub.key
