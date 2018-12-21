@@ -6,27 +6,30 @@
 <br>
 <br>
 
-The **Netcap** (NETwork CAPture) framework efficiently converts a stream of network packets into highly accessible type-safe structured data that represent specific protocols or custom abstractions.
+The *Netcap* (NETwork CAPture) framework efficiently converts a stream of network packets into highly accessible type-safe structured data that represent specific protocols or custom abstractions.
 These audit records can be stored on disk or exchanged over the network,
 and are well suited as a data source for machine learning algorithms.
 Since parsing of untrusted input can be dangerous and network data is potentially malicious,
 implementation was performed in a programming language that provides a garbage collected memory safe runtime.
 
+Watch a simple example of generating audit records from a PCAP dump file,
+and printing information of from TCP and UDP records as ASCII table and CSV:
+
 [![asciicast](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g.svg)](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g)
 
 It was developed for a series of experiments in my bachelor thesis: _Implementation and evaluation of secure and scalable anomaly-based network intrusion detection_.
-Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository (file: [mied18.pdf](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf)), slides from my presentation are available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).
+Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository (file: [mied18.pdf](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf)), slides from my presentation at the institute are available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).
 
 The project won the 2nd Place at Kaspersky Labs SecurIT Cup 2018 in Budapest.
 
-**Netcap** uses Google's Protocol Buffers to encode its output, which allows accessing it across a wide range of programming languages.
+*Netcap* uses Google's Protocol Buffers to encode its output, which allows accessing it across a wide range of programming languages.
 Alternatively, output can be emitted as comma separated values, which is a common input format for data analysis tools and systems.
 The tool is extensible and provides multiple ways of adding support for new protocols, 
 while implementing the parsing logic in a memory safe way.
 It provides high dimensional data about observed traffic and allows the researcher to focus on experimenting with novel approaches for detecting malicious behavior in network environments,
 instead of fiddling with data collection mechanisms and post processing steps.
 It has a concurrent design that makes use of multi-core architectures.
-The name **Netcap** was chosen to be simple and descriptive.
+The name *Netcap* was chosen to be simple and descriptive.
 The command-line tool was designed with usability and readability in mind,
 and displays progress when processing packets.
 
@@ -47,11 +50,11 @@ The following graphic shows a high level architecture overview:
 <img src="graphics/svg/Netcap.svg" width="100%" height="100%">
 <br>
 
-Packets are fetched from an input source (offline dump file or live from an interface) and distributed via round-robin to a pool of workers. Each worker dissects all layers of a packet and writes the generated protobuf audit records to the corresponding file. By default, the data is compressed with gzip to save storage space and buffered to avoid an overhead due to excessive syscalls for writing data to disk.
+Packets are fetched from an input source (offline dump file or live from an interface) and distributed via round-robin to a pool of workers. Each worker dissects all layers of a packet and writes the generated *protobuf* audit records to the corresponding file. By default, the data is compressed with *gzip* to save storage space and buffered to avoid an overhead due to excessive *syscalls* for writing data to disk.
 
 ## Specification
 
-Netcap files have the file extension **.ncap** or **.ncap.gz** if compressed with gzip and contain serialized protocol buffers of one type.  Naming of each file happens according to the naming in the gopacket library:  a short uppercase letter representation for common protocols, anda camel case version full word version for less common protocols.  Audit records are modeled as protocol buffers.  Each file contains a header that specifies which type of audit records is inside the file, what version of Netcap was used to generate it, what input source was used and what time it was created.  Each audit record should be tagged with the timestamp the packet was seen,  in the format seconds.microseconds.  Output is written to a file that represents each data structure from the protocol buffers definition, i.e. TCP.ncap, UDP.ncap. For this purpose, the audit records are written as length delimited records into the file.
+*Netcap* files have the file extension **.ncap** or **.ncap.gz** if compressed with gzip and contain serialized protocol buffers of one type. Naming of each file happens according to the naming in the [gopacket](https://godoc.org/github.com/google/gopacket) library: a short uppercase letter representation for common protocols, and a camel case version full word version for less common protocols. Audit records are modeled as protocol buffers.  Each file contains a header that specifies which type of audit records is inside the file, what version of *Netcap* was used to generate it, what input source was used and what time it was created. Each audit record should be tagged with the timestamp the packet was seen,  in the format seconds.microseconds. Output is written to a file that represents each data structure from the protocol buffers definition, i.e. *TCP.ncap*, *UDP.ncap*. For this purpose, the audit records are written as length delimited records into the file.
 
 ## Quickstart
 
@@ -218,6 +221,320 @@ To execute the unit tests, run the followig from the project root:
 | HTTP                        |  14        | Timestamp, Proto, Method, Host, UserAgent, Referer, ReqCookies, ReqContentLength, URL, ResContentLength, ContentType, StatusCode, SrcIP, DstIP |
 | Flow                        |  17        | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, Size, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 | Connection                  |  17        | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, Size, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
+
+## Show Audit Record File Header
+
+To display the header of the supplied audit record file, the -header flag can be used:
+
+    $ netcap -r TCP.ncap.gz -header
+
+    +----------+---------------------------------------+
+    |  Field   |                Value                  |
+    +----------+---------------------------------------+
+    | Created  | 2018-11-15 04:42:22.411785 +0000 UTC  |
+    | Source   | Wednesday-WorkingHours.pcap           |
+    | Version  | v0.3.3                                |
+    | Type     | NC_TCP                                |
+    +----------+---------------------------------------+
+
+## Print Structured Audit Records
+
+Audit records can be printed structured, this makes use of the *proto.MarshalTextString()* function. This is sometimes useful for debugging, but very verbose.
+
+    $ netcap -r TCP.ncap.gz -struc
+    ...
+    NC_TCP
+    Timestamp: "1499255023.848884"
+    SrcPort: 80
+    DstPort: 49472
+    SeqNum: 1959843981
+    AckNum: 3666268230
+    DataOffset: 5
+    ACK: true
+    Window: 1025
+    Checksum: 2348
+    PayloadEntropy: 7.836586993143013
+    PayloadSize: 1460
+    ...
+
+## Print as CSV
+
+This is the default behavior. First line contains all field names.
+
+    $ netcap -r TCP.ncap.gz
+    Timestamp,SrcPort,DstPort,SeqNum,AckNum,DataOffset,FIN,SYN,RST,PSH,ACK,URG,...
+    1499254962.234259,443,49461,1185870107,2940396492,5,false,false,false,true,true,false,...
+    1499254962.282063,49461,443,2940396492,1185870976,5,false,false,false,false,true,false,...
+    ...
+
+## Print as Tab Separated Values
+
+To use a tab as separator, the -tsv flag can be supplied:
+    
+    $ netcap -r TCP.ncap.gz -tsv
+    Timestamp               SrcPort DstPort Length  Checksum PayloadEntropy  PayloadSize
+    1499254962.084372       49792   1900    145     34831    5.19616448      137
+    1499254962.084377       49792   1900    145     34831    5.19616448      137
+    1499254962.084378       49792   1900    145     34831    5.19616448      137
+    1499254962.084379       49792   1900    145     34831    5.19616448      137
+    ...
+
+## Print as Table
+
+The -table flag can be used to print output as a table.
+Every 100 entries the table is printed to stdout.
+
+    $ netcap -r UDP.ncap.gz -table -select Timestamp,SrcPort,DstPort,Length,Checksum
+    +--------------------+----------+----------+---------+-----------+
+    |     Timestamp      | SrcPort  | DstPort  | Length  | Checksum  |
+    +--------------------+----------+----------+---------+-----------+
+    | 1499255691.722212  | 62109    | 53       | 43      | 38025     |
+    | 1499255691.722216  | 62109    | 53       | 43      | 38025     |
+    | 1499255691.722363  | 53       | 62109    | 59      | 37492     |
+    | 1499255691.722366  | 53       | 62109    | 59      | 37492     |
+    | 1499255691.723146  | 56977    | 53       | 43      | 7337      |
+    | 1499255691.723149  | 56977    | 53       | 43      | 7337      |
+    | 1499255691.723283  | 53       | 56977    | 59      | 6804      |
+    | 1499255691.723286  | 53       | 56977    | 59      | 6804      |
+    | 1499255691.723531  | 63427    | 53       | 43      | 17441     |
+    | 1499255691.723534  | 63427    | 53       | 43      | 17441     |
+    | 1499255691.723682  | 53       | 63427    | 87      | 14671     |
+    ...
+
+## Print with Custom Separator
+
+Output can also be generated with a custom separator:
+
+    $ netcap -r TCP.ncap.gz -sep ";"
+    Timestamp;SrcPort;DstPort;Length;Checksum;PayloadEntropy;PayloadSize
+    1499254962.084372;49792;1900;145;34831;5.19616448;137
+    1499254962.084377;49792;1900;145;34831;5.19616448;137
+    1499254962.084378;49792;1900;145;34831;5.19616448;137
+    ...
+
+## Validate generated Output
+
+To ensure values in the generated CSV would not contain the separator string,
+the -check flag can be used.
+This will determine the expected number of separators for the audit record type,
+and print all lines to stdout that do not have the expected number of separator symbols.
+The separator symbol will be colored red with ansi escape secquences 
+and each line is followed by the number of separators in red color. 
+The -sep flag can be used to specify a custom separator.
+
+    $ netcap -r TCP.ncap.gz -check
+    $ netcap -r TCP.ncap.gz -check -sep=";"
+
+## Filtering and Export
+
+Netcap offers a simple command-line interface to select fields of interest from the gathered audit records.
+
+### Example: Filtering UDP audit records
+
+Show available header fields:
+
+    $ netcap -r UDP.ncap.gz -fields
+    Timestamp,SrcPort,DstPort,Length,Checksum,PayloadEntropy,PayloadSize
+
+Print all fields for the supplied audit record:
+    
+    $ netcap -r UDP.ncap.gz
+    1331904607.100000,53,42665,120,41265,4.863994469989251,112 
+    1331904607.100000,42665,53,53,1764,4.0625550894074385,45 
+    1331904607.290000,51190,53,39,22601,3.1861758166070766,31 
+    1331904607.290000,56434,53,39,37381,3.290856864924384,31 
+    1331904607.330000,137,137,58,64220,3.0267194361875682,50
+    ...
+
+Selecting fields will also define their order:
+
+    $ netcap -r UDP.ncap.gz -select Length,SrcPort,DstPort,Timestamp 
+    Length,SrcPort,DstPort,Timestamp
+    145,49792,1900,1499254962.084372
+    145,49792,1900,1499254962.084377
+    145,49792,1900,1499254962.084378
+    145,49792,1900,1499254962.084379 
+    145,49792,1900,1499254962.084380 
+    ...
+
+Print selection in the supplied order and convert timestamps to UTC time:
+
+    $ netcap -r UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc
+    2012-03-16 13:30:07.1 +0000 UTC,53,42665,120
+    2012-03-16 13:30:07.1 +0000 UTC,42665,53,53
+    2012-03-16 13:30:07.29 +0000 UTC,51190,53,39
+    2012-03-16 13:30:07.29 +0000 UTC,56434,53,39
+    2012-03-16 13:30:07.33 +0000 UTC,137,137,58
+    ...
+
+To save the output into a new file, simply redirect the standard output:
+    
+    $ netcap -r UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc > UDP.csv
+
+## Inclusion & Exclusion of Encoders
+
+The -encoders flag can be used to list all available encoders. In case not all of them are desired, selective inlcusion and exclusion is possible, by using the -include and -exclude flags.
+
+List all encoders:
+
+    $ netcap -encoders
+    custom:
+    + TLS
+    + LinkFlow
+    + NetworkFlow
+    + TransportFlow
+    + HTTP
+    + Flow
+    + Connection
+    layer:
+    + TCP
+    + UDP
+    + IPv4
+    + IPv6
+    + DHCPv4
+    + DHCPv6
+    + ICMPv4
+    + ICMPv6
+    + ICMPv6Echo
+    ...    
+
+Include specific encoders (only those named will be used):
+
+    $ netcap -r traffic.pcap -include Ethernet,Dot1Q,IPv4,IPv6,TCP,UDP,DNS
+
+Exclude encoders (this will prevent decoding of layers encapsulated by the excluded ones):
+
+    $ netcap -r traffic.pcap -exclude TCP,UDP
+
+Applying Berkeley Packet Filters
+
+*Netcap* will decode all traffic it is exposed to, therefore it might be desired to set a berkeley packet filter,
+to reduce the workload imposed on *Netcap*.
+This is possible for both live and offline operation.
+In case a [BPF](https://www.kernel.org/doc/Documentation/networking/filter.txt) should be set for offline use, 
+the [gopacket/pcap](https://godoc.org/github.com/google/gopacket/pcap) package with bindings to the *libpcap* will be used,
+since setting BPF filters is not yet supported by the native [pcapgo](https://godoc.org/github.com/google/gopacket/pcapgo) package.
+
+When capturing live from an interface:
+
+    $ netcap -iface en0 -bpf "host 192.168.1.1"
+
+When reading offline dump files:
+
+    $ netcap -r traffic.pcap -bpf "host 192.168.1.1"
+
+## Netlabel command-line Tool
+
+In the following common operations with the netlabel tool on the command-line are presented and explained.
+
+To display the available command-line flags, the -h flag must be used:
+
+$ netlabel -h Usage of netlabel:
+    -collect
+        append classifications from alert with duplicate timestamps to the generated label
+    -description
+        use attack description instead of classification for labels
+    -disable -layers
+        do not map layer types by timestamp
+    -exclude string
+        specify a comma separated list of suricata classifications that shall be excluded from the generated labeled csv
+    -out string
+        specify output directory, will be created if it does not exist
+    -progress
+        use progress bars
+    -r string
+        read specified file, can either be a pcap or netcap audit record file
+    -sep string
+        set separator string for csv output (default ",")
+    -strict
+        fail when there is more than one alert for the same timestamp
+
+Scan input pcap and create labeled csv files by mapping audit records in the current direc- tory:
+
+    $ netlabel -r traffic.pcap
+
+Scan input pcap and create output files by mapping audit records from the output directory:
+
+    $ netlabel -r traffic.pcap -out output_dir
+
+Abort if there is more than one alert for the same timestamp:
+
+    $ netlabel -r taffic.pcap -strict
+
+Display progress bar while processing input (experimental):
+
+    $ netlabel -r taffic.pcap -progress
+
+Append classifications for duplicate labels:
+
+    $ netlabel -r taffic.pcap -collect
+
+## Sensors & Collection Server
+
+Both sensor and client can be configured by using the -addr flag to specify an ip address and port. To generate a keypair for the server, the -gen-keypair flag must be used:
+
+    $ netcap-server -gen-keypair wrote keys
+    $ ls
+    priv.key pub.key
+
+Now, the server can be started, the location of the file containing the private key must be supplied:
+
+    $ netcap -server -privkey priv.key -addr 127.0.0.1:4200
+
+The server will now be listening for incoming messages. Next, the sensor must be configured. The keypair for the sensor will be generated on startup, but the public key of the server must be provided:
+
+    $ netcap -sensor -pubkey pub.key -addr 127.0.0.1:4200
+    got 126 bytes of type NC_ICMPv6RouterAdvertisement expected [126] got size [73] for type NC_Ethernet
+    got 73 bytes of type NC_Ethernet expected [73]
+    got size [27] for type NC_ICMPv6
+    got size [126] for type NC_ICMPv6RouterAdvertisement
+    got 126 bytes of type NC_ICMPv6RouterAdvertisement expected [126] got size [75] for type NC_IPv6
+    got 75 bytes of type NC_IPv6 expected [75]
+    got 27 bytes of type NC_ICMPv6 expected [27]
+
+The client will now collect the traffic live from the specified interface, and send it to the configured server, once a batch for an audit record type is complete. The server will log all received messages:
+
+    $ netcap -server -privkey priv.key -addr 127.0.0.1:4200 
+    packet-received: bytes=2412 from=127.0.0.1:57368 decoded batch NC_Ethernet from client xyz
+    new file xyz/Ethernet.ncap
+    packet-received: bytes=2701 from=127.0.0.1:65050 decoded batch NC_IPv4 from client xyz
+    new file xyz/IPv4.ncap
+    ...
+
+When stopping the server with a *SIGINT* (Ctrl-C), all audit record file handles will be flushed and closed properly.
+
+## Future Development
+
+As outlined in the future chapter of the thesis,
+*Netcap* will be further extended, including:
+
+- increase unit test coverage
+- more robust error handling & pentest
+- benchmarks & performance optimizations
+- increased protocol coverage (there are still protocols that gopacket offers but that are not integrated)
+- more extracted features that haven proven value in other academic publications
+- support for decoding USB traffic - easy to implement because it is supported by gopacket
+- data export to various SIEM / visualization tools (Grafana, Splunk, Elastic Stack, etc)
+- support for some ICS protocols
+- SSH audit record type and Go implementation of the HASSH technique from salesforce
+- Deep Packet Inspection Module that looks for certain patterns in the payload to identify the application layer before discarding the payload data
+- implement IPv6 stream reassembly
+- implement an interface for application layer decoders that require stream reassembly
+
+More recent datasets should be evaluated using *Netcap*,
+also the next round of experiments with supervised techniques should be conducted with the ET Pro ruleset for labeling.
+Besides that, *Netcap* can of course also be used as a data source for unsupervised machine learning strategies.
+
+Interested in implementing new functionality? 
+Ideas, Feedback, Questions?
+Get in touch! :)
+
+## Use Cases
+
+- monitoring honeypots
+- monitoring medical / industrial devices
+- research on anomaly-based detection mechanisms
+- Forensic data analysis
 
 ## License
 
