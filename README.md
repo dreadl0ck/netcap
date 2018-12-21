@@ -12,6 +12,8 @@ and are well suited as a data source for machine learning algorithms.
 Since parsing of untrusted input can be dangerous and network data is potentially malicious,
 implementation was performed in a programming language that provides a garbage collected memory safe runtime.
 
+[![asciicast](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g.svg)](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g)
+
 It was developed for a series of experiments in my bachelor thesis: "Implementation and evaluation of secure and scalable anomaly-based network intrusion detection".
 Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository.
 
