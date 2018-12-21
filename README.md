@@ -21,11 +21,6 @@ and are well suited as a data source for machine learning algorithms.
 Since parsing of untrusted input can be dangerous and network data is potentially malicious,
 implementation was performed in a programming language that provides a garbage collected memory safe runtime.
 
-Watch a simple example of generating audit records from a PCAP dump file,
-and printing information of from TCP and UDP records as ASCII table and CSV:
-
-[![asciicast](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g.svg)](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g)
-
 It was developed for a series of experiments in my bachelor thesis: _Implementation and evaluation of secure and scalable anomaly-based network intrusion detection_.
 Currently, the thesis serves as documentation until the wiki is ready,
 it is included at the root of this repository (file: [mied18.pdf](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf)).
@@ -45,6 +40,15 @@ The command-line tool was designed with usability and readability in mind,
 and displays progress when processing packets.
 
 This readme serves as a quick overview - for more details please read the thesis.
+
+A simple demonstration of generating audit records from a PCAP dump file,
+querying and displaying the collected information in various ways:
+
+[![asciicast](https://asciinema.org/a/217939.svg)](https://asciinema.org/a/217939)
+
+And live operation decoding traffic from my wireless network interface, while I am surfing the web:
+
+[![asciicast](https://asciinema.org/a/217941.svg)](https://asciinema.org/a/217941)
 
 ## Index
 
