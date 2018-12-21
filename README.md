@@ -62,11 +62,11 @@ and displays progress when processing packets.
 - [Print with Custom Separator](#print-with-custom-separator)
 - [Validate generated Output](#validate-generated-output)
 - [Filtering and Export](#filtering-and-export)
-    - [Example: Filtering UDP audit records](#example:-filtering-udp-audit-records)
-- [Inclusion & Exclusion of Encoders](#inclusion-&-exclusion-of-encoders)
+    - [Example](#example)
+- [Inclusion and Exclusion of Encoders](#inclusion-and-exclusion-of-encoders)
 - [Applying Berkeley Packet Filters](#applying-berkeley-packet-filters)
 - [Netlabel command-line Tool](#netlabel-command-line-tool)
-- [Sensors & Collection Server](#sensors-&-collection-server)
+- [Sensors and Collection Server](#sensors-and-collection-server)
     - [Batch Encryption](#batch-encryption)
     - [Batch Decryption](#batch-decryption)
     - [Usage](#usage)
@@ -496,7 +496,7 @@ Netcap offers a simple interface to filter for specific fields and select only t
 
 Netcap offers a simple command-line interface to select fields of interest from the gathered audit records.
 
-### Example: Filtering UDP audit records
+### Example
 
 Show available header fields:
 
@@ -538,7 +538,7 @@ To save the output into a new file, simply redirect the standard output:
     
     $ netcap -r UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc > UDP.csv
 
-## Inclusion & Exclusion of Encoders
+## Inclusion and Exclusion of Encoders
 
 The *-encoders* flag can be used to list all available encoders. In case not all of them are desired, selective inlcusion and exclusion is possible, by using the *-include* and *-exclude* flags.
 
@@ -637,7 +637,7 @@ Append classifications for duplicate labels:
 
     $ netlabel -r taffic.pcap -collect
 
-## Sensors & Collection Server
+## Sensors and Collection Server
 
 Using Netcap as a data collection mechanism, sensor agents can be deployed to export the traffic they see to a central collection server. This is especially interesting for internet of things (IoT) applications, since these devices are placed inside isolated networks and thus the operator does not have any information about the traffic the device sees. Although Go was not specifically designed for this application, it is an interesting language for embedded systems. Each binary contains the complete runtime, which increases the binary size but requires no installation of dependencies on the device itself. Data exporting currently takes place in batches over UDP sockets. Transferred data is compressed in transit and encrypted with the public key of the collection server. Asymmetric encryption was chosen, to avoid empowering an attacker who compromised a sensor, to decrypt traffic of all sensors commu- nicating with the collection server. To increase the performance, in the future this could be replaced with using a symmetric cipher, together with a solid concept for key rotation and distribution. Sensor agents do not write any data to disk and instead keep it in memory before exporting it.
 
