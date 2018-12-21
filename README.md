@@ -33,6 +33,48 @@ The name *Netcap* was chosen to be simple and descriptive.
 The command-line tool was designed with usability and readability in mind,
 and displays progress when processing packets.
 
+## Index
+
+- [Design Goals](#design-goals)
+- [Specification](#specification)
+- [Installation](#installation)
+    - [Buildsystem](#buildsystem)
+- [Quickstart](#quickstart)
+- [Tests](#tests)
+- [Supported Protocols](#supported-protocols)
+- [Protocol Sub Structure Types](#protocol-sub-structure-types)
+- [Available Fields](#available-fields)
+    [- Layer Encoders](#layer-encoders)
+    [- Custom Encoders](#custom-encoders)
+- [Workers](#workers)
+- [Data Pipe](#data-pipe)
+- [Delimited Protocol Buffer Records](#delimited-protocol-buffer-records)
+- [Data Compression](#data-compression)
+- [Audit Records](#Audit-records)
+- [Encoders](#Encoders)
+- [Unknown Protocols](#unknown-protocols)
+- [Error Log](#error-log)
+- [Show Audit Record File Header](#show-audit-record-file-header)
+- [Print Structured Audit Records](#print-structured-audit-records)
+- [Print as CSV](#print-as-csv)
+- [Print as Tab Separated Values](#print-as-tab-separated-values)
+- [Print as Table](#print-as-table)
+- [Print with Custom Separator](#print-with-custom-separator)
+- [Validate generated Output](#validate-generated-output)
+- [Filtering and Export](#filtering-and-export)
+    - [Example: Filtering UDP audit records](#example:-filtering-udp-audit-records)
+- [Inclusion & Exclusion of Encoders](#inclusion-&-exclusion-of-encoders)
+- [Applying Berkeley Packet Filters](#applying-berkeley-packet-filters)
+- [Netlabel command-line Tool](#netlabel-command-line-tool)
+- [Sensors & Collection Server](#sensors-&-collection-server)
+    - [Batch Encryption](#batch-encryption)
+    - [Batch Decryption](#batch-decryption)
+    - [Usage](#usage)
+- [Dataset Labeling](#dataset-labeling)
+- [Future Development](#future-development)
+- [Use Cases](#use-cases)
+- [License](#license)
+
 ## Design Goals
 
 - memory safety when parsing untrusted input
@@ -55,6 +97,37 @@ Packets are fetched from an input source (offline dump file or live from an inte
 ## Specification
 
 *Netcap* files have the file extension **.ncap** or **.ncap.gz** if compressed with gzip and contain serialized protocol buffers of one type. Naming of each file happens according to the naming in the [gopacket](https://godoc.org/github.com/google/gopacket) library: a short uppercase letter representation for common protocols, and a camel case version full word version for less common protocols. Audit records are modeled as protocol buffers.  Each file contains a header that specifies which type of audit records is inside the file, what version of *Netcap* was used to generate it, what input source was used and what time it was created. Each audit record should be tagged with the timestamp the packet was seen,  in the format *seconds.microseconds*. Output is written to a file that represents each data structure from the protocol buffers definition, i.e. *TCP.ncap*, *UDP.ncap*. For this purpose, the audit records are written as length delimited records into the file.
+
+## Installation
+
+Installation via go get:
+
+    $ go get -u github.com/dreadl0ck/netcap/...
+
+To install the command-line tool:
+
+    $ go build -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
+
+To cross compile for other architectures, set the *GOARCH* and *GOOS* environment variables.
+For example to cross compile a binary for *linux amd64*:
+
+    $ GOARCH=amd64 GOOS=linux go build -o netcap -i github.com/dreadl0ck/netcap/cmd
+
+### Buildsystem
+
+*Netcap* uses the [zeus](github.com/dreadl0ck/zeus) buildsystem, it can be found on github along with installation instructions.
+
+However, the project can easily be installed without zeus.
+All shell scripts needed for installation can be found in the *zeus/generated* directory as standalone versions:
+
+    zeus/generated/install-netcap.sh
+	zeus/generated/install-netlabel.sh
+	zeus/generated/install-sensor.sh
+	zeus/generated/install-server.sh
+
+To install the *Netcap* and *Netlabel* command-line tool and the library with zeus, run:
+
+    $ zeus install
 
 ## Quickstart
 
@@ -104,9 +177,7 @@ To execute the unit tests, run the followig from the project root:
 
     go test -v -bench=. ./...
 
-## Audit Records
-
-### Supported Protocols
+## Supported Protocols
 
 | Name                        | Layer       | Description                |
 | --------------------------- | ----------- | -------------------------- |
@@ -141,7 +212,7 @@ To execute the unit tests, run the followig from the project root:
 | SIP                         | Application | Session Initiation Protocol               |
 | HTTP                        | Application | Hypertext Transfer Protocol              |
 
-### Protocol Sub Structure Types
+## Protocol Sub Structure Types
 
 | Name                        | Description               |
 | --------------------------- | ------------------------- |
@@ -521,30 +592,30 @@ When reading offline dump files:
 
 ## Netlabel command-line Tool
 
-In the following common operations with the netlabel tool on the command-line are presented and explained.
+In the following common operations with the netlabel tool on the command-line are presented and explained. The tool can be found in the *label/cmd* package.
 
 To display the available command-line flags, the *-h* flag must be used:
 
-$ netlabel -h 
-Usage of netlabel:
-    -collect
-        append classifications from alert with duplicate timestamps to the generated label
-    -description
-        use attack description instead of classification for labels
-    -disable -layers
-        do not map layer types by timestamp
-    -exclude string
-        specify a comma separated list of suricata classifications that shall be excluded from the generated labeled csv
-    -out string
-        specify output directory, will be created if it does not exist
-    -progress
-        use progress bars
-    -r string
-        read specified file, can either be a pcap or netcap audit record file
-    -sep string
-        set separator string for csv output (default ",")
-    -strict
-        fail when there is more than one alert for the same timestamp
+    $ netlabel -h 
+    Usage of netlabel:
+        -collect
+            append classifications from alert with duplicate timestamps to the generated label
+        -description
+            use attack description instead of classification for labels
+        -disable -layers
+            do not map layer types by timestamp
+        -exclude string
+            specify a comma separated list of suricata classifications that shall be excluded from the generated labeled csv
+        -out string
+            specify output directory, will be created if it does not exist
+        -progress
+            use progress bars
+        -r string
+            read specified file, can either be a pcap or netcap audit record file
+        -sep string
+            set separator string for csv output (default ",")
+        -strict
+            fail when there is more than one alert for the same timestamp
 
 Scan input pcap and create labeled csv files by mapping audit records in the current directory:
 
