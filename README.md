@@ -54,11 +54,11 @@ Packets are fetched from an input source (offline dump file or live from an inte
 
 ## Specification
 
-*Netcap* files have the file extension **.ncap** or **.ncap.gz** if compressed with gzip and contain serialized protocol buffers of one type. Naming of each file happens according to the naming in the [gopacket](https://godoc.org/github.com/google/gopacket) library: a short uppercase letter representation for common protocols, and a camel case version full word version for less common protocols. Audit records are modeled as protocol buffers.  Each file contains a header that specifies which type of audit records is inside the file, what version of *Netcap* was used to generate it, what input source was used and what time it was created. Each audit record should be tagged with the timestamp the packet was seen,  in the format seconds.microseconds. Output is written to a file that represents each data structure from the protocol buffers definition, i.e. *TCP.ncap*, *UDP.ncap*. For this purpose, the audit records are written as length delimited records into the file.
+*Netcap* files have the file extension **.ncap** or **.ncap.gz** if compressed with gzip and contain serialized protocol buffers of one type. Naming of each file happens according to the naming in the [gopacket](https://godoc.org/github.com/google/gopacket) library: a short uppercase letter representation for common protocols, and a camel case version full word version for less common protocols. Audit records are modeled as protocol buffers.  Each file contains a header that specifies which type of audit records is inside the file, what version of *Netcap* was used to generate it, what input source was used and what time it was created. Each audit record should be tagged with the timestamp the packet was seen,  in the format *seconds.microseconds*. Output is written to a file that represents each data structure from the protocol buffers definition, i.e. *TCP.ncap*, *UDP.ncap*. For this purpose, the audit records are written as length delimited records into the file.
 
 ## Quickstart
 
-Read traffic live from interface, stop with Ctrl-C (SIGINT): 
+Read traffic live from interface, stop with *Ctrl-C* (*SIGINT*): 
 
     $ netcap -iface eth0
 
@@ -222,6 +222,74 @@ To execute the unit tests, run the followig from the project root:
 | Flow                        |  17        | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, Size, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 | Connection                  |  17        | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, Size, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 
+## Workers
+
+[Workers](https://github.com/dreadl0ck/netcap/blob/master/collector/worker.go) are a core concept of *Netcap*, as they handle the actual task of decoding each packet.
+*Netcap* can be configured to run with the desired amount of workers, the default is 1000,
+since this configuration has shown the best results on the development machine.
+Increasing the number of workers also increases the number of runtime operations for goroutine scheduling,
+thus performance might decrease with a huge amount of workers.
+It is recommended to experiment with different configurations on the target system,
+and choose the one that performs best.
+Packet data fetched from the input source is distributed to a worker pool for decoding in round robin style.
+Each worker decodes all layers of a packet and calls all available custom encoders.
+After decoding of each layer, the generated protocol buffer instance is written into the *Netcap* data pipe.
+Packets that produced an error in the decoding phase or carry an unknown protocol are being written in the corresponding logs and dumpfiles.
+
+<br>
+<img src="graphics/svg/Netcap-Worker.svg" width="100%" height="100%">
+<br>
+
+Each worker receives its data from an input channel.
+This channel can be buffered, by default the buffer size is 100,
+also because this configuration has shown the best results on the development machine.
+When the buffer size is set to zero, the operation of writing a packet into the channel blocks, 
+until the goroutine behind it is ready for consumption.
+That means, the goroutine must finish the currently processed packet, until a new packet can be accepted.
+By configuring the buffer size for all routines to a specific number of packets,
+distributing packets among workers can continue even if a worker is not finished yet when new data arrives.
+New packets will be queued in the channel buffer, and writing in the channels will only block if the buffer is full.
+
+## Delimited Protocol Buffer Records
+
+The data format on disk consists of gzipped length-delimited byte records. Each delimited Protocol Buffer record is preceded by a variable-length encoded integer (varint) that specifies the length of the serialized protocol buffer record in bytes. A stream consists of a sequence of such records packed consecutively without additional padding. There are no checksums or compression involved in this processing step.
+
+<br>
+<img src="graphics/svg/Netcap-Delimited.svg" width="100%" height="100%">
+<br>
+
+## Audit Records
+
+<br>
+<img src="graphics/svg/Netcap-Audit-Record.svg" width="100%" height="100%">
+<br>
+
+## Encoders
+
+Encoders take care of converting decoded packet data into protocol buffers for the audit records.
+Two types of encoders exist: the [Layer Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/layerEncoder.go), which operates on *gopacket* layer types,
+and the [Custom Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/customEncoder.go), for which any desired logic can be implemented, 
+including decoding application layer protocols that are not yet supported by gopacket or protocols that require stream reassembly.
+
+## Unknown Protocols
+
+Protocols that cannot be decoded will be dumped in the unknown.pcap file for later anal- ysis, as this contains potentially interesting traffic that is not represented in the generated output. Separating everything that could not be understood makes it easy to reveal hidden communication channels, which are based on custom protocols.
+
+## Error Log
+
+Errors that happen in the gopacket lib due to malformed packets or implementation errors are written to disk in the errors.log file, and can be checked by the analyst later. Each packet that had a decoding error on at least one layer will be added to the errors.pcap. An entry to the error log has the following format:
+
+    <UTC Timestamp>
+    Error: <Description>
+    Packet:
+    <full packet hex dump with layer information>
+
+At the end of the error log, a summary of all errors and the number of their occurrences will be appended.
+
+    ...
+    <error name>: <number of occurrences>
+    ...
+
 ## Show Audit Record File Header
 
 To display the header of the supplied audit record file, the -header flag can be used:
@@ -269,7 +337,7 @@ This is the default behavior. First line contains all field names.
 
 ## Print as Tab Separated Values
 
-To use a tab as separator, the -tsv flag can be supplied:
+To use a tab as separator, the *-tsv* flag can be supplied:
     
     $ netcap -r TCP.ncap.gz -tsv
     Timestamp               SrcPort DstPort Length  Checksum PayloadEntropy  PayloadSize
@@ -281,7 +349,7 @@ To use a tab as separator, the -tsv flag can be supplied:
 
 ## Print as Table
 
-The -table flag can be used to print output as a table.
+The *-table* flag can be used to print output as a table.
 Every 100 entries the table is printed to stdout.
 
     $ netcap -r UDP.ncap.gz -table -select Timestamp,SrcPort,DstPort,Length,Checksum
@@ -315,17 +383,25 @@ Output can also be generated with a custom separator:
 ## Validate generated Output
 
 To ensure values in the generated CSV would not contain the separator string,
-the -check flag can be used.
+the *-check* flag can be used.
+
 This will determine the expected number of separators for the audit record type,
 and print all lines to stdout that do not have the expected number of separator symbols.
 The separator symbol will be colored red with ansi escape secquences 
 and each line is followed by the number of separators in red color. 
-The -sep flag can be used to specify a custom separator.
+
+The *-sep* flag can be used to specify a custom separator.
 
     $ netcap -r TCP.ncap.gz -check
     $ netcap -r TCP.ncap.gz -check -sep=";"
 
 ## Filtering and Export
+
+Netcap offers a simple interface to filter for specific fields and select only those of interest. Filtering and exporting specific fields can be performed with all available audit record types, over a uniform command-line interface. By default, output is generated as CSV with the field names added as first line. It is also possible to use a custom separator string. Fields are exported in the order they are named in the select statement. Sub structures of audit records (for example IPv4Options from an IPv4 packet), are converted to a human readable string representation. More examples for using this feature on the command-line can be found in the usage section.
+
+<br>
+<img src="graphics/svg/Netcap-Export.svg" width="100%" height="100%">
+<br>
 
 Netcap offers a simple command-line interface to select fields of interest from the gathered audit records.
 
@@ -373,7 +449,7 @@ To save the output into a new file, simply redirect the standard output:
 
 ## Inclusion & Exclusion of Encoders
 
-The -encoders flag can be used to list all available encoders. In case not all of them are desired, selective inlcusion and exclusion is possible, by using the -include and -exclude flags.
+The *-encoders* flag can be used to list all available encoders. In case not all of them are desired, selective inlcusion and exclusion is possible, by using the *-include* and *-exclude* flags.
 
 List all encoders:
 
@@ -406,7 +482,7 @@ Exclude encoders (this will prevent decoding of layers encapsulated by the exclu
 
     $ netcap -r traffic.pcap -exclude TCP,UDP
 
-Applying Berkeley Packet Filters
+## Applying Berkeley Packet Filters
 
 *Netcap* will decode all traffic it is exposed to, therefore it might be desired to set a berkeley packet filter,
 to reduce the workload imposed on *Netcap*.
@@ -427,9 +503,10 @@ When reading offline dump files:
 
 In the following common operations with the netlabel tool on the command-line are presented and explained.
 
-To display the available command-line flags, the -h flag must be used:
+To display the available command-line flags, the *-h* flag must be used:
 
-$ netlabel -h Usage of netlabel:
+$ netlabel -h 
+Usage of netlabel:
     -collect
         append classifications from alert with duplicate timestamps to the generated label
     -description
@@ -449,7 +526,7 @@ $ netlabel -h Usage of netlabel:
     -strict
         fail when there is more than one alert for the same timestamp
 
-Scan input pcap and create labeled csv files by mapping audit records in the current direc- tory:
+Scan input pcap and create labeled csv files by mapping audit records in the current directory:
 
     $ netlabel -r traffic.pcap
 
@@ -471,9 +548,16 @@ Append classifications for duplicate labels:
 
 ## Sensors & Collection Server
 
-Both sensor and client can be configured by using the -addr flag to specify an ip address and port. To generate a keypair for the server, the -gen-keypair flag must be used:
+Using Netcap as a data collection mechanism, sensor agents can be deployed to export the traffic they see to a central collection server. This is especially interesting for internet of things (IoT) applications, since these devices are placed inside isolated networks and thus the operator does not have any information about the traffic the device sees. Although Go was not specifically designed for this application, it is an interesting language for embedded systems. Each binary contains the complete runtime, which increases the binary size but requires no installation of dependencies on the device itself. Data exporting currently takes place in batches over UDP sockets. Transferred data is compressed in transit and encrypted with the public key of the collection server. Asymmetric encryption was chosen, to avoid empowering an attacker who compromised a sensor, to decrypt traffic of all sensors commu- nicating with the collection server. To increase the performance, in the future this could be replaced with using a symmetric cipher, together with a solid concept for key rotation and distribution. Sensor agents do not write any data to disk and instead keep it in memory before exporting it.
 
-    $ netcap-server -gen-keypair wrote keys
+<br>
+<img src="graphics/svg/Netcap-IOT.svg" width="100%" height="100%">
+<br>
+
+Both sensor and client can be configured by using the *-addr* flag to specify an ip address and port. To generate a keypair for the server, the -gen-keypair flag must be used:
+
+    $ netcap-server -gen-keypair 
+    wrote keys
     $ ls
     priv.key pub.key
 
@@ -502,6 +586,14 @@ The client will now collect the traffic live from the specified interface, and s
     ...
 
 When stopping the server with a *SIGINT* (Ctrl-C), all audit record file handles will be flushed and closed properly.
+
+## Dataset Labeling
+
+The term labeling refers to the procedure of adding classification information to each audit record. For the purpose of intrusion detection this is usually a label stating whether the record is normal or malicious. This is called binary classification, since there are just two choices for the label (good / bad) [BK14]. Efficient and precise creation of labeled datasets is important for supervised machine learning techniques. To create labeled data, Netcap parses logs produced by suricata and extracts information for each alert. The quality of labels therefore depends on the quality of the used ruleset. In the next step it iterates over the data generated by itself and maps each alert to the corresponding packets, connections or flows. This takes into account all available information on the audit records and alerts. More details on the mapping logic can be found in the implementation chapter. While labeling is usually performed by marking all packets of a known malicious IP address, Netcap implements a more granular and thus more precise approach of mapping labels for each record. Labeling happens asynchronously for each audit record type in a separate goroutine.
+
+<br>
+<img src="graphics/svg/Labels.svg" width="100%" height="100%">
+<br>
 
 ## Future Development
 
