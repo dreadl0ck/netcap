@@ -15,7 +15,7 @@ implementation was performed in a programming language that provides a garbage c
 [![asciicast](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g.svg)](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g)
 
 It was developed for a series of experiments in my bachelor thesis: _Implementation and evaluation of secure and scalable anomaly-based network intrusion detection_.
-Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository (file: _mied18.pdf_) and available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).
+Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository (file: [mied18.pdf](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf)), slides from my presentation are available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).
 
 The project won the 2nd Place at Kaspersky Labs SecurIT Cup 2018 in Budapest.
 
