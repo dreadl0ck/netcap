@@ -224,6 +224,8 @@ To execute the unit tests, run the followig from the project root:
 
 ## Workers
 
+To make use of multi-core processors, processing of packets should happen in an asynchronous way. Since Netcap should be usable on a stream of packets, fetching of packets has to happen sequentially, but decoding them can be parallelized. The packets read from the input data source (PCAP file or network interface) are assigned to a configurable number of workers routines via round-robin. Each of those worker routines operates independently, and has all selected encoders loaded. It decodes all desired layers of the packet, and writes the encoded data into a buffer that will be flushed to disk after reaching its capacity.
+
 [Workers](https://github.com/dreadl0ck/netcap/blob/master/collector/worker.go) are a core concept of *Netcap*, as they handle the actual task of decoding each packet.
 *Netcap* can be configured to run with the desired amount of workers, the default is 1000,
 since this configuration has shown the best results on the development machine.
@@ -250,6 +252,18 @@ By configuring the buffer size for all routines to a specific number of packets,
 distributing packets among workers can continue even if a worker is not finished yet when new data arrives.
 New packets will be queued in the channel buffer, and writing in the channels will only block if the buffer is full.
 
+<br>
+<img src="graphics/svg/Buffered-Workers.svg" width="100%" height="100%">
+<br>
+
+## Data Pipe
+
+The Netcap data pipe describes the way from a network packet that has been processed in a worker routine, to a serialized, delimited and compressed record into a file on disk.
+
+<br>
+<img src="graphics/svg/Netcap-PIpe.svg" width="100%" height="100%">
+<br>
+
 ## Delimited Protocol Buffer Records
 
 The data format on disk consists of gzipped length-delimited byte records. Each delimited Protocol Buffer record is preceded by a variable-length encoded integer (varint) that specifies the length of the serialized protocol buffer record in bytes. A stream consists of a sequence of such records packed consecutively without additional padding. There are no checksums or compression involved in this processing step.
@@ -258,7 +272,13 @@ The data format on disk consists of gzipped length-delimited byte records. Each 
 <img src="graphics/svg/Netcap-Delimited.svg" width="100%" height="100%">
 <br>
 
+## Data Compression
+
+Encoding the output as protocol buffers does not help much with reducing the size, compared to the CSV format. To further reduce the disk size required for storage, the data is gzipped prior to writing it into the file. This makes the resulting files around 70% smaller. Gzip is a common and well supported format, support for decoding it exists in almost every programming language. If this is not desired for e.g. direct access to the stored data, this can be toggled with the -comp command-line flag.
+
 ## Audit Records
+
+A piece of information produced by Netcap is called an audit record. Audit records are type safe structured data, encoded as protocol buffers. An audit record can describe a specific protocol, or other abstractions built on top of observations from the analyzed traffic. Netcap does currently not enforce the presence of any special fields for each audit record, however by convention each audit record should have a timestamp with microsecond precision. A record file contains a header followed by a list of length-delimited serialized audit records. Naming of the audit record file happens according to the encoder name and should signal whether the file contents are compressed by adding the .gz extension.
 
 <br>
 <img src="graphics/svg/Netcap-Audit-Record.svg" width="100%" height="100%">
@@ -554,7 +574,36 @@ Using Netcap as a data collection mechanism, sensor agents can be deployed to ex
 <img src="graphics/svg/Netcap-IOT.svg" width="100%" height="100%">
 <br>
 
-Both sensor and client can be configured by using the *-addr* flag to specify an ip address and port. To generate a keypair for the server, the -gen-keypair flag must be used:
+As described in the concept chapter, sensors and the collection server use UDP datagrams for communication.
+Network communication was implemented using the go standard library. 
+This section will focus on the procedure of encrypting the communication between sensor and collector.
+For encryption and decryption, cryptographic primitives from the [golang.org/x/crypto/nacl/box](https://godoc.org/golang.org/x/crypto/nacl/box) package are used.
+The NaCl (pronounced 'Salt') toolkit was developed by the reowned cryptographer Daniel J. Bernstein.
+The box package uses *Curve25519*, *XSalsa20* and *Poly1305* to encrypt and authenticate messages.
+
+It is important to note that the length of messages is not hidden.
+Netcap uses a thin wrapper around the functionality provided by the nacl package,
+the wrapper has been published here: [github.com/dreadl0ck/cryptoutils](https://www.github.com/dreadl0ck/cryptoutils).
+
+### Batch Encryption
+
+The collection server generates a keypair, consisting of two 32 byte (256bit) keys, hex encodes them and writes the keys to disk. The created files are named *pub.key* and *priv.key*. Now, the servers public key can be shared with sensors. Each sensor also needs to generate a keypair, in order to encrypt messages to the collection server with their private key and the public key of the server. To allow the server to decrypt and authenticate the message, the sensor prepends its own public key to each message.
+
+<br>
+<img src="graphics/svg/Netcap-Sensors.svg" width="100%" height="100%">
+<br>
+
+### Batch Decryption
+
+When receiving an encrypted batch from a sensor, the server needs to trim off the first 32 bytes, to get the public key of the sensor. Now the message can be decrypted, and decompressed. The resulting bytes are serialized data for a batch protocol buffer. After unmarshalling them into the batch structure, the server can append the serialized audit records carried by the batch, into the corresponding audit record file for the provided client identifier.
+
+<br>
+<img src="graphics/svg/Netcap-Batch.svg" width="100%" height="100%">
+<br>
+
+### Usage
+
+Both sensor and client can be configured by using the *-addr* flag to specify an IP address and port. To generate a keypair for the server, the *-gen-keypair* flag must be used:
 
     $ netcap-server -gen-keypair 
     wrote keys
@@ -612,6 +661,7 @@ As outlined in the future chapter of the thesis,
 - Deep Packet Inspection Module that looks for certain patterns in the payload to identify the application layer before discarding the payload data
 - implement IPv6 stream reassembly
 - implement an interface for application layer decoders that require stream reassembly
+- test on windows
 
 More recent datasets should be evaluated using *Netcap*,
 also the next round of experiments with supervised techniques should be conducted with the ET Pro ruleset for labeling.
@@ -630,4 +680,4 @@ Get in touch! :)
 
 ## License
 
-GPLv3
+Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
