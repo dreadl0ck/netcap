@@ -4,6 +4,9 @@
   <img src="graphics/svg/Netcap-Logo.svg" width="100%" height="144">
 </a>
 
+<br>
+<br>
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/zeus)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/docs/LICENSE)
 [![Golang](https://img.shields.io/badge/Go-1.11-blue.svg)](https://golang.org)
@@ -12,8 +15,6 @@
 ![windows](https://img.shields.io/badge/Supports-windows-green.svg)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/dreadl0ck/netcap)
 
-<br>
-<br>
 
 The *Netcap* (NETwork CAPture) framework efficiently converts a stream of network packets into highly accessible type-safe structured data that represent specific protocols or custom abstractions.
 These audit records can be stored on disk or exchanged over the network,
