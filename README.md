@@ -1,8 +1,17 @@
+<br>
+
 <a href="https://github.com/dreadl0ck/netcap">
   <img src="graphics/svg/Netcap-Logo.svg" width="100%" height="144">
 </a>
 
-<br>
+[![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/zeus)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
+[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/docs/LICENSE)
+[![Golang](https://img.shields.io/badge/Go-1.11-blue.svg)](https://golang.org)
+![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
+![macOS](https://img.shields.io/badge/Supports-macOS-green.svg)
+![windows](https://img.shields.io/badge/Supports-windows-green.svg)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/dreadl0ck/netcap)
+
 <br>
 <br>
 
@@ -732,7 +741,7 @@ As outlined in the future chapter of the thesis,
 - Deep Packet Inspection Module that looks for certain patterns in the payload to identify the application layer before discarding the payload data
 - implement IPv6 stream reassembly
 - implement an interface for application layer decoders that require stream reassembly
-- test on windows
+- test compilation and execution on windows
 
 More recent datasets should be evaluated using *Netcap*,
 also the next round of experiments with supervised techniques should be conducted with the ET Pro ruleset for labeling.
