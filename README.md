@@ -14,10 +14,10 @@ implementation was performed in a programming language that provides a garbage c
 
 [![asciicast](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g.svg)](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g)
 
-It was developed for a series of experiments in my bachelor thesis: "Implementation and evaluation of secure and scalable anomaly-based network intrusion detection".
-Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository.
+It was developed for a series of experiments in my bachelor thesis: _Implementation and evaluation of secure and scalable anomaly-based network intrusion detection_.
+Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository (file: _mied18.pdf_) and available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).
 
-The project won the 2nd Place at Kaspersky Labs SecurITCup 2018 in Budapest.
+The project won the 2nd Place at Kaspersky Labs SecurIT Cup 2018 in Budapest.
 
 **Netcap** uses Google's Protocol Buffers to encode its output, which allows accessing it across a wide range of programming languages.
 Alternatively, output can be emitted as comma separated values, which is a common input format for data analysis tools and systems.
