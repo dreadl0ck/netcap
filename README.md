@@ -27,7 +27,9 @@ and printing information of from TCP and UDP records as ASCII table and CSV:
 [![asciicast](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g.svg)](https://asciinema.org/a/isjf9sjMhwFubMhI4bltEWS8g)
 
 It was developed for a series of experiments in my bachelor thesis: _Implementation and evaluation of secure and scalable anomaly-based network intrusion detection_.
-Currently, the thesis serves as documentation until the wiki is ready - it is included at the root of this repository (file: [mied18.pdf](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf)), slides from my presentation at the institute are available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).
+Currently, the thesis serves as documentation until the wiki is ready,
+it is included at the root of this repository (file: [mied18.pdf](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf)).
+Slides from my presentation at the Leibniz Supercomputing Centre of the Bavarian Academy of Sciences and Humanities are available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).
 
 The project won the 2nd Place at Kaspersky Labs SecurIT Cup 2018 in Budapest.
 
@@ -41,6 +43,8 @@ It has a concurrent design that makes use of multi-core architectures.
 The name *Netcap* was chosen to be simple and descriptive.
 The command-line tool was designed with usability and readability in mind,
 and displays progress when processing packets.
+
+This readme serves as a quick overview - for more details please read the thesis.
 
 ## Index
 
@@ -373,7 +377,7 @@ including decoding application layer protocols that are not yet supported by gop
 
 ## Unknown Protocols
 
-Protocols that cannot be decoded will be dumped in the unknown.pcap file for later anal- ysis, as this contains potentially interesting traffic that is not represented in the generated output. Separating everything that could not be understood makes it easy to reveal hidden communication channels, which are based on custom protocols.
+Protocols that cannot be decoded will be dumped in the unknown.pcap file for later analysis, as this contains potentially interesting traffic that is not represented in the generated output. Separating everything that could not be understood makes it easy to reveal hidden communication channels, which are based on custom protocols.
 
 ## Error Log
 
@@ -743,7 +747,7 @@ As outlined in the future chapter of the thesis,
 - implement an interface for application layer decoders that require stream reassembly
 - test compilation and execution on windows
 
-More recent datasets should be evaluated using *Netcap*,
+Additional recent datasets should be evaluated using *Netcap*,
 also the next round of experiments with supervised techniques should be conducted with the ET Pro ruleset for labeling.
 Besides that, *Netcap* can of course also be used as a data source for unsupervised machine learning strategies.
 
