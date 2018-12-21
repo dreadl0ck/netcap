@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="919 1056 1809 1533" width="1809" height="1533">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="919 1056 1809 1533" width="1809" height="1533">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 919 1056 L 2728 1056 L 2728 2589 L 919 2589 Z M 1187 1644 L 1187 1734.9609 L 1384.581 1734.9609 L 1384.581 1644 Z"/>
@@ -84,9 +84,9 @@
     </clipPath>
   </defs>
   <metadata> Produced by OmniGraffle 7.9.3 
-    <dc:date>2018-12-08 22:05:10 +0000</dc:date>
+    <dc:date>2018-12-21 18:35:14 +0000</dc:date>
   </metadata>
-  <g id="Labels" stroke="none" fill-opacity="1" stroke-opacity="1" fill="none" stroke-dasharray="none">
+  <g id="Labels" stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
     <title>Labels</title>
     <g id="Labels: Layer 1">
       <title>Layer 1</title>

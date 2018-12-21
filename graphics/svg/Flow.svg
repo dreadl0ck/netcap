@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="803 1047 1197 1269" width="1197" height="1269">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="803 1047 1197 1269" width="1197" height="1269">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 803 1047 L 2e3 1047 L 2e3 2316 L 803 2316 Z M 823.3711 1052.1813 L 823.3711 1650.7816 L 1363.86 1650.7816 L 1363.86 1052.1813 Z"/>
@@ -25,9 +25,9 @@
     </font-face>
   </defs>
   <metadata> Produced by OmniGraffle 7.9.3 
-    <dc:date>2018-12-08 22:05:10 +0000</dc:date>
+    <dc:date>2018-12-21 18:35:14 +0000</dc:date>
   </metadata>
-  <g id="Flow" stroke="none" fill-opacity="1" stroke-opacity="1" fill="none" stroke-dasharray="none">
+  <g id="Flow" stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
     <title>Flow</title>
     <g id="Flow: Layer 1">
       <title>Layer 1</title>

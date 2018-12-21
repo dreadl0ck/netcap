@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="1245 952 1196 1629" width="1196" height="1629">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="1245 952 1196 1629" width="1196" height="1629">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 1245 952 L 2441 952 L 2441 2581 L 1245 2581 Z M 1265.3891 957.1813 L 1265.3891 1555.7816 L 1805.878 1555.7816 L 1805.878 957.1813 Z"/>
@@ -28,9 +28,9 @@
     </clipPath>
   </defs>
   <metadata> Produced by OmniGraffle 7.9.3 
-    <dc:date>2018-12-08 22:05:10 +0000</dc:date>
+    <dc:date>2018-12-21 18:35:14 +0000</dc:date>
   </metadata>
-  <g id="TLS" stroke="none" fill-opacity="1" stroke-opacity="1" fill="none" stroke-dasharray="none">
+  <g id="TLS" stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
     <title>TLS</title>
     <g id="TLS: Layer 1">
       <title>Layer 1</title>

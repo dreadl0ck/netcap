@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="249 -152 1909 1587" width="1909" height="1587">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="249 -152 1909 1587" width="1909" height="1587">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 249 -152 L 2158 -152 L 2158 1435 L 249 1435 Z M 620 252 L 620 1051 L 1588 1051 L 1588 252 Z"/>
@@ -88,9 +88,9 @@
     </marker>
   </defs>
   <metadata> Produced by OmniGraffle 7.9.3 
-    <dc:date>2018-12-08 22:05:10 +0000</dc:date>
+    <dc:date>2018-12-21 18:35:14 +0000</dc:date>
   </metadata>
-  <g id="Netcap-Worker" stroke="none" fill-opacity="1" stroke-opacity="1" fill="none" stroke-dasharray="none">
+  <g id="Netcap-Worker" stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
     <title>Netcap-Worker</title>
     <g id="Netcap-Worker: Layer 1">
       <title>Layer 1</title>
