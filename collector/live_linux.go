@@ -27,7 +27,11 @@ func (c *Collector) CollectLive(i string, bpf string) {
 
 	// set BPF if requested
 	if bpf != "" {
-		err := handle.SetBPFFilter(bpf)
+		rb, err := rawBPF(bpf)
+		if err != nil {
+			panic(err)
+		}
+		err = handle.SetBPF(rb)
 		if err != nil {
 			panic(err)
 		}
@@ -43,7 +47,7 @@ func (c *Collector) CollectLive(i string, bpf string) {
 	for {
 
 		// read next packet
-		data, ci, err := handle.ZeroCopyReadPacketData()
+		data, ci, err := handle.ReadPacketData()
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -63,11 +67,11 @@ func (c *Collector) CollectLive(i string, bpf string) {
 		// therefore the http decoding must not happen in a worker thread
 		// and instead be performed here to guarantee packets are being processed sequentially
 		if encoder.HTTPActive {
-			encoder.DecodeHTTP(pack)
+			encoder.DecodeHTTP(p)
 		}
 
 		// pass packet to worker for decoding and further processing
-		c.handlePacket(pack)
+		c.handlePacket(p)
 	}
 
 	// run cleanup on channel exit
