@@ -132,7 +132,7 @@ For example to cross compile a binary for *linux amd64*:
 
 ### Buildsystem
 
-*Netcap* uses the [zeus](github.com/dreadl0ck/zeus) buildsystem, it can be found on github along with installation instructions.
+*Netcap* uses the [zeus](https://github.com/dreadl0ck/zeus) buildsystem, it can be found on github along with installation instructions.
 
 However, the project can easily be installed without zeus.
 All shell scripts needed for installation can be found in the *zeus/generated* directory as standalone versions:
