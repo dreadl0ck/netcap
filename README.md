@@ -190,7 +190,7 @@ Convert timestamps to UTC:
 
 ## Tests
 
-To execute the unit tests, run the followig from the project root:
+To execute the unit tests, run the following from the project root:
 
     go test -v -bench=. ./...
 
@@ -199,7 +199,7 @@ To execute the unit tests, run the followig from the project root:
 | Name                        | Layer       | Description                |
 | --------------------------- | ----------- | -------------------------- |
 | Ethernet                    | Link        | IEEE 802.3 Ethernet Protocol               |
-| ARP                         | Link        | Address Resolution Procotol               |
+| ARP                         | Link        | Address Resolution Protocol               |
 | Dot1Q                       | Link        | IEEE 802.1Q, virtual LANs on an Ethernet network               |
 | Dot11                       | Link        | IEEE 802.11 Wireless LAN               |
 | LinkLayerDiscovery          | Link        | IEEE 802.1AB Station and Media Access Control Connectivity Discovery               |
@@ -495,7 +495,7 @@ the *-check* flag can be used.
 
 This will determine the expected number of separators for the audit record type,
 and print all lines to stdout that do not have the expected number of separator symbols.
-The separator symbol will be colored red with ansi escape secquences 
+The separator symbol will be colored red with ansi escape sequences 
 and each line is followed by the number of separators in red color. 
 
 The *-sep* flag can be used to specify a custom separator.
@@ -557,7 +557,7 @@ To save the output into a new file, simply redirect the standard output:
 
 ## Inclusion and Exclusion of Encoders
 
-The *-encoders* flag can be used to list all available encoders. In case not all of them are desired, selective inlcusion and exclusion is possible, by using the *-include* and *-exclude* flags.
+The *-encoders* flag can be used to list all available encoders. In case not all of them are desired, selective inclusion and exclusion is possible, by using the *-include* and *-exclude* flags.
 
 List all encoders:
 
@@ -656,7 +656,7 @@ Append classifications for duplicate labels:
 
 ## Sensors and Collection Server
 
-Using Netcap as a data collection mechanism, sensor agents can be deployed to export the traffic they see to a central collection server. This is especially interesting for internet of things (IoT) applications, since these devices are placed inside isolated networks and thus the operator does not have any information about the traffic the device sees. Although Go was not specifically designed for this application, it is an interesting language for embedded systems. Each binary contains the complete runtime, which increases the binary size but requires no installation of dependencies on the device itself. Data exporting currently takes place in batches over UDP sockets. Transferred data is compressed in transit and encrypted with the public key of the collection server. Asymmetric encryption was chosen, to avoid empowering an attacker who compromised a sensor, to decrypt traffic of all sensors commu- nicating with the collection server. To increase the performance, in the future this could be replaced with using a symmetric cipher, together with a solid concept for key rotation and distribution. Sensor agents do not write any data to disk and instead keep it in memory before exporting it.
+Using Netcap as a data collection mechanism, sensor agents can be deployed to export the traffic they see to a central collection server. This is especially interesting for internet of things (IoT) applications, since these devices are placed inside isolated networks and thus the operator does not have any information about the traffic the device sees. Although Go was not specifically designed for this application, it is an interesting language for embedded systems. Each binary contains the complete runtime, which increases the binary size but requires no installation of dependencies on the device itself. Data exporting currently takes place in batches over UDP sockets. Transferred data is compressed in transit and encrypted with the public key of the collection server. Asymmetric encryption was chosen, to avoid empowering an attacker who compromised a sensor, to decrypt traffic of all sensors communicating with the collection server. To increase the performance, in the future this could be replaced with using a symmetric cipher, together with a solid concept for key rotation and distribution. Sensor agents do not write any data to disk and instead keep it in memory before exporting it.
 
 <br>
 <img src="graphics/svg/Netcap-IOT.svg" width="100%" height="100%">
