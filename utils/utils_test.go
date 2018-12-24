@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-var ti = time.Now()
+var tins = time.Now()
+var ti = time.Unix(tins.Unix(), int64(tins.Nanosecond()/1000*1000))
 var tiStr = TimeToString(ti)
 
 func isDot(r rune) bool {
