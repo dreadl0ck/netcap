@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/dreadl0ck/netcap"
@@ -32,17 +31,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-// maxBufferSize specifies the size of the buffers that
-// are used to temporarily hold data from the UDP packets
-const (
-	maxBufferSize = 10 * 1024
-	timeout       = 1 * time.Minute
-)
-
 var (
 	flagInterface = flag.String("iface", "en0", "interface")
 	flagMaxSize   = flag.Int("max", 10*1024, "max size of packet") // max 65,507 bytes
-	flagProto     = flag.String("proto", "TCP", "proto to collect")
 
 	flagBPF      = flag.String("bpf", "", "supply a BPF filter to use for netcap collection")
 	flagInclude  = flag.String("include", "", "include specific encoders")

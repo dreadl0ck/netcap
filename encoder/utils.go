@@ -18,12 +18,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/md5"
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"math"
-	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -250,13 +248,6 @@ func Entropy(data []byte) (entropy float64) {
 		}
 	}
 	return entropy
-}
-
-func ip2int(ip net.IP) uint32 {
-	if len(ip) == 16 {
-		return binary.BigEndian.Uint32(ip[12:16])
-	}
-	return binary.BigEndian.Uint32(ip)
 }
 
 // pad the input up to the given number of space characters

@@ -52,14 +52,17 @@ func main() {
 	if *flagCPUProfile {
 		defer func() func() {
 			if *flagCPUProfile {
-				f, err := os.Create("netcap.cpu.profile")
+				f, err := os.Create("netcap-" + netcap.Version + ".cpu.profile")
 				if err != nil {
 					log.Fatalf("could not open cpu profile file %q", "netcap.cpu.profile")
 				}
 				pprof.StartCPUProfile(f)
 				return func() {
 					pprof.StopCPUProfile()
-					f.Close()
+					err := f.Close()
+					if err != nil {
+						panic("failed to write CPU profile: " + err.Error())
+					}
 				}
 			}
 			return func() {}
@@ -189,4 +192,16 @@ func main() {
 	}
 
 	fmt.Println("done in", time.Since(start))
+
+	if *flagMemProfile {
+		f, err := os.Create("netcap-" + netcap.Version + ".mem.profile")
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.WriteHeapProfile(f)
+		err = f.Close()
+		if err != nil {
+			panic("failed to write memory profile: " + err.Error())
+		}
+	}
 }
