@@ -27,7 +27,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/dreadl0ck/cryptoutils"
 
@@ -52,7 +51,6 @@ var (
 // that we receive.
 const (
 	maxBufferSize = 10 * 1024
-	timeout       = 1 * time.Minute
 )
 
 func main() {

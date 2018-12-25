@@ -14,16 +14,11 @@
 package collector
 
 import (
-	"crypto/md5"
-	"encoding/binary"
-	"encoding/hex"
 	"fmt"
-	"net"
 	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"golang.org/x/net/bpf"
@@ -48,80 +43,56 @@ func DumpProto(pb proto.Message) {
 	println(proto.MarshalTextString(pb))
 }
 
-// ClearScreen prints ANSI escape to flush screen
-func clearScreen() {
-	print("\033[H\033[2J")
-}
-
 func clearLine() {
 	print("\033[2K\r")
 }
 
-func stringIsSet(flagValue *string) bool {
-	return *flagValue != ""
-}
+// func dumpMap(m map[string]int64, padding int) string {
+// 	var res string
+// 	for k, v := range m {
+// 		res += pad(k, padding) + ": " + fmt.Sprint(v) + "\n"
+// 	}
+// 	return res
+// }
 
-func boolIsSet(flagValue *bool) bool {
-	return *flagValue == true
-}
+// // pad the input string up to the given number of space characters
+// func pad(in string, length int) string {
+// 	if len(in) < length {
+// 		return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
+// 	}
+// 	return in
+// }
 
-func timestampToFloat(t time.Time) float64 {
-	return float64(t.Unix())
-}
+// func ip2int(ip net.IP) uint32 {
+// 	if len(ip) == 16 {
+// 		return binary.BigEndian.Uint32(ip[12:16])
+// 	}
+// 	return binary.BigEndian.Uint32(ip)
+// }
 
-func dumpMap(m map[string]int64, padding int) string {
-	var res string
-	for k, v := range m {
-		res += pad(k, padding) + ": " + fmt.Sprint(v) + "\n"
-	}
-	return res
-}
-
-// pad the input string up to the given number of space characters
-func pad(in string, length int) string {
-	if len(in) < length {
-		return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
-	}
-	return in
-}
-
-func macToInt(mac string) int {
-	//mac := "00-15-CF-80-F8-13"
-	// mac = strings.Replace(mac, "-", "", -1) // the last argument could be 5 instead
-	// return strconv.Btoui64(mac, 16)
-	return 0
-}
-
-func ip2int(ip net.IP) uint32 {
-	if len(ip) == 16 {
-		return binary.BigEndian.Uint32(ip[12:16])
-	}
-	return binary.BigEndian.Uint32(ip)
-}
-
-func int2ip(nn uint32) net.IP {
-	ip := make(net.IP, 4)
-	binary.BigEndian.PutUint32(ip, nn)
-	return ip
-}
+// func int2ip(nn uint32) net.IP {
+// 	ip := make(net.IP, 4)
+// 	binary.BigEndian.PutUint32(ip, nn)
+// 	return ip
+// }
 
 func share(current, total int64) string {
 	percent := (float64(current) / float64(total)) * 100
 	return strconv.FormatFloat(percent, 'f', 5, 64) + "%"
 }
 
-// creates a sha256 hash with the timestamp of the packet and all packet data
-// and returns a hex string
-// currently not in use
-func (c *Collector) calcPacketID(p gopacket.Packet) string {
+// // creates an md5 hash with the timestamp of the packet and all packet data
+// // and returns a hex string
+// // currently not in use
+// func (c *Collector) calcPacketID(p gopacket.Packet) string {
 
-	var out []byte
-	for _, b := range md5.Sum(append([]byte(p.Metadata().Timestamp.String()), p.Data()...)) {
-		out = append(out, b)
-	}
+// 	var out []byte
+// 	for _, b := range md5.Sum(append([]byte(p.Metadata().Timestamp.String()), p.Data()...)) {
+// 		out = append(out, b)
+// 	}
 
-	return hex.EncodeToString(out)
-}
+// 	return hex.EncodeToString(out)
+// }
 
 func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 	// use pcap bpf compiler to get raw bpf instruction

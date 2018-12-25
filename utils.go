@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 
@@ -100,16 +99,16 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 }
 
 // uses reflection to return a list of all fields of a struct
-func allValues(in interface{}) []string {
+// func allValues(in interface{}) []string {
 
-	var (
-		v      = reflect.ValueOf(in)
-		values = make([]string, v.NumField())
-	)
+// 	var (
+// 		v      = reflect.ValueOf(in)
+// 		values = make([]string, v.NumField())
+// 	)
 
-	for i := 0; i < v.NumField(); i++ {
-		values[i] = fmt.Sprint(v.Field(i).Interface())
-	}
+// 	for i := 0; i < v.NumField(); i++ {
+// 		values[i] = fmt.Sprint(v.Field(i).Interface())
+// 	}
 
-	return values
-}
+// 	return values
+// }
