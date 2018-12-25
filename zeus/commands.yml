@@ -7,8 +7,6 @@
 #                          v0.8.4
 #
 
-
-
 # default language
 language: bash
 
@@ -18,34 +16,29 @@ globals:
 # command data
 commands:
     
-    # build the binary
     build:
-        description: build project
+        description: build netcap binary
         dependencies:
             - clean
         buildNumber: true
         exec: go build -o bin/netcap -i github.com/dreadl0ck/netcap/cmd
 
-    # clean up the mess
     clean:
         description: clean up to prepare for build
         exec: rm -rf bin/*
     
-    # perform full install
     install:
-        description: install to $PATH
+        description: install netcap and netlabel to $PATH
         buildNumber: true
-        help: Install the application to the default system location
+        help: Installs the applications to the default system location
         exec: zeus install-netcap && zeus install-netlabel
     
-    # install netcap lib and commandline tool
     install-netcap:
         description: install to $PATH
         buildNumber: true
         help: Install the application to the default system location
         exec: go build -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
 
-    # install netlabel commandline tool
     install-netlabel:
         description: install to $PATH
         buildNumber: true
@@ -53,17 +46,18 @@ commands:
         exec: go build -o $(go env GOPATH)/bin/netlabel -i github.com/dreadl0ck/netcap/label/cmd
 
     install-race:
-        description: install race build to $PATH
+        description: install a netcap build with race detection enabled
         buildNumber: true
         help: Install the race build to the default system location
         exec: go build -race -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
         
     cloc:
-        description: count lines of code
+        description: count lines of code for the project
         exec: cloc --exclude-ext pb.go,py,rb cmd sensor server label types utils collector encoder netcap.go reader.go utils.go
 
     gen-proto:
         description: generate protocol buffers
+        help: proto compiler must be installed
         exec: protoc --go_out=types/. --ruby_out=types/ --python_out=types/ netcap.proto
 
     install-sensor:
@@ -75,12 +69,3 @@ commands:
         description: install to $PATH
         help: Install the netcap server to the default system location
         exec: go build -o $(go env GOPATH)/bin/netcap-server -i github.com/dreadl0ck/netcap/server
-
-    build-tf-neural:
-        language: bash
-        description: build tensorflow python script from jupyter notebook
-        help:
-        arguments:
-        dependencies:
-        outputs:
-        exec: cd tensorflow && jupyter nbconvert --to script t81_558_class12_security.ipynb
