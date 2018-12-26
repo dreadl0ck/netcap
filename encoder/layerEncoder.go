@@ -68,6 +68,8 @@ var (
 		ethernetCTPEncoder,
 		ethernetCTPReplyEncoder,
 		linkLayerDiscoveryInfoEncoder,
+		ipSecAHEncoder,
+		ipSecESPEncoder,
 	}
 )
 
