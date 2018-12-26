@@ -596,6 +596,19 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :DstPort, :int32, 27
     repeated :Extensions, :int32, 28
   end
+  add_message "types.IPSecAH" do
+    optional :Timestamp, :string, 1
+    optional :Reserved, :int32, 2
+    optional :SPI, :int32, 3
+    optional :Seq, :int32, 4
+    optional :AuthenticationData, :bytes, 5
+  end
+  add_message "types.IPSecESP" do
+    optional :Timestamp, :string, 1
+    optional :SPI, :int32, 2
+    optional :Seq, :int32, 3
+    optional :LenEncrypted, :int32, 4
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -662,6 +675,8 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_ICMPv6RouterSolicitation, 62
     value :NC_HTTP, 63
     value :NC_TLSClientHello, 64
+    value :NC_IPSecAH, 65
+    value :NC_IPSecESP, 66
   end
 end
 
@@ -731,5 +746,7 @@ module Types
   ICMPv6RouterSolicitation = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ICMPv6RouterSolicitation").msgclass
   HTTP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.HTTP").msgclass
   TLSClientHello = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.TLSClientHello").msgclass
+  IPSecAH = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPSecAH").msgclass
+  IPSecESP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPSecESP").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
