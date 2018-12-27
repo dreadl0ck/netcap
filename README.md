@@ -130,6 +130,11 @@ For example to cross compile a binary for *linux amd64*:
 
     $ GOARCH=amd64 GOOS=linux go build -o netcap -i github.com/dreadl0ck/netcap/cmd
 
+Install the *netcap* command-line tool with Homebrew:
+
+    $ brew tap dreadl0ck/formulas
+    $ brew install netcap
+
 ### Buildsystem
 
 *Netcap* uses the [zeus](https://github.com/dreadl0ck/zeus) buildsystem, it can be found on github along with installation instructions.
@@ -749,7 +754,7 @@ As outlined in the future chapter of the thesis,
 - Deep Packet Inspection Module that looks for certain patterns in the payload to identify the application layer before discarding the payload data
 - implement IPv6 stream reassembly
 - implement an interface for application layer decoders that require stream reassembly
-- test compilation and execution on windows
+- test compilation and execution on windows (see [this stackoverflow thread on compiling gopacket on windows](https://stackoverflow.com/questions/38047858/compile-gopacket-on-windows-64bit))
 
 Additional recent datasets should be evaluated using *Netcap*,
 also the next round of experiments with supervised techniques should be conducted with the ET Pro ruleset for labeling.
