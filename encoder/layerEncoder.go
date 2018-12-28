@@ -71,6 +71,7 @@ var (
 		ipSecAHEncoder,
 		ipSecESPEncoder,
 		geneveEncoder,
+		ip6FragmentEncoder,
 	}
 )
 
