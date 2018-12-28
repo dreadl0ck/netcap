@@ -33,6 +33,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.IPv4)
 	case types.Type_NC_IPv6:
 		record = new(types.IPv6)
+	case types.Type_NC_IPv6Fragment:
+		record = new(types.IPv6Fragment)
 	case types.Type_NC_DNS:
 		record = new(types.DNS)
 	case types.Type_NC_UDP:

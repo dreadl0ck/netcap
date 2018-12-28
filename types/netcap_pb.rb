@@ -287,6 +287,15 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :PayloadSize, :int32, 11
     optional :HopByHop, :message, 12, "types.IPv6HopByHop"
   end
+  add_message "types.IPv6Fragment" do
+    optional :Timestamp, :string, 1
+    optional :NextHeader, :int32, 2
+    optional :Reserved1, :int32, 3
+    optional :FragmentOffset, :int32, 4
+    optional :Reserved2, :int32, 5
+    optional :MoreFragments, :bool, 6
+    optional :Identification, :uint32, 7
+  end
   add_message "types.ICMPv4" do
     optional :Timestamp, :string, 1
     optional :TypeCode, :int32, 2
@@ -695,6 +704,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_IPSecAH, 65
     value :NC_IPSecESP, 66
     value :NC_Geneve, 67
+    value :NC_IPv6Fragment, 68
   end
 end
 
@@ -731,6 +741,7 @@ module Types
   IPv4 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPv4").msgclass
   IPv4Option = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPv4Option").msgclass
   IPv6 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPv6").msgclass
+  IPv6Fragment = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPv6Fragment").msgclass
   ICMPv4 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ICMPv4").msgclass
   ICMPv6 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ICMPv6").msgclass
   ICMPv6NeighborAdvertisement = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ICMPv6NeighborAdvertisement").msgclass

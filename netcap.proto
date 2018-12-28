@@ -113,6 +113,7 @@ enum Type {
     NC_IPSecAH                     = 65;
     NC_IPSecESP                    = 66;
     NC_Geneve                      = 67;
+    NC_IPv6Fragment                = 68;
 }
 
 /*
@@ -469,6 +470,16 @@ message IPv6 {
     double PayloadEntropy = 10;
     int32  PayloadSize    = 11;
     IPv6HopByHop HopByHop = 12;
+}
+
+message IPv6Fragment {
+    string        Timestamp        = 1;
+    int32         NextHeader       = 2; 
+    int32         Reserved1        = 3;    // Reserved1 is bits [8-16), from least to most significant, 0-indexed
+    int32         FragmentOffset   = 4;
+    int32         Reserved2        = 5;    // Reserved2 is bits [29-31), from least to most significant, 0-indexed
+    bool          MoreFragments    = 6;   
+    uint32        Identification   = 7;  
 }
 
 message ICMPv4 {
