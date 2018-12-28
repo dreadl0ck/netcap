@@ -112,6 +112,7 @@ enum Type {
     NC_TLSClientHello              = 64;
     NC_IPSecAH                     = 65;
     NC_IPSecESP                    = 66;
+    NC_Geneve                      = 67;
 }
 
 /*
@@ -867,4 +868,23 @@ message IPSecESP {
     int32    SPI                       = 2;
     int32    Seq                       = 3;
     int32    LenEncrypted              = 4;
+}
+
+message Geneve {
+    string                Timestamp      = 1;
+    int32                 Version        = 2;
+    int32                 OptionsLength  = 3;
+    bool                  OAMPacket      = 4;
+    bool                  CriticalOption = 5;
+    int32                 Protocol       = 6;
+    uint32                VNI            = 7;
+    repeated GeneveOption Options        = 8;     
+}
+
+message GeneveOption {
+    int32     Class     = 1;
+    int32     Type      = 2;
+    int32     Flags     = 3;
+    int32     Length    = 4;
+    bytes     Data      = 5;
 }

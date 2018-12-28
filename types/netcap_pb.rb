@@ -609,6 +609,23 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Seq, :int32, 3
     optional :LenEncrypted, :int32, 4
   end
+  add_message "types.Geneve" do
+    optional :Timestamp, :string, 1
+    optional :Version, :int32, 2
+    optional :OptionsLength, :int32, 3
+    optional :OAMPacket, :bool, 4
+    optional :CriticalOption, :bool, 5
+    optional :Protocol, :int32, 6
+    optional :VNI, :uint32, 7
+    repeated :Options, :message, 8, "types.GeneveOption"
+  end
+  add_message "types.GeneveOption" do
+    optional :Class, :int32, 1
+    optional :Type, :int32, 2
+    optional :Flags, :int32, 3
+    optional :Length, :int32, 4
+    optional :Data, :bytes, 5
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -677,6 +694,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_TLSClientHello, 64
     value :NC_IPSecAH, 65
     value :NC_IPSecESP, 66
+    value :NC_Geneve, 67
   end
 end
 
@@ -748,5 +766,7 @@ module Types
   TLSClientHello = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.TLSClientHello").msgclass
   IPSecAH = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPSecAH").msgclass
   IPSecESP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPSecESP").msgclass
+  Geneve = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Geneve").msgclass
+  GeneveOption = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GeneveOption").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
