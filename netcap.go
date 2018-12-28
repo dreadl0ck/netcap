@@ -21,7 +21,7 @@ import (
 )
 
 // Version is the current version of the netcap library
-const Version = "v0.3.5"
+const Version = "v0.3.6"
 
 // InitRecord initializes a new record of the given type
 // that conforms to the proto.Message interface
@@ -109,6 +109,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.IPSecESP)
 	case types.Type_NC_Geneve:
 		record = new(types.Geneve)
+	case types.Type_NC_VXLAN:
+		record = new(types.VXLAN)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
