@@ -101,6 +101,10 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.NetworkFlow)
 	case types.Type_NC_TransportFlow:
 		record = new(types.TransportFlow)
+	case types.Type_NC_IPSecAH:
+		record = new(types.IPSecAH)
+	case types.Type_NC_IPSecESP:
+		record = new(types.IPSecESP)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
