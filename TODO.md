@@ -14,17 +14,20 @@ Benchmarks:
 
 ## new protos
 
-- IPSec
+- increase protocol coverage + USB support
 - MLDv2MulticastListenerReport
-- Geneve
 - VXLAN
 - Fragment
+
+## update documentation
+
+- IPSec
+- Geneve
 
 # future
 
 Future Development:
 - scale to multi instance architecture
-- increase protocol coverage + USB support
 - data exporters + visualization dashboards / VR etc
 - robustness testing / pentest
 - performance assessment + optimizations

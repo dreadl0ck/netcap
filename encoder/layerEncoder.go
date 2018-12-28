@@ -70,6 +70,7 @@ var (
 		linkLayerDiscoveryInfoEncoder,
 		ipSecAHEncoder,
 		ipSecESPEncoder,
+		geneveEncoder,
 	}
 )
 
