@@ -16,11 +16,11 @@ Benchmarks:
 
 - increase protocol coverage + USB support
 - MLDv2MulticastListenerReport
-- VXLAN
-- Fragment
 
 ## update documentation
 
+- VXLAN
+- Fragment
 - IPSec
 - Geneve
 

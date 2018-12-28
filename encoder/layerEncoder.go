@@ -72,6 +72,7 @@ var (
 		ipSecESPEncoder,
 		geneveEncoder,
 		ip6FragmentEncoder,
+		vxlanEncoder,
 	}
 )
 

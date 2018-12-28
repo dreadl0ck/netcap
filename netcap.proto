@@ -114,6 +114,7 @@ enum Type {
     NC_IPSecESP                    = 66;
     NC_Geneve                      = 67;
     NC_IPv6Fragment                = 68;
+    NC_VXLAN                       = 69;
 }
 
 /*
@@ -898,4 +899,15 @@ message GeneveOption {
     int32     Flags     = 3;
     int32     Length    = 4;
     bytes     Data      = 5;
+}
+
+// VXLAN is a VXLAN packet header
+message VXLAN {
+    string     Timestamp            = 1;
+    bool       ValidIDFlag          = 2;   // 'I' bit per RFC 7348
+    uint32     VNI                  = 3;   // 'VXLAN Network Identifier' 24 bits per RFC 7348
+    bool       GBPExtension         = 4;   // 'G' bit per Group Policy https://tools.ietf.org/html/draft-smith-vxlan-group-policy-00
+    bool       GBPDontLearn         = 5;   // 'D' bit per Group Policy
+    bool       GBPApplied           = 6;   // 'A' bit per Group Policy
+    int32      GBPGroupPolicyID     = 7;   // 'Group Policy ID' 16 bits per Group Policy
 }

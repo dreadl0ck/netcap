@@ -635,6 +635,15 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Length, :int32, 4
     optional :Data, :bytes, 5
   end
+  add_message "types.VXLAN" do
+    optional :Timestamp, :string, 1
+    optional :ValidIDFlag, :bool, 2
+    optional :VNI, :uint32, 3
+    optional :GBPExtension, :bool, 4
+    optional :GBPDontLearn, :bool, 5
+    optional :GBPApplied, :bool, 6
+    optional :GBPGroupPolicyID, :int32, 7
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -705,6 +714,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_IPSecESP, 66
     value :NC_Geneve, 67
     value :NC_IPv6Fragment, 68
+    value :NC_VXLAN, 69
   end
 end
 
@@ -779,5 +789,6 @@ module Types
   IPSecESP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPSecESP").msgclass
   Geneve = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Geneve").msgclass
   GeneveOption = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GeneveOption").msgclass
+  VXLAN = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.VXLAN").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
