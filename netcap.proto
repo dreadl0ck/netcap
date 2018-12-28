@@ -110,6 +110,8 @@ enum Type {
     NC_ICMPv6RouterSolicitation    = 62;
     NC_HTTP                        = 63;
     NC_TLSClientHello              = 64;
+    NC_IPSecAH                     = 65;
+    NC_IPSecESP                    = 66;
 }
 
 /*
@@ -852,3 +854,17 @@ message TLSClientHello {
     repeated int32 Extensions         = 28;
 }
 
+message IPSecAH {
+    string   Timestamp                 = 1;
+    int32    Reserved                  = 2;
+    int32    SPI                       = 3;
+    int32    Seq                       = 4;
+    bytes    AuthenticationData        = 5;
+}
+
+message IPSecESP {
+    string   Timestamp                 = 1;
+    int32    SPI                       = 2;
+    int32    Seq                       = 3;
+    int32    LenEncrypted              = 4;
+}
