@@ -115,6 +115,7 @@ enum Type {
     NC_Geneve                      = 67;
     NC_IPv6Fragment                = 68;
     NC_VXLAN                       = 69;
+    NC_USB                         = 70;
 }
 
 /*
@@ -910,4 +911,26 @@ message VXLAN {
     bool       GBPDontLearn         = 5;   // 'D' bit per Group Policy
     bool       GBPApplied           = 6;   // 'A' bit per Group Policy
     int32      GBPGroupPolicyID     = 7;   // 'Group Policy ID' 16 bits per Group Policy
+}
+
+message USB {
+    string      Timestamp                 = 1;
+    uint64      ID                        = 2;
+    int32       EventType                 = 3;
+    int32       TransferType              = 4;           
+    int32       Direction                 = 5;           
+    int32       EndpointNumber            = 6;
+    int32       DeviceAddress             = 7;
+    int32       BusID                     = 8; 
+    int64       TimestampSec              = 9; 
+    int32       TimestampUsec             = 10;
+    bool        Setup                     = 11;
+    bool        Data                      = 12;
+    int32       Status                    = 13;
+    uint32      UrbLength                 = 14;
+    uint32      UrbDataLength             = 15;
+    uint32      UrbInterval               = 16;
+    uint32      UrbStartFrame             = 17;
+    uint32      UrbCopyOfTransferFlags    = 18;
+    uint32      IsoNumDesc                = 19;
 }

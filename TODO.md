@@ -14,8 +14,22 @@ Benchmarks:
 
 ## new protos
 
-- increase protocol coverage + USB support
 - MLDv2MulticastListenerReport
+- VRRPv2
+- FDDI
+- GRE
+- EAPOL + Key
+- EAP
+- CiscoDiscoveryInfo
+- CDPHello
+- CDPEnergyWise
+- BFD
+- ASExternalLSA
+- OSPF
+- LSAheader
+- ModbusTCP
+- MPLS
+- LCM
 
 ## update documentation
 
