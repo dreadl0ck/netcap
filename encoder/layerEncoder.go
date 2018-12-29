@@ -73,6 +73,7 @@ var (
 		geneveEncoder,
 		ip6FragmentEncoder,
 		vxlanEncoder,
+		usbEncoder,
 	}
 )
 

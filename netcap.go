@@ -111,6 +111,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Geneve)
 	case types.Type_NC_VXLAN:
 		record = new(types.VXLAN)
+	case types.Type_NC_USB:
+		record = new(types.USB)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

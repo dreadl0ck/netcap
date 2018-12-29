@@ -644,6 +644,27 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :GBPApplied, :bool, 6
     optional :GBPGroupPolicyID, :int32, 7
   end
+  add_message "types.USB" do
+    optional :Timestamp, :string, 1
+    optional :ID, :uint64, 2
+    optional :EventType, :int32, 3
+    optional :TransferType, :int32, 4
+    optional :Direction, :int32, 5
+    optional :EndpointNumber, :int32, 6
+    optional :DeviceAddress, :int32, 7
+    optional :BusID, :int32, 8
+    optional :TimestampSec, :int64, 9
+    optional :TimestampUsec, :int32, 10
+    optional :Setup, :bool, 11
+    optional :Data, :bool, 12
+    optional :Status, :int32, 13
+    optional :UrbLength, :uint32, 14
+    optional :UrbDataLength, :uint32, 15
+    optional :UrbInterval, :uint32, 16
+    optional :UrbStartFrame, :uint32, 17
+    optional :UrbCopyOfTransferFlags, :uint32, 18
+    optional :IsoNumDesc, :uint32, 19
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -715,6 +736,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_Geneve, 67
     value :NC_IPv6Fragment, 68
     value :NC_VXLAN, 69
+    value :NC_USB, 70
   end
 end
 
@@ -790,5 +812,6 @@ module Types
   Geneve = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Geneve").msgclass
   GeneveOption = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GeneveOption").msgclass
   VXLAN = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.VXLAN").msgclass
+  USB = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.USB").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
