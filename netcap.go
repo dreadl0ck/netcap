@@ -123,6 +123,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.OSPFv2)
 	case types.Type_NC_OSPFv3:
 		record = new(types.OSPFv3)
+	case types.Type_NC_BFD:
+		record = new(types.BFD)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

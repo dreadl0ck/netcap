@@ -79,6 +79,7 @@ var (
 		modbusTCPEncoder,
 		ospfv2Encoder,
 		ospfv3Encoder,
+		bfdEncoder,
 	}
 )
 

@@ -121,6 +121,7 @@ enum Type {
     NC_ModbusTCP                   = 73;
     NC_OSPFv2                      = 74;
     NC_OSPFv3                      = 75;
+    NC_BFD                         = 76;
 }
 
 /*
@@ -999,4 +1000,31 @@ message OSPFv3 {
     int32     Instance      = 8;
     int32     Reserved      = 9;
     // interface Content
+}
+
+message BFD {
+    string        Timestamp                = 1;
+    int32         Version                  = 2;  // Version of the BFD protocol.
+    int32         Diagnostic               = 3;  // Diagnostic code for last state change
+    int32         State                    = 4;  // Current state
+    bool          Poll                     = 5;  // Requesting verification
+    bool          Final                    = 6;  // Responding to a received BFD Control packet that had the Poll (P) bit set.
+    bool          ControlPlaneIndependent  = 7;  // BFD implementation does not share fate with its control plane
+    bool          AuthPresent              = 8;  // Authentication Section is present and the session is to be authenticated
+    bool          Demand                   = 9;  // Demand mode is active
+    bool          Multipoint               = 10;  // For future point-to-multipoint extensions. Must always be zero
+    int32         DetectMultiplier         = 11;  // Detection time multiplier
+    int32         MyDiscriminator          = 12;  // A unique, nonzero discriminator value
+    int32         YourDiscriminator        = 13;  // discriminator received from the remote system.
+    int32         DesiredMinTxInterval     = 14;  // Minimum interval, in microseconds,  the local system would like to use when transmitting BFD Control packets
+    int32         RequiredMinRxInterval    = 15;  // Minimum interval, in microseconds, between received BFD Control packets that this system is capable of supporting
+    int32         RequiredMinEchoRxInterval = 16; // Minimum interval, in microseconds, between received BFD Echo packets that this system is capable of supporting
+    BFDAuthHeader AuthHeader                = 17; // Authentication data, variable length.
+}
+
+message BFDAuthHeader {
+    int32 AuthType       = 1;
+    int32 KeyID          = 2;
+    int32 SequenceNumber = 3;
+    bytes Data           = 4;
 }
