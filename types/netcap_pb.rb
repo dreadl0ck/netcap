@@ -690,6 +690,28 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Length, :int32, 4
     optional :UnitIdentifier, :int32, 5
   end
+  add_message "types.OSPFv2" do
+    optional :Timestamp, :string, 1
+    optional :Version, :int32, 2
+    optional :Type, :int32, 3
+    optional :PacketLength, :int32, 4
+    optional :RouterID, :uint32, 5
+    optional :AreaID, :uint32, 6
+    optional :Checksum, :int32, 7
+    optional :AuType, :int32, 8
+    optional :Authentication, :int64, 9
+  end
+  add_message "types.OSPFv3" do
+    optional :Timestamp, :string, 1
+    optional :Version, :int32, 2
+    optional :Type, :int32, 3
+    optional :PacketLength, :int32, 4
+    optional :RouterID, :uint32, 5
+    optional :AreaID, :uint32, 6
+    optional :Checksum, :int32, 7
+    optional :Instance, :int32, 8
+    optional :Reserved, :int32, 9
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -765,6 +787,8 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_LCM, 71
     value :NC_MPLS, 72
     value :NC_ModbusTCP, 73
+    value :NC_OSPFv2, 74
+    value :NC_OSPFv3, 75
   end
 end
 
@@ -844,5 +868,7 @@ module Types
   LCM = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LCM").msgclass
   MPLS = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.MPLS").msgclass
   ModbusTCP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ModbusTCP").msgclass
+  OSPFv2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.OSPFv2").msgclass
+  OSPFv3 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.OSPFv3").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
