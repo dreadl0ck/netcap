@@ -74,6 +74,7 @@ var (
 		ip6FragmentEncoder,
 		vxlanEncoder,
 		usbEncoder,
+		lcmEncoder,
 	}
 )
 
