@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var mplsEncoder = CreateLayerEncoder(types.Type_NC_MPLS, layers.LayerTypeARP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var mplsEncoder = CreateLayerEncoder(types.Type_NC_MPLS, layers.LayerTypeMPLS, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if mpls, ok := layer.(*layers.MPLS); ok {
 		return &types.MPLS{
 			Timestamp:    timestamp,
