@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var ospfv2Encoder = CreateLayerEncoder(types.Type_NC_OSPFv2, layers.LayerTypeARP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var ospfv2Encoder = CreateLayerEncoder(types.Type_NC_OSPFv2, layers.LayerTypeOSPF, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if ospf2, ok := layer.(*layers.OSPFv2); ok {
 		return &types.OSPFv2{
 			Timestamp:      timestamp,

@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var modbusTCPEncoder = CreateLayerEncoder(types.Type_NC_ModbusTCP, layers.LayerTypeARP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var modbusTCPEncoder = CreateLayerEncoder(types.Type_NC_ModbusTCP, layers.LayerTypeModbusTCP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if mtcp, ok := layer.(*layers.ModbusTCP); ok {
 		return &types.ModbusTCP{
 			Timestamp:             timestamp,
