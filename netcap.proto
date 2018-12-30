@@ -117,6 +117,7 @@ enum Type {
     NC_VXLAN                       = 69;
     NC_USB                         = 70;
     NC_LCM                         = 71;
+    NC_MPLS                        = 72;
 }
 
 /*
@@ -953,4 +954,12 @@ message LCM {
     int32     TotalFragments       = 7;
     string    ChannelName          = 8;
     bool      Fragmented           = 9;
+}
+
+message MPLS {
+    string  Timestamp      = 1;
+    int32   Label          = 2;
+    int32   TrafficClass   = 3;
+    bool    StackBottom    = 4;
+    int32   TTL            = 5;
 }

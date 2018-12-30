@@ -29,7 +29,6 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/cryptoutils"
-
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )

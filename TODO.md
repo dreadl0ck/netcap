@@ -28,12 +28,11 @@ Benchmarks:
 - OSPF
 - LSAheader
 - ModbusTCP
-- MPLS
 
 ## update documentation
 
+- MPLS
 - LCM
-
 - USB
 - VXLAN
 - Fragment
