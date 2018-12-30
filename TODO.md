@@ -29,11 +29,10 @@ Benchmarks:
 - LSAheader
 - ModbusTCP
 - MPLS
-- LCM
 
 ## update documentation
 
--> add Copyrights and Comments !!!
+- LCM
 
 - USB
 - VXLAN

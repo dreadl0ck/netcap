@@ -116,6 +116,7 @@ enum Type {
     NC_IPv6Fragment                = 68;
     NC_VXLAN                       = 69;
     NC_USB                         = 70;
+    NC_LCM                         = 71;
 }
 
 /*
@@ -933,4 +934,23 @@ message USB {
     uint32      UrbStartFrame             = 17;
     uint32      UrbCopyOfTransferFlags    = 18;
     uint32      IsoNumDesc                = 19;
+}
+
+// LCM (Lightweight Communications and Marshalling) is a set of libraries and tools for message passing and data marshalling, 
+// targeted at real-time systems where high-bandwidth and low latency are critical. 
+// It provides a publish/subscribe message passing model and automatic marshalling/unmarshalling 
+// code generation with bindings for applications in a variety of programming languages.
+// References
+// https://lcm-proj.github.io/
+// https://github.com/lcm-proj/lcm
+message LCM {
+    string    Timestamp            = 1;
+    int32     Magic                = 2;
+    int32     SequenceNumber       = 3;
+    int32     PayloadSize          = 4;
+    int32     FragmentOffset       = 5;
+    int32     FragmentNumber       = 6;
+    int32     TotalFragments       = 7;
+    string    ChannelName          = 8;
+    bool      Fragmented           = 9;
 }

@@ -665,6 +665,17 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :UrbCopyOfTransferFlags, :uint32, 18
     optional :IsoNumDesc, :uint32, 19
   end
+  add_message "types.LCM" do
+    optional :Timestamp, :string, 1
+    optional :Magic, :int32, 2
+    optional :SequenceNumber, :int32, 3
+    optional :PayloadSize, :int32, 4
+    optional :FragmentOffset, :int32, 5
+    optional :FragmentNumber, :int32, 6
+    optional :TotalFragments, :int32, 7
+    optional :ChannelName, :string, 8
+    optional :Fragmented, :bool, 9
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -737,6 +748,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_IPv6Fragment, 68
     value :NC_VXLAN, 69
     value :NC_USB, 70
+    value :NC_LCM, 71
   end
 end
 
@@ -813,5 +825,6 @@ module Types
   GeneveOption = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GeneveOption").msgclass
   VXLAN = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.VXLAN").msgclass
   USB = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.USB").msgclass
+  LCM = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LCM").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
