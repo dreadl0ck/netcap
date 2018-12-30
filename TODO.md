@@ -23,13 +23,13 @@ Benchmarks:
 - CiscoDiscoveryInfo
 - CDPHello
 - CDPEnergyWise
-- BFD
 - ASExternalLSA
-- OSPF
 - LSA
 
 ## update documentation
 
+- BFD
+- OSPF
 - ModbusTCP
 - MPLS
 - LCM

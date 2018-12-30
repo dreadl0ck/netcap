@@ -712,6 +712,31 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Instance, :int32, 8
     optional :Reserved, :int32, 9
   end
+  add_message "types.BFD" do
+    optional :Timestamp, :string, 1
+    optional :Version, :int32, 2
+    optional :Diagnostic, :int32, 3
+    optional :State, :int32, 4
+    optional :Poll, :bool, 5
+    optional :Final, :bool, 6
+    optional :ControlPlaneIndependent, :bool, 7
+    optional :AuthPresent, :bool, 8
+    optional :Demand, :bool, 9
+    optional :Multipoint, :bool, 10
+    optional :DetectMultiplier, :int32, 11
+    optional :MyDiscriminator, :int32, 12
+    optional :YourDiscriminator, :int32, 13
+    optional :DesiredMinTxInterval, :int32, 14
+    optional :RequiredMinRxInterval, :int32, 15
+    optional :RequiredMinEchoRxInterval, :int32, 16
+    optional :AuthHeader, :message, 17, "types.BFDAuthHeader"
+  end
+  add_message "types.BFDAuthHeader" do
+    optional :AuthType, :int32, 1
+    optional :KeyID, :int32, 2
+    optional :SequenceNumber, :int32, 3
+    optional :Data, :bytes, 4
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -789,6 +814,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_ModbusTCP, 73
     value :NC_OSPFv2, 74
     value :NC_OSPFv3, 75
+    value :NC_BFD, 76
   end
 end
 
@@ -870,5 +896,7 @@ module Types
   ModbusTCP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ModbusTCP").msgclass
   OSPFv2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.OSPFv2").msgclass
   OSPFv3 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.OSPFv3").msgclass
+  BFD = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.BFD").msgclass
+  BFDAuthHeader = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.BFDAuthHeader").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
