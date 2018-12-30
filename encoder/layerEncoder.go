@@ -76,6 +76,7 @@ var (
 		usbEncoder,
 		lcmEncoder,
 		mplsEncoder,
+		modbusTCPEncoder,
 	}
 )
 

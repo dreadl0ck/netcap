@@ -118,6 +118,7 @@ enum Type {
     NC_USB                         = 70;
     NC_LCM                         = 71;
     NC_MPLS                        = 72;
+    NC_ModbusTCP                   = 73;
 }
 
 /*
@@ -962,4 +963,12 @@ message MPLS {
     int32   TrafficClass   = 3;
     bool    StackBottom    = 4;
     int32   TTL            = 5;
+}
+
+message ModbusTCP {
+    string Timestamp      = 1;
+    int32  TransactionIdentifier = 2; // Identification of a MODBUS Request/Response transaction
+    int32  ProtocolIdentifier    = 3; // It is used for intra-system multiplexing
+    int32  Length                = 4; // Number of following bytes (includes 1 byte for UnitIdentifier + Modbus data length
+    int32  UnitIdentifier        = 5; // Identification of a remote slave connected on a serial line or on other buses
 }
