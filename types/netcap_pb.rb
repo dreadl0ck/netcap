@@ -683,6 +683,13 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :StackBottom, :bool, 4
     optional :TTL, :int32, 5
   end
+  add_message "types.ModbusTCP" do
+    optional :Timestamp, :string, 1
+    optional :TransactionIdentifier, :int32, 2
+    optional :ProtocolIdentifier, :int32, 3
+    optional :Length, :int32, 4
+    optional :UnitIdentifier, :int32, 5
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -757,6 +764,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_USB, 70
     value :NC_LCM, 71
     value :NC_MPLS, 72
+    value :NC_ModbusTCP, 73
   end
 end
 
@@ -835,5 +843,6 @@ module Types
   USB = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.USB").msgclass
   LCM = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LCM").msgclass
   MPLS = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.MPLS").msgclass
+  ModbusTCP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ModbusTCP").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
