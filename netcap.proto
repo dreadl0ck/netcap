@@ -119,6 +119,8 @@ enum Type {
     NC_LCM                         = 71;
     NC_MPLS                        = 72;
     NC_ModbusTCP                   = 73;
+    NC_OSPFv2                      = 74;
+    NC_OSPFv3                      = 75;
 }
 
 /*
@@ -971,4 +973,30 @@ message ModbusTCP {
     int32  ProtocolIdentifier    = 3; // It is used for intra-system multiplexing
     int32  Length                = 4; // Number of following bytes (includes 1 byte for UnitIdentifier + Modbus data length
     int32  UnitIdentifier        = 5; // Identification of a remote slave connected on a serial line or on other buses
+}
+
+message OSPFv2 {
+    string    Timestamp     = 1;
+    int32     Version       = 2;
+    int32     Type          = 3;
+    int32     PacketLength  = 4;
+    uint32    RouterID      = 5;
+    uint32    AreaID        = 6;
+    int32     Checksum      = 7;
+    int32     AuType        = 8; 
+    int64     Authentication = 9;
+    // interface Content
+}
+
+message OSPFv3 {
+    string    Timestamp     = 1;
+    int32     Version       = 2;
+    int32     Type          = 3;
+    int32     PacketLength  = 4;
+    uint32    RouterID      = 5;
+    uint32    AreaID        = 6;
+    int32     Checksum      = 7;
+    int32     Instance      = 8;
+    int32     Reserved      = 9;
+    // interface Content
 }

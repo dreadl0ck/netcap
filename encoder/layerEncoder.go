@@ -77,6 +77,8 @@ var (
 		lcmEncoder,
 		mplsEncoder,
 		modbusTCPEncoder,
+		ospfv2Encoder,
+		ospfv3Encoder,
 	}
 )
 

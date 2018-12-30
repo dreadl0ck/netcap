@@ -119,6 +119,10 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.MPLS)
 	case types.Type_NC_ModbusTCP:
 		record = new(types.ModbusTCP)
+	case types.Type_NC_OSPFv2:
+		record = new(types.OSPFv2)
+	case types.Type_NC_OSPFv3:
+		record = new(types.OSPFv3)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
