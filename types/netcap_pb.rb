@@ -676,6 +676,13 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :ChannelName, :string, 8
     optional :Fragmented, :bool, 9
   end
+  add_message "types.MPLS" do
+    optional :Timestamp, :string, 1
+    optional :Label, :int32, 2
+    optional :TrafficClass, :int32, 3
+    optional :StackBottom, :bool, 4
+    optional :TTL, :int32, 5
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -749,6 +756,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_VXLAN, 69
     value :NC_USB, 70
     value :NC_LCM, 71
+    value :NC_MPLS, 72
   end
 end
 
@@ -826,5 +834,6 @@ module Types
   VXLAN = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.VXLAN").msgclass
   USB = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.USB").msgclass
   LCM = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LCM").msgclass
+  MPLS = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.MPLS").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

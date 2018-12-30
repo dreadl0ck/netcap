@@ -75,6 +75,7 @@ var (
 		vxlanEncoder,
 		usbEncoder,
 		lcmEncoder,
+		mplsEncoder,
 	}
 )
 
