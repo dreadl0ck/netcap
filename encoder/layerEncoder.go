@@ -83,6 +83,7 @@ var (
 		greEncoder,
 		fddiEncoder,
 		eapEncoder,
+		vrrpv2Encoder,
 	}
 )
 
