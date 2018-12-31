@@ -16,7 +16,6 @@ Benchmarks:
 
 - MLDv2MulticastListenerReport
 - VRRPv2
-- FDDI
 - EAPOL + Key
 - EAP
 - CiscoDiscoveryInfo
@@ -27,6 +26,7 @@ Benchmarks:
 
 ## update documentation
 
+- FDDI
 - GRE
 - BFD
 - OSPF
