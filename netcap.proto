@@ -122,6 +122,7 @@ enum Type {
     NC_OSPFv2                      = 74;
     NC_OSPFv3                      = 75;
     NC_BFD                         = 76;
+    NC_GRE                         = 77;
 }
 
 /*
@@ -1027,4 +1028,32 @@ message BFDAuthHeader {
     int32 KeyID          = 2;
     int32 SequenceNumber = 3;
     bytes Data           = 4;
+}
+
+message GRE {
+    string       Timestamp         = 1;
+    bool         ChecksumPresent   = 2;
+    bool         RoutingPresent    = 3;
+    bool         KeyPresent        = 4;
+    bool         SeqPresent        = 5;
+    bool         StrictSourceRoute = 6;
+    bool         AckPresent        = 7;
+    int32        RecursionControl  = 8;
+    int32        Flags             = 9; 
+    int32        Version           = 10;                                    
+    int32        Protocol          = 11;                                                             
+    int32        Checksum          = 12;
+    int32        Offset            = 13;                                                   
+    uint32       Key               = 14;
+    uint32       Seq               = 15;
+    uint32       Ack               = 16;                                                           
+    GRERouting   Routing           = 17;
+}
+
+message GRERouting {
+    int32      AddressFamily        = 1;
+    int32      SREOffset            = 2;
+    int32      SRELength            = 3;
+    bytes      RoutingInformation   = 4;
+    GRERouting Next                 = 5;
 }
