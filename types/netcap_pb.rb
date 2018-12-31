@@ -763,6 +763,13 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :RoutingInformation, :bytes, 4
     optional :Next, :message, 5, "types.GRERouting"
   end
+  add_message "types.FDDI" do
+    optional :Timestamp, :string, 1
+    optional :FrameControl, :int32, 2
+    optional :Priority, :int32, 3
+    optional :SrcMAC, :string, 4
+    optional :DstMAC, :string, 5
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -842,6 +849,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_OSPFv3, 75
     value :NC_BFD, 76
     value :NC_GRE, 77
+    value :NC_FDDI, 78
   end
 end
 
@@ -927,5 +935,6 @@ module Types
   BFDAuthHeader = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.BFDAuthHeader").msgclass
   GRE = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRE").msgclass
   GRERouting = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRERouting").msgclass
+  FDDI = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.FDDI").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

@@ -123,6 +123,7 @@ enum Type {
     NC_OSPFv3                      = 75;
     NC_BFD                         = 76;
     NC_GRE                         = 77;
+    NC_FDDI                        = 78;
 }
 
 /*
@@ -1056,4 +1057,12 @@ message GRERouting {
     int32      SRELength            = 3;
     bytes      RoutingInformation   = 4;
     GRERouting Next                 = 5;
+}
+
+message FDDI {
+    string  Timestamp        = 1;
+    int32   FrameControl     = 2;
+    int32   Priority         = 3;
+    string  SrcMAC           = 4;
+    string  DstMAC           = 5;
 }

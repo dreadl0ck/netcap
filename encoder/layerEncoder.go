@@ -81,6 +81,7 @@ var (
 		ospfv3Encoder,
 		bfdEncoder,
 		greEncoder,
+		fddiEncoder,
 	}
 )
 

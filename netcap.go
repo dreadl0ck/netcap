@@ -127,6 +127,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.BFD)
 	case types.Type_NC_GRE:
 		record = new(types.GRE)
+	case types.Type_NC_FDDI:
+		record = new(types.FDDI)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
