@@ -770,6 +770,14 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :SrcMAC, :string, 4
     optional :DstMAC, :string, 5
   end
+  add_message "types.EAP" do
+    optional :Timestamp, :string, 1
+    optional :Code, :int32, 2
+    optional :Id, :int32, 3
+    optional :Length, :int32, 4
+    optional :Type, :int32, 5
+    optional :TypeData, :bytes, 6
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -850,6 +858,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_BFD, 76
     value :NC_GRE, 77
     value :NC_FDDI, 78
+    value :NC_EAP, 79
   end
 end
 
@@ -936,5 +945,6 @@ module Types
   GRE = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRE").msgclass
   GRERouting = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRERouting").msgclass
   FDDI = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.FDDI").msgclass
+  EAP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.EAP").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

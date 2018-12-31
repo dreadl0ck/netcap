@@ -124,6 +124,7 @@ enum Type {
     NC_BFD                         = 76;
     NC_GRE                         = 77;
     NC_FDDI                        = 78;
+    NC_EAP                         = 79;
 }
 
 /*
@@ -1065,4 +1066,13 @@ message FDDI {
     int32   Priority         = 3;
     string  SrcMAC           = 4;
     string  DstMAC           = 5;
+}
+
+message EAP {
+    string   Timestamp   = 1;
+    int32    Code        = 2;
+    int32    Id          = 3;
+    int32    Length      = 4;
+    int32    Type        = 5;
+    bytes    TypeData    = 6;
 }
