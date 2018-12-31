@@ -737,6 +737,32 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :SequenceNumber, :int32, 3
     optional :Data, :bytes, 4
   end
+  add_message "types.GRE" do
+    optional :Timestamp, :string, 1
+    optional :ChecksumPresent, :bool, 2
+    optional :RoutingPresent, :bool, 3
+    optional :KeyPresent, :bool, 4
+    optional :SeqPresent, :bool, 5
+    optional :StrictSourceRoute, :bool, 6
+    optional :AckPresent, :bool, 7
+    optional :RecursionControl, :int32, 8
+    optional :Flags, :int32, 9
+    optional :Version, :int32, 10
+    optional :Protocol, :int32, 11
+    optional :Checksum, :int32, 12
+    optional :Offset, :int32, 13
+    optional :Key, :uint32, 14
+    optional :Seq, :uint32, 15
+    optional :Ack, :uint32, 16
+    optional :Routing, :message, 17, "types.GRERouting"
+  end
+  add_message "types.GRERouting" do
+    optional :AddressFamily, :int32, 1
+    optional :SREOffset, :int32, 2
+    optional :SRELength, :int32, 3
+    optional :RoutingInformation, :bytes, 4
+    optional :Next, :message, 5, "types.GRERouting"
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -815,6 +841,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_OSPFv2, 74
     value :NC_OSPFv3, 75
     value :NC_BFD, 76
+    value :NC_GRE, 77
   end
 end
 
@@ -898,5 +925,7 @@ module Types
   OSPFv3 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.OSPFv3").msgclass
   BFD = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.BFD").msgclass
   BFDAuthHeader = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.BFDAuthHeader").msgclass
+  GRE = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRE").msgclass
+  GRERouting = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRERouting").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

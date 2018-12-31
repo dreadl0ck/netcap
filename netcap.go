@@ -125,6 +125,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.OSPFv3)
 	case types.Type_NC_BFD:
 		record = new(types.BFD)
+	case types.Type_NC_GRE:
+		record = new(types.GRE)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

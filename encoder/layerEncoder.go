@@ -80,6 +80,7 @@ var (
 		ospfv2Encoder,
 		ospfv3Encoder,
 		bfdEncoder,
+		greEncoder,
 	}
 )
 
