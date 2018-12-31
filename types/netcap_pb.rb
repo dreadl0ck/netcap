@@ -778,6 +778,18 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Type, :int32, 5
     optional :TypeData, :bytes, 6
   end
+  add_message "types.VRRPv2" do
+    optional :Timestamp, :string, 1
+    optional :Version, :int32, 2
+    optional :Type, :int32, 3
+    optional :VirtualRtrID, :int32, 4
+    optional :Priority, :int32, 5
+    optional :CountIPAddr, :int32, 6
+    optional :AuthType, :int32, 7
+    optional :AdverInt, :int32, 8
+    optional :Checksum, :int32, 9
+    repeated :IPAddress, :string, 10
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -859,6 +871,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_GRE, 77
     value :NC_FDDI, 78
     value :NC_EAP, 79
+    value :NC_VRRPv2, 80
   end
 end
 
@@ -946,5 +959,6 @@ module Types
   GRERouting = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRERouting").msgclass
   FDDI = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.FDDI").msgclass
   EAP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.EAP").msgclass
+  VRRPv2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.VRRPv2").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

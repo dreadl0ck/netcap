@@ -125,6 +125,7 @@ enum Type {
     NC_GRE                         = 77;
     NC_FDDI                        = 78;
     NC_EAP                         = 79;
+    NC_VRRPv2                      = 80;
 }
 
 /*
@@ -1075,4 +1076,17 @@ message EAP {
     int32    Length      = 4;
     int32    Type        = 5;
     bytes    TypeData    = 6;
+}
+
+message VRRPv2 {
+    string          Timestamp     = 1;     
+    int32           Version       = 2;  // The version field specifies the VRRP protocol version of this packet (v2)
+    int32           Type          = 3;  // The type field specifies the type of this VRRP packet.  The only type defined in v2 is ADVERTISEMENT
+    int32           VirtualRtrID  = 4;  // identifies the virtual router this packet is reporting status for
+    int32           Priority      = 5;  // specifies the sending VRRP router's priority for the virtual router (100 = default)
+    int32           CountIPAddr   = 6;  // The number of IP addresses contained in this VRRP advertisement.
+    int32           AuthType      = 7;  // identifies the authentication method being utilized
+    int32           AdverInt      = 8;  // The Advertisement interval indicates the time interval (in seconds) between ADVERTISEMENTS.  The default is 1 second
+    int32           Checksum      = 9;  // used to detect data corruption in the VRRP message.
+    repeated string IPAddress     = 10;  // one or more IP addresses associated with the virtual router. Specified in the CountIPAddr field.
 }

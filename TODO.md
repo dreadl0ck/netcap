@@ -15,9 +15,7 @@ Benchmarks:
 ## new protos
 
 - MLDv2MulticastListenerReport
-- VRRPv2
 - EAPOL + Key
-- EAP
 - CiscoDiscoveryInfo
 - CDPHello
 - CDPEnergyWise
@@ -26,6 +24,8 @@ Benchmarks:
 
 ## update documentation
 
+- VRRPv2
+- EAP
 - FDDI
 - GRE
 - BFD
@@ -35,7 +35,7 @@ Benchmarks:
 - LCM
 - USB
 - VXLAN
-- Fragment
+- Ipv6Fragment
 - IPSec
 - Geneve
 
