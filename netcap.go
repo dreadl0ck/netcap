@@ -21,7 +21,7 @@ import (
 )
 
 // Version is the current version of the netcap library
-const Version = "v0.3.6"
+const Version = "v0.3.7"
 
 // InitRecord initializes a new record of the given type
 // that conforms to the proto.Message interface
