@@ -82,6 +82,7 @@ var (
 		bfdEncoder,
 		greEncoder,
 		fddiEncoder,
+		eapEncoder,
 	}
 )
 
