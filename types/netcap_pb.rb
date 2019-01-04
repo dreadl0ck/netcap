@@ -778,6 +778,36 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Type, :int32, 5
     optional :TypeData, :bytes, 6
   end
+  add_message "types.EAPOL" do
+    optional :Timestamp, :string, 1
+    optional :Version, :int32, 2
+    optional :Type, :int32, 3
+    optional :Length, :int32, 4
+  end
+  add_message "types.EAPOLKey" do
+    optional :Timestamp, :string, 1
+    optional :KeyDescriptorType, :int32, 2
+    optional :KeyDescriptorVersion, :int32, 3
+    optional :KeyType, :int32, 4
+    optional :KeyIndex, :int32, 5
+    optional :Install, :bool, 6
+    optional :KeyACK, :bool, 7
+    optional :KeyMIC, :bool, 8
+    optional :Secure, :bool, 9
+    optional :MICError, :bool, 10
+    optional :Request, :bool, 11
+    optional :HasEncryptedKeyData, :bool, 12
+    optional :SMKMessage, :bool, 13
+    optional :KeyLength, :int32, 14
+    optional :ReplayCounter, :uint64, 15
+    optional :Nonce, :bytes, 16
+    optional :IV, :bytes, 17
+    optional :RSC, :uint64, 18
+    optional :ID, :uint64, 19
+    optional :MIC, :bytes, 20
+    optional :KeyDataLength, :int32, 21
+    optional :EncryptedKeyData, :bytes, 22
+  end
   add_message "types.VRRPv2" do
     optional :Timestamp, :string, 1
     optional :Version, :int32, 2
@@ -872,6 +902,8 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_FDDI, 78
     value :NC_EAP, 79
     value :NC_VRRPv2, 80
+    value :NC_EAPOL, 81
+    value :NC_EAPOLKey, 82
   end
 end
 
@@ -959,6 +991,8 @@ module Types
   GRERouting = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRERouting").msgclass
   FDDI = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.FDDI").msgclass
   EAP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.EAP").msgclass
+  EAPOL = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.EAPOL").msgclass
+  EAPOLKey = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.EAPOLKey").msgclass
   VRRPv2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.VRRPv2").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

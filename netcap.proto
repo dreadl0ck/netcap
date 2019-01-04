@@ -126,6 +126,8 @@ enum Type {
     NC_FDDI                        = 78;
     NC_EAP                         = 79;
     NC_VRRPv2                      = 80;
+    NC_EAPOL                       = 81;
+    NC_EAPOLKey                    = 82;              
 }
 
 /*
@@ -1069,6 +1071,7 @@ message FDDI {
     string  DstMAC           = 5;
 }
 
+// EAP defines an Extensible Authentication Protocol (rfc 3748) layer.
 message EAP {
     string   Timestamp   = 1;
     int32    Code        = 2;
@@ -1076,6 +1079,40 @@ message EAP {
     int32    Length      = 4;
     int32    Type        = 5;
     bytes    TypeData    = 6;
+}
+
+// EAPOL defines an EAP over LAN (802.1x) layer.
+message EAPOL {
+    string   Timestamp  = 1;;
+    int32    Version    = 2;
+    int32    Type       = 3;
+    int32    Length     = 4;
+}
+
+// EAPOLKey defines an EAPOL-Key frame for 802.1x authentication
+message EAPOLKey {
+    string    Timestamp            = 1;
+    int32     KeyDescriptorType    = 2;
+    int32     KeyDescriptorVersion = 3;
+    int32     KeyType              = 4;
+    int32     KeyIndex             = 5;
+    bool      Install              = 6;
+    bool      KeyACK               = 7;
+    bool      KeyMIC               = 8;
+    bool      Secure               = 9;
+    bool      MICError             = 10; 
+    bool      Request              = 11;                                    
+    bool      HasEncryptedKeyData  = 12;                                                             
+    bool      SMKMessage           = 13;
+    int32     KeyLength            = 14;                                                   
+    uint64    ReplayCounter        = 15;
+    bytes     Nonce                = 16;
+    bytes     IV                   = 17;                                                           
+    uint64    RSC                  = 18;
+    uint64    ID                   = 19;
+    bytes     MIC                  = 20;
+    int32     KeyDataLength        = 21;
+    bytes     EncryptedKeyData     = 22;
 }
 
 message VRRPv2 {
