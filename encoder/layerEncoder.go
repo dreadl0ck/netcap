@@ -84,6 +84,8 @@ var (
 		fddiEncoder,
 		eapEncoder,
 		vrrpv2Encoder,
+		eapolEncoder,
+		eapolkeyEncoder,
 	}
 )
 
