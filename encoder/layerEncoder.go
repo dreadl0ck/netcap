@@ -20,7 +20,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/dreadl0ck/netcap"
@@ -117,28 +116,6 @@ type (
 		out      string
 	}
 )
-
-/*
- *	Initialization
- */
-
-// package level init
-func init() {
-
-	// collect all names for layer encoders on startup
-	for _, e := range layerEncoderSlice {
-		allEncoderNames[e.Layer.String()] = struct{}{}
-	}
-
-	// get system block size for use as the buffer size of the buffered Writers
-	var stat syscall.Statfs_t
-	if err := syscall.Statfs("/", &stat); err != nil {
-		panic(err)
-	}
-
-	// set block size
-	BlockSize = int(stat.Bsize)
-}
 
 // InitLayerEncoders initializes all layer encoders
 func InitLayerEncoders(c Config) {
