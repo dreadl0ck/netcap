@@ -1,5 +1,9 @@
 # TODOs
 
+Linux cross compilation:
+- CC=x86_64-pc-linux-gcc GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -i github.com/dreadl0ck/netcap/cmd
+- GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -ldflags="-L /usr/local/opt/libpcap/lib" -i github.com/dreadl0ck/netcap/cmd
+
 - add ascii cast
 - README
 
@@ -15,7 +19,6 @@ Benchmarks:
 ## new protos
 
 - MLDv2MulticastListenerReport
-- EAPOL + Key
 - CiscoDiscoveryInfo
 - CDPHello
 - CDPEnergyWise
@@ -24,6 +27,7 @@ Benchmarks:
 
 ## update documentation
 
+- EAPOL + Key
 - VRRPv2
 - EAP
 - FDDI
