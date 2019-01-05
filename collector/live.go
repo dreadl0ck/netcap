@@ -1,5 +1,3 @@
-// +build darwin, windows
-
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) 2017 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
