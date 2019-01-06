@@ -1,0 +1,142 @@
+builds:
+- 
+  main: ./cmd/
+  binary: netcap
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+    # - arm
+    # - arm64
+    # - 386
+  
+  # List of combinations of GOOS + GOARCH + GOARM to ignore.
+  # Default is empty.
+  # ignore:
+  #   - goos: windows
+  #     goarch: 386
+  #   - goos: darwin
+  #     goarch: 386
+    # - goos: linux
+    #   goarch: arm
+    #   goarm: 7
+
+  # Hooks can be used to customize the final binary,
+  # for example, to run generators.
+  # Default is both hooks empty.
+  hooks:
+    # this hook is used to compile the linux version in a docker container
+    post: zeus build-all-linux-docker
+    #pre: rice embed-go
+- 
+  main: ./label/cmd/
+  binary: netlabel
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+    - arm
+    - arm64
+- 
+  main: ./server
+  binary: netcap-server
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+    - arm
+    - arm64
+- 
+  main: ./sensor
+  binary: netcap-sensor
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+    - arm
+    - arm64
+
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+
+brew:
+  github:
+    owner: dreadl0ck
+    name: homebrew-formulas
+  homepage: "https://github.com/dreadl0ck/netcap"
+  description: "A framework for secure and scalable network traffic analysis"
+
+# archive:
+#   files:
+#     - dist/linux_amd64/**/*
+
+# before:
+#   hooks:
+    # you may remove this if you don't use vgo
+    #- go mod download
+    # you may remove this if you don't need go generate
+    #- go generate ./...
