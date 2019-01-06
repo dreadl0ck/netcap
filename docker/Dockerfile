@@ -1,17 +1,22 @@
+# Lets use the latest debian image from the go authors
 FROM golang:stretch
 
+# make sure packet lists are up to date
 RUN apt-get update
-#RUN apt-cache search libpcap
+
+# use this to search for available libs
+# RUN apt-cache search libpcap
+
+# install libpcap
 RUN apt-get install -y libpcap-dev
-RUN echo "pwd:$(pwd)"
+
+RUN echo "working dir: $(pwd)"
+
+# get the NETCAP source
 RUN go get -v -u github.com/dreadl0ck/netcap/...
-RUN go build -o nc-linux -i github.com/dreadl0ck/netcap/cmd
 
-# run container
-# docker build .
-
-# get container id
-# docker ps -a
-
-# extract binary from container
-# docker cp {CONTAINER_ID}:/go/nc-linux .
+# build all the things.
+RUN go build -o netcap -i github.com/dreadl0ck/netcap/cmd
+RUN go build -o netlabel -i github.com/dreadl0ck/netcap/label/cmd
+RUN go build -o netcap-sensor -i github.com/dreadl0ck/netcap/sensor
+RUN go build -o netcap-server -i github.com/dreadl0ck/netcap/server

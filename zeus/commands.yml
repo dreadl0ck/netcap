@@ -12,6 +12,8 @@ language: bash
 
 # globals for all commands
 globals:
+    # NETCAP version
+    VERSION: 0.3.8
 
 # command data
 commands:
@@ -21,7 +23,37 @@ commands:
         dependencies:
             - clean
         buildNumber: true
-        exec: go build -o bin/netcap -i github.com/dreadl0ck/netcap/cmd
+        exec: |
+            echo "generating netcap binary v${VERSION}"
+            go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/netcap -i github.com/dreadl0ck/netcap/cmd
+
+    build-all-linux-docker:
+        description: build all framework binaries for linux inside a docker container
+        help: used to compile for linux on macOS because cross compilation is a pain with CGO
+        dependencies:
+            - clean
+
+    release:
+        description: release a new version, bundle and publish on github
+        dependencies:
+            - gen-version
+            - check-version
+        exec: goreleaser release --rm-dist
+
+    release-test:
+        description: test run to release a new version
+        dependencies:
+            - gen-version
+            - check-version
+        exec: goreleaser release --rm-dist --skip-publish --skip-validate #--debug
+    
+    check-version:
+        description: checks wheter the version from the latest git tag matches the one set here
+        exec: |
+            if [[ $(git describe --abbrev=0) != "v${VERSION}" ]]; then
+                echo "[ERROR] latest git tag does not match version $VERSION"
+                exit 1
+            fi
 
     clean:
         description: clean up to prepare for build
@@ -37,19 +69,19 @@ commands:
         description: install to $PATH
         buildNumber: true
         help: Install the application to the default system location
-        exec: go build -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
 
     install-netlabel:
         description: install to $PATH
         buildNumber: true
         help: Install the netlabel application to the default system location
-        exec: go build -o $(go env GOPATH)/bin/netlabel -i github.com/dreadl0ck/netcap/label/cmd
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/netlabel -i github.com/dreadl0ck/netcap/label/cmd
 
     install-race:
         description: install a netcap build with race detection enabled
         buildNumber: true
         help: Install the race build to the default system location
-        exec: go build -race -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
         
     cloc:
         description: count lines of code for the project
@@ -63,9 +95,16 @@ commands:
     install-sensor:
         description: install to $PATH
         help: Install the netcap sensor to the default system location
-        exec: go build -o $(go env GOPATH)/bin/netcap-sensor -i github.com/dreadl0ck/netcap/sensor
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/netcap-sensor -i github.com/dreadl0ck/netcap/sensor
 
     install-server:
         description: install to $PATH
         help: Install the netcap server to the default system location
-        exec: go build -o $(go env GOPATH)/bin/netcap-server -i github.com/dreadl0ck/netcap/server
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/netcap-server -i github.com/dreadl0ck/netcap/server
+
+    # the version defined in the globals section will be set via ldflags on each build
+    # to ensure the correct version is also set for installation via go get
+    # a version.go file is generated on each release with the corresponding version number
+    gen-version:
+        description: generate the version.go file
+        exec: echo -e "package netcap\n\nvar Version = \"v${VERSION}\"" > version.go

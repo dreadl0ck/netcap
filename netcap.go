@@ -20,9 +20,6 @@ import (
 	proto "github.com/golang/protobuf/proto"
 )
 
-// Version is the current version of the netcap library
-const Version = "v0.3.8"
-
 // InitRecord initializes a new record of the given type
 // that conforms to the proto.Message interface
 // if netcap is extended with new audit records they need to be added here as well
