@@ -128,6 +128,8 @@ enum Type {
     NC_VRRPv2                      = 80;
     NC_EAPOL                       = 81;
     NC_EAPOLKey                    = 82;              
+    NC_CiscoDiscovery              = 83;
+    NC_CiscoDiscoveryInfo          = 84;
 }
 
 /*
@@ -1126,4 +1128,122 @@ message VRRPv2 {
     int32           AdverInt      = 8;  // The Advertisement interval indicates the time interval (in seconds) between ADVERTISEMENTS.  The default is 1 second
     int32           Checksum      = 9;  // used to detect data corruption in the VRRP message.
     repeated string IPAddress     = 10;  // one or more IP addresses associated with the virtual router. Specified in the CountIPAddr field.
+}
+
+message CiscoDiscovery {
+    string                       Timestamp   = 1;
+    int32                        Version     = 2;
+    int32                        TTL         = 3;
+    int32                        Checksum    = 4;
+    repeated CiscoDiscoveryValue Values      = 5;
+}
+
+message CiscoDiscoveryValue {
+    int32 Type     = 1;
+    int32 Length   = 2;
+    bytes Value    = 3;
+}
+
+message CDPVLANDialogue {
+    int32  ID     = 1;
+    int32  VLAN   = 2;
+}
+
+message CDPLocation {
+    int32   Type       = 1; // Undocumented
+    string  Location   = 2;
+}
+
+message CDPPowerDialogue {
+    int32    ID       = 1;
+    int32    MgmtID   = 2;
+    repeated uint32  Values   = 3;
+} 
+
+message CDPSparePairPoE {
+    bool  PSEFourWire  = 1; // Supported / Not supported
+    bool  PDArchShared = 2; // Shared / Independent
+    bool  PDRequestOn  = 3; // On / Off
+    bool  PSEOn        = 4; // On / Off
+}
+
+message CiscoDiscoveryInfo {
+    string                         Timestamp           = 1;
+    CDPHello                       CDPHello            = 2;
+    string                         DeviceID            = 3;
+    repeated string                Addresses           = 4;
+    string                         PortID              = 5;
+    CDPCapabilities                Capabilities        = 6;
+    string                         Version             = 7;
+    string                         Platform            = 8;
+    repeated IPNet                 IPPrefixes          = 9;
+    string                         VTPDomain           = 10; 
+    int32                          NativeVLAN          = 11;                                    
+    bool                           FullDuplex          = 12;                                                             
+    CDPVLANDialogue                VLANReply           = 13;
+    CDPVLANDialogue                VLANQuery           = 14;                                                   
+    int32                          PowerConsumption    = 15;
+    uint32                         MTU                 = 16;
+    int32                          ExtendedTrust       = 17;                                                           
+    int32                          UntrustedCOS        = 18;
+    string                         SysName             = 19;
+    string                         SysOID              = 20;
+    repeated string                MgmtAddresses       = 21;
+    CDPLocation                    Location            = 22;
+    CDPPowerDialogue               PowerRequest        = 23;
+    CDPPowerDialogue               PowerAvailable      = 24;
+    CDPSparePairPoE                SparePairPoe        = 25;
+    CDPEnergyWise                  EnergyWise          = 26;
+    repeated CiscoDiscoveryValue   Unknown             = 27;
+}
+
+message CDPHello {
+    bytes          OUI               = 1;
+    int32         ProtocolID         = 2;
+    string         ClusterMaster     = 3;
+    string         Unknown1          = 4;
+    int32           Version          = 5;
+    int32           SubVersion       = 6;
+    int32           Status           = 7;
+    int32           Unknown2         = 8;
+    string         ClusterCommander  = 9;
+    string         SwitchMAC         = 10;
+    int32           Unknown3         = 11;
+    int32         ManagementVLAN     = 12;
+}
+
+message CDPEnergyWise {
+    bytes       EncryptedData   = 1;
+    uint32      Unknown1        = 2;
+    uint32      SequenceNumber  = 3;
+    string      ModelNumber     = 4;
+    int32      Unknown2         = 5;
+    string      HardwareID      = 6;
+    string      SerialNum       = 7;
+    bytes       Unknown3        = 8;
+    string      Role            = 9;
+    string      Domain          = 10;
+    string      Name            = 11;
+    bytes       ReplyUnknown1   = 12;
+    bytes       ReplyPort       = 13;
+    bytes       ReplyAddress    = 14;
+    bytes       ReplyUnknown2   = 15;
+    bytes       ReplyUnknown3   = 16;
+}
+
+message CDPCapabilities {
+    bool     L3Router         = 1;
+    bool     TBBridge         = 2;
+    bool     SPBridge         = 3;
+    bool     L2Switch         = 4;
+    bool     IsHost           = 5;
+    bool     IGMPFilter       = 6;
+    bool     L1Repeater       = 7;
+    bool     IsPhone          = 8;
+    bool     RemotelyManaged  = 9;
+}
+
+message IPNet {
+    string    IP      = 1;     // network number
+    string    IPMask  = 2;     // network mask
 }

@@ -820,6 +820,113 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Checksum, :int32, 9
     repeated :IPAddress, :string, 10
   end
+  add_message "types.CiscoDiscovery" do
+    optional :Timestamp, :string, 1
+    optional :Version, :int32, 2
+    optional :TTL, :int32, 3
+    optional :Checksum, :int32, 4
+    repeated :Values, :message, 5, "types.CiscoDiscoveryValue"
+  end
+  add_message "types.CiscoDiscoveryValue" do
+    optional :Type, :int32, 1
+    optional :Length, :int32, 2
+    optional :Value, :bytes, 3
+  end
+  add_message "types.CDPVLANDialogue" do
+    optional :ID, :int32, 1
+    optional :VLAN, :int32, 2
+  end
+  add_message "types.CDPLocation" do
+    optional :Type, :int32, 1
+    optional :Location, :string, 2
+  end
+  add_message "types.CDPPowerDialogue" do
+    optional :ID, :int32, 1
+    optional :MgmtID, :int32, 2
+    repeated :Values, :uint32, 3
+  end
+  add_message "types.CDPSparePairPoE" do
+    optional :PSEFourWire, :bool, 1
+    optional :PDArchShared, :bool, 2
+    optional :PDRequestOn, :bool, 3
+    optional :PSEOn, :bool, 4
+  end
+  add_message "types.CiscoDiscoveryInfo" do
+    optional :Timestamp, :string, 1
+    optional :CDPHello, :message, 2, "types.CDPHello"
+    optional :DeviceID, :string, 3
+    repeated :Addresses, :string, 4
+    optional :PortID, :string, 5
+    optional :Capabilities, :message, 6, "types.CDPCapabilities"
+    optional :Version, :string, 7
+    optional :Platform, :string, 8
+    repeated :IPPrefixes, :message, 9, "types.IPNet"
+    optional :VTPDomain, :string, 10
+    optional :NativeVLAN, :int32, 11
+    optional :FullDuplex, :bool, 12
+    optional :VLANReply, :message, 13, "types.CDPVLANDialogue"
+    optional :VLANQuery, :message, 14, "types.CDPVLANDialogue"
+    optional :PowerConsumption, :int32, 15
+    optional :MTU, :uint32, 16
+    optional :ExtendedTrust, :int32, 17
+    optional :UntrustedCOS, :int32, 18
+    optional :SysName, :string, 19
+    optional :SysOID, :string, 20
+    repeated :MgmtAddresses, :string, 21
+    optional :Location, :message, 22, "types.CDPLocation"
+    optional :PowerRequest, :message, 23, "types.CDPPowerDialogue"
+    optional :PowerAvailable, :message, 24, "types.CDPPowerDialogue"
+    optional :SparePairPoe, :message, 25, "types.CDPSparePairPoE"
+    optional :EnergyWise, :message, 26, "types.CDPEnergyWise"
+    repeated :Unknown, :message, 27, "types.CiscoDiscoveryValue"
+  end
+  add_message "types.CDPHello" do
+    optional :OUI, :bytes, 1
+    optional :ProtocolID, :int32, 2
+    optional :ClusterMaster, :string, 3
+    optional :Unknown1, :string, 4
+    optional :Version, :int32, 5
+    optional :SubVersion, :int32, 6
+    optional :Status, :int32, 7
+    optional :Unknown2, :int32, 8
+    optional :ClusterCommander, :string, 9
+    optional :SwitchMAC, :string, 10
+    optional :Unknown3, :int32, 11
+    optional :ManagementVLAN, :int32, 12
+  end
+  add_message "types.CDPEnergyWise" do
+    optional :EncryptedData, :bytes, 1
+    optional :Unknown1, :uint32, 2
+    optional :SequenceNumber, :uint32, 3
+    optional :ModelNumber, :string, 4
+    optional :Unknown2, :int32, 5
+    optional :HardwareID, :string, 6
+    optional :SerialNum, :string, 7
+    optional :Unknown3, :bytes, 8
+    optional :Role, :string, 9
+    optional :Domain, :string, 10
+    optional :Name, :string, 11
+    optional :ReplyUnknown1, :bytes, 12
+    optional :ReplyPort, :bytes, 13
+    optional :ReplyAddress, :bytes, 14
+    optional :ReplyUnknown2, :bytes, 15
+    optional :ReplyUnknown3, :bytes, 16
+  end
+  add_message "types.CDPCapabilities" do
+    optional :L3Router, :bool, 1
+    optional :TBBridge, :bool, 2
+    optional :SPBridge, :bool, 3
+    optional :L2Switch, :bool, 4
+    optional :IsHost, :bool, 5
+    optional :IGMPFilter, :bool, 6
+    optional :L1Repeater, :bool, 7
+    optional :IsPhone, :bool, 8
+    optional :RemotelyManaged, :bool, 9
+  end
+  add_message "types.IPNet" do
+    optional :IP, :string, 1
+    optional :IPMask, :string, 2
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -904,6 +1011,8 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_VRRPv2, 80
     value :NC_EAPOL, 81
     value :NC_EAPOLKey, 82
+    value :NC_CiscoDiscovery, 83
+    value :NC_CiscoDiscoveryInfo, 84
   end
 end
 
@@ -994,5 +1103,16 @@ module Types
   EAPOL = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.EAPOL").msgclass
   EAPOLKey = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.EAPOLKey").msgclass
   VRRPv2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.VRRPv2").msgclass
+  CiscoDiscovery = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CiscoDiscovery").msgclass
+  CiscoDiscoveryValue = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CiscoDiscoveryValue").msgclass
+  CDPVLANDialogue = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPVLANDialogue").msgclass
+  CDPLocation = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPLocation").msgclass
+  CDPPowerDialogue = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPPowerDialogue").msgclass
+  CDPSparePairPoE = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPSparePairPoE").msgclass
+  CiscoDiscoveryInfo = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CiscoDiscoveryInfo").msgclass
+  CDPHello = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPHello").msgclass
+  CDPEnergyWise = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPEnergyWise").msgclass
+  CDPCapabilities = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPCapabilities").msgclass
+  IPNet = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPNet").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

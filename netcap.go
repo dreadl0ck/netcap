@@ -134,6 +134,10 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.EAPOL)
 	case types.Type_NC_EAPOLKey:
 		record = new(types.EAPOLKey)
+	case types.Type_NC_CiscoDiscovery:
+		record = new(types.CiscoDiscovery)
+	case types.Type_NC_CiscoDiscoveryInfo:
+		record = new(types.CiscoDiscoveryInfo)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
