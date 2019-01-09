@@ -85,6 +85,8 @@ var (
 		vrrpv2Encoder,
 		eapolEncoder,
 		eapolkeyEncoder,
+		ciscoDiscoveryEncoder,
+		ciscoDiscoveryInfoEncoder,
 	}
 )
 
