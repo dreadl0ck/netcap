@@ -14,8 +14,8 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
+// HTTP labels http.
 func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-
 	var (
 		fname       = filepath.Join(outDir, file)
 		total       = netcap.Count(fname)

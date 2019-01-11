@@ -27,6 +27,7 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
+// LinkFlow labels LinkFlows.
 func LinkFlow(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 
 	// @TODO:

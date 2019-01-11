@@ -28,12 +28,14 @@ import (
 )
 
 var (
-	UseProgressBars   = false
+	// UseProgressBars whether to use the progress bar
+	UseProgressBars = false
+	// ClassificationMap map of classifications
 	ClassificationMap = make(map[string]int)
 	excluded          = make(map[string]bool)
 )
 
-// SetExcluded takes a comma separated list of strings to exclude from labeling
+// SetExcluded takes a comma separated list of strings to exclude from labeling.
 func SetExcluded(arg string) {
 	if arg != "" {
 		if strings.Contains(arg, ",") {
@@ -51,8 +53,7 @@ func SetExcluded(arg string) {
 	}
 }
 
-func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) {
-
+func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) error {
 	// only add to summary if labels were added and no progress bars are being used
 	if labelsTotal != 0 && !UseProgressBars {
 		fmt.Println(" + " + utils.Pad(filepath.Base(f.Name()), 40) + "labels: " + strconv.Itoa(labelsTotal))
@@ -62,28 +63,24 @@ func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, o
 		progress.Finish()
 	}
 
-	err := r.Close()
-	if err != nil {
-		panic(err)
+	if err := r.Close(); err != nil {
+		return err
 	}
 
-	err = f.Sync()
-	if err != nil {
-		panic(err)
+	if err := f.Sync(); err != nil {
+		return err
 	}
 
-	err = f.Close()
-	if err != nil {
-		panic(err)
+	if err := f.Close(); err != nil {
+		return err
 	}
 
 	// remove file that did not have any matching labels
 	if labelsTotal == 0 {
-		err := os.Remove(outFileName)
-		if err != nil {
-			panic(err)
+		if err := os.Remove(outFileName); err != nil {
+			return err
 		}
 	}
-
 	wg.Done()
+	return nil
 }

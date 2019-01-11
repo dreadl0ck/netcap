@@ -22,21 +22,20 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
-
-	"github.com/evilsocket/islazy/tui"
 
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/utils"
 	humanize "github.com/dustin/go-humanize"
+	"github.com/evilsocket/islazy/tui"
 	"github.com/google/gopacket"
 	"github.com/mgutz/ansi"
 )
 
-// Collector provides an interface to collect data from PCAP or a network interface
+// Collector provides an interface to collect data from PCAP or a network interface.
 type Collector struct {
-
 	// input channels for the worker pool
 	workers []chan gopacket.Packet
 
@@ -77,7 +76,7 @@ type Collector struct {
 	config *Config
 }
 
-// New returns a new Collector instance
+// New returns a new Collector instance.
 func New(config Config) *Collector {
 	return &Collector{
 		next:                1,
@@ -90,7 +89,7 @@ func New(config Config) *Collector {
 	}
 }
 
-// stopWorkers halts all workers
+// stopWorkers halts all workers.
 func (c *Collector) stopWorkers() {
 	// wait until all packets have been decoded
 	for _, w := range c.workers {
@@ -100,9 +99,8 @@ func (c *Collector) stopWorkers() {
 	}
 }
 
-// cleanup before leaving. closes all buffers and displays stats
+// cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup() {
-
 	c.statMutex.Lock()
 	c.wg.Wait()
 	c.statMutex.Unlock()
@@ -149,7 +147,7 @@ func (c *Collector) cleanup() {
 }
 
 // handleSignals catches signals and runs the cleanup
-// SIGQUIT is not catched, to allow debugging by producing a stack and goroutine trace
+// SIGQUIT is not catched, to allow debugging by producing a stack and goroutine trace.
 func (c *Collector) handleSignals() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -164,9 +162,8 @@ func (c *Collector) handleSignals() {
 }
 
 // to decode incoming packets in parallel
-// they are passed to several worker goroutines in round robin style
+// they are passed to several worker goroutines in round robin style.
 func (c *Collector) handlePacket(p gopacket.Packet) {
-
 	// make it work for 1 worker only
 	// if len(c.workers) == 1 {
 	// 	c.workers[0] <- p
@@ -185,7 +182,7 @@ func (c *Collector) handlePacket(p gopacket.Packet) {
 	}
 }
 
-// print errors to stdout in red
+// print errors to stdout in red.
 func (c *Collector) printErrors() {
 	c.errorMap.Lock()
 	if len(c.errorMap.Items) > 0 {
@@ -198,9 +195,8 @@ func (c *Collector) printErrors() {
 	c.errorMap.Unlock()
 }
 
-// closes the logfile for errors
+// closes the logfile for errors.
 func (c *Collector) closeErrorLogFile() {
-
 	// append  stats
 	var stats string
 	for msg, count := range c.errorMap.Items {
@@ -225,9 +221,8 @@ func (c *Collector) closeErrorLogFile() {
 	}
 }
 
-// Stats prints collector statistics
+// Stats prints collector statistics.
 func (c *Collector) Stats() {
-
 	rows := [][]string{}
 
 	for k, v := range c.allProtosAtomic.Items {
@@ -260,18 +255,16 @@ func (c *Collector) Stats() {
 	}
 }
 
-// updates the progress indicator and writes to stdout
+// updates the progress indicator and writes to stdout.
 func (c *Collector) printProgress() {
-
 	// must be locked, otherwise a race occurs when sending a SIGINT
 	//  and triggering wg.Wait() in another goroutine...
 	c.statMutex.Lock()
 	c.wg.Add(1)
 	c.statMutex.Unlock()
+	atomic.AddInt64(&c.current, 1)
 
-	c.current++
 	if c.current%10000 == 0 {
-
 		// using a strings.Builder for assembling string for performance
 		// TODO: could be refactored to use a byte slice with a fixed length instead
 		var b strings.Builder
@@ -290,9 +283,8 @@ func (c *Collector) printProgress() {
 }
 
 // Init sets up the collector and starts the configured number of workers
-// must be called prior to usage of the collector instance
-func (c *Collector) Init() {
-
+// must be called prior to usage of the collector instance.
+func (c *Collector) Init() error {
 	// start workers
 	c.workers = c.initWorkers()
 	fmt.Println("spawned", c.config.Workers, "workers")
@@ -304,7 +296,7 @@ func (c *Collector) Init() {
 	if c.config.EncoderConfig.Out != "" {
 		err := os.MkdirAll(c.config.EncoderConfig.Out, 0755)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
@@ -327,6 +319,7 @@ func (c *Collector) Init() {
 	var err error
 	c.errorLogFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.log"))
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }

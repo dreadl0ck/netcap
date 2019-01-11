@@ -27,9 +27,8 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
-// IPv6 labels type NC_IPv6
+// IPv6 labels type NC_IPv6.
 func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-
 	var (
 		fname       = filepath.Join(outDir, "IPv6.ncap.gz")
 		total       = netcap.Count(fname)
