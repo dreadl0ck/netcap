@@ -15,7 +15,6 @@ package collector
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -23,21 +22,21 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
+	"github.com/pkg/errors"
 )
 
 // close errors.pcap and unknown.pcap
-func (c *Collector) closePcapFiles() {
-
+func (c *Collector) closePcapFiles() error {
 	// unknown.pcap
 
 	err := c.unkownPcapWriterBuffered.Flush()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	i, err := c.unknownPcapFile.Stat()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// if file is empty, or a pcap with just the header
@@ -45,55 +44,51 @@ func (c *Collector) closePcapFiles() {
 		//println("removing", fd.Name())
 		err := os.Remove(c.unknownPcapFile.Name())
 		if err != nil {
-			fmt.Println("failed to remove file:", c.unknownPcapFile.Name(), err)
+			return errors.Wrap(err, "failed to remove file: "+c.unknownPcapFile.Name())
 		}
 	}
 
-	var (
-		errSync  = c.unknownPcapFile.Sync()
-		errClose = c.unknownPcapFile.Close()
-	)
-	if errSync != nil || errClose != nil {
-		fmt.Println("error while closing", i.Name(), "errSync", errSync, "errClose", errClose)
+	if err := c.unknownPcapFile.Sync(); err != nil {
+		return err
+	}
+	if err := c.unknownPcapFile.Close(); err != nil {
+		return err
 	}
 
 	// errors.pcap
 
-	err = c.errorsPcapWriterBuffered.Flush()
-	if err != nil {
-		panic(err)
+	if err := c.errorsPcapWriterBuffered.Flush(); err != nil {
+		return err
 	}
 
 	i, err = c.errorsPcapFile.Stat()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// if file is empty, or a pcap with just the header
 	if i.Size() == 0 || i.Size() == 24 {
 		//println("removing", fd.Name())
-		err := os.Remove(c.errorsPcapFile.Name())
-		if err != nil {
-			fmt.Println("failed to remove file:", c.errorsPcapFile.Name(), err)
+		if err := os.Remove(c.errorsPcapFile.Name()); err != nil {
+			return err
 		}
 	}
-
-	errSync = c.errorsPcapFile.Sync()
-	errClose = c.errorsPcapFile.Close()
-	if errSync != nil || errClose != nil {
-		fmt.Println("error while closing", i.Name(), "errSync", errSync, "errClose", errClose)
+	if err := c.errorsPcapFile.Sync(); err != nil {
+		return err
 	}
+	if err := c.errorsPcapFile.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
-// create unknown.pcap file for packets with unknown layers
-func (c *Collector) createUnknownPcap() {
-
+// create unknown.pcap file for packets with unknown layers.
+func (c *Collector) createUnknownPcap() error {
 	var err error
-
 	// Open output pcap file and write header
 	c.unknownPcapFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "unknown.pcap"))
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	c.unkownPcapWriterBuffered = bufio.NewWriterSize(c.unknownPcapFile, encoder.BlockSize)
@@ -101,18 +96,19 @@ func (c *Collector) createUnknownPcap() {
 
 	// set global pcap writer
 	c.unkownPcapWriterAtomic = NewAtomicPcapGoWriter(pcapWriter)
-	pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet)
+	if err := pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
+		return err
+	}
+	return nil
 }
 
 // create errors.pcap file for errors
-func (c *Collector) createErrorsPcap() {
-
+func (c *Collector) createErrorsPcap() error {
 	var err error
-
 	// Open output pcap file and write header
 	c.errorsPcapFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.pcap"))
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	c.errorsPcapWriterBuffered = bufio.NewWriterSize(c.errorsPcapFile, encoder.BlockSize)
@@ -120,23 +116,23 @@ func (c *Collector) createErrorsPcap() {
 
 	// set global pcap writer
 	c.errorsPcapWriterAtomic = NewAtomicPcapGoWriter(pcapWriter)
-	pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet)
-}
-
-// write a packet to the unknown.pcap file
-// if WriteUnknownPackets is set in the config
-func (c *Collector) writePacketToUnknownPcap(p gopacket.Packet) {
-	if c.config.WriteUnknownPackets {
-		err := c.unkownPcapWriterAtomic.WritePacket(p.Metadata().CaptureInfo, p.Data())
-		if err != nil {
-			panic(err)
-		}
+	if err := pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
+		return err
 	}
+	return nil
 }
 
-// logPacketError handles an error when decoding a packet
-func (c *Collector) logPacketError(p gopacket.Packet, err string) {
+// writePacketToUnknownPcap writse a packet to the unknown.pcap file
+// if WriteUnknownPackets is set in the config.
+func (c *Collector) writePacketToUnknownPcap(p gopacket.Packet) error {
+	if c.config.WriteUnknownPackets {
+		return c.unkownPcapWriterAtomic.WritePacket(p.Metadata().CaptureInfo, p.Data())
+	}
+	return nil
+}
 
+// logPacketError handles an error when decoding a packet.
+func (c *Collector) logPacketError(p gopacket.Packet, err string) error {
 	// increment errorMap stats
 	c.errorMap.Inc(err)
 
@@ -144,13 +140,10 @@ func (c *Collector) logPacketError(p gopacket.Packet, err string) {
 	c.errorLogFile.WriteString(p.Metadata().Timestamp.String() + "\nError: " + err + "\nPacket:\n" + p.Dump() + "\n")
 
 	// write packet to errors.pcap
-	c.writePacketToErrorsPcap(p)
+	return c.writePacketToErrorsPcap(p)
 }
 
-// write a packet to the errors.pcap file
-func (c *Collector) writePacketToErrorsPcap(p gopacket.Packet) {
-	err := c.errorsPcapWriterAtomic.WritePacket(p.Metadata().CaptureInfo, p.Data())
-	if err != nil {
-		panic(err)
-	}
+// writePacketToErrorsPcap writes a packet to the errors.pcap file.
+func (c *Collector) writePacketToErrorsPcap(p gopacket.Packet) error {
+	return c.errorsPcapWriterAtomic.WritePacket(p.Metadata().CaptureInfo, p.Data())
 }

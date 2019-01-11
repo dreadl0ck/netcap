@@ -171,7 +171,9 @@ func main() {
 	// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
 	// setting BPF filters is not yet supported by the pcapgo package
 	if *flagBPF != "" {
-		c.CollectBPF(*flagInput, *flagBPF)
+		if err := c.CollectBPF(*flagInput, *flagBPF); err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 

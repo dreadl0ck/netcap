@@ -19,9 +19,8 @@ import (
 )
 
 // worker spawns a new worker goroutine
-// and returns a channel for receiving input packets
+// and returns a channel for receiving input packets.
 func (c *Collector) worker() chan gopacket.Packet {
-
 	// init channel to receive input packets
 	chanInput := make(chan gopacket.Packet, c.config.PacketBufferSize)
 
@@ -52,7 +51,6 @@ func (c *Collector) worker() chan gopacket.Packet {
 
 				// iterate over all layers
 				for _, layer := range p.Layers() {
-
 					c.allProtosAtomic.Inc(layer.LayerType().String())
 
 					// check if packet contains an unknown layer
