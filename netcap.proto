@@ -130,6 +130,10 @@ enum Type {
     NC_EAPOLKey                    = 82;              
     NC_CiscoDiscovery              = 83;
     NC_CiscoDiscoveryInfo          = 84;
+    NC_LSA                         = 85;
+    NC_LSUpdate                    = 86;
+    NC_LSReq                       = 87;
+    NC_LinkLSA                     = 88;
 }
 
 /*
@@ -1246,4 +1250,45 @@ message CDPCapabilities {
 message IPNet {
     string    IP      = 1;     // network number
     string    IPMask  = 2;     // network mask
+}
+
+message LSA {
+    string  Timestamp   = 1;
+    int32   LSAge       = 2;
+    int32   LSType      = 3;
+    uint32  LinkStateID = 4;
+    uint32  AdvRouter   = 5;
+    uint32  LSSeqNumber = 6;
+    int32   LSChecksum  = 7;
+    int32   Length      = 8;
+    int32   LSOptions   = 9;
+}
+
+message LSReq {
+    string  Timestamp    = 1;
+    int32   LSType       = 2;    
+    uint32  LSID         = 3;      
+    uint32  AdvRouter    = 4; 
+}
+
+message LSUpdate {
+    string         Timestamp  = 1;
+    uint32         NumOfLSAs  = 2;
+    repeated LSA   LSAs       = 3;
+}
+
+message LinkLSA {
+    string              Timestamp        = 1;
+    int32               RtrPriority      = 2;
+    uint32              Options          = 3;
+    bytes               LinkLocalAddress = 4;
+    uint32              NumOfPrefixes    = 5;
+    repeated LSAPrefix  Prefixes         = 6;
+}
+
+message LSAPrefix {
+    int32  PrefixLength  = 1;
+    int32  PrefixOptions = 2;
+    int32  Metric        = 3;
+    bytes  AddressPrefix = 4;
 }

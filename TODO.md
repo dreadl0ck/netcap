@@ -1,5 +1,9 @@
 # TODOs
 
+- add OSPF LSA data to audit records
+- log encoding errors for merged packets
+- fix GRE Routing
+
 Linux cross compilation:
 - CC=x86_64-pc-linux-gcc GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -i github.com/dreadl0ck/netcap/cmd
 - GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -ldflags="-L /usr/local/opt/libpcap/lib" -i github.com/dreadl0ck/netcap/cmd
@@ -19,14 +23,12 @@ Benchmarks:
 ## new protos
 
 - MLDv2MulticastListenerReport
-- CiscoDiscoveryInfo
-- CDPHello
-- CDPEnergyWise
 - ASExternalLSA
-- LSA
 
 ## update documentation
 
+- LSA
+- CiscoDiscoveryInfo
 - EAPOL + Key
 - VRRPv2
 - EAP
