@@ -69,9 +69,8 @@ func TimeToUTC(val string) string {
 			return err.Error()
 		}
 		return time.Unix(seconds, micro*1000).UTC().String()
-	} else {
-		return "invalid timestamp: " + val
 	}
+	return "invalid timestamp: " + val
 }
 
 // func decodemac(pkt []byte) uint64 {

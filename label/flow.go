@@ -28,9 +28,8 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
-// Flows labels type NC_Flow
+// Flows labels type NC_Flow.
 func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-
 	var (
 		fname       = filepath.Join(outDir, "Flow.ncap.gz")
 		total       = netcap.Count(fname)

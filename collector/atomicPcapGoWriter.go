@@ -15,6 +15,7 @@ package collector
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcapgo"
@@ -25,27 +26,22 @@ import (
 //////////////////////////
 
 // AtomicPcapGoWriter is a symchronized PCAP writer
-// that counts the number of packets written
+// that counts the number of packets written.
 type AtomicPcapGoWriter struct {
 	count int64
 	w     pcapgo.Writer
 	sync.Mutex
 }
 
-// WritePacket writes a packet into the writer
+// WritePacket writes a packet into the writer.
 func (a *AtomicPcapGoWriter) WritePacket(ci gopacket.CaptureInfo, data []byte) error {
-
 	// sync
 	a.Lock()
-
-	a.count++
-
-	// write data
 	err := a.w.WritePacket(ci, data)
-
 	// dont use a defer here for performance
 	a.Unlock()
 
+	atomic.AddInt64(&a.count, 1)
 	return err
 }
 
