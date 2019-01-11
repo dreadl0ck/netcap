@@ -927,6 +927,42 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :IP, :string, 1
     optional :IPMask, :string, 2
   end
+  add_message "types.LSA" do
+    optional :Timestamp, :string, 1
+    optional :LSAge, :int32, 2
+    optional :LSType, :int32, 3
+    optional :LinkStateID, :uint32, 4
+    optional :AdvRouter, :uint32, 5
+    optional :LSSeqNumber, :uint32, 6
+    optional :LSChecksum, :int32, 7
+    optional :Length, :int32, 8
+    optional :LSOptions, :int32, 9
+  end
+  add_message "types.LSReq" do
+    optional :Timestamp, :string, 1
+    optional :LSType, :int32, 2
+    optional :LSID, :uint32, 3
+    optional :AdvRouter, :uint32, 4
+  end
+  add_message "types.LSUpdate" do
+    optional :Timestamp, :string, 1
+    optional :NumOfLSAs, :uint32, 2
+    repeated :LSAs, :message, 3, "types.LSA"
+  end
+  add_message "types.LinkLSA" do
+    optional :Timestamp, :string, 1
+    optional :RtrPriority, :int32, 2
+    optional :Options, :uint32, 3
+    optional :LinkLocalAddress, :bytes, 4
+    optional :NumOfPrefixes, :uint32, 5
+    repeated :Prefixes, :message, 6, "types.LSAPrefix"
+  end
+  add_message "types.LSAPrefix" do
+    optional :PrefixLength, :int32, 1
+    optional :PrefixOptions, :int32, 2
+    optional :Metric, :int32, 3
+    optional :AddressPrefix, :bytes, 4
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -1013,6 +1049,10 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_EAPOLKey, 82
     value :NC_CiscoDiscovery, 83
     value :NC_CiscoDiscoveryInfo, 84
+    value :NC_LSA, 85
+    value :NC_LSUpdate, 86
+    value :NC_LSReq, 87
+    value :NC_LinkLSA, 88
   end
 end
 
@@ -1114,5 +1154,10 @@ module Types
   CDPEnergyWise = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPEnergyWise").msgclass
   CDPCapabilities = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPCapabilities").msgclass
   IPNet = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPNet").msgclass
+  LSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSA").msgclass
+  LSReq = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSReq").msgclass
+  LSUpdate = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSUpdate").msgclass
+  LinkLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LinkLSA").msgclass
+  LSAPrefix = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSAPrefix").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

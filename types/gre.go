@@ -68,6 +68,11 @@ func (a GRE) NetcapTimestamp() string {
 }
 
 func (r *GRERouting) GetString() string {
+
+	if r == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(begin)

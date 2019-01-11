@@ -65,11 +65,17 @@ func (lldsc *LLDPSysCapabilities) ToString() string {
 
 func (lldma *LLDPMgmtAddress) ToString() string {
 	var b strings.Builder
-	b.WriteString(formatInt32(lldma.Subtype) + "/")                            // int32   // byte
-	b.WriteString(hex.EncodeToString(lldma.Address) + "/")                     // bytes
-	b.WriteString(formatInt32(lldma.InterfaceSubtype) + "/")                   // int32   // byte
-	b.WriteString(strconv.FormatUint(uint64(lldma.InterfaceNumber), 10) + "/") // uint32
-	b.WriteString(lldma.OID + "/")                                             // string
+	b.WriteString(begin)
+	b.WriteString(formatInt32(lldma.Subtype)) // int32   // byte
+	b.WriteString(sep)
+	b.WriteString(hex.EncodeToString(lldma.Address)) // bytes
+	b.WriteString(sep)
+	b.WriteString(formatInt32(lldma.InterfaceSubtype)) // int32   // byte
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatUint(uint64(lldma.InterfaceNumber), 10)) // uint32
+	b.WriteString(sep)
+	b.WriteString(lldma.OID) // string
+	b.WriteString(end)
 	return b.String()
 }
 
@@ -77,7 +83,9 @@ func (lldst *LLDPOrgSpecificTLV) ToString() string {
 	var b strings.Builder
 	b.WriteString(begin)
 	b.WriteString(strconv.FormatUint(uint64(lldst.OUI), 10))
+	b.WriteString(sep)
 	b.WriteString(formatInt32(lldst.SubType))
+	b.WriteString(sep)
 	b.WriteString(hex.EncodeToString(lldst.Info))
 	b.WriteString(end)
 	return b.String()
@@ -87,7 +95,9 @@ func (lldv *LinkLayerDiscoveryValue) ToString() string {
 	var b strings.Builder
 	b.WriteString(begin)
 	b.WriteString(formatInt32(lldv.Type))
+	b.WriteString(sep)
 	b.WriteString(formatInt32(lldv.Length))
+	b.WriteString(sep)
 	b.WriteString(hex.EncodeToString(lldv.Value))
 	b.WriteString(end)
 	return b.String()
@@ -96,16 +106,26 @@ func (lldv *LinkLayerDiscoveryValue) ToString() string {
 func (c *LLDPCapabilities) ToString() string {
 	var b strings.Builder
 	b.WriteString(begin)
-	b.WriteString(strconv.FormatBool(c.Other) + "/")
-	b.WriteString(strconv.FormatBool(c.Repeater) + "/")
-	b.WriteString(strconv.FormatBool(c.Bridge) + "/")
-	b.WriteString(strconv.FormatBool(c.WLANAP) + "/")
-	b.WriteString(strconv.FormatBool(c.Router) + "/")
-	b.WriteString(strconv.FormatBool(c.Phone) + "/")
-	b.WriteString(strconv.FormatBool(c.DocSis) + "/")
-	b.WriteString(strconv.FormatBool(c.StationOnly) + "/")
-	b.WriteString(strconv.FormatBool(c.CVLAN) + "/")
-	b.WriteString(strconv.FormatBool(c.SVLAN) + "/")
+	b.WriteString(strconv.FormatBool(c.Other))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.Repeater))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.Bridge))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.WLANAP))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.Router))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.Phone))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.DocSis))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.StationOnly))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.CVLAN))
+	b.WriteString(sep)
+	b.WriteString(strconv.FormatBool(c.SVLAN))
+	b.WriteString(sep)
 	b.WriteString(strconv.FormatBool(c.TMPR))
 	b.WriteString(end)
 	return b.String()

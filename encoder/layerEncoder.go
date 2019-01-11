@@ -87,6 +87,10 @@ var (
 		eapolkeyEncoder,
 		ciscoDiscoveryEncoder,
 		ciscoDiscoveryInfoEncoder,
+		// linkLsaEncoder,
+		// lsaEncoder,
+		// lsReqEncoder,
+		// lsUpdateEncoder,
 	}
 )
 
@@ -116,6 +120,8 @@ type (
 		csv      bool
 		buffer   bool
 		out      string
+
+		teardownMerged func()
 	}
 )
 
@@ -202,10 +208,46 @@ func InitLayerEncoders(c Config) {
 			}
 		}
 
-		// add to layer encoders map
-		LayerEncoders[e.Layer] = e
+		// check if an encoder for the specified layertype exists
+		if existing, ok := LayerEncoders[e.Layer]; ok {
+			// wrap it
+			LayerEncoders[e.Layer] = mergeEncoders(existing, e)
+		} else {
+			// add to layer encoders map
+			LayerEncoders[e.Layer] = e
+		}
 	}
 	fmt.Println("initialized", len(LayerEncoders), "layer encoders | buffer size:", BlockSize)
+}
+
+// merge two encoders to a dummy encoder
+// that simply calls both encoders after one another
+// this is done to allow several encoders for the same gopacket.LayerType
+// while being able to handle different versions of the same protocol separately
+// it was introduced for the OSPFv2 and v3 encoders
+func mergeEncoders(first, second *LayerEncoder) *LayerEncoder {
+
+	merged := CreateLayerEncoder(first.Type, first.Layer, func(layer gopacket.Layer, timestamp string) proto.Message {
+		err := first.Encode(layer, utils.StringToTime(timestamp))
+		if err != nil {
+			// @TODO log errors to logfile
+			// c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error())
+		}
+		err = second.Encode(layer, utils.StringToTime(timestamp))
+		if err != nil {
+			// @TODO log errors to logfile
+			// c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error())
+		}
+		return nil
+	})
+
+	merged.teardownMerged = func() {
+		// TODO add to stats somehow
+		first.Destroy()
+		second.Destroy()
+	}
+
+	return merged
 }
 
 // CreateLayerEncoder returns a new LayerEncoder instance
@@ -244,6 +286,10 @@ func (d *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
 // Init initializes and configures the encoder
 func (d *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
 
+	fmt.Println("INIT", d.Type, d.Layer)
+
+	protocol := strings.TrimPrefix(d.Type.String(), "NC_")
+
 	d.compress = compress
 	d.buffer = buffer
 	d.csv = csv
@@ -253,9 +299,9 @@ func (d *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bo
 
 		// create file
 		if compress {
-			d.file = CreateFile(filepath.Join(out, d.Layer.String()), ".csv.gz")
+			d.file = CreateFile(filepath.Join(out, protocol), ".csv.gz")
 		} else {
-			d.file = CreateFile(filepath.Join(out, d.Layer.String()), ".csv")
+			d.file = CreateFile(filepath.Join(out, protocol), ".csv")
 		}
 
 		if buffer {
@@ -288,9 +334,9 @@ func (d *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bo
 		d.cWriter = newChanWriter()
 	} else {
 		if compress {
-			d.file = CreateFile(filepath.Join(out, d.Layer.String()), ".ncap.gz")
+			d.file = CreateFile(filepath.Join(out, protocol), ".ncap.gz")
 		} else {
-			d.file = CreateFile(filepath.Join(out, d.Layer.String()), ".ncap")
+			d.file = CreateFile(filepath.Join(out, protocol), ".ncap")
 		}
 	}
 
@@ -329,11 +375,14 @@ func (d *LayerEncoder) GetChan() <-chan []byte {
 
 // Destroy closes and flushes all writers
 func (d *LayerEncoder) Destroy() (name string, size int64) {
+	if d.teardownMerged != nil {
+		d.teardownMerged()
+	}
 	if d.compress {
 		CloseGzipWriters(d.gWriter)
 	}
 	if d.buffer {
 		FlushWriters(d.bWriter)
 	}
-	return CloseFile(d.out, d.file, d.Layer.String())
+	return CloseFile(d.out, d.file, strings.TrimPrefix("NC_", d.Type.String()))
 }

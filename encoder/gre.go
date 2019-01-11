@@ -39,18 +39,25 @@ var greEncoder = CreateLayerEncoder(types.Type_NC_GRE, layers.LayerTypeGRE, func
 			Key:               uint32(gre.Key),
 			Seq:               uint32(gre.Seq),
 			Ack:               uint32(gre.Ack),
-			Routing:           encodeGRERouting(gre.AddressFamily, gre.SREOffset, gre.SRELength, gre.RoutingInformation, gre.Next),
+			// @TODO: DEBUG nil pointer exception when acessing gre.Next
+			// Routing: encodeGRERouting(gre.AddressFamily, gre.SREOffset, gre.SRELength, gre.RoutingInformation, nil),
 		}
 	}
 	return nil
 })
 
 func encodeGRERouting(AddressFamily uint16, SREOffset, SRELength uint8, RoutingInformation []byte, next *layers.GRERouting) *types.GRERouting {
+
+	var r *types.GRERouting
+	if next != nil {
+		r = encodeGRERouting(next.AddressFamily, next.SREOffset, next.SRELength, next.RoutingInformation, next.Next)
+	}
+
 	return &types.GRERouting{
 		AddressFamily:      int32(AddressFamily),
 		SREOffset:          int32(SREOffset),
 		SRELength:          int32(SRELength),
 		RoutingInformation: RoutingInformation,
-		Next:               encodeGRERouting(next.AddressFamily, next.SREOffset, next.SRELength, next.RoutingInformation, next.Next),
+		Next:               r,
 	}
 }
