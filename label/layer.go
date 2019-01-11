@@ -27,11 +27,11 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
+// CollectLabels indicates whether labels should be collected
 var CollectLabels bool
 
-// Layer labels packets of a given gopacket.LayerType string
+// Layer labels packets of a given gopacket.LayerType string.
 func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-
 	var (
 		fname       = filepath.Join(outDir, file)
 		total       = netcap.Count(fname)

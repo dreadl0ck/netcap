@@ -15,12 +15,9 @@ package main
 
 import (
 	"flag"
-
-	"github.com/sirupsen/logrus"
 )
 
 var (
-	Log   = logrus.New()
 	count int64
 
 	flagBPF          = flag.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")

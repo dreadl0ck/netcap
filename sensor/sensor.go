@@ -109,7 +109,10 @@ func main() {
 	})
 
 	// initialize batching
-	chans, handle := c.InitBatching(*flagMaxSize, *flagBPF, *flagInterface)
+	chans, handle, err := c.InitBatching(*flagMaxSize, *flagBPF, *flagInterface)
+	if err != nil {
+		panic(err)
+	}
 
 	// close handle on exit
 	defer handle.Close()

@@ -22,29 +22,29 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
-// BatchInfo contains information about a Batch source
+// BatchInfo contains information about a Batch source.
 type BatchInfo struct {
 	Type types.Type
 	Chan <-chan []byte
 }
 
 // InitBatching initializes batching mode and returns an array of Batchinfos and the pcap handle
-// closing the handle must be done by the caller
-func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInfo, *pcap.Handle) {
+// closing the handle must be done by the caller.
+func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInfo, *pcap.Handle, error) {
 
 	var chans = []BatchInfo{}
 
 	// open live handle
 	handle, err := pcap.OpenLive(in, 1024, true, 30*time.Minute)
 	if err != nil {
-		panic(err)
+		return chans, nil, err
 	}
 
 	// set BPF if requested
 	if bpf != "" {
 		err := handle.SetBPFFilter(bpf)
 		if err != nil {
-			panic(err)
+			return chans, nil, err
 		}
 	}
 
@@ -52,7 +52,10 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 	ps := gopacket.NewPacketSource(handle, handle.LinkType())
 
 	// init collector
-	c.Init()
+	err = c.Init()
+	if err != nil {
+		return chans, nil, err
+	}
 
 	// set live mode
 	encoder.LiveMode = true
@@ -92,5 +95,5 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 		})
 	}
 
-	return chans, handle
+	return chans, handle, nil
 }

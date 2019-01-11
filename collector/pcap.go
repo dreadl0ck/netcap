@@ -25,11 +25,11 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
+	"github.com/pkg/errors"
 )
 
-// openPcap opens pcap files
+// openPcap opens pcap files.
 func openPcap(file string) (*pcapgo.Reader, *os.File, error) {
-
 	// get file handle
 	f, err := os.Open(file)
 	if err != nil {
@@ -41,7 +41,6 @@ func openPcap(file string) (*pcapgo.Reader, *os.File, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-
 	return r, f, nil
 }
 
@@ -66,12 +65,11 @@ func IsPcap(file string) (bool, error) {
 }
 
 // countPackets returns the number of packets in a PCAP file
-func countPackets(path string) (count int64) {
-
+func countPackets(path string) (count int64, err error) {
 	// get reader and file handle
 	r, f, err := openPcap(path)
 	if err != nil {
-		panic(err)
+		return
 	}
 	defer f.Close()
 
@@ -89,16 +87,15 @@ func countPackets(path string) (count int64) {
 		count++
 	}
 
-	return count
+	return
 }
 
-// CollectPcap implements parallel decoding of incoming packets
-func (c *Collector) CollectPcap(path string) {
-
+// CollectPcap implements parallel decoding of incoming packets.
+func (c *Collector) CollectPcap(path string) error {
 	// stat input file
-	stat, errStat := os.Stat(path)
-	if errStat != nil {
-		log.Fatal("failed to open file", errStat)
+	stat, err := os.Stat(path)
+	if err != nil {
+		return errors.Wrap(err, "failed to open file")
 	}
 
 	// file exists.
@@ -111,18 +108,23 @@ func (c *Collector) CollectPcap(path string) {
 	// display total packet count
 	print("counting packets...")
 	start := time.Now()
-	c.numPackets = countPackets(path)
+	c.numPackets, err = countPackets(path)
+	if err != nil {
+		return err
+	}
 	clearLine()
 	fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
 	r, f, err := openPcap(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer f.Close()
 
 	// initialize collector
-	c.Init()
+	if err := c.Init(); err != nil {
+		return err
+	}
 
 	print("decoding packets... ")
 	for {
@@ -134,7 +136,7 @@ func (c *Collector) CollectPcap(path string) {
 			if err == io.EOF {
 				break
 			}
-			log.Fatal("Error reading packet data: ", err)
+			return errors.Wrap(err, "Error reading packet data: ")
 		}
 
 		// show progress
@@ -159,4 +161,5 @@ func (c *Collector) CollectPcap(path string) {
 		c.handlePacket(p)
 	}
 	c.cleanup()
+	return nil
 }

@@ -11,10 +11,9 @@ var ngFile = "../pcaps/Monday-WorkingHours.pcapng"
 var pcapFile = "../pcaps/maccdc2012_00000.pcap"
 
 func BenchmarkReadPcapNG(b *testing.B) {
-
 	r, f, err := openPcapNG(ngFile)
 	if err != nil {
-		panic(err)
+		b.Fatal(err)
 	}
 	defer f.Close()
 
@@ -23,16 +22,15 @@ func BenchmarkReadPcapNG(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		_, _, err := r.ReadPacketData()
 		if err != nil {
-			break
+			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadPcapNGZeroCopy(b *testing.B) {
-
 	r, f, err := openPcapNG(ngFile)
 	if err != nil {
-		panic(err)
+		b.Fatal(err)
 	}
 	defer f.Close()
 
@@ -41,31 +39,32 @@ func BenchmarkReadPcapNGZeroCopy(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		_, _, err := r.ZeroCopyReadPacketData()
 		if err != nil {
-			break
+			b.Fatal(err)
 		}
 	}
 }
 
-func openPcapFile(file string) (*pcapgo.Reader, *os.File) {
-
+func openPcapFile(file string) (*pcapgo.Reader, *os.File, error) {
 	// get file handle
 	f, err := os.Open(file)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
 	// try to create pcap reader
 	r, err := pcapgo.NewReader(f)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
-	return r, f
+	return r, f, nil
 }
 
 func BenchmarkReadPcap(b *testing.B) {
-
-	r, f := openPcapFile(pcapFile)
+	r, f, err := openPcapFile(pcapFile)
+	if err != nil {
+		b.Fatal(err)
+	}
 	defer f.Close()
 
 	b.ReportAllocs()
@@ -73,7 +72,7 @@ func BenchmarkReadPcap(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		_, _, err := r.ReadPacketData()
 		if err != nil {
-			break
+			b.Fatal(err)
 		}
 	}
 }

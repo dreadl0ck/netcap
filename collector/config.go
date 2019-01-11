@@ -16,7 +16,7 @@ package collector
 import "github.com/dreadl0ck/netcap/encoder"
 
 // Config contains configuration parameters
-// for the Collector instance
+// for the Collector instance.
 type Config struct {
 	Live                bool
 	WriteUnknownPackets bool

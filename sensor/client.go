@@ -21,15 +21,15 @@ import (
 )
 
 // sendUDP wraps the whole functionality of a UDP client that sends
-// a message and currently does not wait for a reply
-func sendUDP(ctx context.Context, address string, reader io.Reader) (err error) {
+// a message and currently does not wait for a reply.
+func sendUDP(ctx context.Context, address string, reader io.Reader) error {
 
 	// in case a hostname is specified
 	// resolve the UDP address so that we can make use of DialUDP
 	// with an actual IP and port instead of a name
 	raddr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Although we're not in a connection-oriented transport,
@@ -39,7 +39,7 @@ func sendUDP(ctx context.Context, address string, reader io.Reader) (err error) 
 	//   to and from a specific remote address.
 	conn, err := net.DialUDP("udp", nil, raddr)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Closes the underlying file descriptor associated with the,
@@ -72,5 +72,5 @@ func sendUDP(ctx context.Context, address string, reader io.Reader) (err error) 
 	case err = <-doneChan:
 	}
 
-	return
+	return err
 }

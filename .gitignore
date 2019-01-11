@@ -8,3 +8,5 @@ zeus/.history
 zeus/dumps
 priv.key
 pub.key
+
+dist/

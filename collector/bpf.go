@@ -21,26 +21,28 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/pkg/errors"
 )
 
-// CollectBPF open the named PCAP file and sets the specified BPF filter
-func (c *Collector) CollectBPF(path string, bpf string) {
+// CollectBPF open the named PCAP file and sets the specified BPF filter.
+func (c *Collector) CollectBPF(path string, bpf string) error {
 
 	handle, err := pcap.OpenOffline(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer handle.Close()
 
-	err = handle.SetBPFFilter(bpf)
-	if err != nil {
-		panic(err)
+	if err = handle.SetBPFFilter(bpf); err != nil {
+		return err
 	}
 
-	c.Init()
+	if err = c.Init(); err != nil {
+		return err
+	}
 
 	// read packets
-	print("decoding packets... ")
+	log.Println("decoding packets... ")
 	for {
 
 		// fetch the next packetdata and packetheader
@@ -49,7 +51,7 @@ func (c *Collector) CollectBPF(path string, bpf string) {
 			if err == io.EOF {
 				break
 			}
-			log.Fatal("Error reading packet data: ", err)
+			return errors.Wrap(err, "Error reading packet data")
 		}
 
 		c.printProgress()
@@ -68,4 +70,5 @@ func (c *Collector) CollectBPF(path string, bpf string) {
 		c.handlePacket(p)
 	}
 	c.cleanup()
+	return nil
 }
