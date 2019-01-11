@@ -27,9 +27,8 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
-// UDP labels type NC_UDP
+// UDP labels type NC_UDP.
 func UDP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-
 	var (
 		fname       = filepath.Join(outDir, "UDP.ncap.gz")
 		total       = netcap.Count(fname)

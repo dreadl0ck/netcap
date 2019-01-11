@@ -34,7 +34,6 @@ type Reader struct {
 
 // Open a file
 func Open(file string) (*Reader, error) {
-
 	r := &Reader{}
 
 	h, err := os.Open(file)
@@ -80,7 +79,6 @@ func (r *Reader) Next(msg proto.Message) error {
 
 // ReadHeader reads the file header
 func (r *Reader) ReadHeader() *types.Header {
-
 	// read netcap header
 	var (
 		header = new(types.Header)

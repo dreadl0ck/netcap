@@ -25,7 +25,6 @@ var (
 )
 
 func main() {
-
 	// parse flags
 	flag.Parse()
 

@@ -23,7 +23,6 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/mgutz/ansi"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 var logo = `                       / |
@@ -38,10 +37,6 @@ var logo = `                       / |
 Network Protocol Analysis Framework               00 |
 created by Philipp Mieden, 2018                   00/
 ` + netcap.Version
-
-func init() {
-	Log.Formatter = &prefixed.TextFormatter{}
-}
 
 func printLogo() {
 	utils.ClearScreen()
