@@ -17,7 +17,7 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/kythe/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/delimited"
 )
 
 /////////////////////////////

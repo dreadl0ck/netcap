@@ -16,6 +16,7 @@ package collector
 import (
 	"fmt"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -24,21 +25,21 @@ import (
 	"golang.org/x/net/bpf"
 )
 
-// print live statistics
+// printProgressLive prints live statistics.
 func (c *Collector) printProgressLive() {
-
 	// must be locked, otherwise a race occurs when sending a SIGINT and triggering wg.Wait() in another goroutine...
 	c.statMutex.Lock()
 	c.wg.Add(1)
 	c.statMutex.Unlock()
 
-	c.current++
+	atomic.AddInt64(&c.current, 1)
 	if c.current%1000 == 0 {
 		clearLine()
 		fmt.Print("running since ", time.Since(c.start), ", captured ", c.current, " packets...")
 	}
 }
 
+// DumpProto prints a protobuff Message.
 func DumpProto(pb proto.Message) {
 	println(proto.MarshalTextString(pb))
 }
@@ -47,52 +48,10 @@ func clearLine() {
 	print("\033[2K\r")
 }
 
-// func dumpMap(m map[string]int64, padding int) string {
-// 	var res string
-// 	for k, v := range m {
-// 		res += pad(k, padding) + ": " + fmt.Sprint(v) + "\n"
-// 	}
-// 	return res
-// }
-
-// // pad the input string up to the given number of space characters
-// func pad(in string, length int) string {
-// 	if len(in) < length {
-// 		return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
-// 	}
-// 	return in
-// }
-
-// func ip2int(ip net.IP) uint32 {
-// 	if len(ip) == 16 {
-// 		return binary.BigEndian.Uint32(ip[12:16])
-// 	}
-// 	return binary.BigEndian.Uint32(ip)
-// }
-
-// func int2ip(nn uint32) net.IP {
-// 	ip := make(net.IP, 4)
-// 	binary.BigEndian.PutUint32(ip, nn)
-// 	return ip
-// }
-
 func share(current, total int64) string {
 	percent := (float64(current) / float64(total)) * 100
 	return strconv.FormatFloat(percent, 'f', 5, 64) + "%"
 }
-
-// // creates an md5 hash with the timestamp of the packet and all packet data
-// // and returns a hex string
-// // currently not in use
-// func (c *Collector) calcPacketID(p gopacket.Packet) string {
-
-// 	var out []byte
-// 	for _, b := range md5.Sum(append([]byte(p.Metadata().Timestamp.String()), p.Data()...)) {
-// 		out = append(out, b)
-// 	}
-
-// 	return hex.EncodeToString(out)
-// }
 
 func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 	// use pcap bpf compiler to get raw bpf instruction

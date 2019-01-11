@@ -28,9 +28,8 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
-// TCP labels type NC_TCP
+// TCP labels type NC_TCP.
 func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-
 	var (
 		fname       = filepath.Join(outDir, "TCP.ncap.gz")
 		total       = netcap.Count(fname)

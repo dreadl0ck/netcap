@@ -27,6 +27,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
+	"github.com/pkg/errors"
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
@@ -67,8 +68,7 @@ type SuricataAlert struct {
 // a directory named after the input file is created, all suricata logs go there
 // if no output directory is specified, netcap audit records are expected in the current directory.
 // otherwise audit records are expected in the output directory
-func Suricata(inputPcap string, outputPath string, useDescription bool, separator, selection string) {
-
+func Suricata(inputPcap string, outputPath string, useDescription bool, separator, selection string) error {
 	start := time.Now()
 
 	// directory for suricata logs
@@ -77,15 +77,25 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	if _, err := os.Stat(logDir); err != nil {
 		// does not exist
 		// make sure suricata log dir exists
-		err := os.Mkdir(logDir, 0755)
-		if err != nil {
-			panic(err)
+		if os.IsNotExist(err) {
+			if err := os.Mkdir(logDir, 0755); err != nil {
+				return err
+			}
+		} else {
+			return err
 		}
+
 	} else {
 		// clean suricata logfiles from previous runs
-		os.Remove(logDir + "/fast.log")
-		os.Remove(logDir + "/eve.json")
-		os.Remove(logDir + "/stats.log")
+		if err := os.Remove(logDir + "/fast.log"); err != nil {
+			return err
+		}
+		if err := os.Remove(logDir + "/eve.json"); err != nil {
+			return err
+		}
+		if err := os.Remove(logDir + "/stats.log"); err != nil {
+			return err
+		}
 	}
 
 	fmt.Println("scanning", inputPcap, "with suricata...")
@@ -93,7 +103,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	// call suricata to scan dump file
 	out, err := exec.Command("suricata", "-c", "/usr/local/etc/suricata/suricata.yaml", "-r", inputPcap, "-l", logDir).CombinedOutput()
 	if err != nil {
-		panic(err.Error() + "output: " + string(out))
+		return errors.Wrap(err, "Error with output: "+string(out))
 	}
 
 	// get path for logfile
@@ -115,11 +125,15 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	// read fast.log contents
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// extract alerts
-	labelMap, labels := ParseSuricataFastLog(contents, useDescription)
+	labelMap, labels, err := ParseSuricataFastLog(contents, useDescription)
+	if err != nil {
+		return err
+	}
+
 	if len(labels) == 0 {
 		fmt.Println("no labels found.")
 		os.Exit(0)
@@ -149,7 +163,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	// first read directory
 	files, err := ioutil.ReadDir(outDir)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var (
@@ -159,12 +173,8 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 
 	// iterate over all files in dir
 	for _, f := range files {
-
 		// check if its an audit record file
 		if strings.HasSuffix(f.Name(), ".ncap.gz") || strings.HasSuffix(f.Name(), ".ncap") {
-
-			// fmt.Println("spawning worker for", filename)
-
 			wg.Add(1)
 
 			var (
@@ -216,10 +226,9 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 		time.Sleep(3 * time.Second)
 
 		// start pool
-		var errPool error
-		pool, errPool = pb.StartPool(pbs...)
-		if errPool != nil {
-			panic(errPool)
+		pool, err = pb.StartPool(pbs...)
+		if err != nil {
+			return err
 		}
 		utils.ClearScreen()
 	}
@@ -232,11 +241,11 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	}
 
 	fmt.Println("\ndone in", time.Since(start))
+	return nil
 }
 
-// ParseSuricataFastLog returns labels for a given suricata fast.log contents
-func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[string]*SuricataAlert, arr []*SuricataAlert) {
-
+// ParseSuricataFastLog returns labels for a given suricata fast.log contents.
+func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[string]*SuricataAlert, arr []*SuricataAlert, err error) {
 	fmt.Println("parsing suricata fast.log")
 
 	if len(excluded) != 0 {
@@ -261,9 +270,10 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 
 			// parse timestamp
 			// important: parse in current location
-			t, err := time.ParseInLocation(suricataTS, l[:26], time.Local)
+			var t = time.Time{}
+			t, err = time.ParseInLocation(suricataTS, l[:26], time.Local)
 			if err != nil {
-				panic(err)
+				return
 			}
 
 			// extract protocol name
@@ -275,29 +285,31 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 			// extract values
 			flowSlice := strings.Split(flow, " -> ")
 			if len(flowSlice) != 2 {
-				panic("invalid flow: " + flow)
+				return labelMap, arr, errors.New("invalid flow: " + flow)
 			}
 
 			// split string for source
 			srcSlice := strings.Split(flowSlice[0], ":")
 			if len(srcSlice) != 2 {
-				panic("invalid source: " + flowSlice[0])
+				return labelMap, arr, errors.New("invalid source: " + flowSlice[0])
 			}
 
 			// split string for destination
 			dstSlice := strings.Split(flowSlice[1], ":")
 			if len(dstSlice) != 2 {
-				panic("invalid destination: " + flowSlice[1])
+				return labelMap, arr, errors.New("invalid destination: " + flowSlice[1])
 			}
 
 			// convert ports to integers
-			srcport, err := strconv.Atoi(srcSlice[1])
+			var srcport int
+			srcport, err = strconv.Atoi(srcSlice[1])
 			if err != nil {
-				panic(err)
+				return
 			}
-			dstport, err := strconv.Atoi(dstSlice[1])
+			var dstport int
+			dstport, err = strconv.Atoi(dstSlice[1])
 			if err != nil {
-				panic(err)
+				return
 			}
 
 			// get description
@@ -306,6 +318,7 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 				count        int
 				dStart, dEnd int
 			)
+
 			for i, c := range dRaw {
 				if c == ']' {
 					count++
@@ -391,5 +404,5 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 
 	fmt.Println(len(duplicates), "alerts ignored in labelMap")
 
-	return labelMap, arr
+	return labelMap, arr, nil
 }

@@ -1,14 +1,7 @@
-# Lets use the latest debian image from the go authors
-FROM golang:stretch
-
-# make sure packet lists are up to date
-RUN apt-get update
-
-# use this to search for available libs
-# RUN apt-cache search libpcap
+FROM golang:1.11-alpine
 
 # install libpcap
-RUN apt-get install -y libpcap-dev
+RUN apk update && apk add libpcap-dev git build-base && rm -rf /var/cache/apk/*
 
 RUN echo "working dir: $(pwd)"
 
