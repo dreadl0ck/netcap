@@ -19,10 +19,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dreadl0ck/netcap/encoder"
 	humanize "github.com/dustin/go-humanize"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	"github.com/pkg/errors"
 )
@@ -118,26 +115,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 			return errors.Wrap(err, "Error reading packet data")
 		}
 
-		// show progress
-		c.printProgress()
-
-		// create a new gopacket with lazy decoding
-		// base layer is currently Ethernet
-		// TODO make base layer configurable
-		p := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Lazy)
-		p.Metadata().Timestamp = ci.Timestamp
-		p.Metadata().CaptureInfo = ci
-
-		// if HTTP capture is desired, tcp stream reassembly needs to be performed.
-		// the gopacket/reassembly implementation does not allow packets to arrive out of order
-		// therefore the http decoding must not happen in a worker thread
-		// and instead be performed here to guarantee packets are being processed sequentially
-		if encoder.HTTPActive {
-			encoder.DecodeHTTP(p)
-		}
-
-		// pass packet to a worker routine
-		c.handlePacket(p)
+		c.handleRawPacketData(data, ci)
 	}
 	c.cleanup()
 	return nil

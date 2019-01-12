@@ -43,10 +43,10 @@ func (a OSPFv2) CSVRecord() []string {
 		lsreqs []string
 	)
 	for _, l := range a.LSAs {
-		lsas = append(lsas, l.ToString())
+		lsas = append(lsas, toString(l))
 	}
 	for _, l := range a.LSR {
-		lsreqs = append(lsreqs, l.ToString())
+		lsreqs = append(lsreqs, toString(l))
 	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
@@ -88,7 +88,7 @@ func (r RouterLSAV2) ToString() string {
 
 	var routers []string
 	for _, e := range r.Routers {
-		routers = append(routers, e.ToString())
+		routers = append(routers, toString(e))
 	}
 
 	var b strings.Builder
@@ -126,7 +126,7 @@ func (r RouterLSA) ToString() string {
 
 	var routers []string
 	for _, e := range r.Routers {
-		routers = append(routers, e.ToString())
+		routers = append(routers, toString(e))
 	}
 
 	var b strings.Builder
@@ -214,7 +214,7 @@ func (r LinkLSA) ToString() string {
 
 	var prefixes []string
 	for _, p := range r.Prefixes {
-		prefixes = append(prefixes, p.ToString())
+		prefixes = append(prefixes, toString(p))
 	}
 
 	var b strings.Builder
@@ -238,7 +238,7 @@ func (r IntraAreaPrefixLSA) ToString() string {
 
 	var prefixes []string
 	for _, p := range r.Prefixes {
-		prefixes = append(prefixes, p.ToString())
+		prefixes = append(prefixes, toString(p))
 	}
 
 	var b strings.Builder
@@ -300,25 +300,25 @@ func (l LSA) ToString() string {
 
 	b.WriteString(begin)
 
-	b.WriteString(l.Header.ToString()) // *LSAheader
+	b.WriteString(toString(l.Header)) // *LSAheader
 	b.WriteString(sep)
-	b.WriteString(l.RLSAV2.ToString()) // *RouterLSAV2
+	b.WriteString(toString(l.RLSAV2)) // *RouterLSAV2
 	b.WriteString(sep)
-	b.WriteString(l.ASELSAV2.ToString()) // *ASExternalLSAV2
+	b.WriteString(toString(l.ASELSAV2)) // *ASExternalLSAV2
 	b.WriteString(sep)
-	b.WriteString(l.RLSA.ToString()) // *RouterLSA
+	b.WriteString(toString(l.RLSA)) // *RouterLSA
 	b.WriteString(sep)
-	b.WriteString(l.NLSA.ToString()) // *NetworkLSA
+	b.WriteString(toString(l.NLSA)) // *NetworkLSA
 	b.WriteString(sep)
-	b.WriteString(l.InterAPrefixLSA.ToString()) // *InterAreaPrefixLSA
+	b.WriteString(toString(l.InterAPrefixLSA)) // *InterAreaPrefixLSA
 	b.WriteString(sep)
-	b.WriteString(l.IARouterLSA.ToString()) // *InterAreaRouterLSA
+	b.WriteString(toString(l.IARouterLSA)) // *InterAreaRouterLSA
 	b.WriteString(sep)
-	b.WriteString(l.ASELSA.ToString()) // *ASExternalLSA
+	b.WriteString(toString(l.ASELSA)) // *ASExternalLSA
 	b.WriteString(sep)
-	b.WriteString(l.LLSA.ToString()) // *LinkLSA
+	b.WriteString(toString(l.LLSA)) // *LinkLSA
 	b.WriteString(sep)
-	b.WriteString(l.IntraAPrefixLSA.ToString()) // *IntraAreaPrefixLSA
+	b.WriteString(toString(l.IntraAPrefixLSA)) // *IntraAreaPrefixLSA
 
 	b.WriteString(end)
 
@@ -329,7 +329,7 @@ func (l LSUpdate) ToString() string {
 
 	var lsas []string
 	for _, lsa := range l.LSAs {
-		lsas = append(lsas, lsa.ToString())
+		lsas = append(lsas, toString(lsa))
 	}
 
 	var b strings.Builder
@@ -337,7 +337,7 @@ func (l LSUpdate) ToString() string {
 	b.WriteString(begin)
 	b.WriteString(formatUint32(l.NumOfLSAs)) // uint32
 	b.WriteString(sep)
-	b.WriteString(strings.Join(lsas, "|")) // []*LSA
+	b.WriteString(join(lsas...)) // []*LSA
 	b.WriteString(end)
 
 	return b.String()
@@ -347,7 +347,7 @@ func (l DbDescPkg) ToString() string {
 
 	var headers []string
 	for _, lsa := range l.LSAinfo {
-		headers = append(headers, lsa.ToString())
+		headers = append(headers, toString(lsa))
 	}
 
 	var b strings.Builder
@@ -361,7 +361,7 @@ func (l DbDescPkg) ToString() string {
 	b.WriteString(sep)
 	b.WriteString(formatUint32(l.DDSeqNumber)) // uint32
 	b.WriteString(sep)
-	b.WriteString(strings.Join(headers, "|")) // []*LSAheader
+	b.WriteString(join(headers...)) // []*LSAheader
 	b.WriteString(end)
 
 	return b.String()
