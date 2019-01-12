@@ -130,7 +130,7 @@ var networkFlowEncoder = CreateCustomEncoder(types.Type_NC_NetworkFlow, "Network
 			if networkFlowEncoderInstance.csv {
 				_, err := networkFlowEncoderInstance.csvWriter.WriteRecord(f)
 				if err != nil {
-					errorMap.Inc(err.Error())
+					return err
 				}
 			} else {
 				// write protobuf
@@ -148,7 +148,7 @@ func writeNetworkFlow(f *types.NetworkFlow) {
 	if networkFlowEncoderInstance.csv {
 		_, err := networkFlowEncoderInstance.csvWriter.WriteRecord(f)
 		if err != nil {
-			errorMap.Inc(err.Error())
+			panic(err)
 		}
 	} else {
 		// write protobuf

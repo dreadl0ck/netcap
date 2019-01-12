@@ -192,7 +192,7 @@ func writeFlow(f *types.Flow) {
 	if flowEncoderInstance.csv {
 		_, err := flowEncoderInstance.csvWriter.WriteRecord(f)
 		if err != nil {
-			errorMap.Inc(err.Error())
+			panic(err)
 		}
 	} else {
 		// write protobuf

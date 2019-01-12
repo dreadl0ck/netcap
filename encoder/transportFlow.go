@@ -137,7 +137,7 @@ var transportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "Tra
 			if transportFlowEncoderInstance.csv {
 				_, err := transportFlowEncoderInstance.csvWriter.WriteRecord(f)
 				if err != nil {
-					errorMap.Inc(err.Error())
+					return err
 				}
 			} else {
 				// write protobuf
@@ -155,7 +155,7 @@ func writeTransportFlow(f *types.TransportFlow) {
 	if transportFlowEncoderInstance.csv {
 		_, err := transportFlowEncoderInstance.csvWriter.WriteRecord(f)
 		if err != nil {
-			errorMap.Inc(err.Error())
+			panic(err)
 		}
 	} else {
 		// write protobuf
