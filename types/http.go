@@ -40,7 +40,7 @@ func (h HTTP) CSVRecord() []string {
 		h.Host,
 		h.UserAgent,
 		h.Referer,
-		join(h.ReqCookies),
+		join(h.ReqCookies...),
 		formatInt32(h.ReqContentLength),
 		h.URL,
 		formatInt32(h.ResContentLength),
