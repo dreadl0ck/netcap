@@ -16,7 +16,6 @@ package types
 import (
 	"encoding/hex"
 	"strconv"
-	"strings"
 )
 
 func (t TLSClientHello) CSVHeader() []string {
@@ -72,7 +71,7 @@ func (t TLSClientHello) CSVRecord() []string {
 		joinInts(t.SignatureAlgs),
 		joinInts(t.SupportedGroups),
 		joinInts(t.SupportedPoints),
-		strings.Join(t.ALPNs, sep),
+		join(t.ALPNs...),
 		t.Ja3,
 		t.SrcIP,
 		t.DstIP,

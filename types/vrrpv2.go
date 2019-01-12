@@ -13,8 +13,6 @@
 
 package types
 
-import "strings"
-
 func (a VRRPv2) CSVHeader() []string {
 	return filter([]string{
 		"Timestamp",
@@ -33,15 +31,15 @@ func (a VRRPv2) CSVHeader() []string {
 func (a VRRPv2) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		formatInt32(a.Version),           // int32
-		formatInt32(a.Type),              // int32
-		formatInt32(a.VirtualRtrID),      // int32
-		formatInt32(a.Priority),          // int32
-		formatInt32(a.CountIPAddr),       // int32
-		formatInt32(a.AuthType),          // int32
-		formatInt32(a.AdverInt),          // int32
-		formatInt32(a.Checksum),          // int32
-		strings.Join(a.IPAddress, " | "), // []string
+		formatInt32(a.Version),      // int32
+		formatInt32(a.Type),         // int32
+		formatInt32(a.VirtualRtrID), // int32
+		formatInt32(a.Priority),     // int32
+		formatInt32(a.CountIPAddr),  // int32
+		formatInt32(a.AuthType),     // int32
+		formatInt32(a.AdverInt),     // int32
+		formatInt32(a.Checksum),     // int32
+		join(a.IPAddress...),        // []string
 	})
 }
 
