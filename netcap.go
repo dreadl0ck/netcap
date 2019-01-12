@@ -110,6 +110,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.VXLAN)
 	case types.Type_NC_USB:
 		record = new(types.USB)
+	case types.Type_NC_USBRequestBlockSetup:
+		record = new(types.USBRequestBlockSetup)
 	case types.Type_NC_LCM:
 		record = new(types.LCM)
 	case types.Type_NC_MPLS:

@@ -130,6 +130,7 @@ enum Type {
     NC_EAPOLKey                    = 82;              
     NC_CiscoDiscovery              = 83;
     NC_CiscoDiscoveryInfo          = 84;
+    NC_USBRequestBlockSetup        = 85;
 }
 
 /*
@@ -949,6 +950,15 @@ message USB {
     uint32      IsoNumDesc                = 19;
 }
 
+message USBRequestBlockSetup {
+    string Timestamp   = 1; 
+    int32  RequestType = 2;
+    int32  Request     = 3;
+    int32  Value       = 4;
+    int32  Index       = 5;
+    int32  Length      = 6;
+}
+
 // LCM (Lightweight Communications and Marshalling) is a set of libraries and tools for message passing and data marshalling, 
 // targeted at real-time systems where high-bandwidth and low latency are critical. 
 // It provides a publish/subscribe message passing model and automatic marshalling/unmarshalling 
@@ -1416,3 +1426,4 @@ message IPNet {
     string    IP      = 1;     // network number
     string    IPMask  = 2;     // network mask
 }
+
