@@ -13,7 +13,10 @@
 
 package collector
 
-import "github.com/dreadl0ck/netcap/encoder"
+import (
+	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/google/gopacket"
+)
 
 // Config contains configuration parameters
 // for the Collector instance.
@@ -26,4 +29,6 @@ type Config struct {
 	SnapLen             int
 	Promisc             bool
 	EncoderConfig       encoder.Config
+	BaseLayer           gopacket.LayerType
+	DecodeOptions       gopacket.DecodeOptions
 }
