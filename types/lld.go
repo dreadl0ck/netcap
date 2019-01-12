@@ -15,7 +15,6 @@ package types
 
 import (
 	"encoding/hex"
-	"strings"
 )
 
 func (l LinkLayerDiscovery) CSVHeader() []string {
@@ -35,10 +34,10 @@ func (l LinkLayerDiscovery) CSVRecord() []string {
 	}
 	return filter([]string{
 		formatTimestamp(l.Timestamp),
-		l.ChassisID.ToString(),    // *LLDPChassisID
-		l.PortID.ToString(),       // *LLDPPortID
-		formatInt32(l.TTL),        // int32
-		strings.Join(values, "/"), // []*LinkLayerDiscoveryValue
+		l.ChassisID.ToString(), // *LLDPChassisID
+		l.PortID.ToString(),    // *LLDPPortID
+		formatInt32(l.TTL),     // int32
+		join(values...),        // []*LinkLayerDiscoveryValue
 	})
 }
 

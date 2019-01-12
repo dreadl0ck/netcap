@@ -129,7 +129,7 @@ func (q DNSResourceRecord) ToString() string {
 	b.WriteString(sep)
 	b.WriteString(q.MX.ToString())
 	b.WriteString(sep)
-	b.WriteString(strings.Join(txts, "/"))
+	b.WriteString(join(txts...))
 	b.WriteString(end)
 	return b.String()
 }
