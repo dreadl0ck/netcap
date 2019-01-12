@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 )
 
 func GetBaseLayer(value string) (t gopacket.LayerType) {
@@ -43,6 +43,8 @@ func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 		o = gopacket.Lazy
 	case "default":
 		o = gopacket.Default
+	case "nocopy":
+		o = gopacket.NoCopy
 	default:
 		log.Fatal("invalid decode options:", value)
 	}
