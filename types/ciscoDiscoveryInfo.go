@@ -64,32 +64,32 @@ func (a CiscoDiscoveryInfo) CSVRecord() []string {
 	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.CDPHello.ToString(),              //  *CDPHello
-		a.DeviceID,                         //  string
-		strings.Join(a.Addresses, "|"),     //  []string
-		a.PortID,                           //  string
-		a.Capabilities.ToString(),          //  *CDPCapabilities
-		a.Version,                          //  string
-		a.Platform,                         //  string
-		strings.Join(ipNets, "|"),          //  []*IPNet
-		a.VTPDomain,                        //  string
-		formatInt32(a.NativeVLAN),          //  int32
-		strconv.FormatBool(a.FullDuplex),   //  bool
-		a.VLANReply.ToString(),             //  *CDPVLANDialogue
-		a.VLANQuery.ToString(),             //  *CDPVLANDialogue
-		formatInt32(a.PowerConsumption),    //  int32
-		formatUint32(a.MTU),                //  uint32
-		formatInt32(a.ExtendedTrust),       //  int32
-		formatInt32(a.UntrustedCOS),        //  int32
-		a.SysName,                          //  string
-		a.SysOID,                           //  string
-		strings.Join(a.MgmtAddresses, "|"), //  []string
-		a.Location.ToString(),              //  *CDPLocation
-		a.PowerRequest.ToString(),          //  *CDPPowerDialogue
-		a.PowerAvailable.ToString(),        //  *CDPPowerDialogue
-		a.SparePairPoe.ToString(),          //  *CDPSparePairPoE
-		a.EnergyWise.ToString(),            //  *CDPEnergyWise
-		strings.Join(vals, "|"),            //  []*CiscoDiscoveryValue
+		a.CDPHello.ToString(),            //  *CDPHello
+		a.DeviceID,                       //  string
+		join(a.Addresses...),             //  []string
+		a.PortID,                         //  string
+		a.Capabilities.ToString(),        //  *CDPCapabilities
+		a.Version,                        //  string
+		a.Platform,                       //  string
+		join(ipNets...),                  //  []*IPNet
+		a.VTPDomain,                      //  string
+		formatInt32(a.NativeVLAN),        //  int32
+		strconv.FormatBool(a.FullDuplex), //  bool
+		a.VLANReply.ToString(),           //  *CDPVLANDialogue
+		a.VLANQuery.ToString(),           //  *CDPVLANDialogue
+		formatInt32(a.PowerConsumption),  //  int32
+		formatUint32(a.MTU),              //  uint32
+		formatInt32(a.ExtendedTrust),     //  int32
+		formatInt32(a.UntrustedCOS),      //  int32
+		a.SysName,                        //  string
+		a.SysOID,                         //  string
+		join(a.MgmtAddresses...),         //  []string
+		a.Location.ToString(),            //  *CDPLocation
+		a.PowerRequest.ToString(),        //  *CDPPowerDialogue
+		a.PowerAvailable.ToString(),      //  *CDPPowerDialogue
+		a.SparePairPoe.ToString(),        //  *CDPSparePairPoE
+		a.EnergyWise.ToString(),          //  *CDPEnergyWise
+		join(vals...),                    //  []*CiscoDiscoveryValue
 	})
 }
 
@@ -197,7 +197,7 @@ func (c CDPPowerDialogue) ToString() string {
 	b.WriteString(sep)
 	b.WriteString(formatInt32(c.MgmtID))
 	b.WriteString(sep)
-	b.WriteString(strings.Join(vals, "|"))
+	b.WriteString(join(vals...))
 	b.WriteString(end)
 
 	return b.String()

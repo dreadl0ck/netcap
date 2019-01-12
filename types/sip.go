@@ -15,7 +15,6 @@ package types
 
 import (
 	"strconv"
-	"strings"
 )
 
 func (s SIP) CSVHeader() []string {
@@ -32,7 +31,7 @@ func (s SIP) CSVRecord() []string {
 		s.Timestamp,                      //  string `protobuf:"bytes,1,opt,name=Timestamp,proto3" json:"Timestamp,omitempty"`
 		formatInt32(s.Version),           //  int32 `protobuf:"varint,2,opt,name=Version,proto3" json:"Version,omitempty"`
 		formatInt32(s.Method),            //   int32 `protobuf:"varint,3,opt,name=Method,proto3" json:"Method,omitempty"`
-		strings.Join(s.Headers, "/"),     //  []string `protobuf:"bytes,4,rep,name=Headers,proto3" json:"Headers,omitempty"`
+		join(s.Headers...),               //  []string `protobuf:"bytes,4,rep,name=Headers,proto3" json:"Headers,omitempty"`
 		strconv.FormatBool(s.IsResponse), //            bool     `protobuf:"varint,5,opt,name=IsResponse,proto3" json:"IsResponse,omitempty"`
 		formatInt32(s.ResponseCode),      //          int32    `protobuf:"varint,6,opt,name=ResponseCode,proto3" json:"ResponseCode,omitempty"`
 		s.ResponseStatus,                 //        string   `protobuf

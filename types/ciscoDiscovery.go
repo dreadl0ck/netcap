@@ -38,7 +38,7 @@ func (a CiscoDiscovery) CSVRecord() []string {
 		formatInt32(a.Version),  // int32
 		formatInt32(a.TTL),      // int32
 		formatInt32(a.Checksum), // int32
-		strings.Join(vals, "|"), // []*CiscoDiscoveryValue
+		join(vals...),           // []*CiscoDiscoveryValue
 	})
 }
 

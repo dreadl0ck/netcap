@@ -51,7 +51,7 @@ func (i IGMP) CSVRecord() []string {
 		strconv.FormatBool(i.SupressRouterProcessing), // bool
 		formatInt32(i.RobustnessValue),                // int32
 		formatUint64(i.IntervalTime),                  // uint64
-		strings.Join(i.SourceAddresses, "/"),          // []string
+		join(i.SourceAddresses...),                    // []string
 		formatInt32(i.NumberOfGroupRecords),           // int32
 		formatInt32(i.NumberOfSources),                // int32
 		strings.Join(records, ""),                     // []*IGMPv3GroupRecord
@@ -75,7 +75,7 @@ func (i IGMPv3GroupRecord) ToString() string {
 	b.WriteString(sep)
 	b.WriteString(i.MulticastAddress)
 	b.WriteString(sep)
-	b.WriteString(strings.Join(i.SourceAddresses, "/"))
+	b.WriteString(join(i.SourceAddresses...))
 	b.WriteString(end)
 
 	return b.String()
