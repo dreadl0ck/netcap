@@ -87,10 +87,7 @@ var (
 		eapolkeyEncoder,
 		ciscoDiscoveryEncoder,
 		ciscoDiscoveryInfoEncoder,
-		// linkLsaEncoder,
-		// lsaEncoder,
-		// lsReqEncoder,
-		// lsUpdateEncoder,
+		usbRequestBlockSetupEncoder,
 	}
 )
 

@@ -665,6 +665,14 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :UrbCopyOfTransferFlags, :uint32, 18
     optional :IsoNumDesc, :uint32, 19
   end
+  add_message "types.USBRequestBlockSetup" do
+    optional :Timestamp, :string, 1
+    optional :RequestType, :int32, 2
+    optional :Request, :int32, 3
+    optional :Value, :int32, 4
+    optional :Index, :int32, 5
+    optional :Length, :int32, 6
+  end
   add_message "types.LCM" do
     optional :Timestamp, :string, 1
     optional :Magic, :int32, 2
@@ -1158,6 +1166,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_EAPOLKey, 82
     value :NC_CiscoDiscovery, 83
     value :NC_CiscoDiscoveryInfo, 84
+    value :NC_USBRequestBlockSetup, 85
   end
 end
 
@@ -1234,6 +1243,7 @@ module Types
   GeneveOption = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GeneveOption").msgclass
   VXLAN = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.VXLAN").msgclass
   USB = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.USB").msgclass
+  USBRequestBlockSetup = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.USBRequestBlockSetup").msgclass
   LCM = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LCM").msgclass
   MPLS = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.MPLS").msgclass
   ModbusTCP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ModbusTCP").msgclass
