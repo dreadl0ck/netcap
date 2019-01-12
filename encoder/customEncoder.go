@@ -83,6 +83,10 @@ func init() {
 	for _, e := range customEncoderSlice {
 		allEncoderNames[e.Name] = struct{}{}
 	}
+	// collect all names for custom encoders on startup
+	for _, e := range layerEncoderSlice {
+		allEncoderNames[e.Layer.String()] = struct{}{}
+	}
 }
 
 // InitCustomEncoders initializes all custom encoders
