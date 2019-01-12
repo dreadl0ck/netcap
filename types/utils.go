@@ -25,7 +25,7 @@ import (
 const (
 	begin = "("
 	end   = ")"
-	sep   = "/"
+	sep   = "-"
 )
 
 type Stringable interface {
