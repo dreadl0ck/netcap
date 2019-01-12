@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='types',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0cnetcap.proto\x12\x05types\"Z\n\x06Header\x12\x0f\n\x07\x43reated\x18\x01 \x01(\t\x12\x13\n\x0bInputSource\x18\x02 \x01(\t\x12\x19\n\x04Type\x18\x03 \x01(\x0e\x32\x0b.types.Type\x12\x0f\n\x07Version\x18\x04 \x01(\t\"W\n\x05\x42\x61tch\x12\x10\n\x08\x43lientID\x18\x01 \x01(\t\x12 \n\x0bMessageType\x18\x02 \x01(\x0e\x32\x0b.types.Type\x12\x0c\n\x04Size\x18\x03 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x04 \x01(\x0c\"\xc9\x02\n\x04\x46low\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x11\n\tLinkProto\x18\x02 \x01(\t\x12\x14\n\x0cNetworkProto\x18\x03 \x01(\t\x12\x16\n\x0eTransportProto\x18\x04 \x01(\t\x12\x18\n\x10\x41pplicationProto\x18\x05 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x06 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x07 \x01(\t\x12\r\n\x05SrcIP\x18\x08 \x01(\t\x12\x0f\n\x07SrcPort\x18\t \x01(\t\x12\r\n\x05\x44stIP\x18\n \x01(\t\x12\x0f\n\x07\x44stPort\x18\x0b \x01(\t\x12\x0c\n\x04Size\x18\x0c \x01(\x05\x12\x16\n\x0e\x41ppPayloadSize\x18\r \x01(\x05\x12\x12\n\nNumPackets\x18\x0e \x01(\x05\x12\x0b\n\x03UID\x18\x0f \x01(\t\x12\x15\n\rTimestampLast\x18\x10 \x01(\t\x12\x10\n\x08\x44uration\x18\x11 \x01(\x03\"\xcf\x02\n\nConnection\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x11\n\tLinkProto\x18\x02 \x01(\t\x12\x14\n\x0cNetworkProto\x18\x03 \x01(\t\x12\x16\n\x0eTransportProto\x18\x04 \x01(\t\x12\x18\n\x10\x41pplicationProto\x18\x05 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x06 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x07 \x01(\t\x12\r\n\x05SrcIP\x18\x08 \x01(\t\x12\x0f\n\x07SrcPort\x18\t \x01(\t\x12\r\n\x05\x44stIP\x18\n \x01(\t\x12\x0f\n\x07\x44stPort\x18\x0b \x01(\t\x12\x0c\n\x04Size\x18\x0c \x01(\x05\x12\x16\n\x0e\x41ppPayloadSize\x18\r \x01(\x05\x12\x12\n\nNumPackets\x18\x0e \x01(\x05\x12\x0b\n\x03UID\x18\x0f \x01(\t\x12\x15\n\rTimestampLast\x18\x10 \x01(\t\x12\x10\n\x08\x44uration\x18\x11 \x01(\x03\"\xa9\x01\n\x08LinkFlow\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x15\n\rTimestampLast\x18\x02 \x01(\t\x12\r\n\x05Proto\x18\x03 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x04 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x05 \x01(\t\x12\x0c\n\x04Size\x18\x06 \x01(\x03\x12\x12\n\nNumPackets\x18\x07 \x01(\x03\x12\x0b\n\x03UID\x18\x08 \x01(\x04\x12\x10\n\x08\x44uration\x18\t \x01(\x03\"\xaa\x01\n\x0bNetworkFlow\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x15\n\rTimestampLast\x18\x02 \x01(\t\x12\r\n\x05Proto\x18\x03 \x01(\t\x12\r\n\x05SrcIP\x18\x04 \x01(\t\x12\r\n\x05\x44stIP\x18\x05 \x01(\t\x12\x0c\n\x04Size\x18\x06 \x01(\x03\x12\x12\n\nNumPackets\x18\x07 \x01(\x03\x12\x0b\n\x03UID\x18\x08 \x01(\x04\x12\x10\n\x08\x44uration\x18\t \x01(\x03\"\xb0\x01\n\rTransportFlow\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x15\n\rTimestampLast\x18\x02 \x01(\t\x12\r\n\x05Proto\x18\x03 \x01(\t\x12\x0f\n\x07SrcPort\x18\x04 \x01(\x05\x12\x0f\n\x07\x44stPort\x18\x05 \x01(\x05\x12\x0c\n\x04Size\x18\x06 \x01(\x03\x12\x12\n\nNumPackets\x18\x07 \x01(\x03\x12\x0b\n\x03UID\x18\x08 \x01(\x04\x12\x10\n\x08\x44uration\x18\t \x01(\x03\"\x80\x01\n\x08\x45thernet\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x02 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x03 \x01(\t\x12\x14\n\x0c\x45thernetType\x18\x04 \x01(\x05\x12\x16\n\x0ePayloadEntropy\x18\x05 \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x06 \x01(\x05\"\xdb\x01\n\x03\x41RP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08\x41\x64\x64rType\x18\x02 \x01(\x05\x12\x10\n\x08Protocol\x18\x03 \x01(\x05\x12\x15\n\rHwAddressSize\x18\x04 \x01(\x05\x12\x17\n\x0fProtAddressSize\x18\x05 \x01(\x05\x12\x11\n\tOperation\x18\x06 \x01(\x05\x12\x14\n\x0cSrcHwAddress\x18\x07 \x01(\x0c\x12\x16\n\x0eSrcProtAddress\x18\x08 \x01(\x0c\x12\x14\n\x0c\x44stHwAddress\x18\t \x01(\x0c\x12\x16\n\x0e\x44stProtAddress\x18\n \x01(\x0c\"h\n\x05\x44ot1Q\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08Priority\x18\x02 \x01(\x05\x12\x14\n\x0c\x44ropEligible\x18\x03 \x01(\x08\x12\x16\n\x0eVLANIdentifier\x18\x04 \x01(\x05\x12\x0c\n\x04Type\x18\x05 \x01(\x05\"\xac\x02\n\x05\x44ot11\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\r\n\x05Proto\x18\x03 \x01(\x05\x12\r\n\x05\x46lags\x18\x04 \x01(\x05\x12\x12\n\nDurationID\x18\x05 \x01(\x05\x12\x10\n\x08\x41\x64\x64ress1\x18\x06 \x01(\t\x12\x10\n\x08\x41\x64\x64ress2\x18\x07 \x01(\t\x12\x10\n\x08\x41\x64\x64ress3\x18\x08 \x01(\t\x12\x10\n\x08\x41\x64\x64ress4\x18\t \x01(\t\x12\x16\n\x0eSequenceNumber\x18\n \x01(\x05\x12\x16\n\x0e\x46ragmentNumber\x18\x0b \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x0c \x01(\r\x12\x1c\n\x03QOS\x18\r \x01(\x0b\x32\x0f.types.Dot11QOS\x12(\n\tHTControl\x18\x0e \x01(\x0b\x32\x15.types.Dot11HTControl\"F\n\x08\x44ot11QOS\x12\x0b\n\x03TID\x18\x01 \x01(\x05\x12\x0c\n\x04\x45OSP\x18\x02 \x01(\x08\x12\x11\n\tAckPolicy\x18\x03 \x01(\x05\x12\x0c\n\x04TXOP\x18\x04 \x01(\x05\"\x87\x01\n\x0e\x44ot11HTControl\x12\x14\n\x0c\x41\x43\x43onstraint\x18\x01 \x01(\x08\x12\x13\n\x0bRDGMorePPDU\x18\x02 \x01(\x08\x12%\n\x03VHT\x18\x03 \x01(\x0b\x32\x18.types.Dot11HTControlVHT\x12#\n\x02HT\x18\x04 \x01(\x0b\x32\x17.types.Dot11HTControlHT\"\xe2\x01\n\x11\x44ot11HTControlVHT\x12\x0b\n\x03MRQ\x18\x01 \x01(\x08\x12\x16\n\x0eUnsolicitedMFB\x18\x02 \x01(\x08\x12\x0b\n\x03MSI\x18\x03 \x01(\x05\x12%\n\x03MFB\x18\x04 \x01(\x0b\x32\x18.types.Dot11HTControlMFB\x12\x15\n\rCompressedMSI\x18\x05 \x01(\x05\x12\x16\n\x0eSTBCIndication\x18\x06 \x01(\x08\x12\x0c\n\x04MFSI\x18\x07 \x01(\x05\x12\x0b\n\x03GID\x18\x08 \x01(\x05\x12\x12\n\nCodingType\x18\t \x01(\x05\x12\x16\n\x0e\x46\x62TXBeamformed\x18\n \x01(\x08\"\xc7\x01\n\x10\x44ot11HTControlHT\x12>\n\x14LinkAdapationControl\x18\x01 \x01(\x0b\x32 .types.Dot11LinkAdapationControl\x12\x1b\n\x13\x43\x61librationPosition\x18\x02 \x01(\x05\x12\x1b\n\x13\x43\x61librationSequence\x18\x03 \x01(\x05\x12\x13\n\x0b\x43SISteering\x18\x04 \x01(\x05\x12\x17\n\x0fNDPAnnouncement\x18\x05 \x01(\x08\x12\x0b\n\x03\x44\x45I\x18\x06 \x01(\x08\"L\n\x11\x44ot11HTControlMFB\x12\x0e\n\x06NumSTS\x18\x01 \x01(\x05\x12\x0e\n\x06VHTMCS\x18\x02 \x01(\x05\x12\n\n\x02\x42W\x18\x03 \x01(\x05\x12\x0b\n\x03SNR\x18\x04 \x01(\x05\"}\n\x19\x44ot11LinkAdapationControl\x12\x0b\n\x03TRQ\x18\x01 \x01(\x08\x12\x0b\n\x03MRQ\x18\x02 \x01(\x08\x12\x0b\n\x03MSI\x18\x03 \x01(\x05\x12\x0c\n\x04MFSI\x18\x04 \x01(\x05\x12\x0b\n\x03MFB\x18\x06 \x01(\x05\x12\x1e\n\x04\x41SEL\x18\x05 \x01(\x0b\x32\x10.types.Dot11ASEL\"*\n\tDot11ASEL\x12\x0f\n\x07\x43ommand\x18\x01 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x02 \x01(\x05\"\xb0\x01\n\x12LinkLayerDiscovery\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\'\n\tChassisID\x18\x02 \x01(\x0b\x32\x14.types.LLDPChassisID\x12!\n\x06PortID\x18\x03 \x01(\x0b\x32\x11.types.LLDPPortID\x12\x0b\n\x03TTL\x18\x04 \x01(\x05\x12.\n\x06Values\x18\x05 \x03(\x0b\x32\x1e.types.LinkLayerDiscoveryValue\",\n\rLLDPChassisID\x12\x0f\n\x07Subtype\x18\x01 \x01(\x05\x12\n\n\x02ID\x18\x02 \x01(\x0c\")\n\nLLDPPortID\x12\x0f\n\x07Subtype\x18\x01 \x01(\x05\x12\n\n\x02ID\x18\x02 \x01(\x0c\"F\n\x17LinkLayerDiscoveryValue\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0e\n\x06Length\x18\x02 \x01(\x05\x12\r\n\x05Value\x18\x03 \x01(\x0c\"3\n\x0b\x45thernetCTP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x11\n\tSkipCount\x18\x02 \x01(\x05\"\\\n\x10\x45thernetCTPReply\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08\x46unction\x18\x02 \x01(\x05\x12\x15\n\rReceiptNumber\x18\x03 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x04 \x01(\x0c\"\xac\x02\n\x16LinkLayerDiscoveryInfo\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x17\n\x0fPortDescription\x18\x02 \x01(\t\x12\x0f\n\x07SysName\x18\x03 \x01(\t\x12\x16\n\x0eSysDescription\x18\x04 \x01(\t\x12\x33\n\x0fSysCapabilities\x18\x05 \x01(\x0b\x32\x1a.types.LLDPSysCapabilities\x12+\n\x0bMgmtAddress\x18\x06 \x01(\x0b\x32\x16.types.LLDPMgmtAddress\x12*\n\x07OrgTLVs\x18\x07 \x03(\x0b\x32\x19.types.LLDPOrgSpecificTLV\x12/\n\x07Unknown\x18\x08 \x03(\x0b\x32\x1e.types.LinkLayerDiscoveryValue\"n\n\x13LLDPSysCapabilities\x12*\n\tSystemCap\x18\x01 \x01(\x0b\x32\x17.types.LLDPCapabilities\x12+\n\nEnabledCap\x18\x02 \x01(\x0b\x32\x17.types.LLDPCapabilities\"\xc3\x01\n\x10LLDPCapabilities\x12\r\n\x05Other\x18\x01 \x01(\x08\x12\x10\n\x08Repeater\x18\x02 \x01(\x08\x12\x0e\n\x06\x42ridge\x18\x03 \x01(\x08\x12\x0e\n\x06WLANAP\x18\x04 \x01(\x08\x12\x0e\n\x06Router\x18\x05 \x01(\x08\x12\r\n\x05Phone\x18\x06 \x01(\x08\x12\x0e\n\x06\x44ocSis\x18\x07 \x01(\x08\x12\x13\n\x0bStationOnly\x18\x08 \x01(\x08\x12\r\n\x05\x43VLAN\x18\t \x01(\x08\x12\r\n\x05SVLAN\x18\n \x01(\x08\x12\x0c\n\x04TMPR\x18\x0b \x01(\x08\"s\n\x0fLLDPMgmtAddress\x12\x0f\n\x07Subtype\x18\x01 \x01(\x05\x12\x0f\n\x07\x41\x64\x64ress\x18\x02 \x01(\x0c\x12\x18\n\x10InterfaceSubtype\x18\x03 \x01(\x05\x12\x17\n\x0fInterfaceNumber\x18\x04 \x01(\r\x12\x0b\n\x03OID\x18\x05 \x01(\t\"@\n\x12LLDPOrgSpecificTLV\x12\x0b\n\x03OUI\x18\x01 \x01(\r\x12\x0f\n\x07SubType\x18\x02 \x01(\x05\x12\x0c\n\x04Info\x18\x03 \x01(\x0c\"\xb4\x02\n\x04IPv4\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0b\n\x03IHL\x18\x03 \x01(\x05\x12\x0b\n\x03TOS\x18\x04 \x01(\x05\x12\x0e\n\x06Length\x18\x05 \x01(\x05\x12\n\n\x02Id\x18\x06 \x01(\x05\x12\r\n\x05\x46lags\x18\x07 \x01(\x05\x12\x12\n\nFragOffset\x18\x08 \x01(\x05\x12\x0b\n\x03TTL\x18\t \x01(\x05\x12\x10\n\x08Protocol\x18\n \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x0b \x01(\x05\x12\r\n\x05SrcIP\x18\x0c \x01(\t\x12\r\n\x05\x44stIP\x18\r \x01(\t\x12\x0f\n\x07Padding\x18\x0e \x01(\x0c\x12\"\n\x07Options\x18\x0f \x03(\x0b\x32\x11.types.IPv4Option\x12\x16\n\x0ePayloadEntropy\x18\x10 \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x11 \x01(\x05\"J\n\nIPv4Option\x12\x12\n\nOptionType\x18\x01 \x01(\x05\x12\x14\n\x0cOptionLength\x18\x02 \x01(\x05\x12\x12\n\nOptionData\x18\x03 \x01(\x0c\"\xfb\x01\n\x04IPv6\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x14\n\x0cTrafficClass\x18\x03 \x01(\x05\x12\x11\n\tFlowLabel\x18\x04 \x01(\r\x12\x0e\n\x06Length\x18\x05 \x01(\x05\x12\x12\n\nNextHeader\x18\x06 \x01(\x05\x12\x10\n\x08HopLimit\x18\x07 \x01(\x05\x12\r\n\x05SrcIP\x18\x08 \x01(\t\x12\r\n\x05\x44stIP\x18\t \x01(\t\x12\x16\n\x0ePayloadEntropy\x18\n \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x0b \x01(\x05\x12%\n\x08HopByHop\x18\x0c \x01(\x0b\x32\x13.types.IPv6HopByHop\"\xa2\x01\n\x0cIPv6Fragment\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x12\n\nNextHeader\x18\x02 \x01(\x05\x12\x11\n\tReserved1\x18\x03 \x01(\x05\x12\x16\n\x0e\x46ragmentOffset\x18\x04 \x01(\x05\x12\x11\n\tReserved2\x18\x05 \x01(\x05\x12\x15\n\rMoreFragments\x18\x06 \x01(\x08\x12\x16\n\x0eIdentification\x18\x07 \x01(\r\"X\n\x06ICMPv4\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08TypeCode\x18\x02 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x03 \x01(\x05\x12\n\n\x02Id\x18\x04 \x01(\x05\x12\x0b\n\x03Seq\x18\x05 \x01(\x05\"?\n\x06ICMPv6\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08TypeCode\x18\x02 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x03 \x01(\x05\"|\n\x1bICMPv6NeighborAdvertisement\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05\x46lags\x18\x02 \x01(\x05\x12\x15\n\rTargetAddress\x18\x03 \x01(\t\x12$\n\x07Options\x18\x04 \x03(\x0b\x32\x13.types.ICMPv6Option\"\xba\x01\n\x19ICMPv6RouterAdvertisement\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08HopLimit\x18\x02 \x01(\x05\x12\r\n\x05\x46lags\x18\x03 \x01(\x05\x12\x16\n\x0eRouterLifetime\x18\x04 \x01(\x05\x12\x15\n\rReachableTime\x18\x05 \x01(\r\x12\x14\n\x0cRetransTimer\x18\x06 \x01(\r\x12$\n\x07Options\x18\x07 \x03(\x0b\x32\x13.types.ICMPv6Option\"*\n\x0cICMPv6Option\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x02 \x01(\x0c\"\x89\x01\n\x03UDP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07SrcPort\x18\x02 \x01(\x05\x12\x0f\n\x07\x44stPort\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x05 \x01(\x05\x12\x16\n\x0ePayloadEntropy\x18\x06 \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x07 \x01(\x05\"\xf5\x02\n\x03TCP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07SrcPort\x18\x02 \x01(\x05\x12\x0f\n\x07\x44stPort\x18\x03 \x01(\x05\x12\x0e\n\x06SeqNum\x18\x04 \x01(\r\x12\x0e\n\x06\x41\x63kNum\x18\x05 \x01(\r\x12\x12\n\nDataOffset\x18\x06 \x01(\x05\x12\x0b\n\x03\x46IN\x18\x07 \x01(\x08\x12\x0b\n\x03SYN\x18\x08 \x01(\x08\x12\x0b\n\x03RST\x18\t \x01(\x08\x12\x0b\n\x03PSH\x18\n \x01(\x08\x12\x0b\n\x03\x41\x43K\x18\x0b \x01(\x08\x12\x0b\n\x03URG\x18\x0c \x01(\x08\x12\x0b\n\x03\x45\x43\x45\x18\r \x01(\x08\x12\x0b\n\x03\x43WR\x18\x0e \x01(\x08\x12\n\n\x02NS\x18\x0f \x01(\x08\x12\x0e\n\x06Window\x18\x10 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x11 \x01(\x05\x12\x0e\n\x06Urgent\x18\x12 \x01(\x05\x12\x0f\n\x07Padding\x18\x13 \x01(\x0c\x12!\n\x07Options\x18\x14 \x03(\x0b\x32\x10.types.TCPOption\x12\x16\n\x0ePayloadEntropy\x18\x15 \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x16 \x01(\x05\"I\n\tTCPOption\x12\x12\n\nOptionType\x18\x01 \x01(\x05\x12\x14\n\x0cOptionLength\x18\x02 \x01(\x05\x12\x12\n\nOptionData\x18\x03 \x01(\x0c\"f\n\x04SCTP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07SrcPort\x18\x02 \x01(\r\x12\x0f\n\x07\x44stPort\x18\x03 \x01(\r\x12\x17\n\x0fVerificationTag\x18\x04 \x01(\r\x12\x10\n\x08\x43hecksum\x18\x05 \x01(\r\"\x85\x03\n\x03\x44NS\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\n\n\x02ID\x18\x02 \x01(\x05\x12\n\n\x02QR\x18\x03 \x01(\x08\x12\x0e\n\x06OpCode\x18\x04 \x01(\x05\x12\n\n\x02\x41\x41\x18\x05 \x01(\x08\x12\n\n\x02TC\x18\x06 \x01(\x08\x12\n\n\x02RD\x18\x07 \x01(\x08\x12\n\n\x02RA\x18\x08 \x01(\x08\x12\t\n\x01Z\x18\t \x01(\x05\x12\x14\n\x0cResponseCode\x18\n \x01(\x05\x12\x0f\n\x07QDCount\x18\x0b \x01(\x05\x12\x0f\n\x07\x41NCount\x18\x0c \x01(\x05\x12\x0f\n\x07NSCount\x18\r \x01(\x05\x12\x0f\n\x07\x41RCount\x18\x0e \x01(\x05\x12%\n\tQuestions\x18\x0f \x03(\x0b\x32\x12.types.DNSQuestion\x12)\n\x07\x41nswers\x18\x10 \x03(\x0b\x32\x18.types.DNSResourceRecord\x12-\n\x0b\x41uthorities\x18\x11 \x03(\x0b\x32\x18.types.DNSResourceRecord\x12-\n\x0b\x41\x64\x64itionals\x18\x12 \x03(\x0b\x32\x18.types.DNSResourceRecord\"\x81\x02\n\x11\x44NSResourceRecord\x12\x0c\n\x04Name\x18\x01 \x01(\x0c\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\r\n\x05\x43lass\x18\x03 \x01(\x05\x12\x0b\n\x03TTL\x18\x04 \x01(\r\x12\x12\n\nDataLength\x18\x05 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x06 \x01(\x0c\x12\n\n\x02IP\x18\x07 \x01(\t\x12\n\n\x02NS\x18\x08 \x01(\x0c\x12\r\n\x05\x43NAME\x18\t \x01(\x0c\x12\x0b\n\x03PTR\x18\n \x01(\x0c\x12\x1a\n\x03SOA\x18\x0b \x01(\x0b\x32\r.types.DNSSOA\x12\x1a\n\x03SRV\x18\x0c \x01(\x0b\x32\r.types.DNSSRV\x12\x18\n\x02MX\x18\r \x01(\x0b\x32\x0c.types.DNSMX\x12\x0c\n\x04TXTs\x18\x0e \x03(\x0c\"w\n\x06\x44NSSOA\x12\r\n\x05MName\x18\x01 \x01(\x0c\x12\r\n\x05RName\x18\x02 \x01(\x0c\x12\x0e\n\x06Serial\x18\x03 \x01(\r\x12\x0f\n\x07Refresh\x18\x04 \x01(\r\x12\r\n\x05Retry\x18\x05 \x01(\r\x12\x0e\n\x06\x45xpire\x18\x06 \x01(\r\x12\x0f\n\x07Minimum\x18\x07 \x01(\r\"F\n\x06\x44NSSRV\x12\x10\n\x08Priority\x18\x01 \x01(\x05\x12\x0e\n\x06Weight\x18\x02 \x01(\x05\x12\x0c\n\x04Port\x18\x03 \x01(\x05\x12\x0c\n\x04Name\x18\x04 \x01(\x0c\")\n\x05\x44NSMX\x12\x12\n\nPreference\x18\x01 \x01(\x05\x12\x0c\n\x04Name\x18\x02 \x01(\x0c\"8\n\x0b\x44NSQuestion\x12\x0c\n\x04Name\x18\x01 \x01(\x0c\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\r\n\x05\x43lass\x18\x03 \x01(\x05\"\xc9\x02\n\x06\x44HCPv4\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x11\n\tOperation\x18\x02 \x01(\x05\x12\x14\n\x0cHardwareType\x18\x03 \x01(\x05\x12\x13\n\x0bHardwareLen\x18\x04 \x01(\x05\x12\x14\n\x0cHardwareOpts\x18\x05 \x01(\x05\x12\x0b\n\x03Xid\x18\x06 \x01(\r\x12\x0c\n\x04Secs\x18\x07 \x01(\x05\x12\r\n\x05\x46lags\x18\x08 \x01(\x05\x12\x10\n\x08\x43lientIP\x18\t \x01(\t\x12\x14\n\x0cYourClientIP\x18\n \x01(\t\x12\x14\n\x0cNextServerIP\x18\x0b \x01(\t\x12\x14\n\x0cRelayAgentIP\x18\x0c \x01(\t\x12\x14\n\x0c\x43lientHWAddr\x18\r \x01(\t\x12\x12\n\nServerName\x18\x0e \x01(\x0c\x12\x0c\n\x04\x46ile\x18\x0f \x01(\x0c\x12\"\n\x07Options\x18\x10 \x03(\x0b\x32\x11.types.DHCPOption\"8\n\nDHCPOption\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0e\n\x06Length\x18\x02 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x03 \x01(\x0c\"\x9f\x01\n\x06\x44HCPv6\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07MsgType\x18\x02 \x01(\x05\x12\x10\n\x08HopCount\x18\x03 \x01(\x05\x12\x10\n\x08LinkAddr\x18\x04 \x01(\t\x12\x10\n\x08PeerAddr\x18\x05 \x01(\t\x12\x15\n\rTransactionID\x18\x06 \x01(\x0c\x12$\n\x07Options\x18\x07 \x03(\x0b\x32\x13.types.DHCPv6Option\":\n\x0c\x44HCPv6Option\x12\x0c\n\x04\x43ode\x18\x01 \x01(\x05\x12\x0e\n\x06Length\x18\x02 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x03 \x01(\x0c\"]\n\x03LLC\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04\x44SAP\x18\x02 \x01(\x05\x12\n\n\x02IG\x18\x03 \x01(\x08\x12\x0c\n\x04SSAP\x18\x04 \x01(\x05\x12\n\n\x02\x43R\x18\x05 \x01(\x08\x12\x0f\n\x07\x43ontrol\x18\x06 \x01(\x05\"\xc2\x02\n\x03NTP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x15\n\rLeapIndicator\x18\x02 \x01(\x05\x12\x0f\n\x07Version\x18\x03 \x01(\x05\x12\x0c\n\x04Mode\x18\x04 \x01(\x05\x12\x0f\n\x07Stratum\x18\x05 \x01(\x05\x12\x0c\n\x04Poll\x18\x06 \x01(\x05\x12\x11\n\tPrecision\x18\x07 \x01(\x05\x12\x11\n\tRootDelay\x18\x08 \x01(\r\x12\x16\n\x0eRootDispersion\x18\t \x01(\r\x12\x13\n\x0bReferenceID\x18\n \x01(\r\x12\x1a\n\x12ReferenceTimestamp\x18\x0b \x01(\x04\x12\x17\n\x0fOriginTimestamp\x18\x0c \x01(\x04\x12\x18\n\x10ReceiveTimestamp\x18\r \x01(\x04\x12\x19\n\x11TransmitTimestamp\x18\x0e \x01(\x04\x12\x16\n\x0e\x45xtensionBytes\x18\x0f \x01(\x0c\"\x8c\x01\n\x03SIP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0e\n\x06Method\x18\x03 \x01(\x05\x12\x0f\n\x07Headers\x18\x04 \x03(\t\x12\x12\n\nIsResponse\x18\x05 \x01(\x08\x12\x14\n\x0cResponseCode\x18\x06 \x01(\x05\x12\x16\n\x0eResponseStatus\x18\x07 \x01(\t\"\xc9\x02\n\x04IGMP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\x17\n\x0fMaxResponseTime\x18\x03 \x01(\x04\x12\x10\n\x08\x43hecksum\x18\x04 \x01(\x05\x12\x14\n\x0cGroupAddress\x18\x05 \x01(\x0c\x12\x1f\n\x17SupressRouterProcessing\x18\x06 \x01(\x08\x12\x17\n\x0fRobustnessValue\x18\x07 \x01(\x05\x12\x14\n\x0cIntervalTime\x18\x08 \x01(\x04\x12\x17\n\x0fSourceAddresses\x18\t \x03(\t\x12\x1c\n\x14NumberOfGroupRecords\x18\n \x01(\x05\x12\x17\n\x0fNumberOfSources\x18\x0b \x01(\x05\x12.\n\x0cGroupRecords\x18\x0c \x03(\x0b\x32\x18.types.IGMPv3GroupRecord\x12\x0f\n\x07Version\x18\r \x01(\x05\"\x81\x01\n\x11IGMPv3GroupRecord\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x12\n\nAuxDataLen\x18\x02 \x01(\x05\x12\x17\n\x0fNumberOfSources\x18\x03 \x01(\x05\x12\x18\n\x10MulticastAddress\x18\x04 \x01(\t\x12\x17\n\x0fSourceAddresses\x18\x05 \x03(\t\"M\n\x0cIPv6HopByHop\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12*\n\x07Options\x18\x02 \x03(\x0b\x32\x19.types.IPv6HopByHopOption\"\xa5\x01\n\x12IPv6HopByHopOption\x12\x12\n\nOptionType\x18\x01 \x01(\x05\x12\x14\n\x0cOptionLength\x18\x02 \x01(\x05\x12\x14\n\x0c\x41\x63tualLength\x18\x03 \x01(\x05\x12\x12\n\nOptionData\x18\x04 \x01(\x0c\x12;\n\x0fOptionAlignment\x18\x05 \x01(\x0b\x32\".types.IPv6HopByHopOptionAlignment\"7\n\x1bIPv6HopByHopOptionAlignment\x12\x0b\n\x03One\x18\x01 \x01(\x05\x12\x0b\n\x03Two\x18\x02 \x01(\x05\"C\n\x04SNAP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x1a\n\x12OrganizationalCode\x18\x02 \x01(\x0c\x12\x0c\n\x04Type\x18\x03 \x01(\x05\"F\n\nICMPv6Echo\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x12\n\nIdentifier\x18\x02 \x01(\x05\x12\x11\n\tSeqNumber\x18\x03 \x01(\x05\"l\n\x1aICMPv6NeighborSolicitation\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x15\n\rTargetAddress\x18\x02 \x01(\t\x12$\n\x07Options\x18\x03 \x03(\x0b\x32\x13.types.ICMPv6Option\"S\n\x18ICMPv6RouterSolicitation\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12$\n\x07Options\x18\x02 \x03(\x0b\x32\x13.types.ICMPv6Option\"\x86\x02\n\x04HTTP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05Proto\x18\x02 \x01(\t\x12\x0e\n\x06Method\x18\x03 \x01(\t\x12\x0c\n\x04Host\x18\x04 \x01(\t\x12\x11\n\tUserAgent\x18\x05 \x01(\t\x12\x0f\n\x07Referer\x18\x06 \x01(\t\x12\x12\n\nReqCookies\x18\x07 \x03(\t\x12\x18\n\x10ReqContentLength\x18\x08 \x01(\x05\x12\x0b\n\x03URL\x18\t \x01(\t\x12\x18\n\x10ResContentLength\x18\n \x01(\x05\x12\x13\n\x0b\x43ontentType\x18\x0b \x01(\t\x12\x12\n\nStatusCode\x18\x0c \x01(\x05\x12\r\n\x05SrcIP\x18\r \x01(\t\x12\r\n\x05\x44stIP\x18\x0e \x01(\t\"\xa7\x04\n\x0eTLSClientHello\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\x0f\n\x07Version\x18\x03 \x01(\x05\x12\x12\n\nMessageLen\x18\x04 \x01(\x05\x12\x15\n\rHandshakeType\x18\x05 \x01(\x05\x12\x14\n\x0cHandshakeLen\x18\x06 \x01(\r\x12\x18\n\x10HandshakeVersion\x18\x07 \x01(\x05\x12\x0e\n\x06Random\x18\x08 \x01(\x0c\x12\x14\n\x0cSessionIDLen\x18\t \x01(\r\x12\x11\n\tSessionID\x18\n \x01(\x0c\x12\x16\n\x0e\x43ipherSuiteLen\x18\x0b \x01(\x05\x12\x14\n\x0c\x45xtensionLen\x18\x0c \x01(\x05\x12\x0b\n\x03SNI\x18\r \x01(\t\x12\x0c\n\x04OSCP\x18\x0e \x01(\x08\x12\x14\n\x0c\x43ipherSuites\x18\x0f \x03(\x05\x12\x17\n\x0f\x43ompressMethods\x18\x10 \x03(\x05\x12\x15\n\rSignatureAlgs\x18\x11 \x03(\x05\x12\x17\n\x0fSupportedGroups\x18\x12 \x03(\x05\x12\x17\n\x0fSupportedPoints\x18\x13 \x03(\x05\x12\r\n\x05\x41LPNs\x18\x14 \x03(\t\x12\x0b\n\x03Ja3\x18\x15 \x01(\t\x12\r\n\x05SrcIP\x18\x16 \x01(\t\x12\r\n\x05\x44stIP\x18\x17 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x18 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x19 \x01(\t\x12\x0f\n\x07SrcPort\x18\x1a \x01(\x05\x12\x0f\n\x07\x44stPort\x18\x1b \x01(\x05\x12\x12\n\nExtensions\x18\x1c \x03(\x05\"d\n\x07IPSecAH\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08Reserved\x18\x02 \x01(\x05\x12\x0b\n\x03SPI\x18\x03 \x01(\x05\x12\x0b\n\x03Seq\x18\x04 \x01(\x05\x12\x1a\n\x12\x41uthenticationData\x18\x05 \x01(\x0c\"M\n\x08IPSecESP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0b\n\x03SPI\x18\x02 \x01(\x05\x12\x0b\n\x03Seq\x18\x03 \x01(\x05\x12\x14\n\x0cLenEncrypted\x18\x04 \x01(\x05\"\xb3\x01\n\x06Geneve\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x15\n\rOptionsLength\x18\x03 \x01(\x05\x12\x11\n\tOAMPacket\x18\x04 \x01(\x08\x12\x16\n\x0e\x43riticalOption\x18\x05 \x01(\x08\x12\x10\n\x08Protocol\x18\x06 \x01(\x05\x12\x0b\n\x03VNI\x18\x07 \x01(\r\x12$\n\x07Options\x18\x08 \x03(\x0b\x32\x13.types.GeneveOption\"X\n\x0cGeneveOption\x12\r\n\x05\x43lass\x18\x01 \x01(\x05\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\r\n\x05\x46lags\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x05 \x01(\x0c\"\x96\x01\n\x05VXLAN\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x13\n\x0bValidIDFlag\x18\x02 \x01(\x08\x12\x0b\n\x03VNI\x18\x03 \x01(\r\x12\x14\n\x0cGBPExtension\x18\x04 \x01(\x08\x12\x14\n\x0cGBPDontLearn\x18\x05 \x01(\x08\x12\x12\n\nGBPApplied\x18\x06 \x01(\x08\x12\x18\n\x10GBPGroupPolicyID\x18\x07 \x01(\x05\"\x82\x03\n\x03USB\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\n\n\x02ID\x18\x02 \x01(\x04\x12\x11\n\tEventType\x18\x03 \x01(\x05\x12\x14\n\x0cTransferType\x18\x04 \x01(\x05\x12\x11\n\tDirection\x18\x05 \x01(\x05\x12\x16\n\x0e\x45ndpointNumber\x18\x06 \x01(\x05\x12\x15\n\rDeviceAddress\x18\x07 \x01(\x05\x12\r\n\x05\x42usID\x18\x08 \x01(\x05\x12\x14\n\x0cTimestampSec\x18\t \x01(\x03\x12\x15\n\rTimestampUsec\x18\n \x01(\x05\x12\r\n\x05Setup\x18\x0b \x01(\x08\x12\x0c\n\x04\x44\x61ta\x18\x0c \x01(\x08\x12\x0e\n\x06Status\x18\r \x01(\x05\x12\x11\n\tUrbLength\x18\x0e \x01(\r\x12\x15\n\rUrbDataLength\x18\x0f \x01(\r\x12\x13\n\x0bUrbInterval\x18\x10 \x01(\r\x12\x15\n\rUrbStartFrame\x18\x11 \x01(\r\x12\x1e\n\x16UrbCopyOfTransferFlags\x18\x12 \x01(\r\x12\x12\n\nIsoNumDesc\x18\x13 \x01(\r\"\xc5\x01\n\x03LCM\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05Magic\x18\x02 \x01(\x05\x12\x16\n\x0eSequenceNumber\x18\x03 \x01(\x05\x12\x13\n\x0bPayloadSize\x18\x04 \x01(\x05\x12\x16\n\x0e\x46ragmentOffset\x18\x05 \x01(\x05\x12\x16\n\x0e\x46ragmentNumber\x18\x06 \x01(\x05\x12\x16\n\x0eTotalFragments\x18\x07 \x01(\x05\x12\x13\n\x0b\x43hannelName\x18\x08 \x01(\t\x12\x12\n\nFragmented\x18\t \x01(\x08\"`\n\x04MPLS\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05Label\x18\x02 \x01(\x05\x12\x14\n\x0cTrafficClass\x18\x03 \x01(\x05\x12\x13\n\x0bStackBottom\x18\x04 \x01(\x08\x12\x0b\n\x03TTL\x18\x05 \x01(\x05\"\x81\x01\n\tModbusTCP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x1d\n\x15TransactionIdentifier\x18\x02 \x01(\x05\x12\x1a\n\x12ProtocolIdentifier\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\x12\x16\n\x0eUnitIdentifier\x18\x05 \x01(\x05\"\xac\x01\n\x06OSPFv2\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0c\n\x04Type\x18\x03 \x01(\x05\x12\x14\n\x0cPacketLength\x18\x04 \x01(\x05\x12\x10\n\x08RouterID\x18\x05 \x01(\r\x12\x0e\n\x06\x41reaID\x18\x06 \x01(\r\x12\x10\n\x08\x43hecksum\x18\x07 \x01(\x05\x12\x0e\n\x06\x41uType\x18\x08 \x01(\x05\x12\x16\n\x0e\x41uthentication\x18\t \x01(\x03\"\xa8\x01\n\x06OSPFv3\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0c\n\x04Type\x18\x03 \x01(\x05\x12\x14\n\x0cPacketLength\x18\x04 \x01(\x05\x12\x10\n\x08RouterID\x18\x05 \x01(\r\x12\x0e\n\x06\x41reaID\x18\x06 \x01(\r\x12\x10\n\x08\x43hecksum\x18\x07 \x01(\x05\x12\x10\n\x08Instance\x18\x08 \x01(\x05\x12\x10\n\x08Reserved\x18\t \x01(\x05\"\x9b\x03\n\x03\x42\x46\x44\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x12\n\nDiagnostic\x18\x03 \x01(\x05\x12\r\n\x05State\x18\x04 \x01(\x05\x12\x0c\n\x04Poll\x18\x05 \x01(\x08\x12\r\n\x05\x46inal\x18\x06 \x01(\x08\x12\x1f\n\x17\x43ontrolPlaneIndependent\x18\x07 \x01(\x08\x12\x13\n\x0b\x41uthPresent\x18\x08 \x01(\x08\x12\x0e\n\x06\x44\x65mand\x18\t \x01(\x08\x12\x12\n\nMultipoint\x18\n \x01(\x08\x12\x18\n\x10\x44\x65tectMultiplier\x18\x0b \x01(\x05\x12\x17\n\x0fMyDiscriminator\x18\x0c \x01(\x05\x12\x19\n\x11YourDiscriminator\x18\r \x01(\x05\x12\x1c\n\x14\x44\x65siredMinTxInterval\x18\x0e \x01(\x05\x12\x1d\n\x15RequiredMinRxInterval\x18\x0f \x01(\x05\x12!\n\x19RequiredMinEchoRxInterval\x18\x10 \x01(\x05\x12(\n\nAuthHeader\x18\x11 \x01(\x0b\x32\x14.types.BFDAuthHeader\"V\n\rBFDAuthHeader\x12\x10\n\x08\x41uthType\x18\x01 \x01(\x05\x12\r\n\x05KeyID\x18\x02 \x01(\x05\x12\x16\n\x0eSequenceNumber\x18\x03 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x04 \x01(\x0c\"\xd9\x02\n\x03GRE\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x17\n\x0f\x43hecksumPresent\x18\x02 \x01(\x08\x12\x16\n\x0eRoutingPresent\x18\x03 \x01(\x08\x12\x12\n\nKeyPresent\x18\x04 \x01(\x08\x12\x12\n\nSeqPresent\x18\x05 \x01(\x08\x12\x19\n\x11StrictSourceRoute\x18\x06 \x01(\x08\x12\x12\n\nAckPresent\x18\x07 \x01(\x08\x12\x18\n\x10RecursionControl\x18\x08 \x01(\x05\x12\r\n\x05\x46lags\x18\t \x01(\x05\x12\x0f\n\x07Version\x18\n \x01(\x05\x12\x10\n\x08Protocol\x18\x0b \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x0c \x01(\x05\x12\x0e\n\x06Offset\x18\r \x01(\x05\x12\x0b\n\x03Key\x18\x0e \x01(\r\x12\x0b\n\x03Seq\x18\x0f \x01(\r\x12\x0b\n\x03\x41\x63k\x18\x10 \x01(\r\x12\"\n\x07Routing\x18\x11 \x01(\x0b\x32\x11.types.GRERouting\"\x86\x01\n\nGRERouting\x12\x15\n\rAddressFamily\x18\x01 \x01(\x05\x12\x11\n\tSREOffset\x18\x02 \x01(\x05\x12\x11\n\tSRELength\x18\x03 \x01(\x05\x12\x1a\n\x12RoutingInformation\x18\x04 \x01(\x0c\x12\x1f\n\x04Next\x18\x05 \x01(\x0b\x32\x11.types.GRERouting\"a\n\x04\x46\x44\x44I\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x14\n\x0c\x46rameControl\x18\x02 \x01(\x05\x12\x10\n\x08Priority\x18\x03 \x01(\x05\x12\x0e\n\x06SrcMAC\x18\x04 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x05 \x01(\t\"b\n\x03\x45\x41P\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04\x43ode\x18\x02 \x01(\x05\x12\n\n\x02Id\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\x12\x0c\n\x04Type\x18\x05 \x01(\x05\x12\x10\n\x08TypeData\x18\x06 \x01(\x0c\"I\n\x05\x45\x41POL\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0c\n\x04Type\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\"\xaa\x03\n\x08\x45\x41POLKey\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x19\n\x11KeyDescriptorType\x18\x02 \x01(\x05\x12\x1c\n\x14KeyDescriptorVersion\x18\x03 \x01(\x05\x12\x0f\n\x07KeyType\x18\x04 \x01(\x05\x12\x10\n\x08KeyIndex\x18\x05 \x01(\x05\x12\x0f\n\x07Install\x18\x06 \x01(\x08\x12\x0e\n\x06KeyACK\x18\x07 \x01(\x08\x12\x0e\n\x06KeyMIC\x18\x08 \x01(\x08\x12\x0e\n\x06Secure\x18\t \x01(\x08\x12\x10\n\x08MICError\x18\n \x01(\x08\x12\x0f\n\x07Request\x18\x0b \x01(\x08\x12\x1b\n\x13HasEncryptedKeyData\x18\x0c \x01(\x08\x12\x12\n\nSMKMessage\x18\r \x01(\x08\x12\x11\n\tKeyLength\x18\x0e \x01(\x05\x12\x15\n\rReplayCounter\x18\x0f \x01(\x04\x12\r\n\x05Nonce\x18\x10 \x01(\x0c\x12\n\n\x02IV\x18\x11 \x01(\x0c\x12\x0b\n\x03RSC\x18\x12 \x01(\x04\x12\n\n\x02ID\x18\x13 \x01(\x04\x12\x0b\n\x03MIC\x18\x14 \x01(\x0c\x12\x15\n\rKeyDataLength\x18\x15 \x01(\x05\x12\x18\n\x10\x45ncryptedKeyData\x18\x16 \x01(\x0c\"\xc0\x01\n\x06VRRPv2\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0c\n\x04Type\x18\x03 \x01(\x05\x12\x14\n\x0cVirtualRtrID\x18\x04 \x01(\x05\x12\x10\n\x08Priority\x18\x05 \x01(\x05\x12\x13\n\x0b\x43ountIPAddr\x18\x06 \x01(\x05\x12\x10\n\x08\x41uthType\x18\x07 \x01(\x05\x12\x10\n\x08\x41\x64verInt\x18\x08 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\t \x01(\x05\x12\x11\n\tIPAddress\x18\n \x03(\t\"\x7f\n\x0e\x43iscoDiscovery\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0b\n\x03TTL\x18\x03 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x04 \x01(\x05\x12*\n\x06Values\x18\x05 \x03(\x0b\x32\x1a.types.CiscoDiscoveryValue\"B\n\x13\x43iscoDiscoveryValue\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0e\n\x06Length\x18\x02 \x01(\x05\x12\r\n\x05Value\x18\x03 \x01(\x0c\"+\n\x0f\x43\x44PVLANDialogue\x12\n\n\x02ID\x18\x01 \x01(\x05\x12\x0c\n\x04VLAN\x18\x02 \x01(\x05\"-\n\x0b\x43\x44PLocation\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x10\n\x08Location\x18\x02 \x01(\t\">\n\x10\x43\x44PPowerDialogue\x12\n\n\x02ID\x18\x01 \x01(\x05\x12\x0e\n\x06MgmtID\x18\x02 \x01(\x05\x12\x0e\n\x06Values\x18\x03 \x03(\r\"`\n\x0f\x43\x44PSparePairPoE\x12\x13\n\x0bPSEFourWire\x18\x01 \x01(\x08\x12\x14\n\x0cPDArchShared\x18\x02 \x01(\x08\x12\x13\n\x0bPDRequestOn\x18\x03 \x01(\x08\x12\r\n\x05PSEOn\x18\x04 \x01(\x08\"\x9a\x06\n\x12\x43iscoDiscoveryInfo\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12!\n\x08\x43\x44PHello\x18\x02 \x01(\x0b\x32\x0f.types.CDPHello\x12\x10\n\x08\x44\x65viceID\x18\x03 \x01(\t\x12\x11\n\tAddresses\x18\x04 \x03(\t\x12\x0e\n\x06PortID\x18\x05 \x01(\t\x12,\n\x0c\x43\x61pabilities\x18\x06 \x01(\x0b\x32\x16.types.CDPCapabilities\x12\x0f\n\x07Version\x18\x07 \x01(\t\x12\x10\n\x08Platform\x18\x08 \x01(\t\x12 \n\nIPPrefixes\x18\t \x03(\x0b\x32\x0c.types.IPNet\x12\x11\n\tVTPDomain\x18\n \x01(\t\x12\x12\n\nNativeVLAN\x18\x0b \x01(\x05\x12\x12\n\nFullDuplex\x18\x0c \x01(\x08\x12)\n\tVLANReply\x18\r \x01(\x0b\x32\x16.types.CDPVLANDialogue\x12)\n\tVLANQuery\x18\x0e \x01(\x0b\x32\x16.types.CDPVLANDialogue\x12\x18\n\x10PowerConsumption\x18\x0f \x01(\x05\x12\x0b\n\x03MTU\x18\x10 \x01(\r\x12\x15\n\rExtendedTrust\x18\x11 \x01(\x05\x12\x14\n\x0cUntrustedCOS\x18\x12 \x01(\x05\x12\x0f\n\x07SysName\x18\x13 \x01(\t\x12\x0e\n\x06SysOID\x18\x14 \x01(\t\x12\x15\n\rMgmtAddresses\x18\x15 \x03(\t\x12$\n\x08Location\x18\x16 \x01(\x0b\x32\x12.types.CDPLocation\x12-\n\x0cPowerRequest\x18\x17 \x01(\x0b\x32\x17.types.CDPPowerDialogue\x12/\n\x0ePowerAvailable\x18\x18 \x01(\x0b\x32\x17.types.CDPPowerDialogue\x12,\n\x0cSparePairPoe\x18\x19 \x01(\x0b\x32\x16.types.CDPSparePairPoE\x12(\n\nEnergyWise\x18\x1a \x01(\x0b\x32\x14.types.CDPEnergyWise\x12+\n\x07Unknown\x18\x1b \x03(\x0b\x32\x1a.types.CiscoDiscoveryValue\"\xf2\x01\n\x08\x43\x44PHello\x12\x0b\n\x03OUI\x18\x01 \x01(\x0c\x12\x12\n\nProtocolID\x18\x02 \x01(\x05\x12\x15\n\rClusterMaster\x18\x03 \x01(\t\x12\x10\n\x08Unknown1\x18\x04 \x01(\t\x12\x0f\n\x07Version\x18\x05 \x01(\x05\x12\x12\n\nSubVersion\x18\x06 \x01(\x05\x12\x0e\n\x06Status\x18\x07 \x01(\x05\x12\x10\n\x08Unknown2\x18\x08 \x01(\x05\x12\x18\n\x10\x43lusterCommander\x18\t \x01(\t\x12\x11\n\tSwitchMAC\x18\n \x01(\t\x12\x10\n\x08Unknown3\x18\x0b \x01(\x05\x12\x16\n\x0eManagementVLAN\x18\x0c \x01(\x05\"\xca\x02\n\rCDPEnergyWise\x12\x15\n\rEncryptedData\x18\x01 \x01(\x0c\x12\x10\n\x08Unknown1\x18\x02 \x01(\r\x12\x16\n\x0eSequenceNumber\x18\x03 \x01(\r\x12\x13\n\x0bModelNumber\x18\x04 \x01(\t\x12\x10\n\x08Unknown2\x18\x05 \x01(\x05\x12\x12\n\nHardwareID\x18\x06 \x01(\t\x12\x11\n\tSerialNum\x18\x07 \x01(\t\x12\x10\n\x08Unknown3\x18\x08 \x01(\x0c\x12\x0c\n\x04Role\x18\t \x01(\t\x12\x0e\n\x06\x44omain\x18\n \x01(\t\x12\x0c\n\x04Name\x18\x0b \x01(\t\x12\x15\n\rReplyUnknown1\x18\x0c \x01(\x0c\x12\x11\n\tReplyPort\x18\r \x01(\x0c\x12\x14\n\x0cReplyAddress\x18\x0e \x01(\x0c\x12\x15\n\rReplyUnknown2\x18\x0f \x01(\x0c\x12\x15\n\rReplyUnknown3\x18\x10 \x01(\x0c\"\xbb\x01\n\x0f\x43\x44PCapabilities\x12\x10\n\x08L3Router\x18\x01 \x01(\x08\x12\x10\n\x08TBBridge\x18\x02 \x01(\x08\x12\x10\n\x08SPBridge\x18\x03 \x01(\x08\x12\x10\n\x08L2Switch\x18\x04 \x01(\x08\x12\x0e\n\x06IsHost\x18\x05 \x01(\x08\x12\x12\n\nIGMPFilter\x18\x06 \x01(\x08\x12\x12\n\nL1Repeater\x18\x07 \x01(\x08\x12\x0f\n\x07IsPhone\x18\x08 \x01(\x08\x12\x17\n\x0fRemotelyManaged\x18\t \x01(\x08\"#\n\x05IPNet\x12\n\n\x02IP\x18\x01 \x01(\t\x12\x0e\n\x06IPMask\x18\x02 \x01(\t\"\xab\x01\n\x03LSA\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05LSAge\x18\x02 \x01(\x05\x12\x0e\n\x06LSType\x18\x03 \x01(\x05\x12\x13\n\x0bLinkStateID\x18\x04 \x01(\r\x12\x11\n\tAdvRouter\x18\x05 \x01(\r\x12\x13\n\x0bLSSeqNumber\x18\x06 \x01(\r\x12\x12\n\nLSChecksum\x18\x07 \x01(\x05\x12\x0e\n\x06Length\x18\x08 \x01(\x05\x12\x11\n\tLSOptions\x18\t \x01(\x05\"K\n\x05LSReq\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0e\n\x06LSType\x18\x02 \x01(\x05\x12\x0c\n\x04LSID\x18\x03 \x01(\r\x12\x11\n\tAdvRouter\x18\x04 \x01(\r\"J\n\x08LSUpdate\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x11\n\tNumOfLSAs\x18\x02 \x01(\r\x12\x18\n\x04LSAs\x18\x03 \x03(\x0b\x32\n.types.LSA\"\x97\x01\n\x07LinkLSA\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x13\n\x0bRtrPriority\x18\x02 \x01(\x05\x12\x0f\n\x07Options\x18\x03 \x01(\r\x12\x18\n\x10LinkLocalAddress\x18\x04 \x01(\x0c\x12\x15\n\rNumOfPrefixes\x18\x05 \x01(\r\x12\"\n\x08Prefixes\x18\x06 \x03(\x0b\x32\x10.types.LSAPrefix\"_\n\tLSAPrefix\x12\x14\n\x0cPrefixLength\x18\x01 \x01(\x05\x12\x15\n\rPrefixOptions\x18\x02 \x01(\x05\x12\x0e\n\x06Metric\x18\x03 \x01(\x05\x12\x15\n\rAddressPrefix\x18\x04 \x01(\x0c*\x9c\r\n\x04Type\x12\r\n\tNC_Header\x10\x00\x12\x0c\n\x08NC_Batch\x10\x01\x12\x0b\n\x07NC_Flow\x10\x02\x12\x11\n\rNC_Connection\x10\x03\x12\x0f\n\x0bNC_LinkFlow\x10\x04\x12\x12\n\x0eNC_NetworkFlow\x10\x05\x12\x14\n\x10NC_TransportFlow\x10\x06\x12\x0f\n\x0bNC_Ethernet\x10\x07\x12\n\n\x06NC_ARP\x10\x08\x12\x0c\n\x08NC_Dot1Q\x10\t\x12\x0c\n\x08NC_Dot11\x10\n\x12\x0f\n\x0bNC_Dot11QOS\x10\x0b\x12\x15\n\x11NC_Dot11HTControl\x10\x0c\x12\x18\n\x14NC_Dot11HTControlVHT\x10\r\x12\x17\n\x13NC_Dot11HTControlHT\x10\x0e\x12\x18\n\x14NC_Dot11HTControlMFB\x10\x0f\x12 \n\x1cNC_Dot11LinkAdapationControl\x10\x10\x12\x10\n\x0cNC_Dot11ASEL\x10\x11\x12\x19\n\x15NC_LinkLayerDiscovery\x10\x12\x12\x14\n\x10NC_LLDPChassisID\x10\x13\x12\x11\n\rNC_LLDPPortID\x10\x14\x12\x1e\n\x1aNC_LinkLayerDiscoveryValue\x10\x15\x12\x12\n\x0eNC_EthernetCTP\x10\x16\x12\x17\n\x13NC_EthernetCTPReply\x10\x17\x12\x1d\n\x19NC_LinkLayerDiscoveryInfo\x10\x18\x12\x1a\n\x16NC_LLDPSysCapabilities\x10\x19\x12\x17\n\x13NC_LLDPCapabilities\x10\x1a\x12\x16\n\x12NC_LLDPMgmtAddress\x10\x1b\x12\x19\n\x15NC_LLDPOrgSpecificTLV\x10\x1c\x12\x0b\n\x07NC_IPv4\x10\x1d\x12\x11\n\rNC_IPv4Option\x10\x1e\x12\x0b\n\x07NC_IPv6\x10\x1f\x12\r\n\tNC_ICMPv4\x10 \x12\r\n\tNC_ICMPv6\x10!\x12\"\n\x1eNC_ICMPv6NeighborAdvertisement\x10\"\x12 \n\x1cNC_ICMPv6RouterAdvertisement\x10#\x12\x13\n\x0fNC_ICMPv6Option\x10$\x12\n\n\x06NC_UDP\x10%\x12\n\n\x06NC_TCP\x10&\x12\x10\n\x0cNC_TCPOption\x10\'\x12\x0b\n\x07NC_SCTP\x10(\x12\n\n\x06NC_DNS\x10)\x12\x18\n\x14NC_DNSResourceRecord\x10*\x12\r\n\tNC_DNSSOA\x10+\x12\r\n\tNC_DNSSRV\x10,\x12\x0c\n\x08NC_DNSMX\x10-\x12\x12\n\x0eNC_DNSQuestion\x10.\x12\r\n\tNC_DHCPv4\x10/\x12\x11\n\rNC_DHCPOption\x10\x30\x12\r\n\tNC_DHCPv6\x10\x31\x12\x13\n\x0fNC_DHCPv6Option\x10\x32\x12\n\n\x06NC_LLC\x10\x33\x12\n\n\x06NC_NTP\x10\x34\x12\n\n\x06NC_SIP\x10\x35\x12\x0b\n\x07NC_IGMP\x10\x36\x12\x18\n\x14NC_IGMPv3GroupRecord\x10\x37\x12\x13\n\x0fNC_IPv6HopByHop\x10\x38\x12\x19\n\x15NC_IPv6HopByHopOption\x10\x39\x12\"\n\x1eNC_IPv6HopByHopOptionAlignment\x10:\x12\x0b\n\x07NC_SNAP\x10;\x12\x11\n\rNC_ICMPv6Echo\x10<\x12!\n\x1dNC_ICMPv6NeighborSolicitation\x10=\x12\x1f\n\x1bNC_ICMPv6RouterSolicitation\x10>\x12\x0b\n\x07NC_HTTP\x10?\x12\x15\n\x11NC_TLSClientHello\x10@\x12\x0e\n\nNC_IPSecAH\x10\x41\x12\x0f\n\x0bNC_IPSecESP\x10\x42\x12\r\n\tNC_Geneve\x10\x43\x12\x13\n\x0fNC_IPv6Fragment\x10\x44\x12\x0c\n\x08NC_VXLAN\x10\x45\x12\n\n\x06NC_USB\x10\x46\x12\n\n\x06NC_LCM\x10G\x12\x0b\n\x07NC_MPLS\x10H\x12\x10\n\x0cNC_ModbusTCP\x10I\x12\r\n\tNC_OSPFv2\x10J\x12\r\n\tNC_OSPFv3\x10K\x12\n\n\x06NC_BFD\x10L\x12\n\n\x06NC_GRE\x10M\x12\x0b\n\x07NC_FDDI\x10N\x12\n\n\x06NC_EAP\x10O\x12\r\n\tNC_VRRPv2\x10P\x12\x0c\n\x08NC_EAPOL\x10Q\x12\x0f\n\x0bNC_EAPOLKey\x10R\x12\x15\n\x11NC_CiscoDiscovery\x10S\x12\x19\n\x15NC_CiscoDiscoveryInfo\x10T\x12\n\n\x06NC_LSA\x10U\x12\x0f\n\x0bNC_LSUpdate\x10V\x12\x0c\n\x08NC_LSReq\x10W\x12\x0e\n\nNC_LinkLSA\x10Xb\x06proto3')
+  serialized_pb=_b('\n\x0cnetcap.proto\x12\x05types\"Z\n\x06Header\x12\x0f\n\x07\x43reated\x18\x01 \x01(\t\x12\x13\n\x0bInputSource\x18\x02 \x01(\t\x12\x19\n\x04Type\x18\x03 \x01(\x0e\x32\x0b.types.Type\x12\x0f\n\x07Version\x18\x04 \x01(\t\"W\n\x05\x42\x61tch\x12\x10\n\x08\x43lientID\x18\x01 \x01(\t\x12 \n\x0bMessageType\x18\x02 \x01(\x0e\x32\x0b.types.Type\x12\x0c\n\x04Size\x18\x03 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x04 \x01(\x0c\"\xc9\x02\n\x04\x46low\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x11\n\tLinkProto\x18\x02 \x01(\t\x12\x14\n\x0cNetworkProto\x18\x03 \x01(\t\x12\x16\n\x0eTransportProto\x18\x04 \x01(\t\x12\x18\n\x10\x41pplicationProto\x18\x05 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x06 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x07 \x01(\t\x12\r\n\x05SrcIP\x18\x08 \x01(\t\x12\x0f\n\x07SrcPort\x18\t \x01(\t\x12\r\n\x05\x44stIP\x18\n \x01(\t\x12\x0f\n\x07\x44stPort\x18\x0b \x01(\t\x12\x0c\n\x04Size\x18\x0c \x01(\x05\x12\x16\n\x0e\x41ppPayloadSize\x18\r \x01(\x05\x12\x12\n\nNumPackets\x18\x0e \x01(\x05\x12\x0b\n\x03UID\x18\x0f \x01(\t\x12\x15\n\rTimestampLast\x18\x10 \x01(\t\x12\x10\n\x08\x44uration\x18\x11 \x01(\x03\"\xcf\x02\n\nConnection\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x11\n\tLinkProto\x18\x02 \x01(\t\x12\x14\n\x0cNetworkProto\x18\x03 \x01(\t\x12\x16\n\x0eTransportProto\x18\x04 \x01(\t\x12\x18\n\x10\x41pplicationProto\x18\x05 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x06 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x07 \x01(\t\x12\r\n\x05SrcIP\x18\x08 \x01(\t\x12\x0f\n\x07SrcPort\x18\t \x01(\t\x12\r\n\x05\x44stIP\x18\n \x01(\t\x12\x0f\n\x07\x44stPort\x18\x0b \x01(\t\x12\x0c\n\x04Size\x18\x0c \x01(\x05\x12\x16\n\x0e\x41ppPayloadSize\x18\r \x01(\x05\x12\x12\n\nNumPackets\x18\x0e \x01(\x05\x12\x0b\n\x03UID\x18\x0f \x01(\t\x12\x15\n\rTimestampLast\x18\x10 \x01(\t\x12\x10\n\x08\x44uration\x18\x11 \x01(\x03\"\xa9\x01\n\x08LinkFlow\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x15\n\rTimestampLast\x18\x02 \x01(\t\x12\r\n\x05Proto\x18\x03 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x04 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x05 \x01(\t\x12\x0c\n\x04Size\x18\x06 \x01(\x03\x12\x12\n\nNumPackets\x18\x07 \x01(\x03\x12\x0b\n\x03UID\x18\x08 \x01(\x04\x12\x10\n\x08\x44uration\x18\t \x01(\x03\"\xaa\x01\n\x0bNetworkFlow\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x15\n\rTimestampLast\x18\x02 \x01(\t\x12\r\n\x05Proto\x18\x03 \x01(\t\x12\r\n\x05SrcIP\x18\x04 \x01(\t\x12\r\n\x05\x44stIP\x18\x05 \x01(\t\x12\x0c\n\x04Size\x18\x06 \x01(\x03\x12\x12\n\nNumPackets\x18\x07 \x01(\x03\x12\x0b\n\x03UID\x18\x08 \x01(\x04\x12\x10\n\x08\x44uration\x18\t \x01(\x03\"\xb0\x01\n\rTransportFlow\x12\x16\n\x0eTimestampFirst\x18\x01 \x01(\t\x12\x15\n\rTimestampLast\x18\x02 \x01(\t\x12\r\n\x05Proto\x18\x03 \x01(\t\x12\x0f\n\x07SrcPort\x18\x04 \x01(\x05\x12\x0f\n\x07\x44stPort\x18\x05 \x01(\x05\x12\x0c\n\x04Size\x18\x06 \x01(\x03\x12\x12\n\nNumPackets\x18\x07 \x01(\x03\x12\x0b\n\x03UID\x18\x08 \x01(\x04\x12\x10\n\x08\x44uration\x18\t \x01(\x03\"\x80\x01\n\x08\x45thernet\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x02 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x03 \x01(\t\x12\x14\n\x0c\x45thernetType\x18\x04 \x01(\x05\x12\x16\n\x0ePayloadEntropy\x18\x05 \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x06 \x01(\x05\"\xdb\x01\n\x03\x41RP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08\x41\x64\x64rType\x18\x02 \x01(\x05\x12\x10\n\x08Protocol\x18\x03 \x01(\x05\x12\x15\n\rHwAddressSize\x18\x04 \x01(\x05\x12\x17\n\x0fProtAddressSize\x18\x05 \x01(\x05\x12\x11\n\tOperation\x18\x06 \x01(\x05\x12\x14\n\x0cSrcHwAddress\x18\x07 \x01(\x0c\x12\x16\n\x0eSrcProtAddress\x18\x08 \x01(\x0c\x12\x14\n\x0c\x44stHwAddress\x18\t \x01(\x0c\x12\x16\n\x0e\x44stProtAddress\x18\n \x01(\x0c\"h\n\x05\x44ot1Q\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08Priority\x18\x02 \x01(\x05\x12\x14\n\x0c\x44ropEligible\x18\x03 \x01(\x08\x12\x16\n\x0eVLANIdentifier\x18\x04 \x01(\x05\x12\x0c\n\x04Type\x18\x05 \x01(\x05\"\xac\x02\n\x05\x44ot11\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\r\n\x05Proto\x18\x03 \x01(\x05\x12\r\n\x05\x46lags\x18\x04 \x01(\x05\x12\x12\n\nDurationID\x18\x05 \x01(\x05\x12\x10\n\x08\x41\x64\x64ress1\x18\x06 \x01(\t\x12\x10\n\x08\x41\x64\x64ress2\x18\x07 \x01(\t\x12\x10\n\x08\x41\x64\x64ress3\x18\x08 \x01(\t\x12\x10\n\x08\x41\x64\x64ress4\x18\t \x01(\t\x12\x16\n\x0eSequenceNumber\x18\n \x01(\x05\x12\x16\n\x0e\x46ragmentNumber\x18\x0b \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x0c \x01(\r\x12\x1c\n\x03QOS\x18\r \x01(\x0b\x32\x0f.types.Dot11QOS\x12(\n\tHTControl\x18\x0e \x01(\x0b\x32\x15.types.Dot11HTControl\"F\n\x08\x44ot11QOS\x12\x0b\n\x03TID\x18\x01 \x01(\x05\x12\x0c\n\x04\x45OSP\x18\x02 \x01(\x08\x12\x11\n\tAckPolicy\x18\x03 \x01(\x05\x12\x0c\n\x04TXOP\x18\x04 \x01(\x05\"\x87\x01\n\x0e\x44ot11HTControl\x12\x14\n\x0c\x41\x43\x43onstraint\x18\x01 \x01(\x08\x12\x13\n\x0bRDGMorePPDU\x18\x02 \x01(\x08\x12%\n\x03VHT\x18\x03 \x01(\x0b\x32\x18.types.Dot11HTControlVHT\x12#\n\x02HT\x18\x04 \x01(\x0b\x32\x17.types.Dot11HTControlHT\"\xe2\x01\n\x11\x44ot11HTControlVHT\x12\x0b\n\x03MRQ\x18\x01 \x01(\x08\x12\x16\n\x0eUnsolicitedMFB\x18\x02 \x01(\x08\x12\x0b\n\x03MSI\x18\x03 \x01(\x05\x12%\n\x03MFB\x18\x04 \x01(\x0b\x32\x18.types.Dot11HTControlMFB\x12\x15\n\rCompressedMSI\x18\x05 \x01(\x05\x12\x16\n\x0eSTBCIndication\x18\x06 \x01(\x08\x12\x0c\n\x04MFSI\x18\x07 \x01(\x05\x12\x0b\n\x03GID\x18\x08 \x01(\x05\x12\x12\n\nCodingType\x18\t \x01(\x05\x12\x16\n\x0e\x46\x62TXBeamformed\x18\n \x01(\x08\"\xc7\x01\n\x10\x44ot11HTControlHT\x12>\n\x14LinkAdapationControl\x18\x01 \x01(\x0b\x32 .types.Dot11LinkAdapationControl\x12\x1b\n\x13\x43\x61librationPosition\x18\x02 \x01(\x05\x12\x1b\n\x13\x43\x61librationSequence\x18\x03 \x01(\x05\x12\x13\n\x0b\x43SISteering\x18\x04 \x01(\x05\x12\x17\n\x0fNDPAnnouncement\x18\x05 \x01(\x08\x12\x0b\n\x03\x44\x45I\x18\x06 \x01(\x08\"L\n\x11\x44ot11HTControlMFB\x12\x0e\n\x06NumSTS\x18\x01 \x01(\x05\x12\x0e\n\x06VHTMCS\x18\x02 \x01(\x05\x12\n\n\x02\x42W\x18\x03 \x01(\x05\x12\x0b\n\x03SNR\x18\x04 \x01(\x05\"}\n\x19\x44ot11LinkAdapationControl\x12\x0b\n\x03TRQ\x18\x01 \x01(\x08\x12\x0b\n\x03MRQ\x18\x02 \x01(\x08\x12\x0b\n\x03MSI\x18\x03 \x01(\x05\x12\x0c\n\x04MFSI\x18\x04 \x01(\x05\x12\x0b\n\x03MFB\x18\x06 \x01(\x05\x12\x1e\n\x04\x41SEL\x18\x05 \x01(\x0b\x32\x10.types.Dot11ASEL\"*\n\tDot11ASEL\x12\x0f\n\x07\x43ommand\x18\x01 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x02 \x01(\x05\"\xb0\x01\n\x12LinkLayerDiscovery\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\'\n\tChassisID\x18\x02 \x01(\x0b\x32\x14.types.LLDPChassisID\x12!\n\x06PortID\x18\x03 \x01(\x0b\x32\x11.types.LLDPPortID\x12\x0b\n\x03TTL\x18\x04 \x01(\x05\x12.\n\x06Values\x18\x05 \x03(\x0b\x32\x1e.types.LinkLayerDiscoveryValue\",\n\rLLDPChassisID\x12\x0f\n\x07Subtype\x18\x01 \x01(\x05\x12\n\n\x02ID\x18\x02 \x01(\x0c\")\n\nLLDPPortID\x12\x0f\n\x07Subtype\x18\x01 \x01(\x05\x12\n\n\x02ID\x18\x02 \x01(\x0c\"F\n\x17LinkLayerDiscoveryValue\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0e\n\x06Length\x18\x02 \x01(\x05\x12\r\n\x05Value\x18\x03 \x01(\x0c\"3\n\x0b\x45thernetCTP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x11\n\tSkipCount\x18\x02 \x01(\x05\"\\\n\x10\x45thernetCTPReply\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08\x46unction\x18\x02 \x01(\x05\x12\x15\n\rReceiptNumber\x18\x03 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x04 \x01(\x0c\"\xac\x02\n\x16LinkLayerDiscoveryInfo\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x17\n\x0fPortDescription\x18\x02 \x01(\t\x12\x0f\n\x07SysName\x18\x03 \x01(\t\x12\x16\n\x0eSysDescription\x18\x04 \x01(\t\x12\x33\n\x0fSysCapabilities\x18\x05 \x01(\x0b\x32\x1a.types.LLDPSysCapabilities\x12+\n\x0bMgmtAddress\x18\x06 \x01(\x0b\x32\x16.types.LLDPMgmtAddress\x12*\n\x07OrgTLVs\x18\x07 \x03(\x0b\x32\x19.types.LLDPOrgSpecificTLV\x12/\n\x07Unknown\x18\x08 \x03(\x0b\x32\x1e.types.LinkLayerDiscoveryValue\"n\n\x13LLDPSysCapabilities\x12*\n\tSystemCap\x18\x01 \x01(\x0b\x32\x17.types.LLDPCapabilities\x12+\n\nEnabledCap\x18\x02 \x01(\x0b\x32\x17.types.LLDPCapabilities\"\xc3\x01\n\x10LLDPCapabilities\x12\r\n\x05Other\x18\x01 \x01(\x08\x12\x10\n\x08Repeater\x18\x02 \x01(\x08\x12\x0e\n\x06\x42ridge\x18\x03 \x01(\x08\x12\x0e\n\x06WLANAP\x18\x04 \x01(\x08\x12\x0e\n\x06Router\x18\x05 \x01(\x08\x12\r\n\x05Phone\x18\x06 \x01(\x08\x12\x0e\n\x06\x44ocSis\x18\x07 \x01(\x08\x12\x13\n\x0bStationOnly\x18\x08 \x01(\x08\x12\r\n\x05\x43VLAN\x18\t \x01(\x08\x12\r\n\x05SVLAN\x18\n \x01(\x08\x12\x0c\n\x04TMPR\x18\x0b \x01(\x08\"s\n\x0fLLDPMgmtAddress\x12\x0f\n\x07Subtype\x18\x01 \x01(\x05\x12\x0f\n\x07\x41\x64\x64ress\x18\x02 \x01(\x0c\x12\x18\n\x10InterfaceSubtype\x18\x03 \x01(\x05\x12\x17\n\x0fInterfaceNumber\x18\x04 \x01(\r\x12\x0b\n\x03OID\x18\x05 \x01(\t\"@\n\x12LLDPOrgSpecificTLV\x12\x0b\n\x03OUI\x18\x01 \x01(\r\x12\x0f\n\x07SubType\x18\x02 \x01(\x05\x12\x0c\n\x04Info\x18\x03 \x01(\x0c\"\xb4\x02\n\x04IPv4\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0b\n\x03IHL\x18\x03 \x01(\x05\x12\x0b\n\x03TOS\x18\x04 \x01(\x05\x12\x0e\n\x06Length\x18\x05 \x01(\x05\x12\n\n\x02Id\x18\x06 \x01(\x05\x12\r\n\x05\x46lags\x18\x07 \x01(\x05\x12\x12\n\nFragOffset\x18\x08 \x01(\x05\x12\x0b\n\x03TTL\x18\t \x01(\x05\x12\x10\n\x08Protocol\x18\n \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x0b \x01(\x05\x12\r\n\x05SrcIP\x18\x0c \x01(\t\x12\r\n\x05\x44stIP\x18\r \x01(\t\x12\x0f\n\x07Padding\x18\x0e \x01(\x0c\x12\"\n\x07Options\x18\x0f \x03(\x0b\x32\x11.types.IPv4Option\x12\x16\n\x0ePayloadEntropy\x18\x10 \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x11 \x01(\x05\"J\n\nIPv4Option\x12\x12\n\nOptionType\x18\x01 \x01(\x05\x12\x14\n\x0cOptionLength\x18\x02 \x01(\x05\x12\x12\n\nOptionData\x18\x03 \x01(\x0c\"\xfb\x01\n\x04IPv6\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x14\n\x0cTrafficClass\x18\x03 \x01(\x05\x12\x11\n\tFlowLabel\x18\x04 \x01(\r\x12\x0e\n\x06Length\x18\x05 \x01(\x05\x12\x12\n\nNextHeader\x18\x06 \x01(\x05\x12\x10\n\x08HopLimit\x18\x07 \x01(\x05\x12\r\n\x05SrcIP\x18\x08 \x01(\t\x12\r\n\x05\x44stIP\x18\t \x01(\t\x12\x16\n\x0ePayloadEntropy\x18\n \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x0b \x01(\x05\x12%\n\x08HopByHop\x18\x0c \x01(\x0b\x32\x13.types.IPv6HopByHop\"\xa2\x01\n\x0cIPv6Fragment\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x12\n\nNextHeader\x18\x02 \x01(\x05\x12\x11\n\tReserved1\x18\x03 \x01(\x05\x12\x16\n\x0e\x46ragmentOffset\x18\x04 \x01(\x05\x12\x11\n\tReserved2\x18\x05 \x01(\x05\x12\x15\n\rMoreFragments\x18\x06 \x01(\x08\x12\x16\n\x0eIdentification\x18\x07 \x01(\r\"X\n\x06ICMPv4\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08TypeCode\x18\x02 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x03 \x01(\x05\x12\n\n\x02Id\x18\x04 \x01(\x05\x12\x0b\n\x03Seq\x18\x05 \x01(\x05\"?\n\x06ICMPv6\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08TypeCode\x18\x02 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x03 \x01(\x05\"|\n\x1bICMPv6NeighborAdvertisement\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05\x46lags\x18\x02 \x01(\x05\x12\x15\n\rTargetAddress\x18\x03 \x01(\t\x12$\n\x07Options\x18\x04 \x03(\x0b\x32\x13.types.ICMPv6Option\"\xba\x01\n\x19ICMPv6RouterAdvertisement\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08HopLimit\x18\x02 \x01(\x05\x12\r\n\x05\x46lags\x18\x03 \x01(\x05\x12\x16\n\x0eRouterLifetime\x18\x04 \x01(\x05\x12\x15\n\rReachableTime\x18\x05 \x01(\r\x12\x14\n\x0cRetransTimer\x18\x06 \x01(\r\x12$\n\x07Options\x18\x07 \x03(\x0b\x32\x13.types.ICMPv6Option\"*\n\x0cICMPv6Option\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x02 \x01(\x0c\"\x89\x01\n\x03UDP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07SrcPort\x18\x02 \x01(\x05\x12\x0f\n\x07\x44stPort\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x05 \x01(\x05\x12\x16\n\x0ePayloadEntropy\x18\x06 \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x07 \x01(\x05\"\xf5\x02\n\x03TCP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07SrcPort\x18\x02 \x01(\x05\x12\x0f\n\x07\x44stPort\x18\x03 \x01(\x05\x12\x0e\n\x06SeqNum\x18\x04 \x01(\r\x12\x0e\n\x06\x41\x63kNum\x18\x05 \x01(\r\x12\x12\n\nDataOffset\x18\x06 \x01(\x05\x12\x0b\n\x03\x46IN\x18\x07 \x01(\x08\x12\x0b\n\x03SYN\x18\x08 \x01(\x08\x12\x0b\n\x03RST\x18\t \x01(\x08\x12\x0b\n\x03PSH\x18\n \x01(\x08\x12\x0b\n\x03\x41\x43K\x18\x0b \x01(\x08\x12\x0b\n\x03URG\x18\x0c \x01(\x08\x12\x0b\n\x03\x45\x43\x45\x18\r \x01(\x08\x12\x0b\n\x03\x43WR\x18\x0e \x01(\x08\x12\n\n\x02NS\x18\x0f \x01(\x08\x12\x0e\n\x06Window\x18\x10 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x11 \x01(\x05\x12\x0e\n\x06Urgent\x18\x12 \x01(\x05\x12\x0f\n\x07Padding\x18\x13 \x01(\x0c\x12!\n\x07Options\x18\x14 \x03(\x0b\x32\x10.types.TCPOption\x12\x16\n\x0ePayloadEntropy\x18\x15 \x01(\x01\x12\x13\n\x0bPayloadSize\x18\x16 \x01(\x05\"I\n\tTCPOption\x12\x12\n\nOptionType\x18\x01 \x01(\x05\x12\x14\n\x0cOptionLength\x18\x02 \x01(\x05\x12\x12\n\nOptionData\x18\x03 \x01(\x0c\"f\n\x04SCTP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07SrcPort\x18\x02 \x01(\r\x12\x0f\n\x07\x44stPort\x18\x03 \x01(\r\x12\x17\n\x0fVerificationTag\x18\x04 \x01(\r\x12\x10\n\x08\x43hecksum\x18\x05 \x01(\r\"\x85\x03\n\x03\x44NS\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\n\n\x02ID\x18\x02 \x01(\x05\x12\n\n\x02QR\x18\x03 \x01(\x08\x12\x0e\n\x06OpCode\x18\x04 \x01(\x05\x12\n\n\x02\x41\x41\x18\x05 \x01(\x08\x12\n\n\x02TC\x18\x06 \x01(\x08\x12\n\n\x02RD\x18\x07 \x01(\x08\x12\n\n\x02RA\x18\x08 \x01(\x08\x12\t\n\x01Z\x18\t \x01(\x05\x12\x14\n\x0cResponseCode\x18\n \x01(\x05\x12\x0f\n\x07QDCount\x18\x0b \x01(\x05\x12\x0f\n\x07\x41NCount\x18\x0c \x01(\x05\x12\x0f\n\x07NSCount\x18\r \x01(\x05\x12\x0f\n\x07\x41RCount\x18\x0e \x01(\x05\x12%\n\tQuestions\x18\x0f \x03(\x0b\x32\x12.types.DNSQuestion\x12)\n\x07\x41nswers\x18\x10 \x03(\x0b\x32\x18.types.DNSResourceRecord\x12-\n\x0b\x41uthorities\x18\x11 \x03(\x0b\x32\x18.types.DNSResourceRecord\x12-\n\x0b\x41\x64\x64itionals\x18\x12 \x03(\x0b\x32\x18.types.DNSResourceRecord\"\x81\x02\n\x11\x44NSResourceRecord\x12\x0c\n\x04Name\x18\x01 \x01(\x0c\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\r\n\x05\x43lass\x18\x03 \x01(\x05\x12\x0b\n\x03TTL\x18\x04 \x01(\r\x12\x12\n\nDataLength\x18\x05 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x06 \x01(\x0c\x12\n\n\x02IP\x18\x07 \x01(\t\x12\n\n\x02NS\x18\x08 \x01(\x0c\x12\r\n\x05\x43NAME\x18\t \x01(\x0c\x12\x0b\n\x03PTR\x18\n \x01(\x0c\x12\x1a\n\x03SOA\x18\x0b \x01(\x0b\x32\r.types.DNSSOA\x12\x1a\n\x03SRV\x18\x0c \x01(\x0b\x32\r.types.DNSSRV\x12\x18\n\x02MX\x18\r \x01(\x0b\x32\x0c.types.DNSMX\x12\x0c\n\x04TXTs\x18\x0e \x03(\x0c\"w\n\x06\x44NSSOA\x12\r\n\x05MName\x18\x01 \x01(\x0c\x12\r\n\x05RName\x18\x02 \x01(\x0c\x12\x0e\n\x06Serial\x18\x03 \x01(\r\x12\x0f\n\x07Refresh\x18\x04 \x01(\r\x12\r\n\x05Retry\x18\x05 \x01(\r\x12\x0e\n\x06\x45xpire\x18\x06 \x01(\r\x12\x0f\n\x07Minimum\x18\x07 \x01(\r\"F\n\x06\x44NSSRV\x12\x10\n\x08Priority\x18\x01 \x01(\x05\x12\x0e\n\x06Weight\x18\x02 \x01(\x05\x12\x0c\n\x04Port\x18\x03 \x01(\x05\x12\x0c\n\x04Name\x18\x04 \x01(\x0c\")\n\x05\x44NSMX\x12\x12\n\nPreference\x18\x01 \x01(\x05\x12\x0c\n\x04Name\x18\x02 \x01(\x0c\"8\n\x0b\x44NSQuestion\x12\x0c\n\x04Name\x18\x01 \x01(\x0c\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\r\n\x05\x43lass\x18\x03 \x01(\x05\"\xc9\x02\n\x06\x44HCPv4\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x11\n\tOperation\x18\x02 \x01(\x05\x12\x14\n\x0cHardwareType\x18\x03 \x01(\x05\x12\x13\n\x0bHardwareLen\x18\x04 \x01(\x05\x12\x14\n\x0cHardwareOpts\x18\x05 \x01(\x05\x12\x0b\n\x03Xid\x18\x06 \x01(\r\x12\x0c\n\x04Secs\x18\x07 \x01(\x05\x12\r\n\x05\x46lags\x18\x08 \x01(\x05\x12\x10\n\x08\x43lientIP\x18\t \x01(\t\x12\x14\n\x0cYourClientIP\x18\n \x01(\t\x12\x14\n\x0cNextServerIP\x18\x0b \x01(\t\x12\x14\n\x0cRelayAgentIP\x18\x0c \x01(\t\x12\x14\n\x0c\x43lientHWAddr\x18\r \x01(\t\x12\x12\n\nServerName\x18\x0e \x01(\x0c\x12\x0c\n\x04\x46ile\x18\x0f \x01(\x0c\x12\"\n\x07Options\x18\x10 \x03(\x0b\x32\x11.types.DHCPOption\"8\n\nDHCPOption\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0e\n\x06Length\x18\x02 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x03 \x01(\x0c\"\x9f\x01\n\x06\x44HCPv6\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07MsgType\x18\x02 \x01(\x05\x12\x10\n\x08HopCount\x18\x03 \x01(\x05\x12\x10\n\x08LinkAddr\x18\x04 \x01(\t\x12\x10\n\x08PeerAddr\x18\x05 \x01(\t\x12\x15\n\rTransactionID\x18\x06 \x01(\x0c\x12$\n\x07Options\x18\x07 \x03(\x0b\x32\x13.types.DHCPv6Option\":\n\x0c\x44HCPv6Option\x12\x0c\n\x04\x43ode\x18\x01 \x01(\x05\x12\x0e\n\x06Length\x18\x02 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x03 \x01(\x0c\"]\n\x03LLC\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04\x44SAP\x18\x02 \x01(\x05\x12\n\n\x02IG\x18\x03 \x01(\x08\x12\x0c\n\x04SSAP\x18\x04 \x01(\x05\x12\n\n\x02\x43R\x18\x05 \x01(\x08\x12\x0f\n\x07\x43ontrol\x18\x06 \x01(\x05\"\xc2\x02\n\x03NTP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x15\n\rLeapIndicator\x18\x02 \x01(\x05\x12\x0f\n\x07Version\x18\x03 \x01(\x05\x12\x0c\n\x04Mode\x18\x04 \x01(\x05\x12\x0f\n\x07Stratum\x18\x05 \x01(\x05\x12\x0c\n\x04Poll\x18\x06 \x01(\x05\x12\x11\n\tPrecision\x18\x07 \x01(\x05\x12\x11\n\tRootDelay\x18\x08 \x01(\r\x12\x16\n\x0eRootDispersion\x18\t \x01(\r\x12\x13\n\x0bReferenceID\x18\n \x01(\r\x12\x1a\n\x12ReferenceTimestamp\x18\x0b \x01(\x04\x12\x17\n\x0fOriginTimestamp\x18\x0c \x01(\x04\x12\x18\n\x10ReceiveTimestamp\x18\r \x01(\x04\x12\x19\n\x11TransmitTimestamp\x18\x0e \x01(\x04\x12\x16\n\x0e\x45xtensionBytes\x18\x0f \x01(\x0c\"\x8c\x01\n\x03SIP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0e\n\x06Method\x18\x03 \x01(\x05\x12\x0f\n\x07Headers\x18\x04 \x03(\t\x12\x12\n\nIsResponse\x18\x05 \x01(\x08\x12\x14\n\x0cResponseCode\x18\x06 \x01(\x05\x12\x16\n\x0eResponseStatus\x18\x07 \x01(\t\"\xc9\x02\n\x04IGMP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\x17\n\x0fMaxResponseTime\x18\x03 \x01(\x04\x12\x10\n\x08\x43hecksum\x18\x04 \x01(\x05\x12\x14\n\x0cGroupAddress\x18\x05 \x01(\x0c\x12\x1f\n\x17SupressRouterProcessing\x18\x06 \x01(\x08\x12\x17\n\x0fRobustnessValue\x18\x07 \x01(\x05\x12\x14\n\x0cIntervalTime\x18\x08 \x01(\x04\x12\x17\n\x0fSourceAddresses\x18\t \x03(\t\x12\x1c\n\x14NumberOfGroupRecords\x18\n \x01(\x05\x12\x17\n\x0fNumberOfSources\x18\x0b \x01(\x05\x12.\n\x0cGroupRecords\x18\x0c \x03(\x0b\x32\x18.types.IGMPv3GroupRecord\x12\x0f\n\x07Version\x18\r \x01(\x05\"\x81\x01\n\x11IGMPv3GroupRecord\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x12\n\nAuxDataLen\x18\x02 \x01(\x05\x12\x17\n\x0fNumberOfSources\x18\x03 \x01(\x05\x12\x18\n\x10MulticastAddress\x18\x04 \x01(\t\x12\x17\n\x0fSourceAddresses\x18\x05 \x03(\t\"M\n\x0cIPv6HopByHop\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12*\n\x07Options\x18\x02 \x03(\x0b\x32\x19.types.IPv6HopByHopOption\"\xa5\x01\n\x12IPv6HopByHopOption\x12\x12\n\nOptionType\x18\x01 \x01(\x05\x12\x14\n\x0cOptionLength\x18\x02 \x01(\x05\x12\x14\n\x0c\x41\x63tualLength\x18\x03 \x01(\x05\x12\x12\n\nOptionData\x18\x04 \x01(\x0c\x12;\n\x0fOptionAlignment\x18\x05 \x01(\x0b\x32\".types.IPv6HopByHopOptionAlignment\"7\n\x1bIPv6HopByHopOptionAlignment\x12\x0b\n\x03One\x18\x01 \x01(\x05\x12\x0b\n\x03Two\x18\x02 \x01(\x05\"C\n\x04SNAP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x1a\n\x12OrganizationalCode\x18\x02 \x01(\x0c\x12\x0c\n\x04Type\x18\x03 \x01(\x05\"F\n\nICMPv6Echo\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x12\n\nIdentifier\x18\x02 \x01(\x05\x12\x11\n\tSeqNumber\x18\x03 \x01(\x05\"l\n\x1aICMPv6NeighborSolicitation\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x15\n\rTargetAddress\x18\x02 \x01(\t\x12$\n\x07Options\x18\x03 \x03(\x0b\x32\x13.types.ICMPv6Option\"S\n\x18ICMPv6RouterSolicitation\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12$\n\x07Options\x18\x02 \x03(\x0b\x32\x13.types.ICMPv6Option\"\x86\x02\n\x04HTTP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05Proto\x18\x02 \x01(\t\x12\x0e\n\x06Method\x18\x03 \x01(\t\x12\x0c\n\x04Host\x18\x04 \x01(\t\x12\x11\n\tUserAgent\x18\x05 \x01(\t\x12\x0f\n\x07Referer\x18\x06 \x01(\t\x12\x12\n\nReqCookies\x18\x07 \x03(\t\x12\x18\n\x10ReqContentLength\x18\x08 \x01(\x05\x12\x0b\n\x03URL\x18\t \x01(\t\x12\x18\n\x10ResContentLength\x18\n \x01(\x05\x12\x13\n\x0b\x43ontentType\x18\x0b \x01(\t\x12\x12\n\nStatusCode\x18\x0c \x01(\x05\x12\r\n\x05SrcIP\x18\r \x01(\t\x12\r\n\x05\x44stIP\x18\x0e \x01(\t\"\xa7\x04\n\x0eTLSClientHello\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\x0f\n\x07Version\x18\x03 \x01(\x05\x12\x12\n\nMessageLen\x18\x04 \x01(\x05\x12\x15\n\rHandshakeType\x18\x05 \x01(\x05\x12\x14\n\x0cHandshakeLen\x18\x06 \x01(\r\x12\x18\n\x10HandshakeVersion\x18\x07 \x01(\x05\x12\x0e\n\x06Random\x18\x08 \x01(\x0c\x12\x14\n\x0cSessionIDLen\x18\t \x01(\r\x12\x11\n\tSessionID\x18\n \x01(\x0c\x12\x16\n\x0e\x43ipherSuiteLen\x18\x0b \x01(\x05\x12\x14\n\x0c\x45xtensionLen\x18\x0c \x01(\x05\x12\x0b\n\x03SNI\x18\r \x01(\t\x12\x0c\n\x04OSCP\x18\x0e \x01(\x08\x12\x14\n\x0c\x43ipherSuites\x18\x0f \x03(\x05\x12\x17\n\x0f\x43ompressMethods\x18\x10 \x03(\x05\x12\x15\n\rSignatureAlgs\x18\x11 \x03(\x05\x12\x17\n\x0fSupportedGroups\x18\x12 \x03(\x05\x12\x17\n\x0fSupportedPoints\x18\x13 \x03(\x05\x12\r\n\x05\x41LPNs\x18\x14 \x03(\t\x12\x0b\n\x03Ja3\x18\x15 \x01(\t\x12\r\n\x05SrcIP\x18\x16 \x01(\t\x12\r\n\x05\x44stIP\x18\x17 \x01(\t\x12\x0e\n\x06SrcMAC\x18\x18 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x19 \x01(\t\x12\x0f\n\x07SrcPort\x18\x1a \x01(\x05\x12\x0f\n\x07\x44stPort\x18\x1b \x01(\x05\x12\x12\n\nExtensions\x18\x1c \x03(\x05\"d\n\x07IPSecAH\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x10\n\x08Reserved\x18\x02 \x01(\x05\x12\x0b\n\x03SPI\x18\x03 \x01(\x05\x12\x0b\n\x03Seq\x18\x04 \x01(\x05\x12\x1a\n\x12\x41uthenticationData\x18\x05 \x01(\x0c\"M\n\x08IPSecESP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0b\n\x03SPI\x18\x02 \x01(\x05\x12\x0b\n\x03Seq\x18\x03 \x01(\x05\x12\x14\n\x0cLenEncrypted\x18\x04 \x01(\x05\"\xb3\x01\n\x06Geneve\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x15\n\rOptionsLength\x18\x03 \x01(\x05\x12\x11\n\tOAMPacket\x18\x04 \x01(\x08\x12\x16\n\x0e\x43riticalOption\x18\x05 \x01(\x08\x12\x10\n\x08Protocol\x18\x06 \x01(\x05\x12\x0b\n\x03VNI\x18\x07 \x01(\r\x12$\n\x07Options\x18\x08 \x03(\x0b\x32\x13.types.GeneveOption\"X\n\x0cGeneveOption\x12\r\n\x05\x43lass\x18\x01 \x01(\x05\x12\x0c\n\x04Type\x18\x02 \x01(\x05\x12\r\n\x05\x46lags\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x05 \x01(\x0c\"\x96\x01\n\x05VXLAN\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x13\n\x0bValidIDFlag\x18\x02 \x01(\x08\x12\x0b\n\x03VNI\x18\x03 \x01(\r\x12\x14\n\x0cGBPExtension\x18\x04 \x01(\x08\x12\x14\n\x0cGBPDontLearn\x18\x05 \x01(\x08\x12\x12\n\nGBPApplied\x18\x06 \x01(\x08\x12\x18\n\x10GBPGroupPolicyID\x18\x07 \x01(\x05\"\x82\x03\n\x03USB\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\n\n\x02ID\x18\x02 \x01(\x04\x12\x11\n\tEventType\x18\x03 \x01(\x05\x12\x14\n\x0cTransferType\x18\x04 \x01(\x05\x12\x11\n\tDirection\x18\x05 \x01(\x05\x12\x16\n\x0e\x45ndpointNumber\x18\x06 \x01(\x05\x12\x15\n\rDeviceAddress\x18\x07 \x01(\x05\x12\r\n\x05\x42usID\x18\x08 \x01(\x05\x12\x14\n\x0cTimestampSec\x18\t \x01(\x03\x12\x15\n\rTimestampUsec\x18\n \x01(\x05\x12\r\n\x05Setup\x18\x0b \x01(\x08\x12\x0c\n\x04\x44\x61ta\x18\x0c \x01(\x08\x12\x0e\n\x06Status\x18\r \x01(\x05\x12\x11\n\tUrbLength\x18\x0e \x01(\r\x12\x15\n\rUrbDataLength\x18\x0f \x01(\r\x12\x13\n\x0bUrbInterval\x18\x10 \x01(\r\x12\x15\n\rUrbStartFrame\x18\x11 \x01(\r\x12\x1e\n\x16UrbCopyOfTransferFlags\x18\x12 \x01(\r\x12\x12\n\nIsoNumDesc\x18\x13 \x01(\r\"\xc5\x01\n\x03LCM\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05Magic\x18\x02 \x01(\x05\x12\x16\n\x0eSequenceNumber\x18\x03 \x01(\x05\x12\x13\n\x0bPayloadSize\x18\x04 \x01(\x05\x12\x16\n\x0e\x46ragmentOffset\x18\x05 \x01(\x05\x12\x16\n\x0e\x46ragmentNumber\x18\x06 \x01(\x05\x12\x16\n\x0eTotalFragments\x18\x07 \x01(\x05\x12\x13\n\x0b\x43hannelName\x18\x08 \x01(\t\x12\x12\n\nFragmented\x18\t \x01(\x08\"`\n\x04MPLS\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\r\n\x05Label\x18\x02 \x01(\x05\x12\x14\n\x0cTrafficClass\x18\x03 \x01(\x05\x12\x13\n\x0bStackBottom\x18\x04 \x01(\x08\x12\x0b\n\x03TTL\x18\x05 \x01(\x05\"\x81\x01\n\tModbusTCP\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x1d\n\x15TransactionIdentifier\x18\x02 \x01(\x05\x12\x1a\n\x12ProtocolIdentifier\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\x12\x16\n\x0eUnitIdentifier\x18\x05 \x01(\x05\"\xcb\x02\n\x06OSPFv2\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0c\n\x04Type\x18\x03 \x01(\x05\x12\x14\n\x0cPacketLength\x18\x04 \x01(\x05\x12\x10\n\x08RouterID\x18\x05 \x01(\r\x12\x0e\n\x06\x41reaID\x18\x06 \x01(\r\x12\x10\n\x08\x43hecksum\x18\x07 \x01(\x05\x12\x0e\n\x06\x41uType\x18\x08 \x01(\x05\x12\x16\n\x0e\x41uthentication\x18\t \x01(\x03\x12\x1e\n\x04LSAs\x18\n \x03(\x0b\x32\x10.types.LSAheader\x12\x1c\n\x03LSU\x18\x0b \x01(\x0b\x32\x0f.types.LSUpdate\x12\x19\n\x03LSR\x18\x0c \x03(\x0b\x32\x0c.types.LSReq\x12 \n\x06\x44\x62\x44\x65sc\x18\r \x01(\x0b\x32\x10.types.DbDescPkg\x12\"\n\x07HelloV2\x18\x0e \x01(\x0b\x32\x11.types.HelloPkgV2\"\xca\x01\n\x08HelloPkg\x12\x13\n\x0bInterfaceID\x18\x01 \x01(\r\x12\x13\n\x0bRtrPriority\x18\x02 \x01(\x05\x12\x0f\n\x07Options\x18\x03 \x01(\r\x12\x15\n\rHelloInterval\x18\x04 \x01(\x05\x12\x1a\n\x12RouterDeadInterval\x18\x05 \x01(\r\x12\x1a\n\x12\x44\x65signatedRouterID\x18\x06 \x01(\r\x12 \n\x18\x42\x61\x63kupDesignatedRouterID\x18\x07 \x01(\r\x12\x12\n\nNeighborID\x18\x08 \x03(\r\"\xe1\x01\n\nHelloPkgV2\x12\x13\n\x0bInterfaceID\x18\x01 \x01(\r\x12\x13\n\x0bRtrPriority\x18\x02 \x01(\x05\x12\x0f\n\x07Options\x18\x03 \x01(\r\x12\x15\n\rHelloInterval\x18\x04 \x01(\x05\x12\x1a\n\x12RouterDeadInterval\x18\x05 \x01(\r\x12\x1a\n\x12\x44\x65signatedRouterID\x18\x06 \x01(\r\x12 \n\x18\x42\x61\x63kupDesignatedRouterID\x18\x07 \x01(\r\x12\x12\n\nNeighborID\x18\x08 \x03(\r\x12\x13\n\x0bNetworkMask\x18\t \x01(\r\"y\n\tDbDescPkg\x12\x0f\n\x07Options\x18\x01 \x01(\r\x12\x14\n\x0cInterfaceMTU\x18\x02 \x01(\x05\x12\r\n\x05\x46lags\x18\x03 \x01(\x05\x12\x13\n\x0b\x44\x44SeqNumber\x18\x04 \x01(\r\x12!\n\x07LSAinfo\x18\x05 \x03(\x0b\x32\x10.types.LSAheader\"\xc3\x02\n\x06OSPFv3\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0c\n\x04Type\x18\x03 \x01(\x05\x12\x14\n\x0cPacketLength\x18\x04 \x01(\x05\x12\x10\n\x08RouterID\x18\x05 \x01(\r\x12\x0e\n\x06\x41reaID\x18\x06 \x01(\r\x12\x10\n\x08\x43hecksum\x18\x07 \x01(\x05\x12\x10\n\x08Instance\x18\x08 \x01(\x05\x12\x10\n\x08Reserved\x18\t \x01(\x05\x12\x1e\n\x05Hello\x18\n \x01(\x0b\x32\x0f.types.HelloPkg\x12 \n\x06\x44\x62\x44\x65sc\x18\x0b \x01(\x0b\x32\x10.types.DbDescPkg\x12\x19\n\x03LSR\x18\x0c \x03(\x0b\x32\x0c.types.LSReq\x12\x1c\n\x03LSU\x18\r \x01(\x0b\x32\x0f.types.LSUpdate\x12\x1e\n\x04LSAs\x18\x0e \x03(\x0b\x32\x10.types.LSAheader\"\x9e\x01\n\tLSAheader\x12\r\n\x05LSAge\x18\x01 \x01(\x05\x12\x0e\n\x06LSType\x18\x02 \x01(\x05\x12\x13\n\x0bLinkStateID\x18\x03 \x01(\r\x12\x11\n\tAdvRouter\x18\x04 \x01(\r\x12\x13\n\x0bLSSeqNumber\x18\x05 \x01(\r\x12\x12\n\nLSChecksum\x18\x06 \x01(\x05\x12\x0e\n\x06Length\x18\x07 \x01(\x05\x12\x11\n\tLSOptions\x18\x08 \x01(\x05\"\x92\x03\n\x03LSA\x12 \n\x06Header\x18\x01 \x01(\x0b\x32\x10.types.LSAheader\x12\"\n\x06RLSAV2\x18\x02 \x01(\x0b\x32\x12.types.RouterLSAV2\x12(\n\x08\x41SELSAV2\x18\x03 \x01(\x0b\x32\x16.types.ASExternalLSAV2\x12\x1e\n\x04RLSA\x18\x04 \x01(\x0b\x32\x10.types.RouterLSA\x12\x1f\n\x04NLSA\x18\x05 \x01(\x0b\x32\x11.types.NetworkLSA\x12\x32\n\x0fInterAPrefixLSA\x18\x06 \x01(\x0b\x32\x19.types.InterAreaPrefixLSA\x12.\n\x0bIARouterLSA\x18\x07 \x01(\x0b\x32\x19.types.InterAreaRouterLSA\x12$\n\x06\x41SELSA\x18\x08 \x01(\x0b\x32\x14.types.ASExternalLSA\x12\x1c\n\x04LLSA\x18\t \x01(\x0b\x32\x0e.types.LinkLSA\x12\x32\n\x0fIntraAPrefixLSA\x18\n \x01(\x0b\x32\x19.types.IntraAreaPrefixLSA\"8\n\x05LSReq\x12\x0e\n\x06LSType\x18\x01 \x01(\x05\x12\x0c\n\x04LSID\x18\x02 \x01(\r\x12\x11\n\tAdvRouter\x18\x03 \x01(\r\"7\n\x08LSUpdate\x12\x11\n\tNumOfLSAs\x18\x01 \x01(\r\x12\x18\n\x04LSAs\x18\x02 \x03(\x0b\x32\n.types.LSA\"\x90\x01\n\x12IntraAreaPrefixLSA\x12\x15\n\rNumOfPrefixes\x18\x01 \x01(\x05\x12\x11\n\tRefLSType\x18\x02 \x01(\x05\x12\x16\n\x0eRefLinkStateID\x18\x03 \x01(\r\x12\x14\n\x0cRefAdvRouter\x18\x04 \x01(\r\x12\"\n\x08Prefixes\x18\x05 \x03(\x0b\x32\x10.types.LSAPrefix\"\xd2\x01\n\rASExternalLSA\x12\r\n\x05\x46lags\x18\x01 \x01(\x05\x12\x0e\n\x06Metric\x18\x02 \x01(\r\x12\x14\n\x0cPrefixLength\x18\x03 \x01(\x05\x12\x15\n\rPrefixOptions\x18\x04 \x01(\x05\x12\x11\n\tRefLSType\x18\x05 \x01(\x05\x12\x15\n\rAddressPrefix\x18\x06 \x01(\x0c\x12\x19\n\x11\x46orwardingAddress\x18\x07 \x01(\x0c\x12\x18\n\x10\x45xternalRouteTag\x18\x08 \x01(\r\x12\x16\n\x0eRefLinkStateID\x18\t \x01(\r\"h\n\x12InterAreaPrefixLSA\x12\x0e\n\x06Metric\x18\x01 \x01(\r\x12\x14\n\x0cPrefixLength\x18\x02 \x01(\x05\x12\x15\n\rPrefixOptions\x18\x03 \x01(\x05\x12\x15\n\rAddressPrefix\x18\x04 \x01(\x0c\"R\n\x12InterAreaRouterLSA\x12\x0f\n\x07Options\x18\x01 \x01(\r\x12\x0e\n\x06Metric\x18\x02 \x01(\r\x12\x1b\n\x13\x44\x65stinationRouterID\x18\x03 \x01(\r\"\x80\x01\n\x0f\x41SExternalLSAV2\x12\x13\n\x0bNetworkMask\x18\x01 \x01(\r\x12\x13\n\x0b\x45xternalBit\x18\x02 \x01(\x05\x12\x0e\n\x06Metric\x18\x03 \x01(\r\x12\x19\n\x11\x46orwardingAddress\x18\x04 \x01(\r\x12\x18\n\x10\x45xternalRouteTag\x18\x05 \x01(\r\"K\n\tRouterLSA\x12\r\n\x05\x46lags\x18\x01 \x01(\x05\x12\x0f\n\x07Options\x18\x02 \x01(\r\x12\x1e\n\x07Routers\x18\x03 \x03(\x0b\x32\r.types.Router\"r\n\x06Router\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0e\n\x06Metric\x18\x02 \x01(\x05\x12\x13\n\x0bInterfaceID\x18\x03 \x01(\r\x12\x1b\n\x13NeighborInterfaceID\x18\x04 \x01(\r\x12\x18\n\x10NeighborRouterID\x18\x05 \x01(\r\"M\n\x0bRouterLSAV2\x12\r\n\x05\x46lags\x18\x01 \x01(\x05\x12\r\n\x05Links\x18\x02 \x01(\x05\x12 \n\x07Routers\x18\x03 \x03(\x0b\x32\x0f.types.RouterV2\"J\n\x08RouterV2\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0e\n\x06LinkID\x18\x02 \x01(\r\x12\x10\n\x08LinkData\x18\x03 \x01(\r\x12\x0e\n\x06Metric\x18\x04 \x01(\r\"5\n\nNetworkLSA\x12\x0f\n\x07Options\x18\x01 \x01(\r\x12\x16\n\x0e\x41ttachedRouter\x18\x02 \x03(\r\"\x84\x01\n\x07LinkLSA\x12\x13\n\x0bRtrPriority\x18\x01 \x01(\x05\x12\x0f\n\x07Options\x18\x02 \x01(\r\x12\x18\n\x10LinkLocalAddress\x18\x03 \x01(\x0c\x12\x15\n\rNumOfPrefixes\x18\x04 \x01(\r\x12\"\n\x08Prefixes\x18\x05 \x03(\x0b\x32\x10.types.LSAPrefix\"_\n\tLSAPrefix\x12\x14\n\x0cPrefixLength\x18\x01 \x01(\x05\x12\x15\n\rPrefixOptions\x18\x02 \x01(\x05\x12\x0e\n\x06Metric\x18\x03 \x01(\x05\x12\x15\n\rAddressPrefix\x18\x04 \x01(\x0c\"\x9b\x03\n\x03\x42\x46\x44\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x12\n\nDiagnostic\x18\x03 \x01(\x05\x12\r\n\x05State\x18\x04 \x01(\x05\x12\x0c\n\x04Poll\x18\x05 \x01(\x08\x12\r\n\x05\x46inal\x18\x06 \x01(\x08\x12\x1f\n\x17\x43ontrolPlaneIndependent\x18\x07 \x01(\x08\x12\x13\n\x0b\x41uthPresent\x18\x08 \x01(\x08\x12\x0e\n\x06\x44\x65mand\x18\t \x01(\x08\x12\x12\n\nMultipoint\x18\n \x01(\x08\x12\x18\n\x10\x44\x65tectMultiplier\x18\x0b \x01(\x05\x12\x17\n\x0fMyDiscriminator\x18\x0c \x01(\x05\x12\x19\n\x11YourDiscriminator\x18\r \x01(\x05\x12\x1c\n\x14\x44\x65siredMinTxInterval\x18\x0e \x01(\x05\x12\x1d\n\x15RequiredMinRxInterval\x18\x0f \x01(\x05\x12!\n\x19RequiredMinEchoRxInterval\x18\x10 \x01(\x05\x12(\n\nAuthHeader\x18\x11 \x01(\x0b\x32\x14.types.BFDAuthHeader\"V\n\rBFDAuthHeader\x12\x10\n\x08\x41uthType\x18\x01 \x01(\x05\x12\r\n\x05KeyID\x18\x02 \x01(\x05\x12\x16\n\x0eSequenceNumber\x18\x03 \x01(\x05\x12\x0c\n\x04\x44\x61ta\x18\x04 \x01(\x0c\"\xd9\x02\n\x03GRE\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x17\n\x0f\x43hecksumPresent\x18\x02 \x01(\x08\x12\x16\n\x0eRoutingPresent\x18\x03 \x01(\x08\x12\x12\n\nKeyPresent\x18\x04 \x01(\x08\x12\x12\n\nSeqPresent\x18\x05 \x01(\x08\x12\x19\n\x11StrictSourceRoute\x18\x06 \x01(\x08\x12\x12\n\nAckPresent\x18\x07 \x01(\x08\x12\x18\n\x10RecursionControl\x18\x08 \x01(\x05\x12\r\n\x05\x46lags\x18\t \x01(\x05\x12\x0f\n\x07Version\x18\n \x01(\x05\x12\x10\n\x08Protocol\x18\x0b \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x0c \x01(\x05\x12\x0e\n\x06Offset\x18\r \x01(\x05\x12\x0b\n\x03Key\x18\x0e \x01(\r\x12\x0b\n\x03Seq\x18\x0f \x01(\r\x12\x0b\n\x03\x41\x63k\x18\x10 \x01(\r\x12\"\n\x07Routing\x18\x11 \x01(\x0b\x32\x11.types.GRERouting\"\x86\x01\n\nGRERouting\x12\x15\n\rAddressFamily\x18\x01 \x01(\x05\x12\x11\n\tSREOffset\x18\x02 \x01(\x05\x12\x11\n\tSRELength\x18\x03 \x01(\x05\x12\x1a\n\x12RoutingInformation\x18\x04 \x01(\x0c\x12\x1f\n\x04Next\x18\x05 \x01(\x0b\x32\x11.types.GRERouting\"a\n\x04\x46\x44\x44I\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x14\n\x0c\x46rameControl\x18\x02 \x01(\x05\x12\x10\n\x08Priority\x18\x03 \x01(\x05\x12\x0e\n\x06SrcMAC\x18\x04 \x01(\t\x12\x0e\n\x06\x44stMAC\x18\x05 \x01(\t\"b\n\x03\x45\x41P\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0c\n\x04\x43ode\x18\x02 \x01(\x05\x12\n\n\x02Id\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\x12\x0c\n\x04Type\x18\x05 \x01(\x05\x12\x10\n\x08TypeData\x18\x06 \x01(\x0c\"I\n\x05\x45\x41POL\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0c\n\x04Type\x18\x03 \x01(\x05\x12\x0e\n\x06Length\x18\x04 \x01(\x05\"\xaa\x03\n\x08\x45\x41POLKey\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x19\n\x11KeyDescriptorType\x18\x02 \x01(\x05\x12\x1c\n\x14KeyDescriptorVersion\x18\x03 \x01(\x05\x12\x0f\n\x07KeyType\x18\x04 \x01(\x05\x12\x10\n\x08KeyIndex\x18\x05 \x01(\x05\x12\x0f\n\x07Install\x18\x06 \x01(\x08\x12\x0e\n\x06KeyACK\x18\x07 \x01(\x08\x12\x0e\n\x06KeyMIC\x18\x08 \x01(\x08\x12\x0e\n\x06Secure\x18\t \x01(\x08\x12\x10\n\x08MICError\x18\n \x01(\x08\x12\x0f\n\x07Request\x18\x0b \x01(\x08\x12\x1b\n\x13HasEncryptedKeyData\x18\x0c \x01(\x08\x12\x12\n\nSMKMessage\x18\r \x01(\x08\x12\x11\n\tKeyLength\x18\x0e \x01(\x05\x12\x15\n\rReplayCounter\x18\x0f \x01(\x04\x12\r\n\x05Nonce\x18\x10 \x01(\x0c\x12\n\n\x02IV\x18\x11 \x01(\x0c\x12\x0b\n\x03RSC\x18\x12 \x01(\x04\x12\n\n\x02ID\x18\x13 \x01(\x04\x12\x0b\n\x03MIC\x18\x14 \x01(\x0c\x12\x15\n\rKeyDataLength\x18\x15 \x01(\x05\x12\x18\n\x10\x45ncryptedKeyData\x18\x16 \x01(\x0c\"\xc0\x01\n\x06VRRPv2\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0c\n\x04Type\x18\x03 \x01(\x05\x12\x14\n\x0cVirtualRtrID\x18\x04 \x01(\x05\x12\x10\n\x08Priority\x18\x05 \x01(\x05\x12\x13\n\x0b\x43ountIPAddr\x18\x06 \x01(\x05\x12\x10\n\x08\x41uthType\x18\x07 \x01(\x05\x12\x10\n\x08\x41\x64verInt\x18\x08 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\t \x01(\x05\x12\x11\n\tIPAddress\x18\n \x03(\t\"\x7f\n\x0e\x43iscoDiscovery\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12\x0f\n\x07Version\x18\x02 \x01(\x05\x12\x0b\n\x03TTL\x18\x03 \x01(\x05\x12\x10\n\x08\x43hecksum\x18\x04 \x01(\x05\x12*\n\x06Values\x18\x05 \x03(\x0b\x32\x1a.types.CiscoDiscoveryValue\"B\n\x13\x43iscoDiscoveryValue\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x0e\n\x06Length\x18\x02 \x01(\x05\x12\r\n\x05Value\x18\x03 \x01(\x0c\"+\n\x0f\x43\x44PVLANDialogue\x12\n\n\x02ID\x18\x01 \x01(\x05\x12\x0c\n\x04VLAN\x18\x02 \x01(\x05\"-\n\x0b\x43\x44PLocation\x12\x0c\n\x04Type\x18\x01 \x01(\x05\x12\x10\n\x08Location\x18\x02 \x01(\t\">\n\x10\x43\x44PPowerDialogue\x12\n\n\x02ID\x18\x01 \x01(\x05\x12\x0e\n\x06MgmtID\x18\x02 \x01(\x05\x12\x0e\n\x06Values\x18\x03 \x03(\r\"`\n\x0f\x43\x44PSparePairPoE\x12\x13\n\x0bPSEFourWire\x18\x01 \x01(\x08\x12\x14\n\x0cPDArchShared\x18\x02 \x01(\x08\x12\x13\n\x0bPDRequestOn\x18\x03 \x01(\x08\x12\r\n\x05PSEOn\x18\x04 \x01(\x08\"\x9a\x06\n\x12\x43iscoDiscoveryInfo\x12\x11\n\tTimestamp\x18\x01 \x01(\t\x12!\n\x08\x43\x44PHello\x18\x02 \x01(\x0b\x32\x0f.types.CDPHello\x12\x10\n\x08\x44\x65viceID\x18\x03 \x01(\t\x12\x11\n\tAddresses\x18\x04 \x03(\t\x12\x0e\n\x06PortID\x18\x05 \x01(\t\x12,\n\x0c\x43\x61pabilities\x18\x06 \x01(\x0b\x32\x16.types.CDPCapabilities\x12\x0f\n\x07Version\x18\x07 \x01(\t\x12\x10\n\x08Platform\x18\x08 \x01(\t\x12 \n\nIPPrefixes\x18\t \x03(\x0b\x32\x0c.types.IPNet\x12\x11\n\tVTPDomain\x18\n \x01(\t\x12\x12\n\nNativeVLAN\x18\x0b \x01(\x05\x12\x12\n\nFullDuplex\x18\x0c \x01(\x08\x12)\n\tVLANReply\x18\r \x01(\x0b\x32\x16.types.CDPVLANDialogue\x12)\n\tVLANQuery\x18\x0e \x01(\x0b\x32\x16.types.CDPVLANDialogue\x12\x18\n\x10PowerConsumption\x18\x0f \x01(\x05\x12\x0b\n\x03MTU\x18\x10 \x01(\r\x12\x15\n\rExtendedTrust\x18\x11 \x01(\x05\x12\x14\n\x0cUntrustedCOS\x18\x12 \x01(\x05\x12\x0f\n\x07SysName\x18\x13 \x01(\t\x12\x0e\n\x06SysOID\x18\x14 \x01(\t\x12\x15\n\rMgmtAddresses\x18\x15 \x03(\t\x12$\n\x08Location\x18\x16 \x01(\x0b\x32\x12.types.CDPLocation\x12-\n\x0cPowerRequest\x18\x17 \x01(\x0b\x32\x17.types.CDPPowerDialogue\x12/\n\x0ePowerAvailable\x18\x18 \x01(\x0b\x32\x17.types.CDPPowerDialogue\x12,\n\x0cSparePairPoe\x18\x19 \x01(\x0b\x32\x16.types.CDPSparePairPoE\x12(\n\nEnergyWise\x18\x1a \x01(\x0b\x32\x14.types.CDPEnergyWise\x12+\n\x07Unknown\x18\x1b \x03(\x0b\x32\x1a.types.CiscoDiscoveryValue\"\xf2\x01\n\x08\x43\x44PHello\x12\x0b\n\x03OUI\x18\x01 \x01(\x0c\x12\x12\n\nProtocolID\x18\x02 \x01(\x05\x12\x15\n\rClusterMaster\x18\x03 \x01(\t\x12\x10\n\x08Unknown1\x18\x04 \x01(\t\x12\x0f\n\x07Version\x18\x05 \x01(\x05\x12\x12\n\nSubVersion\x18\x06 \x01(\x05\x12\x0e\n\x06Status\x18\x07 \x01(\x05\x12\x10\n\x08Unknown2\x18\x08 \x01(\x05\x12\x18\n\x10\x43lusterCommander\x18\t \x01(\t\x12\x11\n\tSwitchMAC\x18\n \x01(\t\x12\x10\n\x08Unknown3\x18\x0b \x01(\x05\x12\x16\n\x0eManagementVLAN\x18\x0c \x01(\x05\"\xca\x02\n\rCDPEnergyWise\x12\x15\n\rEncryptedData\x18\x01 \x01(\x0c\x12\x10\n\x08Unknown1\x18\x02 \x01(\r\x12\x16\n\x0eSequenceNumber\x18\x03 \x01(\r\x12\x13\n\x0bModelNumber\x18\x04 \x01(\t\x12\x10\n\x08Unknown2\x18\x05 \x01(\x05\x12\x12\n\nHardwareID\x18\x06 \x01(\t\x12\x11\n\tSerialNum\x18\x07 \x01(\t\x12\x10\n\x08Unknown3\x18\x08 \x01(\x0c\x12\x0c\n\x04Role\x18\t \x01(\t\x12\x0e\n\x06\x44omain\x18\n \x01(\t\x12\x0c\n\x04Name\x18\x0b \x01(\t\x12\x15\n\rReplyUnknown1\x18\x0c \x01(\x0c\x12\x11\n\tReplyPort\x18\r \x01(\x0c\x12\x14\n\x0cReplyAddress\x18\x0e \x01(\x0c\x12\x15\n\rReplyUnknown2\x18\x0f \x01(\x0c\x12\x15\n\rReplyUnknown3\x18\x10 \x01(\x0c\"\xbb\x01\n\x0f\x43\x44PCapabilities\x12\x10\n\x08L3Router\x18\x01 \x01(\x08\x12\x10\n\x08TBBridge\x18\x02 \x01(\x08\x12\x10\n\x08SPBridge\x18\x03 \x01(\x08\x12\x10\n\x08L2Switch\x18\x04 \x01(\x08\x12\x0e\n\x06IsHost\x18\x05 \x01(\x08\x12\x12\n\nIGMPFilter\x18\x06 \x01(\x08\x12\x12\n\nL1Repeater\x18\x07 \x01(\x08\x12\x0f\n\x07IsPhone\x18\x08 \x01(\x08\x12\x17\n\x0fRemotelyManaged\x18\t \x01(\x08\"#\n\x05IPNet\x12\n\n\x02IP\x18\x01 \x01(\t\x12\x0e\n\x06IPMask\x18\x02 \x01(\t*\xe1\x0c\n\x04Type\x12\r\n\tNC_Header\x10\x00\x12\x0c\n\x08NC_Batch\x10\x01\x12\x0b\n\x07NC_Flow\x10\x02\x12\x11\n\rNC_Connection\x10\x03\x12\x0f\n\x0bNC_LinkFlow\x10\x04\x12\x12\n\x0eNC_NetworkFlow\x10\x05\x12\x14\n\x10NC_TransportFlow\x10\x06\x12\x0f\n\x0bNC_Ethernet\x10\x07\x12\n\n\x06NC_ARP\x10\x08\x12\x0c\n\x08NC_Dot1Q\x10\t\x12\x0c\n\x08NC_Dot11\x10\n\x12\x0f\n\x0bNC_Dot11QOS\x10\x0b\x12\x15\n\x11NC_Dot11HTControl\x10\x0c\x12\x18\n\x14NC_Dot11HTControlVHT\x10\r\x12\x17\n\x13NC_Dot11HTControlHT\x10\x0e\x12\x18\n\x14NC_Dot11HTControlMFB\x10\x0f\x12 \n\x1cNC_Dot11LinkAdapationControl\x10\x10\x12\x10\n\x0cNC_Dot11ASEL\x10\x11\x12\x19\n\x15NC_LinkLayerDiscovery\x10\x12\x12\x14\n\x10NC_LLDPChassisID\x10\x13\x12\x11\n\rNC_LLDPPortID\x10\x14\x12\x1e\n\x1aNC_LinkLayerDiscoveryValue\x10\x15\x12\x12\n\x0eNC_EthernetCTP\x10\x16\x12\x17\n\x13NC_EthernetCTPReply\x10\x17\x12\x1d\n\x19NC_LinkLayerDiscoveryInfo\x10\x18\x12\x1a\n\x16NC_LLDPSysCapabilities\x10\x19\x12\x17\n\x13NC_LLDPCapabilities\x10\x1a\x12\x16\n\x12NC_LLDPMgmtAddress\x10\x1b\x12\x19\n\x15NC_LLDPOrgSpecificTLV\x10\x1c\x12\x0b\n\x07NC_IPv4\x10\x1d\x12\x11\n\rNC_IPv4Option\x10\x1e\x12\x0b\n\x07NC_IPv6\x10\x1f\x12\r\n\tNC_ICMPv4\x10 \x12\r\n\tNC_ICMPv6\x10!\x12\"\n\x1eNC_ICMPv6NeighborAdvertisement\x10\"\x12 \n\x1cNC_ICMPv6RouterAdvertisement\x10#\x12\x13\n\x0fNC_ICMPv6Option\x10$\x12\n\n\x06NC_UDP\x10%\x12\n\n\x06NC_TCP\x10&\x12\x10\n\x0cNC_TCPOption\x10\'\x12\x0b\n\x07NC_SCTP\x10(\x12\n\n\x06NC_DNS\x10)\x12\x18\n\x14NC_DNSResourceRecord\x10*\x12\r\n\tNC_DNSSOA\x10+\x12\r\n\tNC_DNSSRV\x10,\x12\x0c\n\x08NC_DNSMX\x10-\x12\x12\n\x0eNC_DNSQuestion\x10.\x12\r\n\tNC_DHCPv4\x10/\x12\x11\n\rNC_DHCPOption\x10\x30\x12\r\n\tNC_DHCPv6\x10\x31\x12\x13\n\x0fNC_DHCPv6Option\x10\x32\x12\n\n\x06NC_LLC\x10\x33\x12\n\n\x06NC_NTP\x10\x34\x12\n\n\x06NC_SIP\x10\x35\x12\x0b\n\x07NC_IGMP\x10\x36\x12\x18\n\x14NC_IGMPv3GroupRecord\x10\x37\x12\x13\n\x0fNC_IPv6HopByHop\x10\x38\x12\x19\n\x15NC_IPv6HopByHopOption\x10\x39\x12\"\n\x1eNC_IPv6HopByHopOptionAlignment\x10:\x12\x0b\n\x07NC_SNAP\x10;\x12\x11\n\rNC_ICMPv6Echo\x10<\x12!\n\x1dNC_ICMPv6NeighborSolicitation\x10=\x12\x1f\n\x1bNC_ICMPv6RouterSolicitation\x10>\x12\x0b\n\x07NC_HTTP\x10?\x12\x15\n\x11NC_TLSClientHello\x10@\x12\x0e\n\nNC_IPSecAH\x10\x41\x12\x0f\n\x0bNC_IPSecESP\x10\x42\x12\r\n\tNC_Geneve\x10\x43\x12\x13\n\x0fNC_IPv6Fragment\x10\x44\x12\x0c\n\x08NC_VXLAN\x10\x45\x12\n\n\x06NC_USB\x10\x46\x12\n\n\x06NC_LCM\x10G\x12\x0b\n\x07NC_MPLS\x10H\x12\x10\n\x0cNC_ModbusTCP\x10I\x12\r\n\tNC_OSPFv2\x10J\x12\r\n\tNC_OSPFv3\x10K\x12\n\n\x06NC_BFD\x10L\x12\n\n\x06NC_GRE\x10M\x12\x0b\n\x07NC_FDDI\x10N\x12\n\n\x06NC_EAP\x10O\x12\r\n\tNC_VRRPv2\x10P\x12\x0c\n\x08NC_EAPOL\x10Q\x12\x0f\n\x0bNC_EAPOLKey\x10R\x12\x15\n\x11NC_CiscoDiscovery\x10S\x12\x19\n\x15NC_CiscoDiscoveryInfo\x10Tb\x06proto3')
 )
 
 _TYPE = _descriptor.EnumDescriptor(
@@ -369,27 +369,11 @@ _TYPE = _descriptor.EnumDescriptor(
       name='NC_CiscoDiscoveryInfo', index=84, number=84,
       serialized_options=None,
       type=None),
-    _descriptor.EnumValueDescriptor(
-      name='NC_LSA', index=85, number=85,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='NC_LSUpdate', index=86, number=86,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='NC_LSReq', index=87, number=87,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='NC_LinkLSA', index=88, number=88,
-      serialized_options=None,
-      type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=16680,
-  serialized_end=18372,
+  serialized_start=18969,
+  serialized_end=20602,
 )
 _sym_db.RegisterEnumDescriptor(_TYPE)
 
@@ -479,10 +463,6 @@ NC_EAPOL = 81
 NC_EAPOLKey = 82
 NC_CiscoDiscovery = 83
 NC_CiscoDiscoveryInfo = 84
-NC_LSA = 85
-NC_LSUpdate = 86
-NC_LSReq = 87
-NC_LinkLSA = 88
 
 
 
@@ -6108,6 +6088,41 @@ _OSPFV2 = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSAs', full_name='types.OSPFv2.LSAs', index=9,
+      number=10, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSU', full_name='types.OSPFv2.LSU', index=10,
+      number=11, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSR', full_name='types.OSPFv2.LSR', index=11,
+      number=12, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='DbDesc', full_name='types.OSPFv2.DbDesc', index=12,
+      number=13, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='HelloV2', full_name='types.OSPFv2.HelloV2', index=13,
+      number=14, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -6121,7 +6136,233 @@ _OSPFV2 = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=11818,
-  serialized_end=11990,
+  serialized_end=12149,
+)
+
+
+_HELLOPKG = _descriptor.Descriptor(
+  name='HelloPkg',
+  full_name='types.HelloPkg',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='InterfaceID', full_name='types.HelloPkg.InterfaceID', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RtrPriority', full_name='types.HelloPkg.RtrPriority', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Options', full_name='types.HelloPkg.Options', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='HelloInterval', full_name='types.HelloPkg.HelloInterval', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RouterDeadInterval', full_name='types.HelloPkg.RouterDeadInterval', index=4,
+      number=5, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='DesignatedRouterID', full_name='types.HelloPkg.DesignatedRouterID', index=5,
+      number=6, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='BackupDesignatedRouterID', full_name='types.HelloPkg.BackupDesignatedRouterID', index=6,
+      number=7, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='NeighborID', full_name='types.HelloPkg.NeighborID', index=7,
+      number=8, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=12152,
+  serialized_end=12354,
+)
+
+
+_HELLOPKGV2 = _descriptor.Descriptor(
+  name='HelloPkgV2',
+  full_name='types.HelloPkgV2',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='InterfaceID', full_name='types.HelloPkgV2.InterfaceID', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RtrPriority', full_name='types.HelloPkgV2.RtrPriority', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Options', full_name='types.HelloPkgV2.Options', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='HelloInterval', full_name='types.HelloPkgV2.HelloInterval', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RouterDeadInterval', full_name='types.HelloPkgV2.RouterDeadInterval', index=4,
+      number=5, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='DesignatedRouterID', full_name='types.HelloPkgV2.DesignatedRouterID', index=5,
+      number=6, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='BackupDesignatedRouterID', full_name='types.HelloPkgV2.BackupDesignatedRouterID', index=6,
+      number=7, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='NeighborID', full_name='types.HelloPkgV2.NeighborID', index=7,
+      number=8, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='NetworkMask', full_name='types.HelloPkgV2.NetworkMask', index=8,
+      number=9, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=12357,
+  serialized_end=12582,
+)
+
+
+_DBDESCPKG = _descriptor.Descriptor(
+  name='DbDescPkg',
+  full_name='types.DbDescPkg',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Options', full_name='types.DbDescPkg.Options', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='InterfaceMTU', full_name='types.DbDescPkg.InterfaceMTU', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Flags', full_name='types.DbDescPkg.Flags', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='DDSeqNumber', full_name='types.DbDescPkg.DDSeqNumber', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSAinfo', full_name='types.DbDescPkg.LSAinfo', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=12584,
+  serialized_end=12705,
 )
 
 
@@ -6195,6 +6436,41 @@ _OSPFV3 = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Hello', full_name='types.OSPFv3.Hello', index=9,
+      number=10, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='DbDesc', full_name='types.OSPFv3.DbDesc', index=10,
+      number=11, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSR', full_name='types.OSPFv3.LSR', index=11,
+      number=12, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSU', full_name='types.OSPFv3.LSU', index=12,
+      number=13, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSAs', full_name='types.OSPFv3.LSAs', index=13,
+      number=14, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -6207,8 +6483,917 @@ _OSPFV3 = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=11993,
-  serialized_end=12161,
+  serialized_start=12708,
+  serialized_end=13031,
+)
+
+
+_LSAHEADER = _descriptor.Descriptor(
+  name='LSAheader',
+  full_name='types.LSAheader',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='LSAge', full_name='types.LSAheader.LSAge', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSType', full_name='types.LSAheader.LSType', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LinkStateID', full_name='types.LSAheader.LinkStateID', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='AdvRouter', full_name='types.LSAheader.AdvRouter', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSSeqNumber', full_name='types.LSAheader.LSSeqNumber', index=4,
+      number=5, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSChecksum', full_name='types.LSAheader.LSChecksum', index=5,
+      number=6, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Length', full_name='types.LSAheader.Length', index=6,
+      number=7, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSOptions', full_name='types.LSAheader.LSOptions', index=7,
+      number=8, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=13034,
+  serialized_end=13192,
+)
+
+
+_LSA = _descriptor.Descriptor(
+  name='LSA',
+  full_name='types.LSA',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Header', full_name='types.LSA.Header', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RLSAV2', full_name='types.LSA.RLSAV2', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ASELSAV2', full_name='types.LSA.ASELSAV2', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RLSA', full_name='types.LSA.RLSA', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='NLSA', full_name='types.LSA.NLSA', index=4,
+      number=5, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='InterAPrefixLSA', full_name='types.LSA.InterAPrefixLSA', index=5,
+      number=6, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='IARouterLSA', full_name='types.LSA.IARouterLSA', index=6,
+      number=7, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ASELSA', full_name='types.LSA.ASELSA', index=7,
+      number=8, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LLSA', full_name='types.LSA.LLSA', index=8,
+      number=9, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='IntraAPrefixLSA', full_name='types.LSA.IntraAPrefixLSA', index=9,
+      number=10, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=13195,
+  serialized_end=13597,
+)
+
+
+_LSREQ = _descriptor.Descriptor(
+  name='LSReq',
+  full_name='types.LSReq',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='LSType', full_name='types.LSReq.LSType', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSID', full_name='types.LSReq.LSID', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='AdvRouter', full_name='types.LSReq.AdvRouter', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=13599,
+  serialized_end=13655,
+)
+
+
+_LSUPDATE = _descriptor.Descriptor(
+  name='LSUpdate',
+  full_name='types.LSUpdate',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='NumOfLSAs', full_name='types.LSUpdate.NumOfLSAs', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LSAs', full_name='types.LSUpdate.LSAs', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=13657,
+  serialized_end=13712,
+)
+
+
+_INTRAAREAPREFIXLSA = _descriptor.Descriptor(
+  name='IntraAreaPrefixLSA',
+  full_name='types.IntraAreaPrefixLSA',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='NumOfPrefixes', full_name='types.IntraAreaPrefixLSA.NumOfPrefixes', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RefLSType', full_name='types.IntraAreaPrefixLSA.RefLSType', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RefLinkStateID', full_name='types.IntraAreaPrefixLSA.RefLinkStateID', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RefAdvRouter', full_name='types.IntraAreaPrefixLSA.RefAdvRouter', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Prefixes', full_name='types.IntraAreaPrefixLSA.Prefixes', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=13715,
+  serialized_end=13859,
+)
+
+
+_ASEXTERNALLSA = _descriptor.Descriptor(
+  name='ASExternalLSA',
+  full_name='types.ASExternalLSA',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Flags', full_name='types.ASExternalLSA.Flags', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Metric', full_name='types.ASExternalLSA.Metric', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='PrefixLength', full_name='types.ASExternalLSA.PrefixLength', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='PrefixOptions', full_name='types.ASExternalLSA.PrefixOptions', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RefLSType', full_name='types.ASExternalLSA.RefLSType', index=4,
+      number=5, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='AddressPrefix', full_name='types.ASExternalLSA.AddressPrefix', index=5,
+      number=6, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ForwardingAddress', full_name='types.ASExternalLSA.ForwardingAddress', index=6,
+      number=7, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ExternalRouteTag', full_name='types.ASExternalLSA.ExternalRouteTag', index=7,
+      number=8, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='RefLinkStateID', full_name='types.ASExternalLSA.RefLinkStateID', index=8,
+      number=9, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=13862,
+  serialized_end=14072,
+)
+
+
+_INTERAREAPREFIXLSA = _descriptor.Descriptor(
+  name='InterAreaPrefixLSA',
+  full_name='types.InterAreaPrefixLSA',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Metric', full_name='types.InterAreaPrefixLSA.Metric', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='PrefixLength', full_name='types.InterAreaPrefixLSA.PrefixLength', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='PrefixOptions', full_name='types.InterAreaPrefixLSA.PrefixOptions', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='AddressPrefix', full_name='types.InterAreaPrefixLSA.AddressPrefix', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14074,
+  serialized_end=14178,
+)
+
+
+_INTERAREAROUTERLSA = _descriptor.Descriptor(
+  name='InterAreaRouterLSA',
+  full_name='types.InterAreaRouterLSA',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Options', full_name='types.InterAreaRouterLSA.Options', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Metric', full_name='types.InterAreaRouterLSA.Metric', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='DestinationRouterID', full_name='types.InterAreaRouterLSA.DestinationRouterID', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14180,
+  serialized_end=14262,
+)
+
+
+_ASEXTERNALLSAV2 = _descriptor.Descriptor(
+  name='ASExternalLSAV2',
+  full_name='types.ASExternalLSAV2',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='NetworkMask', full_name='types.ASExternalLSAV2.NetworkMask', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ExternalBit', full_name='types.ASExternalLSAV2.ExternalBit', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Metric', full_name='types.ASExternalLSAV2.Metric', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ForwardingAddress', full_name='types.ASExternalLSAV2.ForwardingAddress', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ExternalRouteTag', full_name='types.ASExternalLSAV2.ExternalRouteTag', index=4,
+      number=5, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14265,
+  serialized_end=14393,
+)
+
+
+_ROUTERLSA = _descriptor.Descriptor(
+  name='RouterLSA',
+  full_name='types.RouterLSA',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Flags', full_name='types.RouterLSA.Flags', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Options', full_name='types.RouterLSA.Options', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Routers', full_name='types.RouterLSA.Routers', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14395,
+  serialized_end=14470,
+)
+
+
+_ROUTER = _descriptor.Descriptor(
+  name='Router',
+  full_name='types.Router',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Type', full_name='types.Router.Type', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Metric', full_name='types.Router.Metric', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='InterfaceID', full_name='types.Router.InterfaceID', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='NeighborInterfaceID', full_name='types.Router.NeighborInterfaceID', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='NeighborRouterID', full_name='types.Router.NeighborRouterID', index=4,
+      number=5, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14472,
+  serialized_end=14586,
+)
+
+
+_ROUTERLSAV2 = _descriptor.Descriptor(
+  name='RouterLSAV2',
+  full_name='types.RouterLSAV2',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Flags', full_name='types.RouterLSAV2.Flags', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Links', full_name='types.RouterLSAV2.Links', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Routers', full_name='types.RouterLSAV2.Routers', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14588,
+  serialized_end=14665,
+)
+
+
+_ROUTERV2 = _descriptor.Descriptor(
+  name='RouterV2',
+  full_name='types.RouterV2',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Type', full_name='types.RouterV2.Type', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LinkID', full_name='types.RouterV2.LinkID', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LinkData', full_name='types.RouterV2.LinkData', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Metric', full_name='types.RouterV2.Metric', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14667,
+  serialized_end=14741,
+)
+
+
+_NETWORKLSA = _descriptor.Descriptor(
+  name='NetworkLSA',
+  full_name='types.NetworkLSA',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='Options', full_name='types.NetworkLSA.Options', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='AttachedRouter', full_name='types.NetworkLSA.AttachedRouter', index=1,
+      number=2, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14743,
+  serialized_end=14796,
+)
+
+
+_LINKLSA = _descriptor.Descriptor(
+  name='LinkLSA',
+  full_name='types.LinkLSA',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='RtrPriority', full_name='types.LinkLSA.RtrPriority', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Options', full_name='types.LinkLSA.Options', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='LinkLocalAddress', full_name='types.LinkLSA.LinkLocalAddress', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='NumOfPrefixes', full_name='types.LinkLSA.NumOfPrefixes', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Prefixes', full_name='types.LinkLSA.Prefixes', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14799,
+  serialized_end=14931,
+)
+
+
+_LSAPREFIX = _descriptor.Descriptor(
+  name='LSAPrefix',
+  full_name='types.LSAPrefix',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='PrefixLength', full_name='types.LSAPrefix.PrefixLength', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='PrefixOptions', full_name='types.LSAPrefix.PrefixOptions', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='Metric', full_name='types.LSAPrefix.Metric', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='AddressPrefix', full_name='types.LSAPrefix.AddressPrefix', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=14933,
+  serialized_end=15028,
 )
 
 
@@ -6350,8 +7535,8 @@ _BFD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=12164,
-  serialized_end=12575,
+  serialized_start=15031,
+  serialized_end=15442,
 )
 
 
@@ -6402,8 +7587,8 @@ _BFDAUTHHEADER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=12577,
-  serialized_end=12663,
+  serialized_start=15444,
+  serialized_end=15530,
 )
 
 
@@ -6545,8 +7730,8 @@ _GRE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=12666,
-  serialized_end=13011,
+  serialized_start=15533,
+  serialized_end=15878,
 )
 
 
@@ -6604,8 +7789,8 @@ _GREROUTING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=13014,
-  serialized_end=13148,
+  serialized_start=15881,
+  serialized_end=16015,
 )
 
 
@@ -6663,8 +7848,8 @@ _FDDI = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=13150,
-  serialized_end=13247,
+  serialized_start=16017,
+  serialized_end=16114,
 )
 
 
@@ -6729,8 +7914,8 @@ _EAP = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=13249,
-  serialized_end=13347,
+  serialized_start=16116,
+  serialized_end=16214,
 )
 
 
@@ -6781,8 +7966,8 @@ _EAPOL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=13349,
-  serialized_end=13422,
+  serialized_start=16216,
+  serialized_end=16289,
 )
 
 
@@ -6959,8 +8144,8 @@ _EAPOLKEY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=13425,
-  serialized_end=13851,
+  serialized_start=16292,
+  serialized_end=16718,
 )
 
 
@@ -7053,8 +8238,8 @@ _VRRPV2 = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=13854,
-  serialized_end=14046,
+  serialized_start=16721,
+  serialized_end=16913,
 )
 
 
@@ -7112,8 +8297,8 @@ _CISCODISCOVERY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=14048,
-  serialized_end=14175,
+  serialized_start=16915,
+  serialized_end=17042,
 )
 
 
@@ -7157,8 +8342,8 @@ _CISCODISCOVERYVALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=14177,
-  serialized_end=14243,
+  serialized_start=17044,
+  serialized_end=17110,
 )
 
 
@@ -7195,8 +8380,8 @@ _CDPVLANDIALOGUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=14245,
-  serialized_end=14288,
+  serialized_start=17112,
+  serialized_end=17155,
 )
 
 
@@ -7233,8 +8418,8 @@ _CDPLOCATION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=14290,
-  serialized_end=14335,
+  serialized_start=17157,
+  serialized_end=17202,
 )
 
 
@@ -7278,8 +8463,8 @@ _CDPPOWERDIALOGUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=14337,
-  serialized_end=14399,
+  serialized_start=17204,
+  serialized_end=17266,
 )
 
 
@@ -7330,8 +8515,8 @@ _CDPSPAREPAIRPOE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=14401,
-  serialized_end=14497,
+  serialized_start=17268,
+  serialized_end=17364,
 )
 
 
@@ -7543,8 +8728,8 @@ _CISCODISCOVERYINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=14500,
-  serialized_end=15294,
+  serialized_start=17367,
+  serialized_end=18161,
 )
 
 
@@ -7651,8 +8836,8 @@ _CDPHELLO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=15297,
-  serialized_end=15539,
+  serialized_start=18164,
+  serialized_end=18406,
 )
 
 
@@ -7787,8 +8972,8 @@ _CDPENERGYWISE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=15542,
-  serialized_end=15872,
+  serialized_start=18409,
+  serialized_end=18739,
 )
 
 
@@ -7874,8 +9059,8 @@ _CDPCAPABILITIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=15875,
-  serialized_end=16062,
+  serialized_start=18742,
+  serialized_end=18929,
 )
 
 
@@ -7912,310 +9097,8 @@ _IPNET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=16064,
-  serialized_end=16099,
-)
-
-
-_LSA = _descriptor.Descriptor(
-  name='LSA',
-  full_name='types.LSA',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='Timestamp', full_name='types.LSA.Timestamp', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LSAge', full_name='types.LSA.LSAge', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LSType', full_name='types.LSA.LSType', index=2,
-      number=3, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LinkStateID', full_name='types.LSA.LinkStateID', index=3,
-      number=4, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='AdvRouter', full_name='types.LSA.AdvRouter', index=4,
-      number=5, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LSSeqNumber', full_name='types.LSA.LSSeqNumber', index=5,
-      number=6, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LSChecksum', full_name='types.LSA.LSChecksum', index=6,
-      number=7, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='Length', full_name='types.LSA.Length', index=7,
-      number=8, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LSOptions', full_name='types.LSA.LSOptions', index=8,
-      number=9, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=16102,
-  serialized_end=16273,
-)
-
-
-_LSREQ = _descriptor.Descriptor(
-  name='LSReq',
-  full_name='types.LSReq',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='Timestamp', full_name='types.LSReq.Timestamp', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LSType', full_name='types.LSReq.LSType', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LSID', full_name='types.LSReq.LSID', index=2,
-      number=3, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='AdvRouter', full_name='types.LSReq.AdvRouter', index=3,
-      number=4, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=16275,
-  serialized_end=16350,
-)
-
-
-_LSUPDATE = _descriptor.Descriptor(
-  name='LSUpdate',
-  full_name='types.LSUpdate',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='Timestamp', full_name='types.LSUpdate.Timestamp', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='NumOfLSAs', full_name='types.LSUpdate.NumOfLSAs', index=1,
-      number=2, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LSAs', full_name='types.LSUpdate.LSAs', index=2,
-      number=3, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=16352,
-  serialized_end=16426,
-)
-
-
-_LINKLSA = _descriptor.Descriptor(
-  name='LinkLSA',
-  full_name='types.LinkLSA',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='Timestamp', full_name='types.LinkLSA.Timestamp', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='RtrPriority', full_name='types.LinkLSA.RtrPriority', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='Options', full_name='types.LinkLSA.Options', index=2,
-      number=3, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='LinkLocalAddress', full_name='types.LinkLSA.LinkLocalAddress', index=3,
-      number=4, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b(""),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='NumOfPrefixes', full_name='types.LinkLSA.NumOfPrefixes', index=4,
-      number=5, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='Prefixes', full_name='types.LinkLSA.Prefixes', index=5,
-      number=6, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=16429,
-  serialized_end=16580,
-)
-
-
-_LSAPREFIX = _descriptor.Descriptor(
-  name='LSAPrefix',
-  full_name='types.LSAPrefix',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='PrefixLength', full_name='types.LSAPrefix.PrefixLength', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='PrefixOptions', full_name='types.LSAPrefix.PrefixOptions', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='Metric', full_name='types.LSAPrefix.Metric', index=2,
-      number=3, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='AddressPrefix', full_name='types.LSAPrefix.AddressPrefix', index=3,
-      number=4, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b(""),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=16582,
-  serialized_end=16677,
+  serialized_start=18931,
+  serialized_end=18966,
 )
 
 _HEADER.fields_by_name['Type'].enum_type = _TYPE
@@ -8256,6 +9139,32 @@ _IPV6HOPBYHOPOPTION.fields_by_name['OptionAlignment'].message_type = _IPV6HOPBYH
 _ICMPV6NEIGHBORSOLICITATION.fields_by_name['Options'].message_type = _ICMPV6OPTION
 _ICMPV6ROUTERSOLICITATION.fields_by_name['Options'].message_type = _ICMPV6OPTION
 _GENEVE.fields_by_name['Options'].message_type = _GENEVEOPTION
+_OSPFV2.fields_by_name['LSAs'].message_type = _LSAHEADER
+_OSPFV2.fields_by_name['LSU'].message_type = _LSUPDATE
+_OSPFV2.fields_by_name['LSR'].message_type = _LSREQ
+_OSPFV2.fields_by_name['DbDesc'].message_type = _DBDESCPKG
+_OSPFV2.fields_by_name['HelloV2'].message_type = _HELLOPKGV2
+_DBDESCPKG.fields_by_name['LSAinfo'].message_type = _LSAHEADER
+_OSPFV3.fields_by_name['Hello'].message_type = _HELLOPKG
+_OSPFV3.fields_by_name['DbDesc'].message_type = _DBDESCPKG
+_OSPFV3.fields_by_name['LSR'].message_type = _LSREQ
+_OSPFV3.fields_by_name['LSU'].message_type = _LSUPDATE
+_OSPFV3.fields_by_name['LSAs'].message_type = _LSAHEADER
+_LSA.fields_by_name['Header'].message_type = _LSAHEADER
+_LSA.fields_by_name['RLSAV2'].message_type = _ROUTERLSAV2
+_LSA.fields_by_name['ASELSAV2'].message_type = _ASEXTERNALLSAV2
+_LSA.fields_by_name['RLSA'].message_type = _ROUTERLSA
+_LSA.fields_by_name['NLSA'].message_type = _NETWORKLSA
+_LSA.fields_by_name['InterAPrefixLSA'].message_type = _INTERAREAPREFIXLSA
+_LSA.fields_by_name['IARouterLSA'].message_type = _INTERAREAROUTERLSA
+_LSA.fields_by_name['ASELSA'].message_type = _ASEXTERNALLSA
+_LSA.fields_by_name['LLSA'].message_type = _LINKLSA
+_LSA.fields_by_name['IntraAPrefixLSA'].message_type = _INTRAAREAPREFIXLSA
+_LSUPDATE.fields_by_name['LSAs'].message_type = _LSA
+_INTRAAREAPREFIXLSA.fields_by_name['Prefixes'].message_type = _LSAPREFIX
+_ROUTERLSA.fields_by_name['Routers'].message_type = _ROUTER
+_ROUTERLSAV2.fields_by_name['Routers'].message_type = _ROUTERV2
+_LINKLSA.fields_by_name['Prefixes'].message_type = _LSAPREFIX
 _BFD.fields_by_name['AuthHeader'].message_type = _BFDAUTHHEADER
 _GRE.fields_by_name['Routing'].message_type = _GREROUTING
 _GREROUTING.fields_by_name['Next'].message_type = _GREROUTING
@@ -8271,8 +9180,6 @@ _CISCODISCOVERYINFO.fields_by_name['PowerAvailable'].message_type = _CDPPOWERDIA
 _CISCODISCOVERYINFO.fields_by_name['SparePairPoe'].message_type = _CDPSPAREPAIRPOE
 _CISCODISCOVERYINFO.fields_by_name['EnergyWise'].message_type = _CDPENERGYWISE
 _CISCODISCOVERYINFO.fields_by_name['Unknown'].message_type = _CISCODISCOVERYVALUE
-_LSUPDATE.fields_by_name['LSAs'].message_type = _LSA
-_LINKLSA.fields_by_name['Prefixes'].message_type = _LSAPREFIX
 DESCRIPTOR.message_types_by_name['Header'] = _HEADER
 DESCRIPTOR.message_types_by_name['Batch'] = _BATCH
 DESCRIPTOR.message_types_by_name['Flow'] = _FLOW
@@ -8349,7 +9256,26 @@ DESCRIPTOR.message_types_by_name['LCM'] = _LCM
 DESCRIPTOR.message_types_by_name['MPLS'] = _MPLS
 DESCRIPTOR.message_types_by_name['ModbusTCP'] = _MODBUSTCP
 DESCRIPTOR.message_types_by_name['OSPFv2'] = _OSPFV2
+DESCRIPTOR.message_types_by_name['HelloPkg'] = _HELLOPKG
+DESCRIPTOR.message_types_by_name['HelloPkgV2'] = _HELLOPKGV2
+DESCRIPTOR.message_types_by_name['DbDescPkg'] = _DBDESCPKG
 DESCRIPTOR.message_types_by_name['OSPFv3'] = _OSPFV3
+DESCRIPTOR.message_types_by_name['LSAheader'] = _LSAHEADER
+DESCRIPTOR.message_types_by_name['LSA'] = _LSA
+DESCRIPTOR.message_types_by_name['LSReq'] = _LSREQ
+DESCRIPTOR.message_types_by_name['LSUpdate'] = _LSUPDATE
+DESCRIPTOR.message_types_by_name['IntraAreaPrefixLSA'] = _INTRAAREAPREFIXLSA
+DESCRIPTOR.message_types_by_name['ASExternalLSA'] = _ASEXTERNALLSA
+DESCRIPTOR.message_types_by_name['InterAreaPrefixLSA'] = _INTERAREAPREFIXLSA
+DESCRIPTOR.message_types_by_name['InterAreaRouterLSA'] = _INTERAREAROUTERLSA
+DESCRIPTOR.message_types_by_name['ASExternalLSAV2'] = _ASEXTERNALLSAV2
+DESCRIPTOR.message_types_by_name['RouterLSA'] = _ROUTERLSA
+DESCRIPTOR.message_types_by_name['Router'] = _ROUTER
+DESCRIPTOR.message_types_by_name['RouterLSAV2'] = _ROUTERLSAV2
+DESCRIPTOR.message_types_by_name['RouterV2'] = _ROUTERV2
+DESCRIPTOR.message_types_by_name['NetworkLSA'] = _NETWORKLSA
+DESCRIPTOR.message_types_by_name['LinkLSA'] = _LINKLSA
+DESCRIPTOR.message_types_by_name['LSAPrefix'] = _LSAPREFIX
 DESCRIPTOR.message_types_by_name['BFD'] = _BFD
 DESCRIPTOR.message_types_by_name['BFDAuthHeader'] = _BFDAUTHHEADER
 DESCRIPTOR.message_types_by_name['GRE'] = _GRE
@@ -8370,11 +9296,6 @@ DESCRIPTOR.message_types_by_name['CDPHello'] = _CDPHELLO
 DESCRIPTOR.message_types_by_name['CDPEnergyWise'] = _CDPENERGYWISE
 DESCRIPTOR.message_types_by_name['CDPCapabilities'] = _CDPCAPABILITIES
 DESCRIPTOR.message_types_by_name['IPNet'] = _IPNET
-DESCRIPTOR.message_types_by_name['LSA'] = _LSA
-DESCRIPTOR.message_types_by_name['LSReq'] = _LSREQ
-DESCRIPTOR.message_types_by_name['LSUpdate'] = _LSUPDATE
-DESCRIPTOR.message_types_by_name['LinkLSA'] = _LINKLSA
-DESCRIPTOR.message_types_by_name['LSAPrefix'] = _LSAPREFIX
 DESCRIPTOR.enum_types_by_name['Type'] = _TYPE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -8910,12 +9831,145 @@ OSPFv2 = _reflection.GeneratedProtocolMessageType('OSPFv2', (_message.Message,),
   ))
 _sym_db.RegisterMessage(OSPFv2)
 
+HelloPkg = _reflection.GeneratedProtocolMessageType('HelloPkg', (_message.Message,), dict(
+  DESCRIPTOR = _HELLOPKG,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.HelloPkg)
+  ))
+_sym_db.RegisterMessage(HelloPkg)
+
+HelloPkgV2 = _reflection.GeneratedProtocolMessageType('HelloPkgV2', (_message.Message,), dict(
+  DESCRIPTOR = _HELLOPKGV2,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.HelloPkgV2)
+  ))
+_sym_db.RegisterMessage(HelloPkgV2)
+
+DbDescPkg = _reflection.GeneratedProtocolMessageType('DbDescPkg', (_message.Message,), dict(
+  DESCRIPTOR = _DBDESCPKG,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.DbDescPkg)
+  ))
+_sym_db.RegisterMessage(DbDescPkg)
+
 OSPFv3 = _reflection.GeneratedProtocolMessageType('OSPFv3', (_message.Message,), dict(
   DESCRIPTOR = _OSPFV3,
   __module__ = 'netcap_pb2'
   # @@protoc_insertion_point(class_scope:types.OSPFv3)
   ))
 _sym_db.RegisterMessage(OSPFv3)
+
+LSAheader = _reflection.GeneratedProtocolMessageType('LSAheader', (_message.Message,), dict(
+  DESCRIPTOR = _LSAHEADER,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.LSAheader)
+  ))
+_sym_db.RegisterMessage(LSAheader)
+
+LSA = _reflection.GeneratedProtocolMessageType('LSA', (_message.Message,), dict(
+  DESCRIPTOR = _LSA,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.LSA)
+  ))
+_sym_db.RegisterMessage(LSA)
+
+LSReq = _reflection.GeneratedProtocolMessageType('LSReq', (_message.Message,), dict(
+  DESCRIPTOR = _LSREQ,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.LSReq)
+  ))
+_sym_db.RegisterMessage(LSReq)
+
+LSUpdate = _reflection.GeneratedProtocolMessageType('LSUpdate', (_message.Message,), dict(
+  DESCRIPTOR = _LSUPDATE,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.LSUpdate)
+  ))
+_sym_db.RegisterMessage(LSUpdate)
+
+IntraAreaPrefixLSA = _reflection.GeneratedProtocolMessageType('IntraAreaPrefixLSA', (_message.Message,), dict(
+  DESCRIPTOR = _INTRAAREAPREFIXLSA,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.IntraAreaPrefixLSA)
+  ))
+_sym_db.RegisterMessage(IntraAreaPrefixLSA)
+
+ASExternalLSA = _reflection.GeneratedProtocolMessageType('ASExternalLSA', (_message.Message,), dict(
+  DESCRIPTOR = _ASEXTERNALLSA,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.ASExternalLSA)
+  ))
+_sym_db.RegisterMessage(ASExternalLSA)
+
+InterAreaPrefixLSA = _reflection.GeneratedProtocolMessageType('InterAreaPrefixLSA', (_message.Message,), dict(
+  DESCRIPTOR = _INTERAREAPREFIXLSA,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.InterAreaPrefixLSA)
+  ))
+_sym_db.RegisterMessage(InterAreaPrefixLSA)
+
+InterAreaRouterLSA = _reflection.GeneratedProtocolMessageType('InterAreaRouterLSA', (_message.Message,), dict(
+  DESCRIPTOR = _INTERAREAROUTERLSA,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.InterAreaRouterLSA)
+  ))
+_sym_db.RegisterMessage(InterAreaRouterLSA)
+
+ASExternalLSAV2 = _reflection.GeneratedProtocolMessageType('ASExternalLSAV2', (_message.Message,), dict(
+  DESCRIPTOR = _ASEXTERNALLSAV2,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.ASExternalLSAV2)
+  ))
+_sym_db.RegisterMessage(ASExternalLSAV2)
+
+RouterLSA = _reflection.GeneratedProtocolMessageType('RouterLSA', (_message.Message,), dict(
+  DESCRIPTOR = _ROUTERLSA,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.RouterLSA)
+  ))
+_sym_db.RegisterMessage(RouterLSA)
+
+Router = _reflection.GeneratedProtocolMessageType('Router', (_message.Message,), dict(
+  DESCRIPTOR = _ROUTER,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.Router)
+  ))
+_sym_db.RegisterMessage(Router)
+
+RouterLSAV2 = _reflection.GeneratedProtocolMessageType('RouterLSAV2', (_message.Message,), dict(
+  DESCRIPTOR = _ROUTERLSAV2,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.RouterLSAV2)
+  ))
+_sym_db.RegisterMessage(RouterLSAV2)
+
+RouterV2 = _reflection.GeneratedProtocolMessageType('RouterV2', (_message.Message,), dict(
+  DESCRIPTOR = _ROUTERV2,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.RouterV2)
+  ))
+_sym_db.RegisterMessage(RouterV2)
+
+NetworkLSA = _reflection.GeneratedProtocolMessageType('NetworkLSA', (_message.Message,), dict(
+  DESCRIPTOR = _NETWORKLSA,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.NetworkLSA)
+  ))
+_sym_db.RegisterMessage(NetworkLSA)
+
+LinkLSA = _reflection.GeneratedProtocolMessageType('LinkLSA', (_message.Message,), dict(
+  DESCRIPTOR = _LINKLSA,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.LinkLSA)
+  ))
+_sym_db.RegisterMessage(LinkLSA)
+
+LSAPrefix = _reflection.GeneratedProtocolMessageType('LSAPrefix', (_message.Message,), dict(
+  DESCRIPTOR = _LSAPREFIX,
+  __module__ = 'netcap_pb2'
+  # @@protoc_insertion_point(class_scope:types.LSAPrefix)
+  ))
+_sym_db.RegisterMessage(LSAPrefix)
 
 BFD = _reflection.GeneratedProtocolMessageType('BFD', (_message.Message,), dict(
   DESCRIPTOR = _BFD,
@@ -9056,41 +10110,6 @@ IPNet = _reflection.GeneratedProtocolMessageType('IPNet', (_message.Message,), d
   # @@protoc_insertion_point(class_scope:types.IPNet)
   ))
 _sym_db.RegisterMessage(IPNet)
-
-LSA = _reflection.GeneratedProtocolMessageType('LSA', (_message.Message,), dict(
-  DESCRIPTOR = _LSA,
-  __module__ = 'netcap_pb2'
-  # @@protoc_insertion_point(class_scope:types.LSA)
-  ))
-_sym_db.RegisterMessage(LSA)
-
-LSReq = _reflection.GeneratedProtocolMessageType('LSReq', (_message.Message,), dict(
-  DESCRIPTOR = _LSREQ,
-  __module__ = 'netcap_pb2'
-  # @@protoc_insertion_point(class_scope:types.LSReq)
-  ))
-_sym_db.RegisterMessage(LSReq)
-
-LSUpdate = _reflection.GeneratedProtocolMessageType('LSUpdate', (_message.Message,), dict(
-  DESCRIPTOR = _LSUPDATE,
-  __module__ = 'netcap_pb2'
-  # @@protoc_insertion_point(class_scope:types.LSUpdate)
-  ))
-_sym_db.RegisterMessage(LSUpdate)
-
-LinkLSA = _reflection.GeneratedProtocolMessageType('LinkLSA', (_message.Message,), dict(
-  DESCRIPTOR = _LINKLSA,
-  __module__ = 'netcap_pb2'
-  # @@protoc_insertion_point(class_scope:types.LinkLSA)
-  ))
-_sym_db.RegisterMessage(LinkLSA)
-
-LSAPrefix = _reflection.GeneratedProtocolMessageType('LSAPrefix', (_message.Message,), dict(
-  DESCRIPTOR = _LSAPREFIX,
-  __module__ = 'netcap_pb2'
-  # @@protoc_insertion_point(class_scope:types.LSAPrefix)
-  ))
-_sym_db.RegisterMessage(LSAPrefix)
 
 
 # @@protoc_insertion_point(module_scope)

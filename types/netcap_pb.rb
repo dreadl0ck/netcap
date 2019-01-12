@@ -700,6 +700,39 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Checksum, :int32, 7
     optional :AuType, :int32, 8
     optional :Authentication, :int64, 9
+    repeated :LSAs, :message, 10, "types.LSAheader"
+    optional :LSU, :message, 11, "types.LSUpdate"
+    repeated :LSR, :message, 12, "types.LSReq"
+    optional :DbDesc, :message, 13, "types.DbDescPkg"
+    optional :HelloV2, :message, 14, "types.HelloPkgV2"
+  end
+  add_message "types.HelloPkg" do
+    optional :InterfaceID, :uint32, 1
+    optional :RtrPriority, :int32, 2
+    optional :Options, :uint32, 3
+    optional :HelloInterval, :int32, 4
+    optional :RouterDeadInterval, :uint32, 5
+    optional :DesignatedRouterID, :uint32, 6
+    optional :BackupDesignatedRouterID, :uint32, 7
+    repeated :NeighborID, :uint32, 8
+  end
+  add_message "types.HelloPkgV2" do
+    optional :InterfaceID, :uint32, 1
+    optional :RtrPriority, :int32, 2
+    optional :Options, :uint32, 3
+    optional :HelloInterval, :int32, 4
+    optional :RouterDeadInterval, :uint32, 5
+    optional :DesignatedRouterID, :uint32, 6
+    optional :BackupDesignatedRouterID, :uint32, 7
+    repeated :NeighborID, :uint32, 8
+    optional :NetworkMask, :uint32, 9
+  end
+  add_message "types.DbDescPkg" do
+    optional :Options, :uint32, 1
+    optional :InterfaceMTU, :int32, 2
+    optional :Flags, :int32, 3
+    optional :DDSeqNumber, :uint32, 4
+    repeated :LSAinfo, :message, 5, "types.LSAheader"
   end
   add_message "types.OSPFv3" do
     optional :Timestamp, :string, 1
@@ -711,6 +744,118 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Checksum, :int32, 7
     optional :Instance, :int32, 8
     optional :Reserved, :int32, 9
+    optional :Hello, :message, 10, "types.HelloPkg"
+    optional :DbDesc, :message, 11, "types.DbDescPkg"
+    repeated :LSR, :message, 12, "types.LSReq"
+    optional :LSU, :message, 13, "types.LSUpdate"
+    repeated :LSAs, :message, 14, "types.LSAheader"
+  end
+  add_message "types.LSAheader" do
+    optional :LSAge, :int32, 1
+    optional :LSType, :int32, 2
+    optional :LinkStateID, :uint32, 3
+    optional :AdvRouter, :uint32, 4
+    optional :LSSeqNumber, :uint32, 5
+    optional :LSChecksum, :int32, 6
+    optional :Length, :int32, 7
+    optional :LSOptions, :int32, 8
+  end
+  add_message "types.LSA" do
+    optional :Header, :message, 1, "types.LSAheader"
+    optional :RLSAV2, :message, 2, "types.RouterLSAV2"
+    optional :ASELSAV2, :message, 3, "types.ASExternalLSAV2"
+    optional :RLSA, :message, 4, "types.RouterLSA"
+    optional :NLSA, :message, 5, "types.NetworkLSA"
+    optional :InterAPrefixLSA, :message, 6, "types.InterAreaPrefixLSA"
+    optional :IARouterLSA, :message, 7, "types.InterAreaRouterLSA"
+    optional :ASELSA, :message, 8, "types.ASExternalLSA"
+    optional :LLSA, :message, 9, "types.LinkLSA"
+    optional :IntraAPrefixLSA, :message, 10, "types.IntraAreaPrefixLSA"
+  end
+  add_message "types.LSReq" do
+    optional :LSType, :int32, 1
+    optional :LSID, :uint32, 2
+    optional :AdvRouter, :uint32, 3
+  end
+  add_message "types.LSUpdate" do
+    optional :NumOfLSAs, :uint32, 1
+    repeated :LSAs, :message, 2, "types.LSA"
+  end
+  add_message "types.IntraAreaPrefixLSA" do
+    optional :NumOfPrefixes, :int32, 1
+    optional :RefLSType, :int32, 2
+    optional :RefLinkStateID, :uint32, 3
+    optional :RefAdvRouter, :uint32, 4
+    repeated :Prefixes, :message, 5, "types.LSAPrefix"
+  end
+  add_message "types.ASExternalLSA" do
+    optional :Flags, :int32, 1
+    optional :Metric, :uint32, 2
+    optional :PrefixLength, :int32, 3
+    optional :PrefixOptions, :int32, 4
+    optional :RefLSType, :int32, 5
+    optional :AddressPrefix, :bytes, 6
+    optional :ForwardingAddress, :bytes, 7
+    optional :ExternalRouteTag, :uint32, 8
+    optional :RefLinkStateID, :uint32, 9
+  end
+  add_message "types.InterAreaPrefixLSA" do
+    optional :Metric, :uint32, 1
+    optional :PrefixLength, :int32, 2
+    optional :PrefixOptions, :int32, 3
+    optional :AddressPrefix, :bytes, 4
+  end
+  add_message "types.InterAreaRouterLSA" do
+    optional :Options, :uint32, 1
+    optional :Metric, :uint32, 2
+    optional :DestinationRouterID, :uint32, 3
+  end
+  add_message "types.ASExternalLSAV2" do
+    optional :NetworkMask, :uint32, 1
+    optional :ExternalBit, :int32, 2
+    optional :Metric, :uint32, 3
+    optional :ForwardingAddress, :uint32, 4
+    optional :ExternalRouteTag, :uint32, 5
+  end
+  add_message "types.RouterLSA" do
+    optional :Flags, :int32, 1
+    optional :Options, :uint32, 2
+    repeated :Routers, :message, 3, "types.Router"
+  end
+  add_message "types.Router" do
+    optional :Type, :int32, 1
+    optional :Metric, :int32, 2
+    optional :InterfaceID, :uint32, 3
+    optional :NeighborInterfaceID, :uint32, 4
+    optional :NeighborRouterID, :uint32, 5
+  end
+  add_message "types.RouterLSAV2" do
+    optional :Flags, :int32, 1
+    optional :Links, :int32, 2
+    repeated :Routers, :message, 3, "types.RouterV2"
+  end
+  add_message "types.RouterV2" do
+    optional :Type, :int32, 1
+    optional :LinkID, :uint32, 2
+    optional :LinkData, :uint32, 3
+    optional :Metric, :uint32, 4
+  end
+  add_message "types.NetworkLSA" do
+    optional :Options, :uint32, 1
+    repeated :AttachedRouter, :uint32, 2
+  end
+  add_message "types.LinkLSA" do
+    optional :RtrPriority, :int32, 1
+    optional :Options, :uint32, 2
+    optional :LinkLocalAddress, :bytes, 3
+    optional :NumOfPrefixes, :uint32, 4
+    repeated :Prefixes, :message, 5, "types.LSAPrefix"
+  end
+  add_message "types.LSAPrefix" do
+    optional :PrefixLength, :int32, 1
+    optional :PrefixOptions, :int32, 2
+    optional :Metric, :int32, 3
+    optional :AddressPrefix, :bytes, 4
   end
   add_message "types.BFD" do
     optional :Timestamp, :string, 1
@@ -927,42 +1072,6 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :IP, :string, 1
     optional :IPMask, :string, 2
   end
-  add_message "types.LSA" do
-    optional :Timestamp, :string, 1
-    optional :LSAge, :int32, 2
-    optional :LSType, :int32, 3
-    optional :LinkStateID, :uint32, 4
-    optional :AdvRouter, :uint32, 5
-    optional :LSSeqNumber, :uint32, 6
-    optional :LSChecksum, :int32, 7
-    optional :Length, :int32, 8
-    optional :LSOptions, :int32, 9
-  end
-  add_message "types.LSReq" do
-    optional :Timestamp, :string, 1
-    optional :LSType, :int32, 2
-    optional :LSID, :uint32, 3
-    optional :AdvRouter, :uint32, 4
-  end
-  add_message "types.LSUpdate" do
-    optional :Timestamp, :string, 1
-    optional :NumOfLSAs, :uint32, 2
-    repeated :LSAs, :message, 3, "types.LSA"
-  end
-  add_message "types.LinkLSA" do
-    optional :Timestamp, :string, 1
-    optional :RtrPriority, :int32, 2
-    optional :Options, :uint32, 3
-    optional :LinkLocalAddress, :bytes, 4
-    optional :NumOfPrefixes, :uint32, 5
-    repeated :Prefixes, :message, 6, "types.LSAPrefix"
-  end
-  add_message "types.LSAPrefix" do
-    optional :PrefixLength, :int32, 1
-    optional :PrefixOptions, :int32, 2
-    optional :Metric, :int32, 3
-    optional :AddressPrefix, :bytes, 4
-  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -1049,10 +1158,6 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_EAPOLKey, 82
     value :NC_CiscoDiscovery, 83
     value :NC_CiscoDiscoveryInfo, 84
-    value :NC_LSA, 85
-    value :NC_LSUpdate, 86
-    value :NC_LSReq, 87
-    value :NC_LinkLSA, 88
   end
 end
 
@@ -1133,7 +1238,26 @@ module Types
   MPLS = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.MPLS").msgclass
   ModbusTCP = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ModbusTCP").msgclass
   OSPFv2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.OSPFv2").msgclass
+  HelloPkg = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.HelloPkg").msgclass
+  HelloPkgV2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.HelloPkgV2").msgclass
+  DbDescPkg = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.DbDescPkg").msgclass
   OSPFv3 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.OSPFv3").msgclass
+  LSAheader = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSAheader").msgclass
+  LSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSA").msgclass
+  LSReq = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSReq").msgclass
+  LSUpdate = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSUpdate").msgclass
+  IntraAreaPrefixLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IntraAreaPrefixLSA").msgclass
+  ASExternalLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ASExternalLSA").msgclass
+  InterAreaPrefixLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.InterAreaPrefixLSA").msgclass
+  InterAreaRouterLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.InterAreaRouterLSA").msgclass
+  ASExternalLSAV2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.ASExternalLSAV2").msgclass
+  RouterLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.RouterLSA").msgclass
+  Router = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Router").msgclass
+  RouterLSAV2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.RouterLSAV2").msgclass
+  RouterV2 = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.RouterV2").msgclass
+  NetworkLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.NetworkLSA").msgclass
+  LinkLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LinkLSA").msgclass
+  LSAPrefix = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSAPrefix").msgclass
   BFD = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.BFD").msgclass
   BFDAuthHeader = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.BFDAuthHeader").msgclass
   GRE = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.GRE").msgclass
@@ -1154,10 +1278,5 @@ module Types
   CDPEnergyWise = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPEnergyWise").msgclass
   CDPCapabilities = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPCapabilities").msgclass
   IPNet = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPNet").msgclass
-  LSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSA").msgclass
-  LSReq = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSReq").msgclass
-  LSUpdate = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSUpdate").msgclass
-  LinkLSA = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LinkLSA").msgclass
-  LSAPrefix = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.LSAPrefix").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end
