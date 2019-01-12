@@ -163,7 +163,10 @@ func main() {
 
 	// collect traffic live from named interface
 	if live {
-		c.CollectLive(*flagInterface, *flagBPF)
+		err := c.CollectLive(*flagInterface, *flagBPF)
+		if err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 
