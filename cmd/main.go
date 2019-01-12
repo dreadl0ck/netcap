@@ -140,6 +140,8 @@ func main() {
 			Source:          source,
 			Version:         netcap.Version,
 		},
+		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
+		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})
 
 	// read ncap file and print to stdout

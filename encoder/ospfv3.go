@@ -30,7 +30,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 			lSAs   []*types.LSAheader
 		)
 		switch v := ospf3.Content.(type) {
-		case *layers.HelloPkg:
+		case layers.HelloPkg:
 			hello = &types.HelloPkg{
 				InterfaceID:              uint32(v.InterfaceID),
 				RtrPriority:              int32(v.RtrPriority),
@@ -41,7 +41,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 				BackupDesignatedRouterID: uint32(v.BackupDesignatedRouterID),
 				NeighborID:               []uint32(v.NeighborID),
 			}
-		case *layers.DbDescPkg:
+		case layers.DbDescPkg:
 			var lsas []*types.LSAheader
 			for _, h := range v.LSAinfo {
 				lsas = append(lsas, &types.LSAheader{
@@ -62,7 +62,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 				DDSeqNumber:  uint32(v.DDSeqNumber),
 				LSAinfo:      lsas, // []*LSAheader
 			}
-		case []*layers.LSReq:
+		case []layers.LSReq:
 			for _, r := range v {
 				lSR = append(lSR, &types.LSReq{
 					LSType:    int32(r.LSType),
@@ -70,7 +70,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 					AdvRouter: uint32(r.AdvRouter),
 				})
 			}
-		case *layers.LSUpdate:
+		case layers.LSUpdate:
 			var lsas []*types.LSA
 			for _, l := range v.LSAs {
 				var (
@@ -85,7 +85,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 					intraAreaPrefixLSA *types.IntraAreaPrefixLSA
 				)
 				switch v := l.Content.(type) {
-				case *layers.RouterLSAV2:
+				case layers.RouterLSAV2:
 					var routers []*types.RouterV2
 					for _, r := range v.Routers {
 						routers = append(routers, &types.RouterV2{
@@ -100,7 +100,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 						Links:   int32(v.Links),
 						Routers: routers, // []*RouterV2,
 					}
-				case *layers.ASExternalLSAV2:
+				case layers.ASExternalLSAV2:
 					asExternalLSAV2 = &types.ASExternalLSAV2{
 						NetworkMask:       uint32(v.NetworkMask),
 						ExternalBit:       int32(v.ExternalBit),
@@ -108,7 +108,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 						ForwardingAddress: uint32(v.ForwardingAddress),
 						ExternalRouteTag:  uint32(v.ExternalRouteTag),
 					}
-				case *layers.RouterLSA:
+				case layers.RouterLSA:
 					var routers []*types.Router
 					for _, r := range v.Routers {
 						routers = append(routers, &types.Router{
@@ -124,25 +124,25 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 						Options: uint32(v.Options),
 						Routers: routers, // []*Router
 					}
-				case *layers.NetworkLSA:
+				case layers.NetworkLSA:
 					networkLSA = &types.NetworkLSA{
 						Options:        uint32(v.Options),
 						AttachedRouter: []uint32(v.AttachedRouter),
 					}
-				case *layers.InterAreaPrefixLSA:
+				case layers.InterAreaPrefixLSA:
 					interAreaPrefixLSA = &types.InterAreaPrefixLSA{
 						Metric:        uint32(v.Metric),
 						PrefixLength:  int32(v.PrefixLength),
 						PrefixOptions: int32(v.PrefixOptions),
 						AddressPrefix: []byte(v.AddressPrefix),
 					}
-				case *layers.InterAreaRouterLSA:
+				case layers.InterAreaRouterLSA:
 					interAreaRouterLSA = &types.InterAreaRouterLSA{
 						Options:             uint32(v.Options),
 						Metric:              uint32(v.Metric),
 						DestinationRouterID: uint32(v.DestinationRouterID),
 					}
-				case *layers.ASExternalLSA:
+				case layers.ASExternalLSA:
 					asExternalLSA = &types.ASExternalLSA{
 						Flags:             int32(v.Flags),
 						Metric:            uint32(v.Metric),
@@ -154,7 +154,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 						ExternalRouteTag:  uint32(v.ExternalRouteTag),
 						RefLinkStateID:    uint32(v.RefLinkStateID),
 					}
-				case *layers.LinkLSA:
+				case layers.LinkLSA:
 					var prefixes []*types.LSAPrefix
 					for _, r := range v.Prefixes {
 						prefixes = append(prefixes, &types.LSAPrefix{
@@ -171,7 +171,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 						NumOfPrefixes:    uint32(v.NumOfPrefixes),
 						Prefixes:         prefixes, // []*LSAPrefix
 					}
-				case *layers.IntraAreaPrefixLSA:
+				case layers.IntraAreaPrefixLSA:
 					var prefixes []*types.LSAPrefix
 					for _, r := range v.Prefixes {
 						prefixes = append(prefixes, &types.LSAPrefix{
@@ -215,7 +215,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 				NumOfLSAs: uint32(v.NumOfLSAs),
 				LSAs:      lsas, // []*LSA
 			}
-		case []*layers.LSAheader:
+		case []layers.LSAheader:
 			for _, r := range v {
 				lSAs = append(lSAs, &types.LSAheader{
 					LSAge:       int32(r.LSAge),

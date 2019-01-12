@@ -40,15 +40,16 @@ type Stringable interface {
 // 	return ""
 // }
 
-func toString(c interface{}) string {
+// this function wraps the ToString() function call with a nil pointer check
+func toString(c Stringable) string {
 
 	// make sure its not a nil pointer
-	// a simple nil check is apparently not enough
+	// a simple nil check is apparently not enough here
 	if c == nil || (reflect.ValueOf(c).Kind() == reflect.Ptr && reflect.ValueOf(c).IsNil()) {
 		return ""
 	}
 
-	// now check if this
+	// now check if the Stringable interface is implemented
 	if str, ok := c.(Stringable); ok {
 		return str.ToString()
 	}

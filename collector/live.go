@@ -19,8 +19,6 @@ import (
 	"io"
 
 	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/pkg/errors"
 )
@@ -66,23 +64,7 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 			return errors.Wrap(err, "Error reading packet data")
 		}
 
-		c.printProgressLive()
-
-		// init packet and set capture info and timestamp
-		p := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Lazy)
-		p.Metadata().Timestamp = ci.Timestamp
-		p.Metadata().CaptureInfo = ci
-
-		// if HTTP capture is desired, tcp stream reassembly needs to be performed.
-		// the gopacket/reassembly implementation does not allow packets to arrive out of order
-		// therefore the http decoding must not happen in a worker thread
-		// and instead be performed here to guarantee packets are being processed sequentially
-		if encoder.HTTPActive {
-			encoder.DecodeHTTP(p)
-		}
-
-		// pass packet to worker for decoding and further processing
-		c.handlePacket(p)
+		c.handleRawPacketData(data, ci)
 	}
 
 	// run cleanup on channel exit

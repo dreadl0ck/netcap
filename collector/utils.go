@@ -19,11 +19,36 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/golang/protobuf/proto"
+	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"golang.org/x/net/bpf"
 )
+
+func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
+
+	// show progress
+	c.printProgress()
+
+	// create a new gopacket with lazy decoding
+	// base layer is by default Ethernet
+	p := gopacket.NewPacket(data, c.config.BaseLayer, c.config.DecodeOptions)
+	p.Metadata().Timestamp = ci.Timestamp
+	p.Metadata().CaptureInfo = ci
+
+	// if HTTP capture is desired, tcp stream reassembly needs to be performed.
+	// the gopacket/reassembly implementation does not allow packets to arrive out of order
+	// therefore the http decoding must not happen in a worker thread
+	// and instead be performed here to guarantee packets are being processed sequentially
+	if encoder.HTTPActive {
+		encoder.DecodeHTTP(p)
+	}
+
+	// pass packet to a worker routine
+	c.handlePacket(p)
+}
 
 // printProgressLive prints live statistics.
 func (c *Collector) printProgressLive() {
