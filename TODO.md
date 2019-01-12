@@ -1,6 +1,14 @@
 # TODOs
 
-- add OSPF LSA data to audit records
+- make join sep configurable
+- helper func for ToString() on array
+- rename ToString
+
+- OSPF: remove dummy OSPF.ncap file
+- replace all strings.Join... with join util func
+- performance: pre allocate array sizes and use indices
+
+- gopacket TLS type
 - log encoding errors for merged packets
 - fix GRE Routing
 
@@ -22,6 +30,7 @@ Benchmarks:
 
 ## new protos
 
+- NortelDiscovery
 - MLDv2MulticastListenerReport
 - ASExternalLSA
 

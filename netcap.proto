@@ -130,10 +130,6 @@ enum Type {
     NC_EAPOLKey                    = 82;              
     NC_CiscoDiscovery              = 83;
     NC_CiscoDiscoveryInfo          = 84;
-    NC_LSA                         = 85;
-    NC_LSUpdate                    = 86;
-    NC_LSReq                       = 87;
-    NC_LinkLSA                     = 88;
 }
 
 /*
@@ -998,7 +994,44 @@ message OSPFv2 {
     int32     Checksum      = 7;
     int32     AuType        = 8; 
     int64     Authentication = 9;
+    
     // interface Content
+    repeated LSAheader    LSAs    = 10;
+    LSUpdate              LSU     = 11;
+    repeated LSReq        LSR     = 12;
+    DbDescPkg             DbDesc  = 13;
+    HelloPkgV2            HelloV2 = 14;
+}
+
+message HelloPkg {
+    uint32            InterfaceID               = 1;
+    int32             RtrPriority               = 2;
+    uint32            Options                   = 3;
+    int32             HelloInterval             = 4;
+    uint32            RouterDeadInterval        = 5;
+    uint32            DesignatedRouterID        = 6;
+    uint32            BackupDesignatedRouterID  = 7;
+    repeated uint32   NeighborID                = 8;
+}
+
+message HelloPkgV2 {
+    uint32           InterfaceID               = 1;
+    int32            RtrPriority               = 2;
+    uint32           Options                   = 3;
+    int32            HelloInterval             = 4;
+    uint32           RouterDeadInterval        = 5;
+    uint32           DesignatedRouterID        = 6;
+    uint32           BackupDesignatedRouterID  = 7;
+    repeated uint32  NeighborID                = 8;
+    uint32           NetworkMask               = 9;
+}
+
+message DbDescPkg {
+    uint32               Options        = 1;     
+    int32                InterfaceMTU   = 2;
+    int32                Flags          = 3;
+    uint32               DDSeqNumber    = 4;
+    repeated LSAheader   LSAinfo        = 5;        
 }
 
 message OSPFv3 {
@@ -1011,7 +1044,139 @@ message OSPFv3 {
     int32     Checksum      = 7;
     int32     Instance      = 8;
     int32     Reserved      = 9;
+    
     // interface Content
+    HelloPkg              Hello     = 10;
+    DbDescPkg             DbDesc    = 11;
+    repeated LSReq        LSR       = 12;
+    LSUpdate              LSU       = 13;
+    repeated LSAheader    LSAs      = 14;
+}
+
+message LSAheader {
+    int32   LSAge       = 1;
+    int32   LSType      = 2;
+    uint32  LinkStateID = 3;
+    uint32  AdvRouter   = 4;
+    uint32  LSSeqNumber = 5;
+    int32   LSChecksum  = 6;
+    int32   Length      = 7;
+    int32   LSOptions   = 8;
+}
+
+message LSA {
+    
+    LSAheader Header = 1;
+
+    // interface Content
+    RouterLSAV2          RLSAV2           = 2;
+    ASExternalLSAV2      ASELSAV2         = 3;
+    RouterLSA            RLSA             = 4;
+    NetworkLSA           NLSA             = 5;
+    InterAreaPrefixLSA   InterAPrefixLSA  = 6;
+    InterAreaRouterLSA   IARouterLSA      = 7;
+    ASExternalLSA        ASELSA           = 8;
+    LinkLSA              LLSA             = 9;
+    IntraAreaPrefixLSA   IntraAPrefixLSA  = 10;
+}
+
+message LSReq {
+    int32   LSType       = 1;    
+    uint32  LSID         = 2;      
+    uint32  AdvRouter    = 3; 
+}
+
+message LSUpdate {
+    uint32         NumOfLSAs  = 1;
+    repeated LSA   LSAs       = 2;
+}
+
+message IntraAreaPrefixLSA {
+    int32               NumOfPrefixes   = 1;
+    int32               RefLSType       = 2;
+    uint32              RefLinkStateID  = 3;
+    uint32              RefAdvRouter    = 4;
+    repeated LSAPrefix  Prefixes        = 5;
+}
+
+message ASExternalLSA {
+    int32    Flags             = 1;
+    uint32   Metric            = 2;
+    int32    PrefixLength      = 3;
+    int32    PrefixOptions     = 4;
+    int32    RefLSType         = 5;
+    bytes    AddressPrefix     = 6;
+    bytes    ForwardingAddress = 7;
+    uint32   ExternalRouteTag  = 8;
+    uint32   RefLinkStateID    = 9;
+}
+
+message InterAreaPrefixLSA {
+    uint32   Metric          = 1;
+    int32    PrefixLength    = 2;
+    int32    PrefixOptions   = 3;
+    bytes    AddressPrefix   = 4;
+}
+
+message InterAreaRouterLSA {
+    uint32   Options              = 1;
+    uint32   Metric               = 2;
+    uint32   DestinationRouterID  = 3;
+}
+
+message ASExternalLSAV2 {
+    uint32   NetworkMask        = 1;
+    int32    ExternalBit        = 2;
+    uint32   Metric             = 3;
+    uint32   ForwardingAddress  = 4;
+    uint32   ExternalRouteTag   = 5;
+}
+
+message RouterLSA {
+    int32             Flags   = 1;
+    uint32            Options = 2;
+    repeated Router   Routers = 3;
+}
+
+message Router {
+    int32   Type                  = 1;
+    int32   Metric                = 2;
+    uint32  InterfaceID           = 3;
+    uint32  NeighborInterfaceID   = 4;
+    uint32  NeighborRouterID      = 5;
+}
+
+message RouterLSAV2 {
+    int32               Flags   = 1;
+    int32               Links   = 2;
+    repeated RouterV2   Routers = 3;
+}
+
+message RouterV2 {
+    int32    Type      = 1;
+    uint32   LinkID    = 2;
+    uint32   LinkData  = 3;
+    uint32   Metric    = 4;
+}
+
+message NetworkLSA {
+    uint32             Options         = 1;
+    repeated uint32    AttachedRouter  = 2;
+}
+
+message LinkLSA {
+    int32               RtrPriority      = 1;
+    uint32              Options          = 2;
+    bytes               LinkLocalAddress = 3;
+    uint32              NumOfPrefixes    = 4;
+    repeated LSAPrefix  Prefixes         = 5;
+}
+
+message LSAPrefix {
+    int32  PrefixLength  = 1;
+    int32  PrefixOptions = 2;
+    int32  Metric        = 3;
+    bytes  AddressPrefix = 4;
 }
 
 message BFD {
@@ -1250,45 +1415,4 @@ message CDPCapabilities {
 message IPNet {
     string    IP      = 1;     // network number
     string    IPMask  = 2;     // network mask
-}
-
-message LSA {
-    string  Timestamp   = 1;
-    int32   LSAge       = 2;
-    int32   LSType      = 3;
-    uint32  LinkStateID = 4;
-    uint32  AdvRouter   = 5;
-    uint32  LSSeqNumber = 6;
-    int32   LSChecksum  = 7;
-    int32   Length      = 8;
-    int32   LSOptions   = 9;
-}
-
-message LSReq {
-    string  Timestamp    = 1;
-    int32   LSType       = 2;    
-    uint32  LSID         = 3;      
-    uint32  AdvRouter    = 4; 
-}
-
-message LSUpdate {
-    string         Timestamp  = 1;
-    uint32         NumOfLSAs  = 2;
-    repeated LSA   LSAs       = 3;
-}
-
-message LinkLSA {
-    string              Timestamp        = 1;
-    int32               RtrPriority      = 2;
-    uint32              Options          = 3;
-    bytes               LinkLocalAddress = 4;
-    uint32              NumOfPrefixes    = 5;
-    repeated LSAPrefix  Prefixes         = 6;
-}
-
-message LSAPrefix {
-    int32  PrefixLength  = 1;
-    int32  PrefixOptions = 2;
-    int32  Metric        = 3;
-    bytes  AddressPrefix = 4;
 }
