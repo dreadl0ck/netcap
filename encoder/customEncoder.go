@@ -113,7 +113,7 @@ func InitCustomEncoders(c Config) {
 
 				// check if proto exists
 				if _, ok := allEncoderNames[name]; !ok {
-					invalidProto(name)
+					invalidEncoder(name)
 				}
 
 				// add to include map
@@ -138,7 +138,7 @@ func InitCustomEncoders(c Config) {
 
 			// check if proto exists
 			if _, ok := allEncoderNames[name]; !ok {
-				invalidProto(name)
+				invalidEncoder(name)
 			}
 
 			// remove named encoder from customEncoderSlice

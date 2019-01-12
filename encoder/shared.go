@@ -35,8 +35,8 @@ func SetErrorMap(m *AtomicCounterMap) {
 	errorMap = m
 }
 
-func invalidProto(name string) {
-	fmt.Println("invalid protocol: " + ansi.Red + name + ansi.Reset)
+func invalidEncoder(name string) {
+	fmt.Println("invalid encoder: " + ansi.Red + name + ansi.Reset)
 	ShowEncoders()
 	os.Exit(1)
 }
