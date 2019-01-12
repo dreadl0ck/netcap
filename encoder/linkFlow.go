@@ -129,7 +129,7 @@ var linkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", fu
 			if linkFlowEncoderInstance.csv {
 				_, err := linkFlowEncoderInstance.csvWriter.WriteRecord(f)
 				if err != nil {
-					errorMap.Inc(err.Error())
+					return err
 				}
 			} else {
 				// write protobuf
@@ -147,7 +147,7 @@ func writeLinkFlow(f *types.LinkFlow) {
 	if linkFlowEncoderInstance.csv {
 		_, err := linkFlowEncoderInstance.csvWriter.WriteRecord(f)
 		if err != nil {
-			errorMap.Inc(err.Error())
+			panic(err)
 		}
 	} else {
 		// write protobuf

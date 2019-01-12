@@ -201,7 +201,7 @@ func writeConn(c *types.Connection) {
 		// write as csv
 		_, err := connEncoderInstance.csvWriter.WriteRecord(c)
 		if err != nil {
-			errorMap.Inc(err.Error())
+			panic(err)
 		}
 	} else {
 		// write protobuf
