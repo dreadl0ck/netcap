@@ -71,150 +71,7 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 				})
 			}
 		case layers.LSUpdate:
-			var lsas []*types.LSA
-			for _, l := range v.LSAs {
-				var (
-					rLSAV2             *types.RouterLSAV2
-					asExternalLSAV2    *types.ASExternalLSAV2
-					routerLSA          *types.RouterLSA
-					networkLSA         *types.NetworkLSA
-					interAreaPrefixLSA *types.InterAreaPrefixLSA
-					interAreaRouterLSA *types.InterAreaRouterLSA
-					asExternalLSA      *types.ASExternalLSA
-					linkLSA            *types.LinkLSA
-					intraAreaPrefixLSA *types.IntraAreaPrefixLSA
-				)
-				switch v := l.Content.(type) {
-				case layers.RouterLSAV2:
-					var routers []*types.RouterV2
-					for _, r := range v.Routers {
-						routers = append(routers, &types.RouterV2{
-							Type:     int32(r.Type),
-							LinkID:   uint32(r.LinkID),
-							LinkData: uint32(r.LinkData),
-							Metric:   uint32(r.Metric),
-						})
-					}
-					rLSAV2 = &types.RouterLSAV2{
-						Flags:   int32(v.Flags),
-						Links:   int32(v.Links),
-						Routers: routers, // []*RouterV2,
-					}
-				case layers.ASExternalLSAV2:
-					asExternalLSAV2 = &types.ASExternalLSAV2{
-						NetworkMask:       uint32(v.NetworkMask),
-						ExternalBit:       int32(v.ExternalBit),
-						Metric:            uint32(v.Metric),
-						ForwardingAddress: uint32(v.ForwardingAddress),
-						ExternalRouteTag:  uint32(v.ExternalRouteTag),
-					}
-				case layers.RouterLSA:
-					var routers []*types.Router
-					for _, r := range v.Routers {
-						routers = append(routers, &types.Router{
-							Type:                int32(r.Type),
-							Metric:              int32(r.Metric),
-							InterfaceID:         uint32(r.InterfaceID),
-							NeighborInterfaceID: uint32(r.NeighborInterfaceID),
-							NeighborRouterID:    uint32(r.NeighborRouterID),
-						})
-					}
-					routerLSA = &types.RouterLSA{
-						Flags:   int32(v.Flags),
-						Options: uint32(v.Options),
-						Routers: routers, // []*Router
-					}
-				case layers.NetworkLSA:
-					networkLSA = &types.NetworkLSA{
-						Options:        uint32(v.Options),
-						AttachedRouter: []uint32(v.AttachedRouter),
-					}
-				case layers.InterAreaPrefixLSA:
-					interAreaPrefixLSA = &types.InterAreaPrefixLSA{
-						Metric:        uint32(v.Metric),
-						PrefixLength:  int32(v.PrefixLength),
-						PrefixOptions: int32(v.PrefixOptions),
-						AddressPrefix: []byte(v.AddressPrefix),
-					}
-				case layers.InterAreaRouterLSA:
-					interAreaRouterLSA = &types.InterAreaRouterLSA{
-						Options:             uint32(v.Options),
-						Metric:              uint32(v.Metric),
-						DestinationRouterID: uint32(v.DestinationRouterID),
-					}
-				case layers.ASExternalLSA:
-					asExternalLSA = &types.ASExternalLSA{
-						Flags:             int32(v.Flags),
-						Metric:            uint32(v.Metric),
-						PrefixLength:      int32(v.PrefixLength),
-						PrefixOptions:     int32(v.PrefixOptions),
-						RefLSType:         int32(v.RefLSType),
-						AddressPrefix:     []byte(v.AddressPrefix),
-						ForwardingAddress: []byte(v.ForwardingAddress),
-						ExternalRouteTag:  uint32(v.ExternalRouteTag),
-						RefLinkStateID:    uint32(v.RefLinkStateID),
-					}
-				case layers.LinkLSA:
-					var prefixes []*types.LSAPrefix
-					for _, r := range v.Prefixes {
-						prefixes = append(prefixes, &types.LSAPrefix{
-							PrefixLength:  int32(r.PrefixLength),
-							PrefixOptions: int32(r.PrefixOptions),
-							Metric:        int32(r.Metric),
-							AddressPrefix: []byte(r.AddressPrefix),
-						})
-					}
-					linkLSA = &types.LinkLSA{
-						RtrPriority:      int32(v.RtrPriority),
-						Options:          uint32(v.Options),
-						LinkLocalAddress: []byte(v.LinkLocalAddress),
-						NumOfPrefixes:    uint32(v.NumOfPrefixes),
-						Prefixes:         prefixes, // []*LSAPrefix
-					}
-				case layers.IntraAreaPrefixLSA:
-					var prefixes []*types.LSAPrefix
-					for _, r := range v.Prefixes {
-						prefixes = append(prefixes, &types.LSAPrefix{
-							PrefixLength:  int32(r.PrefixLength),
-							PrefixOptions: int32(r.PrefixOptions),
-							Metric:        int32(r.Metric),
-							AddressPrefix: []byte(r.AddressPrefix),
-						})
-					}
-					intraAreaPrefixLSA = &types.IntraAreaPrefixLSA{
-						NumOfPrefixes:  int32(v.NumOfPrefixes),
-						RefLSType:      int32(v.RefLSType),
-						RefLinkStateID: uint32(v.RefLinkStateID),
-						RefAdvRouter:   uint32(v.RefAdvRouter),
-						Prefixes:       prefixes,
-					}
-				}
-				lsas = append(lsas, &types.LSA{
-					Header: &types.LSAheader{
-						LSAge:       int32(l.LSAge),
-						LSType:      int32(l.LSType),
-						LinkStateID: uint32(l.LinkStateID),
-						AdvRouter:   uint32(l.AdvRouter),
-						LSSeqNumber: uint32(l.LSSeqNumber),
-						LSChecksum:  int32(l.LSChecksum),
-						Length:      int32(l.Length),
-						LSOptions:   int32(l.LSOptions),
-					},
-					RLSAV2:          rLSAV2,
-					ASELSAV2:        asExternalLSAV2,
-					RLSA:            routerLSA,
-					NLSA:            networkLSA,
-					InterAPrefixLSA: interAreaPrefixLSA,
-					IARouterLSA:     interAreaRouterLSA,
-					ASELSA:          asExternalLSA,
-					LLSA:            linkLSA,
-					IntraAPrefixLSA: intraAreaPrefixLSA,
-				})
-			}
-			lSU = &types.LSUpdate{
-				NumOfLSAs: uint32(v.NumOfLSAs),
-				LSAs:      lsas, // []*LSA
-			}
+			lSU = encoderLSUpdate(v)
 		case []layers.LSAheader:
 			for _, r := range v {
 				lSAs = append(lSAs, &types.LSAheader{
@@ -248,3 +105,150 @@ var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSP
 	}
 	return nil
 })
+
+func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
+	var lsas []*types.LSA
+	for _, l := range v.LSAs {
+		var (
+			rLSAV2             *types.RouterLSAV2
+			asExternalLSAV2    *types.ASExternalLSAV2
+			routerLSA          *types.RouterLSA
+			networkLSA         *types.NetworkLSA
+			interAreaPrefixLSA *types.InterAreaPrefixLSA
+			interAreaRouterLSA *types.InterAreaRouterLSA
+			asExternalLSA      *types.ASExternalLSA
+			linkLSA            *types.LinkLSA
+			intraAreaPrefixLSA *types.IntraAreaPrefixLSA
+		)
+		switch v := l.Content.(type) {
+		case layers.RouterLSAV2:
+			var routers []*types.RouterV2
+			for _, r := range v.Routers {
+				routers = append(routers, &types.RouterV2{
+					Type:     int32(r.Type),
+					LinkID:   uint32(r.LinkID),
+					LinkData: uint32(r.LinkData),
+					Metric:   uint32(r.Metric),
+				})
+			}
+			rLSAV2 = &types.RouterLSAV2{
+				Flags:   int32(v.Flags),
+				Links:   int32(v.Links),
+				Routers: routers, // []*RouterV2,
+			}
+		case layers.ASExternalLSAV2:
+			asExternalLSAV2 = &types.ASExternalLSAV2{
+				NetworkMask:       uint32(v.NetworkMask),
+				ExternalBit:       int32(v.ExternalBit),
+				Metric:            uint32(v.Metric),
+				ForwardingAddress: uint32(v.ForwardingAddress),
+				ExternalRouteTag:  uint32(v.ExternalRouteTag),
+			}
+		case layers.RouterLSA:
+			var routers []*types.Router
+			for _, r := range v.Routers {
+				routers = append(routers, &types.Router{
+					Type:                int32(r.Type),
+					Metric:              int32(r.Metric),
+					InterfaceID:         uint32(r.InterfaceID),
+					NeighborInterfaceID: uint32(r.NeighborInterfaceID),
+					NeighborRouterID:    uint32(r.NeighborRouterID),
+				})
+			}
+			routerLSA = &types.RouterLSA{
+				Flags:   int32(v.Flags),
+				Options: uint32(v.Options),
+				Routers: routers, // []*Router
+			}
+		case layers.NetworkLSA:
+			networkLSA = &types.NetworkLSA{
+				Options:        uint32(v.Options),
+				AttachedRouter: []uint32(v.AttachedRouter),
+			}
+		case layers.InterAreaPrefixLSA:
+			interAreaPrefixLSA = &types.InterAreaPrefixLSA{
+				Metric:        uint32(v.Metric),
+				PrefixLength:  int32(v.PrefixLength),
+				PrefixOptions: int32(v.PrefixOptions),
+				AddressPrefix: []byte(v.AddressPrefix),
+			}
+		case layers.InterAreaRouterLSA:
+			interAreaRouterLSA = &types.InterAreaRouterLSA{
+				Options:             uint32(v.Options),
+				Metric:              uint32(v.Metric),
+				DestinationRouterID: uint32(v.DestinationRouterID),
+			}
+		case layers.ASExternalLSA:
+			asExternalLSA = &types.ASExternalLSA{
+				Flags:             int32(v.Flags),
+				Metric:            uint32(v.Metric),
+				PrefixLength:      int32(v.PrefixLength),
+				PrefixOptions:     int32(v.PrefixOptions),
+				RefLSType:         int32(v.RefLSType),
+				AddressPrefix:     []byte(v.AddressPrefix),
+				ForwardingAddress: []byte(v.ForwardingAddress),
+				ExternalRouteTag:  uint32(v.ExternalRouteTag),
+				RefLinkStateID:    uint32(v.RefLinkStateID),
+			}
+		case layers.LinkLSA:
+			var prefixes []*types.LSAPrefix
+			for _, r := range v.Prefixes {
+				prefixes = append(prefixes, &types.LSAPrefix{
+					PrefixLength:  int32(r.PrefixLength),
+					PrefixOptions: int32(r.PrefixOptions),
+					Metric:        int32(r.Metric),
+					AddressPrefix: []byte(r.AddressPrefix),
+				})
+			}
+			linkLSA = &types.LinkLSA{
+				RtrPriority:      int32(v.RtrPriority),
+				Options:          uint32(v.Options),
+				LinkLocalAddress: []byte(v.LinkLocalAddress),
+				NumOfPrefixes:    uint32(v.NumOfPrefixes),
+				Prefixes:         prefixes, // []*LSAPrefix
+			}
+		case layers.IntraAreaPrefixLSA:
+			var prefixes []*types.LSAPrefix
+			for _, r := range v.Prefixes {
+				prefixes = append(prefixes, &types.LSAPrefix{
+					PrefixLength:  int32(r.PrefixLength),
+					PrefixOptions: int32(r.PrefixOptions),
+					Metric:        int32(r.Metric),
+					AddressPrefix: []byte(r.AddressPrefix),
+				})
+			}
+			intraAreaPrefixLSA = &types.IntraAreaPrefixLSA{
+				NumOfPrefixes:  int32(v.NumOfPrefixes),
+				RefLSType:      int32(v.RefLSType),
+				RefLinkStateID: uint32(v.RefLinkStateID),
+				RefAdvRouter:   uint32(v.RefAdvRouter),
+				Prefixes:       prefixes,
+			}
+		}
+		lsas = append(lsas, &types.LSA{
+			Header: &types.LSAheader{
+				LSAge:       int32(l.LSAge),
+				LSType:      int32(l.LSType),
+				LinkStateID: uint32(l.LinkStateID),
+				AdvRouter:   uint32(l.AdvRouter),
+				LSSeqNumber: uint32(l.LSSeqNumber),
+				LSChecksum:  int32(l.LSChecksum),
+				Length:      int32(l.Length),
+				LSOptions:   int32(l.LSOptions),
+			},
+			RLSAV2:          rLSAV2,
+			ASELSAV2:        asExternalLSAV2,
+			RLSA:            routerLSA,
+			NLSA:            networkLSA,
+			InterAPrefixLSA: interAreaPrefixLSA,
+			IARouterLSA:     interAreaRouterLSA,
+			ASELSA:          asExternalLSA,
+			LLSA:            linkLSA,
+			IntraAPrefixLSA: intraAreaPrefixLSA,
+		})
+	}
+	return &types.LSUpdate{
+		NumOfLSAs: uint32(v.NumOfLSAs),
+		LSAs:      lsas, // []*LSA
+	}
+}
