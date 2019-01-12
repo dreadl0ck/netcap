@@ -28,6 +28,7 @@ import (
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -45,8 +46,10 @@ var (
 	flagPromiscMode  = flag.Bool("promisc", true, "capture live in promisc mode")
 	flagSnapLen      = flag.Int("snaplen", 1024, "configure snaplen for live capture")
 
-	flagServerPubKey = flag.String("pubkey", "", "path to the hex encoded server public key on disk")
-	flagAddr         = flag.String("addr", "127.0.0.1:1335", "specify the address and port of the collection server")
+	flagServerPubKey  = flag.String("pubkey", "", "path to the hex encoded server public key on disk")
+	flagAddr          = flag.String("addr", "127.0.0.1:1335", "specify the address and port of the collection server")
+	flagBaseLayer     = flag.String("base", "ethernet", "select base layer")
+	flagDecodeOptions = flag.String("opts", "lazy", "select decoding options")
 )
 
 func main() {
@@ -106,6 +109,8 @@ func main() {
 			// set channel writer
 			WriteChan: true,
 		},
+		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
+		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})
 
 	// initialize batching

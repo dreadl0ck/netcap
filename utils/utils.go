@@ -15,12 +15,39 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
+	"github.com/google/gopacket"
 )
+
+func GetBaseLayer(value string) (t gopacket.LayerType) {
+	switch value {
+	case "ethernet":
+		t = layers.LayerTypeEthernet
+	case "usb":
+		t = layers.LayerTypeUSB
+	default:
+		log.Fatal("invalid baseLayer:", value)
+	}
+	return
+}
+
+func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
+	switch value {
+	case "lazy":
+		o = gopacket.Lazy
+	case "default":
+		o = gopacket.Default
+	default:
+		log.Fatal("invalid decode options:", value)
+	}
+	return
+}
 
 // Pad the input up to the given number of space characters
 func Pad(in interface{}, length int) string {
