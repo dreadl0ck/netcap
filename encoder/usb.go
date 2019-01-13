@@ -22,6 +22,10 @@ import (
 
 var usbEncoder = CreateLayerEncoder(types.Type_NC_USB, layers.LayerTypeUSB, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if usb, ok := layer.(*layers.USB); ok {
+		var payload []byte
+		if CapturePayload {
+			payload = layer.LayerPayload()
+		}
 		return &types.USB{
 			Timestamp:              timestamp,
 			ID:                     uint64(usb.ID),
@@ -42,6 +46,7 @@ var usbEncoder = CreateLayerEncoder(types.Type_NC_USB, layers.LayerTypeUSB, func
 			UrbStartFrame:          uint32(usb.UrbStartFrame),
 			UrbCopyOfTransferFlags: uint32(usb.UrbCopyOfTransferFlags),
 			IsoNumDesc:             uint32(usb.IsoNumDesc),
+			Payload:                payload,
 		}
 	}
 	return nil

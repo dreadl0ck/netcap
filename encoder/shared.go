@@ -27,6 +27,9 @@ var (
 	// BlockSize is the file system block size
 	BlockSize int
 
+	// CapturePayload for encoders that support it
+	CapturePayload = false
+
 	allEncoderNames = make(map[string]struct{})
 	errorMap        *AtomicCounterMap
 )

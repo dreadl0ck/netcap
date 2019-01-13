@@ -13,7 +13,10 @@
 
 package types
 
-import "strconv"
+import (
+	"encoding/hex"
+	"strconv"
+)
 
 func (u UDP) CSVHeader() []string {
 	return filter([]string{
@@ -24,6 +27,7 @@ func (u UDP) CSVHeader() []string {
 		"Checksum",
 		"PayloadEntropy",
 		"PayloadSize",
+		"Payload",
 	})
 }
 
@@ -36,6 +40,7 @@ func (u UDP) CSVRecord() []string {
 		formatInt32(u.Checksum),                           // int32
 		strconv.FormatFloat(u.PayloadEntropy, 'f', 8, 64), // float64
 		formatInt32(u.PayloadSize),                        // int32
+		hex.EncodeToString(u.Payload),
 	})
 }
 

@@ -150,6 +150,7 @@ func main() {
 		return
 	}
 
+	encoder.CapturePayload = *flagPayload
 	printLogo()
 
 	// print configuration as table

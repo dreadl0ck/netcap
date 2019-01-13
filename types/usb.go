@@ -13,7 +13,10 @@
 
 package types
 
-import "strconv"
+import (
+	"encoding/hex"
+	"strconv"
+)
 
 func (u USB) CSVHeader() []string {
 	return filter([]string{
@@ -36,6 +39,7 @@ func (u USB) CSVHeader() []string {
 		"UrbStartFrame",
 		"UrbCopyOfTransferFlags",
 		"IsoNumDesc",
+		"Payload",
 	})
 }
 
@@ -60,6 +64,7 @@ func (u USB) CSVRecord() []string {
 		formatUint32(u.UrbStartFrame),
 		formatUint32(u.UrbCopyOfTransferFlags),
 		formatUint32(u.IsoNumDesc),
+		hex.EncodeToString(u.Payload),
 	})
 }
 

@@ -547,6 +547,7 @@ message UDP {
     int32  Checksum       = 5;
     double PayloadEntropy = 6;
     int32  PayloadSize    = 7;
+    bytes  Payload        = 8;
 }
 
 message TCP {
@@ -573,6 +574,7 @@ message TCP {
     repeated TCPOption Options = 20;
     double   PayloadEntropy    = 21;
     int32    PayloadSize       = 22;
+    bytes    Payload           = 23;
 }
 
 message TCPOption {
@@ -948,6 +950,7 @@ message USB {
     uint32      UrbStartFrame             = 17;
     uint32      UrbCopyOfTransferFlags    = 18;
     uint32      IsoNumDesc                = 19;
+    bytes       Payload                   = 20;
 }
 
 message USBRequestBlockSetup {

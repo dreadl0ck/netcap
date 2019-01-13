@@ -22,7 +22,13 @@ import (
 
 var tcpEncoder = CreateLayerEncoder(types.Type_NC_TCP, layers.LayerTypeTCP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if tcp, ok := layer.(*layers.TCP); ok {
-		var opts []*types.TCPOption
+		var (
+			opts    []*types.TCPOption
+			payload []byte
+		)
+		if CapturePayload {
+			payload = layer.LayerPayload()
+		}
 		for _, o := range tcp.Options {
 			opts = append(opts, &types.TCPOption{
 				OptionData:   o.OptionData,
@@ -53,6 +59,7 @@ var tcpEncoder = CreateLayerEncoder(types.Type_NC_TCP, layers.LayerTypeTCP, func
 			Options:        opts,
 			PayloadEntropy: Entropy(tcp.Payload),
 			PayloadSize:    int32(len(tcp.Payload)),
+			Payload:        payload,
 		}
 	}
 	return nil
