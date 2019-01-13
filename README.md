@@ -311,9 +311,9 @@ To execute the unit tests, run the following from the project root:
 | LCM                            | 9  | Timestamp, Magic, SequenceNumber, PayloadSize, FragmentOffset, FragmentNumber, TotalFragments, ChannelName, Fragmented |
 | MPLS                           | 5  | Timestamp, Label, TrafficClass, StackBottom, TTL |
 | ModbusTCP                      | 5  | Timestamp, TransactionIdentifier, ProtocolIdentifier, Length, UnitIdentifier |
-| OSPF                           | 14  | Timestamp, Version, Type, PacketLength, RouterID, AreaID, Checksum, AuType, Authentication, LSAs, LSU, LSR, DbDesc, HelloV2 |
-| OSPF                           | 14  | Timestamp, Version, Type, PacketLength, RouterID, AreaID, Checksum, Instance, Reserved, Hello, DbDesc, LSR, LSU, LSAs |
-| ARP                            | 17  | Timestamp, Version, Diagnostic, State, Poll, Final, ControlPlaneIndependent, AuthPresent, Demand, Multipoint, DetectMultiplier, MyDiscriminator, YourDiscriminator, DesiredMinTxInterval, RequiredMinRxInterval, RequiredMinEchoRxInterval, AuthHeader |
+| OSPFv2                           | 14  | Timestamp, Version, Type, PacketLength, RouterID, AreaID, Checksum, AuType, Authentication, LSAs, LSU, LSR, DbDesc, HelloV2 |
+| OSPFv3                           | 14  | Timestamp, Version, Type, PacketLength, RouterID, AreaID, Checksum, Instance, Reserved, Hello, DbDesc, LSR, LSU, LSAs |
+| BFD                            | 17  | Timestamp, Version, Diagnostic, State, Poll, Final, ControlPlaneIndependent, AuthPresent, Demand, Multipoint, DetectMultiplier, MyDiscriminator, YourDiscriminator, DesiredMinTxInterval, RequiredMinRxInterval, RequiredMinEchoRxInterval, AuthHeader |
 | GRE                            | 17  | Timestamp, ChecksumPresent, RoutingPresent, KeyPresent, SeqPresent, StrictSourceRoute, AckPresent, RecursionControl, Flags, Version, Protocol, Checksum, Offset, Key, Seq, Ack, Routing |
 | FDDI                           | 5  | Timestamp, FrameControl, Priority, SrcMAC, DstMAC |
 | EAP                            | 6  | Timestamp, Code, Id, Length, Type, TypeData |
