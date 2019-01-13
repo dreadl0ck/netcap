@@ -43,6 +43,7 @@ func (t TCP) CSVHeader() []string {
 		"Options",
 		"PayloadEntropy",
 		"PayloadSize",
+		"Payload",
 	})
 }
 func (t TCP) CSVRecord() []string {
@@ -69,6 +70,7 @@ func (t TCP) CSVRecord() []string {
 		t.GetOptionString(),                               // []*TCPOption
 		strconv.FormatFloat(t.PayloadEntropy, 'f', 8, 64), // float64
 		formatInt32(t.PayloadSize),                        // int32
+		hex.EncodeToString(t.Payload),
 	})
 }
 

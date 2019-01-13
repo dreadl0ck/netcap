@@ -22,6 +22,10 @@ import (
 
 var udpEncoder = CreateLayerEncoder(types.Type_NC_UDP, layers.LayerTypeUDP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if udp, ok := layer.(*layers.UDP); ok {
+		var payload []byte
+		if CapturePayload {
+			payload = layer.LayerPayload()
+		}
 		return &types.UDP{
 			Timestamp:      timestamp,
 			SrcPort:        int32(udp.SrcPort),
@@ -30,6 +34,7 @@ var udpEncoder = CreateLayerEncoder(types.Type_NC_UDP, layers.LayerTypeUDP, func
 			Checksum:       int32(udp.Checksum),
 			PayloadEntropy: Entropy(udp.Payload),
 			PayloadSize:    int32(len(udp.Payload)),
+			Payload:        payload,
 		}
 	}
 	return nil

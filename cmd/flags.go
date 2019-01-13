@@ -58,4 +58,5 @@ var (
 
 	flagBaseLayer     = flag.String("base", "ethernet", "select base layer")
 	flagDecodeOptions = flag.String("opts", "lazy", "select decoding options")
+	flagPayload       = flag.Bool("payload", false, "capture payload for supported layers")
 )

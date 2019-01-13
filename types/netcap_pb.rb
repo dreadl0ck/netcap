@@ -335,6 +335,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Checksum, :int32, 5
     optional :PayloadEntropy, :double, 6
     optional :PayloadSize, :int32, 7
+    optional :Payload, :bytes, 8
   end
   add_message "types.TCP" do
     optional :Timestamp, :string, 1
@@ -359,6 +360,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     repeated :Options, :message, 20, "types.TCPOption"
     optional :PayloadEntropy, :double, 21
     optional :PayloadSize, :int32, 22
+    optional :Payload, :bytes, 23
   end
   add_message "types.TCPOption" do
     optional :OptionType, :int32, 1
@@ -664,6 +666,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :UrbStartFrame, :uint32, 17
     optional :UrbCopyOfTransferFlags, :uint32, 18
     optional :IsoNumDesc, :uint32, 19
+    optional :Payload, :bytes, 20
   end
   add_message "types.USBRequestBlockSetup" do
     optional :Timestamp, :string, 1
