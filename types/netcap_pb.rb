@@ -1085,6 +1085,15 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :IP, :string, 1
     optional :IPMask, :string, 2
   end
+  add_message "types.NortelDiscovery" do
+    optional :Timestamp, :string, 1
+    optional :IPAddress, :string, 2
+    optional :SegmentID, :bytes, 3
+    optional :Chassis, :int32, 4
+    optional :Backplane, :int32, 5
+    optional :State, :int32, 6
+    optional :NumLinks, :int32, 7
+  end
   add_enum "types.Type" do
     value :NC_Header, 0
     value :NC_Batch, 1
@@ -1172,6 +1181,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     value :NC_CiscoDiscovery, 83
     value :NC_CiscoDiscoveryInfo, 84
     value :NC_USBRequestBlockSetup, 85
+    value :NC_NortelDiscovery, 86
   end
 end
 
@@ -1293,5 +1303,6 @@ module Types
   CDPEnergyWise = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPEnergyWise").msgclass
   CDPCapabilities = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.CDPCapabilities").msgclass
   IPNet = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.IPNet").msgclass
+  NortelDiscovery = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.NortelDiscovery").msgclass
   Type = Google::Protobuf::DescriptorPool.generated_pool.lookup("types.Type").enummodule
 end

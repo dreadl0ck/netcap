@@ -131,6 +131,7 @@ enum Type {
     NC_CiscoDiscovery              = 83;
     NC_CiscoDiscoveryInfo          = 84;
     NC_USBRequestBlockSetup        = 85;
+    NC_NortelDiscovery             = 86;
 }
 
 /*
@@ -1432,3 +1433,12 @@ message IPNet {
     string    IPMask  = 2;     // network mask
 }
 
+message NortelDiscovery {
+    string    Timestamp    = 1;
+    string    IPAddress    = 2;
+    bytes     SegmentID    = 3;
+    int32     Chassis      = 4;
+    int32     Backplane    = 5;
+    int32     State        = 6;
+    int32     NumLinks     = 7;
+}
