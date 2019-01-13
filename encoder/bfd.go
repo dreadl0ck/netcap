@@ -20,7 +20,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var bfdEncoder = CreateLayerEncoder(types.Type_NC_BFD, layers.LayerTypeARP, func(layer gopacket.Layer, timestamp string) proto.Message {
+var bfdEncoder = CreateLayerEncoder(types.Type_NC_BFD, layers.LayerTypeBFD, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if bfd, ok := layer.(*layers.BFD); ok {
 		return &types.BFD{
 			Timestamp:                 timestamp,
