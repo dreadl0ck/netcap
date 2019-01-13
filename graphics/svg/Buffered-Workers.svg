@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="532 -156 1723 1212" width="1723" height="1212">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="532 -156 1723 1212" width="1723" height="1212">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 532 -156 L 2255 -156 L 2255 1056 L 532 1056 Z M 537.75685 252 L 537.75685 1051 L 2250 1051 L 2250 252 Z"/>
@@ -49,10 +49,10 @@
       </g>
     </marker>
   </defs>
-  <metadata> Produced by OmniGraffle 7.9.3 
-    <dc:date>2018-12-21 18:35:14 +0000</dc:date>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-13 20:47:35 +0000</dc:date>
   </metadata>
-  <g id="Buffered-Workers" stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
+  <g id="Buffered-Workers" fill-opacity="1" stroke-dasharray="none" fill="none" stroke="none" stroke-opacity="1">
     <title>Buffered-Workers</title>
     <g id="Buffered-Workers: Layer 1">
       <title>Layer 1</title>
