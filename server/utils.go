@@ -49,8 +49,9 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 	fmt.Println("new audit record handle", path)
 
 	conf := encoder.Config{
-		Source:  b.ClientID,
-		Version: netcap.Version,
+		Source:          b.ClientID,
+		Version:         netcap.Version,
+		IncludePayloads: b.ContainsPayloads,
 	}
 
 	var (

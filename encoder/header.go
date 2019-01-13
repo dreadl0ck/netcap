@@ -28,6 +28,7 @@ func NewHeader(t types.Type, c Config) *types.Header {
 	header.Created = utils.TimeToString(time.Now())
 	header.InputSource = c.Source
 	header.Version = c.Version
+	header.ContainsPayloads = c.IncludePayloads
 
 	return header
 }

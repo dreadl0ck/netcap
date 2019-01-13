@@ -109,6 +109,7 @@ func main() {
 			{"Source", h.InputSource},
 			{"Version", h.Version},
 			{"Type", h.Type.String()},
+			{"ContainsPayloads", strconv.FormatBool(h.ContainsPayloads)},
 		})
 		os.Exit(0) // bye bye
 	}
@@ -139,6 +140,7 @@ func main() {
 			Out:             *flagOutDir,
 			Source:          source,
 			Version:         netcap.Version,
+			IncludePayloads: *flagPayload,
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
@@ -150,7 +152,6 @@ func main() {
 		return
 	}
 
-	encoder.CapturePayload = *flagPayload
 	printLogo()
 
 	// print configuration as table

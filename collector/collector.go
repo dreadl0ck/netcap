@@ -303,6 +303,7 @@ func (c *Collector) Init() error {
 	// initialize encoders
 	encoder.InitLayerEncoders(c.config.EncoderConfig)
 	encoder.InitCustomEncoders(c.config.EncoderConfig)
+	encoder.CapturePayload = c.config.EncoderConfig.IncludePayloads
 
 	// set pointer of collectors atomic counter map in encoder pkg
 	encoder.SetErrorMap(c.errorMap)

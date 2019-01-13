@@ -50,6 +50,7 @@ var (
 	flagAddr          = flag.String("addr", "127.0.0.1:1335", "specify the address and port of the collection server")
 	flagBaseLayer     = flag.String("base", "ethernet", "select base layer")
 	flagDecodeOptions = flag.String("opts", "lazy", "select decoding options")
+	flagPayload       = flag.Bool("payload", false, "capture payload for supported layers")
 )
 
 func main() {
@@ -107,7 +108,8 @@ func main() {
 			Source:          *flagInterface,
 
 			// set channel writer
-			WriteChan: true,
+			WriteChan:       true,
+			IncludePayloads: *flagPayload,
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
