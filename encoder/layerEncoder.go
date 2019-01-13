@@ -88,6 +88,7 @@ var (
 		ciscoDiscoveryEncoder,
 		ciscoDiscoveryInfoEncoder,
 		usbRequestBlockSetupEncoder,
+		nortelDiscoveryEncoder,
 	}
 )
 
