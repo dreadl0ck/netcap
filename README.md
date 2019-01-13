@@ -302,6 +302,28 @@ To execute the unit tests, run the following from the project root:
 | EthernetCTP                   |  2        | Timestamp, SkipCount             |
 | EthernetCTPReply              |  4        | Timestamp, Function, ReceiptNumber, Data             |
 | LinkLayerDiscoveryInfo        |  8        | Timestamp, PortDescription, SysName, SysDescription, SysCapabilities, MgmtAddress, OrgTLVs, Unknown             |
+| IPSecAH                       | 5  | Timestamp, Reserved, SPI, Seq, AuthenticationData |
+| IPSecESP                      | 4  | Timestamp, SPI, Seq, LenEncrypted |
+| Geneve                        | 8  | Timestamp, Version, OptionsLength, OAMPacket, CriticalOption, Protocol, VNI, Options |
+| IPv6Fragment                  | 7  | Timestamp, NextHeader, Reserved1, FragmentOffset, Reserved2, MoreFragments, Identification |
+| VXLAN                         | 7  | Timestamp, ValidIDFlag, VNI, GBPExtension, GBPDontLearn, GBPApplied, GBPGroupPolicyID |
+| USB                           | 20 |  Timestamp, ID, EventType, TransferType, Direction, EndpointNumber, DeviceAddress, BusID, TimestampSec, TimestampUsec, Setup, Data, Status,  UrbLength, UrbDataLength, UrbInterval, UrbStartFrame, UrbCopyOfTransferFlags, IsoNumDesc, Payload |
+| LCM                            | 9  | Timestamp, Magic, SequenceNumber, PayloadSize, FragmentOffset, FragmentNumber, TotalFragments, ChannelName, Fragmented |
+| MPLS                           | 5  | Timestamp, Label, TrafficClass, StackBottom, TTL |
+| ModbusTCP                      | 5  | Timestamp, TransactionIdentifier, ProtocolIdentifier, Length, UnitIdentifier |
+| OSPF                           | 14  | Timestamp, Version, Type, PacketLength, RouterID, AreaID, Checksum, AuType, Authentication, LSAs, LSU, LSR, DbDesc, HelloV2 |
+| OSPF                           | 14  | Timestamp, Version, Type, PacketLength, RouterID, AreaID, Checksum, Instance, Reserved, Hello, DbDesc, LSR, LSU, LSAs |
+| ARP                            | 17  | Timestamp, Version, Diagnostic, State, Poll, Final, ControlPlaneIndependent, AuthPresent, Demand, Multipoint, DetectMultiplier, MyDiscriminator, YourDiscriminator, DesiredMinTxInterval, RequiredMinRxInterval, RequiredMinEchoRxInterval, AuthHeader |
+| GRE                            | 17  | Timestamp, ChecksumPresent, RoutingPresent, KeyPresent, SeqPresent, StrictSourceRoute, AckPresent, RecursionControl, Flags, Version, Protocol, Checksum, Offset, Key, Seq, Ack, Routing |
+| FDDI                           | 5  | Timestamp, FrameControl, Priority, SrcMAC, DstMAC |
+| EAP                            | 6  | Timestamp, Code, Id, Length, Type, TypeData |
+| VRRP                           | 10  | Timestamp, Version, Type, VirtualRtrID, Priority, CountIPAddr, AuthType, AdverInt, Checksum, IPAdresses |
+| EAPOL                          | 4  | Timestamp, Version, Type, Length |
+| EAPOLKey                       | 22  | Timestamp, KeyDescriptorType, KeyDescriptorVersion, KeyType, KeyIndex, Install, KeyACK, KeyMIC, Secure, MICError, Request, HasEncryptedKeyData, SMKMessage, KeyLength, ReplayCounter, Nonce, IV, RSC, ID, MIC, KeyDataLength, EncryptedKeyData |
+| CiscoDiscovery                 | 5  | Timestamp, Version, TTL, Checksum, Values |
+| CiscoDiscoveryInfo             | 27  | Timestamp, CDPHello, DeviceID, Addresses, PortID, Capabilities, Version, Platform, IPPrefixes, VTPDomain, NativeVLAN, FullDuplex, VLANReply, VLANQuery, PowerConsumption, MTU, ExtendedTrust, UntrustedCOS, SysName, SysOID, MgmtAddresses, Location, PowerRequest, PowerAvailable, SparePairPoe, EnergyWise, Unknown |
+| USBRequestBlockSetup           | 6  | Timestamp, RequestType, Request, Value, Index, Length |
+| NortelDiscovery               | 7 | Timestamp, IPAddress, SegmentID, Chassis, Backplane, State, NumLinks |
 
 ### Custom Encoders
 
@@ -774,3 +796,21 @@ Get in touch! :)
 ## License
 
 Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
+
+## Source Code Stats
+
+generated with cloc version 1.80
+
+> cloc --exclude-ext pb.go,py,rb cmd sensor server label types utils collector encoder netcap.go reader.go utils.go
+
+        175 text files.
+        175 unique files.
+        3 files ignored.
+
+    github.com/AlDanial/cloc v 1.80  T=0.12 s (1412.6 files/s, 130948.3 lines/s)
+    -------------------------------------------------------------------------------
+    Language                     files          blank        comment           code
+    -------------------------------------------------------------------------------
+    Go                             172           1963           3119          10862
+    -------------------------------------------------------------------------------
+    SUM:                           172           1963           3119          10862
