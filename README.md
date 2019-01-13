@@ -38,6 +38,7 @@ It has a concurrent design that makes use of multi-core architectures.
 The name *Netcap* was chosen to be simple and descriptive.
 The command-line tool was designed with usability and readability in mind,
 and displays progress when processing packets.
+The latest version offers 58 audit record types of which 53 are protocol specific and 5 are flow models.
 
 This readme serves as a quick overview - for more details please read the thesis.
 
@@ -199,75 +200,7 @@ To execute the unit tests, run the following from the project root:
 
     go test -v -bench=. ./...
 
-## Supported Protocols
-
-| Name                        | Layer       | Description                |
-| --------------------------- | ----------- | -------------------------- |
-| Ethernet                    | Link        | IEEE 802.3 Ethernet Protocol               |
-| ARP                         | Link        | Address Resolution Protocol               |
-| Dot1Q                       | Link        | IEEE 802.1Q, virtual LANs on an Ethernet network               |
-| Dot11                       | Link        | IEEE 802.11 Wireless LAN               |
-| LinkLayerDiscovery          | Link        | IEEE 802.1AB Station and Media Access Control Connectivity Discovery               |
-| EthernetCTP                 | Link        | diagnostic protocol included in the Xerox Ethernet II specification               |
-| EthernetCTPReply            | Link        | reply to an ethernet ctp packet               |
-| LinkLayerDiscoveryInfo      | Link        | decoded details for a set of LinkLayerDiscoveryValues               |
-| LLC                         | Link        | IEEE 802.2 LLC               |
-| SNAP                        | Link        | mechanism for multiplexing, on networks using IEEE 802.2 LLC               |
-| IPv4                        | Network     | Internet Protocol version 4               |
-| IPv6                        | Network     | Internet Protocol version 6              |
-| IPv6HopByHop                | Network     | IPv6 Hop-by-Hop Header               |
-| IGMP                        | Network     | Internet Group Management Protocol               |
-| ICMPv4                      | Network     | Internet Control Message Protocol v4               |
-| ICMPv6                      | Network     | Internet Control Message Protocol v6               |
-| ICMPv6NeighborAdvertisement | Network     | Neighbor Discovery Protocol               |
-| ICMPv6RouterAdvertisement   | Network     | Neighbor Discovery Protocol               |
-| ICMPv6Echo                  | Network     | Neighbor Discovery Protocol               |
-| ICMPv6NeighborSolicitation  | Network     | Neighbor Discovery Protocol               |
-| ICMPv6RouterSolicitation    | Network     | Neighbor Discovery Protocol               |
-| UDP                         | Transport   | User Datagram Protocol               |
-| TCP                         | Transport   | Transmission Control Protocol               |
-| SCTP                        | Transport   | Stream Control Transmission Protocol               |
-| DNS                         | Application | Domain Name System               |
-| DHCPv4                      | Application | Dynamic Host Configuration version 4               |
-| DHCPv6                      | Application | Dynamic Host Configuration version 6               |
-| NTP                         | Application | Network Time Protocol               |
-| SIP                         | Application | Session Initiation Protocol               |
-| HTTP                        | Application | Hypertext Transfer Protocol              |
-
-## Protocol Sub Structure Types
-
-| Name                        | Description               |
-| --------------------------- | ------------------------- |
-| Dot11QOS                    | IEEE 802.11 Quality Of Service              |
-| Dot11HTControl              | IEEE 802.11 HTC information              |
-| Dot11HTControlVHT           | IEEE 802.11 HTC information              |
-| Dot11HTControlHT            | IEEE 802.11 HTC information              |
-| Dot11HTControlMFB           | IEEE 802.11 HTC information              |
-| Dot11LinkAdapationControl   | IEEE 802.11 HTC information              |
-| Dot11ASEL                   | IEEE 802.11 HTC information              |
-| LLDPChassisID               | Link Layer Discovery Protocol information              |
-| LLDPPortID                  | Link Layer Discovery Protocol information              |
-| LinkLayerDiscoveryValue     | Link Layer Discovery Protocol information              |
-| LLDPSysCapabilities         | Link Layer Discovery Protocol information              |
-| LLDPCapabilities            | Link Layer Discovery Protocol information              |
-| LLDPMgmtAddress             | Link Layer Discovery Protocol information              |
-| LLDPOrgSpecificTLV          | Link Layer Discovery Protocol information              |
-| IPv4Option                  | IPv4 option              |
-| ICMPv6Option                | ICMPv6 option              |
-| TCPOption                   | TCP option              |
-| DNSResourceRecord           | Domain Name System resource record              |
-| DNSSOA                      | Domain Name System start of authority record              |
-| DNSSRV                      | Domain Name System service record              |
-| DNSMX                       | Mail exchange record              |
-| DNSQuestion                 | Domain Name System request for a single domain              |
-| DHCPOption                  | DHCP v4 option              |
-| DHCPv6Option                | DHCP v6 option              |
-| IGMPv3GroupRecord           | IGMPv3 group records for a membership report              |
-| IPv6HopByHopOption          | IPv6 hop by hop extension TLV option              |
-| IPv6HopByHopOptionAlignment | Hop By Hop Option Alignment             |
-
-
-## Available Fields
+## Supported Protocols and Available Fields
 
 ### Layer Encoders
 
