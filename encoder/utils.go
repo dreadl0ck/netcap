@@ -215,7 +215,6 @@ func CloseFile(outDir string, file *os.File, typ string) (name string, size int6
 }
 
 func CreateFile(name, ext string) *os.File {
-	fmt.Println("create file", name+ext)
 	f, err := os.Create(name + ext)
 	if err != nil {
 		panic(err)

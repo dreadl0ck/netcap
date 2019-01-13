@@ -25,4 +25,5 @@ type Config struct {
 	WriteChan       bool
 	Source          string
 	Version         string
+	IncludePayloads bool
 }

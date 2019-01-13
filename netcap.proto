@@ -140,10 +140,11 @@ enum Type {
  */
 
 message Header {
-    string Created     = 1; // Timestamp of creation date
-    string InputSource = 2; // interface name or name of dumpfile
-    Type   Type        = 3; // netcap data type
-    string Version     = 4; // Netcap version string
+    string Created          = 1; // Timestamp of creation date
+    string InputSource      = 2; // interface name or name of dumpfile
+    Type   Type             = 3; // netcap data type
+    string Version          = 4; // Netcap version string
+    bool   ContainsPayloads = 5; 
 }
 
 
@@ -153,10 +154,11 @@ message Header {
  */
 
 message Batch {
-    string ClientID    = 1; // unique client identifier
-    Type   MessageType = 2; // netcap data type
-    int32  Size        = 3; // data size in bytes
-    bytes  Data        = 4; // actual data, (serialized protocol buffers)
+    string ClientID         = 1; // unique client identifier
+    Type   MessageType      = 2; // netcap data type
+    int32  Size             = 3; // data size in bytes
+    bytes  Data             = 4; // actual data, (serialized protocol buffers)
+    bool   ContainsPayloads = 5;
 }
 
 /*

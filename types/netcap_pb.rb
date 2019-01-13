@@ -9,12 +9,14 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :InputSource, :string, 2
     optional :Type, :enum, 3, "types.Type"
     optional :Version, :string, 4
+    optional :ContainsPayloads, :bool, 5
   end
   add_message "types.Batch" do
     optional :ClientID, :string, 1
     optional :MessageType, :enum, 2, "types.Type"
     optional :Size, :int32, 3
     optional :Data, :bytes, 4
+    optional :ContainsPayloads, :bool, 5
   end
   add_message "types.Flow" do
     optional :TimestampFirst, :string, 1

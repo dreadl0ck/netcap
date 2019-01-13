@@ -1,4 +1,5 @@
+// This file was generated. Do not edit.
 package netcap
 
-// Version of netcap
-var Version = "v0.3.8"
+// Netcap version.
+var Version = "v0.3.9"

@@ -283,7 +283,9 @@ func (d *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
 // Init initializes and configures the encoder
 func (d *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
 
-	fmt.Println("INIT", d.Type, d.Layer)
+	if *debug {
+		fmt.Println("INIT", d.Type, d.Layer)
+	}
 
 	protocol := strings.TrimPrefix(d.Type.String(), "NC_")
 
