@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="410 918 1839 279" width="1839" height="279">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="410 918 1839 279" width="1839" height="279">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 415 1094 L 415 1148 L 526.52517 1148 L 526.52517 1094 Z"/>
@@ -47,10 +47,10 @@
       </font-face-src>
     </font-face>
   </defs>
-  <metadata> Produced by OmniGraffle 7.9.3 
-    <dc:date>2018-12-21 18:35:14 +0000</dc:date>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-13 20:47:35 +0000</dc:date>
   </metadata>
-  <g id="Netcap-Delimited" stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
+  <g id="Netcap-Delimited" fill-opacity="1" stroke-dasharray="none" fill="none" stroke="none" stroke-opacity="1">
     <title>Netcap-Delimited</title>
     <g id="Netcap-Delimited: Layer 1">
       <title>Layer 1</title>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="1246 1226 1531 697" width="1531" height="697">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="1246 1226 1531 697" width="1531" height="697">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1331.9063 1530 L 1331.9063 1884 L 1539.0937 1884 L 1539.0937 1530 Z"/>
@@ -47,10 +47,10 @@
       <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1822 L 1805 1884 L 1887.36 1884 L 1887.36 1822 Z"/>
     </clipPath>
   </defs>
-  <metadata> Produced by OmniGraffle 7.9.3 
-    <dc:date>2018-12-21 18:35:14 +0000</dc:date>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-13 20:47:35 +0000</dc:date>
   </metadata>
-  <g id="Netcap-Audit-Record" stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
+  <g id="Netcap-Audit-Record" fill-opacity="1" stroke-dasharray="none" fill="none" stroke="none" stroke-opacity="1">
     <title>Netcap-Audit-Record</title>
     <g id="Netcap-Audit-Record: Layer 1">
       <title>Layer 1</title>
@@ -106,14 +106,23 @@
       <g id="Graphic_53">
         <rect x="1805" y="1684" width="338" height="62" fill="white"/>
         <rect x="1805" y="1684" width="338" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_3)"/>
+        <text transform="translate(1810 1698.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="51.68921" y="26">          Audit Record</tspan>
+        </text>
       </g>
       <g id="Graphic_54">
         <rect x="1805" y="1753" width="338" height="62" fill="white"/>
         <rect x="1805" y="1753" width="338" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_4)"/>
+        <text transform="translate(1810 1767.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="51.68921" y="26">          Audit Record</tspan>
+        </text>
       </g>
       <g id="Graphic_55">
         <rect x="1805" y="1822" width="338" height="62" fill="white"/>
         <rect x="1805" y="1822" width="338" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_5)"/>
+        <text transform="translate(1810 1836.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="113.62158" y="26">          …</tspan>
+        </text>
       </g>
       <g id="Graphic_56">
         <rect x="1805" y="1684" width="82.36" height="62" fill="white"/>
@@ -134,21 +143,6 @@
         <rect x="1805" y="1822" width="82.36" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_8)"/>
         <text transform="translate(1810 1836.6277)" fill="black">
           <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="1.2923047" y="26">length</tspan>
-        </text>
-      </g>
-      <g id="Graphic_59">
-        <text transform="translate(1942 1698.6277)" fill="black">
-          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".26342773" y="26">Audit Record</tspan>
-        </text>
-      </g>
-      <g id="Graphic_60">
-        <text transform="translate(2004 1836.6277)" fill="black">
-          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".19580078" y="26">…</tspan>
-        </text>
-      </g>
-      <g id="Graphic_61">
-        <text transform="translate(1942 1767.6277)" fill="black">
-          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".26342773" y="26">Audit Record</tspan>
         </text>
       </g>
     </g>

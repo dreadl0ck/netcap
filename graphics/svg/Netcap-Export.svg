@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="829 -177 1751 1525" width="1751" height="1525">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="829 -177 1751 1525" width="1751" height="1525">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 829 -177 L 2580 -177 L 2580 1348 L 829 1348 Z M 1324.224 232.00245 L 1324.224 1184.5294 L 2219.5278 1184.5294 L 2219.5278 232.00245 Z"/>
@@ -86,10 +86,10 @@
       </font-face-src>
     </font-face>
   </defs>
-  <metadata> Produced by OmniGraffle 7.9.3 
-    <dc:date>2018-12-21 18:35:14 +0000</dc:date>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-13 20:47:35 +0000</dc:date>
   </metadata>
-  <g id="Netcap-Export" stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
+  <g id="Netcap-Export" fill-opacity="1" stroke-dasharray="none" fill="none" stroke="none" stroke-opacity="1">
     <title>Netcap-Export</title>
     <g id="Netcap-Export: Layer 1">
       <title>Layer 1</title>
