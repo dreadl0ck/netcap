@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="656 49 1479 1083" width="1479" height="1083">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" viewBox="656 49 1479 1083" width="1479" height="1083">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 656 49 L 2135 49 L 2135 1132 L 656 1132 Z M 970.85 765 L 970.85 967 L 1402.85 967 L 1402.85 765 Z"/>
@@ -37,9 +37,9 @@
     </font-face>
   </defs>
   <metadata> Produced by OmniGraffle 7.9.4 
-    <dc:date>2019-01-13 21:03:10 +0000</dc:date>
+    <dc:date>2019-01-14 22:40:49 +0000</dc:date>
   </metadata>
-  <g id="Netcap-Sensors" fill-opacity="1" stroke-dasharray="none" fill="none" stroke="none" stroke-opacity="1">
+  <g id="Netcap-Sensors" stroke-dasharray="none" fill="none" fill-opacity="1" stroke="none" stroke-opacity="1">
     <title>Netcap-Sensors</title>
     <g id="Netcap-Sensors: Layer 1">
       <title>Layer 1</title>
