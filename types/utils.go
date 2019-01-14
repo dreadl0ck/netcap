@@ -22,10 +22,10 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-const (
-	begin = "("
-	end   = ")"
-	sep   = "-"
+var (
+	Begin     = "("
+	End       = ")"
+	Separator = "-"
 )
 
 type Stringable interface {
@@ -64,14 +64,14 @@ func joinInts(a []int32) string {
 		b         strings.Builder
 		lastIndex = len(a) - 1
 	)
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	for i, num := range a {
 		b.WriteString(formatInt32(num))
 		if i != lastIndex {
-			b.WriteString(sep)
+			b.WriteString(Separator)
 		}
 	}
-	b.WriteString(end)
+	b.WriteString(End)
 	return b.String()
 }
 
@@ -80,14 +80,14 @@ func joinUints(a []uint32) string {
 		b         strings.Builder
 		lastIndex = len(a) - 1
 	)
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	for i, num := range a {
 		b.WriteString(formatUint32(num))
 		if i != lastIndex {
-			b.WriteString(sep)
+			b.WriteString(Separator)
 		}
 	}
-	b.WriteString(end)
+	b.WriteString(End)
 	return b.String()
 }
 
@@ -96,14 +96,14 @@ func join(a ...string) string {
 		b         strings.Builder
 		lastIndex = len(a) - 1
 	)
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	for i, v := range a {
 		b.WriteString(v)
 		if i != lastIndex {
-			b.WriteString(sep)
+			b.WriteString(Separator)
 		}
 	}
-	b.WriteString(end)
+	b.WriteString(End)
 	return b.String()
 }
 

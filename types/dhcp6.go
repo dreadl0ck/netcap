@@ -52,12 +52,12 @@ func (d DHCPv6) NetcapTimestamp() string {
 
 func (d DHCPv6Option) ToString() string {
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(d.Code))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(d.Length))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(d.Data))
-	b.WriteString(end)
+	b.WriteString(End)
 	return b.String()
 }

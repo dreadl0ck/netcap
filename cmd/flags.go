@@ -59,4 +59,8 @@ var (
 	flagBaseLayer     = flag.String("base", "ethernet", "select base layer")
 	flagDecodeOptions = flag.String("opts", "lazy", "select decoding options")
 	flagPayload       = flag.Bool("payload", false, "capture payload for supported layers")
+
+	flagBegin           = flag.String("begin", "(", "begin character for a structure in CSV output")
+	flagEnd             = flag.String("end", ")", "end character for a structure in CSV output")
+	flagStructSeparator = flag.String("struct-sep", "-", "separator character for a structure in CSV output")
 )

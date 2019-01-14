@@ -43,11 +43,11 @@ func (i ICMPv6RouterSolicitation) NetcapTimestamp() string {
 func (o ICMPv6Option) ToString() string {
 
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(o.Type))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(o.Data))
-	b.WriteString(end)
+	b.WriteString(End)
 
 	return b.String()
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
 )
@@ -148,6 +149,9 @@ func main() {
 
 	// read ncap file and print to stdout
 	if filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz" {
+		types.Begin = *flagBegin
+		types.End = *flagEnd
+		types.Separator = *flagStructSeparator
 		netcap.Dump(*flagInput, *flagSeparator, *flagTSV, *flagPrintStructured, *flagTable, *flagSelect, *flagUTC, *flagFields)
 		return
 	}

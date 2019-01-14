@@ -49,12 +49,12 @@ func (a CiscoDiscovery) NetcapTimestamp() string {
 func (v CiscoDiscoveryValue) ToString() string {
 
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(v.Type))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(v.Length))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(v.Value))
-	b.WriteString(end)
+	b.WriteString(End)
 	return b.String()
 }

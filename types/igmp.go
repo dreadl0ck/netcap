@@ -66,17 +66,17 @@ func (i IGMP) NetcapTimestamp() string {
 func (i IGMPv3GroupRecord) ToString() string {
 
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(i.Type))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(i.AuxDataLen))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(i.NumberOfSources))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(i.MulticastAddress)
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(join(i.SourceAddresses...))
-	b.WriteString(end)
+	b.WriteString(End)
 
 	return b.String()
 }

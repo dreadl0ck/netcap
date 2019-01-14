@@ -70,12 +70,12 @@ func (d DHCPv4) NetcapTimestamp() string {
 
 func (d DHCPOption) ToString() string {
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(d.Type))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(d.Length))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(d.Data))
-	b.WriteString(end)
+	b.WriteString(End)
 	return b.String()
 }
