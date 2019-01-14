@@ -1,5 +1,5 @@
 <a href="https://github.com/dreadl0ck/netcap">
-  <img src="graphics/svg/Netcap-Logo.svg" width="100%" height="300">
+  <img src="graphics/svg/Netcap-Logov2.svg" width="100%" height="300">
 </a>
 
 <br>
@@ -700,16 +700,13 @@ As outlined in the future chapter of the thesis,
 - increase unit test coverage
 - more robust error handling & pentest
 - benchmarks & performance optimizations
-- increased protocol coverage (there are still protocols that gopacket offers but that are not integrated)
 - more extracted features that haven proven value in other academic publications
-- support for decoding USB traffic - easy to implement because it is supported by gopacket
 - data export to various SIEM / visualization tools (Grafana, Splunk, Elastic Stack, etc)
 - support for some ICS protocols
 - SSH audit record type and Go implementation of the HASSH technique from salesforce
 - Deep Packet Inspection Module that looks for certain patterns in the payload to identify the application layer before discarding the payload data
 - implement IPv6 stream reassembly
 - implement an interface for application layer decoders that require stream reassembly
-- test compilation and execution on windows (see [this stackoverflow thread on compiling gopacket on windows](https://stackoverflow.com/questions/38047858/compile-gopacket-on-windows-64bit))
 
 Additional recent datasets should be evaluated using *Netcap*,
 also the next round of experiments with supervised techniques should be conducted with the ET Pro ruleset for labeling.
