@@ -69,14 +69,14 @@ func (a BFD) NetcapTimestamp() string {
 
 func (a BFDAuthHeader) GetString() string {
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(int32(a.AuthType)))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(int32(a.KeyID)))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(int32(a.SequenceNumber)))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(a.Data))
-	b.WriteString(end)
+	b.WriteString(End)
 	return b.String()
 }

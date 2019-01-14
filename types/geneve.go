@@ -56,17 +56,17 @@ func (i Geneve) NetcapTimestamp() string {
 func (i GeneveOption) ToString() string {
 
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(i.Class))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(i.Type))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(i.Flags))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(i.Length))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(i.Data))
-	b.WriteString(end)
+	b.WriteString(End)
 
 	return b.String()
 }

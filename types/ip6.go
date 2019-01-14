@@ -64,5 +64,5 @@ func (h IPv6HopByHop) ToString() string {
 	for _, o := range h.Options {
 		opts = append(opts, o.ToString())
 	}
-	return h.Timestamp + sep + join(opts...)
+	return h.Timestamp + Separator + join(opts...)
 }

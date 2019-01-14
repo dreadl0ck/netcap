@@ -74,13 +74,13 @@ func (i IPv4) NetcapTimestamp() string {
 func (i IPv4Option) ToString() string {
 
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(i.OptionType))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(i.OptionLength))
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(i.OptionData))
-	b.WriteString(end)
+	b.WriteString(End)
 
 	return b.String()
 }

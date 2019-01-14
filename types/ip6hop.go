@@ -42,13 +42,13 @@ func (l IPv6HopByHop) NetcapTimestamp() string {
 
 func (o IPv6HopByHopOption) ToString() string {
 	var b strings.Builder
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatInt32(o.OptionType))        // int32
 	b.WriteString(formatInt32(o.OptionLength))      // int32
 	b.WriteString(formatInt32(o.ActualLength))      // int32
 	b.WriteString(hex.EncodeToString(o.OptionData)) // []byte
 	b.WriteString(o.OptionAlignment.ToString())     //  *IPv6HopByHopOptionAlignment
-	b.WriteString(end)
+	b.WriteString(End)
 	return b.String()
 }
 

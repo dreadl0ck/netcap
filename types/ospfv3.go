@@ -71,23 +71,23 @@ func (l HelloPkg) ToString() string {
 
 	var b strings.Builder
 
-	b.WriteString(begin)
+	b.WriteString(Begin)
 	b.WriteString(formatUint32(l.InterfaceID)) // uint32
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(l.RtrPriority)) // int32
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatUint32(l.Options)) // uint32
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatInt32(l.HelloInterval)) // int32
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatUint32(l.RouterDeadInterval)) // uint32
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatUint32(l.DesignatedRouterID)) // uint32
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(formatUint32(l.BackupDesignatedRouterID)) // uint32
-	b.WriteString(sep)
+	b.WriteString(Separator)
 	b.WriteString(joinUints(l.NeighborID)) // []uint32
-	b.WriteString(end)
+	b.WriteString(End)
 
 	return b.String()
 }
