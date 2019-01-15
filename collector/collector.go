@@ -36,6 +36,7 @@ import (
 
 // Collector provides an interface to collect data from PCAP or a network interface.
 type Collector struct {
+
 	// input channels for the worker pool
 	workers []chan gopacket.Packet
 
@@ -101,6 +102,7 @@ func (c *Collector) stopWorkers() {
 
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup() {
+
 	c.statMutex.Lock()
 	c.wg.Wait()
 	c.statMutex.Unlock()
@@ -164,6 +166,7 @@ func (c *Collector) handleSignals() {
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines in round robin style.
 func (c *Collector) handlePacket(p gopacket.Packet) {
+
 	// make it work for 1 worker only
 	// if len(c.workers) == 1 {
 	// 	c.workers[0] <- p
@@ -197,6 +200,7 @@ func (c *Collector) printErrors() {
 
 // closes the logfile for errors.
 func (c *Collector) closeErrorLogFile() {
+
 	// append  stats
 	var stats string
 	for msg, count := range c.errorMap.Items {
@@ -223,6 +227,7 @@ func (c *Collector) closeErrorLogFile() {
 
 // Stats prints collector statistics.
 func (c *Collector) Stats() {
+
 	rows := [][]string{}
 
 	for k, v := range c.allProtosAtomic.Items {
@@ -257,6 +262,7 @@ func (c *Collector) Stats() {
 
 // updates the progress indicator and writes to stdout.
 func (c *Collector) printProgress() {
+
 	// must be locked, otherwise a race occurs when sending a SIGINT
 	//  and triggering wg.Wait() in another goroutine...
 	c.statMutex.Lock()
@@ -265,6 +271,7 @@ func (c *Collector) printProgress() {
 	atomic.AddInt64(&c.current, 1)
 
 	if c.current%10000 == 0 {
+
 		// using a strings.Builder for assembling string for performance
 		// TODO: could be refactored to use a byte slice with a fixed length instead
 		var b strings.Builder
@@ -284,7 +291,8 @@ func (c *Collector) printProgress() {
 
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
-func (c *Collector) Init() error {
+func (c *Collector) Init() (err error) {
+
 	// start workers
 	c.workers = c.initWorkers()
 	fmt.Println("spawned", c.config.Workers, "workers")
@@ -294,7 +302,7 @@ func (c *Collector) Init() error {
 
 	// create full output directory path if set
 	if c.config.EncoderConfig.Out != "" {
-		err := os.MkdirAll(c.config.EncoderConfig.Out, 0755)
+		err = os.MkdirAll(c.config.EncoderConfig.Out, 0755)
 		if err != nil {
 			return err
 		}
@@ -303,6 +311,8 @@ func (c *Collector) Init() error {
 	// initialize encoders
 	encoder.InitLayerEncoders(c.config.EncoderConfig)
 	encoder.InitCustomEncoders(c.config.EncoderConfig)
+
+	// set payload capture
 	encoder.CapturePayload = c.config.EncoderConfig.IncludePayloads
 
 	// set pointer of collectors atomic counter map in encoder pkg
@@ -317,10 +327,7 @@ func (c *Collector) Init() error {
 	c.handleSignals()
 
 	// create log file
-	var err error
 	c.errorLogFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.log"))
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return
 }
