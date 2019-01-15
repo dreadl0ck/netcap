@@ -660,11 +660,11 @@ Both sensor and client can be configured by using the *-addr* flag to specify an
 
 Now, the server can be started, the location of the file containing the private key must be supplied:
 
-    $ netcap -server -privkey priv.key -addr 127.0.0.1:4200
+    $ netcap-server -privkey priv.key -addr 127.0.0.1:4200
 
 The server will now be listening for incoming messages. Next, the sensor must be configured. The keypair for the sensor will be generated on startup, but the public key of the server must be provided:
 
-    $ netcap -sensor -pubkey pub.key -addr 127.0.0.1:4200
+    $ netcap-sensor -pubkey pub.key -addr 127.0.0.1:4200
     got 126 bytes of type NC_ICMPv6RouterAdvertisement expected [126] got size [73] for type NC_Ethernet
     got 73 bytes of type NC_Ethernet expected [73]
     got size [27] for type NC_ICMPv6
@@ -675,7 +675,7 @@ The server will now be listening for incoming messages. Next, the sensor must be
 
 The client will now collect the traffic live from the specified interface, and send it to the configured server, once a batch for an audit record type is complete. The server will log all received messages:
 
-    $ netcap -server -privkey priv.key -addr 127.0.0.1:4200 
+    $ netcap-server -privkey priv.key -addr 127.0.0.1:4200 
     packet-received: bytes=2412 from=127.0.0.1:57368 decoded batch NC_Ethernet from client xyz
     new file xyz/Ethernet.ncap
     packet-received: bytes=2701 from=127.0.0.1:65050 decoded batch NC_IPv4 from client xyz
