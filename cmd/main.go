@@ -147,11 +147,13 @@ func main() {
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})
 
+	// set separators for sub structures in CSV
+	types.Begin = *flagBegin
+	types.End = *flagEnd
+	types.Separator = *flagStructSeparator
+
 	// read ncap file and print to stdout
 	if filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz" {
-		types.Begin = *flagBegin
-		types.End = *flagEnd
-		types.Separator = *flagStructSeparator
 		netcap.Dump(*flagInput, *flagSeparator, *flagTSV, *flagPrintStructured, *flagTable, *flagSelect, *flagUTC, *flagFields)
 		return
 	}
