@@ -1,62 +1,49 @@
 # TODOs
 
-- make join sep configurable
-- helper func for ToString() on array
-- rename ToString
+- refactor printProgress()
+- refactor CheckFields()
+- use gopacket.LayerType for c.unknownProtosAtomic and c.allProtosAtomi -> AtomicCounterMap for gopacket.Layers
+- stats table: include custom encoders
 
-- OSPF: remove dummy OSPF.ncap file
-- replace all strings.Join... with join util func
-- performance: pre allocate array sizes and use indices
+## README
 
-- gopacket TLS type
-- log encoding errors for merged packets
-- fix GRE Routing
+- update issues
+- add USB example to README
+- explain payload capture in README
+- add payload to more layers
+- add contributions welcome to README
 
-Linux cross compilation:
+## Linux cross compilation
+
 - CC=x86_64-pc-linux-gcc GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -i github.com/dreadl0ck/netcap/cmd
 - GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -ldflags="-L /usr/local/opt/libpcap/lib" -i github.com/dreadl0ck/netcap/cmd
 
-- add ascii cast
-- README
+## Benchmarks
 
-Benchmarks:
-- add benchmarks writing through channels vs mutex
-- add benchmarks: Concatenating Strings Builder vs byte slices etc
+- writing through channels vs mutex
+- concatenating Strings Builder vs byte slices etc
 
 ## Sensor
 
 - client reuse conn?
 - implement data export to elastic stack / influx 
 
-## new protos
+## New Protocols
 
-- NortelDiscovery
-- MLDv2MulticastListenerReport
-- ASExternalLSA
+- fix GRE Routing field parsing
+- MLDv1MulticastListener + MLDv2MulticastListener
 
-## update documentation
+## Future Development
 
-- LSA
-- CiscoDiscoveryInfo
-- EAPOL + Key
-- VRRPv2
-- EAP
-- FDDI
-- GRE
-- BFD
-- OSPF
-- ModbusTCP
-- MPLS
-- LCM
-- USB
-- VXLAN
-- Ipv6Fragment
-- IPSec
-- Geneve
-
-# future
-
-Future Development:
+- helper func for ToString() on array?
+- add github wiki
+- godoc API cleanup
+- handle panic(err) gracefully
+- performance: allocate fixed size arrays when encoding
+- add flag to map field values to constant names
+- add test files for different protocols
+- JSON output
+- events package to define events based on characteristics or IOCs
 - scale to multi instance architecture
 - data exporters + visualization dashboards / VR etc
 - robustness testing / pentest
@@ -65,7 +52,6 @@ Future Development:
 - labeling: how many unmatched alerts?
 - labeling: switch to intelligence from eve.json
 
-- json output
 - display custom encoder stats in final view: add stats func to custom encoder and call them on destroy
 - TCP stream reassembly: make App Layer decoding configurable, to allow extension for other layer 7 protos (SMTP, FTP etc)
 - flag sort output by timestamp (func in utils)
