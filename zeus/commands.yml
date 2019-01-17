@@ -24,7 +24,7 @@ commands:
             - clean
         buildNumber: true
         exec: |
-            echo "generating netcap binary v${VERSION}"
+            echo "[INFO] generating netcap binary v${VERSION}"
             go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/netcap -i github.com/dreadl0ck/netcap/cmd
 
     build-all-linux-docker:
@@ -32,6 +32,17 @@ commands:
         help: used to compile for linux on macOS because cross compilation is a pain with CGO
         dependencies:
             - clean
+
+    version-bump:
+        description: bump framework version and add git version tag
+        exec: |
+            read -p "[WARNING] This will bump the version to $VERSION, as configured in the zeus/commands.yml. Are you sure? Hit [Enter] to proceed"
+
+            git add .
+            git commit -m "version bump to v${VERSION}"
+            git push
+
+            echo "[INFO] version bumped to v${VERSION}"
 
     release:
         description: release a new version, bundle and publish on github
