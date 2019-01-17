@@ -121,11 +121,13 @@ func (c *Collector) cleanup() {
 	c.closePcapFiles()
 
 	// flush all buffers
-	for _, e := range encoder.LayerEncoders {
-		name, size := e.Destroy()
-		if size != 0 {
-			c.totalBytesWritten += size
-			c.files[name] = humanize.Bytes(uint64(size))
+	for _, encoders := range encoder.LayerEncoders {
+		for _, e := range encoders {
+			name, size := e.Destroy()
+			if size != 0 {
+				c.totalBytesWritten += size
+				c.files[name] = humanize.Bytes(uint64(size))
+			}
 		}
 	}
 
