@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/evilsocket/islazy/tui"
@@ -51,7 +50,6 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 		if fields {
 			os.Exit(0)
 		}
-		time.Sleep(1 * time.Second)
 	}
 
 	for {
