@@ -157,7 +157,7 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 }, func(d *CustomEncoder) error {
 
 	errorsMapMutex.Lock()
-	fmt.Fprintf(os.Stderr, "Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
+	fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
 	errorsMapMutex.Unlock()
 
 	closed := assembler.FlushAll()
@@ -288,12 +288,14 @@ done:
 	fmt.Println("TCP stats:")
 	tui.Table(os.Stdout, []string{"Description", "Value"}, rows)
 
-	rows = [][]string{}
-	fmt.Printf("\nErrors: %d\n", numErrors)
-	for e := range errorsMap {
-		rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
+	if numErrors != 0 {
+		rows = [][]string{}
+		fmt.Printf("\nErrors: %d\n", numErrors)
+		for e := range errorsMap {
+			rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
+		}
+		tui.Table(os.Stdout, []string{"Error", "Count"}, rows)
 	}
-	tui.Table(os.Stdout, []string{"Error", "Count"}, rows)
 
 	fmt.Println("\nflushed", total, "http events.", "requests", requests, "responses", responses)
 

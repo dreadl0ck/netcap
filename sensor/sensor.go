@@ -160,7 +160,7 @@ func main() {
 				if len(leftOverBuf) > 0 {
 					// add to current batch
 					b.Data = append(b.Data, leftOverBuf...)
-					b.Size = int32(len(leftOverBuf))
+					b.TotalSize = int32(len(leftOverBuf))
 
 					// reset leftover buffer
 					leftOverBuf = make([]byte, 0)
@@ -178,7 +178,7 @@ func main() {
 							fmt.Println("got", len(data), "bytes of type", info.Type, "expected", size)
 
 							// calculate new size
-							newSize := int32(len(size)+len(data)) + b.Size
+							newSize := int32(len(size)+len(data)) + b.TotalSize
 
 							// if the new size would exceed the maximum size
 							if newSize > int32(*flagMaxSize) {
@@ -191,7 +191,7 @@ func main() {
 							b.Data = append(b.Data, append(size, data...)...)
 
 							// update batch size
-							b.Size = newSize
+							b.TotalSize = newSize
 
 							// reset size slice
 							size = []byte{}
@@ -208,7 +208,7 @@ func main() {
 
 			send: // send batch to collection server
 
-				fmt.Println("\nBatch done!", b.Size, len(b.Data), b.ClientID, b.MessageType)
+				fmt.Println("\nBatch done!", b.TotalSize, len(b.Data), b.ClientID, b.MessageType)
 
 				// marshal batch
 				d, err := proto.Marshal(b)

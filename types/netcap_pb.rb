@@ -14,7 +14,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
   add_message "types.Batch" do
     optional :ClientID, :string, 1
     optional :MessageType, :enum, 2, "types.Type"
-    optional :Size, :int32, 3
+    optional :TotalSize, :int32, 3
     optional :Data, :bytes, 4
     optional :ContainsPayloads, :bool, 5
   end
@@ -30,7 +30,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :SrcPort, :string, 9
     optional :DstIP, :string, 10
     optional :DstPort, :string, 11
-    optional :Size, :int32, 12
+    optional :TotalSize, :int32, 12
     optional :AppPayloadSize, :int32, 13
     optional :NumPackets, :int32, 14
     optional :UID, :string, 15
@@ -49,7 +49,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :SrcPort, :string, 9
     optional :DstIP, :string, 10
     optional :DstPort, :string, 11
-    optional :Size, :int32, 12
+    optional :TotalSize, :int32, 12
     optional :AppPayloadSize, :int32, 13
     optional :NumPackets, :int32, 14
     optional :UID, :string, 15
@@ -62,7 +62,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Proto, :string, 3
     optional :SrcMAC, :string, 4
     optional :DstMAC, :string, 5
-    optional :Size, :int64, 6
+    optional :TotalSize, :int64, 6
     optional :NumPackets, :int64, 7
     optional :UID, :uint64, 8
     optional :Duration, :int64, 9
@@ -73,7 +73,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Proto, :string, 3
     optional :SrcIP, :string, 4
     optional :DstIP, :string, 5
-    optional :Size, :int64, 6
+    optional :TotalSize, :int64, 6
     optional :NumPackets, :int64, 7
     optional :UID, :uint64, 8
     optional :Duration, :int64, 9
@@ -84,7 +84,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :Proto, :string, 3
     optional :SrcPort, :int32, 4
     optional :DstPort, :int32, 5
-    optional :Size, :int64, 6
+    optional :TotalSize, :int64, 6
     optional :NumPackets, :int64, 7
     optional :UID, :uint64, 8
     optional :Duration, :int64, 9

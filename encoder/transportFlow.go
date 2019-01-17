@@ -86,7 +86,7 @@ var transportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "Tra
 			} // else: do nothing, timestamp is still the oldest one
 
 			flow.NumPackets++
-			flow.Size += int64(len(p.Data()))
+			flow.TotalSize += int64(len(p.Data()))
 
 			if calcDuration {
 				flow.Duration = utils.StringToTime(flow.TimestampLast).Sub(utils.StringToTime(flow.TimestampFirst)).Nanoseconds()
@@ -103,7 +103,7 @@ var transportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "Tra
 			lf.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
 			lf.Proto = ll.LayerType().String()
 			lf.NumPackets = 1
-			lf.Size = int64(len(p.Data()))
+			lf.TotalSize = int64(len(p.Data()))
 			TransportFlows.Items[ll.TransportFlow().FastHash()] = lf
 
 			// continuously flush flows

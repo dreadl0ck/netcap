@@ -157,7 +157,7 @@ message Header {
 message Batch {
     string ClientID         = 1; // unique client identifier
     Type   MessageType      = 2; // netcap data type
-    int32  Size             = 3; // data size in bytes
+    int32  TotalSize        = 3; // data size in bytes
     bytes  Data             = 4; // actual data, (serialized protocol buffers)
     bool   ContainsPayloads = 5;
 }
@@ -181,7 +181,7 @@ message Flow {
     string SrcPort            = 9;
     string DstIP              = 10;
     string DstPort            = 11;
-    int32  Size               = 12; // total bytes transferred
+    int32  TotalSize          = 12; // total bytes transferred
     int32  AppPayloadSize     = 13; // size of application layer payload
     int32  NumPackets         = 14;
     string UID                = 15;
@@ -205,7 +205,7 @@ message Connection {
     string SrcPort            = 9;
     string DstIP              = 10;
     string DstPort            = 11;
-    int32  Size               = 12; // total bytes transferred
+    int32  TotalSize          = 12; // total bytes transferred
     int32  AppPayloadSize     = 13; // size of application layer payload
     int32  NumPackets         = 14;
     string UID                = 15;
@@ -219,7 +219,7 @@ message LinkFlow {
     string Proto          = 3;
     string SrcMAC         = 4;
     string DstMAC         = 5;
-    int64  Size           = 6;
+    int64  TotalSize      = 6;
     int64  NumPackets     = 7;
     uint64 UID            = 8;
     int64  Duration       = 9;
@@ -231,7 +231,7 @@ message NetworkFlow {
     string Proto          = 3;
     string SrcIP          = 4;
     string DstIP          = 5;
-    int64  Size           = 6;
+    int64  TotalSize      = 6;
     int64  NumPackets     = 7;
     uint64 UID            = 8;
     int64  Duration       = 9;
@@ -243,7 +243,7 @@ message TransportFlow {
     string Proto           = 3;
     int32  SrcPort         = 4;
     int32  DstPort         = 5;
-    int64  Size            = 6;
+    int64  TotalSize       = 6;
     int64  NumPackets      = 7;
     uint64 UID             = 8;
     int64  Duration        = 9;

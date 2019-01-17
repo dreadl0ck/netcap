@@ -120,7 +120,7 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 		} // else: do nothing, timestamp is still the oldest one
 
 		flow.NumPackets++
-		flow.Size += int32(len(p.Data()))
+		flow.TotalSize += int32(len(p.Data()))
 
 		// only calculate duration when timetamps have changed
 		if calcDuration {
