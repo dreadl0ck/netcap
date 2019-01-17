@@ -27,6 +27,7 @@ import (
 
 // close errors.pcap and unknown.pcap
 func (c *Collector) closePcapFiles() error {
+
 	// unknown.pcap
 
 	err := c.unkownPcapWriterBuffered.Flush()
@@ -84,7 +85,9 @@ func (c *Collector) closePcapFiles() error {
 
 // create unknown.pcap file for packets with unknown layers.
 func (c *Collector) createUnknownPcap() error {
+
 	var err error
+
 	// Open output pcap file and write header
 	c.unknownPcapFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "unknown.pcap"))
 	if err != nil {
@@ -104,7 +107,9 @@ func (c *Collector) createUnknownPcap() error {
 
 // create errors.pcap file for errors
 func (c *Collector) createErrorsPcap() error {
+
 	var err error
+
 	// Open output pcap file and write header
 	c.errorsPcapFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.pcap"))
 	if err != nil {
@@ -133,6 +138,7 @@ func (c *Collector) writePacketToUnknownPcap(p gopacket.Packet) error {
 
 // logPacketError handles an error when decoding a packet.
 func (c *Collector) logPacketError(p gopacket.Packet, err string) error {
+
 	// increment errorMap stats
 	c.errorMap.Inc(err)
 

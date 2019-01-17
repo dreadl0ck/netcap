@@ -80,11 +80,13 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 	}()
 
 	// get channels for all layer encoders
-	for _, e := range encoder.LayerEncoders {
-		chans = append(chans, BatchInfo{
-			Type: e.Type,
-			Chan: e.GetChan(),
-		})
+	for _, encoders := range encoder.LayerEncoders {
+		for _, e := range encoders {
+			chans = append(chans, BatchInfo{
+				Type: e.Type,
+				Chan: e.GetChan(),
+			})
+		}
 	}
 
 	// get channels for all custom encoders

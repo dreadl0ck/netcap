@@ -21,6 +21,7 @@ import (
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
 func (c *Collector) worker() chan gopacket.Packet {
+
 	// init channel to receive input packets
 	chanInput := make(chan gopacket.Packet, c.config.PacketBufferSize)
 
@@ -35,43 +36,46 @@ func (c *Collector) worker() chan gopacket.Packet {
 					return
 				}
 
-				// // experiment: only decode loaded layers
-				// for lt, le := range encoder.LayerEncoders {
-
-				// 	layer := p.Layer(lt)
-				// 	if layer != nil {
-				// 		c.allProtosAtomic.Inc(lt.String())
-				// 		err := le.Encode(layer, p.Metadata().Timestamp)
-				// 		if err != nil {
-				// 			c.logPacketError(p, "Layer Encoder Error: "+lt.String()+": "+err.Error())
-				// 			goto done
-				// 		}
-				// 	}
-				// }
-
 				// iterate over all layers
 				for _, layer := range p.Layers() {
+
+					// increment counter for layer type
 					c.allProtosAtomic.Inc(layer.LayerType().String())
 
 					// check if packet contains an unknown layer
-					switch layer.LayerType().String() {
-					case "Unknown": // not known to gopacket
+					switch layer.LayerType() {
+					case gopacket.LayerTypeZero: // not known to gopacket
+
+						// increase counter
 						c.unknownProtosAtomic.Inc(layer.LayerType().String())
+
+						// write to unknown.pcap file
 						c.writePacketToUnknownPcap(p)
-					case "DecodeFailure":
+
+						// call custom decoders
+						goto done
+					case gopacket.LayerTypeDecodeFailure:
+						// call custom decoders
 						goto done
 					}
 
-					// pick encoder from the encoderMap by looking up the layer type
-					if d, ok := encoder.LayerEncoders[layer.LayerType()]; ok {
-						err := d.Encode(layer, p.Metadata().Timestamp)
-						if err != nil {
-							c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error())
-							goto done
+					// pick encoders from the encoderMap by looking up the layer type
+					if encoders, ok := encoder.LayerEncoders[layer.LayerType()]; ok {
+						for _, e := range encoders {
+							err := e.Encode(layer, p.Metadata().Timestamp)
+							if err != nil {
+								c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error())
+								goto done
+							}
 						}
 					} else { // no netcap encoder implemented
+
+						// increment unknown layer type counter
 						c.unknownProtosAtomic.Inc(layer.LayerType().String())
-						if layer.LayerType().String() != "Payload" {
+
+						// if its not a payload layer, write to unknown .pcap file
+						// TODO make this configurable?
+						if layer.LayerType() != gopacket.LayerTypePayload {
 							c.writePacketToUnknownPcap(p)
 							goto done
 						}
@@ -89,10 +93,13 @@ func (c *Collector) worker() chan gopacket.Packet {
 				}
 
 				// Check for errors after decoding all layers
+				// if an error has occured while decoding the packet
+				// it will be logged and written into the errors.pcap file
 				if errLayer := p.ErrorLayer(); errLayer != nil {
 					c.logPacketError(p, errLayer.Error().Error())
 				}
 			}
+
 			c.wg.Done()
 			continue
 		}
