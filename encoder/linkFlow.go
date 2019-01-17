@@ -80,7 +80,7 @@ var linkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", fu
 			} // else: do nothing, timestamp is still the oldest one
 
 			flow.NumPackets++
-			flow.Size += int64(len(p.Data()))
+			flow.TotalSize += int64(len(p.Data()))
 
 			if calcDuration {
 				flow.Duration = utils.StringToTime(flow.TimestampLast).Sub(utils.StringToTime(flow.TimestampFirst)).Nanoseconds()
@@ -95,7 +95,7 @@ var linkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", fu
 			lf.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
 			lf.Proto = ll.LayerType().String()
 			lf.NumPackets = 1
-			lf.Size = int64(len(p.Data()))
+			lf.TotalSize = int64(len(p.Data()))
 			LinkFlows.Items[ll.LinkFlow().FastHash()] = lf
 
 			// continuously flush flows

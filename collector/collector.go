@@ -239,7 +239,17 @@ func (c *Collector) Stats() {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
 		}
 	}
-	tui.Table(os.Stdout, []string{"Protocol", "NumPackets", "Share"}, rows)
+	tui.Table(os.Stdout, []string{"Layer", "NumPackets", "Share"}, rows)
+
+	if len(encoder.CustomEncoders) > 0 {
+
+		// TODO also print stats, add a stat func to encoder and call it here
+		rows = [][]string{}
+		for _, e := range encoder.CustomEncoders {
+			rows = append(rows, []string{e.Name, "NA", "NA"})
+		}
+		tui.Table(os.Stdout, []string{"Custom Encoder", "NumPackets", "Share"}, rows)
+	}
 
 	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
 	if c.unkownPcapWriterAtomic.count > 0 {
@@ -249,17 +259,7 @@ func (c *Collector) Stats() {
 	if c.errorsPcapWriterAtomic.count > 0 {
 		res += "-> " + share(c.errorsPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.errorsPcapWriterAtomic.count, 10) + ") written to errors.pcap\n"
 	}
-
-	println(res)
-	if len(encoder.CustomEncoders) > 0 {
-		fmt.Println("Active Custom Encoders:")
-
-		// TODO also print stats, add a stat func to encoder and call it here
-		for _, e := range encoder.CustomEncoders {
-			fmt.Println("+ " + e.Name)
-		}
-		fmt.Println("")
-	}
+	fmt.Println(res)
 }
 
 // updates the progress indicator and writes to stdout.
@@ -276,6 +276,7 @@ func (c *Collector) printProgress() {
 
 		// using a strings.Builder for assembling string for performance
 		// TODO: could be refactored to use a byte slice with a fixed length instead
+		// also only print flows and collections when the corresponding encoders are active
 		var b strings.Builder
 		b.Grow(65)
 		b.WriteString("decoding packets... (")

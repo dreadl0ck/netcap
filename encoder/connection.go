@@ -128,7 +128,7 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 		} // else: do nothing, timestamp is still the oldest one
 
 		conn.NumPackets++
-		conn.Size += int32(len(p.Data()))
+		conn.TotalSize += int32(len(p.Data()))
 
 		// only calculate duration when timetamps have changed
 		if calcDuration {
