@@ -23,18 +23,18 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap"
+	"kythe.io/kythe/go/platform/delimited"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/gopacket"
-	"kythe.io/kythe/go/platform/delimited"
 )
 
 var (
 	// LayerEncoders map contains initialized encoders at runtime
 	// for usage from other packages
-	LayerEncoders = map[gopacket.LayerType]*LayerEncoder{}
+	LayerEncoders = map[gopacket.LayerType][]*LayerEncoder{}
 
 	// contains all available layer encoders
 	layerEncoderSlice = []*LayerEncoder{
@@ -118,8 +118,6 @@ type (
 		csv      bool
 		buffer   bool
 		out      string
-
-		teardownMerged func()
 	}
 )
 
@@ -189,7 +187,7 @@ func InitLayerEncoders(c Config) {
 	// initialize encoders
 	for _, e := range layerEncoderSlice {
 
-		// fmt.Println("init", d.layer)
+		// fmt.Println("init", e.layer)
 		e.Init(c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
 
 		// write header
@@ -206,46 +204,10 @@ func InitLayerEncoders(c Config) {
 			}
 		}
 
-		// check if an encoder for the specified layertype exists
-		if existing, ok := LayerEncoders[e.Layer]; ok {
-			// wrap it
-			LayerEncoders[e.Layer] = mergeEncoders(existing, e)
-		} else {
-			// add to layer encoders map
-			LayerEncoders[e.Layer] = e
-		}
+		// add to layer encoders map
+		LayerEncoders[e.Layer] = append(LayerEncoders[e.Layer], e)
 	}
 	fmt.Println("initialized", len(LayerEncoders), "layer encoders | buffer size:", BlockSize)
-}
-
-// merge two encoders to a dummy encoder
-// that simply calls both encoders after one another
-// this is done to allow several encoders for the same gopacket.LayerType
-// while being able to handle different versions of the same protocol separately
-// it was introduced for the OSPFv2 and v3 encoders
-func mergeEncoders(first, second *LayerEncoder) *LayerEncoder {
-
-	merged := CreateLayerEncoder(first.Type, first.Layer, func(layer gopacket.Layer, timestamp string) proto.Message {
-		err := first.Encode(layer, utils.StringToTime(timestamp))
-		if err != nil {
-			// @TODO log errors to logfile
-			// c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error())
-		}
-		err = second.Encode(layer, utils.StringToTime(timestamp))
-		if err != nil {
-			// @TODO log errors to logfile
-			// c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error())
-		}
-		return nil
-	})
-
-	merged.teardownMerged = func() {
-		// TODO add to stats somehow
-		first.Destroy()
-		second.Destroy()
-	}
-
-	return merged
 }
 
 // CreateLayerEncoder returns a new LayerEncoder instance
@@ -260,19 +222,19 @@ func CreateLayerEncoder(nt types.Type, lt gopacket.LayerType, handler LayerEncod
 // Encode is called for each layer
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
-func (d *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
+func (e *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
 
-	// fmt.Println("decode", d.Layer.String())
+	// fmt.Println("decode", e.Layer.String())
 
-	decoded := d.Handler(l, utils.TimeToString(timestamp))
+	decoded := e.Handler(l, utils.TimeToString(timestamp))
 	if decoded != nil {
-		if d.csv {
-			_, err := d.csvWriter.WriteRecord(decoded)
+		if e.csv {
+			_, err := e.csvWriter.WriteRecord(decoded)
 			if err != nil {
 				return err
 			}
 		} else {
-			err := d.aWriter.PutProto(decoded)
+			err := e.aWriter.PutProto(decoded)
 			if err != nil {
 				return err
 			}
@@ -282,44 +244,44 @@ func (d *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
 }
 
 // Init initializes and configures the encoder
-func (d *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
+func (e *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
 
 	if *debug {
-		fmt.Println("INIT", d.Type, d.Layer)
+		fmt.Println("INIT", e.Type, e.Layer)
 	}
 
-	protocol := strings.TrimPrefix(d.Type.String(), "NC_")
+	protocol := strings.TrimPrefix(e.Type.String(), "NC_")
 
-	d.compress = compress
-	d.buffer = buffer
-	d.csv = csv
-	d.out = out
+	e.compress = compress
+	e.buffer = buffer
+	e.csv = csv
+	e.out = out
 
 	if csv {
 
 		// create file
 		if compress {
-			d.file = CreateFile(filepath.Join(out, protocol), ".csv.gz")
+			e.file = CreateFile(filepath.Join(out, protocol), ".csv.gz")
 		} else {
-			d.file = CreateFile(filepath.Join(out, protocol), ".csv")
+			e.file = CreateFile(filepath.Join(out, protocol), ".csv")
 		}
 
 		if buffer {
 
-			d.bWriter = bufio.NewWriterSize(d.file, BlockSize)
+			e.bWriter = bufio.NewWriterSize(e.file, BlockSize)
 
 			if compress {
-				d.gWriter = gzip.NewWriter(d.bWriter)
-				d.csvWriter = NewCSVWriter(d.gWriter)
+				e.gWriter = gzip.NewWriter(e.bWriter)
+				e.csvWriter = NewCSVWriter(e.gWriter)
 			} else {
-				d.csvWriter = NewCSVWriter(d.bWriter)
+				e.csvWriter = NewCSVWriter(e.bWriter)
 			}
 		} else {
 			if compress {
-				d.gWriter = gzip.NewWriter(d.file)
-				d.csvWriter = NewCSVWriter(d.gWriter)
+				e.gWriter = gzip.NewWriter(e.file)
+				e.csvWriter = NewCSVWriter(e.gWriter)
 			} else {
-				d.csvWriter = NewCSVWriter(d.file)
+				e.csvWriter = NewCSVWriter(e.file)
 			}
 		}
 		return
@@ -331,12 +293,12 @@ func (d *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bo
 
 	// write into channel OR into file
 	if writeChan {
-		d.cWriter = newChanWriter()
+		e.cWriter = newChanWriter()
 	} else {
 		if compress {
-			d.file = CreateFile(filepath.Join(out, protocol), ".ncap.gz")
+			e.file = CreateFile(filepath.Join(out, protocol), ".ncap.gz")
 		} else {
-			d.file = CreateFile(filepath.Join(out, protocol), ".ncap")
+			e.file = CreateFile(filepath.Join(out, protocol), ".ncap")
 		}
 	}
 
@@ -344,45 +306,42 @@ func (d *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bo
 	// when using writeChan buffering is not possible
 	if buffer {
 
-		d.bWriter = bufio.NewWriterSize(d.file, BlockSize)
+		e.bWriter = bufio.NewWriterSize(e.file, BlockSize)
 		if compress {
-			d.gWriter = gzip.NewWriter(d.bWriter)
-			d.dWriter = delimited.NewWriter(d.gWriter)
+			e.gWriter = gzip.NewWriter(e.bWriter)
+			e.dWriter = delimited.NewWriter(e.gWriter)
 		} else {
-			d.dWriter = delimited.NewWriter(d.bWriter)
+			e.dWriter = delimited.NewWriter(e.bWriter)
 		}
 	} else {
 		if compress {
-			d.gWriter = gzip.NewWriter(d.file)
-			d.dWriter = delimited.NewWriter(d.gWriter)
+			e.gWriter = gzip.NewWriter(e.file)
+			e.dWriter = delimited.NewWriter(e.gWriter)
 		} else {
 			if writeChan {
 				// write into channel writer without compression
-				d.dWriter = delimited.NewWriter(d.cWriter)
+				e.dWriter = delimited.NewWriter(e.cWriter)
 			} else {
-				d.dWriter = delimited.NewWriter(d.file)
+				e.dWriter = delimited.NewWriter(e.file)
 			}
 		}
 	}
 
-	d.aWriter = NewAtomicDelimitedWriter(d.dWriter)
+	e.aWriter = NewAtomicDelimitedWriter(e.dWriter)
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder
-func (d *LayerEncoder) GetChan() <-chan []byte {
-	return d.cWriter.Chan()
+func (e *LayerEncoder) GetChan() <-chan []byte {
+	return e.cWriter.Chan()
 }
 
 // Destroy closes and flushes all writers
-func (d *LayerEncoder) Destroy() (name string, size int64) {
-	if d.teardownMerged != nil {
-		d.teardownMerged()
+func (e *LayerEncoder) Destroy() (name string, size int64) {
+	if e.compress {
+		CloseGzipWriters(e.gWriter)
 	}
-	if d.compress {
-		CloseGzipWriters(d.gWriter)
+	if e.buffer {
+		FlushWriters(e.bWriter)
 	}
-	if d.buffer {
-		FlushWriters(d.bWriter)
-	}
-	return CloseFile(d.out, d.file, strings.TrimPrefix("NC_", d.Type.String()))
+	return CloseFile(e.out, e.file, strings.TrimPrefix("NC_", e.Type.String()))
 }
