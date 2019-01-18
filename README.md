@@ -92,6 +92,7 @@ And live operation decoding traffic from my wireless network interface, while I 
 - [Future Development](#future-development)
 - [Use Cases](#use-cases)
 - [License](#license)
+- [Source Code Stats](#source-code-stats)
 
 ## Design Goals
 
@@ -579,7 +580,7 @@ To display the available command-line flags, the *-h* flag must be used:
             append classifications from alert with duplicate timestamps to the generated label
         -description
             use attack description instead of classification for labels
-        -disable -layers
+        -disable-layers
             do not map layer types by timestamp
         -exclude string
             specify a comma separated list of suricata classifications that shall be excluded from the generated labeled csv

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" viewBox="1246 1226 1531 697" width="1531" height="697">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="1246 1226 1531 697" width="1531" height="697">
   <defs>
     <clipPath id="outer_stroke_clip_path">
       <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1331.9063 1530 L 1331.9063 1884 L 1539.0937 1884 L 1539.0937 1530 Z"/>
@@ -29,13 +29,13 @@
       <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1615 L 1805 1677 L 2143 1677 L 2143 1615 Z"/>
     </clipPath>
     <clipPath id="outer_stroke_clip_path_3">
-      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1684 L 1805 1746 L 2143 1746 L 2143 1684 Z"/>
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1888.6875 1684 L 1888.6875 1746 L 2142.6875 1746 L 2142.6875 1684 Z"/>
     </clipPath>
     <clipPath id="outer_stroke_clip_path_4">
-      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1753 L 1805 1815 L 2143 1815 L 2143 1753 Z"/>
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1889 1753 L 1889 1815 L 2143 1815 L 2143 1753 Z"/>
     </clipPath>
     <clipPath id="outer_stroke_clip_path_5">
-      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1822 L 1805 1884 L 2143 1884 L 2143 1822 Z"/>
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1888.8438 1822 L 1888.8438 1884 L 2143.1562 1884 L 2143.1562 1822 Z"/>
     </clipPath>
     <clipPath id="outer_stroke_clip_path_6">
       <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1684 L 1805 1746 L 1887.36 1746 L 1887.36 1684 Z"/>
@@ -48,9 +48,9 @@
     </clipPath>
   </defs>
   <metadata> Produced by OmniGraffle 7.9.4 
-    <dc:date>2019-01-14 23:05:46 +0000</dc:date>
+    <dc:date>2019-01-18 19:12:55 +0000</dc:date>
   </metadata>
-  <g id="Netcap-Audit-Record" stroke-dasharray="none" fill="none" fill-opacity="1" stroke="none" stroke-opacity="1">
+  <g id="Netcap-Audit-Record" fill-opacity="1" stroke-dasharray="none" fill="none" stroke-opacity="1" stroke="none">
     <title>Netcap-Audit-Record</title>
     <g id="Netcap-Audit-Record: Layer 1">
       <title>Layer 1</title>
@@ -104,24 +104,24 @@
         </text>
       </g>
       <g id="Graphic_53">
-        <rect x="1805" y="1684" width="338" height="62" fill="white"/>
-        <rect x="1805" y="1684" width="338" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_3)"/>
-        <text transform="translate(1810 1698.6277)" fill="black">
-          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="51.68921" y="26">          Audit Record</tspan>
+        <rect x="1888.6875" y="1684" width="254" height="62" fill="white"/>
+        <rect x="1888.6875" y="1684" width="254" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_3)"/>
+        <text transform="translate(1893.6875 1698.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="48.26343" y="26">Audit Record</tspan>
         </text>
       </g>
       <g id="Graphic_54">
-        <rect x="1805" y="1753" width="338" height="62" fill="white"/>
-        <rect x="1805" y="1753" width="338" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_4)"/>
-        <text transform="translate(1810 1767.6277)" fill="black">
-          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="51.68921" y="26">          Audit Record</tspan>
+        <rect x="1889" y="1753" width="254" height="62" fill="white"/>
+        <rect x="1889" y="1753" width="254" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_4)"/>
+        <text transform="translate(1894 1767.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="48.26343" y="26">Audit Record</tspan>
         </text>
       </g>
       <g id="Graphic_55">
-        <rect x="1805" y="1822" width="338" height="62" fill="white"/>
-        <rect x="1805" y="1822" width="338" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_5)"/>
-        <text transform="translate(1810 1836.6277)" fill="black">
-          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="113.62158" y="26">          …</tspan>
+        <rect x="1888.8438" y="1822" width="254.3125" height="62" fill="white"/>
+        <rect x="1888.8438" y="1822" width="254.3125" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_5)"/>
+        <text transform="translate(1893.8438 1836.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="110.35205" y="26">…</tspan>
         </text>
       </g>
       <g id="Graphic_56">

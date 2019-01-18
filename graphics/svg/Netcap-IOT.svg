@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" viewBox="381 -177 2598 2223" width="2598" height="2223">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="381 -177 2598 2223" width="2598" height="2223">
   <defs>
     <font-face font-family="Futura" font-size="99" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
       <font-face-src>
@@ -61,9 +61,9 @@
     </font-face>
   </defs>
   <metadata> Produced by OmniGraffle 7.9.4 
-    <dc:date>2019-01-14 23:05:46 +0000</dc:date>
+    <dc:date>2019-01-18 19:12:55 +0000</dc:date>
   </metadata>
-  <g id="Netcap-IOT" stroke-dasharray="none" fill="none" fill-opacity="1" stroke="none" stroke-opacity="1">
+  <g id="Netcap-IOT" fill-opacity="1" stroke-dasharray="none" fill="none" stroke-opacity="1" stroke="none">
     <title>Netcap-IOT</title>
     <g id="Netcap-IOT: Layer 1">
       <title>Layer 1</title>

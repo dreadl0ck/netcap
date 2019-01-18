@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" viewBox="928 141 1152 407" width="1152" height="407">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="928 141 1152 407" width="1152" height="407">
   <defs>
     <font-face font-family="Futura" font-size="20" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
       <font-face-src>
@@ -9,9 +9,9 @@
     </font-face>
   </defs>
   <metadata> Produced by OmniGraffle 7.9.4 
-    <dc:date>2019-01-14 23:05:46 +0000</dc:date>
+    <dc:date>2019-01-18 19:12:55 +0000</dc:date>
   </metadata>
-  <g id="Ethernet" stroke-dasharray="none" fill="none" fill-opacity="1" stroke="none" stroke-opacity="1">
+  <g id="Ethernet" fill-opacity="1" stroke-dasharray="none" fill="none" stroke-opacity="1" stroke="none">
     <title>Ethernet</title>
     <g id="Ethernet: Layer 1">
       <title>Layer 1</title>
