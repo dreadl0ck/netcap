@@ -1,5 +1,13 @@
 # TODOs
 
+type ProtocolBuffer struct {
+    []string Types
+    [][]byte Fields
+}
+
+- add payload data for Flows and Connection if desired?
+- add flags to enable payload capture for link layer protocols. Currently payload capture only supports some Transport layer protos
+
 - refactor printProgress()
 - refactor CheckFields()
 - use gopacket.LayerType for c.unknownProtosAtomic and c.allProtosAtomi -> AtomicCounterMap for gopacket.Layers
@@ -7,7 +15,6 @@
 
 ## README
 
-- update issues
 - add USB example to README
 - explain payload capture in README
 - add payload to more layers
