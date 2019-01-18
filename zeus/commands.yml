@@ -39,8 +39,9 @@ commands:
             read -p "[WARNING] This will bump the version to $VERSION, as configured in the zeus/commands.yml. Are you sure? Hit [Enter] to proceed"
 
             git add .
-            git commit -m "version bump to v${VERSION}"
-            git push
+            git tag -a v${VERSION} -m "v${VERSION} release"
+            git push origin v${VERSION}
+            
 
             echo "[INFO] version bumped to v${VERSION}"
 
@@ -59,7 +60,7 @@ commands:
         exec: goreleaser release --rm-dist --skip-publish --skip-validate #--debug
     
     check-version:
-        description: checks wheter the version from the latest git tag matches the one set here
+        description: checks whether the version from the latest git tag matches the one set here
         exec: |
             if [[ $(git describe --abbrev=0) != "v${VERSION}" ]]; then
                 echo "[ERROR] latest git tag does not match version $VERSION"
