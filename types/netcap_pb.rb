@@ -702,6 +702,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     optional :ProtocolIdentifier, :int32, 3
     optional :Length, :int32, 4
     optional :UnitIdentifier, :int32, 5
+    optional :Payload, :bytes, 6
   end
   add_message "types.OSPFv2" do
     optional :Timestamp, :string, 1
