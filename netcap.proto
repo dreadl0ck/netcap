@@ -159,7 +159,7 @@ message Batch {
     Type   MessageType      = 2; // netcap data type
     int32  TotalSize        = 3; // data size in bytes
     bytes  Data             = 4; // actual data, (serialized protocol buffers)
-    bool   ContainsPayloads = 5;
+    bool   ContainsPayloads = 5; // does the batch contain audit records with payload data?
 }
 
 /*
@@ -998,6 +998,7 @@ message ModbusTCP {
     int32  ProtocolIdentifier    = 3; // It is used for intra-system multiplexing
     int32  Length                = 4; // Number of following bytes (includes 1 byte for UnitIdentifier + Modbus data length
     int32  UnitIdentifier        = 5; // Identification of a remote slave connected on a serial line or on other buses
+    bytes  Payload               = 6;
 }
 
 message OSPFv2 {

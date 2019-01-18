@@ -13,6 +13,8 @@
 
 package types
 
+import "encoding/hex"
+
 func (a ModbusTCP) CSVHeader() []string {
 	return filter([]string{
 		"Timestamp",
@@ -20,6 +22,7 @@ func (a ModbusTCP) CSVHeader() []string {
 		"ProtocolIdentifier",    // int32
 		"Length",                // int32
 		"UnitIdentifier",        // int32
+		"Payload",               // []byte
 	})
 }
 
@@ -30,6 +33,7 @@ func (a ModbusTCP) CSVRecord() []string {
 		formatInt32(a.ProtocolIdentifier),    // int32
 		formatInt32(a.Length),                // int32
 		formatInt32(a.UnitIdentifier),        // int32
+		hex.EncodeToString(a.Payload),
 	})
 }
 

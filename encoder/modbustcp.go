@@ -22,12 +22,17 @@ import (
 
 var modbusTCPEncoder = CreateLayerEncoder(types.Type_NC_ModbusTCP, layers.LayerTypeModbusTCP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if mtcp, ok := layer.(*layers.ModbusTCP); ok {
+		var payload []byte
+		if CapturePayload {
+			payload = layer.LayerPayload()
+		}
 		return &types.ModbusTCP{
 			Timestamp:             timestamp,
 			TransactionIdentifier: int32(mtcp.TransactionIdentifier),
 			ProtocolIdentifier:    int32(mtcp.ProtocolIdentifier),
 			Length:                int32(mtcp.Length),
 			UnitIdentifier:        int32(mtcp.UnitIdentifier),
+			Payload:               payload,
 		}
 	}
 	return nil
