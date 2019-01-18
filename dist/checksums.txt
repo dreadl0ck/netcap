@@ -1,3 +1,0 @@
-e2790630da610fd54d4aabd574e96be1aa0641300793d926f384c6f2a61b4f90  netcap_0.3.8_linux_amd64.tar.gz
-e94e9f033a3d26e7bb2c6ffb5f9edc9e49259c9639b1e38cddcd7129183a1bb4  netcap_0.3.8_windows_amd64.tar.gz
-2fb27a13ad26df8b795ccbdbc5cac655ed18eacf4ab4e72af4775c885c81ea69  netcap_0.3.8_darwin_amd64.tar.gz
