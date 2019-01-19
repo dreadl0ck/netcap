@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -134,24 +135,14 @@ var transportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "Tra
 }, func(d *CustomEncoder) error {
 	if d.cWriter == nil {
 		for _, f := range TransportFlows.Items {
-			if transportFlowEncoderInstance.csv {
-				_, err := transportFlowEncoderInstance.csvWriter.WriteRecord(f)
-				if err != nil {
-					return err
-				}
-			} else {
-				// write protobuf
-				err := transportFlowEncoderInstance.dWriter.PutProto(f)
-				if err != nil {
-					return err
-				}
-			}
+			writeTransportFlow(f)
 		}
 	}
 	return nil
 })
 
 func writeTransportFlow(f *types.TransportFlow) {
+	atomic.AddInt64(&transportFlowEncoderInstance.numRecords, 1)
 	if transportFlowEncoderInstance.csv {
 		_, err := transportFlowEncoderInstance.csvWriter.WriteRecord(f)
 		if err != nil {

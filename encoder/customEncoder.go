@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -74,6 +75,9 @@ type (
 		buffer   bool
 		csv      bool
 		out      string
+
+		// used to keep track of the number of generated audit records
+		numRecords int64
 	}
 )
 
@@ -155,7 +159,7 @@ func InitCustomEncoders(c Config) {
 	// initialize encoders
 	for _, e := range customEncoderSlice {
 
-		// fmt.Println("init custom encoder", d.name)
+		// fmt.Println("init custom encoder", e.name)
 		e.Init(c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
 
 		// call postinit func if set
@@ -200,10 +204,17 @@ func CreateCustomEncoder(t types.Type, name string, postinit func(*CustomEncoder
 // Encode is called for each layer
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
-func (d *CustomEncoder) Encode(p gopacket.Packet) error {
-	decoded := d.Handler(p)
+func (e *CustomEncoder) Encode(p gopacket.Packet) error {
+
+	// call the Handler function of the encoder
+	decoded := e.Handler(p)
 	if decoded != nil {
-		err := d.aWriter.PutProto(decoded)
+
+		// increase counter
+		atomic.AddInt64(&e.numRecords, 1)
+
+		// write record
+		err := e.aWriter.PutProto(decoded)
 		if err != nil {
 			return err
 		}
@@ -212,38 +223,38 @@ func (d *CustomEncoder) Encode(p gopacket.Packet) error {
 }
 
 // Init initializes and configures the encoder
-func (d *CustomEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
+func (e *CustomEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
 
-	d.compress = compress
-	d.buffer = buffer
-	d.csv = csv
-	d.out = out
+	e.compress = compress
+	e.buffer = buffer
+	e.csv = csv
+	e.out = out
 
 	if csv {
 
 		// create file
 		if compress {
-			d.file = CreateFile(filepath.Join(out, d.Name), ".csv.gz")
+			e.file = CreateFile(filepath.Join(out, e.Name), ".csv.gz")
 		} else {
-			d.file = CreateFile(filepath.Join(out, d.Name), ".csv")
+			e.file = CreateFile(filepath.Join(out, e.Name), ".csv")
 		}
 
 		if buffer {
 
-			d.bWriter = bufio.NewWriterSize(d.file, BlockSize)
+			e.bWriter = bufio.NewWriterSize(e.file, BlockSize)
 
 			if compress {
-				d.gWriter = gzip.NewWriter(d.bWriter)
-				d.csvWriter = NewCSVWriter(d.gWriter)
+				e.gWriter = gzip.NewWriter(e.bWriter)
+				e.csvWriter = NewCSVWriter(e.gWriter)
 			} else {
-				d.csvWriter = NewCSVWriter(d.bWriter)
+				e.csvWriter = NewCSVWriter(e.bWriter)
 			}
 		} else {
 			if compress {
-				d.gWriter = gzip.NewWriter(d.file)
-				d.csvWriter = NewCSVWriter(d.gWriter)
+				e.gWriter = gzip.NewWriter(e.file)
+				e.csvWriter = NewCSVWriter(e.gWriter)
 			} else {
-				d.csvWriter = NewCSVWriter(d.file)
+				e.csvWriter = NewCSVWriter(e.file)
 			}
 		}
 		return
@@ -255,59 +266,63 @@ func (d *CustomEncoder) Init(buffer, compress, csv bool, out string, writeChan b
 
 	// write into channel OR into file
 	if writeChan {
-		d.cWriter = newChanWriter()
+		e.cWriter = newChanWriter()
 	} else {
 		if compress {
-			d.file = CreateFile(filepath.Join(out, d.Name), ".ncap.gz")
+			e.file = CreateFile(filepath.Join(out, e.Name), ".ncap.gz")
 		} else {
-			d.file = CreateFile(filepath.Join(out, d.Name), ".ncap")
+			e.file = CreateFile(filepath.Join(out, e.Name), ".ncap")
 		}
 	}
 
 	// buffer data?
 	if buffer {
 
-		d.bWriter = bufio.NewWriterSize(d.file, BlockSize)
+		e.bWriter = bufio.NewWriterSize(e.file, BlockSize)
 		if compress {
-			d.gWriter = gzip.NewWriter(d.bWriter)
-			d.dWriter = delimited.NewWriter(d.gWriter)
+			e.gWriter = gzip.NewWriter(e.bWriter)
+			e.dWriter = delimited.NewWriter(e.gWriter)
 		} else {
-			d.dWriter = delimited.NewWriter(d.bWriter)
+			e.dWriter = delimited.NewWriter(e.bWriter)
 		}
 	} else {
 		if compress {
-			d.gWriter = gzip.NewWriter(d.file)
-			d.dWriter = delimited.NewWriter(d.gWriter)
+			e.gWriter = gzip.NewWriter(e.file)
+			e.dWriter = delimited.NewWriter(e.gWriter)
 		} else {
 			if writeChan {
 				// write into channel writer without compression
-				d.dWriter = delimited.NewWriter(d.cWriter)
+				e.dWriter = delimited.NewWriter(e.cWriter)
 			} else {
-				d.dWriter = delimited.NewWriter(d.file)
+				e.dWriter = delimited.NewWriter(e.file)
 			}
 		}
 	}
-	d.aWriter = NewAtomicDelimitedWriter(d.dWriter)
+	e.aWriter = NewAtomicDelimitedWriter(e.dWriter)
 }
 
 // Destroy closes and flushes all writers and calls deinit if set
-func (d *CustomEncoder) Destroy() (name string, size int64) {
-	if d.deinit != nil {
-		err := d.deinit(d)
+func (e *CustomEncoder) Destroy() (name string, size int64) {
+	if e.deinit != nil {
+		err := e.deinit(e)
 		if err != nil {
 			panic(err)
 		}
 	}
-	if d.compress {
-		CloseGzipWriters(d.gWriter)
+	if e.compress {
+		CloseGzipWriters(e.gWriter)
 	}
-	if d.buffer {
-		FlushWriters(d.bWriter)
+	if e.buffer {
+		FlushWriters(e.bWriter)
 	}
-	return CloseFile(d.out, d.file, d.Name)
+	return CloseFile(e.out, e.file, e.Name)
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder
-func (d *CustomEncoder) GetChan() <-chan []byte {
-	return d.cWriter.Chan()
+func (e *CustomEncoder) GetChan() <-chan []byte {
+	return e.cWriter.Chan()
+}
+
+func (e *CustomEncoder) NumRecords() int64 {
+	return e.numRecords
 }

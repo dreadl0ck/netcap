@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -127,24 +128,14 @@ var networkFlowEncoder = CreateCustomEncoder(types.Type_NC_NetworkFlow, "Network
 }, func(d *CustomEncoder) error {
 	if d.cWriter == nil {
 		for _, f := range NetworkFlows.Items {
-			if networkFlowEncoderInstance.csv {
-				_, err := networkFlowEncoderInstance.csvWriter.WriteRecord(f)
-				if err != nil {
-					return err
-				}
-			} else {
-				// write protobuf
-				err := networkFlowEncoderInstance.dWriter.PutProto(f)
-				if err != nil {
-					return err
-				}
-			}
+			writeNetworkFlow(f)
 		}
 	}
 	return nil
 })
 
 func writeNetworkFlow(f *types.NetworkFlow) {
+	atomic.AddInt64(&networkFlowEncoderInstance.numRecords, 1)
 	if networkFlowEncoderInstance.csv {
 		_, err := networkFlowEncoderInstance.csvWriter.WriteRecord(f)
 		if err != nil {

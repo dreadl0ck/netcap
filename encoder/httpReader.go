@@ -57,6 +57,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -135,6 +136,7 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 				continue
 			}
 
+			atomic.AddInt64(&httpEncoder.numRecords, 1)
 			if httpEncoder.csv {
 				_, err := httpEncoder.csvWriter.WriteRecord(h)
 				if err != nil {

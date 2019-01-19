@@ -17,6 +17,7 @@ import (
 	"flag"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -179,8 +180,8 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 	}
 	Flows.Unlock()
 	return nil
-}, func(d *CustomEncoder) error {
-	if d.cWriter == nil {
+}, func(e *CustomEncoder) error {
+	if e.cWriter == nil {
 		for _, f := range Flows.Items {
 			writeFlow(f)
 		}
@@ -189,6 +190,8 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 })
 
 func writeFlow(f *types.Flow) {
+
+	atomic.AddInt64(&flowEncoderInstance.numRecords, 1)
 	if flowEncoderInstance.csv {
 		_, err := flowEncoderInstance.csvWriter.WriteRecord(f)
 		if err != nil {

@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -207,10 +208,21 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 
 			if res.Request != nil {
 				setRequest(h, res.Request)
-				err := d.aWriter.PutProto(h)
-				if err != nil {
-					errorMap.Inc(err.Error())
+
+				atomic.AddInt64(&d.numRecords, 1)
+
+				if d.csv {
+					_, err := d.csvWriter.WriteRecord(h)
+					if err != nil {
+						errorMap.Inc(err.Error())
+					}
+				} else {
+					err := d.aWriter.PutProto(h)
+					if err != nil {
+						errorMap.Inc(err.Error())
+					}
 				}
+
 				total++
 			} else {
 				newRes = append(newRes, res)
@@ -250,6 +262,7 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 				h := &types.HTTP{}
 				setRequest(h, req)
 
+				atomic.AddInt64(&d.numRecords, 1)
 				err := d.aWriter.PutProto(h)
 				if err != nil {
 					errorMap.Inc(err.Error())

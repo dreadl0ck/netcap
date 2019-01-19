@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -126,24 +127,14 @@ var linkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", fu
 }, func(d *CustomEncoder) error {
 	if d.cWriter == nil {
 		for _, f := range LinkFlows.Items {
-			if linkFlowEncoderInstance.csv {
-				_, err := linkFlowEncoderInstance.csvWriter.WriteRecord(f)
-				if err != nil {
-					return err
-				}
-			} else {
-				// write protobuf
-				err := linkFlowEncoderInstance.dWriter.PutProto(f)
-				if err != nil {
-					return err
-				}
-			}
+			writeLinkFlow(f)
 		}
 	}
 	return nil
 })
 
 func writeLinkFlow(f *types.LinkFlow) {
+	atomic.AddInt64(&linkFlowEncoderInstance.numRecords, 1)
 	if linkFlowEncoderInstance.csv {
 		_, err := linkFlowEncoderInstance.csvWriter.WriteRecord(f)
 		if err != nil {
