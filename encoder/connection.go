@@ -17,6 +17,7 @@ import (
 	"flag"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -197,6 +198,7 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 
 // writeConn writes the connection
 func writeConn(c *types.Connection) {
+	atomic.AddInt64(&connEncoderInstance.numRecords, 1)
 	if connEncoderInstance.csv {
 		// write as csv
 		_, err := connEncoderInstance.csvWriter.WriteRecord(c)

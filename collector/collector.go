@@ -242,13 +242,11 @@ func (c *Collector) Stats() {
 	tui.Table(os.Stdout, []string{"Layer", "NumPackets", "Share"}, rows)
 
 	if len(encoder.CustomEncoders) > 0 {
-
-		// TODO also print stats, add a stat func to encoder and call it here
 		rows = [][]string{}
 		for _, e := range encoder.CustomEncoders {
-			rows = append(rows, []string{e.Name, "NA", "NA"})
+			rows = append(rows, []string{e.Name, strconv.FormatInt(e.NumRecords(), 10), share(e.NumRecords(), c.numPackets)})
 		}
-		tui.Table(os.Stdout, []string{"Custom Encoder", "NumPackets", "Share"}, rows)
+		tui.Table(os.Stdout, []string{"CustomEncoder", "NumRecords", "Share"}, rows)
 	}
 
 	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
