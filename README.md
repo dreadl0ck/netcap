@@ -90,6 +90,7 @@ And live operation decoding traffic from my wireless network interface, while I 
     - [Usage](#usage)
 - [Dataset Labeling](#dataset-labeling)
 - [Future Development](#future-development)
+- [Whats New](#whats-new)
 - [Use Cases](#use-cases)
 - [License](#license)
 - [Source Code Stats](#source-code-stats)
@@ -716,6 +717,104 @@ Besides that, *Netcap* can of course also be used as a data source for unsupervi
 Interested in implementing new functionality? 
 Ideas, Feedback, Questions?
 Get in touch! :)
+
+## Whats New
+
+### Protocols
+
+Many new protocols have been added since the initial release in December 2018,
+including: OSPF, GRE, IPSec, USB, Geneve, VXLAN, LCM, ModbusTCP, MPLS, BFD, EAP, VRRPv2, CiscoDiscovery and more.
+
+### Protobuf serialization performance
+
+Since version 0.3.9 proto serialization is much faster,
+thanks to a different code generator that generates more efficient code for packing and unpacking the protocol buffers in golang.
+
+with [golang](https://github.com/golang/protobuf) code generator:
+
+    $ go test -bench=. -v ./types
+    === RUN   TestMarshal
+    --- PASS: TestMarshal (0.00s)
+    goos: darwin
+    goarch: amd64
+    pkg: github.com/dreadl0ck/netcap/types
+    BenchmarkMarshal-12      	10000000	       184 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkUnmarshal-12    	10000000	       160 ns/op	      40 B/op	       2 allocs/op
+    PASS
+    ok  	github.com/dreadl0ck/netcap/types	3.830s
+
+with [gogo](https://github.com/gogo/protobuf) code generator:
+
+    $ go test -bench=. -v ./types
+    === RUN   TestMarshal
+    --- PASS: TestMarshal (0.00s)
+    goos: darwin
+    goarch: amd64
+    pkg: github.com/dreadl0ck/netcap/types
+    BenchmarkMarshal-12      	20000000	        89.1 ns/op	      64 B/op	       1 allocs/op
+    BenchmarkUnmarshal-12    	20000000	       110 ns/op	      40 B/op	       2 allocs/op
+    PASS
+    ok  	github.com/dreadl0ck/netcap/types	4.215s
+
+However, for this to work, the fields named *Size* on several audit records structures had to be renamed, because the new code generator generates a function named *Size()* on each protocol buffer.
+
+This breaks backwards compatibility to audit records created with version v0.3.8.
+Use the *-header* flag to check which version was used to create the *.ncap* dumpfile.
+The new field name is *TotalSize*.
+
+### Payload capture
+
+It is now possible to capture payload data for the following protocols: TCP, UDP, ModbusTCP, USB
+
+This can be enabled with the **-payload** flag:
+
+    netcap -r traffic.pcap -payload
+
+### USB decoding
+
+USB live capture is now possible, currently the following Audit Records exist: USB and USBRequestBlockSetup.
+
+To capture USB traffic live on macOS, install wireshark and bring up the USB interface:
+
+    sudo ifconfig XHC20 up
+
+Now attach netcap and set baselayer to USB:
+
+    netcap -iface XHC20 -base usb
+
+To read offline USB traffic from a PCAP file use:
+
+    netcap -r usb.pcap -base usb
+
+### Configurable separators for CSV structures
+
+The separator characters for structs in CSV output mode are now configurable via commandline flags.
+
+Default is '(' for opening, '-' as separator for values and ')' for closing.
+
+    type Message struct {
+        string Text
+        bool   Secret
+        int    MagicNumber
+    }
+
+would appear in CSV like:
+
+    (Text-Secret-MagicNumber)
+
+with the concrete field values:
+
+    (Hi-true-42)
+
+### Configurable gopacket.DecodeOptions
+
+Gopackets DecodeOptions are now configurable via commandline, three options exist:
+
+- lazy (gopacket.Lazy)
+- default (gopacket.Default)
+- nocopy (gopacket.NoCopy)
+
+By default, netcap uses the the lazy decoding option.
 
 ## Use Cases
 
