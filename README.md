@@ -6,7 +6,7 @@
 <br>
 <br>
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/zeus)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/netcap)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/docs/LICENSE)
 [![Golang](https://img.shields.io/badge/Go-1.11-blue.svg)](https://golang.org)
 ![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
@@ -105,6 +105,15 @@ And live operation decoding traffic from my wireless network interface, while I 
 - maximum data availability
 - allow implementation of custom abstractions
 - rich platform and architecture support
+
+### Framework Components
+
+Currently there are 4 applications:
+
+- netcap (collection and utility tool)
+- netlabel (tool for creating labeled CSV datasets from netcap data)
+- netcap-server (collection server for distributed collection)
+- netcap-sensor (sensor agent for distributed collection)
 
 The following graphic shows a high level architecture overview:
 
