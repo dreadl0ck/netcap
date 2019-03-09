@@ -20,15 +20,18 @@ import (
 func (s SIP) CSVHeader() []string {
 	return filter([]string{
 		"Timestamp",
-		"OrganizationalCode",
-		"Type",
+		"Version",
+		"Method",
+		"Headers",
+		"IsResponse",
+		"ResponseCode",
+		"ResponseStatus",
 	})
 }
 
 func (s SIP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(s.Timestamp),
-		s.Timestamp,                      //  string `protobuf:"bytes,1,opt,name=Timestamp,proto3" json:"Timestamp,omitempty"`
 		formatInt32(s.Version),           //  int32 `protobuf:"varint,2,opt,name=Version,proto3" json:"Version,omitempty"`
 		formatInt32(s.Method),            //   int32 `protobuf:"varint,3,opt,name=Method,proto3" json:"Method,omitempty"`
 		join(s.Headers...),               //  []string `protobuf:"bytes,4,rep,name=Headers,proto3" json:"Headers,omitempty"`
