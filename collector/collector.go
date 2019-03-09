@@ -239,7 +239,7 @@ func (c *Collector) Stats() {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
 		}
 	}
-	tui.Table(os.Stdout, []string{"Layer", "NumPackets", "Share"}, rows)
+	tui.Table(os.Stdout, []string{"Layer", "NumRecords", "Share"}, rows)
 
 	if len(encoder.CustomEncoders) > 0 {
 		rows = [][]string{}
