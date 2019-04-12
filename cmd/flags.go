@@ -18,8 +18,6 @@ import (
 )
 
 var (
-	count int64
-
 	flagBPF          = flag.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 	flagInclude      = flag.String("include", "", "include specific encoders")
 	flagExclude      = flag.String("exclude", "", "exclude specific encoders")

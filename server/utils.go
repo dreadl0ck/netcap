@@ -118,7 +118,11 @@ func handleSignals() {
 
 	// start signal handler and cleanup routine
 	go func() {
-		_ = <-sigs
+		sig := <-sigs
+
+		fmt.Println("received signal:", sig)
+
+		fmt.Println("exiting")
 
 		cleanup()
 		os.Exit(0)

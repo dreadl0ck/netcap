@@ -14,6 +14,8 @@
 package collector
 
 import (
+	"fmt"
+
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/google/gopacket"
 )
@@ -50,7 +52,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 						c.unknownProtosAtomic.Inc(layer.LayerType().String())
 
 						// write to unknown.pcap file
-						c.writePacketToUnknownPcap(p)
+						if err := c.writePacketToUnknownPcap(p); err != nil {
+							fmt.Println("failed to write packet to unknown.pcap file:", err)
+						}
 
 						// call custom decoders
 						goto done
@@ -64,7 +68,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 						for _, e := range encoders {
 							err := e.Encode(layer, p.Metadata().Timestamp)
 							if err != nil {
-								c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error())
+								if err := c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
+									fmt.Println("failed to log packet error:", err)
+								}
 								goto done
 							}
 						}
@@ -76,7 +82,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 						// if its not a payload layer, write to unknown .pcap file
 						// TODO make this configurable?
 						if layer.LayerType() != gopacket.LayerTypePayload {
-							c.writePacketToUnknownPcap(p)
+							if err := c.writePacketToUnknownPcap(p); err != nil {
+								fmt.Println("failed to write packet to unknown.pcap file:", err)
+							}
 							goto done
 						}
 					}
@@ -87,7 +95,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 				for _, dec := range encoder.CustomEncoders {
 					err := dec.Encode(p)
 					if err != nil {
-						c.logPacketError(p, "CustomEncoder Error: "+dec.Name+": "+err.Error())
+						if err := c.logPacketError(p, "CustomEncoder Error: "+dec.Name+": "+err.Error()); err != nil {
+							fmt.Println("failed to log packet error:", err)
+						}
 						continue
 					}
 				}
@@ -96,7 +106,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 				// if an error has occured while decoding the packet
 				// it will be logged and written into the errors.pcap file
 				if errLayer := p.ErrorLayer(); errLayer != nil {
-					c.logPacketError(p, errLayer.Error().Error())
+					if err := c.logPacketError(p, errLayer.Error().Error()); err != nil {
+						fmt.Println("failed to log packet error:", err)
+					}
 				}
 			}
 

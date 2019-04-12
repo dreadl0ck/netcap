@@ -61,7 +61,7 @@ func SetExcluded(arg string) {
 	}
 }
 
-func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) error {
+func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) {
 	// only add to summary if labels were added and no progress bars are being used
 	if labelsTotal != 0 && !UseProgressBars {
 		fmt.Println(" + " + utils.Pad(filepath.Base(f.Name()), 40) + "labels: " + strconv.Itoa(labelsTotal))
@@ -72,23 +72,22 @@ func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, o
 	}
 
 	if err := r.Close(); err != nil {
-		return err
+		log.Fatal("failed to close netcap reader for", outFileName, ", error:", err)
 	}
 
 	if err := f.Sync(); err != nil {
-		return err
+		log.Fatal("failed to sync", outFileName, ", error:", err)
 	}
 
 	if err := f.Close(); err != nil {
-		return err
+		log.Fatal("failed to close", outFileName, ", error:", err)
 	}
 
 	// remove file that did not have any matching labels
 	if labelsTotal == 0 {
 		if err := os.Remove(outFileName); err != nil {
-			return err
+			log.Fatal("failed remove empty file", outFileName, ", error:", err)
 		}
 	}
 	wg.Done()
-	return nil
 }

@@ -111,7 +111,9 @@ func DecodeHTTP(packet gopacket.Packet) {
 				panic("Not a PacketBuilder")
 			}
 			nextDecoder := newip4.NextLayerType()
-			nextDecoder.Decode(newip4.Payload, pb)
+			if err := nextDecoder.Decode(newip4.Payload, pb); err != nil {
+				fmt.Println("failed to decode ipv4:", err)
+			}
 		}
 	}
 
@@ -172,8 +174,12 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		if err != nil {
 			return err
 		}
-		pprof.WriteHeapProfile(f)
-		f.Close()
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("failed to write heap profile:", err)
+		}
+		if err := f.Close(); err != nil {
+			log.Fatal("failed to close heap profile file:", err)
+		}
 	}
 
 	streamFactory.WaitGoRoutines()

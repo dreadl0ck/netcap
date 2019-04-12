@@ -16,6 +16,7 @@ package collector
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -118,7 +119,9 @@ func (c *Collector) cleanup() {
 	c.stopWorkers()
 
 	// sync pcap file
-	c.closePcapFiles()
+	if err := c.closePcapFiles(); err != nil {
+		log.Fatal("failed to close pcap files: ", err)
+	}
 
 	// flush all buffers
 	for _, encoders := range encoder.LayerEncoders {
@@ -158,7 +161,10 @@ func (c *Collector) handleSignals() {
 
 	// start signal handler and cleanup routine
 	go func() {
-		_ = <-sigs
+		sig := <-sigs
+
+		fmt.Println("reiceived signal:", sig)
+		fmt.Println("exiting")
 
 		c.cleanup()
 		os.Exit(0)
@@ -321,8 +327,12 @@ func (c *Collector) Init() (err error) {
 
 	// create pcap files for packets
 	// with unknown protocols or errors while decoding
-	c.createUnknownPcap()
-	c.createErrorsPcap()
+	if err := c.createUnknownPcap(); err != nil {
+		log.Fatal("failed to create pcap file for unkown packets: ", err)
+	}
+	if err := c.createErrorsPcap(); err != nil {
+		log.Fatal("failed to create pcap decoding errors file: ", err)
+	}
 
 	// handle signal for a clean exit
 	c.handleSignals()

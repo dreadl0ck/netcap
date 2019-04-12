@@ -93,7 +93,7 @@ func (h *httpReader) Read(p []byte) (int, error) {
 func Error(t string, s string, a ...interface{}) {
 	errorsMapMutex.Lock()
 	numErrors++
-	nb, _ := errorsMap[t]
+	nb := errorsMap[t]
 	errorsMap[t] = nb + 1
 	errorsMapMutex.Unlock()
 	if outputLevel >= 0 {
