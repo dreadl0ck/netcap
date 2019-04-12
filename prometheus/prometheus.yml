@@ -1,0 +1,15 @@
+# reference: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 15s
+  #evaluation_interval: 15s
+
+scrape_configs:
+  # process_ metrics
+  - job_name: netcap
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+        - 127.0.0.1:7777

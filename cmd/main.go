@@ -175,7 +175,7 @@ func main() {
 	if live {
 		err := c.CollectLive(*flagInterface, *flagBPF)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("failed to collect live packets: ", err)
 		}
 		return
 	}
@@ -187,7 +187,7 @@ func main() {
 	// setting BPF filters is not yet supported by the pcapgo package
 	if *flagBPF != "" {
 		if err := c.CollectBPF(*flagInput, *flagBPF); err != nil {
-			log.Fatal(err)
+			log.Fatal("failed to set BPF: ", err)
 		}
 		return
 	}
@@ -217,7 +217,7 @@ func main() {
 	if *flagMemProfile {
 		f, err := os.Create("netcap-" + netcap.Version + ".mem.profile")
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("failed create memory profile: ", err)
 		}
 		if err := pprof.WriteHeapProfile(f); err != nil {
 			log.Fatal("failed to write heap profile: ", err)

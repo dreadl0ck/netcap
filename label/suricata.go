@@ -90,15 +90,11 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 		debug("removing suricata logfiles from previous runs")
 
 		// clean suricata logfiles from previous runs
-		if err := os.Remove(logDir + "/fast.log"); err != nil {
-			return err
-		}
-		if err := os.Remove(logDir + "/eve.json"); err != nil {
-			return err
-		}
-		if err := os.Remove(logDir + "/stats.log"); err != nil {
-			return err
-		}
+		// errors are explicitely ignored, because if the files do not exist
+		// there will be an error
+		_ = os.Remove(logDir + "/fast.log")
+		_ = os.Remove(logDir + "/eve.json")
+		_ = os.Remove(logDir + "/stats.log")
 	}
 
 	fmt.Println("scanning", inputPcap, "with suricata...")
