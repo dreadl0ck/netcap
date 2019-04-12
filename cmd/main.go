@@ -57,7 +57,9 @@ func main() {
 				if err != nil {
 					log.Fatalf("could not open cpu profile file %q", "netcap.cpu.profile")
 				}
-				pprof.StartCPUProfile(f)
+				if err := pprof.StartCPUProfile(f); err != nil {
+					log.Fatal("failed to start CPU profiling")
+				}
 				return func() {
 					pprof.StopCPUProfile()
 					err := f.Close()
@@ -201,9 +203,13 @@ func main() {
 	// logic is split for both types here
 	// because the pcapng reader offers ZeroCopyReadPacketData()
 	if isPcap {
-		c.CollectPcap(*flagInput)
+		if err := c.CollectPcap(*flagInput); err != nil {
+			log.Fatal("failed to collect audit records from pcap file: ", err)
+		}
 	} else {
-		c.CollectPcapNG(*flagInput)
+		if err := c.CollectPcapNG(*flagInput); err != nil {
+			log.Fatal("failed to collect audit records from pcapng file: ", err)
+		}
 	}
 
 	fmt.Println("done in", time.Since(start))
@@ -213,7 +219,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		pprof.WriteHeapProfile(f)
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("failed to write heap profile: ", err)
+		}
 		err = f.Close()
 		if err != nil {
 			panic("failed to write memory profile: " + err.Error())

@@ -36,10 +36,10 @@ const suricataTS = "01/02/2006-15:04:05.000000"
 
 // regular expressions to match data from suricata fast.log
 var (
-	protoc         = regexp.MustCompile("\\{[A-Z]*\\}")
-	classification = regexp.MustCompile("\\[Classification:[\\s\\w]*\\]")
-	flowIdent      = regexp.MustCompile("\\}.*")
-	description    = regexp.MustCompile("\\[\\*\\*\\].*\\[\\*\\*\\]")
+	protoc         = regexp.MustCompile(`\{[A-Z]*\}`)
+	classification = regexp.MustCompile(`\[Classification:[\s\w]*\]`)
+	flowIdent      = regexp.MustCompile(`\}.*`)
+	description    = regexp.MustCompile(`\[\*\*\].*\[\*\*\]`)
 
 	// in case more than one label for the same timestamp exists
 	// stop execution and print info
@@ -240,7 +240,9 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 
 	if UseProgressBars {
 		// close pool
-		pool.Stop()
+		if err := pool.Stop(); err != nil {
+			fmt.Println("failed to stop progress bar pool:", err)
+		}
 	}
 
 	fmt.Println("\ndone in", time.Since(start))
@@ -273,6 +275,7 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 
 			// parse timestamp
 			// important: parse in current location
+			// declaring t here to avoid shadowing the error
 			var t = time.Time{}
 			t, err = time.ParseInLocation(suricataTS, l[:26], time.Local)
 			if err != nil {

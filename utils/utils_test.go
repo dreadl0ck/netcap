@@ -8,15 +8,16 @@ import (
 	"time"
 )
 
-var tins = time.Now()
-var ti = time.Unix(tins.Unix(), int64(tins.Nanosecond()/1000*1000))
-var tiStr = TimeToString(ti)
+var (
+	tins  = time.Now()
+	ti    = time.Unix(tins.Unix(), int64(tins.Nanosecond()/1000*1000))
+	tiStr = TimeToString(ti)
+)
+
+const dotRune = 46
 
 func isDot(r rune) bool {
-	if r == 46 {
-		return true
-	}
-	return false
+	return r == dotRune
 }
 
 // TimeToStringOld is the old implementation for timeToString
