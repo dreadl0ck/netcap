@@ -74,6 +74,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	// directory for suricata logs
 	logDir := strings.TrimSuffix(strings.TrimSuffix(inputPcap, ".pcap"), ".pcapng")
 
+	debug("checking log dir:", logDir)
 	if _, err := os.Stat(logDir); err != nil {
 		// does not exist
 		// make sure suricata log dir exists
@@ -86,6 +87,8 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 		}
 
 	} else {
+		debug("removing suricata logfiles from previous runs")
+
 		// clean suricata logfiles from previous runs
 		if err := os.Remove(logDir + "/fast.log"); err != nil {
 			return err

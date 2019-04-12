@@ -33,7 +33,15 @@ var (
 	// ClassificationMap map of classifications
 	ClassificationMap = make(map[string]int)
 	excluded          = make(map[string]bool)
+
+	Debug bool
 )
+
+func debug(args ...interface{}) {
+	if Debug {
+		fmt.Println(args)
+	}
+}
 
 // SetExcluded takes a comma separated list of strings to exclude from labeling.
 func SetExcluded(arg string) {
