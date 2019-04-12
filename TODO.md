@@ -1,5 +1,18 @@
 # TODOs
 
+- YARA support for labels
+
+- metrics: netcap_<protocol>
+- BLOG: Setup Guide
+- HTTP Proxy
+- Full Proxy?
+- Visualize CIC datasets
+- support for exporting live metrics, from pcap and from netcap dumpfile
+- IEEE article
+- webpage
+- Docker Container
+- wiki
+
 - add contributions welcome to README
 - name and shortly describe main framework components
 - add ROADMAP
