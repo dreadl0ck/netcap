@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/dreadl0ck/netcap/label"
 )
 
 var (
-	flagInput     = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagDebug     = flag.Bool("debug", false, "toggle debug mode")
+	flagInput     = flag.String("r", "", "(required) read specified file, can either be a pcap or netcap audit record file")
 	flagSeparator = flag.String("sep", ",", "set separator string for csv output")
 	flagOutDir    = flag.String("out", "", "specify output directory, will be created if it does not exist")
 
@@ -25,8 +27,15 @@ var (
 )
 
 func main() {
+
 	// parse flags
 	flag.Parse()
+
+	if *flagInput == "" {
+		log.Fatal("no input file specified. Nothing to do.")
+	}
+
+	label.Debug = *flagDebug
 
 	// configure
 	label.DisableLayerMapping = *flagDisableLayerMapping
@@ -36,5 +45,5 @@ func main() {
 	label.SetExcluded(*flagExcludeLabels)
 
 	// lets go
-	label.Suricata(*flagInput, *flagOutDir, *flagDescription, *flagSeparator, "")
+	log.Fatal(label.Suricata(*flagInput, *flagOutDir, *flagDescription, *flagSeparator, ""))
 }
