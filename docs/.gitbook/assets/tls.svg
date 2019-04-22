@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="1245 952 1196 1629" width="1196" height="1629">
+  <defs>
+    <clipPath id="outer_stroke_clip_path">
+      <path d="M 1245 952 L 2441 952 L 2441 2581 L 1245 2581 Z M 1265.3891 957.1813 L 1265.3891 1555.7816 L 1805.878 1555.7816 L 1805.878 957.1813 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="25" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Futura" font-size="38" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <clipPath id="outer_stroke_clip_path_2">
+      <path d="M 1245 952 L 2441 952 L 2441 2581 L 1245 2581 Z M 1265.0162 1560.8495 L 1265.0162 2070 L 1805.878 2070 L 1805.878 1560.8495 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="37" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <clipPath id="outer_stroke_clip_path_3">
+      <path d="M 1245 952 L 2441 952 L 2441 2581 L 1245 2581 Z M 1265.7018 2075 L 1265.7018 2575.5294 L 1806.5636 2575.5294 L 1806.5636 2075 Z"/>
+    </clipPath>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-18 19:12:55 +0000</dc:date>
+  </metadata>
+  <g id="TLS" fill-opacity="1" stroke-dasharray="none" fill="none" stroke-opacity="1" stroke="none">
+    <title>TLS</title>
+    <g id="TLS: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_58">
+        <rect x="1265.3891" y="957.1813" width="540.4889" height="598.6003" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path)"/>
+      </g>
+      <g id="Line_57">
+        <line x1="1264.018" y1="1030.3" x2="1806.878" y2="1031.122" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_56">
+        <line x1="1264.018" y1="1102.3" x2="1806.878" y2="1103.5991" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_55">
+        <line x1="1264.018" y1="1174.3" x2="1804.86" y2="1174.3486" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_54">
+        <line x1="1264.018" y1="1246.3" x2="1804.86" y2="1246.3486" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_53">
+        <line x1="1264.018" y1="1318.3" x2="1804.86" y2="1318.3486" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_52">
+        <line x1="1264.018" y1="1469.0489" x2="1804.86" y2="1469.1063" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_51">
+        <text transform="translate(1289.1556 1050.9277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="97.27333" y="26">Timestamp (seconds.micro)</tspan>
+        </text>
+      </g>
+      <g id="Graphic_50">
+        <text transform="translate(1496.3822 1121.9277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".11767578" y="26">Version</tspan>
+        </text>
+      </g>
+      <g id="Graphic_49">
+        <text transform="translate(1467.8822 1196.4277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".21801758" y="26">MessageLen</tspan>
+        </text>
+      </g>
+      <g id="Graphic_48">
+        <text transform="translate(1447.8822 1269.0922)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".454834" y="26">HandshakeType</tspan>
+        </text>
+      </g>
+      <g id="Graphic_47">
+        <text transform="translate(1427.3822 1410.7396)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="5.744873" y="26">HandshakeVersion</tspan>
+        </text>
+      </g>
+      <g id="Graphic_46">
+        <text transform="translate(1386.198 1498.1575)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="112.26238" y="26">Random</tspan>
+        </text>
+      </g>
+      <g id="Graphic_45">
+        <text transform="translate(1501.518 970.43)" fill="black">
+          <tspan font-family="Futura" font-size="38" font-weight="700" fill="black" x=".244" y="39">TLS</tspan>
+        </text>
+      </g>
+      <g id="Graphic_44">
+        <rect x="1265.0162" y="1560.8495" width="540.86184" height="509.1505" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_2)"/>
+      </g>
+      <g id="Line_43">
+        <line x1="1262" y1="1725.81" x2="1804.86" y2="1727.3447" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_42">
+        <line x1="1264.2036" y1="1819.902" x2="1805.0455" y2="1819.9594" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_41">
+        <line x1="1264.2036" y1="1904.9573" x2="1805.0455" y2="1905.0147" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_40">
+        <line x1="1264.2036" y1="1990.0126" x2="1805.0455" y2="1990.07" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_39">
+        <text transform="translate(1288.521 1674.47)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="195.27138" y="26">SessionID</tspan>
+        </text>
+      </g>
+      <g id="Graphic_38">
+        <text transform="translate(1454.0677 1761.002)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".22216797" y="26">CipherSuiteLen</tspan>
+        </text>
+      </g>
+      <g id="Graphic_37">
+        <text transform="translate(1449.0677 1849.0106)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="16.294434" y="26">ExtensionLen</tspan>
+        </text>
+      </g>
+      <g id="Graphic_36">
+        <text transform="translate(1467.0677 1934.066)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="49.9729" y="26">SNI</tspan>
+        </text>
+      </g>
+      <g id="Graphic_35">
+        <text transform="translate(1431.0677 2016.7586)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="36.96167" y="26">CipherSuites</tspan>
+        </text>
+      </g>
+      <g id="Line_34">
+        <line x1="1262" y1="1639.5735" x2="1804.86" y2="1641.1081" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_33">
+        <text transform="translate(1285.7724 1587.9381)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="175.95985" y="26">SessionIDLen</tspan>
+        </text>
+      </g>
+      <g id="Graphic_31">
+        <rect x="1882.3891" y="958.3626" width="540.4889" height="598.6003" stroke="#666" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_30">
+        <line x1="1881.018" y1="1031.3" x2="2423.878" y2="1032.122" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_29">
+        <line x1="1881.018" y1="1103.3" x2="2423.878" y2="1104.5991" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_28">
+        <line x1="1881.018" y1="1175.3" x2="2421.86" y2="1175.3486" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_27">
+        <line x1="1881.018" y1="1247.3" x2="2421.86" y2="1247.3486" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_26">
+        <line x1="1881.018" y1="1319.3" x2="2421.86" y2="1319.3486" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_25">
+        <line x1="1881.018" y1="1470.2302" x2="2421.86" y2="1470.2876" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_24">
+        <text transform="translate(1906.1556 1051.9277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="126.34437" y="26">1397555506.130567</tspan>
+        </text>
+      </g>
+      <g id="Graphic_23">
+        <text transform="translate(2133.3822 1122.9277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".13110352" y="26">769</tspan>
+        </text>
+      </g>
+      <g id="Graphic_22">
+        <text transform="translate(2131.8822 1197.4277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".35546875" y="26">355</tspan>
+        </text>
+      </g>
+      <g id="Graphic_21">
+        <text transform="translate(2147.3822 1269.4277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".28515625" y="26">1</tspan>
+        </text>
+      </g>
+      <g id="Graphic_20">
+        <text transform="translate(2050.8822 1411.9209)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="81.89258" y="26">771</tspan>
+        </text>
+      </g>
+      <g id="Graphic_19">
+        <text transform="translate(2003.198 1482.9665)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="26.776543" y="26">U\305\016\222\241\</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="37.195244" y="58.74463">\b\336\250D\315…</tspan>
+        </text>
+      </g>
+      <g id="Graphic_18">
+        <text transform="translate(2065.518 971.445)" fill="black">
+          <tspan font-family="Futura" font-size="37" font-weight="700" fill="black" x=".0675" y="38">Example</tspan>
+        </text>
+      </g>
+      <g id="Graphic_17">
+        <rect x="1881.5171" y="1556.963" width="540.86184" height="509.1505" stroke="#666" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_16">
+        <path d="M 1881.018 1724.6816 L 2294.3732 1724.8089 L 2422.878 1726.2163" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_15">
+        <line x1="1881.5171" y1="1814.8459" x2="2421.3628" y2="1814.9033" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_14">
+        <line x1="1881.5171" y1="1899.9012" x2="2421.3628" y2="1899.9586" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_13">
+        <line x1="1881.5171" y1="1984.9565" x2="2421.3628" y2="1985.014" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_12">
+        <text transform="translate(1905.9904 1663.9945)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="112.45326" y="26">x\223\2720\006\00…</tspan>
+        </text>
+      </g>
+      <g id="Graphic_11">
+        <text transform="translate(2067.276 1762.1833)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="64.86865" y="26">198</tspan>
+        </text>
+      </g>
+      <g id="Graphic_10">
+        <text transform="translate(2131.776 1850.192)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".3442383" y="26">125</tspan>
+        </text>
+      </g>
+      <g id="Graphic_9">
+        <text transform="translate(2074.6336 1926.5565)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".1069336" y="26">192.168.0.20</tspan>
+        </text>
+      </g>
+      <g id="Graphic_8">
+        <text transform="translate(1975.5624 2011.6118)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".02392578" y="26">106,49188,19,49162,49171,…</tspan>
+        </text>
+      </g>
+      <g id="Line_7">
+        <line x1="1881.6843" y1="1634.3967" x2="2421.1776" y2="1636.052" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_6">
+        <text transform="translate(1901.9556 1589.1194)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="233.96205" y="26">32</tspan>
+        </text>
+      </g>
+      <g id="Line_5">
+        <line x1="1262" y1="1387.1744" x2="1802.842" y2="1387.223" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_4">
+        <line x1="1880.3357" y1="1388.2651" x2="2421.1776" y2="1388.3225" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_3">
+        <text transform="translate(1455.3822 1335.7631)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".31567383" y="26">HandshakeLen</tspan>
+        </text>
+      </g>
+      <g id="Graphic_2">
+        <text transform="translate(2131.776 1336.3928)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".3076172" y="26">351</tspan>
+        </text>
+      </g>
+      <g id="Graphic_60">
+        <rect x="1265.7018" y="2075" width="540.86184" height="500.52936" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_3)"/>
+      </g>
+      <g id="Line_61">
+        <line x1="1262.6855" y1="2239.9606" x2="1805.5455" y2="2241.4952" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_62">
+        <line x1="1264.8891" y1="2334.0525" x2="1805.731" y2="2334.11" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_63">
+        <line x1="1264.8891" y1="2419.1078" x2="1805.731" y2="2419.1652" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_64">
+        <line x1="1264.8891" y1="2504.163" x2="1805.731" y2="2504.2205" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_65">
+        <text transform="translate(1289.2065 2188.6206)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="170.96718" y="26">SignatureAlgs</tspan>
+        </text>
+      </g>
+      <g id="Graphic_66">
+        <text transform="translate(1461.7533 2275.1525)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="57.163086" y="26">Ja3</tspan>
+        </text>
+      </g>
+      <g id="Graphic_67">
+        <text transform="translate(1449.7533 2363.161)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="61.25293" y="26">SrcIP</tspan>
+        </text>
+      </g>
+      <g id="Graphic_68">
+        <text transform="translate(1466.0677 2451.066)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="43.49707" y="26">DstIP</tspan>
+        </text>
+      </g>
+      <g id="Graphic_69">
+        <text transform="translate(1431.7533 2526.5978)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="95.6958" y="26">…</tspan>
+        </text>
+      </g>
+      <g id="Line_70">
+        <line x1="1262.6855" y1="2153.724" x2="1805.5455" y2="2155.2586" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_71">
+        <text transform="translate(1286.458 2102.0886)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="144.75868" y="26">CompressMethods</tspan>
+        </text>
+      </g>
+      <g id="Graphic_72">
+        <rect x="1881.009" y="2066.3789" width="540.86184" height="509.1505" stroke="#666" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_73">
+        <path d="M 1880.51 2234.0976 L 2293.865 2234.2248 L 2422.37 2235.6322" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_74">
+        <line x1="1881.009" y1="2329.4236" x2="2420.8547" y2="2329.481" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_75">
+        <line x1="1881.009" y1="2413.6625" x2="2420.8547" y2="2413.72" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Line_76">
+        <line x1="1881.009" y1="2503.311" x2="2420.8547" y2="2503.3683" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_77">
+        <text transform="translate(1905.4823 2173.4104)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="120.59535" y="26">1025,1283,513,515,…</tspan>
+        </text>
+      </g>
+      <g id="Graphic_78">
+        <text transform="translate(1921.768 2271.5993)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".15136719" y="26">4d7a28d6f2263ed61de88ca66eb011e3</tspan>
+        </text>
+      </g>
+      <g id="Graphic_79">
+        <text transform="translate(2079.268 2359.608)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".470459" y="26">197.162.1.30</tspan>
+        </text>
+      </g>
+      <g id="Graphic_80">
+        <text transform="translate(2076.1255 2435.9725)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".39526367" y="26">172.123.0.10</tspan>
+        </text>
+      </g>
+      <g id="Graphic_81">
+        <text transform="translate(2142.2163 2526.1745)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x=".4277344" y="26">...</tspan>
+        </text>
+      </g>
+      <g id="Line_82">
+        <line x1="1881.1762" y1="2143.8126" x2="2420.6695" y2="2145.468" stroke="#666" stroke-linecap="round" stroke-linejoin="miter" stroke-width="5"/>
+      </g>
+      <g id="Graphic_83">
+        <text transform="translate(1901.4475 2098.5354)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="241.6769" y="26">0</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>
