@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="196 247 1962 809" width="1962" height="809">
+  <defs>
+    <clipPath id="outer_stroke_clip_path">
+      <path d="M 196 247 L 2158 247 L 2158 1056 L 196 1056 Z M 620 252 L 620 1051 L 1588 1051 L 1588 252 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_2">
+      <path d="M 196 247 L 2158 247 L 2158 1056 L 196 1056 Z M 254 563.1014 L 254 739.8986 L 461.1873 739.8986 L 461.1873 563.1014 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="32" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Futura" font-size="35" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -3 5 6" markerWidth="5" markerHeight="6" color="black">
+      <g>
+        <path d="M 2.88 0 L 0 -1.08 L 0 1.08 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <clipPath id="outer_stroke_clip_path_3">
+      <path d="M 196 247 L 2158 247 L 2158 1056 L 196 1056 Z M 1837 586.7728 L 1837 704.0243 L 2152.3003 704.0243 L 2152.3003 586.7728 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="20" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_2" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -3 6 6" markerWidth="6" markerHeight="6" color="black">
+      <g>
+        <path d="M 3.2 0 L 0 -1.2 L 0 1.2 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <font-face font-family="Futura" font-size="75" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-18 19:12:55 +0000</dc:date>
+  </metadata>
+  <g id="Netcap-LayerEncoder" fill-opacity="1" stroke-dasharray="none" fill="none" stroke-opacity="1" stroke="none">
+    <title>Netcap-LayerEncoder</title>
+    <g id="Netcap-LayerEncoder: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_15">
+        <rect x="620" y="252" width="968" height="799" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path)"/>
+      </g>
+      <g id="Graphic_4">
+        <rect x="254" y="563.1014" width="207.18733" height="176.79715" fill="white"/>
+        <rect x="254" y="563.1014" width="207.18733" height="176.79715" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_2)"/>
+        <text transform="translate(259 609.5469)" fill="black">
+          <tspan font-family="Futura" font-size="32" font-weight="500" fill="black" x="51.67179" y="33">Packet</tspan>
+          <tspan font-family="Futura" font-size="32" font-weight="500" fill="black" x="22.046788" y="74.953125">Timestamp</tspan>
+        </text>
+      </g>
+      <g id="Graphic_57">
+        <text transform="translate(201.09366 421.475)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="6.21" y="36">Decoded Packet </tspan>
+        </text>
+      </g>
+      <g id="Line_93">
+        <line x1="1593" y1="648.1501" x2="1810.1005" y2="646.66284" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_89">
+        <rect x="1837" y="586.7728" width="315.30032" height="117.2515" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_3)"/>
+        <text transform="translate(1842 624.422)" fill="black">
+          <tspan font-family="Futura" font-size="32" font-weight="500" fill="black" x="29.18141" y="33">Ethernet.ncap.gz</tspan>
+        </text>
+      </g>
+      <g id="Graphic_110">
+        <text transform="translate(1917.1502 398.45004)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x=".01" y="36">Protocol</tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="10.895" y="82.04996">Buffers</tspan>
+        </text>
+      </g>
+      <g id="Group_187">
+        <g id="Graphic_229">
+          <rect x="655" y="761.8626" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="761.8626" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 765.2025)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="5.9919314" y="21">END</tspan>
+          </text>
+        </g>
+        <g id="Graphic_228">
+          <rect x="931.7234" y="761.8626" width="206.56816" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_227">
+          <rect x="1138.2915" y="761.8626" width="205.78866" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_226">
+          <rect x="1344.0802" y="761.8626" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_225">
+          <rect x="719.6987" y="761.8626" width="212.02468" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_224">
+          <rect x="931.7234" y="728.5872" width="206.56816" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_223">
+          <rect x="1138.2915" y="728.5872" width="205.78866" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_222">
+          <rect x="1344.0802" y="728.5872" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_221">
+          <rect x="719.6987" y="728.5872" width="212.02468" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_220">
+          <rect x="655" y="728.5872" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="728.5872" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 731.927)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="17.905994" y="21">…</tspan>
+          </text>
+        </g>
+        <g id="Graphic_219">
+          <rect x="1138.2915" y="695.3117" width="205.78866" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_218">
+          <rect x="655" y="695.3117" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="695.3117" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 698.6516)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="9.712635" y="21">160</tspan>
+          </text>
+        </g>
+        <g id="Graphic_217">
+          <rect x="931.7234" y="695.3117" width="206.56816" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_216">
+          <rect x="1344.0802" y="695.3117" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_215">
+          <rect x="719.6987" y="695.3117" width="212.02468" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_214">
+          <rect x="1138.2915" y="662.0363" width="205.78866" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_213">
+          <rect x="931.7234" y="662.0363" width="206.56816" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_212">
+          <rect x="655" y="662.0363" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="662.0363" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 665.37616)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="9.624744" y="21">128</tspan>
+          </text>
+        </g>
+        <g id="Graphic_211">
+          <rect x="1344.0802" y="662.0363" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_210">
+          <rect x="719.6987" y="662.0363" width="212.02468" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_209">
+          <rect x="1138.2915" y="628.76086" width="205.78866" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_208">
+          <rect x="931.7234" y="628.76086" width="206.56816" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_207">
+          <rect x="655" y="628.76086" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="628.76086" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 632.1007)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="15.005603" y="21">96</tspan>
+          </text>
+        </g>
+        <g id="Graphic_206">
+          <rect x="719.6987" y="628.76086" width="212.02468" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_205">
+          <rect x="1344.0802" y="628.76086" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_204">
+          <rect x="1344.0802" y="595.4854" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_203">
+          <rect x="655" y="595.4854" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="595.4854" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 598.8253)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="15.093494" y="21">64</tspan>
+          </text>
+        </g>
+        <g id="Graphic_202">
+          <rect x="719.6987" y="562.21" width="212.02468" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_201">
+          <rect x="1344.0802" y="562.21" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_200">
+          <rect x="931.7234" y="562.21" width="206.56816" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_199">
+          <rect x="655" y="562.21" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="562.21" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 565.54986)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="15.005603" y="21">32</tspan>
+          </text>
+        </g>
+        <g id="Graphic_198">
+          <rect x="1138.2915" y="562.21" width="205.78866" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_197">
+          <rect x="655" y="528.93456" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="528.93456" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 532.2744)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="21.177478" y="21">0</tspan>
+          </text>
+        </g>
+        <g id="Graphic_196">
+          <rect x="719.6987" y="528.93456" width="212.02468" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_195">
+          <rect x="1138.2915" y="528.93456" width="205.78866" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_194">
+          <rect x="931.7234" y="528.93456" width="206.56816" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_193">
+          <rect x="1344.0802" y="528.93456" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </g>
+        <g id="Graphic_192">
+          <rect x="655" y="495.6591" width="64.69871" height="33.275434" fill="#999"/>
+          <rect x="655" y="495.6591" width="64.69871" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(660 498.999)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="16.211658" y="21">Bit</tspan>
+          </text>
+        </g>
+        <g id="Graphic_191">
+          <rect x="719.6987" y="495.6591" width="212.02468" height="33.275434" fill="#999"/>
+          <rect x="719.6987" y="495.6591" width="212.02468" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(724.6987 498.999)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="76.32484" y="21">+0..7</tspan>
+          </text>
+        </g>
+        <g id="Graphic_190">
+          <rect x="1138.2915" y="495.6591" width="205.78866" height="33.275434" fill="#999"/>
+          <rect x="1138.2915" y="495.6591" width="205.78866" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(1143.2915 498.999)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="61.741985" y="21">+16..23</tspan>
+          </text>
+        </g>
+        <g id="Graphic_189">
+          <rect x="931.7234" y="495.6591" width="206.56816" height="33.275434" fill="#999"/>
+          <rect x="931.7234" y="495.6591" width="206.56816" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(936.7234 498.999)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="69.0165" y="21">+8..15</tspan>
+          </text>
+        </g>
+        <g id="Graphic_188">
+          <rect x="1344.0802" y="495.6591" width="206.9579" height="33.275434" fill="#999"/>
+          <rect x="1344.0802" y="495.6591" width="206.9579" height="33.275434" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          <text transform="translate(1349.0802 498.999)" fill="black">
+            <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="62.39497" y="21">+24..31</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Graphic_186">
+        <rect x="719.6227" y="528.77023" width="830.3632" height="66.22222" fill="white"/>
+        <rect x="719.6227" y="528.77023" width="830.3632" height="66.22222" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(724.6227 548.5835)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="367.6523" y="21">Preamble</tspan>
+        </text>
+      </g>
+      <g id="Graphic_185">
+        <rect x="719.6227" y="628.1036" width="418.1013" height="33.11111" fill="#c0ffff"/>
+        <rect x="719.6227" y="628.1036" width="418.1013" height="33.11111" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(724.6227 631.3613)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="87.21959" y="21">Destination MAC Address</tspan>
+        </text>
+      </g>
+      <g id="Graphic_184">
+        <rect x="719.6227" y="661.2147" width="830.3632" height="33.11111" fill="#ffffc0"/>
+        <rect x="719.6227" y="661.2147" width="830.3632" height="33.11111" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(724.6227 664.4724)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="312.38374" y="21">Source MAC Address</tspan>
+        </text>
+      </g>
+      <g id="Graphic_183">
+        <rect x="719.6227" y="694.3258" width="418.1013" height="33.11111" fill="white"/>
+        <rect x="719.6227" y="694.3258" width="418.1013" height="33.11111" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(724.6227 697.5835)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="159.36803" y="21">EtherType</tspan>
+        </text>
+      </g>
+      <g id="Graphic_182">
+        <rect x="719.6227" y="727.4369" width="830.3632" height="33.11111" fill="#c0ffc0"/>
+        <rect x="719.6227" y="727.4369" width="830.3632" height="33.11111" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(724.6227 730.6946)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="372.95014" y="21">Payload</tspan>
+        </text>
+      </g>
+      <g id="Graphic_181">
+        <rect x="719.6227" y="594.99246" width="830.3632" height="33.11111" fill="#c0ffff"/>
+        <rect x="719.6227" y="594.99246" width="830.3632" height="33.11111" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(724.6227 598.25016)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="293.35053" y="21">Destination MAC Address</tspan>
+        </text>
+      </g>
+      <g id="Graphic_180">
+        <rect x="1137.724" y="628.1036" width="412.2619" height="33.11111" fill="#ffffc0"/>
+        <rect x="1137.724" y="628.1036" width="412.2619" height="33.11111" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(1142.724 631.3613)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="103.33309" y="21">Source MAC Address</tspan>
+        </text>
+      </g>
+      <g id="Graphic_179">
+        <rect x="1137.724" y="694.3258" width="412.2619" height="33.11111" fill="#c0ffc0"/>
+        <rect x="1137.724" y="694.3258" width="412.2619" height="33.11111" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(1142.724 697.5835)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="163.8995" y="21">Payload</tspan>
+        </text>
+      </g>
+      <g id="Graphic_178">
+        <rect x="719.6227" y="760.548" width="830.3632" height="33.11111" fill="#ffc0c0"/>
+        <rect x="719.6227" y="760.548" width="830.3632" height="33.11111" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        <text transform="translate(724.6227 763.8057)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="341.78803" y="21">CRC Checksum</tspan>
+        </text>
+      </g>
+      <g id="Line_231">
+        <line x1="466.1873" y1="651.5" x2="596.1" y2="651.5" marker-end="url(#FilledArrow_Marker_2)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+      </g>
+      <g id="Graphic_232">
+        <text transform="translate(903 325.38306)" fill="black">
+          <tspan font-family="Futura" font-size="75" font-weight="500" fill="black" x=".4692383" y="78">ETHERNET</tspan>
+        </text>
+      </g>
+      <g id="Graphic_233">
+        <text transform="translate(946.5 866.2722)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x=".18" y="36">Data collection</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>
