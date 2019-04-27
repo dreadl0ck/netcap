@@ -49,6 +49,9 @@ var (
 	StopOnDuplicateLabels = false
 
 	DisableLayerMapping = false
+
+	// SuricataConfigPath contains the path for the suricata config file.
+	SuricataConfigPath string
 )
 
 // SuricataAlert is a summary structure of an alerts contents
@@ -100,7 +103,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	fmt.Println("scanning", inputPcap, "with suricata...")
 
 	// call suricata to scan dump file
-	out, err := exec.Command("suricata", "-c", "/usr/local/etc/suricata/suricata.yaml", "-r", inputPcap, "-l", logDir).CombinedOutput()
+	out, err := exec.Command("suricata", "-c", SuricataConfigPath, "-r", inputPcap, "-l", logDir).CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, "Error with output: "+string(out))
 	}
