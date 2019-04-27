@@ -125,3 +125,13 @@ commands:
     gen-version:
         description: generate the version.go file
         exec: echo -e "// This file was generated. Do not edit.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"" > version.go
+
+    build-docker-alpine:
+        description: builds the alpine docker container
+        exec: |
+            cd docker
+            echo "[INFO] building container for v${VERSION}"
+            docker build -t dreadl0ck/netcap:v${VERSION} .
+            # docker images
+            echo "[INFO] pushing container to docker registry"
+            docker push dreadl0ck/netcap
