@@ -19,6 +19,7 @@ var (
 	flagExcludeLabels         = flag.String("exclude", "", "specify a comma separated list of suricata classifications that shall be excluded from the generated labeled csv")
 	flagCollectLabels         = flag.Bool("collect", false, "append classifications from alert with duplicate timestamps to the generated label")
 	flagDisableLayerMapping   = flag.Bool("disable-layers", false, "do not map layer types by timestamp")
+	flagSuricataConfigPath    = flag.String("suricata-config", "/usr/local/etc/suricata/suricata.yaml", "set the path to the suricata config file")
 
 	// this wont work currently, because the Select() func will stop if there are fields that are not present on an audit record
 	// as labeling iterates over all available records, there will always be a record that does not have all selected fields
@@ -38,6 +39,7 @@ func main() {
 	label.Debug = *flagDebug
 
 	// configure
+	label.SuricataConfigPath = *flagSuricataConfigPath
 	label.DisableLayerMapping = *flagDisableLayerMapping
 	label.UseProgressBars = *flagProgressBars
 	label.StopOnDuplicateLabels = *flagStopOnDuplicateLabels
