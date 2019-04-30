@@ -434,3 +434,7 @@ func (l LSAheader) ToString() string {
 
 	return b.String()
 }
+
+func (u LSAheader) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
+}

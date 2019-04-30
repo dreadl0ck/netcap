@@ -51,7 +51,7 @@ type AuditRecord interface {
 	// Inc()
 
 	// returns the audir record as JSON
-	// JSON()
+	JSON()
 }
 
 // selectFields returns an array with the inidices of the desired fields for selection

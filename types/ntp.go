@@ -61,3 +61,7 @@ func (n NTP) CSVRecord() []string {
 func (n NTP) NetcapTimestamp() string {
 	return n.Timestamp
 }
+
+func (u NTP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
+}

@@ -80,3 +80,7 @@ func (a BFDAuthHeader) GetString() string {
 	b.WriteString(End)
 	return b.String()
 }
+
+func (a BFD) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

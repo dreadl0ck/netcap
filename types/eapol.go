@@ -34,3 +34,7 @@ func (a EAPOL) CSVRecord() []string {
 func (a EAPOL) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a EAPOL) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

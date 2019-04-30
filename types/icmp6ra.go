@@ -48,3 +48,7 @@ func (i ICMPv6RouterAdvertisement) CSVRecord() []string {
 func (i ICMPv6RouterAdvertisement) NetcapTimestamp() string {
 	return i.Timestamp
 }
+
+func (a ICMPv6RouterAdvertisement) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

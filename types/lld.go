@@ -52,3 +52,7 @@ func (l LLDPChassisID) ToString() string {
 func (l LLDPPortID) ToString() string {
 	return join(formatInt32(l.Subtype), hex.EncodeToString(l.ID))
 }
+
+func (a LinkLayerDiscovery) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

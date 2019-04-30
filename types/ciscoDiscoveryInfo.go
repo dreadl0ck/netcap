@@ -273,3 +273,7 @@ func (c CDPLocation) ToString() string {
 
 	return b.String()
 }
+
+func (a CiscoDiscoveryInfo) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

@@ -54,3 +54,7 @@ func (h HTTP) CSVRecord() []string {
 func (f HTTP) NetcapTimestamp() string {
 	return f.Timestamp
 }
+
+func (a HTTP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

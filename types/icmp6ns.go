@@ -38,3 +38,7 @@ func (i ICMPv6NeighborSolicitation) CSVRecord() []string {
 func (i ICMPv6NeighborSolicitation) NetcapTimestamp() string {
 	return i.Timestamp
 }
+
+func (a ICMPv6NeighborSolicitation) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

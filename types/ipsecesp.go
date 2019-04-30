@@ -34,3 +34,7 @@ func (a IPSecESP) CSVRecord() []string {
 func (a IPSecESP) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a IPSecESP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

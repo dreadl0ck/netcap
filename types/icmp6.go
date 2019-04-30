@@ -32,3 +32,7 @@ func (i ICMPv6) CSVRecord() []string {
 func (i ICMPv6) NetcapTimestamp() string {
 	return i.Timestamp
 }
+
+func (a ICMPv6) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

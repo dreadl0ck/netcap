@@ -36,3 +36,7 @@ func (a FDDI) CSVRecord() []string {
 func (a FDDI) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a FDDI) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

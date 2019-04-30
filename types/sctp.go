@@ -40,3 +40,7 @@ func (s SCTP) CSVRecord() []string {
 func (s SCTP) NetcapTimestamp() string {
 	return s.Timestamp
 }
+
+func (u SCTP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
+}

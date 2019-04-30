@@ -36,3 +36,7 @@ func (s SNAP) CSVRecord() []string {
 func (s SNAP) NetcapTimestamp() string {
 	return s.Timestamp
 }
+
+func (u SNAP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
+}

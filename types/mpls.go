@@ -38,3 +38,7 @@ func (a MPLS) CSVRecord() []string {
 func (a MPLS) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a MPLS) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

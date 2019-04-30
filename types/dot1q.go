@@ -40,3 +40,7 @@ func (d Dot1Q) CSVRecord() []string {
 func (d Dot1Q) NetcapTimestamp() string {
 	return d.Timestamp
 }
+
+func (a Dot1Q) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

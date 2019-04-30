@@ -42,3 +42,7 @@ func (a VXLAN) CSVRecord() []string {
 func (a VXLAN) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a VXLAN) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

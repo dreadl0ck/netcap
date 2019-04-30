@@ -42,3 +42,7 @@ func (a IPv6Fragment) CSVRecord() []string {
 func (a IPv6Fragment) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a IPv6Fragment) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}
