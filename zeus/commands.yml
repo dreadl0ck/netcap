@@ -18,14 +18,62 @@ globals:
 # command data
 commands:
     
-    build:
-        description: build netcap binary
-        dependencies:
-            - clean
+    ## Install all
+    ##
+
+    install:
+        description: install netcap and netlabel to $PATH
         buildNumber: true
-        exec: |
-            echo "[INFO] generating netcap binary v${VERSION}"
-            go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/netcap -i github.com/dreadl0ck/netcap/cmd
+        help: Installs the applications to the default system location
+        dependencies:
+            - net.cap
+            - net.label
+            - net.collector
+            - net.sensor
+            - net.proxy
+        exec: echo done
+
+    ## Compile Framework Components
+    ##
+
+    net.cap:
+        description: compile net.cap binary to $GOPATH/bin
+        buildNumber: true
+        help: Install the application to the default system location
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.cap -i github.com/dreadl0ck/netcap/cmd/cap
+
+    net.label:
+        description: compile net.label binary to $GOPATH/bin
+        buildNumber: true
+        help: Install the net.label application to the default system location
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.label -i github.com/dreadl0ck/netcap/cmd/label
+
+    net.sensor:
+        description: compile net.sensor binary to $GOPATH/bin
+        help: Install the netcap sensor to the default system location
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.sensor -i github.com/dreadl0ck/netcap/cmd/sensor
+
+    net.collector:
+        description: compile net.collector binary to $GOPATH/bin
+        help: Install the netcap server to the default system location
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.collector -i github.com/dreadl0ck/netcap/cmd/collector
+
+    net.proxy:
+        description: compile net.proxy binary to $GOPATH/bin
+        help: Install the netcap server to the default system location
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
+
+    ## Debug Builds
+    ##
+
+    install-race:
+        description: install a netcap build with race detection enabled
+        buildNumber: true
+        help: Install the race build to the default system location
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
+
+    ## Containers
+    ##
 
     build-all-linux-docker:
         description: build all framework binaries for linux inside a docker container
@@ -33,6 +81,72 @@ commands:
         dependencies:
             - clean
 
+    ## Release
+    ##
+
+    # run a prod release
+    release:
+        description: release a new version, bundle and publish on github
+        dependencies:
+            - gen-version
+            - check-version
+        exec: goreleaser release --rm-dist
+
+    # run a test release
+    release-test:
+        description: test run to release a new version
+        dependencies:
+            - gen-version
+            - check-version
+        exec: goreleaser release --rm-dist --skip-publish --skip-validate #--debug
+
+    ## Utils
+    ##
+
+    # count lines of code
+    cloc:
+        description: count lines of code for the project
+        exec: cloc --exclude-ext pb.go,py,rb cmd sensor server label types utils collector encoder netcap.go reader.go utils.go
+
+    # generate protocol buffers
+    gen-proto:
+        description: generate protocol buffers
+        help: proto compiler must be installed
+        exec: protoc --gogofaster_out=types/. --ruby_out=types/ --python_out=types/ netcap.proto
+
+    # the version defined in the globals section will be set via ldflags on each build
+    # to ensure the correct version is also set for installation via go get
+    # a version.go file is generated on each release with the corresponding version number
+    gen-version:
+        description: generate the version.go file
+        exec: echo -e "// This file was generated. Do not edit.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"" > version.go
+
+    # build and push the Alpine docker container
+    build-docker-alpine:
+        description: builds the alpine docker container
+        exec: |
+            cd docker
+            echo "[INFO] building container for v${VERSION}"
+            docker build -t dreadl0ck/netcap:v${VERSION} .
+            # docker images
+            echo "[INFO] pushing container to docker registry"
+            docker push dreadl0ck/netcap
+    
+    # check git version
+    check-version:
+        description: checks whether the version from the latest git tag matches the one set here
+        exec: |
+            if [[ $(git describe --abbrev=0) != "v${VERSION}" ]]; then
+                echo "[ERROR] latest git tag does not match version $VERSION"
+                exit 1
+            fi
+
+    # remove all files in project bin folder
+    clean:
+        description: clean up to prepare for build
+        exec: rm -rf bin/*
+
+    # bump the git version tag
     version-bump:
         description: bump framework version and add git version tag
         exec: |
@@ -44,94 +158,3 @@ commands:
             
 
             echo "[INFO] version bumped to v${VERSION}"
-
-    release:
-        description: release a new version, bundle and publish on github
-        dependencies:
-            - gen-version
-            - check-version
-        exec: goreleaser release --rm-dist
-
-    release-test:
-        description: test run to release a new version
-        dependencies:
-            - gen-version
-            - check-version
-        exec: goreleaser release --rm-dist --skip-publish --skip-validate #--debug
-    
-    check-version:
-        description: checks whether the version from the latest git tag matches the one set here
-        exec: |
-            if [[ $(git describe --abbrev=0) != "v${VERSION}" ]]; then
-                echo "[ERROR] latest git tag does not match version $VERSION"
-                exit 1
-            fi
-
-    clean:
-        description: clean up to prepare for build
-        exec: rm -rf bin/*
-    
-    install:
-        description: install netcap and netlabel to $PATH
-        buildNumber: true
-        help: Installs the applications to the default system location
-        dependencies:
-            - "netcap"
-            - "netlabel"
-            - "server"
-            - "sensor"
-        exec: echo done
-    
-    netcap:
-        description: install to $PATH
-        buildNumber: true
-        help: Install the application to the default system location
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
-
-    netlabel:
-        description: install to $PATH
-        buildNumber: true
-        help: Install the netlabel application to the default system location
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/netlabel -i github.com/dreadl0ck/netcap/label/cmd
-
-    install-race:
-        description: install a netcap build with race detection enabled
-        buildNumber: true
-        help: Install the race build to the default system location
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
-        
-    cloc:
-        description: count lines of code for the project
-        exec: cloc --exclude-ext pb.go,py,rb cmd sensor server label types utils collector encoder netcap.go reader.go utils.go
-
-    gen-proto:
-        description: generate protocol buffers
-        help: proto compiler must be installed
-        exec: protoc --gogofaster_out=types/. --ruby_out=types/ --python_out=types/ netcap.proto
-
-    sensor:
-        description: install to $PATH
-        help: Install the netcap sensor to the default system location
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/netcap-sensor -i github.com/dreadl0ck/netcap/sensor
-
-    server:
-        description: install to $PATH
-        help: Install the netcap server to the default system location
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/netcap-server -i github.com/dreadl0ck/netcap/server
-
-    # the version defined in the globals section will be set via ldflags on each build
-    # to ensure the correct version is also set for installation via go get
-    # a version.go file is generated on each release with the corresponding version number
-    gen-version:
-        description: generate the version.go file
-        exec: echo -e "// This file was generated. Do not edit.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"" > version.go
-
-    build-docker-alpine:
-        description: builds the alpine docker container
-        exec: |
-            cd docker
-            echo "[INFO] building container for v${VERSION}"
-            docker build -t dreadl0ck/netcap:v${VERSION} .
-            # docker images
-            echo "[INFO] pushing container to docker registry"
-            docker push dreadl0ck/netcap

@@ -160,7 +160,7 @@ func main() {
 		return
 	}
 
-	printLogo()
+	netcap.PrintLogo()
 
 	// print configuration as table
 	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
