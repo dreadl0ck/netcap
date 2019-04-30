@@ -31,18 +31,26 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func Overview() {
-	fmt.Println("------------ LayerEncoders ------------")
+func MarkdownOverview() {
+	fmt.Println("# NETCAP Overview " + netcap.Version)
+	fmt.Println("> Documentation: docs.netcap.io")
+	fmt.Println("## LayerEncoders")
+
+	fmt.Println("|Name|NumFields|Fields|")
+	fmt.Println("|----|---------|------|")
 	for _, e := range layerEncoderSlice {
 		if csv, ok := netcap.InitRecord(e.Type).(types.CSV); ok {
-			fmt.Println(pad(e.Layer.String(), 30), len(csv.CSVHeader()), strings.Join(csv.CSVHeader(), ","))
+			fmt.Println("|"+pad(e.Layer.String(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
 
-	fmt.Println("------------ CustomEncoders ------------")
+	fmt.Println("## CustomEncoders")
+
+	fmt.Println("|Name|NumFields|Fields|")
+	fmt.Println("|----|---------|------|")
 	for _, e := range customEncoderSlice {
 		if csv, ok := netcap.InitRecord(e.Type).(types.CSV); ok {
-			fmt.Println(pad(e.Name, 30), len(csv.CSVHeader()), strings.Join(csv.CSVHeader(), ","))
+			fmt.Println("|"+pad(e.Name, 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
 }

@@ -41,7 +41,7 @@ func main() {
 	}
 
 	if *flagPrintProtocolOverview {
-		encoder.Overview()
+		encoder.MarkdownOverview()
 		return
 	}
 
