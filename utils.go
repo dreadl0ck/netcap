@@ -8,9 +8,29 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/gogo/protobuf/proto"
 )
+
+var logo = `                       / |
+ _______    ______   _10 |_     _______   ______    ______
+/     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
+0010100 /|/011010 /|101010/   /0101010/  001010  |/100110  |
+01 |  00 |00    00 |  10 | __ 00 |       /    10 |00 |  01 |
+10 |  01 |01001010/   00 |/  |01 \_____ /0101000 |00 |__10/|
+10 |  00 |00/    / |  10  00/ 00/    / |00    00 |00/   00/
+00/   10/  0101000/    0010/   0010010/  0010100/ 1010100/
+                                                  00 |
+Network Protocol Analysis Framework               00 |
+created by Philipp Mieden, 2018                   00/
+` + Version
+
+// PrintLogo prints the netcap logo
+func PrintLogo() {
+	utils.ClearScreen()
+	fmt.Println(logo)
+}
 
 // Dump reads the specified netcap file
 // and dumps the output according to the configuration to stdout
