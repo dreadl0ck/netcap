@@ -40,3 +40,7 @@ func (a EAP) CSVRecord() []string {
 func (a EAP) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a EAP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

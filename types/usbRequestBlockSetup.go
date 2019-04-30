@@ -38,3 +38,7 @@ func (a USBRequestBlockSetup) CSVRecord() []string {
 func (a USBRequestBlockSetup) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a USBRequestBlockSetup) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

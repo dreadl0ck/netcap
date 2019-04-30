@@ -61,3 +61,7 @@ func (d DHCPv6Option) ToString() string {
 	b.WriteString(End)
 	return b.String()
 }
+
+func (a DHCPv6) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

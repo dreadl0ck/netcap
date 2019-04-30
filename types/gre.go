@@ -89,3 +89,7 @@ func (r *GRERouting) GetString() string {
 
 	return b.String()
 }
+
+func (a GRE) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

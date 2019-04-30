@@ -50,3 +50,7 @@ func (a ARP) CSVRecord() []string {
 func (a ARP) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a ARP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

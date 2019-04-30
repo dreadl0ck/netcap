@@ -46,3 +46,7 @@ func (a LCM) CSVRecord() []string {
 func (a LCM) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a LCM) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

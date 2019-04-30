@@ -40,3 +40,7 @@ func (i ICMPv6NeighborAdvertisement) CSVRecord() []string {
 func (i ICMPv6NeighborAdvertisement) NetcapTimestamp() string {
 	return i.Timestamp
 }
+
+func (a ICMPv6NeighborAdvertisement) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

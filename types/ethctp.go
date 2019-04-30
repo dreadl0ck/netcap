@@ -30,3 +30,7 @@ func (i EthernetCTP) CSVRecord() []string {
 func (i EthernetCTP) NetcapTimestamp() string {
 	return i.Timestamp
 }
+
+func (a EthernetCTP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

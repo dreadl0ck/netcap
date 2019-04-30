@@ -71,3 +71,7 @@ func (u USB) CSVRecord() []string {
 func (f USB) NetcapTimestamp() string {
 	return f.Timestamp
 }
+
+func (f USB) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&f)
+}

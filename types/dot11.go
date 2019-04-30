@@ -173,3 +173,7 @@ func (d *Dot11ASEL) ToString() string {
 	b.WriteString(End)
 	return b.String()
 }
+
+func (a Dot11) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

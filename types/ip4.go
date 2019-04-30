@@ -84,3 +84,7 @@ func (i IPv4Option) ToString() string {
 
 	return b.String()
 }
+
+func (a IPv4) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

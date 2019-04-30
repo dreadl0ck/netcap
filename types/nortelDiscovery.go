@@ -42,3 +42,7 @@ func (a NortelDiscovery) CSVRecord() []string {
 func (a NortelDiscovery) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a NortelDiscovery) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

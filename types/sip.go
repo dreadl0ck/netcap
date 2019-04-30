@@ -44,3 +44,7 @@ func (s SIP) CSVRecord() []string {
 func (s SIP) NetcapTimestamp() string {
 	return s.Timestamp
 }
+
+func (u SIP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
+}

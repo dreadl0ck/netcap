@@ -85,3 +85,7 @@ func (t TLSClientHello) CSVRecord() []string {
 func (f TLSClientHello) NetcapTimestamp() string {
 	return f.Timestamp
 }
+
+func (u TLSClientHello) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
+}

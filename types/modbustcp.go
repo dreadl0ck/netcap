@@ -40,3 +40,7 @@ func (a ModbusTCP) CSVRecord() []string {
 func (a ModbusTCP) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a ModbusTCP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

@@ -91,3 +91,7 @@ func (l HelloPkg) ToString() string {
 
 	return b.String()
 }
+
+func (u HelloPkg) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
+}

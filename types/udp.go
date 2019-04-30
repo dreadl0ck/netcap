@@ -44,10 +44,6 @@ func init() {
 	prometheus.MustRegister(udpMetric)
 }
 
-func (u UDP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
-}
-
 func (u UDP) CSVHeader() []string {
 	return filter(fieldsUDP)
 }
@@ -67,6 +63,10 @@ func (u UDP) CSVRecord() []string {
 
 func (u UDP) NetcapTimestamp() string {
 	return u.Timestamp
+}
+
+func (u UDP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
 }
 
 func (u UDP) Inc() {

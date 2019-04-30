@@ -42,3 +42,7 @@ func (l LLC) CSVRecord() []string {
 func (l LLC) NetcapTimestamp() string {
 	return l.Timestamp
 }
+
+func (a LLC) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

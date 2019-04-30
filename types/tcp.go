@@ -46,6 +46,7 @@ func (t TCP) CSVHeader() []string {
 		"Payload",
 	})
 }
+
 func (t TCP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(t.Timestamp),                      // string
@@ -90,4 +91,8 @@ func (t TCP) GetOptionString() string {
 
 func (f TCP) NetcapTimestamp() string {
 	return f.Timestamp
+}
+
+func (u TCP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&u)
 }

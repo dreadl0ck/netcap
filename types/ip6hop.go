@@ -55,3 +55,7 @@ func (o IPv6HopByHopOption) ToString() string {
 func (a IPv6HopByHopOptionAlignment) ToString() string {
 	return join(formatInt32(a.One), formatInt32(a.Two))
 }
+
+func (a IPv6HopByHop) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

@@ -38,3 +38,7 @@ func (a IPSecAH) CSVRecord() []string {
 func (a IPSecAH) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a IPSecAH) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

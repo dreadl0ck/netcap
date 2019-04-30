@@ -51,3 +51,7 @@ func (o ICMPv6Option) ToString() string {
 
 	return b.String()
 }
+
+func (a ICMPv6RouterSolicitation) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

@@ -80,3 +80,7 @@ func (i IGMPv3GroupRecord) ToString() string {
 
 	return b.String()
 }
+
+func (a IGMP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

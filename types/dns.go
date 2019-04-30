@@ -177,3 +177,7 @@ func (q *DNSMX) ToString() string {
 	b.WriteString(End)
 	return b.String()
 }
+
+func (a DNS) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

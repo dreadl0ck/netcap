@@ -66,3 +66,7 @@ func (h IPv6HopByHop) ToString() string {
 	}
 	return h.Timestamp + Separator + join(opts...)
 }
+
+func (a IPv6) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

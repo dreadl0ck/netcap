@@ -60,3 +60,7 @@ func (c Connection) CSVRecord() []string {
 func (c Connection) NetcapTimestamp() string {
 	return c.TimestampFirst
 }
+
+func (a Connection) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

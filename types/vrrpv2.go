@@ -46,3 +46,7 @@ func (a VRRPv2) CSVRecord() []string {
 func (a VRRPv2) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a VRRPv2) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

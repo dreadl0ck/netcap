@@ -46,3 +46,7 @@ func (f LinkFlow) CSVRecord() []string {
 func (f LinkFlow) NetcapTimestamp() string {
 	return f.TimestampFirst
 }
+
+func (a LinkFlow) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

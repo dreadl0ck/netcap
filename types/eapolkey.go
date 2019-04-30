@@ -75,3 +75,7 @@ func (a EAPOLKey) CSVRecord() []string {
 func (a EAPOLKey) NetcapTimestamp() string {
 	return a.Timestamp
 }
+
+func (a EAPOLKey) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}

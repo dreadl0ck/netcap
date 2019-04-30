@@ -70,3 +70,7 @@ func (i GeneveOption) ToString() string {
 
 	return b.String()
 }
+
+func (a Geneve) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}
