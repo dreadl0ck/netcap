@@ -293,26 +293,38 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 				return labelMap, arr, errors.New("invalid flow: " + flow)
 			}
 
-			// split string for source
+			// split string for source IP address
 			srcSlice := strings.Split(flowSlice[0], ":")
-			if len(srcSlice) != 2 {
-				return labelMap, arr, errors.New("invalid source: " + flowSlice[0])
+			if len(srcSlice) < 2 {
+				return labelMap, arr, errors.New("invalid source address: " + flowSlice[0])
+			}
+			var sourceIP string
+			if len(srcSlice) > 2 { // IPv6
+				sourceIP = strings.Join(srcSlice[:len(srcSlice)-1], ":")
+			} else { // IPv4
+				sourceIP = strings.Join(srcSlice[:len(srcSlice)-1], "")
 			}
 
-			// split string for destination
+			// split string for destination IP address
 			dstSlice := strings.Split(flowSlice[1], ":")
-			if len(dstSlice) != 2 {
-				return labelMap, arr, errors.New("invalid destination: " + flowSlice[1])
+			if len(dstSlice) < 2 {
+				return labelMap, arr, errors.New("invalid destination address: " + flowSlice[1])
+			}
+			var destIP string
+			if len(dstSlice) > 2 { // IPv6
+				destIP = strings.Join(dstSlice[:len(dstSlice)-1], ":")
+			} else { // IPv4
+				destIP = strings.Join(dstSlice[:len(dstSlice)-1], "")
 			}
 
 			// convert ports to integers
 			var srcport int
-			srcport, err = strconv.Atoi(srcSlice[1])
+			srcport, err = strconv.Atoi(srcSlice[len(srcSlice)-1])
 			if err != nil {
 				return
 			}
 			var dstport int
-			dstport, err = strconv.Atoi(dstSlice[1])
+			dstport, err = strconv.Atoi(dstSlice[len(dstSlice)-1])
 			if err != nil {
 				return
 			}
@@ -339,9 +351,9 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 			a := &SuricataAlert{
 				Timestamp:      utils.TimeToString(t),
 				Proto:          nProto,
-				SrcIP:          srcSlice[0],
+				SrcIP:          sourceIP,
 				SrcPort:        srcport,
-				DstIP:          dstSlice[0],
+				DstIP:          destIP,
 				DstPort:        dstport,
 				Classification: strings.TrimSuffix(strings.TrimPrefix(classification.FindString(l), "[Classification: "), "]"),
 				Description:    dRaw[dStart:dEnd],
