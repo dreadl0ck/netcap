@@ -7,23 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mgutz/ansi"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// prefix for all prometheus metrics exposed by our proxy
-const prefix = "netcap_"
-
-// init is used to register the prometheus metrics on startup
-func init() {
-
-	// counters
-	prometheus.MustRegister(
-		upTime,
-	)
-}
+const metricsRoute = "/metrics"
 
 var (
 	// Start time
@@ -32,7 +20,7 @@ var (
 	// Uptime
 	upTime = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: prefix + "uptime",
+			Name: "nc_uptime",
 			Help: "Number of seconds since the last restart",
 		},
 		[]string{},
@@ -42,12 +30,13 @@ var (
 // ServeMetricsAt exposes the prometheus at the given address
 func ServeMetricsAt(addr string) {
 
-	var metricsHandler = promhttp.Handler()
-	fmt.Println(ansi.Yellow+"serving metrics at:", addr+"/metrics"+ansi.Reset)
+	fmt.Println("satrting to serve metrics at:", addr+metricsRoute)
 
 	go func() {
+		metricsHandler := promhttp.Handler()
+
 		// serve prometheus metrics on the /metrics route
-		http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		http.HandleFunc(metricsRoute, func(w http.ResponseWriter, r *http.Request) {
 			upTime.WithLabelValues().Set(math.RoundToEven(time.Since(startTime).Seconds()))
 			metricsHandler.ServeHTTP(w, r)
 		})
