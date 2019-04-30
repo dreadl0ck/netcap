@@ -61,10 +61,10 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 
 	if !structured && !table {
 
-		if p, ok := record.(types.CSV); ok {
+		if p, ok := record.(types.AuditRecord); ok {
 			fmt.Println(strings.Join(p.CSVHeader(), separator))
 		} else {
-			log.Fatal("netcap type does not implement the types.CSV interface!")
+			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
 		}
 
 		if fields {
@@ -87,7 +87,7 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 			continue
 		}
 
-		if p, ok := record.(types.CSV); ok {
+		if p, ok := record.(types.AuditRecord); ok {
 			if table {
 				rows = append(rows, p.CSVRecord())
 
@@ -99,17 +99,17 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 			}
 			os.Stdout.WriteString(strings.Join(p.CSVRecord(), separator) + "\n")
 		} else {
-			log.Fatal("netcap type does not implement the types.CSV interface!")
+			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
 		}
 
 	}
 
 	if table {
-		if p, ok := record.(types.CSV); ok {
+		if p, ok := record.(types.AuditRecord); ok {
 			tui.Table(os.Stdout, p.CSVHeader(), rows)
 			fmt.Println()
 		} else {
-			log.Fatal("netcap type does not implement the types.CSV interface!")
+			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
 		}
 	}
 

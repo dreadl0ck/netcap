@@ -140,7 +140,7 @@ func TimeToString(t time.Time) string {
 	return string(b)
 }
 
-// func sortSlice(values []types.CSV) {
+// func sortSlice(values []types.AuditRecord) {
 // 	sort.Slice(values, func(i, j int) bool {
 // 		iTime := StringToTime(values[i].NetcapTimestamp())
 // 		jTime := StringToTime(values[j].NetcapTimestamp())

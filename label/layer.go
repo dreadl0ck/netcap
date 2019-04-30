@@ -60,12 +60,12 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 		var (
 			record = netcap.InitRecord(header.Type)
 			ok     bool
-			p      types.CSV
+			p      types.AuditRecord
 		)
 
 		// check if we can decode it as CSV
-		if p, ok = record.(types.CSV); !ok {
-			panic("type does not implement types.CSV interface:" + typ)
+		if p, ok = record.(types.AuditRecord); !ok {
+			panic("type does not implement types.AuditRecord interface:" + typ)
 		}
 
 		// run selection

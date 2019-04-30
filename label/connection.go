@@ -59,7 +59,7 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 
 		var (
 			conn = new(types.Connection)
-			co   types.CSV
+			co   types.AuditRecord
 			pm   proto.Message
 			ok   bool
 		)
@@ -67,7 +67,7 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 
 		types.Select(conn, selection)
 
-		if co, ok = pm.(types.CSV); !ok {
+		if co, ok = pm.(types.AuditRecord); !ok {
 			panic("type does not implement CSV interface")
 		}
 

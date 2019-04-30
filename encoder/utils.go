@@ -39,7 +39,7 @@ func MarkdownOverview() {
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
 	for _, e := range layerEncoderSlice {
-		if csv, ok := netcap.InitRecord(e.Type).(types.CSV); ok {
+		if csv, ok := netcap.InitRecord(e.Type).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(e.Layer.String(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
@@ -49,7 +49,7 @@ func MarkdownOverview() {
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
 	for _, e := range customEncoderSlice {
-		if csv, ok := netcap.InitRecord(e.Type).(types.CSV); ok {
+		if csv, ok := netcap.InitRecord(e.Type).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(e.Name, 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}

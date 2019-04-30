@@ -57,7 +57,7 @@ func NetworkFlow(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 
 		var (
 			flow = new(types.NetworkFlow)
-			co   types.CSV
+			co   types.AuditRecord
 			pm   proto.Message
 			ok   bool
 		)
@@ -65,7 +65,7 @@ func NetworkFlow(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 
 		types.Select(flow, selection)
 
-		if co, ok = pm.(types.CSV); !ok {
+		if co, ok = pm.(types.AuditRecord); !ok {
 			panic("type does not implement CSV interface")
 		}
 

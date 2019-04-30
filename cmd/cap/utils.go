@@ -38,10 +38,10 @@ func CheckFields() {
 		record            = netcap.InitRecord(h.Type)
 		numExpectedFields int
 	)
-	if p, ok := record.(types.CSV); ok {
+	if p, ok := record.(types.AuditRecord); ok {
 		numExpectedFields = len(p.CSVHeader())
 	} else {
-		log.Fatal("netcap type does not implement the types.CSV interface!")
+		log.Fatal("netcap type does not implement the types.AuditRecord interface!")
 	}
 
 	// for {
@@ -51,7 +51,7 @@ func CheckFields() {
 	// 		break
 	// 	}
 
-	// 	if p, ok := record.(types.CSV); ok {
+	// 	if p, ok := record.(types.AuditRecord); ok {
 	// 		fields := p.CSVRecord()
 	// 		// TODO refactor to use netcap lib to read file instead of calling it as command
 	// 	}
