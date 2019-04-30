@@ -57,7 +57,7 @@ func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 
 		var (
 			ip6 = new(types.IPv6)
-			fl  types.CSV
+			fl  types.AuditRecord
 			pm  proto.Message
 			ok  bool
 		)
@@ -65,7 +65,7 @@ func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 
 		types.Select(ip6, selection)
 
-		if fl, ok = pm.(types.CSV); !ok {
+		if fl, ok = pm.(types.AuditRecord); !ok {
 			panic("type does not implement CSV interface")
 		}
 

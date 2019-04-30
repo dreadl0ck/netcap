@@ -57,7 +57,7 @@ func UDP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 
 		var (
 			udp = new(types.UDP)
-			fl  types.CSV
+			fl  types.AuditRecord
 			pm  proto.Message
 			ok  bool
 		)
@@ -65,7 +65,7 @@ func UDP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 
 		types.Select(udp, selection)
 
-		if fl, ok = pm.(types.CSV); !ok {
+		if fl, ok = pm.(types.AuditRecord); !ok {
 			panic("type does not implement CSV interface")
 		}
 

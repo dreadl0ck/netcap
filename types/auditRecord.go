@@ -33,13 +33,10 @@ var (
 	jsonMarshaler = &jsonpb.Marshaler{}
 )
 
-// TODO
-// RENAME CSV -> AuditRecord
-//
-
-// CSV ensures that the type can be converted to comma separated values
+// AuditRecord is the interface for basic operations with NETCAP audit records
+// this includes dumping as CSV or JSON or prometheus metrics
 // and provides access to the timestamp of the audit record
-type CSV interface {
+type AuditRecord interface {
 
 	// returns CSV values
 	CSVRecord() []string
@@ -87,10 +84,10 @@ func selectFields(all []string, selection string) (s []int) {
 // Select takes a proto.Message and sets the selection on the package level
 func Select(msg proto.Message, vals string) {
 	if vals != "" && vals != " " {
-		if p, ok := msg.(CSV); ok {
+		if p, ok := msg.(AuditRecord); ok {
 			selection = selectFields(p.CSVHeader(), vals)
 		} else {
-			log.Fatal("netcap type does not implement the types.CSV interface!")
+			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
 		}
 	}
 }

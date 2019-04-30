@@ -58,7 +58,7 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 
 		var (
 			flow = new(types.Flow)
-			fl   types.CSV
+			fl   types.AuditRecord
 			pm   proto.Message
 			ok   bool
 		)
@@ -66,7 +66,7 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 
 		types.Select(flow, selection)
 
-		if fl, ok = pm.(types.CSV); !ok {
+		if fl, ok = pm.(types.AuditRecord); !ok {
 			panic("type does not implement CSV interface")
 		}
 

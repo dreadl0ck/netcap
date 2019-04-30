@@ -37,7 +37,7 @@ func (w *csvWriter) WriteHeader(msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 
-	if csv, ok := msg.(types.CSV); ok {
+	if csv, ok := msg.(types.AuditRecord); ok {
 		return w.w.Write([]byte(strings.Join(csv.CSVHeader(), ",") + "\n"))
 	}
 
@@ -49,7 +49,7 @@ func (w *csvWriter) WriteRecord(msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 
-	if csv, ok := msg.(types.CSV); ok {
+	if csv, ok := msg.(types.AuditRecord); ok {
 		return w.w.Write([]byte(strings.Join(csv.CSVRecord(), ",") + "\n"))
 	}
 
