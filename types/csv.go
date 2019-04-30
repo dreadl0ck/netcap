@@ -19,6 +19,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gogo/protobuf/jsonpb"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/mgutz/ansi"
 )
@@ -28,7 +29,13 @@ var (
 
 	// UTC allows to print timestamp in the utc format
 	UTC bool
+
+	jsonMarshaler = &jsonpb.Marshaler{}
 )
+
+// TODO
+// RENAME CSV -> AuditRecord
+//
 
 // CSV ensures that the type can be converted to comma separated values
 // and provides access to the timestamp of the audit record
@@ -42,6 +49,12 @@ type CSV interface {
 
 	// used to retrieve the timestamp of the audit record for labeling
 	NetcapTimestamp() string
+
+	// increments the metric for the audit record
+	// Inc()
+
+	// returns the audir record as JSON
+	// JSON()
 }
 
 // selectFields returns an array with the inidices of the desired fields for selection

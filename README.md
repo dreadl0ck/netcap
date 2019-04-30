@@ -767,8 +767,6 @@ with [gogo](https://github.com/gogo/protobuf) code generator:
 
 However, for this to work, the fields named *Size* on several audit records structures had to be renamed, because the new code generator generates a function named *Size()* on each protocol buffer.
 
-This breaks backwards compatibility to audit records created with version v0.3.8.
-Use the *-header* flag to check which version was used to create the *.ncap* dumpfile.
 The new field name is *TotalSize*.
 
 ### Payload capture

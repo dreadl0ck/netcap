@@ -4,1185 +4,1187 @@
 require 'google/protobuf'
 
 Google::Protobuf::DescriptorPool.generated_pool.build do
-  add_message "types.Header" do
-    optional :Created, :string, 1
-    optional :InputSource, :string, 2
-    optional :Type, :enum, 3, "types.Type"
-    optional :Version, :string, 4
-    optional :ContainsPayloads, :bool, 5
-  end
-  add_message "types.Batch" do
-    optional :ClientID, :string, 1
-    optional :MessageType, :enum, 2, "types.Type"
-    optional :TotalSize, :int32, 3
-    optional :Data, :bytes, 4
-    optional :ContainsPayloads, :bool, 5
-  end
-  add_message "types.Flow" do
-    optional :TimestampFirst, :string, 1
-    optional :LinkProto, :string, 2
-    optional :NetworkProto, :string, 3
-    optional :TransportProto, :string, 4
-    optional :ApplicationProto, :string, 5
-    optional :SrcMAC, :string, 6
-    optional :DstMAC, :string, 7
-    optional :SrcIP, :string, 8
-    optional :SrcPort, :string, 9
-    optional :DstIP, :string, 10
-    optional :DstPort, :string, 11
-    optional :TotalSize, :int32, 12
-    optional :AppPayloadSize, :int32, 13
-    optional :NumPackets, :int32, 14
-    optional :UID, :string, 15
-    optional :TimestampLast, :string, 16
-    optional :Duration, :int64, 17
-  end
-  add_message "types.Connection" do
-    optional :TimestampFirst, :string, 1
-    optional :LinkProto, :string, 2
-    optional :NetworkProto, :string, 3
-    optional :TransportProto, :string, 4
-    optional :ApplicationProto, :string, 5
-    optional :SrcMAC, :string, 6
-    optional :DstMAC, :string, 7
-    optional :SrcIP, :string, 8
-    optional :SrcPort, :string, 9
-    optional :DstIP, :string, 10
-    optional :DstPort, :string, 11
-    optional :TotalSize, :int32, 12
-    optional :AppPayloadSize, :int32, 13
-    optional :NumPackets, :int32, 14
-    optional :UID, :string, 15
-    optional :TimestampLast, :string, 16
-    optional :Duration, :int64, 17
-  end
-  add_message "types.LinkFlow" do
-    optional :TimestampFirst, :string, 1
-    optional :TimestampLast, :string, 2
-    optional :Proto, :string, 3
-    optional :SrcMAC, :string, 4
-    optional :DstMAC, :string, 5
-    optional :TotalSize, :int64, 6
-    optional :NumPackets, :int64, 7
-    optional :UID, :uint64, 8
-    optional :Duration, :int64, 9
-  end
-  add_message "types.NetworkFlow" do
-    optional :TimestampFirst, :string, 1
-    optional :TimestampLast, :string, 2
-    optional :Proto, :string, 3
-    optional :SrcIP, :string, 4
-    optional :DstIP, :string, 5
-    optional :TotalSize, :int64, 6
-    optional :NumPackets, :int64, 7
-    optional :UID, :uint64, 8
-    optional :Duration, :int64, 9
-  end
-  add_message "types.TransportFlow" do
-    optional :TimestampFirst, :string, 1
-    optional :TimestampLast, :string, 2
-    optional :Proto, :string, 3
-    optional :SrcPort, :int32, 4
-    optional :DstPort, :int32, 5
-    optional :TotalSize, :int64, 6
-    optional :NumPackets, :int64, 7
-    optional :UID, :uint64, 8
-    optional :Duration, :int64, 9
-  end
-  add_message "types.Ethernet" do
-    optional :Timestamp, :string, 1
-    optional :SrcMAC, :string, 2
-    optional :DstMAC, :string, 3
-    optional :EthernetType, :int32, 4
-    optional :PayloadEntropy, :double, 5
-    optional :PayloadSize, :int32, 6
-  end
-  add_message "types.ARP" do
-    optional :Timestamp, :string, 1
-    optional :AddrType, :int32, 2
-    optional :Protocol, :int32, 3
-    optional :HwAddressSize, :int32, 4
-    optional :ProtAddressSize, :int32, 5
-    optional :Operation, :int32, 6
-    optional :SrcHwAddress, :bytes, 7
-    optional :SrcProtAddress, :bytes, 8
-    optional :DstHwAddress, :bytes, 9
-    optional :DstProtAddress, :bytes, 10
-  end
-  add_message "types.Dot1Q" do
-    optional :Timestamp, :string, 1
-    optional :Priority, :int32, 2
-    optional :DropEligible, :bool, 3
-    optional :VLANIdentifier, :int32, 4
-    optional :Type, :int32, 5
-  end
-  add_message "types.Dot11" do
-    optional :Timestamp, :string, 1
-    optional :Type, :int32, 2
-    optional :Proto, :int32, 3
-    optional :Flags, :int32, 4
-    optional :DurationID, :int32, 5
-    optional :Address1, :string, 6
-    optional :Address2, :string, 7
-    optional :Address3, :string, 8
-    optional :Address4, :string, 9
-    optional :SequenceNumber, :int32, 10
-    optional :FragmentNumber, :int32, 11
-    optional :Checksum, :uint32, 12
-    optional :QOS, :message, 13, "types.Dot11QOS"
-    optional :HTControl, :message, 14, "types.Dot11HTControl"
-  end
-  add_message "types.Dot11QOS" do
-    optional :TID, :int32, 1
-    optional :EOSP, :bool, 2
-    optional :AckPolicy, :int32, 3
-    optional :TXOP, :int32, 4
-  end
-  add_message "types.Dot11HTControl" do
-    optional :ACConstraint, :bool, 1
-    optional :RDGMorePPDU, :bool, 2
-    optional :VHT, :message, 3, "types.Dot11HTControlVHT"
-    optional :HT, :message, 4, "types.Dot11HTControlHT"
-  end
-  add_message "types.Dot11HTControlVHT" do
-    optional :MRQ, :bool, 1
-    optional :UnsolicitedMFB, :bool, 2
-    optional :MSI, :int32, 3
-    optional :MFB, :message, 4, "types.Dot11HTControlMFB"
-    optional :CompressedMSI, :int32, 5
-    optional :STBCIndication, :bool, 6
-    optional :MFSI, :int32, 7
-    optional :GID, :int32, 8
-    optional :CodingType, :int32, 9
-    optional :FbTXBeamformed, :bool, 10
-  end
-  add_message "types.Dot11HTControlHT" do
-    optional :LinkAdapationControl, :message, 1, "types.Dot11LinkAdapationControl"
-    optional :CalibrationPosition, :int32, 2
-    optional :CalibrationSequence, :int32, 3
-    optional :CSISteering, :int32, 4
-    optional :NDPAnnouncement, :bool, 5
-    optional :DEI, :bool, 6
-  end
-  add_message "types.Dot11HTControlMFB" do
-    optional :NumSTS, :int32, 1
-    optional :VHTMCS, :int32, 2
-    optional :BW, :int32, 3
-    optional :SNR, :int32, 4
-  end
-  add_message "types.Dot11LinkAdapationControl" do
-    optional :TRQ, :bool, 1
-    optional :MRQ, :bool, 2
-    optional :MSI, :int32, 3
-    optional :MFSI, :int32, 4
-    optional :MFB, :int32, 6
-    optional :ASEL, :message, 5, "types.Dot11ASEL"
-  end
-  add_message "types.Dot11ASEL" do
-    optional :Command, :int32, 1
-    optional :Data, :int32, 2
-  end
-  add_message "types.LinkLayerDiscovery" do
-    optional :Timestamp, :string, 1
-    optional :ChassisID, :message, 2, "types.LLDPChassisID"
-    optional :PortID, :message, 3, "types.LLDPPortID"
-    optional :TTL, :int32, 4
-    repeated :Values, :message, 5, "types.LinkLayerDiscoveryValue"
-  end
-  add_message "types.LLDPChassisID" do
-    optional :Subtype, :int32, 1
-    optional :ID, :bytes, 2
-  end
-  add_message "types.LLDPPortID" do
-    optional :Subtype, :int32, 1
-    optional :ID, :bytes, 2
-  end
-  add_message "types.LinkLayerDiscoveryValue" do
-    optional :Type, :int32, 1
-    optional :Length, :int32, 2
-    optional :Value, :bytes, 3
-  end
-  add_message "types.EthernetCTP" do
-    optional :Timestamp, :string, 1
-    optional :SkipCount, :int32, 2
-  end
-  add_message "types.EthernetCTPReply" do
-    optional :Timestamp, :string, 1
-    optional :Function, :int32, 2
-    optional :ReceiptNumber, :int32, 3
-    optional :Data, :bytes, 4
-  end
-  add_message "types.LinkLayerDiscoveryInfo" do
-    optional :Timestamp, :string, 1
-    optional :PortDescription, :string, 2
-    optional :SysName, :string, 3
-    optional :SysDescription, :string, 4
-    optional :SysCapabilities, :message, 5, "types.LLDPSysCapabilities"
-    optional :MgmtAddress, :message, 6, "types.LLDPMgmtAddress"
-    repeated :OrgTLVs, :message, 7, "types.LLDPOrgSpecificTLV"
-    repeated :Unknown, :message, 8, "types.LinkLayerDiscoveryValue"
-  end
-  add_message "types.LLDPSysCapabilities" do
-    optional :SystemCap, :message, 1, "types.LLDPCapabilities"
-    optional :EnabledCap, :message, 2, "types.LLDPCapabilities"
-  end
-  add_message "types.LLDPCapabilities" do
-    optional :Other, :bool, 1
-    optional :Repeater, :bool, 2
-    optional :Bridge, :bool, 3
-    optional :WLANAP, :bool, 4
-    optional :Router, :bool, 5
-    optional :Phone, :bool, 6
-    optional :DocSis, :bool, 7
-    optional :StationOnly, :bool, 8
-    optional :CVLAN, :bool, 9
-    optional :SVLAN, :bool, 10
-    optional :TMPR, :bool, 11
-  end
-  add_message "types.LLDPMgmtAddress" do
-    optional :Subtype, :int32, 1
-    optional :Address, :bytes, 2
-    optional :InterfaceSubtype, :int32, 3
-    optional :InterfaceNumber, :uint32, 4
-    optional :OID, :string, 5
-  end
-  add_message "types.LLDPOrgSpecificTLV" do
-    optional :OUI, :uint32, 1
-    optional :SubType, :int32, 2
-    optional :Info, :bytes, 3
-  end
-  add_message "types.IPv4" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :IHL, :int32, 3
-    optional :TOS, :int32, 4
-    optional :Length, :int32, 5
-    optional :Id, :int32, 6
-    optional :Flags, :int32, 7
-    optional :FragOffset, :int32, 8
-    optional :TTL, :int32, 9
-    optional :Protocol, :int32, 10
-    optional :Checksum, :int32, 11
-    optional :SrcIP, :string, 12
-    optional :DstIP, :string, 13
-    optional :Padding, :bytes, 14
-    repeated :Options, :message, 15, "types.IPv4Option"
-    optional :PayloadEntropy, :double, 16
-    optional :PayloadSize, :int32, 17
-  end
-  add_message "types.IPv4Option" do
-    optional :OptionType, :int32, 1
-    optional :OptionLength, :int32, 2
-    optional :OptionData, :bytes, 3
-  end
-  add_message "types.IPv6" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :TrafficClass, :int32, 3
-    optional :FlowLabel, :uint32, 4
-    optional :Length, :int32, 5
-    optional :NextHeader, :int32, 6
-    optional :HopLimit, :int32, 7
-    optional :SrcIP, :string, 8
-    optional :DstIP, :string, 9
-    optional :PayloadEntropy, :double, 10
-    optional :PayloadSize, :int32, 11
-    optional :HopByHop, :message, 12, "types.IPv6HopByHop"
-  end
-  add_message "types.IPv6Fragment" do
-    optional :Timestamp, :string, 1
-    optional :NextHeader, :int32, 2
-    optional :Reserved1, :int32, 3
-    optional :FragmentOffset, :int32, 4
-    optional :Reserved2, :int32, 5
-    optional :MoreFragments, :bool, 6
-    optional :Identification, :uint32, 7
-  end
-  add_message "types.ICMPv4" do
-    optional :Timestamp, :string, 1
-    optional :TypeCode, :int32, 2
-    optional :Checksum, :int32, 3
-    optional :Id, :int32, 4
-    optional :Seq, :int32, 5
-  end
-  add_message "types.ICMPv6" do
-    optional :Timestamp, :string, 1
-    optional :TypeCode, :int32, 2
-    optional :Checksum, :int32, 3
-  end
-  add_message "types.ICMPv6NeighborAdvertisement" do
-    optional :Timestamp, :string, 1
-    optional :Flags, :int32, 2
-    optional :TargetAddress, :string, 3
-    repeated :Options, :message, 4, "types.ICMPv6Option"
-  end
-  add_message "types.ICMPv6RouterAdvertisement" do
-    optional :Timestamp, :string, 1
-    optional :HopLimit, :int32, 2
-    optional :Flags, :int32, 3
-    optional :RouterLifetime, :int32, 4
-    optional :ReachableTime, :uint32, 5
-    optional :RetransTimer, :uint32, 6
-    repeated :Options, :message, 7, "types.ICMPv6Option"
-  end
-  add_message "types.ICMPv6Option" do
-    optional :Type, :int32, 1
-    optional :Data, :bytes, 2
-  end
-  add_message "types.UDP" do
-    optional :Timestamp, :string, 1
-    optional :SrcPort, :int32, 2
-    optional :DstPort, :int32, 3
-    optional :Length, :int32, 4
-    optional :Checksum, :int32, 5
-    optional :PayloadEntropy, :double, 6
-    optional :PayloadSize, :int32, 7
-    optional :Payload, :bytes, 8
-  end
-  add_message "types.TCP" do
-    optional :Timestamp, :string, 1
-    optional :SrcPort, :int32, 2
-    optional :DstPort, :int32, 3
-    optional :SeqNum, :uint32, 4
-    optional :AckNum, :uint32, 5
-    optional :DataOffset, :int32, 6
-    optional :FIN, :bool, 7
-    optional :SYN, :bool, 8
-    optional :RST, :bool, 9
-    optional :PSH, :bool, 10
-    optional :ACK, :bool, 11
-    optional :URG, :bool, 12
-    optional :ECE, :bool, 13
-    optional :CWR, :bool, 14
-    optional :NS, :bool, 15
-    optional :Window, :int32, 16
-    optional :Checksum, :int32, 17
-    optional :Urgent, :int32, 18
-    optional :Padding, :bytes, 19
-    repeated :Options, :message, 20, "types.TCPOption"
-    optional :PayloadEntropy, :double, 21
-    optional :PayloadSize, :int32, 22
-    optional :Payload, :bytes, 23
-  end
-  add_message "types.TCPOption" do
-    optional :OptionType, :int32, 1
-    optional :OptionLength, :int32, 2
-    optional :OptionData, :bytes, 3
-  end
-  add_message "types.SCTP" do
-    optional :Timestamp, :string, 1
-    optional :SrcPort, :uint32, 2
-    optional :DstPort, :uint32, 3
-    optional :VerificationTag, :uint32, 4
-    optional :Checksum, :uint32, 5
-  end
-  add_message "types.DNS" do
-    optional :Timestamp, :string, 1
-    optional :ID, :int32, 2
-    optional :QR, :bool, 3
-    optional :OpCode, :int32, 4
-    optional :AA, :bool, 5
-    optional :TC, :bool, 6
-    optional :RD, :bool, 7
-    optional :RA, :bool, 8
-    optional :Z, :int32, 9
-    optional :ResponseCode, :int32, 10
-    optional :QDCount, :int32, 11
-    optional :ANCount, :int32, 12
-    optional :NSCount, :int32, 13
-    optional :ARCount, :int32, 14
-    repeated :Questions, :message, 15, "types.DNSQuestion"
-    repeated :Answers, :message, 16, "types.DNSResourceRecord"
-    repeated :Authorities, :message, 17, "types.DNSResourceRecord"
-    repeated :Additionals, :message, 18, "types.DNSResourceRecord"
-  end
-  add_message "types.DNSResourceRecord" do
-    optional :Name, :bytes, 1
-    optional :Type, :int32, 2
-    optional :Class, :int32, 3
-    optional :TTL, :uint32, 4
-    optional :DataLength, :int32, 5
-    optional :Data, :bytes, 6
-    optional :IP, :string, 7
-    optional :NS, :bytes, 8
-    optional :CNAME, :bytes, 9
-    optional :PTR, :bytes, 10
-    optional :SOA, :message, 11, "types.DNSSOA"
-    optional :SRV, :message, 12, "types.DNSSRV"
-    optional :MX, :message, 13, "types.DNSMX"
-    repeated :TXTs, :bytes, 14
-  end
-  add_message "types.DNSSOA" do
-    optional :MName, :bytes, 1
-    optional :RName, :bytes, 2
-    optional :Serial, :uint32, 3
-    optional :Refresh, :uint32, 4
-    optional :Retry, :uint32, 5
-    optional :Expire, :uint32, 6
-    optional :Minimum, :uint32, 7
-  end
-  add_message "types.DNSSRV" do
-    optional :Priority, :int32, 1
-    optional :Weight, :int32, 2
-    optional :Port, :int32, 3
-    optional :Name, :bytes, 4
-  end
-  add_message "types.DNSMX" do
-    optional :Preference, :int32, 1
-    optional :Name, :bytes, 2
-  end
-  add_message "types.DNSQuestion" do
-    optional :Name, :bytes, 1
-    optional :Type, :int32, 2
-    optional :Class, :int32, 3
-  end
-  add_message "types.DHCPv4" do
-    optional :Timestamp, :string, 1
-    optional :Operation, :int32, 2
-    optional :HardwareType, :int32, 3
-    optional :HardwareLen, :int32, 4
-    optional :HardwareOpts, :int32, 5
-    optional :Xid, :uint32, 6
-    optional :Secs, :int32, 7
-    optional :Flags, :int32, 8
-    optional :ClientIP, :string, 9
-    optional :YourClientIP, :string, 10
-    optional :NextServerIP, :string, 11
-    optional :RelayAgentIP, :string, 12
-    optional :ClientHWAddr, :string, 13
-    optional :ServerName, :bytes, 14
-    optional :File, :bytes, 15
-    repeated :Options, :message, 16, "types.DHCPOption"
-  end
-  add_message "types.DHCPOption" do
-    optional :Type, :int32, 1
-    optional :Length, :int32, 2
-    optional :Data, :bytes, 3
-  end
-  add_message "types.DHCPv6" do
-    optional :Timestamp, :string, 1
-    optional :MsgType, :int32, 2
-    optional :HopCount, :int32, 3
-    optional :LinkAddr, :string, 4
-    optional :PeerAddr, :string, 5
-    optional :TransactionID, :bytes, 6
-    repeated :Options, :message, 7, "types.DHCPv6Option"
-  end
-  add_message "types.DHCPv6Option" do
-    optional :Code, :int32, 1
-    optional :Length, :int32, 2
-    optional :Data, :bytes, 3
-  end
-  add_message "types.LLC" do
-    optional :Timestamp, :string, 1
-    optional :DSAP, :int32, 2
-    optional :IG, :bool, 3
-    optional :SSAP, :int32, 4
-    optional :CR, :bool, 5
-    optional :Control, :int32, 6
-  end
-  add_message "types.NTP" do
-    optional :Timestamp, :string, 1
-    optional :LeapIndicator, :int32, 2
-    optional :Version, :int32, 3
-    optional :Mode, :int32, 4
-    optional :Stratum, :int32, 5
-    optional :Poll, :int32, 6
-    optional :Precision, :int32, 7
-    optional :RootDelay, :uint32, 8
-    optional :RootDispersion, :uint32, 9
-    optional :ReferenceID, :uint32, 10
-    optional :ReferenceTimestamp, :uint64, 11
-    optional :OriginTimestamp, :uint64, 12
-    optional :ReceiveTimestamp, :uint64, 13
-    optional :TransmitTimestamp, :uint64, 14
-    optional :ExtensionBytes, :bytes, 15
-  end
-  add_message "types.SIP" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :Method, :int32, 3
-    repeated :Headers, :string, 4
-    optional :IsResponse, :bool, 5
-    optional :ResponseCode, :int32, 6
-    optional :ResponseStatus, :string, 7
-  end
-  add_message "types.IGMP" do
-    optional :Timestamp, :string, 1
-    optional :Type, :int32, 2
-    optional :MaxResponseTime, :uint64, 3
-    optional :Checksum, :int32, 4
-    optional :GroupAddress, :bytes, 5
-    optional :SupressRouterProcessing, :bool, 6
-    optional :RobustnessValue, :int32, 7
-    optional :IntervalTime, :uint64, 8
-    repeated :SourceAddresses, :string, 9
-    optional :NumberOfGroupRecords, :int32, 10
-    optional :NumberOfSources, :int32, 11
-    repeated :GroupRecords, :message, 12, "types.IGMPv3GroupRecord"
-    optional :Version, :int32, 13
-  end
-  add_message "types.IGMPv3GroupRecord" do
-    optional :Type, :int32, 1
-    optional :AuxDataLen, :int32, 2
-    optional :NumberOfSources, :int32, 3
-    optional :MulticastAddress, :string, 4
-    repeated :SourceAddresses, :string, 5
-  end
-  add_message "types.IPv6HopByHop" do
-    optional :Timestamp, :string, 1
-    repeated :Options, :message, 2, "types.IPv6HopByHopOption"
-  end
-  add_message "types.IPv6HopByHopOption" do
-    optional :OptionType, :int32, 1
-    optional :OptionLength, :int32, 2
-    optional :ActualLength, :int32, 3
-    optional :OptionData, :bytes, 4
-    optional :OptionAlignment, :message, 5, "types.IPv6HopByHopOptionAlignment"
-  end
-  add_message "types.IPv6HopByHopOptionAlignment" do
-    optional :One, :int32, 1
-    optional :Two, :int32, 2
-  end
-  add_message "types.SNAP" do
-    optional :Timestamp, :string, 1
-    optional :OrganizationalCode, :bytes, 2
-    optional :Type, :int32, 3
-  end
-  add_message "types.ICMPv6Echo" do
-    optional :Timestamp, :string, 1
-    optional :Identifier, :int32, 2
-    optional :SeqNumber, :int32, 3
-  end
-  add_message "types.ICMPv6NeighborSolicitation" do
-    optional :Timestamp, :string, 1
-    optional :TargetAddress, :string, 2
-    repeated :Options, :message, 3, "types.ICMPv6Option"
-  end
-  add_message "types.ICMPv6RouterSolicitation" do
-    optional :Timestamp, :string, 1
-    repeated :Options, :message, 2, "types.ICMPv6Option"
-  end
-  add_message "types.HTTP" do
-    optional :Timestamp, :string, 1
-    optional :Proto, :string, 2
-    optional :Method, :string, 3
-    optional :Host, :string, 4
-    optional :UserAgent, :string, 5
-    optional :Referer, :string, 6
-    repeated :ReqCookies, :string, 7
-    optional :ReqContentLength, :int32, 8
-    optional :URL, :string, 9
-    optional :ResContentLength, :int32, 10
-    optional :ContentType, :string, 11
-    optional :StatusCode, :int32, 12
-    optional :SrcIP, :string, 13
-    optional :DstIP, :string, 14
-  end
-  add_message "types.TLSClientHello" do
-    optional :Timestamp, :string, 1
-    optional :Type, :int32, 2
-    optional :Version, :int32, 3
-    optional :MessageLen, :int32, 4
-    optional :HandshakeType, :int32, 5
-    optional :HandshakeLen, :uint32, 6
-    optional :HandshakeVersion, :int32, 7
-    optional :Random, :bytes, 8
-    optional :SessionIDLen, :uint32, 9
-    optional :SessionID, :bytes, 10
-    optional :CipherSuiteLen, :int32, 11
-    optional :ExtensionLen, :int32, 12
-    optional :SNI, :string, 13
-    optional :OSCP, :bool, 14
-    repeated :CipherSuites, :int32, 15
-    repeated :CompressMethods, :int32, 16
-    repeated :SignatureAlgs, :int32, 17
-    repeated :SupportedGroups, :int32, 18
-    repeated :SupportedPoints, :int32, 19
-    repeated :ALPNs, :string, 20
-    optional :Ja3, :string, 21
-    optional :SrcIP, :string, 22
-    optional :DstIP, :string, 23
-    optional :SrcMAC, :string, 24
-    optional :DstMAC, :string, 25
-    optional :SrcPort, :int32, 26
-    optional :DstPort, :int32, 27
-    repeated :Extensions, :int32, 28
-  end
-  add_message "types.IPSecAH" do
-    optional :Timestamp, :string, 1
-    optional :Reserved, :int32, 2
-    optional :SPI, :int32, 3
-    optional :Seq, :int32, 4
-    optional :AuthenticationData, :bytes, 5
-  end
-  add_message "types.IPSecESP" do
-    optional :Timestamp, :string, 1
-    optional :SPI, :int32, 2
-    optional :Seq, :int32, 3
-    optional :LenEncrypted, :int32, 4
-  end
-  add_message "types.Geneve" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :OptionsLength, :int32, 3
-    optional :OAMPacket, :bool, 4
-    optional :CriticalOption, :bool, 5
-    optional :Protocol, :int32, 6
-    optional :VNI, :uint32, 7
-    repeated :Options, :message, 8, "types.GeneveOption"
-  end
-  add_message "types.GeneveOption" do
-    optional :Class, :int32, 1
-    optional :Type, :int32, 2
-    optional :Flags, :int32, 3
-    optional :Length, :int32, 4
-    optional :Data, :bytes, 5
-  end
-  add_message "types.VXLAN" do
-    optional :Timestamp, :string, 1
-    optional :ValidIDFlag, :bool, 2
-    optional :VNI, :uint32, 3
-    optional :GBPExtension, :bool, 4
-    optional :GBPDontLearn, :bool, 5
-    optional :GBPApplied, :bool, 6
-    optional :GBPGroupPolicyID, :int32, 7
-  end
-  add_message "types.USB" do
-    optional :Timestamp, :string, 1
-    optional :ID, :uint64, 2
-    optional :EventType, :int32, 3
-    optional :TransferType, :int32, 4
-    optional :Direction, :int32, 5
-    optional :EndpointNumber, :int32, 6
-    optional :DeviceAddress, :int32, 7
-    optional :BusID, :int32, 8
-    optional :TimestampSec, :int64, 9
-    optional :TimestampUsec, :int32, 10
-    optional :Setup, :bool, 11
-    optional :Data, :bool, 12
-    optional :Status, :int32, 13
-    optional :UrbLength, :uint32, 14
-    optional :UrbDataLength, :uint32, 15
-    optional :UrbInterval, :uint32, 16
-    optional :UrbStartFrame, :uint32, 17
-    optional :UrbCopyOfTransferFlags, :uint32, 18
-    optional :IsoNumDesc, :uint32, 19
-    optional :Payload, :bytes, 20
-  end
-  add_message "types.USBRequestBlockSetup" do
-    optional :Timestamp, :string, 1
-    optional :RequestType, :int32, 2
-    optional :Request, :int32, 3
-    optional :Value, :int32, 4
-    optional :Index, :int32, 5
-    optional :Length, :int32, 6
-  end
-  add_message "types.LCM" do
-    optional :Timestamp, :string, 1
-    optional :Magic, :int32, 2
-    optional :SequenceNumber, :int32, 3
-    optional :PayloadSize, :int32, 4
-    optional :FragmentOffset, :int32, 5
-    optional :FragmentNumber, :int32, 6
-    optional :TotalFragments, :int32, 7
-    optional :ChannelName, :string, 8
-    optional :Fragmented, :bool, 9
-  end
-  add_message "types.MPLS" do
-    optional :Timestamp, :string, 1
-    optional :Label, :int32, 2
-    optional :TrafficClass, :int32, 3
-    optional :StackBottom, :bool, 4
-    optional :TTL, :int32, 5
-  end
-  add_message "types.ModbusTCP" do
-    optional :Timestamp, :string, 1
-    optional :TransactionIdentifier, :int32, 2
-    optional :ProtocolIdentifier, :int32, 3
-    optional :Length, :int32, 4
-    optional :UnitIdentifier, :int32, 5
-    optional :Payload, :bytes, 6
-  end
-  add_message "types.OSPFv2" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :Type, :int32, 3
-    optional :PacketLength, :int32, 4
-    optional :RouterID, :uint32, 5
-    optional :AreaID, :uint32, 6
-    optional :Checksum, :int32, 7
-    optional :AuType, :int32, 8
-    optional :Authentication, :int64, 9
-    repeated :LSAs, :message, 10, "types.LSAheader"
-    optional :LSU, :message, 11, "types.LSUpdate"
-    repeated :LSR, :message, 12, "types.LSReq"
-    optional :DbDesc, :message, 13, "types.DbDescPkg"
-    optional :HelloV2, :message, 14, "types.HelloPkgV2"
-  end
-  add_message "types.HelloPkg" do
-    optional :InterfaceID, :uint32, 1
-    optional :RtrPriority, :int32, 2
-    optional :Options, :uint32, 3
-    optional :HelloInterval, :int32, 4
-    optional :RouterDeadInterval, :uint32, 5
-    optional :DesignatedRouterID, :uint32, 6
-    optional :BackupDesignatedRouterID, :uint32, 7
-    repeated :NeighborID, :uint32, 8
-  end
-  add_message "types.HelloPkgV2" do
-    optional :InterfaceID, :uint32, 1
-    optional :RtrPriority, :int32, 2
-    optional :Options, :uint32, 3
-    optional :HelloInterval, :int32, 4
-    optional :RouterDeadInterval, :uint32, 5
-    optional :DesignatedRouterID, :uint32, 6
-    optional :BackupDesignatedRouterID, :uint32, 7
-    repeated :NeighborID, :uint32, 8
-    optional :NetworkMask, :uint32, 9
-  end
-  add_message "types.DbDescPkg" do
-    optional :Options, :uint32, 1
-    optional :InterfaceMTU, :int32, 2
-    optional :Flags, :int32, 3
-    optional :DDSeqNumber, :uint32, 4
-    repeated :LSAinfo, :message, 5, "types.LSAheader"
-  end
-  add_message "types.OSPFv3" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :Type, :int32, 3
-    optional :PacketLength, :int32, 4
-    optional :RouterID, :uint32, 5
-    optional :AreaID, :uint32, 6
-    optional :Checksum, :int32, 7
-    optional :Instance, :int32, 8
-    optional :Reserved, :int32, 9
-    optional :Hello, :message, 10, "types.HelloPkg"
-    optional :DbDesc, :message, 11, "types.DbDescPkg"
-    repeated :LSR, :message, 12, "types.LSReq"
-    optional :LSU, :message, 13, "types.LSUpdate"
-    repeated :LSAs, :message, 14, "types.LSAheader"
-  end
-  add_message "types.LSAheader" do
-    optional :LSAge, :int32, 1
-    optional :LSType, :int32, 2
-    optional :LinkStateID, :uint32, 3
-    optional :AdvRouter, :uint32, 4
-    optional :LSSeqNumber, :uint32, 5
-    optional :LSChecksum, :int32, 6
-    optional :Length, :int32, 7
-    optional :LSOptions, :int32, 8
-  end
-  add_message "types.LSA" do
-    optional :Header, :message, 1, "types.LSAheader"
-    optional :RLSAV2, :message, 2, "types.RouterLSAV2"
-    optional :ASELSAV2, :message, 3, "types.ASExternalLSAV2"
-    optional :RLSA, :message, 4, "types.RouterLSA"
-    optional :NLSA, :message, 5, "types.NetworkLSA"
-    optional :InterAPrefixLSA, :message, 6, "types.InterAreaPrefixLSA"
-    optional :IARouterLSA, :message, 7, "types.InterAreaRouterLSA"
-    optional :ASELSA, :message, 8, "types.ASExternalLSA"
-    optional :LLSA, :message, 9, "types.LinkLSA"
-    optional :IntraAPrefixLSA, :message, 10, "types.IntraAreaPrefixLSA"
-  end
-  add_message "types.LSReq" do
-    optional :LSType, :int32, 1
-    optional :LSID, :uint32, 2
-    optional :AdvRouter, :uint32, 3
-  end
-  add_message "types.LSUpdate" do
-    optional :NumOfLSAs, :uint32, 1
-    repeated :LSAs, :message, 2, "types.LSA"
-  end
-  add_message "types.IntraAreaPrefixLSA" do
-    optional :NumOfPrefixes, :int32, 1
-    optional :RefLSType, :int32, 2
-    optional :RefLinkStateID, :uint32, 3
-    optional :RefAdvRouter, :uint32, 4
-    repeated :Prefixes, :message, 5, "types.LSAPrefix"
-  end
-  add_message "types.ASExternalLSA" do
-    optional :Flags, :int32, 1
-    optional :Metric, :uint32, 2
-    optional :PrefixLength, :int32, 3
-    optional :PrefixOptions, :int32, 4
-    optional :RefLSType, :int32, 5
-    optional :AddressPrefix, :bytes, 6
-    optional :ForwardingAddress, :bytes, 7
-    optional :ExternalRouteTag, :uint32, 8
-    optional :RefLinkStateID, :uint32, 9
-  end
-  add_message "types.InterAreaPrefixLSA" do
-    optional :Metric, :uint32, 1
-    optional :PrefixLength, :int32, 2
-    optional :PrefixOptions, :int32, 3
-    optional :AddressPrefix, :bytes, 4
-  end
-  add_message "types.InterAreaRouterLSA" do
-    optional :Options, :uint32, 1
-    optional :Metric, :uint32, 2
-    optional :DestinationRouterID, :uint32, 3
-  end
-  add_message "types.ASExternalLSAV2" do
-    optional :NetworkMask, :uint32, 1
-    optional :ExternalBit, :int32, 2
-    optional :Metric, :uint32, 3
-    optional :ForwardingAddress, :uint32, 4
-    optional :ExternalRouteTag, :uint32, 5
-  end
-  add_message "types.RouterLSA" do
-    optional :Flags, :int32, 1
-    optional :Options, :uint32, 2
-    repeated :Routers, :message, 3, "types.Router"
-  end
-  add_message "types.Router" do
-    optional :Type, :int32, 1
-    optional :Metric, :int32, 2
-    optional :InterfaceID, :uint32, 3
-    optional :NeighborInterfaceID, :uint32, 4
-    optional :NeighborRouterID, :uint32, 5
-  end
-  add_message "types.RouterLSAV2" do
-    optional :Flags, :int32, 1
-    optional :Links, :int32, 2
-    repeated :Routers, :message, 3, "types.RouterV2"
-  end
-  add_message "types.RouterV2" do
-    optional :Type, :int32, 1
-    optional :LinkID, :uint32, 2
-    optional :LinkData, :uint32, 3
-    optional :Metric, :uint32, 4
-  end
-  add_message "types.NetworkLSA" do
-    optional :Options, :uint32, 1
-    repeated :AttachedRouter, :uint32, 2
-  end
-  add_message "types.LinkLSA" do
-    optional :RtrPriority, :int32, 1
-    optional :Options, :uint32, 2
-    optional :LinkLocalAddress, :bytes, 3
-    optional :NumOfPrefixes, :uint32, 4
-    repeated :Prefixes, :message, 5, "types.LSAPrefix"
-  end
-  add_message "types.LSAPrefix" do
-    optional :PrefixLength, :int32, 1
-    optional :PrefixOptions, :int32, 2
-    optional :Metric, :int32, 3
-    optional :AddressPrefix, :bytes, 4
-  end
-  add_message "types.BFD" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :Diagnostic, :int32, 3
-    optional :State, :int32, 4
-    optional :Poll, :bool, 5
-    optional :Final, :bool, 6
-    optional :ControlPlaneIndependent, :bool, 7
-    optional :AuthPresent, :bool, 8
-    optional :Demand, :bool, 9
-    optional :Multipoint, :bool, 10
-    optional :DetectMultiplier, :int32, 11
-    optional :MyDiscriminator, :int32, 12
-    optional :YourDiscriminator, :int32, 13
-    optional :DesiredMinTxInterval, :int32, 14
-    optional :RequiredMinRxInterval, :int32, 15
-    optional :RequiredMinEchoRxInterval, :int32, 16
-    optional :AuthHeader, :message, 17, "types.BFDAuthHeader"
-  end
-  add_message "types.BFDAuthHeader" do
-    optional :AuthType, :int32, 1
-    optional :KeyID, :int32, 2
-    optional :SequenceNumber, :int32, 3
-    optional :Data, :bytes, 4
-  end
-  add_message "types.GRE" do
-    optional :Timestamp, :string, 1
-    optional :ChecksumPresent, :bool, 2
-    optional :RoutingPresent, :bool, 3
-    optional :KeyPresent, :bool, 4
-    optional :SeqPresent, :bool, 5
-    optional :StrictSourceRoute, :bool, 6
-    optional :AckPresent, :bool, 7
-    optional :RecursionControl, :int32, 8
-    optional :Flags, :int32, 9
-    optional :Version, :int32, 10
-    optional :Protocol, :int32, 11
-    optional :Checksum, :int32, 12
-    optional :Offset, :int32, 13
-    optional :Key, :uint32, 14
-    optional :Seq, :uint32, 15
-    optional :Ack, :uint32, 16
-    optional :Routing, :message, 17, "types.GRERouting"
-  end
-  add_message "types.GRERouting" do
-    optional :AddressFamily, :int32, 1
-    optional :SREOffset, :int32, 2
-    optional :SRELength, :int32, 3
-    optional :RoutingInformation, :bytes, 4
-    optional :Next, :message, 5, "types.GRERouting"
-  end
-  add_message "types.FDDI" do
-    optional :Timestamp, :string, 1
-    optional :FrameControl, :int32, 2
-    optional :Priority, :int32, 3
-    optional :SrcMAC, :string, 4
-    optional :DstMAC, :string, 5
-  end
-  add_message "types.EAP" do
-    optional :Timestamp, :string, 1
-    optional :Code, :int32, 2
-    optional :Id, :int32, 3
-    optional :Length, :int32, 4
-    optional :Type, :int32, 5
-    optional :TypeData, :bytes, 6
-  end
-  add_message "types.EAPOL" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :Type, :int32, 3
-    optional :Length, :int32, 4
-  end
-  add_message "types.EAPOLKey" do
-    optional :Timestamp, :string, 1
-    optional :KeyDescriptorType, :int32, 2
-    optional :KeyDescriptorVersion, :int32, 3
-    optional :KeyType, :int32, 4
-    optional :KeyIndex, :int32, 5
-    optional :Install, :bool, 6
-    optional :KeyACK, :bool, 7
-    optional :KeyMIC, :bool, 8
-    optional :Secure, :bool, 9
-    optional :MICError, :bool, 10
-    optional :Request, :bool, 11
-    optional :HasEncryptedKeyData, :bool, 12
-    optional :SMKMessage, :bool, 13
-    optional :KeyLength, :int32, 14
-    optional :ReplayCounter, :uint64, 15
-    optional :Nonce, :bytes, 16
-    optional :IV, :bytes, 17
-    optional :RSC, :uint64, 18
-    optional :ID, :uint64, 19
-    optional :MIC, :bytes, 20
-    optional :KeyDataLength, :int32, 21
-    optional :EncryptedKeyData, :bytes, 22
-  end
-  add_message "types.VRRPv2" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :Type, :int32, 3
-    optional :VirtualRtrID, :int32, 4
-    optional :Priority, :int32, 5
-    optional :CountIPAddr, :int32, 6
-    optional :AuthType, :int32, 7
-    optional :AdverInt, :int32, 8
-    optional :Checksum, :int32, 9
-    repeated :IPAddress, :string, 10
-  end
-  add_message "types.CiscoDiscovery" do
-    optional :Timestamp, :string, 1
-    optional :Version, :int32, 2
-    optional :TTL, :int32, 3
-    optional :Checksum, :int32, 4
-    repeated :Values, :message, 5, "types.CiscoDiscoveryValue"
-  end
-  add_message "types.CiscoDiscoveryValue" do
-    optional :Type, :int32, 1
-    optional :Length, :int32, 2
-    optional :Value, :bytes, 3
-  end
-  add_message "types.CDPVLANDialogue" do
-    optional :ID, :int32, 1
-    optional :VLAN, :int32, 2
-  end
-  add_message "types.CDPLocation" do
-    optional :Type, :int32, 1
-    optional :Location, :string, 2
-  end
-  add_message "types.CDPPowerDialogue" do
-    optional :ID, :int32, 1
-    optional :MgmtID, :int32, 2
-    repeated :Values, :uint32, 3
-  end
-  add_message "types.CDPSparePairPoE" do
-    optional :PSEFourWire, :bool, 1
-    optional :PDArchShared, :bool, 2
-    optional :PDRequestOn, :bool, 3
-    optional :PSEOn, :bool, 4
-  end
-  add_message "types.CiscoDiscoveryInfo" do
-    optional :Timestamp, :string, 1
-    optional :CDPHello, :message, 2, "types.CDPHello"
-    optional :DeviceID, :string, 3
-    repeated :Addresses, :string, 4
-    optional :PortID, :string, 5
-    optional :Capabilities, :message, 6, "types.CDPCapabilities"
-    optional :Version, :string, 7
-    optional :Platform, :string, 8
-    repeated :IPPrefixes, :message, 9, "types.IPNet"
-    optional :VTPDomain, :string, 10
-    optional :NativeVLAN, :int32, 11
-    optional :FullDuplex, :bool, 12
-    optional :VLANReply, :message, 13, "types.CDPVLANDialogue"
-    optional :VLANQuery, :message, 14, "types.CDPVLANDialogue"
-    optional :PowerConsumption, :int32, 15
-    optional :MTU, :uint32, 16
-    optional :ExtendedTrust, :int32, 17
-    optional :UntrustedCOS, :int32, 18
-    optional :SysName, :string, 19
-    optional :SysOID, :string, 20
-    repeated :MgmtAddresses, :string, 21
-    optional :Location, :message, 22, "types.CDPLocation"
-    optional :PowerRequest, :message, 23, "types.CDPPowerDialogue"
-    optional :PowerAvailable, :message, 24, "types.CDPPowerDialogue"
-    optional :SparePairPoe, :message, 25, "types.CDPSparePairPoE"
-    optional :EnergyWise, :message, 26, "types.CDPEnergyWise"
-    repeated :Unknown, :message, 27, "types.CiscoDiscoveryValue"
-  end
-  add_message "types.CDPHello" do
-    optional :OUI, :bytes, 1
-    optional :ProtocolID, :int32, 2
-    optional :ClusterMaster, :string, 3
-    optional :Unknown1, :string, 4
-    optional :Version, :int32, 5
-    optional :SubVersion, :int32, 6
-    optional :Status, :int32, 7
-    optional :Unknown2, :int32, 8
-    optional :ClusterCommander, :string, 9
-    optional :SwitchMAC, :string, 10
-    optional :Unknown3, :int32, 11
-    optional :ManagementVLAN, :int32, 12
-  end
-  add_message "types.CDPEnergyWise" do
-    optional :EncryptedData, :bytes, 1
-    optional :Unknown1, :uint32, 2
-    optional :SequenceNumber, :uint32, 3
-    optional :ModelNumber, :string, 4
-    optional :Unknown2, :int32, 5
-    optional :HardwareID, :string, 6
-    optional :SerialNum, :string, 7
-    optional :Unknown3, :bytes, 8
-    optional :Role, :string, 9
-    optional :Domain, :string, 10
-    optional :Name, :string, 11
-    optional :ReplyUnknown1, :bytes, 12
-    optional :ReplyPort, :bytes, 13
-    optional :ReplyAddress, :bytes, 14
-    optional :ReplyUnknown2, :bytes, 15
-    optional :ReplyUnknown3, :bytes, 16
-  end
-  add_message "types.CDPCapabilities" do
-    optional :L3Router, :bool, 1
-    optional :TBBridge, :bool, 2
-    optional :SPBridge, :bool, 3
-    optional :L2Switch, :bool, 4
-    optional :IsHost, :bool, 5
-    optional :IGMPFilter, :bool, 6
-    optional :L1Repeater, :bool, 7
-    optional :IsPhone, :bool, 8
-    optional :RemotelyManaged, :bool, 9
-  end
-  add_message "types.IPNet" do
-    optional :IP, :string, 1
-    optional :IPMask, :string, 2
-  end
-  add_message "types.NortelDiscovery" do
-    optional :Timestamp, :string, 1
-    optional :IPAddress, :string, 2
-    optional :SegmentID, :bytes, 3
-    optional :Chassis, :int32, 4
-    optional :Backplane, :int32, 5
-    optional :State, :int32, 6
-    optional :NumLinks, :int32, 7
-  end
-  add_enum "types.Type" do
-    value :NC_Header, 0
-    value :NC_Batch, 1
-    value :NC_Flow, 2
-    value :NC_Connection, 3
-    value :NC_LinkFlow, 4
-    value :NC_NetworkFlow, 5
-    value :NC_TransportFlow, 6
-    value :NC_Ethernet, 7
-    value :NC_ARP, 8
-    value :NC_Dot1Q, 9
-    value :NC_Dot11, 10
-    value :NC_Dot11QOS, 11
-    value :NC_Dot11HTControl, 12
-    value :NC_Dot11HTControlVHT, 13
-    value :NC_Dot11HTControlHT, 14
-    value :NC_Dot11HTControlMFB, 15
-    value :NC_Dot11LinkAdapationControl, 16
-    value :NC_Dot11ASEL, 17
-    value :NC_LinkLayerDiscovery, 18
-    value :NC_LLDPChassisID, 19
-    value :NC_LLDPPortID, 20
-    value :NC_LinkLayerDiscoveryValue, 21
-    value :NC_EthernetCTP, 22
-    value :NC_EthernetCTPReply, 23
-    value :NC_LinkLayerDiscoveryInfo, 24
-    value :NC_LLDPSysCapabilities, 25
-    value :NC_LLDPCapabilities, 26
-    value :NC_LLDPMgmtAddress, 27
-    value :NC_LLDPOrgSpecificTLV, 28
-    value :NC_IPv4, 29
-    value :NC_IPv4Option, 30
-    value :NC_IPv6, 31
-    value :NC_ICMPv4, 32
-    value :NC_ICMPv6, 33
-    value :NC_ICMPv6NeighborAdvertisement, 34
-    value :NC_ICMPv6RouterAdvertisement, 35
-    value :NC_ICMPv6Option, 36
-    value :NC_UDP, 37
-    value :NC_TCP, 38
-    value :NC_TCPOption, 39
-    value :NC_SCTP, 40
-    value :NC_DNS, 41
-    value :NC_DNSResourceRecord, 42
-    value :NC_DNSSOA, 43
-    value :NC_DNSSRV, 44
-    value :NC_DNSMX, 45
-    value :NC_DNSQuestion, 46
-    value :NC_DHCPv4, 47
-    value :NC_DHCPOption, 48
-    value :NC_DHCPv6, 49
-    value :NC_DHCPv6Option, 50
-    value :NC_LLC, 51
-    value :NC_NTP, 52
-    value :NC_SIP, 53
-    value :NC_IGMP, 54
-    value :NC_IGMPv3GroupRecord, 55
-    value :NC_IPv6HopByHop, 56
-    value :NC_IPv6HopByHopOption, 57
-    value :NC_IPv6HopByHopOptionAlignment, 58
-    value :NC_SNAP, 59
-    value :NC_ICMPv6Echo, 60
-    value :NC_ICMPv6NeighborSolicitation, 61
-    value :NC_ICMPv6RouterSolicitation, 62
-    value :NC_HTTP, 63
-    value :NC_TLSClientHello, 64
-    value :NC_IPSecAH, 65
-    value :NC_IPSecESP, 66
-    value :NC_Geneve, 67
-    value :NC_IPv6Fragment, 68
-    value :NC_VXLAN, 69
-    value :NC_USB, 70
-    value :NC_LCM, 71
-    value :NC_MPLS, 72
-    value :NC_ModbusTCP, 73
-    value :NC_OSPFv2, 74
-    value :NC_OSPFv3, 75
-    value :NC_BFD, 76
-    value :NC_GRE, 77
-    value :NC_FDDI, 78
-    value :NC_EAP, 79
-    value :NC_VRRPv2, 80
-    value :NC_EAPOL, 81
-    value :NC_EAPOLKey, 82
-    value :NC_CiscoDiscovery, 83
-    value :NC_CiscoDiscoveryInfo, 84
-    value :NC_USBRequestBlockSetup, 85
-    value :NC_NortelDiscovery, 86
+  add_file("netcap.proto", :syntax => :proto3) do
+    add_message "types.Header" do
+      optional :Created, :string, 1
+      optional :InputSource, :string, 2
+      optional :Type, :enum, 3, "types.Type"
+      optional :Version, :string, 4
+      optional :ContainsPayloads, :bool, 5
+    end
+    add_message "types.Batch" do
+      optional :ClientID, :string, 1
+      optional :MessageType, :enum, 2, "types.Type"
+      optional :TotalSize, :int32, 3
+      optional :Data, :bytes, 4
+      optional :ContainsPayloads, :bool, 5
+    end
+    add_message "types.Flow" do
+      optional :TimestampFirst, :string, 1
+      optional :LinkProto, :string, 2
+      optional :NetworkProto, :string, 3
+      optional :TransportProto, :string, 4
+      optional :ApplicationProto, :string, 5
+      optional :SrcMAC, :string, 6
+      optional :DstMAC, :string, 7
+      optional :SrcIP, :string, 8
+      optional :SrcPort, :string, 9
+      optional :DstIP, :string, 10
+      optional :DstPort, :string, 11
+      optional :TotalSize, :int32, 12
+      optional :AppPayloadSize, :int32, 13
+      optional :NumPackets, :int32, 14
+      optional :UID, :string, 15
+      optional :TimestampLast, :string, 16
+      optional :Duration, :int64, 17
+    end
+    add_message "types.Connection" do
+      optional :TimestampFirst, :string, 1
+      optional :LinkProto, :string, 2
+      optional :NetworkProto, :string, 3
+      optional :TransportProto, :string, 4
+      optional :ApplicationProto, :string, 5
+      optional :SrcMAC, :string, 6
+      optional :DstMAC, :string, 7
+      optional :SrcIP, :string, 8
+      optional :SrcPort, :string, 9
+      optional :DstIP, :string, 10
+      optional :DstPort, :string, 11
+      optional :TotalSize, :int32, 12
+      optional :AppPayloadSize, :int32, 13
+      optional :NumPackets, :int32, 14
+      optional :UID, :string, 15
+      optional :TimestampLast, :string, 16
+      optional :Duration, :int64, 17
+    end
+    add_message "types.LinkFlow" do
+      optional :TimestampFirst, :string, 1
+      optional :TimestampLast, :string, 2
+      optional :Proto, :string, 3
+      optional :SrcMAC, :string, 4
+      optional :DstMAC, :string, 5
+      optional :TotalSize, :int64, 6
+      optional :NumPackets, :int64, 7
+      optional :UID, :uint64, 8
+      optional :Duration, :int64, 9
+    end
+    add_message "types.NetworkFlow" do
+      optional :TimestampFirst, :string, 1
+      optional :TimestampLast, :string, 2
+      optional :Proto, :string, 3
+      optional :SrcIP, :string, 4
+      optional :DstIP, :string, 5
+      optional :TotalSize, :int64, 6
+      optional :NumPackets, :int64, 7
+      optional :UID, :uint64, 8
+      optional :Duration, :int64, 9
+    end
+    add_message "types.TransportFlow" do
+      optional :TimestampFirst, :string, 1
+      optional :TimestampLast, :string, 2
+      optional :Proto, :string, 3
+      optional :SrcPort, :int32, 4
+      optional :DstPort, :int32, 5
+      optional :TotalSize, :int64, 6
+      optional :NumPackets, :int64, 7
+      optional :UID, :uint64, 8
+      optional :Duration, :int64, 9
+    end
+    add_message "types.Ethernet" do
+      optional :Timestamp, :string, 1
+      optional :SrcMAC, :string, 2
+      optional :DstMAC, :string, 3
+      optional :EthernetType, :int32, 4
+      optional :PayloadEntropy, :double, 5
+      optional :PayloadSize, :int32, 6
+    end
+    add_message "types.ARP" do
+      optional :Timestamp, :string, 1
+      optional :AddrType, :int32, 2
+      optional :Protocol, :int32, 3
+      optional :HwAddressSize, :int32, 4
+      optional :ProtAddressSize, :int32, 5
+      optional :Operation, :int32, 6
+      optional :SrcHwAddress, :bytes, 7
+      optional :SrcProtAddress, :bytes, 8
+      optional :DstHwAddress, :bytes, 9
+      optional :DstProtAddress, :bytes, 10
+    end
+    add_message "types.Dot1Q" do
+      optional :Timestamp, :string, 1
+      optional :Priority, :int32, 2
+      optional :DropEligible, :bool, 3
+      optional :VLANIdentifier, :int32, 4
+      optional :Type, :int32, 5
+    end
+    add_message "types.Dot11" do
+      optional :Timestamp, :string, 1
+      optional :Type, :int32, 2
+      optional :Proto, :int32, 3
+      optional :Flags, :int32, 4
+      optional :DurationID, :int32, 5
+      optional :Address1, :string, 6
+      optional :Address2, :string, 7
+      optional :Address3, :string, 8
+      optional :Address4, :string, 9
+      optional :SequenceNumber, :int32, 10
+      optional :FragmentNumber, :int32, 11
+      optional :Checksum, :uint32, 12
+      optional :QOS, :message, 13, "types.Dot11QOS"
+      optional :HTControl, :message, 14, "types.Dot11HTControl"
+    end
+    add_message "types.Dot11QOS" do
+      optional :TID, :int32, 1
+      optional :EOSP, :bool, 2
+      optional :AckPolicy, :int32, 3
+      optional :TXOP, :int32, 4
+    end
+    add_message "types.Dot11HTControl" do
+      optional :ACConstraint, :bool, 1
+      optional :RDGMorePPDU, :bool, 2
+      optional :VHT, :message, 3, "types.Dot11HTControlVHT"
+      optional :HT, :message, 4, "types.Dot11HTControlHT"
+    end
+    add_message "types.Dot11HTControlVHT" do
+      optional :MRQ, :bool, 1
+      optional :UnsolicitedMFB, :bool, 2
+      optional :MSI, :int32, 3
+      optional :MFB, :message, 4, "types.Dot11HTControlMFB"
+      optional :CompressedMSI, :int32, 5
+      optional :STBCIndication, :bool, 6
+      optional :MFSI, :int32, 7
+      optional :GID, :int32, 8
+      optional :CodingType, :int32, 9
+      optional :FbTXBeamformed, :bool, 10
+    end
+    add_message "types.Dot11HTControlHT" do
+      optional :LinkAdapationControl, :message, 1, "types.Dot11LinkAdapationControl"
+      optional :CalibrationPosition, :int32, 2
+      optional :CalibrationSequence, :int32, 3
+      optional :CSISteering, :int32, 4
+      optional :NDPAnnouncement, :bool, 5
+      optional :DEI, :bool, 6
+    end
+    add_message "types.Dot11HTControlMFB" do
+      optional :NumSTS, :int32, 1
+      optional :VHTMCS, :int32, 2
+      optional :BW, :int32, 3
+      optional :SNR, :int32, 4
+    end
+    add_message "types.Dot11LinkAdapationControl" do
+      optional :TRQ, :bool, 1
+      optional :MRQ, :bool, 2
+      optional :MSI, :int32, 3
+      optional :MFSI, :int32, 4
+      optional :MFB, :int32, 6
+      optional :ASEL, :message, 5, "types.Dot11ASEL"
+    end
+    add_message "types.Dot11ASEL" do
+      optional :Command, :int32, 1
+      optional :Data, :int32, 2
+    end
+    add_message "types.LinkLayerDiscovery" do
+      optional :Timestamp, :string, 1
+      optional :ChassisID, :message, 2, "types.LLDPChassisID"
+      optional :PortID, :message, 3, "types.LLDPPortID"
+      optional :TTL, :int32, 4
+      repeated :Values, :message, 5, "types.LinkLayerDiscoveryValue"
+    end
+    add_message "types.LLDPChassisID" do
+      optional :Subtype, :int32, 1
+      optional :ID, :bytes, 2
+    end
+    add_message "types.LLDPPortID" do
+      optional :Subtype, :int32, 1
+      optional :ID, :bytes, 2
+    end
+    add_message "types.LinkLayerDiscoveryValue" do
+      optional :Type, :int32, 1
+      optional :Length, :int32, 2
+      optional :Value, :bytes, 3
+    end
+    add_message "types.EthernetCTP" do
+      optional :Timestamp, :string, 1
+      optional :SkipCount, :int32, 2
+    end
+    add_message "types.EthernetCTPReply" do
+      optional :Timestamp, :string, 1
+      optional :Function, :int32, 2
+      optional :ReceiptNumber, :int32, 3
+      optional :Data, :bytes, 4
+    end
+    add_message "types.LinkLayerDiscoveryInfo" do
+      optional :Timestamp, :string, 1
+      optional :PortDescription, :string, 2
+      optional :SysName, :string, 3
+      optional :SysDescription, :string, 4
+      optional :SysCapabilities, :message, 5, "types.LLDPSysCapabilities"
+      optional :MgmtAddress, :message, 6, "types.LLDPMgmtAddress"
+      repeated :OrgTLVs, :message, 7, "types.LLDPOrgSpecificTLV"
+      repeated :Unknown, :message, 8, "types.LinkLayerDiscoveryValue"
+    end
+    add_message "types.LLDPSysCapabilities" do
+      optional :SystemCap, :message, 1, "types.LLDPCapabilities"
+      optional :EnabledCap, :message, 2, "types.LLDPCapabilities"
+    end
+    add_message "types.LLDPCapabilities" do
+      optional :Other, :bool, 1
+      optional :Repeater, :bool, 2
+      optional :Bridge, :bool, 3
+      optional :WLANAP, :bool, 4
+      optional :Router, :bool, 5
+      optional :Phone, :bool, 6
+      optional :DocSis, :bool, 7
+      optional :StationOnly, :bool, 8
+      optional :CVLAN, :bool, 9
+      optional :SVLAN, :bool, 10
+      optional :TMPR, :bool, 11
+    end
+    add_message "types.LLDPMgmtAddress" do
+      optional :Subtype, :int32, 1
+      optional :Address, :bytes, 2
+      optional :InterfaceSubtype, :int32, 3
+      optional :InterfaceNumber, :uint32, 4
+      optional :OID, :string, 5
+    end
+    add_message "types.LLDPOrgSpecificTLV" do
+      optional :OUI, :uint32, 1
+      optional :SubType, :int32, 2
+      optional :Info, :bytes, 3
+    end
+    add_message "types.IPv4" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :IHL, :int32, 3
+      optional :TOS, :int32, 4
+      optional :Length, :int32, 5
+      optional :Id, :int32, 6
+      optional :Flags, :int32, 7
+      optional :FragOffset, :int32, 8
+      optional :TTL, :int32, 9
+      optional :Protocol, :int32, 10
+      optional :Checksum, :int32, 11
+      optional :SrcIP, :string, 12
+      optional :DstIP, :string, 13
+      optional :Padding, :bytes, 14
+      repeated :Options, :message, 15, "types.IPv4Option"
+      optional :PayloadEntropy, :double, 16
+      optional :PayloadSize, :int32, 17
+    end
+    add_message "types.IPv4Option" do
+      optional :OptionType, :int32, 1
+      optional :OptionLength, :int32, 2
+      optional :OptionData, :bytes, 3
+    end
+    add_message "types.IPv6" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :TrafficClass, :int32, 3
+      optional :FlowLabel, :uint32, 4
+      optional :Length, :int32, 5
+      optional :NextHeader, :int32, 6
+      optional :HopLimit, :int32, 7
+      optional :SrcIP, :string, 8
+      optional :DstIP, :string, 9
+      optional :PayloadEntropy, :double, 10
+      optional :PayloadSize, :int32, 11
+      optional :HopByHop, :message, 12, "types.IPv6HopByHop"
+    end
+    add_message "types.IPv6Fragment" do
+      optional :Timestamp, :string, 1
+      optional :NextHeader, :int32, 2
+      optional :Reserved1, :int32, 3
+      optional :FragmentOffset, :int32, 4
+      optional :Reserved2, :int32, 5
+      optional :MoreFragments, :bool, 6
+      optional :Identification, :uint32, 7
+    end
+    add_message "types.ICMPv4" do
+      optional :Timestamp, :string, 1
+      optional :TypeCode, :int32, 2
+      optional :Checksum, :int32, 3
+      optional :Id, :int32, 4
+      optional :Seq, :int32, 5
+    end
+    add_message "types.ICMPv6" do
+      optional :Timestamp, :string, 1
+      optional :TypeCode, :int32, 2
+      optional :Checksum, :int32, 3
+    end
+    add_message "types.ICMPv6NeighborAdvertisement" do
+      optional :Timestamp, :string, 1
+      optional :Flags, :int32, 2
+      optional :TargetAddress, :string, 3
+      repeated :Options, :message, 4, "types.ICMPv6Option"
+    end
+    add_message "types.ICMPv6RouterAdvertisement" do
+      optional :Timestamp, :string, 1
+      optional :HopLimit, :int32, 2
+      optional :Flags, :int32, 3
+      optional :RouterLifetime, :int32, 4
+      optional :ReachableTime, :uint32, 5
+      optional :RetransTimer, :uint32, 6
+      repeated :Options, :message, 7, "types.ICMPv6Option"
+    end
+    add_message "types.ICMPv6Option" do
+      optional :Type, :int32, 1
+      optional :Data, :bytes, 2
+    end
+    add_message "types.UDP" do
+      optional :Timestamp, :string, 1
+      optional :SrcPort, :int32, 2
+      optional :DstPort, :int32, 3
+      optional :Length, :int32, 4
+      optional :Checksum, :int32, 5
+      optional :PayloadEntropy, :double, 6
+      optional :PayloadSize, :int32, 7
+      optional :Payload, :bytes, 8
+    end
+    add_message "types.TCP" do
+      optional :Timestamp, :string, 1
+      optional :SrcPort, :int32, 2
+      optional :DstPort, :int32, 3
+      optional :SeqNum, :uint32, 4
+      optional :AckNum, :uint32, 5
+      optional :DataOffset, :int32, 6
+      optional :FIN, :bool, 7
+      optional :SYN, :bool, 8
+      optional :RST, :bool, 9
+      optional :PSH, :bool, 10
+      optional :ACK, :bool, 11
+      optional :URG, :bool, 12
+      optional :ECE, :bool, 13
+      optional :CWR, :bool, 14
+      optional :NS, :bool, 15
+      optional :Window, :int32, 16
+      optional :Checksum, :int32, 17
+      optional :Urgent, :int32, 18
+      optional :Padding, :bytes, 19
+      repeated :Options, :message, 20, "types.TCPOption"
+      optional :PayloadEntropy, :double, 21
+      optional :PayloadSize, :int32, 22
+      optional :Payload, :bytes, 23
+    end
+    add_message "types.TCPOption" do
+      optional :OptionType, :int32, 1
+      optional :OptionLength, :int32, 2
+      optional :OptionData, :bytes, 3
+    end
+    add_message "types.SCTP" do
+      optional :Timestamp, :string, 1
+      optional :SrcPort, :uint32, 2
+      optional :DstPort, :uint32, 3
+      optional :VerificationTag, :uint32, 4
+      optional :Checksum, :uint32, 5
+    end
+    add_message "types.DNS" do
+      optional :Timestamp, :string, 1
+      optional :ID, :int32, 2
+      optional :QR, :bool, 3
+      optional :OpCode, :int32, 4
+      optional :AA, :bool, 5
+      optional :TC, :bool, 6
+      optional :RD, :bool, 7
+      optional :RA, :bool, 8
+      optional :Z, :int32, 9
+      optional :ResponseCode, :int32, 10
+      optional :QDCount, :int32, 11
+      optional :ANCount, :int32, 12
+      optional :NSCount, :int32, 13
+      optional :ARCount, :int32, 14
+      repeated :Questions, :message, 15, "types.DNSQuestion"
+      repeated :Answers, :message, 16, "types.DNSResourceRecord"
+      repeated :Authorities, :message, 17, "types.DNSResourceRecord"
+      repeated :Additionals, :message, 18, "types.DNSResourceRecord"
+    end
+    add_message "types.DNSResourceRecord" do
+      optional :Name, :bytes, 1
+      optional :Type, :int32, 2
+      optional :Class, :int32, 3
+      optional :TTL, :uint32, 4
+      optional :DataLength, :int32, 5
+      optional :Data, :bytes, 6
+      optional :IP, :string, 7
+      optional :NS, :bytes, 8
+      optional :CNAME, :bytes, 9
+      optional :PTR, :bytes, 10
+      optional :SOA, :message, 11, "types.DNSSOA"
+      optional :SRV, :message, 12, "types.DNSSRV"
+      optional :MX, :message, 13, "types.DNSMX"
+      repeated :TXTs, :bytes, 14
+    end
+    add_message "types.DNSSOA" do
+      optional :MName, :bytes, 1
+      optional :RName, :bytes, 2
+      optional :Serial, :uint32, 3
+      optional :Refresh, :uint32, 4
+      optional :Retry, :uint32, 5
+      optional :Expire, :uint32, 6
+      optional :Minimum, :uint32, 7
+    end
+    add_message "types.DNSSRV" do
+      optional :Priority, :int32, 1
+      optional :Weight, :int32, 2
+      optional :Port, :int32, 3
+      optional :Name, :bytes, 4
+    end
+    add_message "types.DNSMX" do
+      optional :Preference, :int32, 1
+      optional :Name, :bytes, 2
+    end
+    add_message "types.DNSQuestion" do
+      optional :Name, :bytes, 1
+      optional :Type, :int32, 2
+      optional :Class, :int32, 3
+    end
+    add_message "types.DHCPv4" do
+      optional :Timestamp, :string, 1
+      optional :Operation, :int32, 2
+      optional :HardwareType, :int32, 3
+      optional :HardwareLen, :int32, 4
+      optional :HardwareOpts, :int32, 5
+      optional :Xid, :uint32, 6
+      optional :Secs, :int32, 7
+      optional :Flags, :int32, 8
+      optional :ClientIP, :string, 9
+      optional :YourClientIP, :string, 10
+      optional :NextServerIP, :string, 11
+      optional :RelayAgentIP, :string, 12
+      optional :ClientHWAddr, :string, 13
+      optional :ServerName, :bytes, 14
+      optional :File, :bytes, 15
+      repeated :Options, :message, 16, "types.DHCPOption"
+    end
+    add_message "types.DHCPOption" do
+      optional :Type, :int32, 1
+      optional :Length, :int32, 2
+      optional :Data, :bytes, 3
+    end
+    add_message "types.DHCPv6" do
+      optional :Timestamp, :string, 1
+      optional :MsgType, :int32, 2
+      optional :HopCount, :int32, 3
+      optional :LinkAddr, :string, 4
+      optional :PeerAddr, :string, 5
+      optional :TransactionID, :bytes, 6
+      repeated :Options, :message, 7, "types.DHCPv6Option"
+    end
+    add_message "types.DHCPv6Option" do
+      optional :Code, :int32, 1
+      optional :Length, :int32, 2
+      optional :Data, :bytes, 3
+    end
+    add_message "types.LLC" do
+      optional :Timestamp, :string, 1
+      optional :DSAP, :int32, 2
+      optional :IG, :bool, 3
+      optional :SSAP, :int32, 4
+      optional :CR, :bool, 5
+      optional :Control, :int32, 6
+    end
+    add_message "types.NTP" do
+      optional :Timestamp, :string, 1
+      optional :LeapIndicator, :int32, 2
+      optional :Version, :int32, 3
+      optional :Mode, :int32, 4
+      optional :Stratum, :int32, 5
+      optional :Poll, :int32, 6
+      optional :Precision, :int32, 7
+      optional :RootDelay, :uint32, 8
+      optional :RootDispersion, :uint32, 9
+      optional :ReferenceID, :uint32, 10
+      optional :ReferenceTimestamp, :uint64, 11
+      optional :OriginTimestamp, :uint64, 12
+      optional :ReceiveTimestamp, :uint64, 13
+      optional :TransmitTimestamp, :uint64, 14
+      optional :ExtensionBytes, :bytes, 15
+    end
+    add_message "types.SIP" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :Method, :int32, 3
+      repeated :Headers, :string, 4
+      optional :IsResponse, :bool, 5
+      optional :ResponseCode, :int32, 6
+      optional :ResponseStatus, :string, 7
+    end
+    add_message "types.IGMP" do
+      optional :Timestamp, :string, 1
+      optional :Type, :int32, 2
+      optional :MaxResponseTime, :uint64, 3
+      optional :Checksum, :int32, 4
+      optional :GroupAddress, :bytes, 5
+      optional :SupressRouterProcessing, :bool, 6
+      optional :RobustnessValue, :int32, 7
+      optional :IntervalTime, :uint64, 8
+      repeated :SourceAddresses, :string, 9
+      optional :NumberOfGroupRecords, :int32, 10
+      optional :NumberOfSources, :int32, 11
+      repeated :GroupRecords, :message, 12, "types.IGMPv3GroupRecord"
+      optional :Version, :int32, 13
+    end
+    add_message "types.IGMPv3GroupRecord" do
+      optional :Type, :int32, 1
+      optional :AuxDataLen, :int32, 2
+      optional :NumberOfSources, :int32, 3
+      optional :MulticastAddress, :string, 4
+      repeated :SourceAddresses, :string, 5
+    end
+    add_message "types.IPv6HopByHop" do
+      optional :Timestamp, :string, 1
+      repeated :Options, :message, 2, "types.IPv6HopByHopOption"
+    end
+    add_message "types.IPv6HopByHopOption" do
+      optional :OptionType, :int32, 1
+      optional :OptionLength, :int32, 2
+      optional :ActualLength, :int32, 3
+      optional :OptionData, :bytes, 4
+      optional :OptionAlignment, :message, 5, "types.IPv6HopByHopOptionAlignment"
+    end
+    add_message "types.IPv6HopByHopOptionAlignment" do
+      optional :One, :int32, 1
+      optional :Two, :int32, 2
+    end
+    add_message "types.SNAP" do
+      optional :Timestamp, :string, 1
+      optional :OrganizationalCode, :bytes, 2
+      optional :Type, :int32, 3
+    end
+    add_message "types.ICMPv6Echo" do
+      optional :Timestamp, :string, 1
+      optional :Identifier, :int32, 2
+      optional :SeqNumber, :int32, 3
+    end
+    add_message "types.ICMPv6NeighborSolicitation" do
+      optional :Timestamp, :string, 1
+      optional :TargetAddress, :string, 2
+      repeated :Options, :message, 3, "types.ICMPv6Option"
+    end
+    add_message "types.ICMPv6RouterSolicitation" do
+      optional :Timestamp, :string, 1
+      repeated :Options, :message, 2, "types.ICMPv6Option"
+    end
+    add_message "types.HTTP" do
+      optional :Timestamp, :string, 1
+      optional :Proto, :string, 2
+      optional :Method, :string, 3
+      optional :Host, :string, 4
+      optional :UserAgent, :string, 5
+      optional :Referer, :string, 6
+      repeated :ReqCookies, :string, 7
+      optional :ReqContentLength, :int32, 8
+      optional :URL, :string, 9
+      optional :ResContentLength, :int32, 10
+      optional :ContentType, :string, 11
+      optional :StatusCode, :int32, 12
+      optional :SrcIP, :string, 13
+      optional :DstIP, :string, 14
+    end
+    add_message "types.TLSClientHello" do
+      optional :Timestamp, :string, 1
+      optional :Type, :int32, 2
+      optional :Version, :int32, 3
+      optional :MessageLen, :int32, 4
+      optional :HandshakeType, :int32, 5
+      optional :HandshakeLen, :uint32, 6
+      optional :HandshakeVersion, :int32, 7
+      optional :Random, :bytes, 8
+      optional :SessionIDLen, :uint32, 9
+      optional :SessionID, :bytes, 10
+      optional :CipherSuiteLen, :int32, 11
+      optional :ExtensionLen, :int32, 12
+      optional :SNI, :string, 13
+      optional :OSCP, :bool, 14
+      repeated :CipherSuites, :int32, 15
+      repeated :CompressMethods, :int32, 16
+      repeated :SignatureAlgs, :int32, 17
+      repeated :SupportedGroups, :int32, 18
+      repeated :SupportedPoints, :int32, 19
+      repeated :ALPNs, :string, 20
+      optional :Ja3, :string, 21
+      optional :SrcIP, :string, 22
+      optional :DstIP, :string, 23
+      optional :SrcMAC, :string, 24
+      optional :DstMAC, :string, 25
+      optional :SrcPort, :int32, 26
+      optional :DstPort, :int32, 27
+      repeated :Extensions, :int32, 28
+    end
+    add_message "types.IPSecAH" do
+      optional :Timestamp, :string, 1
+      optional :Reserved, :int32, 2
+      optional :SPI, :int32, 3
+      optional :Seq, :int32, 4
+      optional :AuthenticationData, :bytes, 5
+    end
+    add_message "types.IPSecESP" do
+      optional :Timestamp, :string, 1
+      optional :SPI, :int32, 2
+      optional :Seq, :int32, 3
+      optional :LenEncrypted, :int32, 4
+    end
+    add_message "types.Geneve" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :OptionsLength, :int32, 3
+      optional :OAMPacket, :bool, 4
+      optional :CriticalOption, :bool, 5
+      optional :Protocol, :int32, 6
+      optional :VNI, :uint32, 7
+      repeated :Options, :message, 8, "types.GeneveOption"
+    end
+    add_message "types.GeneveOption" do
+      optional :Class, :int32, 1
+      optional :Type, :int32, 2
+      optional :Flags, :int32, 3
+      optional :Length, :int32, 4
+      optional :Data, :bytes, 5
+    end
+    add_message "types.VXLAN" do
+      optional :Timestamp, :string, 1
+      optional :ValidIDFlag, :bool, 2
+      optional :VNI, :uint32, 3
+      optional :GBPExtension, :bool, 4
+      optional :GBPDontLearn, :bool, 5
+      optional :GBPApplied, :bool, 6
+      optional :GBPGroupPolicyID, :int32, 7
+    end
+    add_message "types.USB" do
+      optional :Timestamp, :string, 1
+      optional :ID, :uint64, 2
+      optional :EventType, :int32, 3
+      optional :TransferType, :int32, 4
+      optional :Direction, :int32, 5
+      optional :EndpointNumber, :int32, 6
+      optional :DeviceAddress, :int32, 7
+      optional :BusID, :int32, 8
+      optional :TimestampSec, :int64, 9
+      optional :TimestampUsec, :int32, 10
+      optional :Setup, :bool, 11
+      optional :Data, :bool, 12
+      optional :Status, :int32, 13
+      optional :UrbLength, :uint32, 14
+      optional :UrbDataLength, :uint32, 15
+      optional :UrbInterval, :uint32, 16
+      optional :UrbStartFrame, :uint32, 17
+      optional :UrbCopyOfTransferFlags, :uint32, 18
+      optional :IsoNumDesc, :uint32, 19
+      optional :Payload, :bytes, 20
+    end
+    add_message "types.USBRequestBlockSetup" do
+      optional :Timestamp, :string, 1
+      optional :RequestType, :int32, 2
+      optional :Request, :int32, 3
+      optional :Value, :int32, 4
+      optional :Index, :int32, 5
+      optional :Length, :int32, 6
+    end
+    add_message "types.LCM" do
+      optional :Timestamp, :string, 1
+      optional :Magic, :int32, 2
+      optional :SequenceNumber, :int32, 3
+      optional :PayloadSize, :int32, 4
+      optional :FragmentOffset, :int32, 5
+      optional :FragmentNumber, :int32, 6
+      optional :TotalFragments, :int32, 7
+      optional :ChannelName, :string, 8
+      optional :Fragmented, :bool, 9
+    end
+    add_message "types.MPLS" do
+      optional :Timestamp, :string, 1
+      optional :Label, :int32, 2
+      optional :TrafficClass, :int32, 3
+      optional :StackBottom, :bool, 4
+      optional :TTL, :int32, 5
+    end
+    add_message "types.ModbusTCP" do
+      optional :Timestamp, :string, 1
+      optional :TransactionIdentifier, :int32, 2
+      optional :ProtocolIdentifier, :int32, 3
+      optional :Length, :int32, 4
+      optional :UnitIdentifier, :int32, 5
+      optional :Payload, :bytes, 6
+    end
+    add_message "types.OSPFv2" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :Type, :int32, 3
+      optional :PacketLength, :int32, 4
+      optional :RouterID, :uint32, 5
+      optional :AreaID, :uint32, 6
+      optional :Checksum, :int32, 7
+      optional :AuType, :int32, 8
+      optional :Authentication, :int64, 9
+      repeated :LSAs, :message, 10, "types.LSAheader"
+      optional :LSU, :message, 11, "types.LSUpdate"
+      repeated :LSR, :message, 12, "types.LSReq"
+      optional :DbDesc, :message, 13, "types.DbDescPkg"
+      optional :HelloV2, :message, 14, "types.HelloPkgV2"
+    end
+    add_message "types.HelloPkg" do
+      optional :InterfaceID, :uint32, 1
+      optional :RtrPriority, :int32, 2
+      optional :Options, :uint32, 3
+      optional :HelloInterval, :int32, 4
+      optional :RouterDeadInterval, :uint32, 5
+      optional :DesignatedRouterID, :uint32, 6
+      optional :BackupDesignatedRouterID, :uint32, 7
+      repeated :NeighborID, :uint32, 8
+    end
+    add_message "types.HelloPkgV2" do
+      optional :InterfaceID, :uint32, 1
+      optional :RtrPriority, :int32, 2
+      optional :Options, :uint32, 3
+      optional :HelloInterval, :int32, 4
+      optional :RouterDeadInterval, :uint32, 5
+      optional :DesignatedRouterID, :uint32, 6
+      optional :BackupDesignatedRouterID, :uint32, 7
+      repeated :NeighborID, :uint32, 8
+      optional :NetworkMask, :uint32, 9
+    end
+    add_message "types.DbDescPkg" do
+      optional :Options, :uint32, 1
+      optional :InterfaceMTU, :int32, 2
+      optional :Flags, :int32, 3
+      optional :DDSeqNumber, :uint32, 4
+      repeated :LSAinfo, :message, 5, "types.LSAheader"
+    end
+    add_message "types.OSPFv3" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :Type, :int32, 3
+      optional :PacketLength, :int32, 4
+      optional :RouterID, :uint32, 5
+      optional :AreaID, :uint32, 6
+      optional :Checksum, :int32, 7
+      optional :Instance, :int32, 8
+      optional :Reserved, :int32, 9
+      optional :Hello, :message, 10, "types.HelloPkg"
+      optional :DbDesc, :message, 11, "types.DbDescPkg"
+      repeated :LSR, :message, 12, "types.LSReq"
+      optional :LSU, :message, 13, "types.LSUpdate"
+      repeated :LSAs, :message, 14, "types.LSAheader"
+    end
+    add_message "types.LSAheader" do
+      optional :LSAge, :int32, 1
+      optional :LSType, :int32, 2
+      optional :LinkStateID, :uint32, 3
+      optional :AdvRouter, :uint32, 4
+      optional :LSSeqNumber, :uint32, 5
+      optional :LSChecksum, :int32, 6
+      optional :Length, :int32, 7
+      optional :LSOptions, :int32, 8
+    end
+    add_message "types.LSA" do
+      optional :Header, :message, 1, "types.LSAheader"
+      optional :RLSAV2, :message, 2, "types.RouterLSAV2"
+      optional :ASELSAV2, :message, 3, "types.ASExternalLSAV2"
+      optional :RLSA, :message, 4, "types.RouterLSA"
+      optional :NLSA, :message, 5, "types.NetworkLSA"
+      optional :InterAPrefixLSA, :message, 6, "types.InterAreaPrefixLSA"
+      optional :IARouterLSA, :message, 7, "types.InterAreaRouterLSA"
+      optional :ASELSA, :message, 8, "types.ASExternalLSA"
+      optional :LLSA, :message, 9, "types.LinkLSA"
+      optional :IntraAPrefixLSA, :message, 10, "types.IntraAreaPrefixLSA"
+    end
+    add_message "types.LSReq" do
+      optional :LSType, :int32, 1
+      optional :LSID, :uint32, 2
+      optional :AdvRouter, :uint32, 3
+    end
+    add_message "types.LSUpdate" do
+      optional :NumOfLSAs, :uint32, 1
+      repeated :LSAs, :message, 2, "types.LSA"
+    end
+    add_message "types.IntraAreaPrefixLSA" do
+      optional :NumOfPrefixes, :int32, 1
+      optional :RefLSType, :int32, 2
+      optional :RefLinkStateID, :uint32, 3
+      optional :RefAdvRouter, :uint32, 4
+      repeated :Prefixes, :message, 5, "types.LSAPrefix"
+    end
+    add_message "types.ASExternalLSA" do
+      optional :Flags, :int32, 1
+      optional :Metric, :uint32, 2
+      optional :PrefixLength, :int32, 3
+      optional :PrefixOptions, :int32, 4
+      optional :RefLSType, :int32, 5
+      optional :AddressPrefix, :bytes, 6
+      optional :ForwardingAddress, :bytes, 7
+      optional :ExternalRouteTag, :uint32, 8
+      optional :RefLinkStateID, :uint32, 9
+    end
+    add_message "types.InterAreaPrefixLSA" do
+      optional :Metric, :uint32, 1
+      optional :PrefixLength, :int32, 2
+      optional :PrefixOptions, :int32, 3
+      optional :AddressPrefix, :bytes, 4
+    end
+    add_message "types.InterAreaRouterLSA" do
+      optional :Options, :uint32, 1
+      optional :Metric, :uint32, 2
+      optional :DestinationRouterID, :uint32, 3
+    end
+    add_message "types.ASExternalLSAV2" do
+      optional :NetworkMask, :uint32, 1
+      optional :ExternalBit, :int32, 2
+      optional :Metric, :uint32, 3
+      optional :ForwardingAddress, :uint32, 4
+      optional :ExternalRouteTag, :uint32, 5
+    end
+    add_message "types.RouterLSA" do
+      optional :Flags, :int32, 1
+      optional :Options, :uint32, 2
+      repeated :Routers, :message, 3, "types.Router"
+    end
+    add_message "types.Router" do
+      optional :Type, :int32, 1
+      optional :Metric, :int32, 2
+      optional :InterfaceID, :uint32, 3
+      optional :NeighborInterfaceID, :uint32, 4
+      optional :NeighborRouterID, :uint32, 5
+    end
+    add_message "types.RouterLSAV2" do
+      optional :Flags, :int32, 1
+      optional :Links, :int32, 2
+      repeated :Routers, :message, 3, "types.RouterV2"
+    end
+    add_message "types.RouterV2" do
+      optional :Type, :int32, 1
+      optional :LinkID, :uint32, 2
+      optional :LinkData, :uint32, 3
+      optional :Metric, :uint32, 4
+    end
+    add_message "types.NetworkLSA" do
+      optional :Options, :uint32, 1
+      repeated :AttachedRouter, :uint32, 2
+    end
+    add_message "types.LinkLSA" do
+      optional :RtrPriority, :int32, 1
+      optional :Options, :uint32, 2
+      optional :LinkLocalAddress, :bytes, 3
+      optional :NumOfPrefixes, :uint32, 4
+      repeated :Prefixes, :message, 5, "types.LSAPrefix"
+    end
+    add_message "types.LSAPrefix" do
+      optional :PrefixLength, :int32, 1
+      optional :PrefixOptions, :int32, 2
+      optional :Metric, :int32, 3
+      optional :AddressPrefix, :bytes, 4
+    end
+    add_message "types.BFD" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :Diagnostic, :int32, 3
+      optional :State, :int32, 4
+      optional :Poll, :bool, 5
+      optional :Final, :bool, 6
+      optional :ControlPlaneIndependent, :bool, 7
+      optional :AuthPresent, :bool, 8
+      optional :Demand, :bool, 9
+      optional :Multipoint, :bool, 10
+      optional :DetectMultiplier, :int32, 11
+      optional :MyDiscriminator, :int32, 12
+      optional :YourDiscriminator, :int32, 13
+      optional :DesiredMinTxInterval, :int32, 14
+      optional :RequiredMinRxInterval, :int32, 15
+      optional :RequiredMinEchoRxInterval, :int32, 16
+      optional :AuthHeader, :message, 17, "types.BFDAuthHeader"
+    end
+    add_message "types.BFDAuthHeader" do
+      optional :AuthType, :int32, 1
+      optional :KeyID, :int32, 2
+      optional :SequenceNumber, :int32, 3
+      optional :Data, :bytes, 4
+    end
+    add_message "types.GRE" do
+      optional :Timestamp, :string, 1
+      optional :ChecksumPresent, :bool, 2
+      optional :RoutingPresent, :bool, 3
+      optional :KeyPresent, :bool, 4
+      optional :SeqPresent, :bool, 5
+      optional :StrictSourceRoute, :bool, 6
+      optional :AckPresent, :bool, 7
+      optional :RecursionControl, :int32, 8
+      optional :Flags, :int32, 9
+      optional :Version, :int32, 10
+      optional :Protocol, :int32, 11
+      optional :Checksum, :int32, 12
+      optional :Offset, :int32, 13
+      optional :Key, :uint32, 14
+      optional :Seq, :uint32, 15
+      optional :Ack, :uint32, 16
+      optional :Routing, :message, 17, "types.GRERouting"
+    end
+    add_message "types.GRERouting" do
+      optional :AddressFamily, :int32, 1
+      optional :SREOffset, :int32, 2
+      optional :SRELength, :int32, 3
+      optional :RoutingInformation, :bytes, 4
+      optional :Next, :message, 5, "types.GRERouting"
+    end
+    add_message "types.FDDI" do
+      optional :Timestamp, :string, 1
+      optional :FrameControl, :int32, 2
+      optional :Priority, :int32, 3
+      optional :SrcMAC, :string, 4
+      optional :DstMAC, :string, 5
+    end
+    add_message "types.EAP" do
+      optional :Timestamp, :string, 1
+      optional :Code, :int32, 2
+      optional :Id, :int32, 3
+      optional :Length, :int32, 4
+      optional :Type, :int32, 5
+      optional :TypeData, :bytes, 6
+    end
+    add_message "types.EAPOL" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :Type, :int32, 3
+      optional :Length, :int32, 4
+    end
+    add_message "types.EAPOLKey" do
+      optional :Timestamp, :string, 1
+      optional :KeyDescriptorType, :int32, 2
+      optional :KeyDescriptorVersion, :int32, 3
+      optional :KeyType, :int32, 4
+      optional :KeyIndex, :int32, 5
+      optional :Install, :bool, 6
+      optional :KeyACK, :bool, 7
+      optional :KeyMIC, :bool, 8
+      optional :Secure, :bool, 9
+      optional :MICError, :bool, 10
+      optional :Request, :bool, 11
+      optional :HasEncryptedKeyData, :bool, 12
+      optional :SMKMessage, :bool, 13
+      optional :KeyLength, :int32, 14
+      optional :ReplayCounter, :uint64, 15
+      optional :Nonce, :bytes, 16
+      optional :IV, :bytes, 17
+      optional :RSC, :uint64, 18
+      optional :ID, :uint64, 19
+      optional :MIC, :bytes, 20
+      optional :KeyDataLength, :int32, 21
+      optional :EncryptedKeyData, :bytes, 22
+    end
+    add_message "types.VRRPv2" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :Type, :int32, 3
+      optional :VirtualRtrID, :int32, 4
+      optional :Priority, :int32, 5
+      optional :CountIPAddr, :int32, 6
+      optional :AuthType, :int32, 7
+      optional :AdverInt, :int32, 8
+      optional :Checksum, :int32, 9
+      repeated :IPAddress, :string, 10
+    end
+    add_message "types.CiscoDiscovery" do
+      optional :Timestamp, :string, 1
+      optional :Version, :int32, 2
+      optional :TTL, :int32, 3
+      optional :Checksum, :int32, 4
+      repeated :Values, :message, 5, "types.CiscoDiscoveryValue"
+    end
+    add_message "types.CiscoDiscoveryValue" do
+      optional :Type, :int32, 1
+      optional :Length, :int32, 2
+      optional :Value, :bytes, 3
+    end
+    add_message "types.CDPVLANDialogue" do
+      optional :ID, :int32, 1
+      optional :VLAN, :int32, 2
+    end
+    add_message "types.CDPLocation" do
+      optional :Type, :int32, 1
+      optional :Location, :string, 2
+    end
+    add_message "types.CDPPowerDialogue" do
+      optional :ID, :int32, 1
+      optional :MgmtID, :int32, 2
+      repeated :Values, :uint32, 3
+    end
+    add_message "types.CDPSparePairPoE" do
+      optional :PSEFourWire, :bool, 1
+      optional :PDArchShared, :bool, 2
+      optional :PDRequestOn, :bool, 3
+      optional :PSEOn, :bool, 4
+    end
+    add_message "types.CiscoDiscoveryInfo" do
+      optional :Timestamp, :string, 1
+      optional :CDPHello, :message, 2, "types.CDPHello"
+      optional :DeviceID, :string, 3
+      repeated :Addresses, :string, 4
+      optional :PortID, :string, 5
+      optional :Capabilities, :message, 6, "types.CDPCapabilities"
+      optional :Version, :string, 7
+      optional :Platform, :string, 8
+      repeated :IPPrefixes, :message, 9, "types.IPNet"
+      optional :VTPDomain, :string, 10
+      optional :NativeVLAN, :int32, 11
+      optional :FullDuplex, :bool, 12
+      optional :VLANReply, :message, 13, "types.CDPVLANDialogue"
+      optional :VLANQuery, :message, 14, "types.CDPVLANDialogue"
+      optional :PowerConsumption, :int32, 15
+      optional :MTU, :uint32, 16
+      optional :ExtendedTrust, :int32, 17
+      optional :UntrustedCOS, :int32, 18
+      optional :SysName, :string, 19
+      optional :SysOID, :string, 20
+      repeated :MgmtAddresses, :string, 21
+      optional :Location, :message, 22, "types.CDPLocation"
+      optional :PowerRequest, :message, 23, "types.CDPPowerDialogue"
+      optional :PowerAvailable, :message, 24, "types.CDPPowerDialogue"
+      optional :SparePairPoe, :message, 25, "types.CDPSparePairPoE"
+      optional :EnergyWise, :message, 26, "types.CDPEnergyWise"
+      repeated :Unknown, :message, 27, "types.CiscoDiscoveryValue"
+    end
+    add_message "types.CDPHello" do
+      optional :OUI, :bytes, 1
+      optional :ProtocolID, :int32, 2
+      optional :ClusterMaster, :string, 3
+      optional :Unknown1, :string, 4
+      optional :Version, :int32, 5
+      optional :SubVersion, :int32, 6
+      optional :Status, :int32, 7
+      optional :Unknown2, :int32, 8
+      optional :ClusterCommander, :string, 9
+      optional :SwitchMAC, :string, 10
+      optional :Unknown3, :int32, 11
+      optional :ManagementVLAN, :int32, 12
+    end
+    add_message "types.CDPEnergyWise" do
+      optional :EncryptedData, :bytes, 1
+      optional :Unknown1, :uint32, 2
+      optional :SequenceNumber, :uint32, 3
+      optional :ModelNumber, :string, 4
+      optional :Unknown2, :int32, 5
+      optional :HardwareID, :string, 6
+      optional :SerialNum, :string, 7
+      optional :Unknown3, :bytes, 8
+      optional :Role, :string, 9
+      optional :Domain, :string, 10
+      optional :Name, :string, 11
+      optional :ReplyUnknown1, :bytes, 12
+      optional :ReplyPort, :bytes, 13
+      optional :ReplyAddress, :bytes, 14
+      optional :ReplyUnknown2, :bytes, 15
+      optional :ReplyUnknown3, :bytes, 16
+    end
+    add_message "types.CDPCapabilities" do
+      optional :L3Router, :bool, 1
+      optional :TBBridge, :bool, 2
+      optional :SPBridge, :bool, 3
+      optional :L2Switch, :bool, 4
+      optional :IsHost, :bool, 5
+      optional :IGMPFilter, :bool, 6
+      optional :L1Repeater, :bool, 7
+      optional :IsPhone, :bool, 8
+      optional :RemotelyManaged, :bool, 9
+    end
+    add_message "types.IPNet" do
+      optional :IP, :string, 1
+      optional :IPMask, :string, 2
+    end
+    add_message "types.NortelDiscovery" do
+      optional :Timestamp, :string, 1
+      optional :IPAddress, :string, 2
+      optional :SegmentID, :bytes, 3
+      optional :Chassis, :int32, 4
+      optional :Backplane, :int32, 5
+      optional :State, :int32, 6
+      optional :NumLinks, :int32, 7
+    end
+    add_enum "types.Type" do
+      value :NC_Header, 0
+      value :NC_Batch, 1
+      value :NC_Flow, 2
+      value :NC_Connection, 3
+      value :NC_LinkFlow, 4
+      value :NC_NetworkFlow, 5
+      value :NC_TransportFlow, 6
+      value :NC_Ethernet, 7
+      value :NC_ARP, 8
+      value :NC_Dot1Q, 9
+      value :NC_Dot11, 10
+      value :NC_Dot11QOS, 11
+      value :NC_Dot11HTControl, 12
+      value :NC_Dot11HTControlVHT, 13
+      value :NC_Dot11HTControlHT, 14
+      value :NC_Dot11HTControlMFB, 15
+      value :NC_Dot11LinkAdapationControl, 16
+      value :NC_Dot11ASEL, 17
+      value :NC_LinkLayerDiscovery, 18
+      value :NC_LLDPChassisID, 19
+      value :NC_LLDPPortID, 20
+      value :NC_LinkLayerDiscoveryValue, 21
+      value :NC_EthernetCTP, 22
+      value :NC_EthernetCTPReply, 23
+      value :NC_LinkLayerDiscoveryInfo, 24
+      value :NC_LLDPSysCapabilities, 25
+      value :NC_LLDPCapabilities, 26
+      value :NC_LLDPMgmtAddress, 27
+      value :NC_LLDPOrgSpecificTLV, 28
+      value :NC_IPv4, 29
+      value :NC_IPv4Option, 30
+      value :NC_IPv6, 31
+      value :NC_ICMPv4, 32
+      value :NC_ICMPv6, 33
+      value :NC_ICMPv6NeighborAdvertisement, 34
+      value :NC_ICMPv6RouterAdvertisement, 35
+      value :NC_ICMPv6Option, 36
+      value :NC_UDP, 37
+      value :NC_TCP, 38
+      value :NC_TCPOption, 39
+      value :NC_SCTP, 40
+      value :NC_DNS, 41
+      value :NC_DNSResourceRecord, 42
+      value :NC_DNSSOA, 43
+      value :NC_DNSSRV, 44
+      value :NC_DNSMX, 45
+      value :NC_DNSQuestion, 46
+      value :NC_DHCPv4, 47
+      value :NC_DHCPOption, 48
+      value :NC_DHCPv6, 49
+      value :NC_DHCPv6Option, 50
+      value :NC_LLC, 51
+      value :NC_NTP, 52
+      value :NC_SIP, 53
+      value :NC_IGMP, 54
+      value :NC_IGMPv3GroupRecord, 55
+      value :NC_IPv6HopByHop, 56
+      value :NC_IPv6HopByHopOption, 57
+      value :NC_IPv6HopByHopOptionAlignment, 58
+      value :NC_SNAP, 59
+      value :NC_ICMPv6Echo, 60
+      value :NC_ICMPv6NeighborSolicitation, 61
+      value :NC_ICMPv6RouterSolicitation, 62
+      value :NC_HTTP, 63
+      value :NC_TLSClientHello, 64
+      value :NC_IPSecAH, 65
+      value :NC_IPSecESP, 66
+      value :NC_Geneve, 67
+      value :NC_IPv6Fragment, 68
+      value :NC_VXLAN, 69
+      value :NC_USB, 70
+      value :NC_LCM, 71
+      value :NC_MPLS, 72
+      value :NC_ModbusTCP, 73
+      value :NC_OSPFv2, 74
+      value :NC_OSPFv3, 75
+      value :NC_BFD, 76
+      value :NC_GRE, 77
+      value :NC_FDDI, 78
+      value :NC_EAP, 79
+      value :NC_VRRPv2, 80
+      value :NC_EAPOL, 81
+      value :NC_EAPOLKey, 82
+      value :NC_CiscoDiscovery, 83
+      value :NC_CiscoDiscoveryInfo, 84
+      value :NC_USBRequestBlockSetup, 85
+      value :NC_NortelDiscovery, 86
+    end
   end
 end
 
