@@ -17,29 +17,33 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsDNS = []string{
+	"Timestamp",
+	"ID",           // int32
+	"QR",           // bool
+	"OpCode",       // int32
+	"AA",           // bool
+	"TC",           // bool
+	"RD",           // bool
+	"RA",           // bool
+	"Z",            // int32
+	"ResponseCode", // int32
+	"QDCount",      // int32
+	"ANCount",      // int32
+	"NSCount",      // int32
+	"ARCount",      // int32
+	"Questions",    // []*DNSQuestion
+	"Answers",      // []*DNSResourceRecord
+	"Authorities",  // []*DNSResourceRecord
+	"Additionals",  // []*DNSResourceRecord
+}
+
 func (d DNS) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"ID",           // int32
-		"QR",           // bool
-		"OpCode",       // int32
-		"AA",           // bool
-		"TC",           // bool
-		"RD",           // bool
-		"RA",           // bool
-		"Z",            // int32
-		"ResponseCode", // int32
-		"QDCount",      // int32
-		"ANCount",      // int32
-		"NSCount",      // int32
-		"ARCount",      // int32
-		"Questions",    // []*DNSQuestion
-		"Answers",      // []*DNSResourceRecord
-		"Authorities",  // []*DNSResourceRecord
-		"Additionals",  // []*DNSResourceRecord
-	})
+	return filter(fieldsDNS)
 }
 
 func (d DNS) CSVRecord() []string {
@@ -180,4 +184,20 @@ func (q *DNSMX) ToString() string {
 
 func (a DNS) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var dnsMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_DNS.String()),
+		Help: Type_NC_DNS.String() + " audit records",
+	},
+	fieldsDNS,
+)
+
+func init() {
+	prometheus.MustRegister(dnsMetric)
+}
+
+func (a DNS) Inc() {
+	dnsMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

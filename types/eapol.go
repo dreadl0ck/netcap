@@ -13,13 +13,21 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsEAPOL = []string{
+	"Timestamp",
+	"Version", //  int32
+	"Type",    //  int32
+	"Length",  //  int32
+}
+
 func (a EAPOL) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version", //  int32
-		"Type",    //  int32
-		"Length",  //  int32
-	})
+	return filter(fieldsEAPOL)
 }
 
 func (a EAPOL) CSVRecord() []string {
@@ -37,4 +45,20 @@ func (a EAPOL) NetcapTimestamp() string {
 
 func (a EAPOL) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var eapPolMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_EAPOL.String()),
+		Help: Type_NC_EAPOL.String() + " audit records",
+	},
+	fieldsEAPOL,
+)
+
+func init() {
+	prometheus.MustRegister(eapPolMetric)
+}
+
+func (a EAPOL) Inc() {
+	eapPolMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

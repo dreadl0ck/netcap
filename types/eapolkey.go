@@ -16,33 +16,38 @@ package types
 import (
 	"encoding/hex"
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsEAPOLKey = []string{
+	"Timestamp",
+	"KeyDescriptorType",    // int32
+	"KeyDescriptorVersion", // int32
+	"KeyType",              // int32
+	"KeyIndex",             // int32
+	"Install",              // bool
+	"KeyACK",               // bool
+	"KeyMIC",               // bool
+	"Secure",               // bool
+	"MICError",             // bool
+	"Request",              // bool
+	"HasEncryptedKeyData",  // bool
+	"SMKMessage",           // bool
+	"KeyLength",            // int32
+	"ReplayCounter",        // uint64
+	"Nonce",                // []byte
+	"IV",                   // []byte
+	"RSC",                  // uint64
+	"ID",                   // uint64
+	"MIC",                  // []byte
+	"KeyDataLength",        // int32
+	"EncryptedKeyData",     // []byte
+}
+
 func (a EAPOLKey) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"KeyDescriptorType",    // int32
-		"KeyDescriptorVersion", // int32
-		"KeyType",              // int32
-		"KeyIndex",             // int32
-		"Install",              // bool
-		"KeyACK",               // bool
-		"KeyMIC",               // bool
-		"Secure",               // bool
-		"MICError",             // bool
-		"Request",              // bool
-		"HasEncryptedKeyData",  // bool
-		"SMKMessage",           // bool
-		"KeyLength",            // int32
-		"ReplayCounter",        // uint64
-		"Nonce",                // []byte
-		"IV",                   // []byte
-		"RSC",                  // uint64
-		"ID",                   // uint64
-		"MIC",                  // []byte
-		"KeyDataLength",        // int32
-		"EncryptedKeyData",     // []byte
-	})
+	return filter(fieldsEAPOLKey)
 }
 
 func (a EAPOLKey) CSVRecord() []string {
@@ -78,4 +83,20 @@ func (a EAPOLKey) NetcapTimestamp() string {
 
 func (a EAPOLKey) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var eapPolKeyMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_EAPOLKey.String()),
+		Help: Type_NC_EAPOLKey.String() + " audit records",
+	},
+	fieldsEAPOLKey,
+)
+
+func init() {
+	prometheus.MustRegister(eapPolKeyMetric)
+}
+
+func (a EAPOLKey) Inc() {
+	eapPolKeyMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

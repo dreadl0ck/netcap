@@ -15,21 +15,26 @@ package types
 
 import (
 	"encoding/hex"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsARP = []string{
+	"Timestamp",
+	"AddrType",        // int32
+	"Protocol",        // int32
+	"HwAddressSize",   // int32
+	"ProtAddressSize", // int32
+	"Operation",       // int32
+	"SrcHwAddress",    // []byte
+	"SrcProtAddress",  // []byte
+	"DstHwAddress",    // []byte
+	"DstProtAddress",  // []byte
+}
+
 func (a ARP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"AddrType",        // int32
-		"Protocol",        // int32
-		"HwAddressSize",   // int32
-		"ProtAddressSize", // int32
-		"Operation",       // int32
-		"SrcHwAddress",    // []byte
-		"SrcProtAddress",  // []byte
-		"DstHwAddress",    // []byte
-		"DstProtAddress",  // []byte
-	})
+	return filter(fieldsARP)
 }
 
 func (a ARP) CSVRecord() []string {
@@ -53,4 +58,20 @@ func (a ARP) NetcapTimestamp() string {
 
 func (a ARP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var arpMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_ARP.String()),
+		Help: Type_NC_ARP.String() + " audit records",
+	},
+	fieldsARP,
+)
+
+func init() {
+	prometheus.MustRegister(arpMetric)
+}
+
+func (a ARP) Inc() {
+	arpMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

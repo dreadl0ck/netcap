@@ -16,16 +16,20 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsCiscoDiscovery = []string{
+	"Timestamp",
+	"Version",  // int32
+	"TTL",      // int32
+	"Checksum", // int32
+	"Values",   // []*CiscoDiscoveryValue
+}
+
 func (a CiscoDiscovery) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version",  // int32
-		"TTL",      // int32
-		"Checksum", // int32
-		"Values",   // []*CiscoDiscoveryValue
-	})
+	return filter(fieldsCiscoDiscovery)
 }
 
 func (a CiscoDiscovery) CSVRecord() []string {
@@ -61,4 +65,20 @@ func (v CiscoDiscoveryValue) ToString() string {
 
 func (a CiscoDiscovery) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ciscoDiscoveryMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_CiscoDiscovery.String()),
+		Help: Type_NC_CiscoDiscovery.String() + " audit records",
+	},
+	fieldsCiscoDiscovery,
+)
+
+func init() {
+	prometheus.MustRegister(ciscoDiscoveryMetric)
+}
+
+func (a CiscoDiscovery) Inc() {
+	ciscoDiscoveryMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

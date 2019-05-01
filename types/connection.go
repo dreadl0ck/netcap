@@ -13,26 +13,34 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsConnection = []string{
+	"TimestampFirst",
+	"LinkProto",
+	"NetworkProto",
+	"TransportProto",
+	"ApplicationProto",
+	"SrcMAC",
+	"DstMAC",
+	"SrcIP",
+	"SrcPort",
+	"DstIP",
+	"DstPort",
+	"TotalSize",
+	"AppPayloadSize",
+	"NumPackets",
+	"UID",
+	"Duration",
+	"TimestampLast",
+}
+
 func (c Connection) CSVHeader() []string {
-	return filter([]string{
-		"TimestampFirst",
-		"LinkProto",
-		"NetworkProto",
-		"TransportProto",
-		"ApplicationProto",
-		"SrcMAC",
-		"DstMAC",
-		"SrcIP",
-		"SrcPort",
-		"DstIP",
-		"DstPort",
-		"TotalSize",
-		"AppPayloadSize",
-		"NumPackets",
-		"UID",
-		"Duration",
-		"TimestampLast",
-	})
+	return filter(fieldsConnection)
 }
 
 func (c Connection) CSVRecord() []string {
@@ -63,4 +71,20 @@ func (c Connection) NetcapTimestamp() string {
 
 func (a Connection) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var connectionsMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_Connection.String()),
+		Help: Type_NC_Connection.String() + " audit records",
+	},
+	fieldsConnection,
+)
+
+func init() {
+	prometheus.MustRegister(connectionsMetric)
+}
+
+func (a Connection) Inc() {
+	connectionsMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

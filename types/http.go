@@ -13,23 +13,31 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsHTTP = []string{
+	"Timestamp",
+	"Proto",
+	"Method",
+	"Host",
+	"UserAgent",
+	"Referer",
+	"ReqCookies",
+	"ReqContentLength",
+	"URL",
+	"ResContentLength",
+	"ContentType",
+	"StatusCode",
+	"SrcIP",
+	"DstIP",
+}
+
 func (h HTTP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Proto",
-		"Method",
-		"Host",
-		"UserAgent",
-		"Referer",
-		"ReqCookies",
-		"ReqContentLength",
-		"URL",
-		"ResContentLength",
-		"ContentType",
-		"StatusCode",
-		"SrcIP",
-		"DstIP",
-	})
+	return filter(fieldsHTTP)
 }
 
 func (h HTTP) CSVRecord() []string {
@@ -57,4 +65,20 @@ func (f HTTP) NetcapTimestamp() string {
 
 func (a HTTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var httpMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_HTTP.String()),
+		Help: Type_NC_HTTP.String() + " audit records",
+	},
+	fieldsHTTP,
+)
+
+func init() {
+	prometheus.MustRegister(httpMetric)
+}
+
+func (a HTTP) Inc() {
+	httpMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }
