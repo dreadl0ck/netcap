@@ -16,27 +16,31 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsDHCPv4 = []string{
+	"Timestamp",    // string
+	"Operation",    // int32
+	"HardwareType", // int32
+	"HardwareLen",  // int32
+	"HardwareOpts", // int32
+	"Xid",          // uint32
+	"Secs",         // int32
+	"Flags",        // int32
+	"ClientIP",     // string
+	"YourClientIP", // string
+	"NextServerIP", // string
+	"RelayAgentIP", // string
+	"ClientHWAddr", // string
+	"ServerName",   // []byte
+	"File",         // []byte
+	"Options",      // []*DHCPOption
+}
+
 func (d DHCPv4) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",    // string
-		"Operation",    // int32
-		"HardwareType", // int32
-		"HardwareLen",  // int32
-		"HardwareOpts", // int32
-		"Xid",          // uint32
-		"Secs",         // int32
-		"Flags",        // int32
-		"ClientIP",     // string
-		"YourClientIP", // string
-		"NextServerIP", // string
-		"RelayAgentIP", // string
-		"ClientHWAddr", // string
-		"ServerName",   // []byte
-		"File",         // []byte
-		"Options",      // []*DHCPOption
-	})
+	return filter(fieldsDHCPv4)
 }
 
 func (d DHCPv4) CSVRecord() []string {
@@ -82,4 +86,20 @@ func (d DHCPOption) ToString() string {
 
 func (a DHCPv4) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var dhcp4Metric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_DHCPv4.String()),
+		Help: Type_NC_DHCPv4.String() + " audit records",
+	},
+	fieldsDHCPv4,
+)
+
+func init() {
+	prometheus.MustRegister(dhcp4Metric)
+}
+
+func (a DHCPv4) Inc() {
+	dhcp4Metric.WithLabelValues(a.CSVRecord()...).Inc()
 }

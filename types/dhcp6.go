@@ -16,18 +16,22 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsDHCPv6 = []string{
+	"Timestamp",     // string
+	"MsgType",       // int32
+	"HopCount",      // int32
+	"LinkAddr",      // string
+	"PeerAddr",      // string
+	"TransactionID", // []byte
+	"Options",       // []*DHCPv6Option
+}
+
 func (d DHCPv6) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",     // string
-		"MsgType",       // int32
-		"HopCount",      // int32
-		"LinkAddr",      // string
-		"PeerAddr",      // string
-		"TransactionID", // []byte
-		"Options",       // []*DHCPv6Option
-	})
+	return filter(fieldsDHCPv6)
 }
 
 func (d DHCPv6) CSVRecord() []string {
@@ -64,4 +68,20 @@ func (d DHCPv6Option) ToString() string {
 
 func (a DHCPv6) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var dhcp6Metric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_DHCPv6.String()),
+		Help: Type_NC_DHCPv6.String() + " audit records",
+	},
+	fieldsDHCPv6,
+)
+
+func init() {
+	prometheus.MustRegister(dhcp6Metric)
+}
+
+func (a DHCPv6) Inc() {
+	dhcp6Metric.WithLabelValues(a.CSVRecord()...).Inc()
 }

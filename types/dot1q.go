@@ -15,16 +15,21 @@ package types
 
 import (
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsDot1Q = []string{
+	"Timestamp",
+	"Priority",       //  int32
+	"DropEligible",   //  bool
+	"VLANIdentifier", //  int32
+	"Type",           //  int32
+}
+
 func (d Dot1Q) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Priority",       //  int32
-		"DropEligible",   //  bool
-		"VLANIdentifier", //  int32
-		"Type",           //  int32
-	})
+	return filter(fieldsDot1Q)
 }
 
 func (d Dot1Q) CSVRecord() []string {
@@ -43,4 +48,20 @@ func (d Dot1Q) NetcapTimestamp() string {
 
 func (a Dot1Q) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var dot1qMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_Dot1Q.String()),
+		Help: Type_NC_Dot1Q.String() + " audit records",
+	},
+	fieldsDot1Q,
+)
+
+func init() {
+	prometheus.MustRegister(dot1qMetric)
+}
+
+func (a Dot1Q) Inc() {
+	dot1qMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

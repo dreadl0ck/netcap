@@ -13,15 +13,23 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsEthernet = []string{
+	"Timestamp",
+	"SrcMAC",         // string
+	"DstMAC",         // string
+	"EthernetType",   // int32
+	"PayloadEntropy", // float64
+	"PayloadSize",    // int32
+}
+
 func (e Ethernet) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"SrcMAC",         // string
-		"DstMAC",         // string
-		"EthernetType",   // int32
-		"PayloadEntropy", // float64
-		"PayloadSize",    // int32
-	})
+	return filter(fieldsEthernet)
 }
 func (e Ethernet) CSVRecord() []string {
 	return filter([]string{
@@ -40,4 +48,20 @@ func (e Ethernet) NetcapTimestamp() string {
 
 func (a Ethernet) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ethernetMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_Ethernet.String()),
+		Help: Type_NC_Ethernet.String() + " audit records",
+	},
+	fieldsEthernet,
+)
+
+func init() {
+	prometheus.MustRegister(ethernetMetric)
+}
+
+func (a Ethernet) Inc() {
+	ethernetMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

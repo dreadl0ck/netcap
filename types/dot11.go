@@ -16,25 +16,29 @@ package types
 import (
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsDot11 = []string{
+	"Timestamp",
+	"Type",           // int32
+	"Proto",          // int32
+	"Flags",          // int32
+	"DurationID",     // int32
+	"Address1",       // string
+	"Address2",       // string
+	"Address3",       // string
+	"Address4",       // string
+	"SequenceNumber", // int32
+	"FragmentNumber", // int32
+	"Checksum",       // uint32
+	"QOS",            // *Dot11QOS
+	"HTControl",      // *Dot11HTControl
+}
+
 func (d Dot11) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Type",           // int32
-		"Proto",          // int32
-		"Flags",          // int32
-		"DurationID",     // int32
-		"Address1",       // string
-		"Address2",       // string
-		"Address3",       // string
-		"Address4",       // string
-		"SequenceNumber", // int32
-		"FragmentNumber", // int32
-		"Checksum",       // uint32
-		"QOS",            // *Dot11QOS
-		"HTControl",      // *Dot11HTControl
-	})
+	return filter(fieldsDot11)
 }
 
 func (d Dot11) CSVRecord() []string {
@@ -176,4 +180,20 @@ func (d *Dot11ASEL) ToString() string {
 
 func (a Dot11) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var dot11Metric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_Dot11.String()),
+		Help: Type_NC_Dot11.String() + " audit records",
+	},
+	fieldsDot11,
+)
+
+func init() {
+	prometheus.MustRegister(dot11Metric)
+}
+
+func (a Dot11) Inc() {
+	dot11Metric.WithLabelValues(a.CSVRecord()...).Inc()
 }

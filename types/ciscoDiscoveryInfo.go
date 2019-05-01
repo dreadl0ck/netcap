@@ -17,38 +17,42 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsCiscoDiscoveryInfo = []string{
+	"Timestamp",
+	"CDPHello",         // *CDPHello
+	"DeviceID",         // string
+	"Addresses",        // []string
+	"PortID",           // string
+	"Capabilities",     // *CDPCapabilities
+	"Version",          // string
+	"Platform",         // string
+	"IPPrefixes",       // []*IPNet
+	"VTPDomain",        // string
+	"NativeVLAN",       // int32
+	"FullDuplex",       // bool
+	"VLANReply",        // *CDPVLANDialogue
+	"VLANQuery",        // *CDPVLANDialogue
+	"PowerConsumption", // int32
+	"MTU",              // uint32
+	"ExtendedTrust",    // int32
+	"UntrustedCOS",     // int32
+	"SysName",          // string
+	"SysOID",           // string
+	"MgmtAddresses",    // []string
+	"Location",         // *CDPLocation
+	"PowerRequest",     // *CDPPowerDialogue
+	"PowerAvailable",   // *CDPPowerDialogue
+	"SparePairPoe",     // *CDPSparePairPoE
+	"EnergyWise",       // *CDPEnergyWise
+	"Unknown",          // []*CiscoDiscoveryValue
+}
+
 func (a CiscoDiscoveryInfo) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"CDPHello",         // *CDPHello
-		"DeviceID",         // string
-		"Addresses",        // []string
-		"PortID",           // string
-		"Capabilities",     // *CDPCapabilities
-		"Version",          // string
-		"Platform",         // string
-		"IPPrefixes",       // []*IPNet
-		"VTPDomain",        // string
-		"NativeVLAN",       // int32
-		"FullDuplex",       // bool
-		"VLANReply",        // *CDPVLANDialogue
-		"VLANQuery",        // *CDPVLANDialogue
-		"PowerConsumption", // int32
-		"MTU",              // uint32
-		"ExtendedTrust",    // int32
-		"UntrustedCOS",     // int32
-		"SysName",          // string
-		"SysOID",           // string
-		"MgmtAddresses",    // []string
-		"Location",         // *CDPLocation
-		"PowerRequest",     // *CDPPowerDialogue
-		"PowerAvailable",   // *CDPPowerDialogue
-		"SparePairPoe",     // *CDPSparePairPoE
-		"EnergyWise",       // *CDPEnergyWise
-		"Unknown",          // []*CiscoDiscoveryValue
-	})
+	return filter(fieldsCiscoDiscoveryInfo)
 }
 
 func (a CiscoDiscoveryInfo) CSVRecord() []string {
@@ -276,4 +280,20 @@ func (c CDPLocation) ToString() string {
 
 func (a CiscoDiscoveryInfo) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ciscoDiscoveryInfoMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_CiscoDiscoveryInfo.String()),
+		Help: Type_NC_CiscoDiscoveryInfo.String() + " audit records",
+	},
+	fieldsCiscoDiscoveryInfo,
+)
+
+func init() {
+	prometheus.MustRegister(ciscoDiscoveryInfoMetric)
+}
+
+func (a CiscoDiscoveryInfo) Inc() {
+	ciscoDiscoveryInfoMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

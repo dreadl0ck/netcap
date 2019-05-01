@@ -13,14 +13,22 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsFDDI = []string{
+	"Timestamp",
+	"FrameControl", //  int32
+	"Priority",     //  int32
+	"SrcMAC",       //  string
+	"DstMAC",       //  string
+}
+
 func (a FDDI) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"FrameControl", //  int32
-		"Priority",     //  int32
-		"SrcMAC",       //  string
-		"DstMAC",       //  string
-	})
+	return filter(fieldsFDDI)
 }
 
 func (a FDDI) CSVRecord() []string {
@@ -39,4 +47,20 @@ func (a FDDI) NetcapTimestamp() string {
 
 func (a FDDI) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var fddiMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_FDDI.String()),
+		Help: Type_NC_FDDI.String() + " audit records",
+	},
+	fieldsFDDI,
+)
+
+func init() {
+	prometheus.MustRegister(fddiMetric)
+}
+
+func (a FDDI) Inc() {
+	fddiMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

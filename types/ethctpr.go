@@ -15,15 +15,20 @@ package types
 
 import (
 	"encoding/hex"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsEthernetCTPReply = []string{
+	"Timestamp",
+	"Function",      // int32
+	"ReceiptNumber", // int32
+	"Data",          // bytes
+}
+
 func (i EthernetCTPReply) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Function",      // int32
-		"ReceiptNumber", // int32
-		"Data",          // bytes
-	})
+	return filter(fieldsEthernetCTPReply)
 }
 
 func (i EthernetCTPReply) CSVRecord() []string {
@@ -41,4 +46,20 @@ func (i EthernetCTPReply) NetcapTimestamp() string {
 
 func (a EthernetCTPReply) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ethernetCTPReplyMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_EthernetCTPReply.String()),
+		Help: Type_NC_EthernetCTPReply.String() + " audit records",
+	},
+	fieldsEthernetCTPReply,
+)
+
+func init() {
+	prometheus.MustRegister(ethernetCTPReplyMetric)
+}
+
+func (a EthernetCTPReply) Inc() {
+	ethernetCTPReplyMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

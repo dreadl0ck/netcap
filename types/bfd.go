@@ -17,28 +17,32 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsBFD = []string{
+	"Timestamp",
+	"Version",
+	"Diagnostic",
+	"State",
+	"Poll",
+	"Final",
+	"ControlPlaneIndependent",
+	"AuthPresent",
+	"Demand",
+	"Multipoint",
+	"DetectMultiplier",
+	"MyDiscriminator",
+	"YourDiscriminator",
+	"DesiredMinTxInterval",
+	"RequiredMinRxInterval",
+	"RequiredMinEchoRxInterval",
+	"AuthHeader",
+}
+
 func (a BFD) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version",
-		"Diagnostic",
-		"State",
-		"Poll",
-		"Final",
-		"ControlPlaneIndependent",
-		"AuthPresent",
-		"Demand",
-		"Multipoint",
-		"DetectMultiplier",
-		"MyDiscriminator",
-		"YourDiscriminator",
-		"DesiredMinTxInterval",
-		"RequiredMinRxInterval",
-		"RequiredMinEchoRxInterval",
-		"AuthHeader",
-	})
+	return filter(fieldsBFD)
 }
 
 func (a BFD) CSVRecord() []string {
@@ -83,4 +87,20 @@ func (a BFDAuthHeader) GetString() string {
 
 func (a BFD) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var bfdMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_BFD.String()),
+		Help: Type_NC_BFD.String() + " audit records",
+	},
+	fieldsBFD,
+)
+
+func init() {
+	prometheus.MustRegister(bfdMetric)
+}
+
+func (a BFD) Inc() {
+	bfdMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

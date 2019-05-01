@@ -17,19 +17,23 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsGeneve = []string{
+	"Timestamp",
+	"Version",        // int32
+	"OptionsLength",  // int32
+	"OAMPacket",      // bool
+	"CriticalOption", // bool
+	"Protocol",       // int32
+	"VNI",            // uint32
+	"Options",        // []*GeneveOption
+}
+
 func (i Geneve) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version",        // int32
-		"OptionsLength",  // int32
-		"OAMPacket",      // bool
-		"CriticalOption", // bool
-		"Protocol",       // int32
-		"VNI",            // uint32
-		"Options",        // []*GeneveOption
-	})
+	return filter(fieldsGeneve)
 }
 
 func (i Geneve) CSVRecord() []string {
@@ -73,4 +77,20 @@ func (i GeneveOption) ToString() string {
 
 func (a Geneve) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var geneveMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_Geneve.String()),
+		Help: Type_NC_Geneve.String() + " audit records",
+	},
+	fieldsGeneve,
+)
+
+func init() {
+	prometheus.MustRegister(geneveMetric)
+}
+
+func (a Geneve) Inc() {
+	geneveMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

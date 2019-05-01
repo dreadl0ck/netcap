@@ -17,28 +17,32 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsGRE = []string{
+	"Timestamp",
+	"ChecksumPresent",   // bool
+	"RoutingPresent",    // bool
+	"KeyPresent",        // bool
+	"SeqPresent",        // bool
+	"StrictSourceRoute", // bool
+	"AckPresent",        // bool
+	"RecursionControl",  // int32
+	"Flags",             // int32
+	"Version",           // int32
+	"Protocol",          // int32
+	"Checksum",          // int32
+	"Offset",            // int32
+	"Key",               // uint32
+	"Seq",               // uint32
+	"Ack",               // uint32
+	"Routing",           // *GRERouting
+}
+
 func (a GRE) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"ChecksumPresent",   // bool
-		"RoutingPresent",    // bool
-		"KeyPresent",        // bool
-		"SeqPresent",        // bool
-		"StrictSourceRoute", // bool
-		"AckPresent",        // bool
-		"RecursionControl",  // int32
-		"Flags",             // int32
-		"Version",           // int32
-		"Protocol",          // int32
-		"Checksum",          // int32
-		"Offset",            // int32
-		"Key",               // uint32
-		"Seq",               // uint32
-		"Ack",               // uint32
-		"Routing",           // *GRERouting
-	})
+	return filter(fieldsGRE)
 }
 
 func (a GRE) CSVRecord() []string {
@@ -92,4 +96,20 @@ func (r *GRERouting) GetString() string {
 
 func (a GRE) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var greMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_GRE.String()),
+		Help: Type_NC_GRE.String() + " audit records",
+	},
+	fieldsGRE,
+)
+
+func init() {
+	prometheus.MustRegister(greMetric)
+}
+
+func (a GRE) Inc() {
+	greMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

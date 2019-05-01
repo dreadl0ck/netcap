@@ -13,11 +13,19 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsEthernetCTP = []string{
+	"Timestamp",
+	"SkipCount", // int32
+}
+
 func (i EthernetCTP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"SkipCount", // int32
-	})
+	return filter(fieldsEthernetCTP)
 }
 
 func (i EthernetCTP) CSVRecord() []string {
@@ -33,4 +41,20 @@ func (i EthernetCTP) NetcapTimestamp() string {
 
 func (a EthernetCTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ethernetCTPMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_EthernetCTP.String()),
+		Help: Type_NC_EthernetCTP.String() + " audit records",
+	},
+	fieldsEthernetCTP,
+)
+
+func init() {
+	prometheus.MustRegister(ethernetCTPMetric)
+}
+
+func (a EthernetCTP) Inc() {
+	ethernetCTPMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

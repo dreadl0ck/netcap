@@ -13,17 +13,24 @@
 
 package types
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsEAP = []string{
+	"Timestamp",
+	"Code",     // int32
+	"Id",       // int32
+	"Length",   // int32
+	"Type",     // int32
+	"TypeData", // []byte
+}
 
 func (a EAP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Code",     // int32
-		"Id",       // int32
-		"Length",   // int32
-		"Type",     // int32
-		"TypeData", // []byte
-	})
+	return filter(fieldsEAP)
 }
 
 func (a EAP) CSVRecord() []string {
@@ -43,4 +50,20 @@ func (a EAP) NetcapTimestamp() string {
 
 func (a EAP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var eapMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_EAP.String()),
+		Help: Type_NC_EAP.String() + " audit records",
+	},
+	fieldsEAP,
+)
+
+func init() {
+	prometheus.MustRegister(eapMetric)
+}
+
+func (a EAP) Inc() {
+	eapMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

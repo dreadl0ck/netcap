@@ -13,26 +13,34 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsFlow = []string{
+	"TimestampFirst",
+	"LinkProto",
+	"NetworkProto",
+	"TransportProto",
+	"ApplicationProto",
+	"SrcMAC",
+	"DstMAC",
+	"SrcIP",
+	"SrcPort",
+	"DstIP",
+	"DstPort",
+	"TotalSize",
+	"AppPayloadSize",
+	"NumPackets",
+	"UID",
+	"Duration",
+	"TimestampLast",
+}
+
 func (f Flow) CSVHeader() []string {
-	return filter([]string{
-		"TimestampFirst",
-		"LinkProto",
-		"NetworkProto",
-		"TransportProto",
-		"ApplicationProto",
-		"SrcMAC",
-		"DstMAC",
-		"SrcIP",
-		"SrcPort",
-		"DstIP",
-		"DstPort",
-		"TotalSize",
-		"AppPayloadSize",
-		"NumPackets",
-		"UID",
-		"Duration",
-		"TimestampLast",
-	})
+	return filter(fieldsFlow)
 }
 
 func (f Flow) CSVRecord() []string {
@@ -63,4 +71,20 @@ func (f Flow) NetcapTimestamp() string {
 
 func (a Flow) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var flowMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_Flow.String()),
+		Help: Type_NC_Flow.String() + " audit records",
+	},
+	fieldsFlow,
+)
+
+func init() {
+	prometheus.MustRegister(flowMetric)
+}
+
+func (a Flow) Inc() {
+	flowMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

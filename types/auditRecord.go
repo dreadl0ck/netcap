@@ -48,7 +48,7 @@ type AuditRecord interface {
 	NetcapTimestamp() string
 
 	// increments the metric for the audit record
-	// Inc()
+	Inc()
 
 	// returns the audit record as JSON
 	JSON() (string, error)
