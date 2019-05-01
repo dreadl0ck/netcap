@@ -17,34 +17,38 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsTCP = []string{
+	"Timestamp",
+	"SrcPort",
+	"DstPort",
+	"SeqNum",
+	"AckNum",
+	"DataOffset",
+	"FIN",
+	"SYN",
+	"RST",
+	"PSH",
+	"ACK",
+	"URG",
+	"ECE",
+	"CWR",
+	"NS",
+	"Window",
+	"Checksum",
+	"Urgent",
+	"Padding",
+	"Options",
+	"PayloadEntropy",
+	"PayloadSize",
+	"Payload",
+}
+
 func (t TCP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"SrcPort",
-		"DstPort",
-		"SeqNum",
-		"AckNum",
-		"DataOffset",
-		"FIN",
-		"SYN",
-		"RST",
-		"PSH",
-		"ACK",
-		"URG",
-		"ECE",
-		"CWR",
-		"NS",
-		"Window",
-		"Checksum",
-		"Urgent",
-		"Padding",
-		"Options",
-		"PayloadEntropy",
-		"PayloadSize",
-		"Payload",
-	})
+	return filter(fieldsTCP)
 }
 
 func (t TCP) CSVRecord() []string {
@@ -95,4 +99,20 @@ func (f TCP) NetcapTimestamp() string {
 
 func (u TCP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
+}
+
+var tcpMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_TCP.String()),
+		Help: Type_NC_TCP.String() + " audit records",
+	},
+	fieldsTCP,
+)
+
+func init() {
+	prometheus.MustRegister(tcpMetric)
+}
+
+func (a TCP) Inc() {
+	tcpMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

@@ -16,31 +16,36 @@ package types
 import (
 	"encoding/hex"
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsUSB = []string{
+	"Timestamp",
+	"ID",
+	"EventType",
+	"TransferType",
+	"Direction",
+	"EndpointNumber",
+	"DeviceAddress",
+	"BusID",
+	"TimestampSec",
+	"TimestampUsec",
+	"Setup",
+	"Data",
+	"Status",
+	"UrbLength",
+	"UrbDataLength",
+	"UrbInterval",
+	"UrbStartFrame",
+	"UrbCopyOfTransferFlags",
+	"IsoNumDesc",
+	"Payload",
+}
+
 func (u USB) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"ID",
-		"EventType",
-		"TransferType",
-		"Direction",
-		"EndpointNumber",
-		"DeviceAddress",
-		"BusID",
-		"TimestampSec",
-		"TimestampUsec",
-		"Setup",
-		"Data",
-		"Status",
-		"UrbLength",
-		"UrbDataLength",
-		"UrbInterval",
-		"UrbStartFrame",
-		"UrbCopyOfTransferFlags",
-		"IsoNumDesc",
-		"Payload",
-	})
+	return filter(fieldsUSB)
 }
 
 func (u USB) CSVRecord() []string {
@@ -74,4 +79,20 @@ func (f USB) NetcapTimestamp() string {
 
 func (f USB) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&f)
+}
+
+var usbMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_USB.String()),
+		Help: Type_NC_USB.String() + " audit records",
+	},
+	fieldsUSB,
+)
+
+func init() {
+	prometheus.MustRegister(usbMetric)
+}
+
+func (a USB) Inc() {
+	usbMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

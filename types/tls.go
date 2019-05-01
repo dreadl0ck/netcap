@@ -16,38 +16,43 @@ package types
 import (
 	"encoding/hex"
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsTLSClientHello = []string{
+	"Timestamp",
+	"Type",
+	"Version",
+	"MessageLen",
+	"HandshakeType",
+	"HandshakeLen",
+	"HandshakeVersion",
+	"Random",
+	"SessionIDLen",
+	"SessionID",
+	"CipherSuiteLen",
+	"ExtensionLen",
+	"SNI",
+	"OSCP",
+	"CipherSuites",
+	"CompressMethods",
+	"SignatureAlgs",
+	"SupportedGroups",
+	"SupportedPoints",
+	"ALPNs",
+	"Ja3",
+	"SrcIP",
+	"DstIP",
+	"SrcMAC",
+	"DstMAC",
+	"SrcPort",
+	"DstPort",
+}
+
 func (t TLSClientHello) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Type",
-		"Version",
-		"MessageLen",
-		"HandshakeType",
-		"HandshakeLen",
-		"HandshakeVersion",
-		"Random",
-		"SessionIDLen",
-		"SessionID",
-		"CipherSuiteLen",
-		"ExtensionLen",
-		"SNI",
-		"OSCP",
-		"CipherSuites",
-		"CompressMethods",
-		"SignatureAlgs",
-		"SupportedGroups",
-		"SupportedPoints",
-		"ALPNs",
-		"Ja3",
-		"SrcIP",
-		"DstIP",
-		"SrcMAC",
-		"DstMAC",
-		"SrcPort",
-		"DstPort",
-	})
+	return filter(fieldsTLSClientHello)
 }
 
 func (t TLSClientHello) CSVRecord() []string {
@@ -88,4 +93,20 @@ func (f TLSClientHello) NetcapTimestamp() string {
 
 func (u TLSClientHello) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
+}
+
+var tlsMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_TLSClientHello.String()),
+		Help: Type_NC_TLSClientHello.String() + " audit records",
+	},
+	fieldsTLSClientHello,
+)
+
+func init() {
+	prometheus.MustRegister(tlsMetric)
+}
+
+func (a TLSClientHello) Inc() {
+	tlsMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

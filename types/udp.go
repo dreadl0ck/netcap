@@ -32,18 +32,6 @@ var fieldsUDP = []string{
 	"Payload",
 }
 
-var udpMetric = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_UDP.String()),
-		Help: Type_NC_UDP.String() + " audit records",
-	},
-	fieldsUDP,
-)
-
-func init() {
-	prometheus.MustRegister(udpMetric)
-}
-
 func (u UDP) CSVHeader() []string {
 	return filter(fieldsUDP)
 }
@@ -69,6 +57,18 @@ func (u UDP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
 }
 
+var udpMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_UDP.String()),
+		Help: Type_NC_UDP.String() + " audit records",
+	},
+	fieldsUDP,
+)
+
+func init() {
+	prometheus.MustRegister(udpMetric)
+}
+
 func (u UDP) Inc() {
-	udpMetric.WithLabelValues(fieldsUDP...).Inc()
+	udpMetric.WithLabelValues(u.CSVRecord()...).Inc()
 }

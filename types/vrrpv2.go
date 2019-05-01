@@ -13,19 +13,27 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsVRRPv2 = []string{
+	"Timestamp",
+	"Version",      // int32
+	"Type",         // int32
+	"VirtualRtrID", // int32
+	"Priority",     // int32
+	"CountIPAddr",  // int32
+	"AuthType",     // int32
+	"AdverInt",     // int32
+	"Checksum",     // int32
+	"IPAdresses",   // []string
+}
+
 func (a VRRPv2) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version",      // int32
-		"Type",         // int32
-		"VirtualRtrID", // int32
-		"Priority",     // int32
-		"CountIPAddr",  // int32
-		"AuthType",     // int32
-		"AdverInt",     // int32
-		"Checksum",     // int32
-		"IPAdresses",   // []string
-	})
+	return filter(fieldsVRRPv2)
 }
 
 func (a VRRPv2) CSVRecord() []string {
@@ -49,4 +57,20 @@ func (a VRRPv2) NetcapTimestamp() string {
 
 func (a VRRPv2) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var vrrp2Metric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_VRRPv2.String()),
+		Help: Type_NC_VRRPv2.String() + " audit records",
+	},
+	fieldsVRRPv2,
+)
+
+func init() {
+	prometheus.MustRegister(vrrp2Metric)
+}
+
+func (a VRRPv2) Inc() {
+	vrrp2Metric.WithLabelValues(a.CSVRecord()...).Inc()
 }

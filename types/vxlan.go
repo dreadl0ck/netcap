@@ -13,18 +13,25 @@
 
 package types
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsVXLAN = []string{
+	"Timestamp",
+	"ValidIDFlag",      //  bool
+	"VNI",              //  uint32
+	"GBPExtension",     //  bool
+	"GBPDontLearn",     //  bool
+	"GBPApplied",       //  bool
+	"GBPGroupPolicyID", //  int32
+}
 
 func (a VXLAN) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"ValidIDFlag",      //  bool
-		"VNI",              //  uint32
-		"GBPExtension",     //  bool
-		"GBPDontLearn",     //  bool
-		"GBPApplied",       //  bool
-		"GBPGroupPolicyID", //  int32
-	})
+	return filter(fieldsVXLAN)
 }
 
 func (a VXLAN) CSVRecord() []string {
@@ -45,4 +52,20 @@ func (a VXLAN) NetcapTimestamp() string {
 
 func (a VXLAN) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var vxlanMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_VXLAN.String()),
+		Help: Type_NC_VXLAN.String() + " audit records",
+	},
+	fieldsVXLAN,
+)
+
+func init() {
+	prometheus.MustRegister(vxlanMetric)
+}
+
+func (a VXLAN) Inc() {
+	vxlanMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }
