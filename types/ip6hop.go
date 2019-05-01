@@ -16,13 +16,17 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsIPv6HopByHop = []string{
+	"Timestamp",
+	"Options",
+}
+
 func (l IPv6HopByHop) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Options",
-	})
+	return filter(fieldsIPv6HopByHop)
 }
 
 func (l IPv6HopByHop) CSVRecord() []string {
@@ -58,4 +62,20 @@ func (a IPv6HopByHopOptionAlignment) ToString() string {
 
 func (a IPv6HopByHop) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ip6hopMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_IPv6HopByHop.String()),
+		Help: Type_NC_IPv6HopByHop.String() + " audit records",
+	},
+	fieldsIPv6HopByHop,
+)
+
+func init() {
+	prometheus.MustRegister(ip6hopMetric)
+}
+
+func (a IPv6HopByHop) Inc() {
+	ip6hopMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

@@ -13,15 +13,21 @@
 
 package types
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsICMPv6NeighborAdvertisement = []string{
+	"Timestamp",
+	"Flags",         // int32
+	"TargetAddress", // string
+	"Options",       // []*ICMPv6Option
+}
 
 func (i ICMPv6NeighborAdvertisement) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Flags",         // int32
-		"TargetAddress", // string
-		"Options",       // []*ICMPv6Option
-	})
+	return filter(fieldsICMPv6NeighborAdvertisement)
 }
 
 func (i ICMPv6NeighborAdvertisement) CSVRecord() []string {
@@ -43,4 +49,20 @@ func (i ICMPv6NeighborAdvertisement) NetcapTimestamp() string {
 
 func (a ICMPv6NeighborAdvertisement) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var icmp6naMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_ICMPv6NeighborAdvertisement.String()),
+		Help: Type_NC_ICMPv6NeighborAdvertisement.String() + " audit records",
+	},
+	fieldsICMPv6NeighborAdvertisement,
+)
+
+func init() {
+	prometheus.MustRegister(icmp6naMetric)
+}
+
+func (a ICMPv6NeighborAdvertisement) Inc() {
+	icmp6naMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

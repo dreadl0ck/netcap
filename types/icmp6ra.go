@@ -15,18 +15,22 @@ package types
 
 import (
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsICMPv6RouterAdvertisement = []string{
+	"Timestamp",
+	"HopLimit",       //  int32
+	"Flags",          //  int32
+	"RouterLifetime", //  int32
+	"ReachableTime",  //  uint32
+	"RetransTimer",   //  uint32
+	"Options",        //  []*ICMPv6Option
+}
+
 func (i ICMPv6RouterAdvertisement) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"HopLimit",       //  int32
-		"Flags",          //  int32
-		"RouterLifetime", //  int32
-		"ReachableTime",  //  uint32
-		"RetransTimer",   //  uint32
-		"Options",        //  []*ICMPv6Option
-	})
+	return filter(fieldsICMPv6RouterAdvertisement)
 }
 
 func (i ICMPv6RouterAdvertisement) CSVRecord() []string {
@@ -51,4 +55,20 @@ func (i ICMPv6RouterAdvertisement) NetcapTimestamp() string {
 
 func (a ICMPv6RouterAdvertisement) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var icmp6raMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_ICMPv6RouterAdvertisement.String()),
+		Help: Type_NC_ICMPv6RouterAdvertisement.String() + " audit records",
+	},
+	fieldsICMPv6RouterAdvertisement,
+)
+
+func init() {
+	prometheus.MustRegister(icmp6raMetric)
+}
+
+func (a ICMPv6RouterAdvertisement) Inc() {
+	icmp6raMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

@@ -15,23 +15,28 @@ package types
 
 import (
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsIPv6 = []string{
+	"Timestamp",
+	"Version",        // int32
+	"TrafficClass",   // int32
+	"FlowLabel",      // uint32
+	"Length",         // int32
+	"NextHeader",     // int32
+	"HopLimit",       // int32
+	"SrcIP",          // string
+	"DstIP",          // string
+	"PayloadEntropy", // float64
+	"PayloadSize",    // int32
+	"HopByHop",       // *IPv6HopByHop
+}
+
 func (i IPv6) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version",        // int32
-		"TrafficClass",   // int32
-		"FlowLabel",      // uint32
-		"Length",         // int32
-		"NextHeader",     // int32
-		"HopLimit",       // int32
-		"SrcIP",          // string
-		"DstIP",          // string
-		"PayloadEntropy", // float64
-		"PayloadSize",    // int32
-		"HopByHop",       // *IPv6HopByHop
-	})
+	return filter(fieldsIPv6)
 }
 
 func (i IPv6) CSVRecord() []string {
@@ -69,4 +74,20 @@ func (h IPv6HopByHop) ToString() string {
 
 func (a IPv6) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ip6Metric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_IPv6.String()),
+		Help: Type_NC_IPv6.String() + " audit records",
+	},
+	fieldsIPv6,
+)
+
+func init() {
+	prometheus.MustRegister(ip6Metric)
+}
+
+func (a IPv6) Inc() {
+	ip6Metric.WithLabelValues(a.CSVRecord()...).Inc()
 }

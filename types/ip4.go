@@ -17,28 +17,32 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsIPv4 = []string{
+	"Timestamp",
+	"Version",        // int32
+	"IHL",            // int32
+	"TOS",            // int32
+	"Length",         // int32
+	"Id",             // int32
+	"Flags",          // int32
+	"FragOffset",     // int32
+	"TTL",            // int32
+	"Protocol",       // int32
+	"Checksum",       // int32
+	"SrcIP",          // string
+	"DstIP",          // string
+	"Padding",        // []byte
+	"Options",        // []*IPv4Option
+	"PayloadEntropy", // float64
+	"PayloadSize",    // int32
+}
+
 func (i IPv4) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version",        // int32
-		"IHL",            // int32
-		"TOS",            // int32
-		"Length",         // int32
-		"Id",             // int32
-		"Flags",          // int32
-		"FragOffset",     // int32
-		"TTL",            // int32
-		"Protocol",       // int32
-		"Checksum",       // int32
-		"SrcIP",          // string
-		"DstIP",          // string
-		"Padding",        // []byte
-		"Options",        // []*IPv4Option
-		"PayloadEntropy", // float64
-		"PayloadSize",    // int32
-	})
+	return filter(fieldsIPv4)
 }
 
 func (i IPv4) CSVRecord() []string {
@@ -87,4 +91,20 @@ func (i IPv4Option) ToString() string {
 
 func (a IPv4) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ip4Metric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_IPv4.String()),
+		Help: Type_NC_IPv4.String() + " audit records",
+	},
+	fieldsIPv4,
+)
+
+func init() {
+	prometheus.MustRegister(ip4Metric)
+}
+
+func (a IPv4) Inc() {
+	ip4Metric.WithLabelValues(a.CSVRecord()...).Inc()
 }

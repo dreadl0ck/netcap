@@ -17,24 +17,28 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsIGMP = []string{
+	"Timestamp",
+	"Type",                    // int32
+	"MaxResponseTime",         // uint64
+	"Checksum",                // int32
+	"GroupAddress",            // []byte
+	"SupressRouterProcessing", // bool
+	"RobustnessValue",         // int32
+	"IntervalTime",            // uint64
+	"SourceAddresses",         // []string
+	"NumberOfGroupRecords",    // int32
+	"NumberOfSources",         // int32
+	"GroupRecords",            // []*IGMPv3GroupRecord
+	"Version",                 // int32
+}
+
 func (i IGMP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Type",                    // int32
-		"MaxResponseTime",         // uint64
-		"Checksum",                // int32
-		"GroupAddress",            // []byte
-		"SupressRouterProcessing", // bool
-		"RobustnessValue",         // int32
-		"IntervalTime",            // uint64
-		"SourceAddresses",         // []string
-		"NumberOfGroupRecords",    // int32
-		"NumberOfSources",         // int32
-		"GroupRecords",            // []*IGMPv3GroupRecord
-		"Version",                 // int32
-	})
+	return filter(fieldsIGMP)
 }
 
 func (i IGMP) CSVRecord() []string {
@@ -83,4 +87,20 @@ func (i IGMPv3GroupRecord) ToString() string {
 
 func (a IGMP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var igmpMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_IGMP.String()),
+		Help: Type_NC_IGMP.String() + " audit records",
+	},
+	fieldsIGMP,
+)
+
+func init() {
+	prometheus.MustRegister(igmpMetric)
+}
+
+func (a IGMP) Inc() {
+	igmpMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

@@ -16,13 +16,17 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsICMPv6RouterSolicitation = []string{
+	"Timestamp",
+	"Options",
+}
+
 func (i ICMPv6RouterSolicitation) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Options",
-	})
+	return filter(fieldsICMPv6RouterSolicitation)
 }
 
 func (i ICMPv6RouterSolicitation) CSVRecord() []string {
@@ -54,4 +58,20 @@ func (o ICMPv6Option) ToString() string {
 
 func (a ICMPv6RouterSolicitation) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var icmp6rsMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_ICMPv6RouterSolicitation.String()),
+		Help: Type_NC_ICMPv6RouterSolicitation.String() + " audit records",
+	},
+	fieldsICMPv6RouterSolicitation,
+)
+
+func init() {
+	prometheus.MustRegister(icmp6rsMetric)
+}
+
+func (a ICMPv6RouterSolicitation) Inc() {
+	icmp6rsMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

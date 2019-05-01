@@ -15,16 +15,21 @@ package types
 
 import (
 	"encoding/hex"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsLLD = []string{
+	"Timestamp",
+	"ChassisID", // *LLDPChassisID
+	"PortID",    // *LLDPPortID
+	"TTL",       // int32
+	"Values",    // []*LinkLayerDiscoveryValue
+}
+
 func (l LinkLayerDiscovery) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"ChassisID", // *LLDPChassisID
-		"PortID",    // *LLDPPortID
-		"TTL",       // int32
-		"Values",    // []*LinkLayerDiscoveryValue
-	})
+	return filter(fieldsLLD)
 }
 
 func (l LinkLayerDiscovery) CSVRecord() []string {
@@ -55,4 +60,20 @@ func (l LLDPPortID) ToString() string {
 
 func (a LinkLayerDiscovery) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var lldMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_LinkLayerDiscovery.String()),
+		Help: Type_NC_LinkLayerDiscovery.String() + " audit records",
+	},
+	fieldsLLD,
+)
+
+func init() {
+	prometheus.MustRegister(lldMetric)
+}
+
+func (a LinkLayerDiscovery) Inc() {
+	lldMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }
