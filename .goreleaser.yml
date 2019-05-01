@@ -1,7 +1,7 @@
 builds:
 - 
-  main: ./cmd/
-  binary: netcap
+  main: ./cmd/cap
+  binary: net.cap
   env:
     - CGO_ENABLED=1
 
@@ -43,8 +43,8 @@ builds:
     post: zeus build-all-linux-docker
     #pre: rice embed-go
 - 
-  main: ./label/cmd/
-  binary: netlabel
+  main: ./cmd/label
+  binary: net.label
   env:
     - CGO_ENABLED=1
 
@@ -66,8 +66,8 @@ builds:
     - arm
     - arm64
 - 
-  main: ./server
-  binary: netcap-server
+  main: ./cmd/collector
+  binary: net.collector
   env:
     - CGO_ENABLED=1
 
@@ -89,8 +89,8 @@ builds:
     - arm
     - arm64
 - 
-  main: ./sensor
-  binary: netcap-sensor
+  main: ./cmd/sensor
+  binary: net.sensor
   env:
     - CGO_ENABLED=1
 
@@ -111,6 +111,59 @@ builds:
     - amd64
     - arm
     - arm64
+- 
+  main: ./cmd/proxy
+  binary: net.proxy
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+    - arm
+    - arm64
+- 
+  main: ./cmd/exporter
+  binary: net.exporter
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+    - arm
+    - arm64
+
+brew:
+  github:
+    owner: dreadl0ck
+    name: homebrew-formulas
+  homepage: "https://github.com/dreadl0ck/netcap"
+  description: "A framework for secure and scalable network traffic analysis"
 
 checksum:
   name_template: 'checksums.txt'
@@ -122,14 +175,6 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
-
-brew:
-  github:
-    owner: dreadl0ck
-    name: homebrew-formulas
-  homepage: "https://github.com/dreadl0ck/netcap"
-  description: "A framework for secure and scalable network traffic analysis"
-
 # archive:
 #   files:
 #     - dist/linux_amd64/**/*

@@ -96,7 +96,7 @@ commands:
         description: test run to release a new version
         dependencies:
             - gen-version
-            - check-version
+            #- check-version
         exec: goreleaser release --rm-dist --skip-publish --skip-validate #--debug
 
     ## Utils
