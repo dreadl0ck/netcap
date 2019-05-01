@@ -21,14 +21,18 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/types"
+
 	"go.uber.org/zap"
 )
 
 // ReverseProxy represents a named reverse proxy
 // that uses a custom http.Transport to export netcap audit records
 type ReverseProxy struct {
-	Name string
-	rp   *httputil.ReverseProxy
+	Name   string
+	rp     *httputil.ReverseProxy
+	writer *netcap.Writer
 }
 
 // ServeHTTP implements the http.Handler interface
@@ -79,6 +83,7 @@ func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
 
 		targetURL: targetURL,
 		proxyName: proxyName,
+		proxy:     proxy,
 
 		// init round tripper
 		rt: &http.Transport{
@@ -103,6 +108,9 @@ func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
 			},
 		},
 	}
+
+	proxy.writer = netcap.NewWriter("HTTP", true, true, false, "", false)
+	proxy.writer.WriteHeader(types.Type_NC_HTTP, targetURL.String(), netcap.Version, false)
 
 	return proxy
 }
