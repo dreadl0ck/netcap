@@ -16,25 +16,29 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsOSPFv2 = []string{
+	"Timestamp",
+	"Version",        // int32
+	"Type",           // int32
+	"PacketLength",   // int32
+	"RouterID",       // uint32
+	"AreaID",         // uint32
+	"Checksum",       // int32
+	"AuType",         // int32
+	"Authentication", // int64
+	"LSAs",           // []*LSAheader
+	"LSU",            // *LSUpdate
+	"LSR",            // []*LSReq
+	"DbDesc",         // *DbDescPkg
+	"HelloV2",        // *HelloPkgV2
+}
+
 func (a OSPFv2) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version",        // int32
-		"Type",           // int32
-		"PacketLength",   // int32
-		"RouterID",       // uint32
-		"AreaID",         // uint32
-		"Checksum",       // int32
-		"AuType",         // int32
-		"Authentication", // int64
-		"LSAs",           // []*LSAheader
-		"LSU",            // *LSUpdate
-		"LSR",            // []*LSReq
-		"DbDesc",         // *DbDescPkg
-		"HelloV2",        // *HelloPkgV2
-	})
+	return filter(fieldsOSPFv2)
 }
 
 func (a OSPFv2) CSVRecord() []string {
@@ -437,4 +441,20 @@ func (l LSAheader) ToString() string {
 
 func (u LSAheader) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
+}
+
+var ospf2Metric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_OSPFv2.String()),
+		Help: Type_NC_OSPFv2.String() + " audit records",
+	},
+	fieldsOSPFv2,
+)
+
+func init() {
+	prometheus.MustRegister(ospf2Metric)
+}
+
+func (a OSPFv2) Inc() {
+	ospf2Metric.WithLabelValues(a.CSVRecord()...).Inc()
 }

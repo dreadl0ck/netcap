@@ -15,18 +15,23 @@ package types
 
 import (
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsSIP = []string{
+	"Timestamp",
+	"Version",
+	"Method",
+	"Headers",
+	"IsResponse",
+	"ResponseCode",
+	"ResponseStatus",
+}
+
 func (s SIP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Version",
-		"Method",
-		"Headers",
-		"IsResponse",
-		"ResponseCode",
-		"ResponseStatus",
-	})
+	return filter(fieldsSIP)
 }
 
 func (s SIP) CSVRecord() []string {
@@ -47,4 +52,20 @@ func (s SIP) NetcapTimestamp() string {
 
 func (u SIP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
+}
+
+var sipMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_SIP.String()),
+		Help: Type_NC_SIP.String() + " audit records",
+	},
+	fieldsSIP,
+)
+
+func init() {
+	prometheus.MustRegister(snapMetric)
+}
+
+func (a SIP) Inc() {
+	sipMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

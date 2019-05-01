@@ -13,18 +13,25 @@
 
 package types
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsNortelDiscovery = []string{
+	"Timestamp",
+	"IPAddress", // string
+	"SegmentID", // []byte
+	"Chassis",   // int32
+	"Backplane", // int32
+	"State",     // int32
+	"NumLinks",  // int32
+}
 
 func (a NortelDiscovery) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"IPAddress", // string
-		"SegmentID", // []byte
-		"Chassis",   // int32
-		"Backplane", // int32
-		"State",     // int32
-		"NumLinks",  // int32
-	})
+	return filter(fieldsNortelDiscovery)
 }
 
 func (a NortelDiscovery) CSVRecord() []string {
@@ -45,4 +52,20 @@ func (a NortelDiscovery) NetcapTimestamp() string {
 
 func (a NortelDiscovery) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var nortelDiscoveryMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_NortelDiscovery.String()),
+		Help: Type_NC_NortelDiscovery.String() + " audit records",
+	},
+	fieldsNortelDiscovery,
+)
+
+func init() {
+	prometheus.MustRegister(nortelDiscoveryMetric)
+}
+
+func (a NortelDiscovery) Inc() {
+	nortelDiscoveryMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

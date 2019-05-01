@@ -16,26 +16,31 @@ package types
 import (
 	"encoding/hex"
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsNTP = []string{
+	"Timestamp",
+	"LeapIndicator",
+	"Version",
+	"Mode",
+	"Stratum",
+	"Poll",
+	"Precision",
+	"RootDelay",
+	"RootDispersion",
+	"ReferenceID",
+	"ReferenceTimestamp",
+	"OriginTimestamp",
+	"ReceiveTimestamp",
+	"TransmitTimestamp",
+	"ExtensionBytes",
+}
+
 func (n NTP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"LeapIndicator",
-		"Version",
-		"Mode",
-		"Stratum",
-		"Poll",
-		"Precision",
-		"RootDelay",
-		"RootDispersion",
-		"ReferenceID",
-		"ReferenceTimestamp",
-		"OriginTimestamp",
-		"ReceiveTimestamp",
-		"TransmitTimestamp",
-		"ExtensionBytes",
-	})
+	return filter(fieldsNTP)
 }
 
 func (n NTP) CSVRecord() []string {
@@ -64,4 +69,20 @@ func (n NTP) NetcapTimestamp() string {
 
 func (u NTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
+}
+
+var ntpMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_NTP.String()),
+		Help: Type_NC_NTP.String() + " audit records",
+	},
+	fieldsNTP,
+)
+
+func init() {
+	prometheus.MustRegister(ntpMetric)
+}
+
+func (a NTP) Inc() {
+	ntpMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

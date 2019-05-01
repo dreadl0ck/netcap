@@ -13,20 +13,27 @@
 
 package types
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsNetworkFlow = []string{
+	"TimestampFirst",
+	"TimestampLast",
+	"Proto",
+	"SrcIP",
+	"DstIP",
+	"TotalSize",
+	"NumPackets",
+	"UID",
+	"Duration",
+}
 
 func (f NetworkFlow) CSVHeader() []string {
-	return filter([]string{
-		"TimestampFirst",
-		"TimestampLast",
-		"Proto",
-		"SrcIP",
-		"DstIP",
-		"TotalSize",
-		"NumPackets",
-		"UID",
-		"Duration",
-	})
+	return filter(fieldsNetworkFlow)
 }
 
 func (f NetworkFlow) CSVRecord() []string {
@@ -49,4 +56,20 @@ func (f NetworkFlow) NetcapTimestamp() string {
 
 func (u NetworkFlow) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
+}
+
+var networkFlowMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_NetworkFlow.String()),
+		Help: Type_NC_NetworkFlow.String() + " audit records",
+	},
+	fieldsNetworkFlow,
+)
+
+func init() {
+	prometheus.MustRegister(networkFlowMetric)
+}
+
+func (a NetworkFlow) Inc() {
+	networkFlowMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

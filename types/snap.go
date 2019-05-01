@@ -15,14 +15,19 @@ package types
 
 import (
 	"encoding/hex"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsSNAP = []string{
+	"Timestamp",
+	"OrganizationalCode",
+	"Type",
+}
+
 func (s SNAP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"OrganizationalCode",
-		"Type",
-	})
+	return filter(fieldsSNAP)
 }
 
 func (s SNAP) CSVRecord() []string {
@@ -39,4 +44,20 @@ func (s SNAP) NetcapTimestamp() string {
 
 func (u SNAP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
+}
+
+var snapMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_SNAP.String()),
+		Help: Type_NC_SNAP.String() + " audit records",
+	},
+	fieldsSNAP,
+)
+
+func init() {
+	prometheus.MustRegister(snapMetric)
+}
+
+func (a SNAP) Inc() {
+	snapMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }
