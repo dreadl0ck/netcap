@@ -15,16 +15,21 @@ package types
 
 import (
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsSCTP = []string{
+	"Timestamp",
+	"SrcPort",
+	"DstPort",
+	"VerificationTag",
+	"Checksum",
+}
+
 func (s SCTP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"SrcPort",
-		"DstPort",
-		"VerificationTag",
-		"Checksum",
-	})
+	return filter(fieldsSCTP)
 }
 
 func (s SCTP) CSVRecord() []string {
@@ -43,4 +48,20 @@ func (s SCTP) NetcapTimestamp() string {
 
 func (u SCTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
+}
+
+var sctpMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_SCTP.String()),
+		Help: Type_NC_SCTP.String() + " audit records",
+	},
+	fieldsSCTP,
+)
+
+func init() {
+	prometheus.MustRegister(sctpMetric)
+}
+
+func (a SCTP) Inc() {
+	sctpMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }
