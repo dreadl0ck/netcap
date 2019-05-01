@@ -5,6 +5,6 @@ It is now possible to capture payload data for the following protocols: TCP, UDP
 This can be enabled with the **-payload** flag:
 
 ```text
-$ netcap -r traffic.pcap -payload
+$ net.cap -r traffic.pcap -payload
 ```
 
