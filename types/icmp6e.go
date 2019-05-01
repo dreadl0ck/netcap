@@ -13,6 +13,18 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsICMPv6Echo = []string{
+	"Timestamp",
+	"Identifier", //  int32
+	"SeqNumber",  //  int32
+}
+
 func (i ICMPv6Echo) CSVHeader() []string {
 	return filter([]string{
 		"Timestamp",
@@ -36,4 +48,20 @@ func (i ICMPv6Echo) NetcapTimestamp() string {
 
 func (a ICMPv6Echo) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var icmp6eMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_ICMPv6Echo.String()),
+		Help: Type_NC_ICMPv6Echo.String() + " audit records",
+	},
+	fieldsICMPv6Echo,
+)
+
+func init() {
+	prometheus.MustRegister(icmp6eMetric)
+}
+
+func (a ICMPv6Echo) Inc() {
+	icmp6eMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

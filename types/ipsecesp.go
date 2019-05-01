@@ -13,13 +13,21 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsIPSecESP = []string{
+	"Timestamp",
+	"SPI",
+	"Seq",
+	"LenEncrypted",
+}
+
 func (a IPSecESP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"SPI",
-		"Seq",
-		"LenEncrypted",
-	})
+	return filter(fieldsIPSecESP)
 }
 
 func (a IPSecESP) CSVRecord() []string {
@@ -37,4 +45,20 @@ func (a IPSecESP) NetcapTimestamp() string {
 
 func (a IPSecESP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ipSecEspMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_IPSecESP.String()),
+		Help: Type_NC_IPSecESP.String() + " audit records",
+	},
+	fieldsIPSecESP,
+)
+
+func init() {
+	prometheus.MustRegister(ipSecEspMetric)
+}
+
+func (a IPSecESP) Inc() {
+	ipSecEspMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

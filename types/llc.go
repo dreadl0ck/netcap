@@ -15,17 +15,22 @@ package types
 
 import (
 	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var fieldsLLC = []string{
+	"Timestamp", // string
+	"DSAP",      // int32
+	"IG",        // bool
+	"SSAP",      // int32
+	"CR",        // bool
+	"Control",   // int32
+}
+
 func (l LLC) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp", // string
-		"DSAP",      // int32
-		"IG",        // bool
-		"SSAP",      // int32
-		"CR",        // bool
-		"Control",   // int32
-	})
+	return filter(fieldsLLC)
 }
 
 func (l LLC) CSVRecord() []string {
@@ -45,4 +50,20 @@ func (l LLC) NetcapTimestamp() string {
 
 func (a LLC) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var llcMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_LLC.String()),
+		Help: Type_NC_LLC.String() + " audit records",
+	},
+	fieldsLLC,
+)
+
+func init() {
+	prometheus.MustRegister(llcMetric)
+}
+
+func (a LLC) Inc() {
+	llcMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

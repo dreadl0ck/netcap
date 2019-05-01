@@ -13,16 +13,23 @@
 
 package types
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsMPLS = []string{
+	"Timestamp",
+	"Label",
+	"TrafficClass",
+	"StackBottom",
+	"TTL",
+}
 
 func (a MPLS) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Label",
-		"TrafficClass",
-		"StackBottom",
-		"TTL",
-	})
+	return filter(fieldsMPLS)
 }
 
 func (a MPLS) CSVRecord() []string {
@@ -41,4 +48,20 @@ func (a MPLS) NetcapTimestamp() string {
 
 func (a MPLS) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var mplsMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_MPLS.String()),
+		Help: Type_NC_MPLS.String() + " audit records",
+	},
+	fieldsMPLS,
+)
+
+func init() {
+	prometheus.MustRegister(mplsMetric)
+}
+
+func (a MPLS) Inc() {
+	mplsMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

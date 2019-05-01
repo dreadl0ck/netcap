@@ -13,14 +13,20 @@
 
 package types
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsICMPv6NeighborSolicitation = []string{
+	"Timestamp",
+	"TargetAddress", // string
+	"Options",       // []*ICMPv6Option
+}
 
 func (i ICMPv6NeighborSolicitation) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"TargetAddress", // string
-		"Options",       // []*ICMPv6Option
-	})
+	return filter(fieldsICMPv6NeighborSolicitation)
 }
 
 func (i ICMPv6NeighborSolicitation) CSVRecord() []string {
@@ -41,4 +47,20 @@ func (i ICMPv6NeighborSolicitation) NetcapTimestamp() string {
 
 func (a ICMPv6NeighborSolicitation) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var icmp6nsMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_ICMPv6NeighborSolicitation.String()),
+		Help: Type_NC_ICMPv6NeighborSolicitation.String() + " audit records",
+	},
+	fieldsICMPv6NeighborSolicitation,
+)
+
+func init() {
+	prometheus.MustRegister(icmp6nsMetric)
+}
+
+func (a ICMPv6NeighborSolicitation) Inc() {
+	icmp6nsMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

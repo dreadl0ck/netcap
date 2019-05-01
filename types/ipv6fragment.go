@@ -13,18 +13,25 @@
 
 package types
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsIPv6Fragment = []string{
+	"Timestamp",
+	"NextHeader",
+	"Reserved1",
+	"FragmentOffset",
+	"Reserved2",
+	"MoreFragments",
+	"Identification",
+}
 
 func (a IPv6Fragment) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"NextHeader",
-		"Reserved1",
-		"FragmentOffset",
-		"Reserved2",
-		"MoreFragments",
-		"Identification",
-	})
+	return filter(fieldsIPv6Fragment)
 }
 
 func (a IPv6Fragment) CSVRecord() []string {
@@ -45,4 +52,20 @@ func (a IPv6Fragment) NetcapTimestamp() string {
 
 func (a IPv6Fragment) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ipv6fragMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_IPv6Fragment.String()),
+		Help: Type_NC_IPv6Fragment.String() + " audit records",
+	},
+	fieldsIPv6Fragment,
+)
+
+func init() {
+	prometheus.MustRegister(ipv6fragMetric)
+}
+
+func (a IPv6Fragment) Inc() {
+	ipv6fragMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

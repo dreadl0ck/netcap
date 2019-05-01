@@ -13,20 +13,27 @@
 
 package types
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsLCM = []string{
+	"Timestamp",
+	"Magic",          // int32
+	"SequenceNumber", // int32
+	"PayloadSize",    // int32
+	"FragmentOffset", // int32
+	"FragmentNumber", // int32
+	"TotalFragments", // int32
+	"ChannelName",    // string
+	"Fragmented",     // bool
+}
 
 func (a LCM) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Magic",          // int32
-		"SequenceNumber", // int32
-		"PayloadSize",    // int32
-		"FragmentOffset", // int32
-		"FragmentNumber", // int32
-		"TotalFragments", // int32
-		"ChannelName",    // string
-		"Fragmented",     // bool
-	})
+	return filter(fieldsLCM)
 }
 
 func (a LCM) CSVRecord() []string {
@@ -49,4 +56,20 @@ func (a LCM) NetcapTimestamp() string {
 
 func (a LCM) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var lcmMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_LCM.String()),
+		Help: Type_NC_LCM.String() + " audit records",
+	},
+	fieldsLCM,
+)
+
+func init() {
+	prometheus.MustRegister(lcmMetric)
+}
+
+func (a LCM) Inc() {
+	lcmMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

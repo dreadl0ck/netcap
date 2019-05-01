@@ -13,17 +13,24 @@
 
 package types
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsModbusTCP = []string{
+	"Timestamp",
+	"TransactionIdentifier", // int32
+	"ProtocolIdentifier",    // int32
+	"Length",                // int32
+	"UnitIdentifier",        // int32
+	"Payload",               // []byte
+}
 
 func (a ModbusTCP) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"TransactionIdentifier", // int32
-		"ProtocolIdentifier",    // int32
-		"Length",                // int32
-		"UnitIdentifier",        // int32
-		"Payload",               // []byte
-	})
+	return filter(fieldsModbusTCP)
 }
 
 func (a ModbusTCP) CSVRecord() []string {
@@ -43,4 +50,20 @@ func (a ModbusTCP) NetcapTimestamp() string {
 
 func (a ModbusTCP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var modbusTcpMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_ModbusTCP.String()),
+		Help: Type_NC_ModbusTCP.String() + " audit records",
+	},
+	fieldsModbusTCP,
+)
+
+func init() {
+	prometheus.MustRegister(modbusTcpMetric)
+}
+
+func (a ModbusTCP) Inc() {
+	modbusTcpMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

@@ -13,16 +13,23 @@
 
 package types
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsIPSecAH = []string{
+	"Timestamp",
+	"Reserved",
+	"SPI",
+	"Seq",
+	"AuthenticationData",
+}
 
 func (a IPSecAH) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Reserved",
-		"SPI",
-		"Seq",
-		"AuthenticationData",
-	})
+	return filter(fieldsIPSecAH)
 }
 
 func (a IPSecAH) CSVRecord() []string {
@@ -41,4 +48,20 @@ func (a IPSecAH) NetcapTimestamp() string {
 
 func (a IPSecAH) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var ipSecAhMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_IPSecAH.String()),
+		Help: Type_NC_IPSecAH.String() + " audit records",
+	},
+	fieldsIPSecAH,
+)
+
+func init() {
+	prometheus.MustRegister(ipSecAhMetric)
+}
+
+func (a IPSecAH) Inc() {
+	ipSecAhMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }
