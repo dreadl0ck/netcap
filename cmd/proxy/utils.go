@@ -21,13 +21,39 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 var (
 	// Debug mode
 	Debug bool
 )
+
+func cleanup() {
+	for _, p := range proxies {
+		p.writer.Close()
+	}
+}
+
+func handleSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	// start signal handler and cleanup routine
+	go func() {
+		sig := <-sigs
+
+		fmt.Println("received signal:", sig)
+
+		fmt.Println("exiting")
+
+		cleanup()
+		os.Exit(0)
+	}()
+}
 
 // TrimPortIPv4 trims the port number from an IPv4 address string
 func TrimPortIPv4(addr string) string {

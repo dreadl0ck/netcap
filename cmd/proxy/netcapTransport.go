@@ -33,6 +33,7 @@ type NetcapTransport struct {
 	proxyName string
 	rt        http.RoundTripper
 	targetURL *url.URL
+	proxy     *ReverseProxy
 }
 
 // RoundTrip implements the http.Transport interface
@@ -115,7 +116,7 @@ makeHTTPRequest:
 	// resp.Header.Get("Content-Encoding")
 	// serverName := resp.Header.Get("Server")
 
-	r := types.HTTP{
+	r := &types.HTTP{
 		Timestamp: utils.TimeToString(time.Now()),
 		// Proto            : string  (),
 		Method:           string(req.Method),
@@ -130,6 +131,11 @@ makeHTTPRequest:
 		StatusCode:       int32(resp.StatusCode),
 		SrcIP:            string(req.RemoteAddr),
 		// DstIP:            string(),
+	}
+
+	err = t.proxy.writer.Write(r)
+	if err != nil {
+		log.Fatal("failed to write audit record:", err)
 	}
 
 	j, err := r.JSON()

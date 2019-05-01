@@ -26,6 +26,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var proxies []*ReverseProxy
+
 func main() {
 
 	netcap.PrintLogo()
@@ -55,6 +57,8 @@ func main() {
 			},
 		}
 	}
+
+	handleSignals()
 
 	// print configuration
 	fmt.Println("Configuration:")
@@ -100,6 +104,7 @@ func main() {
 
 			// instantiate proxy
 			p := NewReverseProxy(proxyName, targetURL)
+			proxies = append(proxies, p)
 			if tls {
 
 				// check if key and cert file have been specified
