@@ -11,12 +11,14 @@ $ sudo ifconfig XHC20 up
 Now attach netcap and set baselayer to USB:
 
 ```text
-$ netcap -iface XHC20 -base usb
+$ net.cap -iface XHC20 -base usb
 ```
 
 To read offline USB traffic from a PCAP file use:
 
 ```text
-$ netcap -r usb.pcap -base usb
+$ net.cap -r usb.pcap -base usb
 ```
+
+Don't forget to set the **-payload** flag if you want to preserve the data being transmitted!
 

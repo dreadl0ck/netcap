@@ -21,13 +21,15 @@ _Netcap_ uses Google's Protocol Buffers to encode its output, which allows acces
 
 #### Framework Components
 
-Currently there are 4 applications:
+Currently there are 6 applications:
 
-* netcap \(collection and utility tool\)
-* netlabel \(tool for creating labeled CSV datasets from netcap data\)
-* netcap-server \(collection server for distributed collection\)
-* netcap-sensor \(sensor agent for distributed collection\)
-
+* * net.cap \(collection and utility tool\)
+* net.label \(tool for creating labeled CSV datasets from netcap data\)
+* net.collector \(collection server for distributed collection\)
+* net.sensor \(sensor agent for distributed collection\)
+* net.proxy \(http reverse proxy for capturing traffic from web services\)
+* net.exporter \(exporter for prometheus metrics\)
+* * 
 ### Use Cases
 
 * monitoring honeypots
