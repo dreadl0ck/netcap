@@ -13,15 +13,23 @@
 
 package types
 
+import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var fieldsUSBRequestBlockSetup = []string{
+	"Timestamp",
+	"RequestType", // int32
+	"Request",     // int32
+	"Value",       // int32
+	"Index",       // int32
+	"Length",      // int32
+}
+
 func (a USBRequestBlockSetup) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"RequestType", // int32
-		"Request",     // int32
-		"Value",       // int32
-		"Index",       // int32
-		"Length",      // int32
-	})
+	return filter(fieldsUSBRequestBlockSetup)
 }
 
 func (a USBRequestBlockSetup) CSVRecord() []string {
@@ -41,4 +49,20 @@ func (a USBRequestBlockSetup) NetcapTimestamp() string {
 
 func (a USBRequestBlockSetup) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+var usbRequestBlockSetupMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_USBRequestBlockSetup.String()),
+		Help: Type_NC_USBRequestBlockSetup.String() + " audit records",
+	},
+	fieldsUSBRequestBlockSetup,
+)
+
+func init() {
+	prometheus.MustRegister(usbRequestBlockSetupMetric)
+}
+
+func (a USBRequestBlockSetup) Inc() {
+	usbRequestBlockSetupMetric.WithLabelValues(a.CSVRecord()...).Inc()
 }

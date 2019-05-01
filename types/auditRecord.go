@@ -50,8 +50,8 @@ type AuditRecord interface {
 	// increments the metric for the audit record
 	// Inc()
 
-	// returns the audir record as JSON
-	JSON()
+	// returns the audit record as JSON
+	JSON() (string, error)
 }
 
 // selectFields returns an array with the inidices of the desired fields for selection
