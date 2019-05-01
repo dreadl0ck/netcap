@@ -16,6 +16,7 @@ package encoder
 import (
 	"flag"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -181,7 +182,7 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 	Flows.Unlock()
 	return nil
 }, func(e *CustomEncoder) error {
-	if e.cWriter == nil {
+	if !e.writer.IsChanWriter {
 		for _, f := range Flows.Items {
 			writeFlow(f)
 		}
@@ -192,16 +193,8 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 func writeFlow(f *types.Flow) {
 
 	atomic.AddInt64(&flowEncoderInstance.numRecords, 1)
-	if flowEncoderInstance.csv {
-		_, err := flowEncoderInstance.csvWriter.WriteRecord(f)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		// write protobuf
-		err := flowEncoderInstance.aWriter.PutProto(f)
-		if err != nil {
-			panic(err)
-		}
+	err := flowEncoderInstance.writer.Write(f)
+	if err != nil {
+		log.Fatal("failed to write proto: ", err)
 	}
 }

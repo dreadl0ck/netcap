@@ -20,6 +20,9 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
+// IMPORTANT: OSPF has gopacket.LayerType == "OSPF"
+// therefore the audit record file will also be named OSPF.ncap
+// and contain either the v2 or v3 version, as stated in the file header
 var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSPF, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if ospf3, ok := layer.(*layers.OSPFv3); ok {
 		var (

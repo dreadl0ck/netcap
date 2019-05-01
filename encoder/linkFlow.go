@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -124,8 +125,8 @@ var linkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", fu
 		LinkFlows.Unlock()
 	}
 	return nil
-}, func(d *CustomEncoder) error {
-	if d.cWriter == nil {
+}, func(e *CustomEncoder) error {
+	if !e.writer.IsChanWriter {
 		for _, f := range LinkFlows.Items {
 			writeLinkFlow(f)
 		}
@@ -135,17 +136,9 @@ var linkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", fu
 
 func writeLinkFlow(f *types.LinkFlow) {
 	atomic.AddInt64(&linkFlowEncoderInstance.numRecords, 1)
-	if linkFlowEncoderInstance.csv {
-		_, err := linkFlowEncoderInstance.csvWriter.WriteRecord(f)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		// write protobuf
-		err := linkFlowEncoderInstance.aWriter.PutProto(f)
-		if err != nil {
-			panic(err)
-		}
+	err := linkFlowEncoderInstance.writer.Write(f)
+	if err != nil {
+		log.Fatal("failed to write audit record: ", err)
 	}
 }
 

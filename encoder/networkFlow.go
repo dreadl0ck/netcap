@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -125,8 +126,8 @@ var networkFlowEncoder = CreateCustomEncoder(types.Type_NC_NetworkFlow, "Network
 		NetworkFlows.Unlock()
 	}
 	return nil
-}, func(d *CustomEncoder) error {
-	if d.cWriter == nil {
+}, func(e *CustomEncoder) error {
+	if !e.writer.IsChanWriter {
 		for _, f := range NetworkFlows.Items {
 			writeNetworkFlow(f)
 		}
@@ -136,17 +137,9 @@ var networkFlowEncoder = CreateCustomEncoder(types.Type_NC_NetworkFlow, "Network
 
 func writeNetworkFlow(f *types.NetworkFlow) {
 	atomic.AddInt64(&networkFlowEncoderInstance.numRecords, 1)
-	if networkFlowEncoderInstance.csv {
-		_, err := networkFlowEncoderInstance.csvWriter.WriteRecord(f)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		// write protobuf
-		err := networkFlowEncoderInstance.aWriter.PutProto(f)
-		if err != nil {
-			panic(err)
-		}
+	err := networkFlowEncoderInstance.writer.Write(f)
+	if err != nil {
+		log.Fatal("failed to write audit record: ", err)
 	}
 }
 

@@ -14,11 +14,8 @@
 package encoder
 
 import (
-	"bufio"
-	"compress/gzip"
 	"fmt"
-	"os"
-	"path/filepath"
+	"log"
 	"strings"
 	"sync/atomic"
 
@@ -26,7 +23,6 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/gopacket"
-	"kythe.io/kythe/go/platform/delimited"
 )
 
 var (
@@ -55,29 +51,16 @@ type (
 
 		// public fields
 		Name string
-		Type types.Type
 
-		// private fields
-		file      *os.File
-		bWriter   *bufio.Writer
-		gWriter   *gzip.Writer
-		dWriter   *delimited.Writer
-		aWriter   *AtomicDelimitedWriter
-		cWriter   *chanWriter
-		csvWriter *csvWriter
-
+		Type     types.Type
 		Handler  CustomEncoderHandler
 		postinit func(*CustomEncoder) error
 		deinit   func(*CustomEncoder) error
 
-		// configuration
-		compress bool
-		buffer   bool
-		csv      bool
-		out      string
-
 		// used to keep track of the number of generated audit records
 		numRecords int64
+
+		writer *netcap.Writer
 	}
 )
 
@@ -160,7 +143,7 @@ func InitCustomEncoders(c Config) {
 	for _, e := range customEncoderSlice {
 
 		// fmt.Println("init custom encoder", e.name)
-		e.Init(c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
+		e.writer = netcap.NewWriter(e.Name, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
 
 		// call postinit func if set
 		if e.postinit != nil {
@@ -171,23 +154,15 @@ func InitCustomEncoders(c Config) {
 		}
 
 		// write header
-		if e.csv {
-			_, err := e.csvWriter.WriteHeader(netcap.InitRecord(e.Type))
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			err := e.aWriter.PutProto(NewHeader(e.Type, c))
-			if err != nil {
-				fmt.Println("failed to write header")
-				panic(err)
-			}
+		err := e.writer.WriteHeader(e.Type, c.Source, c.Version, c.IncludePayloads)
+		if err != nil {
+			log.Fatal("failed to write header for audit record: ", e.Name)
 		}
 
 		// append to custom encoders slice
 		CustomEncoders = append(CustomEncoders, e)
 	}
-	fmt.Println("initialized", len(CustomEncoders), "custom encoders | buffer size:", BlockSize)
+	fmt.Println("initialized", len(CustomEncoders), "custom encoders")
 }
 
 // CreateCustomEncoder returns a new CustomEncoder instance
@@ -214,91 +189,12 @@ func (e *CustomEncoder) Encode(p gopacket.Packet) error {
 		atomic.AddInt64(&e.numRecords, 1)
 
 		// write record
-		err := e.aWriter.PutProto(decoded)
+		err := e.writer.WriteProto(decoded)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-// Init initializes and configures the encoder
-func (e *CustomEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
-
-	e.compress = compress
-	e.buffer = buffer
-	e.csv = csv
-	e.out = out
-
-	if csv {
-
-		// create file
-		if compress {
-			e.file = CreateFile(filepath.Join(out, e.Name), ".csv.gz")
-		} else {
-			e.file = CreateFile(filepath.Join(out, e.Name), ".csv")
-		}
-
-		if buffer {
-
-			e.bWriter = bufio.NewWriterSize(e.file, BlockSize)
-
-			if compress {
-				e.gWriter = gzip.NewWriter(e.bWriter)
-				e.csvWriter = NewCSVWriter(e.gWriter)
-			} else {
-				e.csvWriter = NewCSVWriter(e.bWriter)
-			}
-		} else {
-			if compress {
-				e.gWriter = gzip.NewWriter(e.file)
-				e.csvWriter = NewCSVWriter(e.gWriter)
-			} else {
-				e.csvWriter = NewCSVWriter(e.file)
-			}
-		}
-		return
-	}
-
-	if writeChan && buffer || writeChan && compress {
-		panic("buffering or compression cannot be activated when running using writeChan")
-	}
-
-	// write into channel OR into file
-	if writeChan {
-		e.cWriter = newChanWriter()
-	} else {
-		if compress {
-			e.file = CreateFile(filepath.Join(out, e.Name), ".ncap.gz")
-		} else {
-			e.file = CreateFile(filepath.Join(out, e.Name), ".ncap")
-		}
-	}
-
-	// buffer data?
-	if buffer {
-
-		e.bWriter = bufio.NewWriterSize(e.file, BlockSize)
-		if compress {
-			e.gWriter = gzip.NewWriter(e.bWriter)
-			e.dWriter = delimited.NewWriter(e.gWriter)
-		} else {
-			e.dWriter = delimited.NewWriter(e.bWriter)
-		}
-	} else {
-		if compress {
-			e.gWriter = gzip.NewWriter(e.file)
-			e.dWriter = delimited.NewWriter(e.gWriter)
-		} else {
-			if writeChan {
-				// write into channel writer without compression
-				e.dWriter = delimited.NewWriter(e.cWriter)
-			} else {
-				e.dWriter = delimited.NewWriter(e.file)
-			}
-		}
-	}
-	e.aWriter = NewAtomicDelimitedWriter(e.dWriter)
 }
 
 // Destroy closes and flushes all writers and calls deinit if set
@@ -309,20 +205,15 @@ func (e *CustomEncoder) Destroy() (name string, size int64) {
 			panic(err)
 		}
 	}
-	if e.compress {
-		CloseGzipWriters(e.gWriter)
-	}
-	if e.buffer {
-		FlushWriters(e.bWriter)
-	}
-	return CloseFile(e.out, e.file, e.Name)
+	return e.writer.Close()
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder
 func (e *CustomEncoder) GetChan() <-chan []byte {
-	return e.cWriter.Chan()
+	return e.writer.GetChan()
 }
 
+// NumRecords returns the number of written records
 func (e *CustomEncoder) NumRecords() int64 {
 	return e.numRecords
 }

@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package encoder
+package io
 
 import (
 	"io"
@@ -22,18 +22,18 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-type csvWriter struct {
+type CSVWriter struct {
 	w io.Writer
 	sync.Mutex
 }
 
-func NewCSVWriter(w io.Writer) *csvWriter {
-	return &csvWriter{
+func NewCSVWriter(w io.Writer) *CSVWriter {
+	return &CSVWriter{
 		w: w,
 	}
 }
 
-func (w *csvWriter) WriteHeader(msg proto.Message) (int, error) {
+func (w *CSVWriter) WriteHeader(msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 
@@ -44,7 +44,7 @@ func (w *csvWriter) WriteHeader(msg proto.Message) (int, error) {
 	panic("can not write as CSV" + msg.String())
 }
 
-func (w *csvWriter) WriteRecord(msg proto.Message) (int, error) {
+func (w *CSVWriter) WriteRecord(msg proto.Message) (int, error) {
 
 	w.Lock()
 	defer w.Unlock()
@@ -56,6 +56,6 @@ func (w *csvWriter) WriteRecord(msg proto.Message) (int, error) {
 	panic("can not write as CSV" + msg.String())
 }
 
-func (w *csvWriter) Close() error {
+func (w *CSVWriter) Close() error {
 	return nil
 }

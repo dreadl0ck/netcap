@@ -62,7 +62,7 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 	)
 
 	// add file header
-	err = delimited.NewWriter(gWriter).PutProto(encoder.NewHeader(b.MessageType, conf))
+	err = delimited.NewWriter(gWriter).PutProto(netcap.NewHeader(b.MessageType, conf.Source, conf.Version, conf.IncludePayloads))
 	if err != nil {
 		fmt.Println("failed to write header")
 		panic(err)

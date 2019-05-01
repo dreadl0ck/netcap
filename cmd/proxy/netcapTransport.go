@@ -15,11 +15,15 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
 
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	"go.uber.org/zap"
 )
 
@@ -51,7 +55,7 @@ func (t *NetcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err
 	}
 
 	// start timer
-	var start = time.Now()
+	// var start = time.Now()
 
 makeHTTPRequest:
 	// start round trip
@@ -61,7 +65,7 @@ makeHTTPRequest:
 	}
 
 	// calculate time delta of the initial request
-	delta := time.Since(start)
+	// delta := time.Since(start)
 
 	// handle redirect and special status codes
 	switch resp.StatusCode {
@@ -111,38 +115,44 @@ makeHTTPRequest:
 	// resp.Header.Get("Content-Encoding")
 	// serverName := resp.Header.Get("Server")
 
-	// r := types.HTTP{
-	// 	Timestamp: utils.TimeToString(time.Now()),
-	// 	// Proto            : string  (),
-	// 	Method:           string(req.Method),
-	// 	Host:             string(req.Host),
-	// 	UserAgent:        string(req.UserAgent()),
-	// 	Referer:          string(req.Referer()),
-	// 	ReqCookies:       cookies,
-	// 	ReqContentLength: int32(req.ContentLength),
-	// 	URL:              string(req.URL.String()),
-	// 	ResContentLength: int32(resp.ContentLength),
-	// 	ContentType:      string(req.Header.Get("Content-Type")),
-	// 	StatusCode:       int32(resp.StatusCode),
-	// 	SrcIP:            string(req.RemoteAddr),
-	// 	// DstIP:            string(),
-	// }
+	r := types.HTTP{
+		Timestamp: utils.TimeToString(time.Now()),
+		// Proto            : string  (),
+		Method:           string(req.Method),
+		Host:             string(req.Host),
+		UserAgent:        string(req.UserAgent()),
+		Referer:          string(req.Referer()),
+		ReqCookies:       cookies,
+		ReqContentLength: int32(req.ContentLength),
+		URL:              string(req.URL.String()),
+		ResContentLength: int32(resp.ContentLength),
+		ContentType:      string(req.Header.Get("Content-Type")),
+		StatusCode:       int32(resp.StatusCode),
+		SrcIP:            string(req.RemoteAddr),
+		// DstIP:            string(),
+	}
 
-	Log.Info("round trip finished",
-		zap.Duration("delta", delta),
-		zap.String("proxy", t.proxyName),
-		zap.String("method", req.Method),
-		zap.String("time", delta.String()),
-		zap.String("URL", req.URL.String()),
-		zap.String("status", resp.Status),
-		zap.Int("code", resp.StatusCode),
-		zap.Int64("respContentLength", resp.ContentLength),
-		zap.Int64("reqContentLength", req.ContentLength),
-		zap.String("remoteAddr", req.RemoteAddr),
-		zap.String("userAgent", req.UserAgent()),
-		zap.String("formValues", req.Form.Encode()),
-		zap.Strings("cookies", cookies),
-	)
+	j, err := r.JSON()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(j)
+
+	// Log.Info("round trip finished",
+	// zap.Duration("delta", delta),
+	// zap.String("proxy", t.proxyName),
+	// zap.String("method", req.Method),
+	// zap.String("time", delta.String()),
+	// zap.String("URL", req.URL.String()),
+	// zap.String("status", resp.Status),
+	// zap.Int("code", resp.StatusCode),
+	// zap.Int64("respContentLength", resp.ContentLength),
+	// zap.Int64("reqContentLength", req.ContentLength),
+	// zap.String("remoteAddr", req.RemoteAddr),
+	// zap.String("userAgent", req.UserAgent()),
+	// zap.String("formValues", req.Form.Encode()),
+	// zap.Strings("cookies", cookies),
+	// )
 
 	return resp, nil
 }

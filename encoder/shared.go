@@ -24,9 +24,6 @@ var (
 	// LiveMode switch for all encoders
 	LiveMode bool
 
-	// BlockSize is the file system block size
-	BlockSize int
-
 	// CapturePayload for encoders that support it
 	CapturePayload = false
 

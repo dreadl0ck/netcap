@@ -157,7 +157,7 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
 	return nil
-}, func(d *CustomEncoder) error {
+}, func(e *CustomEncoder) error {
 
 	errorsMapMutex.Lock()
 	fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
@@ -215,18 +215,10 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 			if res.Request != nil {
 				setRequest(h, res.Request)
 
-				atomic.AddInt64(&d.numRecords, 1)
-
-				if d.csv {
-					_, err := d.csvWriter.WriteRecord(h)
-					if err != nil {
-						errorMap.Inc(err.Error())
-					}
-				} else {
-					err := d.aWriter.PutProto(h)
-					if err != nil {
-						errorMap.Inc(err.Error())
-					}
+				atomic.AddInt64(&e.numRecords, 1)
+				err := e.writer.Write(h)
+				if err != nil {
+					errorMap.Inc(err.Error())
 				}
 
 				total++
@@ -268,8 +260,8 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 				h := &types.HTTP{}
 				setRequest(h, req)
 
-				atomic.AddInt64(&d.numRecords, 1)
-				err := d.aWriter.PutProto(h)
+				atomic.AddInt64(&e.numRecords, 1)
+				err := e.writer.Write(h)
 				if err != nil {
 					errorMap.Inc(err.Error())
 				}

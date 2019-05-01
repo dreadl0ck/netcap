@@ -2,4 +2,4 @@
 package netcap
 
 // Netcap version.
-var Version = "v0.3.9"
+var Version = "v0.4.0"

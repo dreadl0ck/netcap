@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"flag"
+	"log"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -187,8 +188,8 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 	}
 	Connections.Unlock()
 	return nil
-}, func(d *CustomEncoder) error {
-	if d.cWriter == nil {
+}, func(e *CustomEncoder) error {
+	if !e.writer.IsChanWriter {
 		for _, c := range Connections.Items {
 			writeConn(c)
 		}
@@ -199,17 +200,8 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 // writeConn writes the connection
 func writeConn(c *types.Connection) {
 	atomic.AddInt64(&connEncoderInstance.numRecords, 1)
-	if connEncoderInstance.csv {
-		// write as csv
-		_, err := connEncoderInstance.csvWriter.WriteRecord(c)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		// write protobuf
-		err := connEncoderInstance.aWriter.PutProto(c)
-		if err != nil {
-			panic(err)
-		}
+	err := connEncoderInstance.writer.Write(c)
+	if err != nil {
+		log.Fatal("failed to write proto: ", err)
 	}
 }
