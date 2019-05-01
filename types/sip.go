@@ -63,7 +63,7 @@ var sipMetric = prometheus.NewCounterVec(
 )
 
 func init() {
-	prometheus.MustRegister(snapMetric)
+	prometheus.MustRegister(sipMetric)
 }
 
 func (a SIP) Inc() {
