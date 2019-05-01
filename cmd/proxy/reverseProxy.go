@@ -109,7 +109,7 @@ func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
 		},
 	}
 
-	proxy.writer = netcap.NewWriter("HTTP", true, true, false, "", false)
+	proxy.writer = netcap.NewWriter("HTTP["+targetURL.Host+"]", true, true, false, "", false)
 	proxy.writer.WriteHeader(types.Type_NC_HTTP, targetURL.String(), netcap.Version, false)
 
 	return proxy
