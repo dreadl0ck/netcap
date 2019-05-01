@@ -137,16 +137,9 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 			}
 
 			atomic.AddInt64(&httpEncoder.numRecords, 1)
-			if httpEncoder.csv {
-				_, err := httpEncoder.csvWriter.WriteRecord(h)
-				if err != nil {
-					errorMap.Inc(err.Error())
-				}
-			} else {
-				err := httpEncoder.aWriter.PutProto(h)
-				if err != nil {
-					errorMap.Inc(err.Error())
-				}
+			err := httpEncoder.writer.Write(h)
+			if err != nil {
+				errorMap.Inc(err.Error())
 			}
 		}
 
@@ -163,16 +156,9 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 				h := &types.HTTP{}
 				setRequest(h, req)
 
-				if httpEncoder.csv {
-					_, err := httpEncoder.csvWriter.WriteRecord(h)
-					if err != nil {
-						errorMap.Inc(err.Error())
-					}
-				} else {
-					err := httpEncoder.aWriter.PutProto(h)
-					if err != nil {
-						errorMap.Inc(err.Error())
-					}
+				err := httpEncoder.writer.Write(h)
+				if err != nil {
+					errorMap.Inc(err.Error())
 				}
 			}
 		}

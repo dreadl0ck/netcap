@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"sync"
@@ -132,8 +133,8 @@ var transportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "Tra
 		TransportFlows.Unlock()
 	}
 	return nil
-}, func(d *CustomEncoder) error {
-	if d.cWriter == nil {
+}, func(e *CustomEncoder) error {
+	if !e.writer.IsChanWriter {
 		for _, f := range TransportFlows.Items {
 			writeTransportFlow(f)
 		}
@@ -143,17 +144,9 @@ var transportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "Tra
 
 func writeTransportFlow(f *types.TransportFlow) {
 	atomic.AddInt64(&transportFlowEncoderInstance.numRecords, 1)
-	if transportFlowEncoderInstance.csv {
-		_, err := transportFlowEncoderInstance.csvWriter.WriteRecord(f)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		// write protobuf
-		err := transportFlowEncoderInstance.aWriter.PutProto(f)
-		if err != nil {
-			panic(err)
-		}
+	err := transportFlowEncoderInstance.writer.Write(f)
+	if err != nil {
+		log.Fatal("failed to write audit record: ", err)
 	}
 }
 

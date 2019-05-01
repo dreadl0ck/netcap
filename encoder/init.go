@@ -1,5 +1,3 @@
-// +build darwin,linux
-
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) 2017 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -15,8 +13,6 @@
 
 package encoder
 
-import "syscall"
-
 /*
  *	Package Level Initialization
  */
@@ -27,13 +23,4 @@ func init() {
 	for _, e := range layerEncoderSlice {
 		allEncoderNames[e.Layer.String()] = struct{}{}
 	}
-
-	// get system block size for use as the buffer size of the buffered Writers
-	var stat syscall.Statfs_t
-	if err := syscall.Statfs("/", &stat); err != nil {
-		panic(err)
-	}
-
-	// set block size
-	BlockSize = int(stat.Bsize)
 }

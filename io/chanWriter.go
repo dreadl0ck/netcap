@@ -11,24 +11,28 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package encoder
+package io
 
-import (
-	"time"
+// chanWriter writes into a []byte chan
+type ChanWriter struct {
+	ch chan []byte
+}
 
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
-)
+// TODO make chan buf size configurable
+func NewChanWriter() *ChanWriter {
+	return &ChanWriter{make(chan []byte, 1024)}
+}
 
-func NewHeader(t types.Type, c Config) *types.Header {
+func (w *ChanWriter) Chan() <-chan []byte {
+	return w.ch
+}
 
-	// init header
-	header := new(types.Header)
-	header.Type = t
-	header.Created = utils.TimeToString(time.Now())
-	header.InputSource = c.Source
-	header.Version = c.Version
-	header.ContainsPayloads = c.IncludePayloads
+func (w *ChanWriter) Write(p []byte) (int, error) {
+	w.ch <- p
+	return len(p), nil
+}
 
-	return header
+func (w *ChanWriter) Close() error {
+	close(w.ch)
+	return nil
 }

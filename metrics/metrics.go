@@ -30,7 +30,7 @@ var (
 // ServeMetricsAt exposes the prometheus at the given address
 func ServeMetricsAt(addr string) {
 
-	fmt.Println("satrting to serve metrics at:", addr+metricsRoute)
+	fmt.Println("starting to serve metrics at:", addr+metricsRoute)
 
 	go func() {
 		metricsHandler := promhttp.Handler()

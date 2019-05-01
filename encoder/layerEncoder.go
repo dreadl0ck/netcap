@@ -14,17 +14,12 @@
 package encoder
 
 import (
-	"bufio"
-	"compress/gzip"
 	"fmt"
-	"os"
-	"path/filepath"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/dreadl0ck/netcap"
-	"kythe.io/kythe/go/platform/delimited"
-
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
@@ -103,21 +98,8 @@ type (
 		Layer gopacket.LayerType
 		Type  types.Type
 
-		// private fields
-		file      *os.File
-		bWriter   *bufio.Writer
-		gWriter   *gzip.Writer
-		dWriter   *delimited.Writer
-		aWriter   *AtomicDelimitedWriter
-		Handler   LayerEncoderHandler
-		cWriter   *chanWriter
-		csvWriter *csvWriter
-
-		// configuration
-		compress bool
-		csv      bool
-		buffer   bool
-		out      string
+		Handler LayerEncoderHandler
+		writer  *netcap.Writer
 	}
 )
 
@@ -187,27 +169,18 @@ func InitLayerEncoders(c Config) {
 	// initialize encoders
 	for _, e := range layerEncoderSlice {
 
-		// fmt.Println("init", e.layer)
-		e.Init(c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
+		//fmt.Println("init", e.Layer)
+		e.writer = netcap.NewWriter(e.Layer.String(), c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
 
-		// write header
-		if e.csv {
-			_, err := e.csvWriter.WriteHeader(netcap.InitRecord(e.Type))
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			err := e.aWriter.PutProto(NewHeader(e.Type, c))
-			if err != nil {
-				fmt.Println("failed to write header")
-				panic(err)
-			}
+		err := e.writer.WriteHeader(e.Type, c.Source, c.Version, c.IncludePayloads)
+		if err != nil {
+			log.Fatal("failed to write header for audit record: ", e.Type.String())
 		}
 
 		// add to layer encoders map
 		LayerEncoders[e.Layer] = append(LayerEncoders[e.Layer], e)
 	}
-	fmt.Println("initialized", len(LayerEncoders), "layer encoders | buffer size:", BlockSize)
+	fmt.Println("initialized", len(LayerEncoders), "layer encoders")
 }
 
 // CreateLayerEncoder returns a new LayerEncoder instance
@@ -228,120 +201,21 @@ func (e *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
 
 	decoded := e.Handler(l, utils.TimeToString(timestamp))
 	if decoded != nil {
-		if e.csv {
-			_, err := e.csvWriter.WriteRecord(decoded)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := e.aWriter.PutProto(decoded)
-			if err != nil {
-				return err
-			}
+		// write record
+		err := e.writer.WriteProto(decoded)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-// Init initializes and configures the encoder
-func (e *LayerEncoder) Init(buffer, compress, csv bool, out string, writeChan bool) {
-
-	if *debug {
-		fmt.Println("INIT", e.Type, e.Layer)
-	}
-
-	protocol := strings.TrimPrefix(e.Type.String(), "NC_")
-
-	e.compress = compress
-	e.buffer = buffer
-	e.csv = csv
-	e.out = out
-
-	if csv {
-
-		// create file
-		if compress {
-			e.file = CreateFile(filepath.Join(out, protocol), ".csv.gz")
-		} else {
-			e.file = CreateFile(filepath.Join(out, protocol), ".csv")
-		}
-
-		if buffer {
-
-			e.bWriter = bufio.NewWriterSize(e.file, BlockSize)
-
-			if compress {
-				e.gWriter = gzip.NewWriter(e.bWriter)
-				e.csvWriter = NewCSVWriter(e.gWriter)
-			} else {
-				e.csvWriter = NewCSVWriter(e.bWriter)
-			}
-		} else {
-			if compress {
-				e.gWriter = gzip.NewWriter(e.file)
-				e.csvWriter = NewCSVWriter(e.gWriter)
-			} else {
-				e.csvWriter = NewCSVWriter(e.file)
-			}
-		}
-		return
-	}
-
-	if writeChan && buffer || writeChan && compress {
-		panic("buffering or compression cannot be activated when running using writeChan")
-	}
-
-	// write into channel OR into file
-	if writeChan {
-		e.cWriter = newChanWriter()
-	} else {
-		if compress {
-			e.file = CreateFile(filepath.Join(out, protocol), ".ncap.gz")
-		} else {
-			e.file = CreateFile(filepath.Join(out, protocol), ".ncap")
-		}
-	}
-
-	// buffer data?
-	// when using writeChan buffering is not possible
-	if buffer {
-
-		e.bWriter = bufio.NewWriterSize(e.file, BlockSize)
-		if compress {
-			e.gWriter = gzip.NewWriter(e.bWriter)
-			e.dWriter = delimited.NewWriter(e.gWriter)
-		} else {
-			e.dWriter = delimited.NewWriter(e.bWriter)
-		}
-	} else {
-		if compress {
-			e.gWriter = gzip.NewWriter(e.file)
-			e.dWriter = delimited.NewWriter(e.gWriter)
-		} else {
-			if writeChan {
-				// write into channel writer without compression
-				e.dWriter = delimited.NewWriter(e.cWriter)
-			} else {
-				e.dWriter = delimited.NewWriter(e.file)
-			}
-		}
-	}
-
-	e.aWriter = NewAtomicDelimitedWriter(e.dWriter)
-}
-
 // GetChan returns a channel to receive serialized protobuf data from the encoder
 func (e *LayerEncoder) GetChan() <-chan []byte {
-	return e.cWriter.Chan()
+	return e.writer.GetChan()
 }
 
 // Destroy closes and flushes all writers
 func (e *LayerEncoder) Destroy() (name string, size int64) {
-	if e.compress {
-		CloseGzipWriters(e.gWriter)
-	}
-	if e.buffer {
-		FlushWriters(e.bWriter)
-	}
-	return CloseFile(e.out, e.file, strings.TrimPrefix("NC_", e.Type.String()))
+	return e.writer.Close()
 }

@@ -85,7 +85,9 @@ func main() {
 	}
 
 	if *flagInput == "" && !live {
-		fmt.Println("nothing to do. need a pcap or netcap file with the read flag (-r) or live mode enabled.")
+		netcap.PrintLogo()
+		fmt.Println()
+		fmt.Println("> nothing to do. need a pcap or netcap file with the read flag (-r) or live mode and an interface (-iface)")
 		os.Exit(1)
 	}
 

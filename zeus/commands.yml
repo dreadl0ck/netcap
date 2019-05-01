@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.3.9
+    VERSION: 0.4.0
 
 # command data
 commands:
@@ -39,29 +39,28 @@ commands:
     net.cap:
         description: compile net.cap binary to $GOPATH/bin
         buildNumber: true
-        help: Install the application to the default system location
         exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.cap -i github.com/dreadl0ck/netcap/cmd/cap
 
     net.label:
         description: compile net.label binary to $GOPATH/bin
         buildNumber: true
-        help: Install the net.label application to the default system location
         exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.label -i github.com/dreadl0ck/netcap/cmd/label
 
     net.sensor:
         description: compile net.sensor binary to $GOPATH/bin
-        help: Install the netcap sensor to the default system location
         exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.sensor -i github.com/dreadl0ck/netcap/cmd/sensor
 
     net.collector:
         description: compile net.collector binary to $GOPATH/bin
-        help: Install the netcap server to the default system location
         exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.collector -i github.com/dreadl0ck/netcap/cmd/collector
 
     net.proxy:
         description: compile net.proxy binary to $GOPATH/bin
-        help: Install the netcap server to the default system location
         exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
+    
+    net.exporter:
+        description: compile net.exporter binary to $GOPATH/bin
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.exporter -i github.com/dreadl0ck/netcap/cmd/exporter
 
     ## Debug Builds
     ##
