@@ -108,11 +108,19 @@ commands:
         description: count lines of code for the project
         exec: cloc --exclude-ext pb.go,py,rb cmd metrics label types utils io collector encoder netcap.go reader.go utils.go writer.go
 
-    # generate protocol buffers
-    gen-proto:
+    # generate protocol buffers for development
+    gen-proto-dev:
         description: generate protocol buffers
-        help: proto compiler must be installed
+        help: proto compiler must be installed with gogofaster plugin
         exec: protoc --gogofaster_out=types/. --python_out=../pynetcap netcap.proto
+
+    # generate protocol buffers for release
+    gen-proto-release:
+        description: generate protocol buffers
+        help: proto compiler must be installed with all required plugins
+        exec: |
+            mkdir -p types/{python,java,swift,rust,cpp,csharp,js}
+            protoc --gogofaster_out=types/. --python_out=types/python --java_out=types/java --swift_out=types/swift --rust_out=types/rust --cpp_out=types/cpp --csharp_out=types/csharp --js_out=types/js netcap.proto
 
     # the version defined in the globals section will be set via ldflags on each build
     # to ensure the correct version is also set for installation via go get

@@ -1,3 +1,10 @@
+types/python
+types/java
+types/swift
+types/rust
+types/cpp
+types/csharp
+types/js
 data/
 __pycache__
 pcaps

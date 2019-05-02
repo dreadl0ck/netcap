@@ -1,6 +1,5 @@
 # TODOs
 
-- add pre generated netcap type definitions for several programming languages
 - add YARA support for labels
 - implement reading NC files in rust
 
