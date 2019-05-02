@@ -852,6 +852,18 @@ message HTTP {
     int32  StatusCode          = 12;
     string SrcIP               = 13;
     string DstIP               = 14;
+    string ReqContentEncoding  = 15;
+    string ResContentEncoding  = 16;
+    string ServerName          = 17;
+    repeated string ResCookies = 18;
+    string ResContentType      = 19;
+
+    // Time Deltas (Nanoseconds)
+    // currently only available when using the HTTP proxy
+    int64  DoneAfter           = 20;
+    int64  DNSDoneAfter        = 21;
+    int64  FirstByteAfter      = 22;
+    int64  TLSDoneAfter        = 23;
 }
 
 // TLS Client Hello

@@ -47,6 +47,7 @@ var (
 	errorsMap      = make(map[string]uint)
 	errorsMapMutex sync.Mutex
 
+	// HTTPActive must be set to true to decode HTTP traffic
 	HTTPActive bool
 	reqMutex   sync.Mutex
 	httpReqMap = make(map[Stream][]*http.Request)
@@ -55,11 +56,13 @@ var (
 	httpResMap = make(map[Stream][]*http.Response)
 )
 
+// Stream contains both unidirectional flows for a connection
 type Stream struct {
 	a gopacket.Flow
 	b gopacket.Flow
 }
 
+// Reverse flips source and destination
 func (s Stream) Reverse() Stream {
 	return Stream{
 		s.a.Reverse(),
@@ -205,13 +208,10 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		var newRes []*http.Response
 		for _, res := range resArr {
 
-			// populate types.HTTP with all infos from request
-			h := &types.HTTP{
-				ResContentLength: int32(res.ContentLength),
-				ContentType:      res.Header.Get("Content-Type"),
-				StatusCode:       int32(res.StatusCode),
-			}
+			// populate types.HTTP with all infos from response
+			h := newHTTPFromResponse(res)
 
+			// now add request information
 			if res.Request != nil {
 				setRequest(h, res.Request)
 
@@ -313,16 +313,38 @@ done:
 	return nil
 })
 
+/*
+ *	Utils
+ */
+
 // set HTTP request on types.HTTP
 func setRequest(h *types.HTTP, req *http.Request) {
+
+	// set basic info
 	h.Timestamp = req.Header.Get("netcap-ts")
 	h.Proto = req.Proto
 	h.Method = req.Method
 	h.Host = req.Host
+	h.ReqContentLength = int32(req.ContentLength)
+	h.ReqContentEncoding = req.Header.Get("Content-Encoding")
+
+	// manually replace commas, to avoid breaking them the CSV
+	// use the -check flag to validate the generated CSV output and find errors quickly
 	h.UserAgent = strings.Replace(req.UserAgent(), ",", "(comma)", -1)
 	h.Referer = strings.Replace(req.Referer(), ",", "(comma)", -1)
-	h.ReqContentLength = int32(req.ContentLength)
 	h.URL = strings.Replace(req.URL.String(), ",", "(comma)", -1)
+
+	// retrieve ip adresses set on the request while processing
 	h.SrcIP = req.Header.Get("netcap-clientip")
 	h.DstIP = req.Header.Get("netcap-serverip")
+}
+
+func newHTTPFromResponse(res *http.Response) *types.HTTP {
+	return &types.HTTP{
+		ResContentLength:   int32(res.ContentLength),
+		ContentType:        res.Header.Get("Content-Type"),
+		StatusCode:         int32(res.StatusCode),
+		ServerName:         res.Header.Get("Server"),
+		ResContentEncoding: res.Header.Get("Content-Encoding"),
+	}
 }
