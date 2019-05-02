@@ -61,6 +61,7 @@ type (
 		numRecords int64
 
 		writer *netcap.Writer
+		export bool
 	}
 )
 
@@ -153,6 +154,9 @@ func InitCustomEncoders(c Config) {
 			}
 		}
 
+		// export metrics?
+		e.export = c.Export
+
 		// write header
 		err := e.writer.WriteHeader(e.Type, c.Source, c.Version, c.IncludePayloads)
 		if err != nil {
@@ -182,16 +186,27 @@ func CreateCustomEncoder(t types.Type, name string, postinit func(*CustomEncoder
 func (e *CustomEncoder) Encode(p gopacket.Packet) error {
 
 	// call the Handler function of the encoder
-	decoded := e.Handler(p)
-	if decoded != nil {
+	record := e.Handler(p)
+	if record != nil {
 
 		// increase counter
 		atomic.AddInt64(&e.numRecords, 1)
 
 		// write record
-		err := e.writer.WriteProto(decoded)
+		err := e.writer.WriteProto(record)
 		if err != nil {
 			return err
+		}
+
+		// export metrics if configured
+		if e.export {
+			// assert to audit record
+			if p, ok := record.(types.AuditRecord); ok {
+				// export metrics
+				p.Inc()
+			} else {
+				log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			}
 		}
 	}
 	return nil
