@@ -14,6 +14,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os/exec"
@@ -24,9 +25,27 @@ import (
 	"github.com/mgutz/ansi"
 )
 
+func printHeader() {
+	netcap.PrintLogo()
+	fmt.Println()
+	fmt.Println("usage examples:")
+	fmt.Println("	$ net.cap -r dump.pcap")
+	fmt.Println("	$ net.cap -iface eth0")
+	fmt.Println("	$ net.cap -r TCP.ncap.gz")
+	fmt.Println("	$ net.cap -fields -r TCP.ncap.gz")
+	fmt.Println("	$ net.cap -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv")
+	fmt.Println()
+}
+
+// usage prints the use
+func printUsage() {
+	printHeader()
+	flag.PrintDefaults()
+}
+
 // CheckFields checks if the separator occurs inside fields of audit records
 // to prevent this breaking the generated CSV file
-func CheckFields() {
+func checkFields() {
 
 	r, err := netcap.Open(*flagInput)
 	if err != nil {
