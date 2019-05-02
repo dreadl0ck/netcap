@@ -15,10 +15,13 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"time"
 
@@ -51,12 +54,53 @@ func (t *NetcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err
 	req.Host = t.targetURL.Host
 	req.Header.Set("Host", t.targetURL.Host)
 
-	if Debug {
+	if *flagDebug {
 		DumpHTTPRequest(req, t.proxyName)
 	}
 
-	// start timer
-	// var start = time.Now()
+	// Request Tracing
+	// collects timing information for TLS, DNS and connection stats
+	var (
+		startTime         = time.Now()
+		tlsHandShakeStart time.Time
+		dnsStart          time.Time
+
+		// when tracing is enabled, these additional parameters will be made available on the HTTP audit records
+		firstResponseByteDuration time.Duration
+		dnsResolvedDuration       time.Duration
+		tlsHandshakeDuration      time.Duration
+		destIP                    string
+	)
+
+	if *flagTrace {
+		// create http client trace
+		trace := &httptrace.ClientTrace{
+			GotConn: func(connInfo httptrace.GotConnInfo) {
+				destIP = connInfo.Conn.RemoteAddr().String()
+			},
+			TLSHandshakeStart: func() {
+				tlsHandShakeStart = time.Now()
+			},
+			TLSHandshakeDone: func(t tls.ConnectionState, e error) {
+				// TODO: add tls information to HTTP audit record + ja3
+				// fmt.Println("TLSHandshakeDone", t, e)
+				tlsHandshakeDuration = time.Since(tlsHandShakeStart)
+			},
+			DNSDone: func(d httptrace.DNSDoneInfo) {
+				// fmt.Println("DNSDone", d)
+				dnsResolvedDuration = time.Since(dnsStart)
+			},
+			DNSStart: func(info httptrace.DNSStartInfo) {
+				dnsStart = time.Now()
+			},
+			GotFirstResponseByte: func() {
+				firstResponseByteDuration = time.Since(startTime)
+			},
+		}
+
+		// add tracing context
+		req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+	}
 
 makeHTTPRequest:
 	// start round trip
@@ -66,27 +110,42 @@ makeHTTPRequest:
 	}
 
 	// calculate time delta of the initial request
-	// delta := time.Since(start)
+	delta := time.Since(startTime)
 
 	// handle redirect and special status codes
 	switch resp.StatusCode {
-	case http.StatusFound: // redirect. modify request and try again
+
+	// handle redirects
+	case http.StatusFound:
+
+		// get new location
 		newLoc := resp.Header.Get("Location")
+
+		// modify request
 		req.URL.Path = newLoc
 
 		Log.Info(t.proxyName+" proxy got a redirect.",
 			zap.String("newLocation", newLoc),
 		)
+
+		// try again
 		goto makeHTTPRequest
 	}
 
-	// collect the cookies
-	var cookies []string
+	// collect the cookies for both request and response
+	var (
+		reqCookies []string
+		resCookies []string
+	)
 	for _, c := range req.Cookies() {
-		cookies = append(cookies, c.String())
+		reqCookies = append(reqCookies, c.String())
+	}
+	for _, c := range resp.Cookies() {
+		resCookies = append(resCookies, c.String())
 	}
 
 	// read the raw bytes of the response body
+	// to set content length manually in case the value in the header is wrong
 	rawbody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -101,36 +160,47 @@ makeHTTPRequest:
 		resp.ContentLength = int64(len(rawbody))
 	}
 
-	if Debug {
+	if *flagDebug {
 		DumpHTTPResponse(resp, t.proxyName, rawbody)
 	}
 
-	// check X-Forwarded-For header
-	// since the host might not always be set
-	// for example in case of proxies
-	if req.URL.Host == "" {
-		req.URL.Host = req.Header.Get("X-Forwarded-For")
-		Log.Info("set req.URL.Host to", zap.String("host", req.URL.Host))
+	var sourceIP = req.RemoteAddr
+	if sourceIP == "" {
+		sourceIP = getIPAdress(req)
 	}
 
-	// resp.Header.Get("Content-Encoding")
-	// serverName := resp.Header.Get("Server")
-
 	r := &types.HTTP{
-		Timestamp: utils.TimeToString(time.Now()),
-		// Proto            : string  (),
-		Method:           string(req.Method),
-		Host:             string(req.Host),
-		UserAgent:        string(req.UserAgent()),
-		Referer:          string(req.Referer()),
-		ReqCookies:       cookies,
-		ReqContentLength: int32(req.ContentLength),
-		URL:              string(req.URL.String()),
-		ResContentLength: int32(resp.ContentLength),
-		ContentType:      string(req.Header.Get("Content-Type")),
-		StatusCode:       int32(resp.StatusCode),
-		SrcIP:            string(req.RemoteAddr),
-		// DstIP:            string(),
+		Timestamp: utils.TimeToString(startTime),
+
+		// Request information
+		ReqCookies:         reqCookies,
+		Proto:              req.Proto,
+		Method:             string(req.Method),
+		Host:               string(req.URL.Host),
+		UserAgent:          string(req.UserAgent()),
+		Referer:            string(req.Referer()),
+		ReqContentLength:   int32(req.ContentLength),
+		ContentType:        string(req.Header.Get("Content-Type")),
+		URL:                string(req.URL.String()),
+		ReqContentEncoding: req.Header.Get("Content-Encoding"),
+
+		// Response information
+		ResContentLength:   int32(resp.ContentLength),
+		StatusCode:         int32(resp.StatusCode),
+		ResContentEncoding: resp.Header.Get("Content-Encoding"),
+		ServerName:         resp.Header.Get("Server"),
+		ResCookies:         resCookies,
+		ResContentType:     string(resp.Header.Get("Content-Type")),
+		DoneAfter:          delta.Nanoseconds(),
+
+		// Address information
+		SrcIP: sourceIP,
+
+		// available when tracing is enabled
+		DstIP:          destIP,
+		DNSDoneAfter:   dnsResolvedDuration.Nanoseconds(),
+		TLSDoneAfter:   tlsHandshakeDuration.Nanoseconds(),
+		FirstByteAfter: firstResponseByteDuration.Nanoseconds(),
 	}
 
 	err = t.proxy.writer.Write(r)
@@ -138,26 +208,36 @@ makeHTTPRequest:
 		log.Fatal("failed to write audit record:", err)
 	}
 
-	j, err := r.JSON()
-	if err != nil {
-		log.Fatal(err)
+	// fmt.Println(j)
+	if *flagDump {
+		j, err := r.JSON()
+		if err != nil {
+			log.Fatal(err)
+		}
+		var b bytes.Buffer
+		err = json.Indent(&b, []byte(j), "", " ")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(b.String())
 	}
-	fmt.Println(j)
 
 	// Log.Info("round trip finished",
-	// zap.Duration("delta", delta),
-	// zap.String("proxy", t.proxyName),
-	// zap.String("method", req.Method),
-	// zap.String("time", delta.String()),
-	// zap.String("URL", req.URL.String()),
-	// zap.String("status", resp.Status),
-	// zap.Int("code", resp.StatusCode),
-	// zap.Int64("respContentLength", resp.ContentLength),
-	// zap.Int64("reqContentLength", req.ContentLength),
-	// zap.String("remoteAddr", req.RemoteAddr),
-	// zap.String("userAgent", req.UserAgent()),
-	// zap.String("formValues", req.Form.Encode()),
-	// zap.Strings("cookies", cookies),
+	// 	zap.String("time", delta.String()),
+	// 	zap.String("proxy", t.proxyName),
+	// 	zap.String("method", req.Method),
+	// 	zap.String("URL", req.URL.String()),
+	// 	zap.String("status", resp.Status),
+	// 	zap.Int("code", resp.StatusCode),
+	// 	zap.Int64("respContentLength", resp.ContentLength),
+	// 	zap.Int64("reqContentLength", req.ContentLength),
+	// 	zap.String("remoteAddr", req.RemoteAddr),
+	// 	zap.String("userAgent", req.UserAgent()),
+	// 	zap.String("formValues", req.Form.Encode()),
+	// 	zap.Strings("resCookies", resCookies),
+	// 	zap.Strings("reqCookies", reqCookies),
+	// 	zap.String("destinationIP", destIP),
 	// )
 
 	return resp, nil
