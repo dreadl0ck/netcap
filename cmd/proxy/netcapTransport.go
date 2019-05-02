@@ -232,22 +232,5 @@ makeHTTPRequest:
 		}
 	}
 
-	// Log.Info("round trip finished",
-	// 	zap.String("time", delta.String()),
-	// 	zap.String("proxy", t.proxyName),
-	// 	zap.String("method", req.Method),
-	// 	zap.String("URL", req.URL.String()),
-	// 	zap.String("status", resp.Status),
-	// 	zap.Int("code", resp.StatusCode),
-	// 	zap.Int64("respContentLength", resp.ContentLength),
-	// 	zap.Int64("reqContentLength", req.ContentLength),
-	// 	zap.String("remoteAddr", req.RemoteAddr),
-	// 	zap.String("userAgent", req.UserAgent()),
-	// 	zap.String("formValues", req.Form.Encode()),
-	// 	zap.Strings("resCookies", resCookies),
-	// 	zap.Strings("reqCookies", reqCookies),
-	// 	zap.String("destinationIP", destIP),
-	// )
-
 	return resp, nil
 }
