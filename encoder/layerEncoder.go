@@ -100,6 +100,7 @@ type (
 
 		Handler LayerEncoderHandler
 		writer  *netcap.Writer
+		export  bool
 	}
 )
 
@@ -177,6 +178,9 @@ func InitLayerEncoders(c Config) {
 			log.Fatal("failed to write header for audit record: ", e.Type.String())
 		}
 
+		// export metrics?
+		e.export = c.Export
+
 		// add to layer encoders map
 		LayerEncoders[e.Layer] = append(LayerEncoders[e.Layer], e)
 	}
@@ -197,14 +201,24 @@ func CreateLayerEncoder(nt types.Type, lt gopacket.LayerType, handler LayerEncod
 // and writes the serialized protobuf into the data pipe
 func (e *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
 
-	// fmt.Println("decode", e.Layer.String())
+	record := e.Handler(l, utils.TimeToString(timestamp))
+	if record != nil {
 
-	decoded := e.Handler(l, utils.TimeToString(timestamp))
-	if decoded != nil {
 		// write record
-		err := e.writer.WriteProto(decoded)
+		err := e.writer.WriteProto(record)
 		if err != nil {
 			return err
+		}
+
+		// export metrics if configured
+		if e.export {
+			// assert to audit record
+			if p, ok := record.(types.AuditRecord); ok {
+				// export metrics
+				p.Inc()
+			} else {
+				log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			}
 		}
 	}
 	return nil

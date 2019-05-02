@@ -26,4 +26,5 @@ type Config struct {
 	Source          string
 	Version         string
 	IncludePayloads bool
+	Export          bool
 }
