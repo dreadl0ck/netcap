@@ -33,23 +33,28 @@ import (
 
 func main() {
 
+	// parse commandline flags
 	flag.Parse()
 
+	// print version and exit
 	if *flagVersion {
 		fmt.Println(netcap.Version)
 		os.Exit(0)
 	}
 
+	// print a markdown overview of all available encoders and fields
 	if *flagPrintProtocolOverview {
 		encoder.MarkdownOverview()
 		return
 	}
 
+	// util to convert netcap timestamp to UTC time
 	if *flagToUTC != "" {
 		fmt.Println(utils.TimeToUTC(*flagToUTC))
 		os.Exit(1)
 	}
 
+	// configure CPU profiling
 	if *flagCPUProfile {
 		defer func() func() {
 			if *flagCPUProfile {
@@ -84,6 +89,7 @@ func main() {
 		live = true
 	}
 
+	// abort if there is no input or no live capture
 	if *flagInput == "" && !live {
 		netcap.PrintLogo()
 		fmt.Println()
@@ -91,13 +97,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// check if fields count matches for all generated rows
+	// util to check if fields count matches for all generated rows
 	if *flagCheckFields {
 		CheckFields()
 		return
 	}
 
+	// read dumpfile header and exit
 	if *flagHeader {
+
 		// open input file for reading
 		r, err := netcap.Open(*flagInput)
 		if err != nil {
@@ -119,6 +127,7 @@ func main() {
 		os.Exit(0) // bye bye
 	}
 
+	// set data source
 	var source string
 	if *flagInput != "" {
 		source = *flagInput
@@ -216,6 +225,7 @@ func main() {
 
 	fmt.Println("done in", time.Since(start))
 
+	// memory profiling
 	if *flagMemProfile {
 		f, err := os.Create("netcap-" + netcap.Version + ".mem.profile")
 		if err != nil {

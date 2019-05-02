@@ -26,6 +26,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// a list of all reverse proxies
+// used to close all files handles on exit via OS signals
 var proxies []*ReverseProxy
 
 func main() {
@@ -55,6 +57,7 @@ func main() {
 		}
 	}
 
+	// handle OS signals
 	handleSignals()
 
 	// print configuration
