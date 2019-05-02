@@ -1,36 +1,16 @@
 # TODOs
 
-net.server
-net.client
-net.cap
-net.label
-net.proxy
-net.exporter
-
-cmd/
-    server
-    client
-    cap
-    label
-    proxy
-    exporter
-
-- YARA support for labels
+- add pre generated netcap type definitions for several programming languages
+- add YARA support for labels
 - implement reading NC files in rust
 
-- metrics: netcap_<protocol>
 - BLOG: Setup Guide
-- HTTP Proxy
+
 - Full Proxy?
 - Visualize CIC datasets
-- support for exporting live metrics, from pcap and from netcap dumpfile
-- IEEE article
-- webpage
-- Docker Container
-- wiki
 
 - add contributions welcome to README
-- name and shortly describe main framework components
+- name and shortly describe main framework components in README
 - add ROADMAP
 
 - capture payloads for HTTP

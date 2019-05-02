@@ -1,5 +1,5 @@
 <a href="https://github.com/dreadl0ck/netcap">
-  <img src="graphics/svg/Netcap-Logov2.svg" width="100%" height="300">
+  <img src="docs/graphics/svg/Netcap-Logov2.svg" width="100%" height="300">
 </a>
 
 <br>
