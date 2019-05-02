@@ -118,7 +118,7 @@ Currently there are 4 applications:
 The following graphic shows a high level architecture overview:
 
 <br>
-<img src="graphics/svg/Netcap.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap.svg" width="100%" height="100%">
 <br>
 
 Packets are fetched from an input source (offline dump file or live from an interface) and distributed via round-robin to a pool of workers. Each worker dissects all layers of a packet and writes the generated *protobuf* audit records to the corresponding file. By default, the data is compressed with *gzip* to save storage space and buffered to avoid an overhead due to excessive *syscalls* for writing data to disk.
@@ -298,7 +298,7 @@ After decoding of each layer, the generated protocol buffer instance is written 
 Packets that produced an error in the decoding phase or carry an unknown protocol are being written in the corresponding logs and dumpfiles.
 
 <br>
-<img src="graphics/svg/Netcap-Worker.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap-Worker.svg" width="100%" height="100%">
 <br>
 
 Each worker receives its data from an input channel.
@@ -312,7 +312,7 @@ distributing packets among workers can continue even if a worker is not finished
 New packets will be queued in the channel buffer, and writing in the channels will only block if the buffer is full.
 
 <br>
-<img src="graphics/svg/Buffered-Workers.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Buffered-Workers.svg" width="100%" height="100%">
 <br>
 
 ## Data Pipe
@@ -320,7 +320,7 @@ New packets will be queued in the channel buffer, and writing in the channels wi
 The Netcap data pipe describes the way from a network packet that has been processed in a worker routine, to a serialized, delimited and compressed record into a file on disk.
 
 <br>
-<img src="graphics/svg/Netcap-PIpe.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap-PIpe.svg" width="100%" height="100%">
 <br>
 
 ## Delimited Protocol Buffer Records
@@ -328,7 +328,7 @@ The Netcap data pipe describes the way from a network packet that has been proce
 The data format on disk consists of gzipped length-delimited byte records. Each delimited Protocol Buffer record is preceded by a variable-length encoded integer (varint) that specifies the length of the serialized protocol buffer record in bytes. A stream consists of a sequence of such records packed consecutively without additional padding. There are no checksums or compression involved in this processing step.
 
 <br>
-<img src="graphics/svg/Netcap-Delimited.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap-Delimited.svg" width="100%" height="100%">
 <br>
 
 ## Data Compression
@@ -340,7 +340,7 @@ Encoding the output as protocol buffers does not help much with reducing the siz
 A piece of information produced by Netcap is called an audit record. Audit records are type safe structured data, encoded as protocol buffers. An audit record can describe a specific protocol, or other abstractions built on top of observations from the analyzed traffic. Netcap does currently not enforce the presence of any special fields for each audit record, however by convention each audit record should have a timestamp with microsecond precision. A record file contains a header followed by a list of length-delimited serialized audit records. Naming of the audit record file happens according to the encoder name and should signal whether the file contents are compressed by adding the .gz extension.
 
 <br>
-<img src="graphics/svg/Netcap-Audit-Record.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap-Audit-Record.svg" width="100%" height="100%">
 <br>
 
 ## Encoders
@@ -479,7 +479,7 @@ The *-sep* flag can be used to specify a custom separator.
 Netcap offers a simple interface to filter for specific fields and select only those of interest. Filtering and exporting specific fields can be performed with all available audit record types, over a uniform command-line interface. By default, output is generated as CSV with the field names added as first line. It is also possible to use a custom separator string. Fields are exported in the order they are named in the select statement. Sub structures of audit records (for example IPv4Options from an IPv4 packet), are converted to a human readable string representation. More examples for using this feature on the command-line can be found in the usage section.
 
 <br>
-<img src="graphics/svg/Netcap-Export.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap-Export.svg" width="100%" height="100%">
 <br>
 
 Netcap offers a simple command-line interface to select fields of interest from the gathered audit records.
@@ -630,7 +630,7 @@ Append classifications for duplicate labels:
 Using Netcap as a data collection mechanism, sensor agents can be deployed to export the traffic they see to a central collection server. This is especially interesting for internet of things (IoT) applications, since these devices are placed inside isolated networks and thus the operator does not have any information about the traffic the device sees. Although Go was not specifically designed for this application, it is an interesting language for embedded systems. Each binary contains the complete runtime, which increases the binary size but requires no installation of dependencies on the device itself. Data exporting currently takes place in batches over UDP sockets. Transferred data is compressed in transit and encrypted with the public key of the collection server. Asymmetric encryption was chosen, to avoid empowering an attacker who compromised a sensor, to decrypt traffic of all sensors communicating with the collection server. To increase the performance, in the future this could be replaced with using a symmetric cipher, together with a solid concept for key rotation and distribution. Sensor agents do not write any data to disk and instead keep it in memory before exporting it.
 
 <br>
-<img src="graphics/svg/Netcap-IOT.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap-IOT.svg" width="100%" height="100%">
 <br>
 
 As described in the concept chapter, sensors and the collection server use UDP datagrams for communication.
@@ -649,7 +649,7 @@ the wrapper has been published here: [github.com/dreadl0ck/cryptoutils](https://
 The collection server generates a keypair, consisting of two 32 byte (256bit) keys, hex encodes them and writes the keys to disk. The created files are named *pub.key* and *priv.key*. Now, the servers public key can be shared with sensors. Each sensor also needs to generate a keypair, in order to encrypt messages to the collection server with their private key and the public key of the server. To allow the server to decrypt and authenticate the message, the sensor prepends its own public key to each message.
 
 <br>
-<img src="graphics/svg/Netcap-Sensors.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap-Sensors.svg" width="100%" height="100%">
 <br>
 
 ### Batch Decryption
@@ -657,7 +657,7 @@ The collection server generates a keypair, consisting of two 32 byte (256bit) ke
 When receiving an encrypted batch from a sensor, the server needs to trim off the first 32 bytes, to get the public key of the sensor. Now the message can be decrypted, and decompressed. The resulting bytes are serialized data for a batch protocol buffer. After unmarshalling them into the batch structure, the server can append the serialized audit records carried by the batch, into the corresponding audit record file for the provided client identifier.
 
 <br>
-<img src="graphics/svg/Netcap-Batch.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Netcap-Batch.svg" width="100%" height="100%">
 <br>
 
 ### Usage
@@ -700,7 +700,7 @@ When stopping the server with a *SIGINT* (Ctrl-C), all audit record file handles
 The term labeling refers to the procedure of adding classification information to each audit record. For the purpose of intrusion detection this is usually a label stating whether the record is normal or malicious. This is called binary classification, since there are just two choices for the label (good / bad) [BK14]. Efficient and precise creation of labeled datasets is important for supervised machine learning techniques. To create labeled data, Netcap parses logs produced by suricata and extracts information for each alert. The quality of labels therefore depends on the quality of the used ruleset. In the next step it iterates over the data generated by itself and maps each alert to the corresponding packets, connections or flows. This takes into account all available information on the audit records and alerts. More details on the mapping logic can be found in the implementation chapter. While labeling is usually performed by marking all packets of a known malicious IP address, Netcap implements a more granular and thus more precise approach of mapping labels for each record. Labeling happens asynchronously for each audit record type in a separate goroutine.
 
 <br>
-<img src="graphics/svg/Labels.svg" width="100%" height="100%">
+<img src="docs/graphics/svg/Labels.svg" width="100%" height="100%">
 <br>
 
 ## Future Development
