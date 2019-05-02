@@ -1,16 +1,18 @@
 # TODOs
 
+- add header to each commandline tool with a few usage examples if no params given
+- add a separate tool for reading: net.decode?
+- colorize
 - add YARA support for labels
-- implement reading NC files in rust
-
-- BLOG: Setup Guide
-
-- Full Proxy?
-- Visualize CIC datasets
-
 - add contributions welcome to README
 - name and shortly describe main framework components in README
+
 - add ROADMAP
+- BLOG: Setup Guide
+- Visualize CIC datasets
+
+- implement reading NC files in rust
+- Full Proxy?
 
 - capture payloads for HTTP
 - add payload data for Flows and Connection if desired

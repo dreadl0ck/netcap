@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/mgutz/ansi"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/encoder"
@@ -32,6 +34,8 @@ import (
 )
 
 func main() {
+
+	flag.Usage = printUsage
 
 	// parse commandline flags
 	flag.Parse()
@@ -91,15 +95,14 @@ func main() {
 
 	// abort if there is no input or no live capture
 	if *flagInput == "" && !live {
-		netcap.PrintLogo()
-		fmt.Println()
-		fmt.Println("> nothing to do. need a pcap or netcap file with the read flag (-r) or live mode and an interface (-iface)")
+		printHeader()
+		fmt.Println(ansi.Red + "> nothing to do. need a pcap or netcap file with the read flag (-r) or live mode and an interface (-iface)" + ansi.Reset)
 		os.Exit(1)
 	}
 
 	// util to check if fields count matches for all generated rows
 	if *flagCheckFields {
-		CheckFields()
+		checkFields()
 		return
 	}
 
