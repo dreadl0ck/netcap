@@ -166,3 +166,7 @@ commands:
             
 
             echo "[INFO] version bumped to v${VERSION}"
+    
+    static-analyze:
+        description: run the golangci-lint static source code analyzer
+        exec: golangci-lint run
