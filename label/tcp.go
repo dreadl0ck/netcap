@@ -67,7 +67,7 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 		types.Select(tcp, selection)
 
 		if fl, ok = pm.(types.AuditRecord); !ok {
-			panic("type does not implement CSV interface")
+			panic("type does not implement types.AuditRecord interface")
 		}
 
 		// write header

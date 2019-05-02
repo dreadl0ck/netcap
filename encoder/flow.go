@@ -143,13 +143,11 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 			f.NetworkProto = nl.LayerType().String()
 			f.SrcIP = nl.NetworkFlow().Src().String()
 			f.DstIP = nl.NetworkFlow().Dst().String()
-			net = nl.NetworkFlow()
 		}
 		if tl := p.TransportLayer(); tl != nil {
 			f.TransportProto = tl.LayerType().String()
 			f.SrcPort = tl.TransportFlow().Src().String()
 			f.DstPort = tl.TransportFlow().Dst().String()
-			transport = tl.TransportFlow()
 		}
 		if al := p.ApplicationLayer(); al != nil {
 			f.ApplicationProto = al.LayerType().String()

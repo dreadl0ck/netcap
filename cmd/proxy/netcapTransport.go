@@ -169,6 +169,8 @@ makeHTTPRequest:
 		sourceIP = getIPAdress(req)
 	}
 
+	// create HTTP audit record and populate it with data
+	// from both http.Request and http.Response
 	r := &types.HTTP{
 		Timestamp: utils.TimeToString(startTime),
 
@@ -203,24 +205,31 @@ makeHTTPRequest:
 		FirstByteAfter: firstResponseByteDuration.Nanoseconds(),
 	}
 
+	// write record to disk
 	err = t.proxy.writer.Write(r)
 	if err != nil {
 		log.Fatal("failed to write audit record:", err)
 	}
 
-	// fmt.Println(j)
+	// dump as JSON if configured
 	if *flagDump {
 		j, err := r.JSON()
 		if err != nil {
 			log.Fatal(err)
 		}
-		var b bytes.Buffer
-		err = json.Indent(&b, []byte(j), "", " ")
-		if err != nil {
-			log.Fatal(err)
-		}
 
-		fmt.Println(b.String())
+		// pretty print if configured
+		if *flagDumpFormatted {
+			var b bytes.Buffer
+			err = json.Indent(&b, []byte(j), "", " ")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println(b.String())
+		} else {
+			fmt.Println(j)
+		}
 	}
 
 	// Log.Info("round trip finished",

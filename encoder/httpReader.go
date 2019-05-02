@@ -317,7 +317,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 					target = base
 					n      = 0
 				)
-				for true {
+				for {
 					_, err := os.Stat(target)
 					//if os.IsNotExist(err) != nil {
 					if err != nil {
@@ -332,7 +332,11 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 					Error("HTTP-create", "Cannot create %s: %s\n", target, err)
 					continue
 				}
+
+				// explicitely declare io.Reader interface
 				var r io.Reader
+
+				// now assign a new buffer
 				r = bytes.NewBuffer(body)
 				if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
 					r, err = gzip.NewReader(r)

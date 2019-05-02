@@ -39,7 +39,7 @@ var (
 
 func debug(args ...interface{}) {
 	if Debug {
-		fmt.Println(args)
+		fmt.Println(args...)
 	}
 }
 
