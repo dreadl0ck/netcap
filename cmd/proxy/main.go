@@ -35,9 +35,6 @@ func main() {
 	// parse commandline flags
 	flag.Parse()
 
-	// set debug mode
-	Debug = *flagDebug
-
 	// check if flags have been used to configure a single instance proxy
 	if *flagLocal == "" || *flagRemote == "" {
 		// parse config file

@@ -26,4 +26,7 @@ var (
 	flagConfig              = flag.String("config", "net.proxy-config.yml", "set config file path")
 	flagRemote              = flag.String("remote", "", "set remote endpoint")
 	flagDebug               = flag.Bool("debug", false, "set debug mode")
+	flagTrace               = flag.Bool("trace", true, "trac HTTP requests to retrieve additional information")
+	flagDump                = flag.Bool("dump", false, "dumps audit record as JSON to stdout")
+	flagDumpFormatted       = flag.Bool("format", true, "format when dumping JSON")
 )
