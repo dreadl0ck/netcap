@@ -34,6 +34,9 @@ var fieldsHTTP = []string{
 	"StatusCode",
 	"SrcIP",
 	"DstIP",
+	"ReqContentEncoding",
+	"ResContentEncoding",
+	"ServerName",
 }
 
 func (h HTTP) CSVHeader() []string {
@@ -56,6 +59,9 @@ func (h HTTP) CSVRecord() []string {
 		formatInt32(h.StatusCode),
 		h.SrcIP,
 		h.DstIP,
+		h.ReqContentEncoding,
+		h.ResContentEncoding,
+		h.ServerName,
 	})
 }
 

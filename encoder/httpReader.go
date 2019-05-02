@@ -121,13 +121,10 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 
 		for _, res := range resArr {
 
-			// populate types.HTTP with all infos from request
-			h := &types.HTTP{
-				ResContentLength: int32(res.ContentLength),
-				ContentType:      res.Header.Get("Content-Type"),
-				StatusCode:       int32(res.StatusCode),
-			}
+			// populate types.HTTP with all infos from response
+			h := newHTTPFromResponse(res)
 
+			// now add request information
 			if res.Request != nil {
 				setRequest(h, res.Request)
 			} else {
