@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dreadl0ck/netcap/metrics"
+
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap"
@@ -158,10 +160,15 @@ func main() {
 			Source:          source,
 			Version:         netcap.Version,
 			IncludePayloads: *flagPayload,
+			Export:          *flagExport,
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})
+
+	if *flagExport {
+		metrics.ServeMetricsAt(*flagMetricsAddress)
+	}
 
 	// set separators for sub structures in CSV
 	types.Begin = *flagBegin

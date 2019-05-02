@@ -92,10 +92,10 @@ func (c *Collector) worker() chan gopacket.Packet {
 
 			done:
 				// call customencoders
-				for _, dec := range encoder.CustomEncoders {
-					err := dec.Encode(p)
+				for _, e := range encoder.CustomEncoders {
+					err := e.Encode(p)
 					if err != nil {
-						if err := c.logPacketError(p, "CustomEncoder Error: "+dec.Name+": "+err.Error()); err != nil {
+						if err := c.logPacketError(p, "CustomEncoder Error: "+e.Name+": "+err.Error()); err != nil {
 							fmt.Println("failed to log packet error:", err)
 						}
 						continue

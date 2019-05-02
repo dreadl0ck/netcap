@@ -26,42 +26,47 @@ commands:
         buildNumber: true
         help: Installs the applications to the default system location
         dependencies:
-            - net.cap
+            - net.capture
             - net.label
-            - net.collector
-            - net.sensor
+            - net.collect
+            - net.agent
             - net.proxy
-            - net.exporter
+            - net.export
+            - net.dump
         exec: echo done
 
     ## Compile Framework Components
     ##
 
-    net.cap:
-        description: compile net.cap binary to $GOPATH/bin
+    net.capture:
+        description: compile net.capture binary to $GOPATH/bin
         buildNumber: true
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.cap -i github.com/dreadl0ck/netcap/cmd/cap
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.capture -i github.com/dreadl0ck/netcap/cmd/capture
 
     net.label:
         description: compile net.label binary to $GOPATH/bin
         buildNumber: true
         exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.label -i github.com/dreadl0ck/netcap/cmd/label
 
-    net.sensor:
-        description: compile net.sensor binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.sensor -i github.com/dreadl0ck/netcap/cmd/sensor
+    net.agent:
+        description: compile net.agent binary to $GOPATH/bin
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.agent -i github.com/dreadl0ck/netcap/cmd/agent
 
-    net.collector:
-        description: compile net.collector binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.collector -i github.com/dreadl0ck/netcap/cmd/collector
+    net.collect:
+        description: compile net.collect binary to $GOPATH/bin
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.collect -i github.com/dreadl0ck/netcap/cmd/collect
 
     net.proxy:
         description: compile net.proxy binary to $GOPATH/bin
         exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
     
-    net.exporter:
-        description: compile net.exporter binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.exporter -i github.com/dreadl0ck/netcap/cmd/exporter
+    net.export:
+        description: compile net.export binary to $GOPATH/bin
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.export -i github.com/dreadl0ck/netcap/cmd/export
+
+    net.dump:
+        description: compile net.dump binary to $GOPATH/bin
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.dump -i github.com/dreadl0ck/netcap/cmd/dump
 
     ## Debug Builds
     ##

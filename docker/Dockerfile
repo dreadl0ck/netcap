@@ -15,9 +15,10 @@ RUN echo GOPATH=$GOPATH
 RUN ls /go/src/github.com/dreadl0ck/netcap/cmd
 
 # build all the things.
-RUN go build -o net.cap -i github.com/dreadl0ck/netcap/cmd/cap
+RUN go build -o net.capture -i github.com/dreadl0ck/netcap/cmd/capture
 RUN go build -o net.label -i github.com/dreadl0ck/netcap/cmd/label
-RUN go build -o net.sensor -i github.com/dreadl0ck/netcap/cmd/sensor
-RUN go build -o net.collector -i github.com/dreadl0ck/netcap/cmd/collector
+RUN go build -o net.agent -i github.com/dreadl0ck/netcap/cmd/agent
+RUN go build -o net.collect -i github.com/dreadl0ck/netcap/cmd/collect
 RUN go build -o net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
-RUN go build -o net.exporter -i github.com/dreadl0ck/netcap/cmd/exporter
+RUN go build -o net.export -i github.com/dreadl0ck/netcap/cmd/export
+RUN go build -o net.dump -i github.com/dreadl0ck/netcap/cmd/dump
