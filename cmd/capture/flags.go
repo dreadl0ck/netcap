@@ -61,4 +61,8 @@ var (
 	flagBegin           = flag.String("begin", "(", "begin character for a structure in CSV output")
 	flagEnd             = flag.String("end", ")", "end character for a structure in CSV output")
 	flagStructSeparator = flag.String("struct-sep", "-", "separator character for a structure in CSV output")
+
+	// move to exporter?
+	flagExport         = flag.Bool("export", true, "export prometheus metrics")
+	flagMetricsAddress = flag.String("address", "127.0.0.1:4444", "metrics address")
 )

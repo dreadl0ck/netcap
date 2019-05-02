@@ -1,7 +1,7 @@
 builds:
 - 
-  main: ./cmd/cap
-  binary: net.cap
+  main: ./cmd/capture
+  binary: net.capture
   env:
     - CGO_ENABLED=1
 
@@ -66,8 +66,8 @@ builds:
     - arm
     - arm64
 - 
-  main: ./cmd/collector
-  binary: net.collector
+  main: ./cmd/collect
+  binary: net.collect
   env:
     - CGO_ENABLED=1
 
@@ -89,8 +89,8 @@ builds:
     - arm
     - arm64
 - 
-  main: ./cmd/sensor
-  binary: net.sensor
+  main: ./cmd/agent
+  binary: net.agent
   env:
     - CGO_ENABLED=1
 
@@ -135,8 +135,31 @@ builds:
     - arm
     - arm64
 - 
-  main: ./cmd/exporter
-  binary: net.exporter
+  main: ./cmd/export
+  binary: net.export
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+    - arm
+    - arm64
+- 
+  main: ./cmd/dump
+  binary: net.dump
   env:
     - CGO_ENABLED=1
 

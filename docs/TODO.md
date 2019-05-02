@@ -1,11 +1,16 @@
 # TODOs
 
+- add a check if all field names for CSV match the ones from the definitions
+- add more flags to commandline tools
 - add header to each commandline tool with a few usage examples if no params given
+- colorize tool output
+
+- include pre generated protocol buffer definitions in release
+- check TODOs
 - add a separate tool for reading: net.decode?
-- colorize
 - add YARA support for labels
 - add contributions welcome to README
-- name and shortly describe main framework components in README
+- shortly describe main framework components in README (cmd/*)
 
 - add ROADMAP
 - BLOG: Setup Guide

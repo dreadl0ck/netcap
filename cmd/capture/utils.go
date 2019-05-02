@@ -29,11 +29,11 @@ func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
 	fmt.Println("usage examples:")
-	fmt.Println("	$ net.cap -r dump.pcap")
-	fmt.Println("	$ net.cap -iface eth0")
-	fmt.Println("	$ net.cap -r TCP.ncap.gz")
-	fmt.Println("	$ net.cap -fields -r TCP.ncap.gz")
-	fmt.Println("	$ net.cap -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv")
+	fmt.Println("	$ net.capture -r dump.pcap")
+	fmt.Println("	$ net.capture -iface eth0")
+	fmt.Println("	$ net.capture -r TCP.ncap.gz")
+	fmt.Println("	$ net.capture -fields -r TCP.ncap.gz")
+	fmt.Println("	$ net.capture -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv")
 	fmt.Println()
 }
 

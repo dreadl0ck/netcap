@@ -31,12 +31,13 @@ rm -rf ../dist/linux_amd64
 mkdir -p ../dist/linux_amd64
 
 # copy binaries from container
-docker cp $CONTAINER_ID:/go/net.cap ../dist/linux_amd64/net.cap
+docker cp $CONTAINER_ID:/go/net.capture ../dist/linux_amd64/net.capture
 docker cp $CONTAINER_ID:/go/net.label ../dist/linux_amd64/net.label
-docker cp $CONTAINER_ID:/go/net.collector ../dist/linux_amd64/net.collector
-docker cp $CONTAINER_ID:/go/net.sensor ../dist/linux_amd64/net.sensor
+docker cp $CONTAINER_ID:/go/net.collect ../dist/linux_amd64/net.collect
+docker cp $CONTAINER_ID:/go/net.agent ../dist/linux_amd64/net.agent
 docker cp $CONTAINER_ID:/go/net.proxy ../dist/linux_amd64/net.proxy
-docker cp $CONTAINER_ID:/go/net.exporter ../dist/linux_amd64/net.exporter
+docker cp $CONTAINER_ID:/go/net.export ../dist/linux_amd64/net.export
+docker cp $CONTAINER_ID:/go/net.dump ../dist/linux_amd64/net.dump
 
 # remove container
 docker rm $CONTAINER_ID
