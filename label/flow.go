@@ -67,7 +67,7 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 		types.Select(flow, selection)
 
 		if fl, ok = pm.(types.AuditRecord); !ok {
-			panic("type does not implement CSV interface")
+			panic("type does not implement types.AuditRecord interface")
 		}
 
 		// write header
