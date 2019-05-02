@@ -112,7 +112,7 @@ commands:
     gen-proto:
         description: generate protocol buffers
         help: proto compiler must be installed
-        exec: protoc --gogofaster_out=types/. --ruby_out=types/ --python_out=types/ netcap.proto
+        exec: protoc --gogofaster_out=types/. --python_out=../pynetcap netcap.proto
 
     # the version defined in the globals section will be set via ldflags on each build
     # to ensure the correct version is also set for installation via go get
