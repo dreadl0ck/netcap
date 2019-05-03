@@ -34,43 +34,47 @@ import (
 
 func main() {
 
+	// parse commandline flags
+	flag.Usage = printUsage
 	flag.Parse()
 
-	if !*flagQuiet {
+	if *flagPrintLogo {
 		netcap.PrintLogo()
 	}
 
-	if *flagRead != "" {
+	// set data source
+	var source string
+	if *flagInput != "" {
+		source = *flagInput
+	} else if *flagInterface != "" {
+		source = *flagInterface
+	} else {
+		source = "unknown"
+	}
 
-		stat, err := os.Stat(*flagRead)
+	fmt.Println("serving metrics at", *flagMetricsAddress)
+	metrics.ServeMetricsAt(*flagMetricsAddress)
+
+	switch {
+	case len(os.Args) == 2 && os.Args[1] == ".":
+		exportDir(".")
+	case filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz":
+		exportFile(*flagInput)
+	case *flagInput != "":
+
+		// stat file
+		stat, err := os.Stat(*flagInput)
 		if err != nil {
 			log.Fatal("failed to stat input:", err)
 		}
 
+		// check if its a directory
 		if stat.IsDir() {
-			exportDir(*flagRead)
+			exportDir(*flagInput)
 		} else {
-			if filepath.Ext(*flagRead) == ".ncap" || filepath.Ext(*flagRead) == ".gz" {
-				fmt.Println("opening file", *flagRead)
-			} else {
-				log.Fatal("expecting files with file extension .ncap or .ncap.gz")
-			}
-			exportFile(*flagRead)
-		}
-	} else if len(os.Args) == 2 && os.Args[1] == "." {
-		exportDir(".")
-	} else {
-		go func() {
-			// set data source
-			var source string
-			if *flagInput != "" {
-				source = *flagInput
-			} else if *flagInterface != "" {
-				source = *flagInterface
-			} else {
-				source = "unknown"
-			}
 
+			// it's a file
+			// parse PCAP file or live from interface
 			// init collector
 			c := collector.New(collector.Config{
 				Live:                *flagInterface != "",
@@ -82,14 +86,14 @@ func main() {
 				EncoderConfig: encoder.Config{
 					Buffer:          *flagBuffer,
 					Compression:     *flagCompress,
-					CSV:             false,
+					CSV:             *flagCSV,
 					IncludeEncoders: *flagInclude,
 					ExcludeEncoders: *flagExclude,
 					Out:             *flagOutDir,
 					Source:          source,
 					Version:         netcap.Version,
 					IncludePayloads: *flagPayload,
-					Export:          false,
+					Export:          true,
 				},
 				BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 				DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
@@ -163,11 +167,9 @@ func main() {
 					panic("failed to write memory profile: " + err.Error())
 				}
 			}
-		}()
+		}
 	}
 
-	fmt.Println("serving metrics at", *flagAddress)
-	metrics.ServeMetricsAt(*flagAddress)
-
+	// wait until the end of time
 	<-make(chan bool)
 }
