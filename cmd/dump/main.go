@@ -27,6 +27,8 @@ import (
 
 func main() {
 
+	// parse commandline flags
+	flag.Usage = printUsage
 	flag.Parse()
 
 	// read dumpfile header and exit
