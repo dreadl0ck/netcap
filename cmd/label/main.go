@@ -42,7 +42,8 @@ var (
 
 func main() {
 
-	// parse flags
+	// parse commandline flags
+	flag.Usage = printUsage
 	flag.Parse()
 
 	if *flagInput == "" {
