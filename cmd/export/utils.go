@@ -14,6 +14,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -27,6 +28,23 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+func printHeader() {
+	netcap.PrintLogo()
+	fmt.Println()
+	fmt.Println("usage examples:")
+	fmt.Println("	$ net.export -r dump.pcap")
+	fmt.Println("	$ net.export -iface eth0 -promisc=false")
+	fmt.Println("	$ net.export -r TCP.ncap.gz")
+	fmt.Println("	$ net.export .")
+	fmt.Println()
+}
+
+// usage prints the use
+func printUsage() {
+	printHeader()
+	flag.PrintDefaults()
+}
 
 func exportDir(path string) {
 
@@ -42,9 +60,11 @@ func exportDir(path string) {
 
 	for _, f := range files {
 
-		fName := f.Name()
+		var (
+			fName = f.Name()
+			ext = filepath.Ext(fName)
+		)
 
-		ext := filepath.Ext(fName)
 		if ext == ".ncap" || ext == ".gz" {
 
 			fmt.Println("exporting", fName)

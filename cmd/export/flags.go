@@ -16,14 +16,13 @@ package main
 import "flag"
 
 var (
-	flagAddress  = flag.String("address", "127.0.0.1:7777", "set address for exposing metrics")
+	flagMetricsAddress  = flag.String("address", "127.0.0.1:7777", "set address for exposing metrics")
 	flagDumpJSON = flag.Bool("dumpJson", false, "dump as JSON")
-	flagQuiet    = flag.Bool("quiet", false, "dont print logo only output")
-	flagRead     = flag.String("r", "", "input netcap audit recod file")
+	flagPrintLogo = flag.Bool("logo", true, "show netcap logo")
+
 	flagReplay   = flag.Bool("replay", true, "replay traffic")
 
 	flagExport         = flag.Bool("export", true, "export prometheus metrics")
-	flagMetricsAddress = flag.String("address", "127.0.0.1:7777", "metrics address")
 
 	flagInput         = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagInterface     = flag.String("iface", "", "attach to network interface and capture in live mode")
@@ -43,4 +42,5 @@ var (
 	flagInclude       = flag.String("include", "", "include specific encoders")
 	flagExclude       = flag.String("exclude", "", "exclude specific encoders")
 	flagMemProfile    = flag.Bool("memprof", false, "create memory profile")
+	flagCSV           = flag.Bool("csv", false, "print output data as csv with header line")
 )
