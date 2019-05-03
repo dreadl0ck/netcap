@@ -14,6 +14,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os/exec"
@@ -24,6 +25,22 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/mgutz/ansi"
 )
+
+func printHeader() {
+	netcap.PrintLogo()
+	fmt.Println()
+	fmt.Println("usage examples:")
+	fmt.Println("	$ net.util -r TCP.ncap.gz -check")
+	fmt.Println("	$ net.util -r TCP.ncap.gz -check -sep '/'")
+	fmt.Println("	$ net.util -ts2utc 1505839354.197231")
+	fmt.Println()
+}
+
+// usage prints the use
+func printUsage() {
+	printHeader()
+	flag.PrintDefaults()
+}
 
 // CheckFields checks if the separator occurs inside fields of audit records
 // to prevent this breaking the generated CSV file
