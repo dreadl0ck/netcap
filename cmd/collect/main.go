@@ -33,18 +33,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var (
-	flagGenKeypair = flag.Bool("gen-keypair", false, "generate keypair")
-	flagPrivKey    = flag.String("privkey", "", "path to the hex encoded server private key")
-	flagAddr       = flag.String("addr", "127.0.0.1:1335", "specify an adress and port to listen for incoming traffic")
-
-	files = make(map[string]*AuditRecordHandle)
-
-	// not configurable at the moment
-	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")
-	// flagBuffer     = flag.Bool("buf", true, "buffer data before writing to disk")
-)
-
 // maxBufferSize specifies the size of the buffers that
 // are used to temporarily hold data from the UDP packets
 // that we receive.
@@ -54,6 +42,8 @@ const (
 
 func main() {
 
+	// parse commandline flags
+	flag.Usage = printUsage
 	flag.Parse()
 
 	if *flagGenKeypair {

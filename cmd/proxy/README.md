@@ -8,7 +8,7 @@ in order to gather *Netcap* audit records from them.
 A file for each proxy will be created that contains HTTP audit records.
 Multiple proxies can be configured with a YAML config file.
 
-The naming scheme is HTTP[proxyName].ncap.gz, e.g: HTTP[https://github.com].ncap.gz
+The naming scheme is HTTP[remoteURL].ncap.gz, e.g: HTTP[github.com].ncap.gz
 
 Read more about this tool in the documentation: https://docs.netcap.io
 

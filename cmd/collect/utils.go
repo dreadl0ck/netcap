@@ -14,65 +14,28 @@
 package main
 
 import (
-	"bufio"
-	"compress/gzip"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/dreadl0ck/netcap/types"
-	"kythe.io/kythe/go/platform/delimited"
 )
 
-// AuditRecordHandle wraps a file handle of a netcap audit record file
-// contains the original file handle and writers to compress and buffer the data
-type AuditRecordHandle struct {
-	gWriter *gzip.Writer
-	bWriter *bufio.Writer
-	f       *os.File
+func printHeader() {
+	netcap.PrintLogo()
+	fmt.Println()
+	fmt.Println("usage examples:")
+	fmt.Println("	$ net.collect -privkey priv.key -addr 127.0.0.1:4200")
+	fmt.Println("	$ net.collect -gen-keypair")
+	fmt.Println()
 }
 
-// NewAuditRecordHandle creates a new netcap audit record file
-func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
-
-	err := os.MkdirAll(b.ClientID, 0755)
-	if err != nil {
-		panic(err)
-	}
-	f, err := os.Create(path)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("new audit record handle", path)
-
-	conf := encoder.Config{
-		Source:          b.ClientID,
-		Version:         netcap.Version,
-		IncludePayloads: b.ContainsPayloads,
-	}
-
-	var (
-		// create buffered writer that writes into the file handle
-		bWriter = bufio.NewWriter(f)
-		// create gzip writer that writes into the buffered writer
-		gWriter = gzip.NewWriter(bWriter)
-	)
-
-	// add file header
-	err = delimited.NewWriter(gWriter).PutProto(netcap.NewHeader(b.MessageType, conf.Source, conf.Version, conf.IncludePayloads))
-	if err != nil {
-		fmt.Println("failed to write header")
-		panic(err)
-	}
-
-	return &AuditRecordHandle{
-		bWriter: bWriter,
-		gWriter: gWriter,
-		f:       f,
-	}
+// usage prints the use
+func printUsage() {
+	printHeader()
+	flag.PrintDefaults()
 }
 
 func cleanup() {

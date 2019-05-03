@@ -28,10 +28,10 @@ Convert a netcap timestamp to UTC time:
 
     $ net.util -h
         -check
-    	        check number of occurences of the separator, in fields of an audit record file
+                check number of occurences of the separator, in fields of an audit record file
         -r string
                 read specified file, can either be a pcap or netcap audit record file
         -sep string
                 set separator string for csv output (default ",")
         -ts2utc string
-                util to convert sencods.microseconds timestamp to UTC
+                util to convert seconds.microseconds timestamp to UTC

@@ -33,9 +33,8 @@ import (
 
 func main() {
 
-	flag.Usage = printUsage
-
 	// parse commandline flags
+	flag.Usage = printUsage
 	flag.Parse()
 
 	// print version and exit

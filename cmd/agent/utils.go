@@ -24,8 +24,7 @@ func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
 	fmt.Println("usage examples:")
-	fmt.Println("	$ net.capture -r dump.pcap")
-	fmt.Println("	$ net.capture -iface eth0")
+	fmt.Println("	$ net.agent -pubkey pub.key -addr 127.0.0.1:4200")
 	fmt.Println()
 }
 
