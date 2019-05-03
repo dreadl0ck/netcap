@@ -23,6 +23,8 @@ import (
 
 func main() {
 
+	// parse commandline flags
+	flag.Usage = printUsage
 	flag.Parse()
 
 	// util to convert netcap timestamp to UTC time
