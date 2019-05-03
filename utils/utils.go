@@ -73,6 +73,9 @@ func ClearLine() {
 
 // Progress display
 func Progress(current, total int64) string {
+	if total == 0 {
+		return strconv.FormatInt(current, 10)
+	}
 	var b []byte
 	b = strconv.AppendInt(b, int64((float64(current)/float64(total))*100), 10)
 	b = append(b, byte(37)) // dec 37 == PERCENT_SIGN (%)

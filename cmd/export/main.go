@@ -60,114 +60,117 @@ func main() {
 		exportDir(".")
 	case filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz":
 		exportFile(*flagInput)
-	case *flagInput != "":
+	case *flagInput != "" || *flagInterface != "":
 
-		// stat file
-		stat, err := os.Stat(*flagInput)
-		if err != nil {
-			log.Fatal("failed to stat input:", err)
-		}
-
-		// check if its a directory
-		if stat.IsDir() {
-			exportDir(*flagInput)
-		} else {
-
-			// it's a file
-			// parse PCAP file or live from interface
-			// init collector
-			c := collector.New(collector.Config{
-				Live:                *flagInterface != "",
-				Workers:             *flagWorkers,
-				PacketBufferSize:    *flagPacketBuffer,
-				WriteUnknownPackets: !*flagIngoreUnknown,
-				Promisc:             *flagPromiscMode,
-				SnapLen:             *flagSnapLen,
-				EncoderConfig: encoder.Config{
-					Buffer:          *flagBuffer,
-					Compression:     *flagCompress,
-					CSV:             *flagCSV,
-					IncludeEncoders: *flagInclude,
-					ExcludeEncoders: *flagExclude,
-					Out:             *flagOutDir,
-					Source:          source,
-					Version:         netcap.Version,
-					IncludePayloads: *flagPayload,
-					Export:          true,
-				},
-				BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
-				DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
-			})
-
-			netcap.PrintLogo()
-
-			// print configuration as table
-			tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
-				{"Workers", strconv.Itoa(*flagWorkers)},
-				{"MemBuffer", strconv.FormatBool(*flagBuffer)},
-				{"Compression", strconv.FormatBool(*flagCompress)},
-				{"PacketBuffer", strconv.Itoa(*flagPacketBuffer)},
-			})
-			fmt.Println() // add a newline
-
-			// collect traffic live from named interface
-			if *flagInterface != "" {
-				err := c.CollectLive(*flagInterface, *flagBPF)
-				if err != nil {
-					log.Fatal("failed to collect live packets: ", err)
-				}
-				return
-			}
-
-			// start timer
-			start := time.Now()
-
-			// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
-			// setting BPF filters is not yet supported by the pcapgo package
-			if *flagBPF != "" {
-				if err := c.CollectBPF(*flagInput, *flagBPF); err != nil {
-					log.Fatal("failed to set BPF: ", err)
-				}
-				return
-			}
-
-			// if not, use native pcapgo version
-			isPcap, err := collector.IsPcap(*flagInput)
+		if *flagInput != "" {
+			// stat file
+			stat, err := os.Stat(*flagInput)
 			if err != nil {
-				// invalid path
-				fmt.Println("failed to open file:", err)
-				os.Exit(1)
+				log.Fatal("failed to stat input:", err)
 			}
 
-			// logic is split for both types here
-			// because the pcapng reader offers ZeroCopyReadPacketData()
-			if isPcap {
-				if err := c.CollectPcap(*flagInput); err != nil {
-					log.Fatal("failed to collect audit records from pcap file: ", err)
-				}
-			} else {
-				if err := c.CollectPcapNG(*flagInput); err != nil {
-					log.Fatal("failed to collect audit records from pcapng file: ", err)
-				}
-			}
-
-			fmt.Println("done in", time.Since(start))
-
-			// memory profiling
-			if *flagMemProfile {
-				f, err := os.Create("netcap-" + netcap.Version + ".mem.profile")
-				if err != nil {
-					log.Fatal("failed create memory profile: ", err)
-				}
-				if err := pprof.WriteHeapProfile(f); err != nil {
-					log.Fatal("failed to write heap profile: ", err)
-				}
-				err = f.Close()
-				if err != nil {
-					panic("failed to write memory profile: " + err.Error())
-				}
+			// check if its a directory
+			if stat.IsDir() {
+				exportDir(*flagInput)
+				break
 			}
 		}
+
+		// it's a file
+		// parse PCAP file or live from interface
+		// init collector
+		c := collector.New(collector.Config{
+			Live:                *flagInterface != "",
+			Workers:             *flagWorkers,
+			PacketBufferSize:    *flagPacketBuffer,
+			WriteUnknownPackets: !*flagIngoreUnknown,
+			Promisc:             *flagPromiscMode,
+			SnapLen:             *flagSnapLen,
+			EncoderConfig: encoder.Config{
+				Buffer:          *flagBuffer,
+				Compression:     *flagCompress,
+				CSV:             *flagCSV,
+				IncludeEncoders: *flagInclude,
+				ExcludeEncoders: *flagExclude,
+				Out:             *flagOutDir,
+				Source:          source,
+				Version:         netcap.Version,
+				IncludePayloads: *flagPayload,
+				Export:          true,
+			},
+			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
+			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
+		})
+
+		netcap.PrintLogo()
+
+		// print configuration as table
+		tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
+			{"Workers", strconv.Itoa(*flagWorkers)},
+			{"MemBuffer", strconv.FormatBool(*flagBuffer)},
+			{"Compression", strconv.FormatBool(*flagCompress)},
+			{"PacketBuffer", strconv.Itoa(*flagPacketBuffer)},
+		})
+		fmt.Println() // add a newline
+
+		// collect traffic live from named interface
+		if *flagInterface != "" {
+			err := c.CollectLive(*flagInterface, *flagBPF)
+			if err != nil {
+				log.Fatal("failed to collect live packets: ", err)
+			}
+			return
+		}
+
+		// start timer
+		start := time.Now()
+
+		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
+		// setting BPF filters is not yet supported by the pcapgo package
+		if *flagBPF != "" {
+			if err := c.CollectBPF(*flagInput, *flagBPF); err != nil {
+				log.Fatal("failed to set BPF: ", err)
+			}
+			return
+		}
+
+		// if not, use native pcapgo version
+		isPcap, err := collector.IsPcap(*flagInput)
+		if err != nil {
+			// invalid path
+			fmt.Println("failed to open file:", err)
+			os.Exit(1)
+		}
+
+		// logic is split for both types here
+		// because the pcapng reader offers ZeroCopyReadPacketData()
+		if isPcap {
+			if err := c.CollectPcap(*flagInput); err != nil {
+				log.Fatal("failed to collect audit records from pcap file: ", err)
+			}
+		} else {
+			if err := c.CollectPcapNG(*flagInput); err != nil {
+				log.Fatal("failed to collect audit records from pcapng file: ", err)
+			}
+		}
+
+		fmt.Println("done in", time.Since(start))
+
+		// memory profiling
+		if *flagMemProfile {
+			f, err := os.Create("netcap-" + netcap.Version + ".mem.profile")
+			if err != nil {
+				log.Fatal("failed create memory profile: ", err)
+			}
+			if err := pprof.WriteHeapProfile(f); err != nil {
+				log.Fatal("failed to write heap profile: ", err)
+			}
+			err = f.Close()
+			if err != nil {
+				panic("failed to write memory profile: " + err.Error())
+			}
+		}
+
 	}
 
 	// wait until the end of time
