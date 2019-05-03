@@ -54,7 +54,7 @@ var fddiMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_FDDI.String()),
 		Help: Type_NC_FDDI.String() + " audit records",
 	},
-	fieldsFDDI,
+	fieldsFDDI[1:],
 )
 
 func init() {
@@ -62,5 +62,5 @@ func init() {
 }
 
 func (a FDDI) Inc() {
-	fddiMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	fddiMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

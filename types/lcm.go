@@ -63,7 +63,7 @@ var lcmMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_LCM.String()),
 		Help: Type_NC_LCM.String() + " audit records",
 	},
-	fieldsLCM,
+	fieldsLCM[1:],
 )
 
 func init() {
@@ -71,5 +71,5 @@ func init() {
 }
 
 func (a LCM) Inc() {
-	lcmMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	lcmMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

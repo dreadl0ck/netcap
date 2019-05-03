@@ -94,7 +94,7 @@ var bfdMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_BFD.String()),
 		Help: Type_NC_BFD.String() + " audit records",
 	},
-	fieldsBFD,
+	fieldsBFD[1:],
 )
 
 func init() {
@@ -102,5 +102,5 @@ func init() {
 }
 
 func (a BFD) Inc() {
-	bfdMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	bfdMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

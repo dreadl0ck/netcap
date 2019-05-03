@@ -57,7 +57,7 @@ var modbusTcpMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_ModbusTCP.String()),
 		Help: Type_NC_ModbusTCP.String() + " audit records",
 	},
-	fieldsModbusTCP,
+	fieldsModbusTCP[1:],
 )
 
 func init() {
@@ -65,5 +65,5 @@ func init() {
 }
 
 func (a ModbusTCP) Inc() {
-	modbusTcpMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	modbusTcpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

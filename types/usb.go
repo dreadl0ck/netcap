@@ -86,7 +86,7 @@ var usbMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_USB.String()),
 		Help: Type_NC_USB.String() + " audit records",
 	},
-	fieldsUSB,
+	fieldsUSB[1:],
 )
 
 func init() {
@@ -94,5 +94,5 @@ func init() {
 }
 
 func (a USB) Inc() {
-	usbMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	usbMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

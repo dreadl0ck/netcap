@@ -84,7 +84,7 @@ var geneveMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_Geneve.String()),
 		Help: Type_NC_Geneve.String() + " audit records",
 	},
-	fieldsGeneve,
+	fieldsGeneve[1:],
 )
 
 func init() {
@@ -92,5 +92,5 @@ func init() {
 }
 
 func (a Geneve) Inc() {
-	geneveMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	geneveMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

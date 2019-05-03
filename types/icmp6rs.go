@@ -65,7 +65,7 @@ var icmp6rsMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_ICMPv6RouterSolicitation.String()),
 		Help: Type_NC_ICMPv6RouterSolicitation.String() + " audit records",
 	},
-	fieldsICMPv6RouterSolicitation,
+	fieldsICMPv6RouterSolicitation[1:],
 )
 
 func init() {
@@ -73,5 +73,5 @@ func init() {
 }
 
 func (a ICMPv6RouterSolicitation) Inc() {
-	icmp6rsMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	icmp6rsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

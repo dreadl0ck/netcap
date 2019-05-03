@@ -98,7 +98,7 @@ var ip4Metric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_IPv4.String()),
 		Help: Type_NC_IPv4.String() + " audit records",
 	},
-	fieldsIPv4,
+	fieldsIPv4[1:],
 )
 
 func init() {
@@ -106,5 +106,5 @@ func init() {
 }
 
 func (a IPv4) Inc() {
-	ip4Metric.WithLabelValues(a.CSVRecord()...).Inc()
+	ip4Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

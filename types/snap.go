@@ -51,7 +51,7 @@ var snapMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_SNAP.String()),
 		Help: Type_NC_SNAP.String() + " audit records",
 	},
-	fieldsSNAP,
+	fieldsSNAP[1:],
 )
 
 func init() {
@@ -59,5 +59,5 @@ func init() {
 }
 
 func (a SNAP) Inc() {
-	snapMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	snapMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

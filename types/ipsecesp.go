@@ -52,7 +52,7 @@ var ipSecEspMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_IPSecESP.String()),
 		Help: Type_NC_IPSecESP.String() + " audit records",
 	},
-	fieldsIPSecESP,
+	fieldsIPSecESP[1:],
 )
 
 func init() {
@@ -60,5 +60,5 @@ func init() {
 }
 
 func (a IPSecESP) Inc() {
-	ipSecEspMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ipSecEspMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

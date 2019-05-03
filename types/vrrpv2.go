@@ -64,7 +64,7 @@ var vrrp2Metric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_VRRPv2.String()),
 		Help: Type_NC_VRRPv2.String() + " audit records",
 	},
-	fieldsVRRPv2,
+	fieldsVRRPv2[1:],
 )
 
 func init() {
@@ -72,5 +72,5 @@ func init() {
 }
 
 func (a VRRPv2) Inc() {
-	vrrp2Metric.WithLabelValues(a.CSVRecord()...).Inc()
+	vrrp2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

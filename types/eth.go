@@ -55,7 +55,7 @@ var ethernetMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_Ethernet.String()),
 		Help: Type_NC_Ethernet.String() + " audit records",
 	},
-	fieldsEthernet,
+	fieldsEthernet[1:],
 )
 
 func init() {
@@ -63,5 +63,5 @@ func init() {
 }
 
 func (a Ethernet) Inc() {
-	ethernetMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ethernetMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

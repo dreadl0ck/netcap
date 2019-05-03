@@ -78,7 +78,7 @@ var httpMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_HTTP.String()),
 		Help: Type_NC_HTTP.String() + " audit records",
 	},
-	fieldsHTTP,
+	fieldsHTTP[1:],
 )
 
 func init() {
@@ -86,5 +86,5 @@ func init() {
 }
 
 func (a HTTP) Inc() {
-	httpMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	httpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

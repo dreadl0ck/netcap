@@ -53,7 +53,7 @@ var ethernetCTPReplyMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_EthernetCTPReply.String()),
 		Help: Type_NC_EthernetCTPReply.String() + " audit records",
 	},
-	fieldsEthernetCTPReply,
+	fieldsEthernetCTPReply[1:],
 )
 
 func init() {
@@ -61,5 +61,5 @@ func init() {
 }
 
 func (a EthernetCTPReply) Inc() {
-	ethernetCTPReplyMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ethernetCTPReplyMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

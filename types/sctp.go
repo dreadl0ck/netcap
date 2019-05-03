@@ -55,7 +55,7 @@ var sctpMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_SCTP.String()),
 		Help: Type_NC_SCTP.String() + " audit records",
 	},
-	fieldsSCTP,
+	fieldsSCTP[1:],
 )
 
 func init() {
@@ -63,5 +63,5 @@ func init() {
 }
 
 func (a SCTP) Inc() {
-	sctpMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	sctpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

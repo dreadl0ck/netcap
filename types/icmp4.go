@@ -54,7 +54,7 @@ var icmp4Metric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_ICMPv4.String()),
 		Help: Type_NC_ICMPv4.String() + " audit records",
 	},
-	fieldsICMPv4,
+	fieldsICMPv4[1:],
 )
 
 func init() {
@@ -62,5 +62,5 @@ func init() {
 }
 
 func (a ICMPv4) Inc() {
-	icmp4Metric.WithLabelValues(a.CSVRecord()...).Inc()
+	icmp4Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

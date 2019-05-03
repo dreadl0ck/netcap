@@ -59,7 +59,7 @@ var nortelDiscoveryMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_NortelDiscovery.String()),
 		Help: Type_NC_NortelDiscovery.String() + " audit records",
 	},
-	fieldsNortelDiscovery,
+	fieldsNortelDiscovery[1:],
 )
 
 func init() {
@@ -67,5 +67,5 @@ func init() {
 }
 
 func (a NortelDiscovery) Inc() {
-	nortelDiscoveryMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	nortelDiscoveryMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

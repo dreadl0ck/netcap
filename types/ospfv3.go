@@ -107,7 +107,7 @@ var ospf3Metric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_OSPFv3.String()),
 		Help: Type_NC_OSPFv3.String() + " audit records",
 	},
-	fieldsOSPFv3,
+	fieldsOSPFv3[1:],
 )
 
 func init() {
@@ -115,5 +115,5 @@ func init() {
 }
 
 func (a OSPFv3) Inc() {
-	ospf3Metric.WithLabelValues(a.CSVRecord()...).Inc()
+	ospf3Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

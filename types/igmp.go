@@ -94,7 +94,7 @@ var igmpMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_IGMP.String()),
 		Help: Type_NC_IGMP.String() + " audit records",
 	},
-	fieldsIGMP,
+	fieldsIGMP[1:],
 )
 
 func init() {
@@ -102,5 +102,5 @@ func init() {
 }
 
 func (a IGMP) Inc() {
-	igmpMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	igmpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

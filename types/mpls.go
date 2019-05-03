@@ -55,7 +55,7 @@ var mplsMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_MPLS.String()),
 		Help: Type_NC_MPLS.String() + " audit records",
 	},
-	fieldsMPLS,
+	fieldsMPLS[1:],
 )
 
 func init() {
@@ -63,5 +63,5 @@ func init() {
 }
 
 func (a MPLS) Inc() {
-	mplsMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	mplsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
