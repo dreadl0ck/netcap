@@ -62,7 +62,7 @@ var udpMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_UDP.String()),
 		Help: Type_NC_UDP.String() + " audit records",
 	},
-	fieldsUDP,
+	fieldsUDP[1:],
 )
 
 func init() {
@@ -70,5 +70,5 @@ func init() {
 }
 
 func (u UDP) Inc() {
-	udpMetric.WithLabelValues(u.CSVRecord()...).Inc()
+	udpMetric.WithLabelValues(u.CSVRecord()[1:]...).Inc()
 }

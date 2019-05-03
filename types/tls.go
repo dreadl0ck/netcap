@@ -100,7 +100,7 @@ var tlsMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_TLSClientHello.String()),
 		Help: Type_NC_TLSClientHello.String() + " audit records",
 	},
-	fieldsTLSClientHello,
+	fieldsTLSClientHello[1:],
 )
 
 func init() {
@@ -108,5 +108,5 @@ func init() {
 }
 
 func (a TLSClientHello) Inc() {
-	tlsMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	tlsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

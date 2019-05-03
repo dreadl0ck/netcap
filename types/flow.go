@@ -78,7 +78,7 @@ var flowMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_Flow.String()),
 		Help: Type_NC_Flow.String() + " audit records",
 	},
-	fieldsFlow,
+	fieldsFlow[1:],
 )
 
 func init() {
@@ -86,5 +86,5 @@ func init() {
 }
 
 func (a Flow) Inc() {
-	flowMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	flowMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

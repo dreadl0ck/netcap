@@ -187,7 +187,7 @@ var dot11Metric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_Dot11.String()),
 		Help: Type_NC_Dot11.String() + " audit records",
 	},
-	fieldsDot11,
+	fieldsDot11[1:],
 )
 
 func init() {
@@ -195,5 +195,5 @@ func init() {
 }
 
 func (a Dot11) Inc() {
-	dot11Metric.WithLabelValues(a.CSVRecord()...).Inc()
+	dot11Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

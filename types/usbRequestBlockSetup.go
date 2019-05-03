@@ -56,7 +56,7 @@ var usbRequestBlockSetupMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_USBRequestBlockSetup.String()),
 		Help: Type_NC_USBRequestBlockSetup.String() + " audit records",
 	},
-	fieldsUSBRequestBlockSetup,
+	fieldsUSBRequestBlockSetup[1:],
 )
 
 func init() {
@@ -64,5 +64,5 @@ func init() {
 }
 
 func (a USBRequestBlockSetup) Inc() {
-	usbRequestBlockSetupMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	usbRequestBlockSetupMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

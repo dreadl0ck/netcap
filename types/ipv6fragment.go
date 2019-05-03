@@ -59,7 +59,7 @@ var ipv6fragMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_IPv6Fragment.String()),
 		Help: Type_NC_IPv6Fragment.String() + " audit records",
 	},
-	fieldsIPv6Fragment,
+	fieldsIPv6Fragment[1:],
 )
 
 func init() {
@@ -67,5 +67,5 @@ func init() {
 }
 
 func (a IPv6Fragment) Inc() {
-	ipv6fragMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ipv6fragMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

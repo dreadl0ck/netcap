@@ -59,7 +59,7 @@ var vxlanMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_VXLAN.String()),
 		Help: Type_NC_VXLAN.String() + " audit records",
 	},
-	fieldsVXLAN,
+	fieldsVXLAN[1:],
 )
 
 func init() {
@@ -67,5 +67,5 @@ func init() {
 }
 
 func (a VXLAN) Inc() {
-	vxlanMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	vxlanMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

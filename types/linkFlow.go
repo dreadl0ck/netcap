@@ -63,7 +63,7 @@ var linkFlowMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_LinkFlow.String()),
 		Help: Type_NC_LinkFlow.String() + " audit records",
 	},
-	fieldsLinkFlow,
+	fieldsLinkFlow[1:],
 )
 
 func init() {
@@ -71,5 +71,5 @@ func init() {
 }
 
 func (a LinkFlow) Inc() {
-	linkFlowMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	linkFlowMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

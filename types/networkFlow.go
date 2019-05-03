@@ -63,7 +63,7 @@ var networkFlowMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_NetworkFlow.String()),
 		Help: Type_NC_NetworkFlow.String() + " audit records",
 	},
-	fieldsNetworkFlow,
+	fieldsNetworkFlow[1:],
 )
 
 func init() {
@@ -71,5 +71,5 @@ func init() {
 }
 
 func (a NetworkFlow) Inc() {
-	networkFlowMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	networkFlowMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

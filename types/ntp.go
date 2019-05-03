@@ -76,7 +76,7 @@ var ntpMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_NTP.String()),
 		Help: Type_NC_NTP.String() + " audit records",
 	},
-	fieldsNTP,
+	fieldsNTP[1:],
 )
 
 func init() {
@@ -84,5 +84,5 @@ func init() {
 }
 
 func (a NTP) Inc() {
-	ntpMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ntpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

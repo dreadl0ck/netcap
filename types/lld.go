@@ -67,7 +67,7 @@ var lldMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_LinkLayerDiscovery.String()),
 		Help: Type_NC_LinkLayerDiscovery.String() + " audit records",
 	},
-	fieldsLLD,
+	fieldsLLD[1:],
 )
 
 func init() {
@@ -75,5 +75,5 @@ func init() {
 }
 
 func (a LinkLayerDiscovery) Inc() {
-	lldMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	lldMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

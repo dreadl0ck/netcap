@@ -78,7 +78,7 @@ var connectionsMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_Connection.String()),
 		Help: Type_NC_Connection.String() + " audit records",
 	},
-	fieldsConnection,
+	fieldsConnection[1:],
 )
 
 func init() {
@@ -86,5 +86,5 @@ func init() {
 }
 
 func (a Connection) Inc() {
-	connectionsMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	connectionsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

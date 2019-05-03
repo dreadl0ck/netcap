@@ -59,7 +59,7 @@ var sipMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_SIP.String()),
 		Help: Type_NC_SIP.String() + " audit records",
 	},
-	fieldsSIP,
+	fieldsSIP[1:],
 )
 
 func init() {
@@ -67,5 +67,5 @@ func init() {
 }
 
 func (a SIP) Inc() {
-	sipMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	sipMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

@@ -48,7 +48,7 @@ var ethernetCTPMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_EthernetCTP.String()),
 		Help: Type_NC_EthernetCTP.String() + " audit records",
 	},
-	fieldsEthernetCTP,
+	fieldsEthernetCTP[1:],
 )
 
 func init() {
@@ -56,5 +56,5 @@ func init() {
 }
 
 func (a EthernetCTP) Inc() {
-	ethernetCTPMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ethernetCTPMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

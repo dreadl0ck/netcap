@@ -57,7 +57,7 @@ var eapMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_EAP.String()),
 		Help: Type_NC_EAP.String() + " audit records",
 	},
-	fieldsEAP,
+	fieldsEAP[1:],
 )
 
 func init() {
@@ -65,5 +65,5 @@ func init() {
 }
 
 func (a EAP) Inc() {
-	eapMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	eapMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

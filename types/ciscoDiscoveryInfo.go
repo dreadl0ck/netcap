@@ -287,7 +287,7 @@ var ciscoDiscoveryInfoMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_CiscoDiscoveryInfo.String()),
 		Help: Type_NC_CiscoDiscoveryInfo.String() + " audit records",
 	},
-	fieldsCiscoDiscoveryInfo,
+	fieldsCiscoDiscoveryInfo[1:],
 )
 
 func init() {
@@ -295,5 +295,5 @@ func init() {
 }
 
 func (a CiscoDiscoveryInfo) Inc() {
-	ciscoDiscoveryInfoMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ciscoDiscoveryInfoMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

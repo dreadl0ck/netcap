@@ -69,7 +69,7 @@ var ip6hopMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_IPv6HopByHop.String()),
 		Help: Type_NC_IPv6HopByHop.String() + " audit records",
 	},
-	fieldsIPv6HopByHop,
+	fieldsIPv6HopByHop[1:],
 )
 
 func init() {
@@ -77,5 +77,5 @@ func init() {
 }
 
 func (a IPv6HopByHop) Inc() {
-	ip6hopMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ip6hopMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

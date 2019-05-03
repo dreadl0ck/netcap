@@ -103,7 +103,7 @@ var greMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_GRE.String()),
 		Help: Type_NC_GRE.String() + " audit records",
 	},
-	fieldsGRE,
+	fieldsGRE[1:],
 )
 
 func init() {
@@ -111,5 +111,5 @@ func init() {
 }
 
 func (a GRE) Inc() {
-	greMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	greMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

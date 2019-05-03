@@ -106,7 +106,7 @@ var tcpMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_TCP.String()),
 		Help: Type_NC_TCP.String() + " audit records",
 	},
-	fieldsTCP,
+	fieldsTCP[1:],
 )
 
 func init() {
@@ -114,5 +114,5 @@ func init() {
 }
 
 func (a TCP) Inc() {
-	tcpMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	tcpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

@@ -55,7 +55,7 @@ var ipSecAhMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_IPSecAH.String()),
 		Help: Type_NC_IPSecAH.String() + " audit records",
 	},
-	fieldsIPSecAH,
+	fieldsIPSecAH[1:],
 )
 
 func init() {
@@ -63,5 +63,5 @@ func init() {
 }
 
 func (a IPSecAH) Inc() {
-	ipSecAhMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	ipSecAhMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

@@ -90,7 +90,7 @@ var eapPolKeyMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_EAPOLKey.String()),
 		Help: Type_NC_EAPOLKey.String() + " audit records",
 	},
-	fieldsEAPOLKey,
+	fieldsEAPOLKey[1:],
 )
 
 func init() {
@@ -98,5 +98,5 @@ func init() {
 }
 
 func (a EAPOLKey) Inc() {
-	eapPolKeyMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	eapPolKeyMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }

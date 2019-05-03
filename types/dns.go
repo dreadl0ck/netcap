@@ -191,7 +191,7 @@ var dnsMetric = prometheus.NewCounterVec(
 		Name: strings.ToLower(Type_NC_DNS.String()),
 		Help: Type_NC_DNS.String() + " audit records",
 	},
-	fieldsDNS,
+	fieldsDNS[1:],
 )
 
 func init() {
@@ -199,5 +199,5 @@ func init() {
 }
 
 func (a DNS) Inc() {
-	dnsMetric.WithLabelValues(a.CSVRecord()...).Inc()
+	dnsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
