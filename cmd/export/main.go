@@ -19,8 +19,15 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
+	"strconv"
+	"time"
 
+	"github.com/dreadl0ck/netcap/collector"
+	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/metrics"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/evilsocket/islazy/tui"
 
 	"github.com/dreadl0ck/netcap"
 )
@@ -50,8 +57,113 @@ func main() {
 			}
 			exportFile(*flagRead)
 		}
-	} else {
+	} else if len(os.Args) == 2 && os.Args[1] == "." {
 		exportDir(".")
+	} else {
+		go func() {
+			// set data source
+			var source string
+			if *flagInput != "" {
+				source = *flagInput
+			} else if *flagInterface != "" {
+				source = *flagInterface
+			} else {
+				source = "unknown"
+			}
+
+			// init collector
+			c := collector.New(collector.Config{
+				Live:                *flagInterface != "",
+				Workers:             *flagWorkers,
+				PacketBufferSize:    *flagPacketBuffer,
+				WriteUnknownPackets: !*flagIngoreUnknown,
+				Promisc:             *flagPromiscMode,
+				SnapLen:             *flagSnapLen,
+				EncoderConfig: encoder.Config{
+					Buffer:          *flagBuffer,
+					Compression:     *flagCompress,
+					CSV:             false,
+					IncludeEncoders: *flagInclude,
+					ExcludeEncoders: *flagExclude,
+					Out:             *flagOutDir,
+					Source:          source,
+					Version:         netcap.Version,
+					IncludePayloads: *flagPayload,
+					Export:          false,
+				},
+				BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
+				DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
+			})
+
+			netcap.PrintLogo()
+
+			// print configuration as table
+			tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
+				{"Workers", strconv.Itoa(*flagWorkers)},
+				{"MemBuffer", strconv.FormatBool(*flagBuffer)},
+				{"Compression", strconv.FormatBool(*flagCompress)},
+				{"PacketBuffer", strconv.Itoa(*flagPacketBuffer)},
+			})
+			fmt.Println() // add a newline
+
+			// collect traffic live from named interface
+			if *flagInterface != "" {
+				err := c.CollectLive(*flagInterface, *flagBPF)
+				if err != nil {
+					log.Fatal("failed to collect live packets: ", err)
+				}
+				return
+			}
+
+			// start timer
+			start := time.Now()
+
+			// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
+			// setting BPF filters is not yet supported by the pcapgo package
+			if *flagBPF != "" {
+				if err := c.CollectBPF(*flagInput, *flagBPF); err != nil {
+					log.Fatal("failed to set BPF: ", err)
+				}
+				return
+			}
+
+			// if not, use native pcapgo version
+			isPcap, err := collector.IsPcap(*flagInput)
+			if err != nil {
+				// invalid path
+				fmt.Println("failed to open file:", err)
+				os.Exit(1)
+			}
+
+			// logic is split for both types here
+			// because the pcapng reader offers ZeroCopyReadPacketData()
+			if isPcap {
+				if err := c.CollectPcap(*flagInput); err != nil {
+					log.Fatal("failed to collect audit records from pcap file: ", err)
+				}
+			} else {
+				if err := c.CollectPcapNG(*flagInput); err != nil {
+					log.Fatal("failed to collect audit records from pcapng file: ", err)
+				}
+			}
+
+			fmt.Println("done in", time.Since(start))
+
+			// memory profiling
+			if *flagMemProfile {
+				f, err := os.Create("netcap-" + netcap.Version + ".mem.profile")
+				if err != nil {
+					log.Fatal("failed create memory profile: ", err)
+				}
+				if err := pprof.WriteHeapProfile(f); err != nil {
+					log.Fatal("failed to write heap profile: ", err)
+				}
+				err = f.Close()
+				if err != nil {
+					panic("failed to write memory profile: " + err.Error())
+				}
+			}
+		}()
 	}
 
 	fmt.Println("serving metrics at", *flagAddress)

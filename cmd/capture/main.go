@@ -18,19 +18,15 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime/pprof"
 	"strconv"
 	"time"
-
-	"github.com/dreadl0ck/netcap/metrics"
 
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
 )
@@ -52,12 +48,6 @@ func main() {
 	if *flagPrintProtocolOverview {
 		encoder.MarkdownOverview()
 		return
-	}
-
-	// util to convert netcap timestamp to UTC time
-	if *flagToUTC != "" {
-		fmt.Println(utils.TimeToUTC(*flagToUTC))
-		os.Exit(1)
 	}
 
 	// configure CPU profiling
@@ -102,36 +92,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// util to check if fields count matches for all generated rows
-	if *flagCheckFields {
-		checkFields()
-		return
-	}
-
-	// read dumpfile header and exit
-	if *flagHeader {
-
-		// open input file for reading
-		r, err := netcap.Open(*flagInput)
-		if err != nil {
-			panic(err)
-		}
-
-		// get header
-		// this will panic if the header is corrupted
-		h := r.ReadHeader()
-
-		// print result as table
-		tui.Table(os.Stdout, []string{"Field", "Value"}, [][]string{
-			{"Created", utils.TimeToUTC(h.Created)},
-			{"Source", h.InputSource},
-			{"Version", h.Version},
-			{"Type", h.Type.String()},
-			{"ContainsPayloads", strconv.FormatBool(h.ContainsPayloads)},
-		})
-		os.Exit(0) // bye bye
-	}
-
 	// set data source
 	var source string
 	if *flagInput != "" {
@@ -153,33 +113,18 @@ func main() {
 		EncoderConfig: encoder.Config{
 			Buffer:          *flagBuffer,
 			Compression:     *flagCompress,
-			CSV:             *flagCSV,
+			CSV:             false,
 			IncludeEncoders: *flagInclude,
 			ExcludeEncoders: *flagExclude,
 			Out:             *flagOutDir,
 			Source:          source,
 			Version:         netcap.Version,
 			IncludePayloads: *flagPayload,
-			Export:          *flagExport,
+			Export:          false,
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})
-
-	if *flagExport {
-		metrics.ServeMetricsAt(*flagMetricsAddress)
-	}
-
-	// set separators for sub structures in CSV
-	types.Begin = *flagBegin
-	types.End = *flagEnd
-	types.Separator = *flagStructSeparator
-
-	// read ncap file and print to stdout
-	if filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz" {
-		netcap.Dump(*flagInput, *flagSeparator, *flagTSV, *flagPrintStructured, *flagTable, *flagSelect, *flagUTC, *flagFields)
-		return
-	}
 
 	netcap.PrintLogo()
 
