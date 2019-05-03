@@ -16,6 +16,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,7 +27,25 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/dreadl0ck/netcap"
 )
+
+func printHeader() {
+	netcap.PrintLogo()
+	fmt.Println()
+	fmt.Println("usage examples:")
+	fmt.Println("	$ net.proxy -local 127.0.0.1:4444 -remote https://github.com")
+	fmt.Println("	$ net.proxy -local 127.0.0.1:4444 -remote https://github.com -maxIdle 300")
+	fmt.Println("	$ net.proxy -local 127.0.0.1:4444 -remote https://github.com -dump")
+	fmt.Println()
+}
+
+// usage prints the use
+func printUsage() {
+	printHeader()
+	flag.PrintDefaults()
+}
 
 // cleanup when receiving OS signals
 func cleanup() {
