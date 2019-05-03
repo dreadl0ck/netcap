@@ -33,6 +33,7 @@ commands:
             - net.proxy
             - net.export
             - net.dump
+            - net.util
         exec: echo done
 
     ## Compile Framework Components
@@ -67,6 +68,10 @@ commands:
     net.dump:
         description: compile net.dump binary to $GOPATH/bin
         exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.dump -i github.com/dreadl0ck/netcap/cmd/dump
+
+    net.util:
+        description: compile net.util binary to $GOPATH/bin
+        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.util -i github.com/dreadl0ck/netcap/cmd/util
 
     ## Debug Builds
     ##
