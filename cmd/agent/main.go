@@ -55,7 +55,8 @@ var (
 
 func main() {
 
-	// parse command-line flags
+	// parse commandline flags
+	flag.Usage = printUsage
 	flag.Parse()
 
 	// no server public key specified - no party

@@ -1,6 +1,8 @@
 # TODOs
 
-- add a check if all field names for CSV match the ones from the definitions
+- net.collect -gen-keypair  -> net.util
+- live: fix progress count
+- replace AuditRecordHandle in net.collect with netcap.Writer
 - add more flags to commandline tools
 - add header to each commandline tool with a few usage examples if no params given
 - colorize tool output

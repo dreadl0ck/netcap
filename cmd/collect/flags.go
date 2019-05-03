@@ -13,24 +13,16 @@
 
 package main
 
-import (
-	"flag"
-	"fmt"
+import "flag"
 
-	"github.com/dreadl0ck/netcap"
+var (
+	flagGenKeypair = flag.Bool("gen-keypair", false, "generate keypair")
+	flagPrivKey    = flag.String("privkey", "", "path to the hex encoded server private key")
+	flagAddr       = flag.String("addr", "127.0.0.1:1335", "specify an adress and port to listen for incoming traffic")
+
+	files = make(map[string]*AuditRecordHandle)
+
+	// not configurable at the moment
+	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")
+	// flagBuffer     = flag.Bool("buf", true, "buffer data before writing to disk")
 )
-
-func printHeader() {
-	netcap.PrintLogo()
-	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.capture -r dump.pcap")
-	fmt.Println("	$ net.capture -iface eth0")
-	fmt.Println()
-}
-
-// usage prints the use
-func printUsage() {
-	printHeader()
-	flag.PrintDefaults()
-}
