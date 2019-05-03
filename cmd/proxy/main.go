@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dreadl0ck/netcap"
 	"go.uber.org/zap"
 )
 
@@ -32,9 +31,8 @@ var proxies []*ReverseProxy
 
 func main() {
 
-	netcap.PrintLogo()
-
 	// parse commandline flags
+	flag.Usage = printUsage
 	flag.Parse()
 
 	// check if flags have been used to configure a single instance proxy
