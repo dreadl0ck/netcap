@@ -38,6 +38,12 @@ func main() {
 	flag.Usage = printUsage
 	flag.Parse()
 
+	// print version and exit
+	if *flagVersion {
+		fmt.Println(netcap.Version)
+		os.Exit(0)
+	}
+
 	// set data source
 	var source string
 	if *flagInput != "" {

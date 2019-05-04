@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/cryptoutils"
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
@@ -45,6 +46,12 @@ func main() {
 	// parse commandline flags
 	flag.Usage = printUsage
 	flag.Parse()
+
+	// print version and exit
+	if *flagVersion {
+		fmt.Println(netcap.Version)
+		os.Exit(0)
+	}
 
 	if *flagGenKeypair {
 

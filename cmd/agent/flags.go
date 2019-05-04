@@ -1,0 +1,38 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+package main
+
+import "flag"
+
+var (
+	flagInterface = flag.String("iface", "en0", "interface")
+	flagMaxSize   = flag.Int("max", 10*1024, "max size of packet") // max 65,507 bytes
+
+	flagBPF      = flag.String("bpf", "", "supply a BPF filter to use for netcap collection")
+	flagInclude  = flag.String("include", "", "include specific encoders")
+	flagExclude  = flag.String("exclude", "", "exclude specific encoders")
+	flagEncoders = flag.Bool("encoders", false, "show all available encoders")
+
+	flagWorkers      = flag.Int("workers", 100, "number of encoder routines")
+	flagPacketBuffer = flag.Int("pbuf", 0, "set packet buffer size")
+	flagPromiscMode  = flag.Bool("promisc", true, "capture live in promisc mode")
+	flagSnapLen      = flag.Int("snaplen", 1024, "configure snaplen for live capture")
+
+	flagServerPubKey  = flag.String("pubkey", "", "path to the hex encoded server public key on disk")
+	flagAddr          = flag.String("addr", "127.0.0.1:1335", "specify the address and port of the collection server")
+	flagBaseLayer     = flag.String("base", "ethernet", "select base layer")
+	flagDecodeOptions = flag.String("opts", "lazy", "select decoding options")
+	flagPayload       = flag.Bool("payload", false, "capture payload for supported layers")
+	flagVersion       = flag.Bool("version", false, "print netcap package version and exit")
+)

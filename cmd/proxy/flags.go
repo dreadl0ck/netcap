@@ -29,4 +29,5 @@ var (
 	flagTrace               = flag.Bool("trace", true, "trace HTTP requests to retrieve additional information")
 	flagDump                = flag.Bool("dump", false, "dumps audit record as JSON to stdout")
 	flagDumpFormatted       = flag.Bool("format", true, "format when dumping JSON")
+	flagVersion             = flag.Bool("version", false, "print netcap package version and exit")
 )

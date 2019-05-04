@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dreadl0ck/netcap"
 	"go.uber.org/zap"
 )
 
@@ -34,6 +35,12 @@ func main() {
 	// parse commandline flags
 	flag.Usage = printUsage
 	flag.Parse()
+
+	// print version and exit
+	if *flagVersion {
+		fmt.Println(netcap.Version)
+		os.Exit(0)
+	}
 
 	// check if flags have been used to configure a single instance proxy
 	if *flagLocal == "" || *flagRemote == "" {
