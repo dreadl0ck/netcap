@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -26,6 +27,12 @@ func main() {
 	// parse commandline flags
 	flag.Usage = printUsage
 	flag.Parse()
+
+	// print version and exit
+	if *flagVersion {
+		fmt.Println(netcap.Version)
+		os.Exit(0)
+	}
 
 	// util to convert netcap timestamp to UTC time
 	if *flagToUTC != "" {

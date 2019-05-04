@@ -15,6 +15,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -30,6 +31,12 @@ func main() {
 	// parse commandline flags
 	flag.Usage = printUsage
 	flag.Parse()
+
+	// print version and exit
+	if *flagVersion {
+		fmt.Println(netcap.Version)
+		os.Exit(0)
+	}
 
 	// read dumpfile header and exit
 	if *flagHeader {

@@ -19,8 +19,8 @@ var (
 	flagGenKeypair = flag.Bool("gen-keypair", false, "generate keypair")
 	flagPrivKey    = flag.String("privkey", "", "path to the hex encoded server private key")
 	flagAddr       = flag.String("addr", "127.0.0.1:1335", "specify an adress and port to listen for incoming traffic")
-
-	files = make(map[string]*AuditRecordHandle)
+	flagVersion    = flag.Bool("version", false, "print netcap package version and exit")
+	files          = make(map[string]*AuditRecordHandle)
 
 	// not configurable at the moment
 	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")

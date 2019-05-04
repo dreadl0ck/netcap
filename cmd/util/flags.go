@@ -21,4 +21,5 @@ var (
 	flagToUTC       = flag.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
 	flagInput       = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagSeparator   = flag.String("sep", ",", "set separator string for csv output")
+	flagVersion     = flag.Bool("version", false, "print netcap package version and exit")
 )
