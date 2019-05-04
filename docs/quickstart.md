@@ -5,61 +5,61 @@
 Read traffic live from interface, stop with _Ctrl-C_ \(_SIGINT_\):
 
 ```text
-$ netcap -iface eth0
+$ net.capture -iface eth0
 ```
 
 Read traffic from a dump file \(supports PCAP or PCAPNG\):
 
 ```text
-$ netcap -r traffic.pcap
+$ net.capture -r traffic.pcap
 ```
 
 Read a netcap dumpfile and print to stdout as CSV:
 
 ```text
-$ netcap -r TCP.ncap.gz
+$ net.dump -r TCP.ncap.gz
 ```
 
 Show the available fields for a specific Netcap dump file:
 
 ```text
-$ netcap -fields -r TCP.ncap.gz
+$ net.dump -fields -r TCP.ncap.gz
 ```
 
 Print only selected fields and output as CSV:
 
 ```text
-$ netcap -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort
+$ net.dump -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort
 ```
 
 Save CSV output to file:
 
 ```text
-$ netcap -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv
+$ net.dump -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv
 ```
 
 Print output separated with tabs:
 
 ```text
-$ netcap -r TPC.ncap.gz -tsv
+$ net.dump -r TPC.ncap.gz -tsv
 ```
 
 Run with 24 workers and disable gzip compression and buffering:
 
 ```text
-$ netcap -workers 24 -buf false -comp false -r traffic.pcapng
+$ net.capture -workers 24 -buf false -comp false -r traffic.pcapng
 ```
 
 Parse pcap and write all data to output directory \(will be created if it does not exist\):
 
 ```text
-$ netcap -r traffic.pcap -out traffic_ncap
+$ net.capture -r traffic.pcap -out traffic_ncap
 ```
 
 Convert timestamps to UTC:
 
 ```text
-$ netcap -r TCP.ncap.gz -select Timestamp,SrcPort,Dstport -utc
+$ net.dump -r TCP.ncap.gz -select Timestamp,SrcPort,Dstport -utc
 ```
 
 ### Show Audit Record File Header
@@ -67,7 +67,7 @@ $ netcap -r TCP.ncap.gz -select Timestamp,SrcPort,Dstport -utc
 To display the header of the supplied audit record file, the -header flag can be used:
 
 ```text
-$ netcap -r TCP.ncap.gz -header
+$ net.capture -r TCP.ncap.gz -header
 
 +----------+---------------------------------------+
 |  Field   |                Value                  |
@@ -84,7 +84,7 @@ $ netcap -r TCP.ncap.gz -header
 Audit records can be printed structured, this makes use of the _proto.MarshalTextString\(\)_ function. This is sometimes useful for debugging, but very verbose.
 
 ```text
-$ netcap -r TCP.ncap.gz -struc
+$ net.dump -r TCP.ncap.gz -struc
 ...
 NC_TCP
 Timestamp: "1499255023.848884"
@@ -106,7 +106,7 @@ PayloadSize: 1460
 This is the default behavior. First line contains all field names.
 
 ```text
-$ netcap -r TCP.ncap.gz
+$ net.dump -r TCP.ncap.gz
 Timestamp,SrcPort,DstPort,SeqNum,AckNum,DataOffset,FIN,SYN,RST,PSH,ACK,URG,...
 1499254962.234259,443,49461,1185870107,2940396492,5,false,false,false,true,true,false,...
 1499254962.282063,49461,443,2940396492,1185870976,5,false,false,false,false,true,false,...
@@ -118,7 +118,7 @@ Timestamp,SrcPort,DstPort,SeqNum,AckNum,DataOffset,FIN,SYN,RST,PSH,ACK,URG,...
 To use a tab as separator, the _-tsv_ flag can be supplied:
 
 ```text
-$ netcap -r TCP.ncap.gz -tsv
+$ net.dump -r TCP.ncap.gz -tsv
 Timestamp               SrcPort DstPort Length  Checksum PayloadEntropy  PayloadSize
 1499254962.084372       49792   1900    145     34831    5.19616448      137
 1499254962.084377       49792   1900    145     34831    5.19616448      137
@@ -132,7 +132,7 @@ Timestamp               SrcPort DstPort Length  Checksum PayloadEntropy  Payload
 The _-table_ flag can be used to print output as a table. Every 100 entries the table is printed to stdout.
 
 ```text
-$ netcap -r UDP.ncap.gz -table -select Timestamp,SrcPort,DstPort,Length,Checksum
+$ net.dump -r UDP.ncap.gz -table -select Timestamp,SrcPort,DstPort,Length,Checksum
 +--------------------+----------+----------+---------+-----------+
 |     Timestamp      | SrcPort  | DstPort  | Length  | Checksum  |
 +--------------------+----------+----------+---------+-----------+
@@ -155,7 +155,7 @@ $ netcap -r UDP.ncap.gz -table -select Timestamp,SrcPort,DstPort,Length,Checksum
 Output can also be generated with a custom separator:
 
 ```text
-$ netcap -r TCP.ncap.gz -sep ";"
+$ net.dump -r TCP.ncap.gz -sep ";"
 Timestamp;SrcPort;DstPort;Length;Checksum;PayloadEntropy;PayloadSize
 1499254962.084372;49792;1900;145;34831;5.19616448;137
 1499254962.084377;49792;1900;145;34831;5.19616448;137
@@ -172,7 +172,7 @@ This will determine the expected number of separators for the audit record type,
 The _-sep_ flag can be used to specify a custom separator.
 
 ```text
-$ netcap -r TCP.ncap.gz -check
-$ netcap -r TCP.ncap.gz -check -sep=";"
+$ net.util -r TCP.ncap.gz -check
+$ net.util -r TCP.ncap.gz -check -sep=";"
 ```
 
