@@ -38,10 +38,6 @@ func main() {
 	flag.Usage = printUsage
 	flag.Parse()
 
-	if *flagPrintLogo {
-		netcap.PrintLogo()
-	}
-
 	// set data source
 	var source string
 	if *flagInput != "" {
@@ -52,7 +48,6 @@ func main() {
 		source = "unknown"
 	}
 
-	fmt.Println("serving metrics at", *flagMetricsAddress)
 	metrics.ServeMetricsAt(*flagMetricsAddress)
 
 	switch {

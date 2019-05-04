@@ -128,6 +128,7 @@ var (
 		[]string{},
 	)
 )
+
 var fieldsTCPMetrics = []string{
 	"SrcPort",
 	"DstPort",

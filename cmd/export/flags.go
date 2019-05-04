@@ -16,12 +16,9 @@ package main
 import "flag"
 
 var (
-	flagMetricsAddress  = flag.String("address", "127.0.0.1:7777", "set address for exposing metrics")
-	flagDumpJSON = flag.Bool("dumpJson", false, "dump as JSON")
-	flagPrintLogo = flag.Bool("logo", true, "show netcap logo")
-
-	flagReplay   = flag.Bool("replay", true, "replay traffic")
-
+	flagMetricsAddress = flag.String("address", "127.0.0.1:7777", "set address for exposing metrics")
+	flagDumpJSON       = flag.Bool("dumpJson", false, "dump as JSON")
+	flagReplay         = flag.Bool("replay", true, "replay traffic")
 	flagExport         = flag.Bool("export", true, "export prometheus metrics")
 
 	flagInput         = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")

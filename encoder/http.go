@@ -211,10 +211,18 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 			// populate types.HTTP with all infos from response
 			h := newHTTPFromResponse(res)
 
-			// now add request information
+			// add request information if available
 			if res.Request != nil {
+
+				// add request info
 				setRequest(h, res.Request)
 
+				// export metrics if configured
+				if e.export {
+					h.Inc()
+				}
+
+				// write to disk
 				atomic.AddInt64(&e.numRecords, 1)
 				err := e.writer.Write(h)
 				if err != nil {
@@ -231,7 +239,7 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		httpResMap[s] = newRes
 	}
 
-	// process all leftover responses
+	// TODO: process all leftover responses
 	// for _, resArr := range httpResMap {
 	// 	printProgress(total, sum)
 	// 	for _, res := range resArr {
@@ -257,9 +265,17 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		for _, req := range reqArr {
 			total++
 			if req != nil {
+
+				// add request info
 				h := &types.HTTP{}
 				setRequest(h, req)
 
+				// export metrics if configured
+				if e.export {
+					h.Inc()
+				}
+
+				// write to disk
 				atomic.AddInt64(&e.numRecords, 1)
 				err := e.writer.Write(h)
 				if err != nil {
