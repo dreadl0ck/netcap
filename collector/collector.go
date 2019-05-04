@@ -15,11 +15,13 @@ package collector
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -34,6 +36,8 @@ import (
 	"github.com/google/gopacket"
 	"github.com/mgutz/ansi"
 )
+
+var flagFreeOSMemory = flag.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
 
 // Collector provides an interface to collect data from PCAP or a network interface.
 type Collector struct {
@@ -272,10 +276,12 @@ func (c *Collector) printProgress() {
 	// must be locked, otherwise a race occurs when sending a SIGINT
 	//  and triggering wg.Wait() in another goroutine...
 	c.statMutex.Lock()
+	// increment wait group for packet processing
 	c.wg.Add(1)
 	c.statMutex.Unlock()
-	atomic.AddInt64(&c.current, 1)
 
+	// increment atomic packet counter
+	atomic.AddInt64(&c.current, 1)
 	if c.current%10000 == 0 {
 
 		// using a strings.Builder for assembling string for performance
@@ -337,8 +343,27 @@ func (c *Collector) Init() (err error) {
 	// handle signal for a clean exit
 	c.handleSignals()
 
+	if *flagFreeOSMemory != 0 {
+		fmt.Println("will free the OS memory every", *flagFreeOSMemory, "minutes")
+		go c.FreeOSMemory()
+	}
+
 	// create log file
 	c.errorLogFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.log"))
 
 	return
+}
+
+// GetNumPackets returns the current number of processed packets
+func (c *Collector) GetNumPackets() int64 {
+	return atomic.LoadInt64(&c.current)
+}
+
+func (c *Collector) FreeOSMemory() {
+	for {
+		select {
+		case <-time.After(time.Duration(*flagFreeOSMemory) * time.Minute):
+			debug.FreeOSMemory()
+		}
+	}
 }

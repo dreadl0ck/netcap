@@ -44,12 +44,19 @@ func (c *Collector) worker() chan gopacket.Packet {
 					// increment counter for layer type
 					c.allProtosAtomic.Inc(layer.LayerType().String())
 
+					if c.config.EncoderConfig.Export {
+						allProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+					}
+
 					// check if packet contains an unknown layer
 					switch layer.LayerType() {
 					case gopacket.LayerTypeZero: // not known to gopacket
 
 						// increase counter
 						c.unknownProtosAtomic.Inc(layer.LayerType().String())
+						if c.config.EncoderConfig.Export {
+							unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+						}
 
 						// write to unknown.pcap file
 						if err := c.writePacketToUnknownPcap(p); err != nil {
@@ -71,6 +78,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 								if err := c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
 									fmt.Println("failed to log packet error:", err)
 								}
+								if c.config.EncoderConfig.Export {
+									decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
+								}
 								goto done
 							}
 						}
@@ -78,6 +88,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 
 						// increment unknown layer type counter
 						c.unknownProtosAtomic.Inc(layer.LayerType().String())
+						if c.config.EncoderConfig.Export {
+							unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+						}
 
 						// if its not a payload layer, write to unknown .pcap file
 						// TODO make this configurable?
@@ -98,6 +111,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 						if err := c.logPacketError(p, "CustomEncoder Error: "+e.Name+": "+err.Error()); err != nil {
 							fmt.Println("failed to log packet error:", err)
 						}
+						if c.config.EncoderConfig.Export {
+							decodingErrorsTotal.WithLabelValues(e.Name, err.Error()).Inc()
+						}
 						continue
 					}
 				}
@@ -108,6 +124,9 @@ func (c *Collector) worker() chan gopacket.Packet {
 				if errLayer := p.ErrorLayer(); errLayer != nil {
 					if err := c.logPacketError(p, errLayer.Error().Error()); err != nil {
 						fmt.Println("failed to log packet error:", err)
+					}
+					if c.config.EncoderConfig.Export {
+						decodingErrorsTotal.WithLabelValues(errLayer.LayerType().String(), errLayer.Error().Error()).Inc()
 					}
 				}
 			}
