@@ -101,18 +101,85 @@ func (u TCP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
 }
 
-var tcpMetric = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_TCP.String()),
-		Help: Type_NC_TCP.String() + " audit records",
-	},
-	fieldsTCP[1:],
+var (
+	tcpMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: strings.ToLower(Type_NC_TCP.String()),
+			Help: Type_NC_TCP.String() + " audit records",
+		},
+		fieldsTCPMetrics,
+	)
+	tcpPayloadEntropy = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_TCP.String()) + "_entropy",
+			Help:    Type_NC_TCP.String() + " payload entropy",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		// []string{"SrcPort", "DstPort"},
+		[]string{},
+	)
+	tcpPayloadSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_TCP.String()) + "_size",
+			Help:    Type_NC_TCP.String() + " payload sizes",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		// []string{"SrcPort", "DstPort"},
+		[]string{},
+	)
 )
+var fieldsTCPMetrics = []string{
+	"SrcPort",
+	"DstPort",
+	// "SeqNum",
+	// "AckNum",
+	"DataOffset",
+	"FIN",
+	"SYN",
+	"RST",
+	"PSH",
+	"ACK",
+	"URG",
+	"ECE",
+	"CWR",
+	"NS",
+	// "Window",
+	"Urgent",
+	// "Padding",
+	// "Options",
+}
+
+func (t TCP) metricValues() []string {
+	return []string{
+		formatInt32(t.SrcPort), // int32
+		formatInt32(t.DstPort), // int32
+		// strconv.FormatUint(uint64(t.SeqNum), 10), // uint32
+		// strconv.FormatUint(uint64(t.AckNum), 10), // uint32
+		formatInt32(t.DataOffset), // int32
+		strconv.FormatBool(t.FIN), // bool
+		strconv.FormatBool(t.SYN), // bool
+		strconv.FormatBool(t.RST), // bool
+		strconv.FormatBool(t.PSH), // bool
+		strconv.FormatBool(t.ACK), // bool
+		strconv.FormatBool(t.URG), // bool
+		strconv.FormatBool(t.ECE), // bool
+		strconv.FormatBool(t.CWR), // bool
+		strconv.FormatBool(t.NS),  // bool
+		// formatInt32(t.Window),     // int32
+		formatInt32(t.Urgent), // int32
+		// string(t.Padding),                        // []byte
+		// t.GetOptionString(),                      // []*TCPOption
+	}
+}
 
 func init() {
 	prometheus.MustRegister(tcpMetric)
+	prometheus.MustRegister(tcpPayloadEntropy)
+	prometheus.MustRegister(tcpPayloadSize)
 }
 
 func (a TCP) Inc() {
-	tcpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	tcpMetric.WithLabelValues(a.metricValues()...).Inc()
+	tcpPayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
+	tcpPayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
 }

@@ -93,18 +93,72 @@ func (a IPv4) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
 }
 
-var ip4Metric = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_IPv4.String()),
-		Help: Type_NC_IPv4.String() + " audit records",
-	},
-	fieldsIPv4[1:],
+var (
+	ip4Metric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: strings.ToLower(Type_NC_IPv4.String()),
+			Help: Type_NC_IPv4.String() + " audit records",
+		},
+		fieldsIPv4Metrics,
+	)
+	ip4PayloadEntropy = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_IPv4.String()) + "_entropy",
+			Help:    Type_NC_IPv4.String() + " payload entropy",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		[]string{},
+		// []string{"SrcIP", "DstIP"},
+	)
+	ip4PayloadSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_IPv4.String()) + "_size",
+			Help:    Type_NC_IPv4.String() + " payload sizes",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		[]string{},
+		// []string{"SrcIP", "DstIP"},
+	)
 )
+
+var fieldsIPv4Metrics = []string{
+	"Version", // int32
+	"IHL",     // int32
+	"TOS",     // int32
+	"Length",  // int32
+	// "Id",         // int32
+	"Flags",      // int32
+	"FragOffset", // int32
+	"TTL",        // int32
+	"Protocol",   // int32
+	"SrcIP",      // string
+	"DstIP",      // string
+}
+
+func (i IPv4) metricValues() []string {
+	return []string{
+		formatInt32(i.Version), // int32
+		formatInt32(i.IHL),     // int32
+		formatInt32(i.TOS),     // int32
+		formatInt32(i.Length),  // int32
+		// formatInt32(i.Id),         // int32
+		formatInt32(i.Flags),      // int32
+		formatInt32(i.FragOffset), // int32
+		formatInt32(i.TTL),        // int32
+		formatInt32(i.Protocol),   // int32
+		i.SrcIP,                   // string
+		i.DstIP,                   // string
+	}
+}
 
 func init() {
 	prometheus.MustRegister(ip4Metric)
+	prometheus.MustRegister(ip4PayloadEntropy)
+	prometheus.MustRegister(ip4PayloadSize)
 }
 
 func (a IPv4) Inc() {
-	ip4Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	ip4Metric.WithLabelValues(a.metricValues()...).Inc()
+	ip4PayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
+	ip4PayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
 }

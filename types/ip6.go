@@ -76,18 +76,64 @@ func (a IPv6) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
 }
 
-var ip6Metric = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_IPv6.String()),
-		Help: Type_NC_IPv6.String() + " audit records",
-	},
-	fieldsIPv6[1:],
+var (
+	ip6Metric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: strings.ToLower(Type_NC_IPv6.String()),
+			Help: Type_NC_IPv6.String() + " audit records",
+		},
+		fieldsIPv6Metrics,
+	)
+	ip6PayloadEntropy = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_IPv6.String()) + "_entropy",
+			Help:    Type_NC_IPv6.String() + " payload entropy",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		// []string{"SrcIP", "DstIP"},
+		[]string{},
+	)
+	ip6PayloadSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_IPv6.String()) + "_size",
+			Help:    Type_NC_IPv6.String() + " payload sizes",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		// []string{"SrcIP", "DstIP"},
+		[]string{},
+	)
 )
+
+var fieldsIPv6Metrics = []string{
+	"Version",      // int32
+	"TrafficClass", // int32
+	"FlowLabel",    // uint32
+	"NextHeader",   // int32
+	"HopLimit",     // int32
+	"SrcIP",        // string
+	"DstIP",        // string
+}
+
+func (i IPv6) metricValues() []string {
+	return []string{
+		formatInt32(i.Version),      // int32
+		formatInt32(i.TrafficClass), // int32
+		formatUint32(i.FlowLabel),   // uint32
+		formatInt32(i.NextHeader),   // int32
+		formatInt32(i.HopLimit),     // int32
+		i.SrcIP,                     // string
+		i.DstIP,                     // string
+	}
+}
 
 func init() {
 	prometheus.MustRegister(ip6Metric)
+	prometheus.MustRegister(ip6PayloadEntropy)
+	prometheus.MustRegister(ip6PayloadSize)
 }
 
 func (a IPv6) Inc() {
-	ip6Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	ip6Metric.WithLabelValues(a.metricValues()...).Inc()
+	ip6PayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
+	ip6PayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
 }
