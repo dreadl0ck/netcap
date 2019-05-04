@@ -73,18 +73,88 @@ func (a Connection) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
 }
 
-var connectionsMetric = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_Connection.String()),
-		Help: Type_NC_Connection.String() + " audit records",
-	},
-	fieldsConnection[1:],
+var (
+	connectionsMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: strings.ToLower(Type_NC_Connection.String()),
+			Help: Type_NC_Connection.String() + " audit records",
+		},
+		fieldsConnectionMetrics,
+	)
+	connTotalSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_Connection.String()) + "_size",
+			Help:    Type_NC_Connection.String() + " payload entropy",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		[]string{"SrcMAC", "DstMAC"},
+	)
+	connAppPayloadSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_Connection.String()) + "_payload_size",
+			Help:    Type_NC_Connection.String() + " payload sizes",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		[]string{"SrcMAC", "DstMAC"},
+	)
+	connNumPackets = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_Connection.String()) + "_numpackets",
+			Help:    Type_NC_Connection.String() + " payload sizes",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		[]string{"SrcMAC", "DstMAC"},
+	)
+	connDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_Connection.String()) + "_duration",
+			Help:    Type_NC_Connection.String() + " payload sizes",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		[]string{"SrcMAC", "DstMAC"},
+	)
 )
+
+var fieldsConnectionMetrics = []string{
+	"LinkProto",
+	"NetworkProto",
+	"TransportProto",
+	"ApplicationProto",
+	"SrcMAC",
+	"DstMAC",
+	"SrcIP",
+	"SrcPort",
+	"DstIP",
+	"DstPort",
+}
+
+func (f Connection) metricValues() []string {
+	return []string{
+		f.LinkProto,
+		f.NetworkProto,
+		f.TransportProto,
+		f.ApplicationProto,
+		f.SrcMAC,
+		f.DstMAC,
+		f.SrcIP,
+		f.SrcPort,
+		f.DstIP,
+		f.DstPort,
+	}
+}
 
 func init() {
 	prometheus.MustRegister(connectionsMetric)
+	prometheus.MustRegister(connTotalSize)
+	prometheus.MustRegister(connAppPayloadSize)
+	prometheus.MustRegister(connNumPackets)
+	prometheus.MustRegister(connDuration)
 }
 
 func (a Connection) Inc() {
-	connectionsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	connectionsMetric.WithLabelValues(a.metricValues()...).Inc()
+	connTotalSize.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.TotalSize))
+	connAppPayloadSize.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.AppPayloadSize))
+	connNumPackets.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.NumPackets))
+	connDuration.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.Duration))
 }
