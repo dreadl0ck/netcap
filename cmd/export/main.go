@@ -48,12 +48,12 @@ func main() {
 		source = "unknown"
 	}
 
-	metrics.ServeMetricsAt(*flagMetricsAddress)
-
 	switch {
 	case len(os.Args) == 2 && os.Args[1] == ".":
+		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
 		exportDir(".")
 	case filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz":
+		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
 		exportFile(*flagInput)
 	case *flagInput != "" || *flagInterface != "":
 
@@ -96,6 +96,8 @@ func main() {
 			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 		})
+
+		metrics.ServeMetricsAt(*flagMetricsAddress, c)
 
 		netcap.PrintLogo()
 
