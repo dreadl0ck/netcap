@@ -133,6 +133,11 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 				continue
 			}
 
+			// export metrics if configured
+			if httpEncoder.export {
+				h.Inc()
+			}
+
 			atomic.AddInt64(&httpEncoder.numRecords, 1)
 			err := httpEncoder.writer.Write(h)
 			if err != nil {
@@ -152,6 +157,11 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 			if req != nil {
 				h := &types.HTTP{}
 				setRequest(h, req)
+
+				// export metrics if configured
+				if httpEncoder.export {
+					h.Inc()
+				}
 
 				err := httpEncoder.writer.Write(h)
 				if err != nil {

@@ -48,15 +48,15 @@ var (
 
 	flagFlowFlushInterval = flag.Int("flow-flush-interval", 2000, "flush flows every X flows")
 	flagFlowTimeOut       = flag.Int("flow-timeout", 30, "close flows older than X seconds")
-)
 
-var (
-	flowFlushInterval = int64(*flagFlowFlushInterval)
-	flowTimeOut       = time.Second * time.Duration(*flagFlowTimeOut)
+	flowFlushInterval int64
+	flowTimeOut       time.Duration
 )
 
 var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *CustomEncoder) error {
 	flowEncoderInstance = d
+	flowFlushInterval = int64(*flagFlowFlushInterval)
+	flowTimeOut = time.Second * time.Duration(*flagFlowTimeOut)
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
@@ -155,9 +155,13 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 		}
 		Flows.Items[flowID] = f
 
+		fmt.Println(flows, flowFlushInterval, flows%flowFlushInterval)
+
 		// continuously flush flows
 		flows++
 		if flows%flowFlushInterval == 0 {
+
+			fmt.Println("FLOW FLUSH")
 
 			var selectFlows []*types.Flow
 			for id, f := range Flows.Items {
@@ -189,6 +193,10 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 })
 
 func writeFlow(f *types.Flow) {
+
+	if flowEncoderInstance.export {
+		f.Inc()
+	}
 
 	atomic.AddInt64(&flowEncoderInstance.numRecords, 1)
 	err := flowEncoderInstance.writer.Write(f)

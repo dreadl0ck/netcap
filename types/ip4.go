@@ -125,7 +125,7 @@ var fieldsIPv4Metrics = []string{
 	"Version", // int32
 	"IHL",     // int32
 	"TOS",     // int32
-	"Length",  // int32
+	// "Length",  // int32
 	// "Id",         // int32
 	"Flags",      // int32
 	"FragOffset", // int32
@@ -140,7 +140,7 @@ func (i IPv4) metricValues() []string {
 		formatInt32(i.Version), // int32
 		formatInt32(i.IHL),     // int32
 		formatInt32(i.TOS),     // int32
-		formatInt32(i.Length),  // int32
+		// formatInt32(i.Length),  // int32
 		// formatInt32(i.Id),         // int32
 		formatInt32(i.Flags),      // int32
 		formatInt32(i.FragOffset), // int32

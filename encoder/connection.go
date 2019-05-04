@@ -52,11 +52,9 @@ var (
 	// flags for flushing intervals
 	flagConnFlushInterval = flag.Int("conn-flush-interval", 10000, "flush connections every X flows")
 	flagConnTimeOut       = flag.Int("conn-timeout", 60, "close connections older than X seconds")
-)
 
-var (
-	connFlushInterval = int64(*flagConnFlushInterval)
-	connTimeOut       = time.Second * time.Duration(*flagConnTimeOut)
+	connFlushInterval int64
+	connTimeOut       time.Duration
 )
 
 // ConnectionID is a bidirectional connection
@@ -74,6 +72,8 @@ func (c ConnectionID) String() string {
 
 var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connection", func(d *CustomEncoder) error {
 	connEncoderInstance = d
+	connFlushInterval = int64(*flagConnFlushInterval)
+	connTimeOut = time.Second * time.Duration(*flagConnTimeOut)
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
@@ -199,6 +199,11 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 
 // writeConn writes the connection
 func writeConn(c *types.Connection) {
+
+	if connEncoderInstance.export {
+		c.Inc()
+	}
+
 	atomic.AddInt64(&connEncoderInstance.numRecords, 1)
 	err := connEncoderInstance.writer.Write(c)
 	if err != nil {
