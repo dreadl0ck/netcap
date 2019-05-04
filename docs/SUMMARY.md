@@ -17,4 +17,7 @@
 * [Internals](internals.md)
 * [Metrics](metrics.md)
 * [Python Integration](python-integration.md)
+* [FAQ](faq.md)
+* [Extension](extension.md)
+* [Contributing](contributing.md)
 
