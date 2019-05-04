@@ -1,5 +1,6 @@
 # TODOs
 
+- remove length field from UDP and IPv6
 - net.collect -gen-keypair  -> net.util
 - live: fix progress count
 - replace AuditRecordHandle in net.collect with netcap.Writer

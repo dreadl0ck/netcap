@@ -25,7 +25,7 @@ var fieldsUDP = []string{
 	"Timestamp",
 	"SrcPort",
 	"DstPort",
-	"Length",
+	"Length", // redundant: PayloadSize + UDP Header Size = Length, remove field from audit record
 	"Checksum",
 	"PayloadEntropy",
 	"PayloadSize",
@@ -57,18 +57,54 @@ func (u UDP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
 }
 
-var udpMetric = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_UDP.String()),
-		Help: Type_NC_UDP.String() + " audit records",
-	},
-	fieldsUDP[1:],
+var (
+	udpMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: strings.ToLower(Type_NC_UDP.String()),
+			Help: Type_NC_UDP.String() + " audit records",
+		},
+		fieldsUDPMetrics,
+	)
+	udpPayloadEntropy = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_UDP.String()) + "_entropy",
+			Help:    Type_NC_UDP.String() + " payload entropy",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		// fieldsUDPMetrics,
+		[]string{},
+	)
+	udpPayloadSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_UDP.String()) + "_size",
+			Help:    Type_NC_UDP.String() + " payload sizes",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		// fieldsUDPMetrics,
+		[]string{},
+	)
 )
+
+var fieldsUDPMetrics = []string{
+	"SrcPort",
+	"DstPort",
+}
+
+func (u UDP) metricValues() []string {
+	return []string{
+		formatInt32(u.SrcPort), // int32
+		formatInt32(u.DstPort), // int32
+	}
+}
 
 func init() {
 	prometheus.MustRegister(udpMetric)
+	prometheus.MustRegister(udpPayloadEntropy)
+	prometheus.MustRegister(udpPayloadSize)
 }
 
 func (u UDP) Inc() {
-	udpMetric.WithLabelValues(u.CSVRecord()[1:]...).Inc()
+	udpMetric.WithLabelValues(u.metricValues()...).Inc()
+	udpPayloadEntropy.WithLabelValues().Observe(u.PayloadEntropy)
+	udpPayloadSize.WithLabelValues().Observe(float64(u.PayloadSize))
 }

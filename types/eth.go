@@ -50,18 +50,56 @@ func (a Ethernet) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
 }
 
-var ethernetMetric = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_Ethernet.String()),
-		Help: Type_NC_Ethernet.String() + " audit records",
-	},
-	fieldsEthernet[1:],
+var (
+	ethernetMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: strings.ToLower(Type_NC_Ethernet.String()),
+			Help: Type_NC_Ethernet.String() + " audit records",
+		},
+		fieldsEthernetMetrics,
+	)
+	ethernetPayloadEntropy = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_Ethernet.String()) + "_entropy",
+			Help:    Type_NC_Ethernet.String() + " payload entropy",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		// fieldsEthernetMetrics,
+		[]string{},
+	)
+	ethernetPayloadSize = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    strings.ToLower(Type_NC_Ethernet.String()) + "_size",
+			Help:    Type_NC_Ethernet.String() + " payload sizes",
+			Buckets: prometheus.LinearBuckets(20, 5, 5),
+		},
+		// fieldsEthernetMetrics,
+		[]string{},
+	)
 )
+
+var fieldsEthernetMetrics = []string{
+	"SrcMAC",       // string
+	"DstMAC",       // string
+	"EthernetType", // int32
+}
+
+func (e Ethernet) metricValues() []string {
+	return []string{
+		e.SrcMAC,                    // string
+		e.DstMAC,                    // string
+		formatInt32(e.EthernetType), // int32
+	}
+}
 
 func init() {
 	prometheus.MustRegister(ethernetMetric)
+	prometheus.MustRegister(ethernetPayloadEntropy)
+	prometheus.MustRegister(ethernetPayloadSize)
 }
 
 func (a Ethernet) Inc() {
-	ethernetMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	ethernetMetric.WithLabelValues(a.metricValues()...).Inc()
+	ethernetPayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
+	ethernetPayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
 }
