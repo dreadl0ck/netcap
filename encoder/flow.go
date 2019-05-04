@@ -155,13 +155,9 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 		}
 		Flows.Items[flowID] = f
 
-		fmt.Println(flows, flowFlushInterval, flows%flowFlushInterval)
-
 		// continuously flush flows
 		flows++
 		if flows%flowFlushInterval == 0 {
-
-			fmt.Println("FLOW FLUSH")
 
 			var selectFlows []*types.Flow
 			for id, f := range Flows.Items {
