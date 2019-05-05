@@ -4,7 +4,11 @@ description: Prometheus Metrics
 
 # Metrics
 
+## Introduction
+
 Netcap now support exporting prometheus metrics about its go runtime, the collection process and the audit records itself. This feature can be used with the **net.export** tool.
+
+## Configuration
 
 Metrics are served by default on **127.0.0.1:7777/metrics**. Configure a prometheus instance to scrape it:
 
@@ -25,6 +29,8 @@ scrape_configs:
       - targets:
         - 127.0.0.1:7777
 ```
+
+## Usage
 
 Export a PCAP dumpfile and serve metrics .
 
@@ -50,9 +56,15 @@ Export all audit record files in the current directory:
 $ net.export .
 ```
 
+## Overview Dashboard Preview
+
 ![Grafana Dashboard Overview](.gitbook/assets/screenshot-2019-05-04-at-23.39.19.png)
 
+## TCP Dashboard Preview
+
 ![Grafana Dashboard TCP](.gitbook/assets/screenshot-2019-05-04-at-23.39.41.png)
+
+## HTTP Dashboard Preview
 
 ![Grafana Dashboard HTTP](.gitbook/assets/screenshot-2019-05-04-at-23.40.05.png)
 

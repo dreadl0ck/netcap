@@ -4,7 +4,7 @@ description: For those who can't wait to get their hands dirty.
 
 # Quickstart
 
-### Basic Commands
+## Basic Commands
 
 Read traffic live from interface, stop with _Ctrl-C_ \(_SIGINT_\):
 
@@ -66,7 +66,7 @@ Convert timestamps to UTC:
 $ net.dump -r TCP.ncap.gz -select Timestamp,SrcPort,Dstport -utc
 ```
 
-### Show Audit Record File Header
+## Show Audit Record File Header
 
 To display the header of the supplied audit record file, the -header flag can be used:
 
@@ -83,7 +83,7 @@ $ net.capture -r TCP.ncap.gz -header
 +----------+---------------------------------------+
 ```
 
-### Print Structured Audit Records
+## Print Structured Audit Records
 
 Audit records can be printed structured, this makes use of the _proto.MarshalTextString\(\)_ function. This is sometimes useful for debugging, but very verbose.
 
@@ -105,7 +105,7 @@ PayloadSize: 1460
 ...
 ```
 
-### Print as CSV
+## Print as CSV
 
 This is the default behavior. First line contains all field names.
 
@@ -117,7 +117,7 @@ Timestamp,SrcPort,DstPort,SeqNum,AckNum,DataOffset,FIN,SYN,RST,PSH,ACK,URG,...
 ...
 ```
 
-### Print as Tab Separated Values
+## Print as Tab Separated Values
 
 To use a tab as separator, the _-tsv_ flag can be supplied:
 
@@ -131,7 +131,7 @@ Timestamp               SrcPort DstPort Length  Checksum PayloadEntropy  Payload
 ...
 ```
 
-### Print as Table
+## Print as Table
 
 The _-table_ flag can be used to print output as a table. Every 100 entries the table is printed to stdout.
 
@@ -154,7 +154,7 @@ $ net.dump -r UDP.ncap.gz -table -select Timestamp,SrcPort,DstPort,Length,Checks
 ...
 ```
 
-### Print with Custom Separator
+## Print with Custom Separator
 
 Output can also be generated with a custom separator:
 
@@ -167,7 +167,7 @@ Timestamp;SrcPort;DstPort;Length;Checksum;PayloadEntropy;PayloadSize
 ...
 ```
 
-### Validate generated Output
+## Validate generated Output
 
 To ensure values in the generated CSV would not contain the separator string, the _-check_ flag can be used.
 

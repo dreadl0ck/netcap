@@ -4,7 +4,7 @@ description: Inspect traffic to web applications with a HTTP reverse proxy
 
 # HTTP Proxy
 
-### Motivation
+## Motivation
 
 The **net.proxy** tool allows to quickly spin up monitoring of web applications and retrieving netcap audit records.
 
@@ -12,7 +12,7 @@ Since currently, TCP stream reassembly is only supported for IPv4, netcap misses
 
 By using a simple reverse proxy for HTTP traffic, the operating system handles the stream reassembly and we can make sure no IPv6 traffic is missed.
 
-### Usage
+## Usage
 
 Spin up a single proxy instance from the commandline:
 
@@ -26,7 +26,7 @@ $ net.proxy -config example_config.yml
 
 The default config path is **net.proxy-config.yml**, so if this file exists in the folder where you execute the proxy, you do not need to specify it on the commandline.
 
-### Configuration
+## Configuration
 
 For proxying several services, you need to provide a config file, here is a simple example:
 
@@ -56,7 +56,7 @@ keyFile: "certs/cert.key"
 logdir: "logs"
 ```
 
-### Help
+## Help
 
 ```text
 Usage of net.proxy:
