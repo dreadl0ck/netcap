@@ -1,4 +1,10 @@
+---
+description: A brief overview
+---
+
 # Overview
+
+![](.gitbook/assets/netcap-logov2.jpg)
 
 The _Netcap_ \(NETwork CAPture\) framework efficiently converts a stream of network packets into highly accessible type-safe structured data that represent specific protocols or custom abstractions. These audit records can be stored on disk or exchanged over the network, and are well suited as a data source for machine learning algorithms. Since parsing of untrusted input can be dangerous and network data is potentially malicious, implementation was performed in a programming language that provides a garbage collected memory safe runtime.
 
@@ -32,8 +38,6 @@ Currently there are 8 applications:
 * net.util \(utility tool for validating audit records and converting timestamps\)
 * net.export \(exporter for prometheus metrics\)
 
-
-
 ## Use Cases
 
 * monitoring honeypots
@@ -41,29 +45,29 @@ Currently there are 8 applications:
 * research on anomaly-based detection mechanisms
 * Forensic data analysis
 
-
-
 ## License
 
-Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
+Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term. For more infos refer to the License page.
 
 ## Source Code Stats
 
-generated with cloc version 1.80
+Stats for netcap v0.4, generated with cloc version 1.80
 
-> cloc --exclude-ext pb.go,py,rb cmd sensor server label types utils collector encoder netcap.go reader.go utils.go
+> $ zeus cloc
 
 ```text
-    175 text files.
-    175 unique files.
-    3 files ignored.
+     332 text files.
+     332 unique files.
+     128 files ignored.
 
-github.com/AlDanial/cloc v 1.80  T=0.12 s (1412.6 files/s, 130948.3 lines/s)
+github.com/AlDanial/cloc v 1.80  T=0.17 s (1167.8 files/s, 117408.0 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                             172           1963           3119          10862
+Go                             196           2692           3655          13540
+Markdown                         8            106              0            517
 -------------------------------------------------------------------------------
-SUM:                           172           1963           3119          10862
+SUM:                           204           2798           3655          14057
+-------------------------------------------------------------------------------
 ```
 
