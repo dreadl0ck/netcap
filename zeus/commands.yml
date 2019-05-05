@@ -100,6 +100,7 @@ commands:
         dependencies:
             - gen-version
             - check-version
+            - gen-proto-release
         exec: goreleaser release --rm-dist
 
     # run a test release
@@ -108,6 +109,7 @@ commands:
         dependencies:
             - gen-version
             #- check-version
+            - gen-proto-release
         exec: goreleaser release --rm-dist --skip-publish --skip-validate #--debug
 
     ## Utils
