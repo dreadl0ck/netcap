@@ -5,8 +5,12 @@ cd docker
 
 echo "[INFO] building docker image"
 
+# in case of cache annoyances:
+# docker rm -f $(docker ps -a -q)
+# docker rmi -f $(docker images -a -q)
+
 # build image
-docker build -t "netcap-linux" .
+docker build --no-cache -t "netcap-linux" .
 
 echo "[INFO] running docker image"
 
@@ -38,6 +42,7 @@ docker cp $CONTAINER_ID:/go/net.agent ../dist/linux_amd64/net.agent
 docker cp $CONTAINER_ID:/go/net.proxy ../dist/linux_amd64/net.proxy
 docker cp $CONTAINER_ID:/go/net.export ../dist/linux_amd64/net.export
 docker cp $CONTAINER_ID:/go/net.dump ../dist/linux_amd64/net.dump
+docker cp $CONTAINER_ID:/go/net.util ../dist/linux_amd64/net.util
 
 # remove container
 docker rm $CONTAINER_ID
