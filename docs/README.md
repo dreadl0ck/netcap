@@ -46,7 +46,7 @@ Currently there are 8 applications:
 * monitoring medical / industrial devices
 * research on anomaly-based detection mechanisms
 * Forensic data analysis
-* 
+
 ## Demos
 
 A simple demonstration of generating audit records from a PCAP dump file, querying and displaying the collected information in various ways
