@@ -229,13 +229,13 @@ archives:
   files:
     - LICENSE
     - README.md
-    - types/cpp
-    - types/csharp
-    - types/java
-    - types/js
-    - types/python
-    - types/rust
-    - types/swift
+    - types/cpp/*
+    - types/csharp/*
+    - types/java/*
+    - types/js/*
+    - types/python/*
+    - types/rust/*
+    - types/swift/*
     - types/netcap.pb.go
 
 # before:

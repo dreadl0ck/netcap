@@ -18,7 +18,7 @@ import "flag"
 var (
 	flagMetricsAddress = flag.String("address", "127.0.0.1:7777", "set address for exposing metrics")
 	flagDumpJSON       = flag.Bool("dumpJson", false, "dump as JSON")
-	flagReplay         = flag.Bool("replay", true, "replay traffic (only works when exporting audit records directly!)")
+	flagReplay         = flag.Bool("replay", false, "replay traffic (only works when exporting audit records directly!)")
 	flagDir            = flag.String("dir", "", "path to directory with netcap audit records")
 	flagInput          = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagInterface      = flag.String("iface", "", "attach to network interface and capture in live mode")
