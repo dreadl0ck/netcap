@@ -4,11 +4,15 @@ description: Setup instructions
 
 # Installation
 
+## Go Get
+
 Installation via go get:
 
 ```text
 $ go get -u github.com/dreadl0ck/netcap/...
 ```
+
+## Development Build
 
 To install the command-line tool:
 
@@ -16,11 +20,15 @@ To install the command-line tool:
 $ go build -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
 ```
 
+## Cross Compilation
+
 To cross compile for other architectures, set the _GOARCH_ and _GOOS_ environment variables. For example to cross compile a binary for _linux amd64_:
 
 ```text
 $ GOARCH=amd64 GOOS=linux go build -o netcap -i github.com/dreadl0ck/netcap/cmd
 ```
+
+## Homebrew
 
 Install the _netcap_ command-line tool with Homebrew:
 
@@ -29,7 +37,7 @@ $ brew tap dreadl0ck/formulas
 $ brew install netcap
 ```
 
-#### Buildsystem
+## Buildsystem
 
 _Netcap_ uses the [zeus](https://github.com/dreadl0ck/zeus) buildsystem, it can be found on github along with installation instructions.
 
@@ -48,7 +56,7 @@ To install the _Netcap_ and _Netlabel_ command-line tool and the library with ze
 $ zeus install
 ```
 
-### Tests
+## Tests
 
 To execute the unit tests, run the following from the project root:
 

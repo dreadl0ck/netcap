@@ -4,9 +4,15 @@ description: Read Netcap Audit records from Python
 
 # Python Integration
 
+## Source Code
+
 The Python library for interacting with netcap audit records has been published here:
 
 {% embed url="https://github.com/dreadl0ck/pynetcap" %}
+
+## Usage
+
+### Read into python dictionary
 
 Currently it is possible to retrieve the audit records as python dictionary:
 
@@ -22,7 +28,9 @@ print("RECORDS:")
 print(reader.records)
 ```
 
-or as pandas dataframe:
+### Read into pandas dataframe
+
+Retrieving the audit records as pandas dataframe:
 
 ```python
 #!/usr/bin/python

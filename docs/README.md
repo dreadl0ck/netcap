@@ -27,7 +27,7 @@ _Netcap_ uses Google's Protocol Buffers to encode its output, which allows acces
 * allow implementation of custom abstractions
 * rich platform and architecture support
 
-### Framework Components
+## Framework Components
 
 Currently there are 8 applications:
 
