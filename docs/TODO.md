@@ -2,16 +2,13 @@
 
 - remove length field from UDP and IPv6
 - net.collect -gen-keypair  -> net.util
-- live: fix progress count
 - replace AuditRecordHandle in net.collect with netcap.Writer
-- add more flags to commandline tools
-- add header to each commandline tool with a few usage examples if no params given
 - colorize tool output
 
 - include pre generated protocol buffer definitions in release
 - check TODOs
-- add a separate tool for reading: net.decode?
 - add YARA support for labels
+
 - add contributions welcome to README
 - shortly describe main framework components in README (cmd/*)
 
