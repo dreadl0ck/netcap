@@ -1,3 +1,7 @@
+---
+description: Setup instructions
+---
+
 # Installation
 
 Installation via go get:

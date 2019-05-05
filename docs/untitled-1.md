@@ -1,3 +1,7 @@
+---
+description: Label audit records for supervised machine learning
+---
+
 # Audit Record Labeling
 
 ### Introduction

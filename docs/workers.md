@@ -1,3 +1,7 @@
+---
+description: This is where the magic happens
+---
+
 # Workers
 
 To make use of multi-core processors, processing of packets should happen in an asynchronous way. Since Netcap should be usable on a stream of packets, fetching of packets has to happen sequentially, but decoding them can be parallelized. The packets read from the input data source \(PCAP file or network interface\) are assigned to a configurable number of workers routines via round-robin. Each of those worker routines operates independently, and has all selected encoders loaded. It decodes all desired layers of the packet, and writes the encoded data into a buffer that will be flushed to disk after reaching its capacity.

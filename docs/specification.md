@@ -1,3 +1,7 @@
+---
+description: The Netcap audit record format
+---
+
 # Specification
 
 _Netcap_ files have the file extension **.ncap** or **.ncap.gz** if compressed with gzip and contain serialized protocol buffers of one type. Naming of each file happens according to the naming in the [gopacket](https://godoc.org/github.com/google/gopacket) library: a short uppercase letter representation for common protocols, and a camel case version full word version for less common protocols. Audit records are modeled as protocol buffers. Each file contains a header that specifies which type of audit records is inside the file, what version of _Netcap_ was used to generate it, what input source was used and what time it was created. Each audit record should be tagged with the timestamp the packet was seen, in the format _seconds.microseconds_. Output is written to a file that represents each data structure from the protocol buffers definition, i.e. _TCP.ncap_, _UDP.ncap_. For this purpose, the audit records are written as length delimited records into the file.
