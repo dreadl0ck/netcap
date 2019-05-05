@@ -20,4 +20,5 @@
 * [FAQ](faq.md)
 * [Extension](extension.md)
 * [Contributing](contributing.md)
+* [License](license.md)
 

@@ -10,7 +10,9 @@ I have no clue - please try and report the findings :\)
 
 ## How can I contribute to the project?
 
-Sure - Please see the Contributing page.
+Please see the Contributing page.
 
+## I have a question, how can I reach you?
 
+Contact me by mail: dreadl0ck \[at\] protonmail \[dot\] ch
 
