@@ -116,7 +116,7 @@ commands:
     # count lines of code
     cloc:
         description: count lines of code for the project
-        exec: cloc --exclude-ext pb.go,py,rb cmd metrics label types utils io collector encoder netcap.go reader.go utils.go writer.go
+        exec: cloc --exclude-ext pb.go,py,rb,js,cpp,cc,rs,java,swift,c,cs,h cmd metrics label types utils io collector encoder netcap.go reader.go utils.go writer.go
 
     # generate protocol buffers for development
     gen-proto-dev:
