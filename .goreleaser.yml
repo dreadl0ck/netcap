@@ -42,6 +42,29 @@ builds:
     # this hook is used to compile the linux version in a docker container
     post: zeus build-all-linux-docker
     #pre: rice embed-go
+-
+  main: ./cmd/util
+  binary: net.util
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+    - arm
+    - arm64
 - 
   main: ./cmd/label
   binary: net.label
@@ -198,9 +221,22 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
-# archive:
-#   files:
-#     - dist/linux_amd64/**/*
+
+archives:
+- 
+  # Defaults are any files matching `LICENCE*`, `LICENSE*`,
+  # `README*` and `CHANGELOG*` (case-insensitive).
+  files:
+    - LICENSE
+    - README.md
+    - types/cpp
+    - types/csharp
+    - types/java
+    - types/js
+    - types/python
+    - types/rust
+    - types/swift
+    - types/netcap.pb.go
 
 # before:
 #   hooks:

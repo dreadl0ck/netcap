@@ -22,3 +22,4 @@ RUN go build -o net.collect -i github.com/dreadl0ck/netcap/cmd/collect
 RUN go build -o net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
 RUN go build -o net.export -i github.com/dreadl0ck/netcap/cmd/export
 RUN go build -o net.dump -i github.com/dreadl0ck/netcap/cmd/dump
+RUN go build -o net.util -i github.com/dreadl0ck/netcap/cmd/util

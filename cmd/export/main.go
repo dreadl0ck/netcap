@@ -55,13 +55,17 @@ func main() {
 	}
 
 	switch {
-	case len(os.Args) == 2 && os.Args[1] == ".":
-		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
-		exportDir(".")
 	case filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz":
 		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
 		exportFile(*flagInput)
+	case *flagDir != "":
+		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
+		exportDir(*flagDir)
 	case *flagInput != "" || *flagInterface != "":
+
+		if *flagReplay {
+			log.Fatal("replay flag is set, but replaying the audit records is only possible when exporting audit records.")
+		}
 
 		if *flagInput != "" {
 			// stat file
@@ -173,7 +177,8 @@ func main() {
 				panic("failed to write memory profile: " + err.Error())
 			}
 		}
-
+	default:
+		log.Fatal("nothing to do.")
 	}
 
 	// wait until the end of time
