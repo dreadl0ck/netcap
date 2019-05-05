@@ -4,6 +4,8 @@ description: Contributing to the Netcap project
 
 # Contributing
 
+Interested in implementing new functionality? Ideas, Feedback, Questions? Get in touch! :\)
+
 ### Issues & Bug Reports
 
 Please include the Netcap version, the exact error messages and as much log output as possible!
