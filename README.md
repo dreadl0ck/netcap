@@ -12,8 +12,9 @@
 ![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
 ![macOS](https://img.shields.io/badge/Supports-macOS-green.svg)
 ![windows](https://img.shields.io/badge/Supports-windows-green.svg)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/dreadl0ck/netcap)
+[![GoDoc](https://img.shields.io/badge/GoDoc-reference-blue.svg)](https://godoc.org/github.com/dreadl0ck/netcap)
 [![Homepage](https://img.shields.io/badge/Homepage-blue.svg)](https://netcap.io)
+[![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://docs.netcap.io)
 
 The *Netcap* (NETwork CAPture) framework efficiently converts a stream of network packets into highly accessible type-safe structured data that represent specific protocols or custom abstractions.
 These audit records can be stored on disk or exchanged over the network,
