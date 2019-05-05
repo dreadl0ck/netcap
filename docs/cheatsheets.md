@@ -2,7 +2,23 @@
 description: A collection of cheatsheets and useful resources
 ---
 
-# Cheatsheets
+# Downloads
+
+## Publications
+
+### Thesis
+
+{% file src=".gitbook/assets/mied18.pdf" %}
+
+### Thesis Presentation
+
+{% file src=".gitbook/assets/mied18\_os.pdf" %}
+
+### SecurIT Cup 2018 Presentation
+
+{% file src=".gitbook/assets/securitcup\_slides\_philipp\_mieden.pdf" %}
+
+## Cheatsheets
 
 ### List of all supported protocols and fields
 

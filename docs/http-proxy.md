@@ -14,12 +14,54 @@ By using a simple reverse proxy for HTTP traffic, the operating system handles t
 
 ### Usage
 
+Spin up a single proxy instance from the commandline:
+
 `$ net.proxy -local 127.0.0.1:4000 -remote http://google.com`
+
+Specifiy a custom config file for proxying multiple services:
+
+```text
+$ net.proxy -config example_config.yml
+```
+
+The default config path is **net.proxy-config.yml**, so if this file exists in the folder where you execute the proxy, you do not need to specify it on the commandline.
+
+### Configuration
+
+For proxying several services, you need to provide a config file, here is a simple example:
+
+```yaml
+# Proxies map holds all reverse proxies
+proxies:
+  service1:
+    local: 127.0.0.1:443
+    remote: http://127.0.0.1:8080
+    tls: true
+  
+  service2:
+    local: 127.0.0.1:9999
+    remote: http://192.168.1.20
+
+  service3:
+    local: 127.0.0.1:7000
+    remote: https://google.com
+
+# CertFile for TLS secured connections
+certFile: "certs/cert.crt"
+
+# KeyFile for TLS secured connections
+keyFile: "certs/cert.key"
+
+# Logdir is used as destination for the logfile
+logdir: "logs"
+```
 
 ### Help
 
 ```text
 Usage of net.proxy:
+  -version bool
+        print netcap package version and exit
   -config string
     	set config file path (default "net.proxy-config.yml")
   -debug
