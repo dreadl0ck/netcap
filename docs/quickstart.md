@@ -1,3 +1,7 @@
+---
+description: For those who can't wait to get their hands dirty.
+---
+
 # Quickstart
 
 ### Basic Commands

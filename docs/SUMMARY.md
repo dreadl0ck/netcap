@@ -13,7 +13,7 @@
 * [Distributed Collection](distributed-collection.md)
 * [Workers](workers.md)
 * [Filtering and Export](filtering-and-export.md)
-* [Cheatsheets](cheatsheets.md)
+* [Downloads](cheatsheets.md)
 * [Internals](internals.md)
 * [Metrics](metrics.md)
 * [Python Integration](python-integration.md)

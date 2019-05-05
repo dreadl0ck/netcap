@@ -1,3 +1,7 @@
+---
+description: Capture traffic sent via Universal Serial Bus (USB) protocol
+---
+
 # USB Capture
 
 USB live capture is now possible, currently the following Audit Records exist: USB and USBRequestBlockSetup.
