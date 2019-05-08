@@ -56,6 +56,7 @@ func exportDir(path string) {
 	var (
 		wg    sync.WaitGroup
 		count = 0
+		times = map[string]time.Time{}
 	)
 
 	for _, f := range files {
@@ -66,13 +67,89 @@ func exportDir(path string) {
 		)
 
 		if ext == ".ncap" || ext == ".gz" {
+			if !*flagReplay {
 
-			fmt.Println("exporting", fName)
+				fmt.Println("exporting", fName)
+
+				// add to waitgroup
+				wg.Add(1)
+
+				// increase counter
+				count++
+
+				go func() {
+					exportFile(fName)
+					wg.Done()
+				}()
+
+				continue
+			}
+			times[fName] = firstTimestamp(fName)
+		}
+	}
+
+	if *flagReplay {
+		// determine the first timestamp
+		var (
+			begin     = time.Now()
+			beginPath string
+		)
+		for p, t := range times {
+			if t.Before(begin) {
+				begin = t
+				beginPath = p
+			}
+		}
+		fmt.Println("exporting", beginPath)
+		wg.Add(1)
+		count++
+
+		// time when we started to export the first file
+		beginExportFirstFile := time.Now()
+
+		// start exporting
+		exportFile(beginPath)
+
+		// remove this one from the map
+		delete(times, beginPath)
+
+		for p, t := range times {
+
+			var (
+				// copy to avoid capturing loop variable
+				path = p
+
+				// calculate delta to first timestamp
+				deltaToBegin = t.Sub(begin)
+			)
+
+			fmt.Println("exporting", p, "in", deltaToBegin)
+
+			// add to waitgroup
 			wg.Add(1)
+
+			// increase counter
 			count++
 
 			go func() {
-				exportFile(fName)
+
+				fmt.Println("SINCE:", time.Since(beginExportFirstFile))
+
+				// sub the time needed to spawn the goroutine
+				// from the previously calculated delta
+				// usually around 1-3ms
+				sleep := deltaToBegin - time.Since(beginExportFirstFile)
+
+				// fmt.Println(p, sleep)
+
+				// now sleep for the calculated interval
+				// before starting to export the file
+				time.Sleep(sleep)
+
+				// begin exporting the file
+				exportFile(path)
+
+				// done
 				wg.Done()
 			}()
 		}
@@ -82,6 +159,43 @@ func exportDir(path string) {
 	wg.Wait()
 
 	fmt.Println("all exports finished!")
+}
+
+// this will open the netcap dump file at path
+// and return the timestamp of the first audit record in there
+func firstTimestamp(path string) time.Time {
+
+	r, err := netcap.Open(path)
+	if err != nil {
+		log.Fatal("failed to open netcap file:", err)
+	}
+	defer r.Close()
+
+	var (
+		// read netcap file header
+		header = r.ReadHeader()
+
+		// initalize a record instance for the type from the header
+		record = netcap.InitRecord(header.Type)
+	)
+
+	for {
+		// read next record
+		err := r.Next(record)
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			// bail out on end of file
+			break
+		} else if err != nil {
+			panic(err)
+		}
+
+		// assert to AuditRecord
+		if p, ok := record.(types.AuditRecord); ok {
+			return utils.StringToTime(p.NetcapTimestamp())
+		}
+	}
+
+	return time.Time{}
 }
 
 func exportFile(path string) {
@@ -102,7 +216,7 @@ func exportFile(path string) {
 		// initalize a record instance for the type from the header
 		record = netcap.InitRecord(header.Type)
 
-		previousTimestamp time.Time
+		firstTimestamp time.Time
 	)
 
 	for {
@@ -122,12 +236,18 @@ func exportFile(path string) {
 			if *flagReplay {
 				t := utils.StringToTime(p.NetcapTimestamp())
 				if count == 1 {
-					previousTimestamp = t
+					firstTimestamp = t
 				} else {
-					sleep := previousTimestamp.Sub(t)
-					// fmt.Println(sleep)
-					time.Sleep(sleep)
-					previousTimestamp = t
+					go func() {
+						sleep := t.Sub(firstTimestamp)
+
+						// fmt.Println(sleep)
+
+						time.Sleep(sleep)
+						// increment metric
+						p.Inc()
+					}()
+					continue
 				}
 			}
 
