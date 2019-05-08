@@ -10,15 +10,15 @@ Packets are fetched from an input source \(offline dump file or live from an int
 
 ![Packet collection process](.gitbook/assets/netcap.svg)
 
-### Encoders
+## Encoders
 
 Encoders take care of converting decoded packet data into protocol buffers for the audit records. Two types of encoders exist: the [Layer Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/layerEncoder.go), which operates on _gopacket_ layer types, and the [Custom Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/customEncoder.go), for which any desired logic can be implemented, including decoding application layer protocols that are not yet supported by gopacket or protocols that require stream reassembly.
 
-### Unknown Protocols
+## Unknown Protocols
 
 Protocols that cannot be decoded will be dumped in the unknown.pcap file for later analysis, as this contains potentially interesting traffic that is not represented in the generated output. Separating everything that could not be understood makes it easy to reveal hidden communication channels, which are based on custom protocols.
 
-### Error Log
+## Error Log
 
 Errors that happen in the gopacket lib due to malformed packets or implementation errors are written to disk in the errors.log file, and can be checked by the analyst later. Each packet that had a decoding error on at least one layer will be added to the errors.pcap. An entry to the error log has the following format:
 
@@ -37,7 +37,7 @@ At the end of the error log, a summary of all errors and the number of their occ
 ...
 ```
 
-### Inclusion and Exclusion of Encoders
+## Inclusion and Exclusion of Encoders
 
 The _-encoders_ flag can be used to list all available encoders. In case not all of them are desired, selective inclusion and exclusion is possible, by using the _-include_ and _-exclude_ flags.
 
@@ -78,7 +78,7 @@ Exclude encoders \(this will prevent decoding of layers encapsulated by the excl
 $ netcap -r traffic.pcap -exclude TCP,UDP
 ```
 
-### Applying Berkeley Packet Filters
+## Applying Berkeley Packet Filters
 
 _Netcap_ will decode all traffic it is exposed to, therefore it might be desired to set a berkeley packet filter, to reduce the workload imposed on _Netcap_. This is possible for both live and offline operation. In case a [BPF](https://www.kernel.org/doc/Documentation/networking/filter.txt) should be set for offline use, the [gopacket/pcap](https://godoc.org/github.com/google/gopacket/pcap) package with bindings to the _libpcap_ will be used, since setting BPF filters is not yet supported by the native [pcapgo](https://godoc.org/github.com/google/gopacket/pcapgo) package.
 
