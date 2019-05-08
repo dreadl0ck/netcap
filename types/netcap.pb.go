@@ -6107,7 +6107,7 @@ type HTTP struct {
 	ResCookies         []string `protobuf:"bytes,18,rep,name=ResCookies,proto3" json:"ResCookies,omitempty"`
 	ResContentType     string   `protobuf:"bytes,19,opt,name=ResContentType,proto3" json:"ResContentType,omitempty"`
 	// Time Deltas (Nanoseconds)
-	// currently only available when using the HTTP proxy
+	// currently only available when using the HTTP proxy with tracing enabled.
 	DoneAfter      int64 `protobuf:"varint,20,opt,name=DoneAfter,proto3" json:"DoneAfter,omitempty"`
 	DNSDoneAfter   int64 `protobuf:"varint,21,opt,name=DNSDoneAfter,proto3" json:"DNSDoneAfter,omitempty"`
 	FirstByteAfter int64 `protobuf:"varint,22,opt,name=FirstByteAfter,proto3" json:"FirstByteAfter,omitempty"`
