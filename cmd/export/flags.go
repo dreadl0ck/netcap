@@ -36,7 +36,7 @@ var (
 	flagOutDir         = flag.String("out", "", "specify output directory, will be created if it does not exist")
 	flagBPF            = flag.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 	flagInclude        = flag.String("include", "", "include specific encoders")
-	flagExclude        = flag.String("exclude", "", "exclude specific encoders")
+	flagExclude        = flag.String("exclude", "LinkFlow,TransportFlow,NetworkFlow", "exclude specific encoders")
 	flagMemProfile     = flag.Bool("memprof", false, "create memory profile")
 	flagCSV            = flag.Bool("csv", false, "print output data as csv with header line")
 )
