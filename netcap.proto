@@ -859,7 +859,7 @@ message HTTP {
     string ResContentType      = 19;
 
     // Time Deltas (Nanoseconds)
-    // currently only available when using the HTTP proxy
+    // currently only available when using the HTTP proxy with tracing enabled.
     int64  DoneAfter           = 20;
     int64  DNSDoneAfter        = 21;
     int64  FirstByteAfter      = 22;
