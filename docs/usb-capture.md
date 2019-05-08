@@ -4,6 +4,8 @@ description: Capture traffic sent via Universal Serial Bus (USB) protocol
 
 # USB Capture
 
+## Live Capture
+
 USB live capture is now possible, currently the following Audit Records exist: USB and USBRequestBlockSetup.
 
 To capture USB traffic live on macOS, install wireshark and bring up the USB interface:
@@ -17,6 +19,8 @@ Now attach netcap and set baselayer to USB:
 ```text
 $ net.cap -iface XHC20 -base usb
 ```
+
+## Offline from dumpfile
 
 To read offline USB traffic from a PCAP file use:
 
