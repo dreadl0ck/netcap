@@ -22,7 +22,7 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"kythe.io/kythe/go/platform/delimited"
+	"github.com/dreadl0ck/netcap/delimited"
 )
 
 const blockSizeDefault = 4096
