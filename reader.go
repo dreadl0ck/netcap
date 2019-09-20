@@ -21,7 +21,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/types"
 	proto "github.com/golang/protobuf/proto"
-	"kythe.io/kythe/go/platform/delimited"
+	"github.com/dreadl0ck/netcap/delimited"
 )
 
 // Reader implements reading netcap files
