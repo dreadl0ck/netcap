@@ -115,6 +115,12 @@ commands:
     ## Utils
     ##
 
+    clean:
+        description: clean project
+        exec: |
+            rm -rf bin/*
+            rm -f *.ncap *.pcap *.ncap.gz *.log
+
     # count lines of code
     cloc:
         description: count lines of code for the project
@@ -160,11 +166,6 @@ commands:
                 echo "[ERROR] latest git tag does not match version $VERSION"
                 exit 1
             fi
-
-    # remove all files in project bin folder
-    clean:
-        description: clean up to prepare for build
-        exec: rm -rf bin/*
 
     # bump the git version tag
     version-bump:
