@@ -1,5 +1,7 @@
 # TODOs
 
+- use new 1.13 strings.ToValidUTF8()
+
 - remove length field from UDP and IPv6
 - net.collect -gen-keypair  -> net.util
 - replace AuditRecordHandle in net.collect with netcap.Writer
