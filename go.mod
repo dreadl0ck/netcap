@@ -9,6 +9,7 @@ require (
 	github.com/dreadl0ck/tlsx v0.0.0-20181116232845-5334a78b2ee2
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evilsocket/islazy v1.10.4
+	github.com/fatih/color v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.0
 	github.com/golang/protobuf v1.3.2
 	github.com/google/gopacket v1.1.17
