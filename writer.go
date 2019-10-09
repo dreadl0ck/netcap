@@ -19,10 +19,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"github.com/dreadl0ck/netcap/delimited"
 )
 
 const blockSizeDefault = 4096
@@ -102,7 +102,8 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 				w.csvWriter = io.NewCSVWriter(w.file)
 			}
 		}
-		return nil
+
+		return w
 	}
 
 	if writeChan && buffer || writeChan && compress {
@@ -248,4 +249,8 @@ func (w *Writer) Close() (name string, size int64) {
 // GetChan returns a channel for receiving bytes
 func (w *Writer) GetChan() <-chan []byte {
 	return w.cWriter.Chan()
+}
+
+func (w *Writer) IsCSV() bool {
+	return w.csv
 }

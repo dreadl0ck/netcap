@@ -112,7 +112,7 @@ func main() {
 		EncoderConfig: encoder.Config{
 			Buffer:          *flagBuffer,
 			Compression:     *flagCompress,
-			CSV:             false,
+			CSV:             *flagCSV,
 			IncludeEncoders: *flagInclude,
 			ExcludeEncoders: *flagExclude,
 			Out:             *flagOutDir,
