@@ -40,7 +40,7 @@ builds:
   # Default is both hooks empty.
   hooks:
     # this hook is used to compile the linux version in a docker container
-    post: zeus build-all-linux-docker
+    post: zeus build-all-alpine-docker
     #pre: rice embed-go
 -
   main: ./cmd/util
