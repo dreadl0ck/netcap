@@ -91,6 +91,10 @@ func main() {
 		return
 	}
 
+	if *flagPrivKey == "" {
+		log.Fatal("no path to private key specified")
+	}
+
 	// serve
 	ctx := context.Background()
 	log.Fatal(udpServer(ctx, *flagAddr))
@@ -99,9 +103,8 @@ func main() {
 // udpServer implements a simple UDP server
 func udpServer(ctx context.Context, address string) (err error) {
 
-	// ListenPacket provides us a wrapper around ListenUDP so that
-	// we don't need to call `net.ResolveUDPAddr` and then subsequentially
-	// perform a `ListenUDP` with the UDP address.
+	// ListenPacket provides a wrapper around ListenUDP
+	// eliminating the need to call net.ResolveUDPAddr
 	//
 	// The returned value (PacketConn) is pretty much the same as the one
 	// from ListenUDP (UDPConn) - the only difference is that `Packet*`
@@ -126,14 +129,14 @@ func udpServer(ctx context.Context, address string) (err error) {
 	// read private key file contents
 	privKeyContents, err := ioutil.ReadFile(*flagPrivKey)
 	if err != nil {
-		panic(err)
+		log.Fatal("failed to read private key file: ", err)
 	}
 
 	// hex decode private key
 	var serverPrivKey [cryptoutils.KeySize]byte
 	_, err = hex.Decode(serverPrivKey[:], privKeyContents)
 	if err != nil {
-		panic(err)
+		log.Fatal("failed to decode private key: ", err)
 	}
 
 	// Given that waiting for packets to arrive is blocking by nature and we want
@@ -243,6 +246,9 @@ func udpServer(ctx context.Context, address string) (err error) {
 		fmt.Println("cancelled")
 		err = ctx.Err()
 	case err = <-doneChan:
+		if err != nil {
+			log.Println("encountered an error while collecting audit records: ", err)
+		}
 		cleanup()
 	}
 
