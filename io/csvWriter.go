@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
 )
@@ -41,7 +42,8 @@ func (w *CSVWriter) WriteHeader(msg proto.Message) (int, error) {
 		return w.w.Write([]byte(strings.Join(csv.CSVHeader(), ",") + "\n"))
 	}
 
-	panic("can not write as CSV" + msg.String())
+	spew.Dump(msg)
+	panic("protocol buffer does not implement the types.AuditRecord interface")
 }
 
 func (w *CSVWriter) WriteRecord(msg proto.Message) (int, error) {
