@@ -170,8 +170,17 @@ func InitLayerEncoders(c Config) {
 	// initialize encoders
 	for _, e := range layerEncoderSlice {
 
-		//fmt.Println("init", e.Layer)
-		e.writer = netcap.NewWriter(e.Layer.String(), c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
+		fmt.Println("init", e.Layer)
+		var filename = e.Layer.String()
+
+		// handle inconsistencies in gopacket naming convention
+		switch e.Type {
+		case types.Type_NC_OSPFv2:
+			filename = "OSPFv2"
+		case types.Type_NC_OSPFv3:
+			filename = "OSPFv3"
+		}
+		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
 
 		err := e.writer.WriteHeader(e.Type, c.Source, c.Version, c.IncludePayloads)
 		if err != nil {
@@ -204,10 +213,17 @@ func (e *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
 	record := e.Handler(l, utils.TimeToString(timestamp))
 	if record != nil {
 
-		// write record
-		err := e.writer.WriteProto(record)
-		if err != nil {
-			return err
+		if e.writer.IsCSV() {
+			_, err := e.writer.WriteCSV(record)
+			if err != nil {
+				return err
+			}
+		} else {
+			// write record
+			err := e.writer.WriteProto(record)
+			if err != nil {
+				return err
+			}
 		}
 
 		// export metrics if configured

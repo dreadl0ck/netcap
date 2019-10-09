@@ -192,10 +192,17 @@ func (e *CustomEncoder) Encode(p gopacket.Packet) error {
 		// increase counter
 		atomic.AddInt64(&e.numRecords, 1)
 
-		// write record
-		err := e.writer.WriteProto(record)
-		if err != nil {
-			return err
+		if e.writer.IsCSV() {
+			_, err := e.writer.WriteCSV(record)
+			if err != nil {
+				return err
+			}
+		} else {
+			// write record
+			err := e.writer.WriteProto(record)
+			if err != nil {
+				return err
+			}
 		}
 
 		// export metrics if configured
