@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.4.0
+    VERSION: 0.4.1
 
 # command data
 commands:
@@ -105,9 +105,10 @@ commands:
         description: release a new version, bundle and publish on github
         dependencies:
             - gen-version
+            - version-bump
             - check-version
             - gen-proto-release
-        exec: goreleaser release --rm-dist
+        exec: git add . && git commit -m "bumped version to ${VERSION}" && goreleaser release --rm-dist
 
     # run a test release
     release-test:
