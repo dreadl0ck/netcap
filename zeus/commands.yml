@@ -85,8 +85,14 @@ commands:
     ## Containers
     ##
 
-    build-all-linux-docker:
-        description: build all framework binaries for linux inside a docker container
+    build-all-alpine-docker:
+        description: build all framework binaries for linux inside an apline docker container
+        help: used to compile for linux on macOS because cross compilation is a pain with CGO
+        dependencies:
+            - clean
+    
+    build-all-ubuntu-docker:
+        description: build all framework binaries for linux inside an ubuntu docker container
         help: used to compile for linux on macOS because cross compilation is a pain with CGO
         dependencies:
             - clean
