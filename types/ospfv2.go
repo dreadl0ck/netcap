@@ -458,3 +458,7 @@ func init() {
 func (a OSPFv2) Inc() {
 	ospf2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a OSPFv2) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}
