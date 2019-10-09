@@ -117,3 +117,7 @@ func init() {
 func (a OSPFv3) Inc() {
 	ospf3Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a OSPFv3) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&a)
+}
