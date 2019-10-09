@@ -108,7 +108,7 @@ commands:
             - version-bump
             - check-version
             - gen-proto-release
-        exec: git add . && git commit -m "bumped version to ${VERSION}" && goreleaser release --rm-dist
+        exec: goreleaser release --rm-dist
 
     # run a test release
     release-test:
