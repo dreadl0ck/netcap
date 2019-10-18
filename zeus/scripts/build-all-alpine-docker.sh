@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# make this script callable from project root dir
-cd docker
-
 echo "[INFO] building docker image"
 
 # in case of cache annoyances:
@@ -29,28 +26,28 @@ fi
 echo "[INFO] preparing dist folder, CONTAINER_ID: $CONTAINER_ID"
 
 # clean up
-rm -rf ../dist/linux_amd64
+rm -rf dist/linux_amd64
 
 # create path in dist
-mkdir -p ../dist/linux_amd64
+mkdir -p dist/linux_amd64
 
 # copy binaries from container
-docker cp $CONTAINER_ID:/netcap/net.capture ../dist/linux_amd64/net.capture
-docker cp $CONTAINER_ID:/netcap/net.label ../dist/linux_amd64/net.label
-docker cp $CONTAINER_ID:/netcap/net.collect ../dist/linux_amd64/net.collect
-docker cp $CONTAINER_ID:/netcap/net.agent ../dist/linux_amd64/net.agent
-docker cp $CONTAINER_ID:/netcap/net.proxy ../dist/linux_amd64/net.proxy
-docker cp $CONTAINER_ID:/netcap/net.export ../dist/linux_amd64/net.export
-docker cp $CONTAINER_ID:/netcap/net.dump ../dist/linux_amd64/net.dump
-docker cp $CONTAINER_ID:/netcap/net.util ../dist/linux_amd64/net.util
+docker cp $CONTAINER_ID:/netcap/net.capture dist/linux_amd64/net.capture
+docker cp $CONTAINER_ID:/netcap/net.label dist/linux_amd64/net.label
+docker cp $CONTAINER_ID:/netcap/net.collect dist/linux_amd64/net.collect
+docker cp $CONTAINER_ID:/netcap/net.agent dist/linux_amd64/net.agent
+docker cp $CONTAINER_ID:/netcap/net.proxy dist/linux_amd64/net.proxy
+docker cp $CONTAINER_ID:/netcap/net.export dist/linux_amd64/net.export
+docker cp $CONTAINER_ID:/netcap/net.dump dist/linux_amd64/net.dump
+docker cp $CONTAINER_ID:/netcap/net.util dist/linux_amd64/net.util
 
 # remove container
 docker rm $CONTAINER_ID
 
-cp ../LICENSE ../dist/linux_amd64
-cp ../README.md ../dist/linux_amd64
+cp LICENSE dist/linux_amd64
+cp README.md dist/linux_amd64
 
-cd ../dist
+cd dist
 
 # create tar archive for linux
 tar -cvf netcap_${VERSION}_linux_amd64.tar.gz linux_amd64
