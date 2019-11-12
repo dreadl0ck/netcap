@@ -27,6 +27,10 @@ var fieldsModbusTCP = []string{
 	"Length",                // int32
 	"UnitIdentifier",        // int32
 	"Payload",               // []byte
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (a ModbusTCP) CSVHeader() []string {
@@ -41,6 +45,10 @@ func (a ModbusTCP) CSVRecord() []string {
 		formatInt32(a.Length),                // int32
 		formatInt32(a.UnitIdentifier),        // int32
 		hex.EncodeToString(a.Payload),
+		a.Context.SrcIP,
+		a.Context.DstIP,
+		a.Context.SrcPort,
+		a.Context.DstPort,
 	})
 }
 
@@ -66,4 +74,8 @@ func init() {
 
 func (a ModbusTCP) Inc() {
 	modbusTcpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *ModbusTCP) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

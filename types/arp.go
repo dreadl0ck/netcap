@@ -75,3 +75,5 @@ func init() {
 func (a ARP) Inc() {
 	arpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *ARP) SetPacketContext(ctx *PacketContext) {}

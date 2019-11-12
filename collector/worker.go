@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/google/gopacket"
@@ -72,8 +73,27 @@ func (c *Collector) worker() chan gopacket.Packet {
 
 					// pick encoders from the encoderMap by looking up the layer type
 					if encoders, ok := encoder.LayerEncoders[layer.LayerType()]; ok {
+
+						var ctx = &types.PacketContext{}
+
+						if encoder.AddContext {
+
+							var (
+								netLayer = p.NetworkLayer()
+								transportLayer = p.TransportLayer()
+							)
+							if netLayer != nil {
+								ctx.SrcIP = netLayer.NetworkFlow().Src().String()
+								ctx.DstIP = netLayer.NetworkFlow().Dst().String()
+							}
+							if transportLayer != nil {
+								ctx.SrcPort = transportLayer.TransportFlow().Src().String()
+								ctx.DstPort = transportLayer.TransportFlow().Dst().String()
+							}
+						}
+
 						for _, e := range encoders {
-							err := e.Encode(layer, p.Metadata().Timestamp)
+							err := e.Encode(ctx, p, layer)
 							if err != nil {
 								if err := c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
 									fmt.Println("failed to log packet error:", err)

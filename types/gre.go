@@ -39,6 +39,10 @@ var fieldsGRE = []string{
 	"Seq",               // uint32
 	"Ack",               // uint32
 	"Routing",           // *GRERouting
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (a GRE) CSVHeader() []string {
@@ -64,6 +68,10 @@ func (a GRE) CSVRecord() []string {
 		formatUint32(a.Seq),                     // uint32
 		formatUint32(a.Ack),                     // uint32
 		a.Routing.GetString(),                   // *GRERouting
+		a.Context.SrcIP,
+		a.Context.DstIP,
+		a.Context.SrcPort,
+		a.Context.DstPort,
 	})
 }
 
@@ -112,4 +120,8 @@ func init() {
 
 func (a GRE) Inc() {
 	greMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *GRE) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

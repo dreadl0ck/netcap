@@ -28,6 +28,8 @@ var fieldsVXLAN = []string{
 	"GBPDontLearn",     //  bool
 	"GBPApplied",       //  bool
 	"GBPGroupPolicyID", //  int32
+	"SrcIP",
+	"DstIP",
 }
 
 func (a VXLAN) CSVHeader() []string {
@@ -43,6 +45,8 @@ func (a VXLAN) CSVRecord() []string {
 		strconv.FormatBool(a.GBPDontLearn), //  bool
 		strconv.FormatBool(a.GBPApplied),   //  bool
 		formatInt32(a.GBPGroupPolicyID),    //  int32
+		a.Context.SrcIP,
+		a.Context.DstIP,
 	})
 }
 
@@ -68,4 +72,8 @@ func init() {
 
 func (a VXLAN) Inc() {
 	vxlanMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *VXLAN) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

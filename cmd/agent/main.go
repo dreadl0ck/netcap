@@ -96,6 +96,7 @@ func main() {
 			// set channel writer
 			WriteChan:       true,
 			IncludePayloads: *flagPayload,
+			AddContext:      *flagContext,
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),

@@ -40,6 +40,10 @@ var fieldsDNS = []string{
 	"Answers",      // []*DNSResourceRecord
 	"Authorities",  // []*DNSResourceRecord
 	"Additionals",  // []*DNSResourceRecord
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (d DNS) CSVHeader() []string {
@@ -81,6 +85,10 @@ func (d DNS) CSVRecord() []string {
 		strings.Join(answers, ""),     // []*DNSResourceRecord
 		strings.Join(authorities, ""), // []*DNSResourceRecord
 		strings.Join(additionals, ""), // []*DNSResourceRecord
+		d.Context.SrcIP,
+		d.Context.DstIP,
+		d.Context.SrcPort,
+		d.Context.DstPort,
 	})
 }
 
@@ -200,4 +208,8 @@ func init() {
 
 func (a DNS) Inc() {
 	dnsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *DNS) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

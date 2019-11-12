@@ -96,3 +96,5 @@ func init() {
 func (a USB) Inc() {
 	usbMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *USB) SetPacketContext(ctx *PacketContext) {}

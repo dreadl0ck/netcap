@@ -37,6 +37,10 @@ var fieldsDHCPv4 = []string{
 	"ServerName",   // []byte
 	"File",         // []byte
 	"Options",      // []*DHCPOption
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (d DHCPv4) CSVHeader() []string {
@@ -65,6 +69,10 @@ func (d DHCPv4) CSVRecord() []string {
 		hex.EncodeToString(d.ServerName), // []byte
 		hex.EncodeToString(d.File),       // []byte
 		strings.Join(opts, ""),           // []*DHCPOption
+		d.Context.SrcIP,
+		d.Context.DstIP,
+		d.Context.SrcPort,
+		d.Context.DstPort,
 	})
 }
 
@@ -102,4 +110,8 @@ func init() {
 
 func (a DHCPv4) Inc() {
 	dhcp4Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *DHCPv4) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

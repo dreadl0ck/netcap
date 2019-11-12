@@ -162,3 +162,12 @@ func (a IPv4) Inc() {
 	ip4PayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
 	ip4PayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
 }
+
+func (a *IPv4) SetPacketContext(ctx *PacketContext) {
+
+	// prevent duplicate data on context
+	ctx.SrcIP = ""
+	ctx.DstIP = ""
+
+	a.Context = ctx
+}

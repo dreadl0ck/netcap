@@ -26,6 +26,8 @@ var fieldsSCTP = []string{
 	"DstPort",
 	"VerificationTag",
 	"Checksum",
+	"SrcIP",
+	"DstIP",
 }
 
 func (s SCTP) CSVHeader() []string {
@@ -39,6 +41,8 @@ func (s SCTP) CSVRecord() []string {
 		strconv.FormatUint(uint64(s.DstPort), 10),
 		strconv.FormatUint(uint64(s.VerificationTag), 10),
 		strconv.FormatUint(uint64(s.Checksum), 10),
+		s.Context.SrcIP,
+		s.Context.DstIP,
 	})
 }
 
@@ -64,4 +68,13 @@ func init() {
 
 func (a SCTP) Inc() {
 	sctpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *SCTP) SetPacketContext(ctx *PacketContext) {
+
+	// clear duplicate data
+	ctx.SrcIP = ""
+	ctx.DstIP = ""
+
+	a.Context = ctx
 }

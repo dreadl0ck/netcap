@@ -26,6 +26,8 @@ var fieldsIPSecAH = []string{
 	"SPI",
 	"Seq",
 	"AuthenticationData",
+	"SrcIP",        // string
+	"DstIP",        // string
 }
 
 func (a IPSecAH) CSVHeader() []string {
@@ -39,6 +41,8 @@ func (a IPSecAH) CSVRecord() []string {
 		formatInt32(a.SPI),
 		formatInt32(a.Seq),
 		hex.EncodeToString(a.AuthenticationData),
+		a.Context.SrcIP,
+		a.Context.DstIP,
 	})
 }
 
@@ -64,4 +68,8 @@ func init() {
 
 func (a IPSecAH) Inc() {
 	ipSecAhMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *IPSecAH) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

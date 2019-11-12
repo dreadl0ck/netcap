@@ -27,6 +27,8 @@ var fieldsICMPv6RouterAdvertisement = []string{
 	"ReachableTime",  //  uint32
 	"RetransTimer",   //  uint32
 	"Options",        //  []*ICMPv6Option
+	"SrcIP",
+	"DstIP",
 }
 
 func (i ICMPv6RouterAdvertisement) CSVHeader() []string {
@@ -46,6 +48,8 @@ func (i ICMPv6RouterAdvertisement) CSVRecord() []string {
 		formatUint32(i.ReachableTime), // uint32
 		formatUint32(i.RetransTimer),  // uint32
 		strings.Join(opts, ""),
+		i.Context.SrcIP,
+		i.Context.DstIP,
 	})
 }
 
@@ -71,4 +75,8 @@ func init() {
 
 func (a ICMPv6RouterAdvertisement) Inc() {
 	icmp6raMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *ICMPv6RouterAdvertisement) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

@@ -65,3 +65,5 @@ func init() {
 func (a Dot1Q) Inc() {
 	dot1qMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *Dot1Q) SetPacketContext(ctx *PacketContext) {}

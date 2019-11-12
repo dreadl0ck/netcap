@@ -82,3 +82,5 @@ func init() {
 func (a CiscoDiscovery) Inc() {
 	ciscoDiscoveryMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *CiscoDiscovery) SetPacketContext(ctx *PacketContext) {}

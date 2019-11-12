@@ -100,3 +100,5 @@ func init() {
 func (a EAPOLKey) Inc() {
 	eapPolKeyMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *EAPOLKey) SetPacketContext(ctx *PacketContext) {}

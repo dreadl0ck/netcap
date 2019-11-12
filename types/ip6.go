@@ -137,3 +137,12 @@ func (a IPv6) Inc() {
 	ip6PayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
 	ip6PayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
 }
+
+func (a *IPv6) SetPacketContext(ctx *PacketContext) {
+
+	// clear those values explicitly to prevent duplicating them on the context
+	ctx.SrcIP = ""
+	ctx.DstIP = ""
+
+	a.Context = ctx
+}

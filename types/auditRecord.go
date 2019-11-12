@@ -52,9 +52,15 @@ type AuditRecord interface {
 
 	// returns the audit record as JSON
 	JSON() (string, error)
+
+	// can be implemented to set additional information for each audit record
+	// important:
+	//  - MUST be implemented on a pointer of an instance
+	//  - the passed in packet context MUST be set on the Context field of the current audit record
+	SetPacketContext(ctx *PacketContext)
 }
 
-// selectFields returns an array with the inidices of the desired fields for selection
+// selectFields returns an array with the indices of the desired fields for selection
 func selectFields(all []string, selection string) (s []int) {
 
 	var (

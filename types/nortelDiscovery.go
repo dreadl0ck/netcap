@@ -69,3 +69,5 @@ func init() {
 func (a NortelDiscovery) Inc() {
 	nortelDiscoveryMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *NortelDiscovery) SetPacketContext(ctx *PacketContext) {}

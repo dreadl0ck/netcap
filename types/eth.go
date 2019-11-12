@@ -103,3 +103,5 @@ func (a Ethernet) Inc() {
 	ethernetPayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
 	ethernetPayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
 }
+
+func (a *Ethernet) SetPacketContext(ctx *PacketContext) {}

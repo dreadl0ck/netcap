@@ -23,6 +23,8 @@ var fieldsICMPv6NeighborSolicitation = []string{
 	"Timestamp",
 	"TargetAddress", // string
 	"Options",       // []*ICMPv6Option
+	"SrcIP",
+	"DstIP",
 }
 
 func (i ICMPv6NeighborSolicitation) CSVHeader() []string {
@@ -38,6 +40,8 @@ func (i ICMPv6NeighborSolicitation) CSVRecord() []string {
 		formatTimestamp(i.Timestamp),
 		i.TargetAddress,
 		strings.Join(opts, ""),
+		i.Context.SrcIP,
+		i.Context.DstIP,
 	})
 }
 
@@ -63,4 +67,8 @@ func init() {
 
 func (a ICMPv6NeighborSolicitation) Inc() {
 	icmp6nsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *ICMPv6NeighborSolicitation) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

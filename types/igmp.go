@@ -35,6 +35,8 @@ var fieldsIGMP = []string{
 	"NumberOfSources",         // int32
 	"GroupRecords",            // []*IGMPv3GroupRecord
 	"Version",                 // int32
+	"SrcIP",
+	"DstIP",
 }
 
 func (i IGMP) CSVHeader() []string {
@@ -58,8 +60,10 @@ func (i IGMP) CSVRecord() []string {
 		join(i.SourceAddresses...),                    // []string
 		formatInt32(i.NumberOfGroupRecords),           // int32
 		formatInt32(i.NumberOfSources),                // int32
-		strings.Join(records, ""),                     // []*IGMPv3GroupRecord
+		strings.Join(records, ""),                // []*IGMPv3GroupRecord
 		formatInt32(i.Version),                        // int32
+		i.Context.SrcIP,
+		i.Context.DstIP,
 	})
 }
 
@@ -103,4 +107,8 @@ func init() {
 
 func (a IGMP) Inc() {
 	igmpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *IGMP) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

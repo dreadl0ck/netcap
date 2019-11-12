@@ -48,4 +48,5 @@ var (
 	flagPayload       = flag.Bool("payload", false, "capture payload for supported layers")
 
 	flagCSV = flag.Bool("csv", false, "output data as CSV instead of audit records")
+	flagContext = flag.Bool("context", true, "add packet flow context to selected audit records")
 )

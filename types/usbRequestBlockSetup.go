@@ -66,3 +66,5 @@ func init() {
 func (a USBRequestBlockSetup) Inc() {
 	usbRequestBlockSetupMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *USBRequestBlockSetup) SetPacketContext(ctx *PacketContext) {}

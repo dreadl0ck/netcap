@@ -15,15 +15,13 @@ package encoder
 
 import (
 	"fmt"
-	"log"
-	"strings"
-	"time"
-
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/gopacket"
+	"log"
+	"strings"
 )
 
 var (
@@ -85,6 +83,10 @@ var (
 		usbRequestBlockSetupEncoder,
 		nortelDiscoveryEncoder,
 	}
+
+	// set via encoder config
+	// used to request a content from being set on the audit records
+	AddContext bool
 )
 
 type (
@@ -118,6 +120,8 @@ func InitLayerEncoders(c Config) {
 		// new selection
 		selection []*LayerEncoder
 	)
+
+	AddContext = c.AddContext
 
 	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" {
@@ -170,7 +174,7 @@ func InitLayerEncoders(c Config) {
 	// initialize encoders
 	for _, e := range layerEncoderSlice {
 
-		fmt.Println("init", e.Layer)
+		//fmt.Println("init", e.Layer)
 		var filename = e.Layer.String()
 
 		// handle inconsistencies in gopacket naming convention
@@ -208,10 +212,19 @@ func CreateLayerEncoder(nt types.Type, lt gopacket.LayerType, handler LayerEncod
 // Encode is called for each layer
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
-func (e *LayerEncoder) Encode(l gopacket.Layer, timestamp time.Time) error {
+func (e *LayerEncoder) Encode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
 
-	record := e.Handler(l, utils.TimeToString(timestamp))
+	record := e.Handler(l, utils.TimeToString(p.Metadata().Timestamp))
 	if record != nil {
+
+		if ctx != nil {
+			// assert to audit record
+			if p, ok := record.(types.AuditRecord); ok {
+				p.SetPacketContext(ctx)
+			} else {
+				log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			}
+		}
 
 		if e.writer.IsCSV() {
 			_, err := e.writer.WriteCSV(record)

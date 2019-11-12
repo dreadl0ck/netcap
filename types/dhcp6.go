@@ -28,6 +28,10 @@ var fieldsDHCPv6 = []string{
 	"PeerAddr",      // string
 	"TransactionID", // []byte
 	"Options",       // []*DHCPv6Option
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (d DHCPv6) CSVHeader() []string {
@@ -47,6 +51,10 @@ func (d DHCPv6) CSVRecord() []string {
 		d.PeerAddr,                          // string
 		hex.EncodeToString(d.TransactionID), // []byte
 		strings.Join(opts, ""),              // []*DHCPv6Option
+		d.Context.SrcIP,
+		d.Context.DstIP,
+		d.Context.SrcPort,
+		d.Context.DstPort,
 	})
 }
 
@@ -84,4 +92,8 @@ func init() {
 
 func (a DHCPv6) Inc() {
 	dhcp6Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *DHCPv6) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

@@ -77,3 +77,5 @@ func init() {
 func (a LinkLayerDiscovery) Inc() {
 	lldMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *LinkLayerDiscovery) SetPacketContext(ctx *PacketContext) {}

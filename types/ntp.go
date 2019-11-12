@@ -37,6 +37,10 @@ var fieldsNTP = []string{
 	"ReceiveTimestamp",
 	"TransmitTimestamp",
 	"ExtensionBytes",
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (n NTP) CSVHeader() []string {
@@ -60,6 +64,10 @@ func (n NTP) CSVRecord() []string {
 		strconv.FormatUint(uint64(n.ReceiveTimestamp), 10),   // uint64
 		strconv.FormatUint(uint64(n.TransmitTimestamp), 10),  // uint64
 		hex.EncodeToString(n.ExtensionBytes),                 // []byte
+		n.Context.SrcIP,
+		n.Context.DstIP,
+		n.Context.SrcPort,
+		n.Context.DstPort,
 	})
 }
 
@@ -85,4 +93,8 @@ func init() {
 
 func (a NTP) Inc() {
 	ntpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *NTP) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

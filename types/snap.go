@@ -61,3 +61,5 @@ func init() {
 func (a SNAP) Inc() {
 	snapMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *SNAP) SetPacketContext(ctx *PacketContext) {}

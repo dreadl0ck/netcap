@@ -39,6 +39,10 @@ var fieldsBFD = []string{
 	"RequiredMinRxInterval",
 	"RequiredMinEchoRxInterval",
 	"AuthHeader",
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (a BFD) CSVHeader() []string {
@@ -64,6 +68,10 @@ func (a BFD) CSVRecord() []string {
 		formatInt32(a.RequiredMinRxInterval),          // int32
 		formatInt32(a.RequiredMinEchoRxInterval),      // int32
 		a.AuthHeader.GetString(),                      // *BFDAuthHeader
+		a.Context.SrcIP,
+		a.Context.DstIP,
+		a.Context.SrcPort,
+		a.Context.DstPort,
 	})
 }
 
@@ -103,4 +111,8 @@ func init() {
 
 func (a BFD) Inc() {
 	bfdMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *BFD) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

@@ -67,3 +67,5 @@ func init() {
 func (a LLC) Inc() {
 	llcMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *LLC) SetPacketContext(ctx *PacketContext) {}

@@ -24,6 +24,8 @@ var fieldsICMPv6NeighborAdvertisement = []string{
 	"Flags",         // int32
 	"TargetAddress", // string
 	"Options",       // []*ICMPv6Option
+	"SrcIP",
+	"DstIP",
 }
 
 func (i ICMPv6NeighborAdvertisement) CSVHeader() []string {
@@ -40,6 +42,8 @@ func (i ICMPv6NeighborAdvertisement) CSVRecord() []string {
 		formatInt32(i.Flags),
 		i.TargetAddress,
 		strings.Join(opts, ""),
+		i.Context.SrcIP,
+		i.Context.DstIP,
 	})
 }
 
@@ -65,4 +69,8 @@ func init() {
 
 func (a ICMPv6NeighborAdvertisement) Inc() {
 	icmp6naMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *ICMPv6NeighborAdvertisement) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }
