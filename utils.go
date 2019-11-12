@@ -50,22 +50,34 @@ func PrintLogo() {
 	fmt.Println(logo)
 }
 
+// DumpConfig contains all possible settings for dumping an audit records
+type DumpConfig struct {
+	Path         string
+	Separator    string
+	TabSeparated bool
+	Structured   bool
+	Table        bool
+	Selection    string
+	UTC          bool
+	Fields       bool
+	JSON         bool
+}
+
 // Dump reads the specified netcap file
 // and dumps the output according to the configuration to stdout
-// TODO: add dumpConfig type, create default and pass this one instead
-func Dump(path string, separator string, tsv bool, structured bool, table bool, selection string, utc bool, fields bool, dumpJson bool) {
+func Dump(c DumpConfig) {
 
 	var (
 		count  = 0
-		r, err = Open(path)
+		r, err = Open(c.Path)
 	)
 	if err != nil {
 		log.Fatal("failed to open audit record file: ", err)
 	}
 	defer r.Close()
 
-	if separator == "\\t" || tsv {
-		separator = "\t"
+	if c.Separator == "\\t" || c.TabSeparated {
+		c.Separator = "\t"
 	}
 
 	var (
@@ -75,18 +87,18 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 		rows [][]string
 	)
 
-	types.Select(record, selection)
-	types.UTC = utc
+	types.Select(record, c.Selection)
+	types.UTC = c.UTC
 
-	if !structured && !table {
+	if !c.Structured && !c.Table {
 
 		if p, ok := record.(types.AuditRecord); ok {
-			fmt.Println(strings.Join(p.CSVHeader(), separator))
+			fmt.Println(strings.Join(p.CSVHeader(), c.Separator))
 		} else {
 			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
 		}
 
-		if fields {
+		if c.Fields {
 			os.Exit(0)
 		}
 	}
@@ -100,7 +112,7 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 		}
 		count++
 
-		if structured {
+		if c.Structured {
 			os.Stdout.WriteString(header.Type.String())
 			os.Stdout.WriteString("\n")
 			os.Stdout.WriteString(proto.MarshalTextString(record))
@@ -109,7 +121,7 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 		}
 
 		if p, ok := record.(types.AuditRecord); ok {
-			if dumpJson {
+			if c.JSON {
 				marshaled, err := json.MarshalIndent(p, "  ", " ")
 				if err != nil {
 					log.Fatal("failed to marshal json:", err)
@@ -118,7 +130,7 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 				os.Stdout.WriteString("\n")
 				continue
 			}
-			if table {
+			if c.Table {
 				rows = append(rows, p.CSVRecord())
 
 				if count%100 == 0 {
@@ -127,14 +139,14 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 				}
 				continue
 			}
-			os.Stdout.WriteString(strings.Join(p.CSVRecord(), separator) + "\n")
+			os.Stdout.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
 		} else {
 			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
 		}
 
 	}
 
-	if table {
+	if c.Table {
 		if p, ok := record.(types.AuditRecord); ok {
 			tui.Table(os.Stdout, p.CSVHeader(), rows)
 			fmt.Println()

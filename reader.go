@@ -19,9 +19,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/types"
 	proto "github.com/golang/protobuf/proto"
-	"github.com/dreadl0ck/netcap/delimited"
 )
 
 // Reader implements reading netcap files

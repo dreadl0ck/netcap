@@ -11,6 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Implements mapping alerts from suricata to netcap audit records
 package label
 
 import (

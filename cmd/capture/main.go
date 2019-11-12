@@ -120,7 +120,7 @@ func main() {
 			Version:         netcap.Version,
 			IncludePayloads: *flagPayload,
 			Export:          false,
-			AddContext: 	 *flagContext,
+			AddContext:      *flagContext,
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),

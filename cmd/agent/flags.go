@@ -35,5 +35,5 @@ var (
 	flagDecodeOptions = flag.String("opts", "lazy", "select decoding options")
 	flagPayload       = flag.Bool("payload", false, "capture payload for supported layers")
 	flagVersion       = flag.Bool("version", false, "print netcap package version and exit")
-	flagContext = flag.Bool("context", true, "add packet flow context to selected audit records")
+	flagContext       = flag.Bool("context", true, "add packet flow context to selected audit records")
 )

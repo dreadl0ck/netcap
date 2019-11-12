@@ -11,6 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Provides a mechanism to collect network packets from a network interface on macOS, linux and windows
 package collector
 
 import (

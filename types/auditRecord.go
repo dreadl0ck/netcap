@@ -11,6 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Contains the type definitions for the supported network protocols
 package types
 
 import (

@@ -31,9 +31,9 @@ const testData = "\x00\x01N\x02ET\x03CAP"
 func TestCorruptedWriter(t *testing.T) {
 
 	var (
-		bad = errors.New("BAD")
+		bad    = errors.New("BAD")
 		buffer = &errWriter{
-			nc: 1,
+			nc:  1,
 			err: bad,
 		}
 		wr = NewWriter(buffer)
@@ -50,7 +50,7 @@ func TestGoodWriter(t *testing.T) {
 
 	var (
 		buffer bytes.Buffer
-		wr = NewWriter(&buffer)
+		wr     = NewWriter(&buffer)
 	)
 
 	// iterate over records
@@ -68,14 +68,14 @@ func TestGoodWriter(t *testing.T) {
 
 /*
 	READER
- */
+*/
 
 func TestCorruptedReader(t *testing.T) {
 
 	const corrupt = "\x05NETC" // n = 5, only 4 bytes of data
 
 	var (
-		r = strings.NewReader(corrupt)
+		r  = strings.NewReader(corrupt)
 		rd = NewReader(r)
 	)
 
@@ -90,7 +90,7 @@ func TestCorruptedReader(t *testing.T) {
 func TestGoodReader(t *testing.T) {
 
 	var (
-		r = strings.NewReader(testData)
+		r  = strings.NewReader(testData)
 		rd = NewReader(r)
 	)
 
@@ -122,9 +122,9 @@ func TestRoundTrip(t *testing.T) {
 
 	// write all the words in the input as records to a delimited writer
 	var (
-		words = strings.Fields(input)
+		words  = strings.Fields(input)
 		buffer bytes.Buffer
-		wr = NewWriter(&buffer)
+		wr     = NewWriter(&buffer)
 	)
 
 	// iterate over words
@@ -138,7 +138,7 @@ func TestRoundTrip(t *testing.T) {
 	// read all the records back from the buffer with a delimited reader
 	var (
 		got []string
-		rd = NewReader(&buffer)
+		rd  = NewReader(&buffer)
 	)
 
 	for {

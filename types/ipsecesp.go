@@ -24,8 +24,8 @@ var fieldsIPSecESP = []string{
 	"SPI",
 	"Seq",
 	"LenEncrypted",
-	"SrcIP",        // string
-	"DstIP",        // string
+	"SrcIP", // string
+	"DstIP", // string
 }
 
 func (a IPSecESP) CSVHeader() []string {

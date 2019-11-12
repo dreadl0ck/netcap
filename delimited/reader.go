@@ -75,4 +75,3 @@ func (r *Reader) NextProto(pb proto.Message) error {
 	// unpack protocol buffer
 	return proto.Unmarshal(rec, pb)
 }
-

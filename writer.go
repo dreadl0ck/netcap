@@ -37,7 +37,7 @@ var (
  *	Type Definition
  */
 
-// Writer supports writing audit records to disk
+// Writer is a structure that supports writing audit records to disk
 type Writer struct {
 
 	// Name of the associated audit record type

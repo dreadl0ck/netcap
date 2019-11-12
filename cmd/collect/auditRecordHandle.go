@@ -20,9 +20,9 @@ import (
 	"os"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/delimited"
 )
 
 // AuditRecordHandle wraps a file handle of a netcap audit record file

@@ -11,11 +11,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// This package implements a simple reader and writer for streams of length-delimited byte records
-// Note:
-//  - Each record is written as a varint-encoded length in bytes, followed immediately by the record itself
-//  - a stream consists of a sequence of such records packed consecutively without additional padding
-//  - no checksums or compression are used
+// This package implements a simple reader and writer for streams of length-delimited byte records.
+// Each record is written as a varint-encoded length in bytes, followed immediately by the record itself.
+// A stream consists of a sequence of such records packed consecutively without additional padding.
+// No checksums or compression are being used.
 package delimited
 
 import (
@@ -84,5 +83,3 @@ func (w Writer) WriteRecord(record []byte) (int, error) {
 
 	return lengthWritten + dataWritten, nil
 }
-
-

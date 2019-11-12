@@ -69,7 +69,19 @@ func main() {
 
 	// read ncap file and print to stdout
 	if filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz" {
-		netcap.Dump(*flagInput, *flagSeparator, *flagTSV, *flagPrintStructured, *flagTable, *flagSelect, *flagUTC, *flagFields, *flagJSON)
+		netcap.Dump(
+			netcap.DumpConfig{
+				Path:         *flagInput,
+				Separator:    *flagSeparator,
+				TabSeparated: *flagTSV,
+				Structured:   *flagPrintStructured,
+				Table:        *flagTable,
+				Selection:    *flagSelect,
+				UTC:          *flagUTC,
+				Fields:       *flagFields,
+				JSON:         *flagJSON,
+			},
+		)
 		return
 	}
 }
