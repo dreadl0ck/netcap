@@ -197,3 +197,5 @@ func init() {
 func (a Dot11) Inc() {
 	dot11Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *Dot11) SetPacketContext(ctx *PacketContext) {}

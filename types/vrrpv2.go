@@ -30,6 +30,8 @@ var fieldsVRRPv2 = []string{
 	"AdverInt",     // int32
 	"Checksum",     // int32
 	"IPAdresses",   // []string
+	"SrcIP",
+	"DstIP",
 }
 
 func (a VRRPv2) CSVHeader() []string {
@@ -48,6 +50,8 @@ func (a VRRPv2) CSVRecord() []string {
 		formatInt32(a.AdverInt),     // int32
 		formatInt32(a.Checksum),     // int32
 		join(a.IPAddress...),        // []string
+		a.Context.SrcIP,
+		a.Context.DstIP,
 	})
 }
 
@@ -73,4 +77,8 @@ func init() {
 
 func (a VRRPv2) Inc() {
 	vrrp2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *VRRPv2) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

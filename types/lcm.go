@@ -30,6 +30,10 @@ var fieldsLCM = []string{
 	"TotalFragments", // int32
 	"ChannelName",    // string
 	"Fragmented",     // bool
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (a LCM) CSVHeader() []string {
@@ -47,6 +51,10 @@ func (a LCM) CSVRecord() []string {
 		formatInt32(a.TotalFragments),    // int32
 		a.ChannelName,                    // string
 		strconv.FormatBool(a.Fragmented), // bool
+		a.Context.SrcIP,
+		a.Context.DstIP,
+		a.Context.SrcPort,
+		a.Context.DstPort,
 	})
 }
 
@@ -72,4 +80,8 @@ func init() {
 
 func (a LCM) Inc() {
 	lcmMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *LCM) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

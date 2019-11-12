@@ -120,6 +120,7 @@ func main() {
 			Version:         netcap.Version,
 			IncludePayloads: *flagPayload,
 			Export:          false,
+			AddContext: 	 *flagContext,
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
@@ -133,6 +134,7 @@ func main() {
 		{"MemBuffer", strconv.FormatBool(*flagBuffer)},
 		{"Compression", strconv.FormatBool(*flagCompress)},
 		{"PacketBuffer", strconv.Itoa(*flagPacketBuffer)},
+		{"PacketContext", strconv.FormatBool(*flagContext)},
 	})
 	fmt.Println() // add a newline
 

@@ -28,6 +28,10 @@ var fieldsSIP = []string{
 	"IsResponse",
 	"ResponseCode",
 	"ResponseStatus",
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (s SIP) CSVHeader() []string {
@@ -43,6 +47,10 @@ func (s SIP) CSVRecord() []string {
 		strconv.FormatBool(s.IsResponse), //            bool     `protobuf:"varint,5,opt,name=IsResponse,proto3" json:"IsResponse,omitempty"`
 		formatInt32(s.ResponseCode),      //          int32    `protobuf:"varint,6,opt,name=ResponseCode,proto3" json:"ResponseCode,omitempty"`
 		s.ResponseStatus,                 //        string   `protobuf
+		s.Context.SrcIP,
+		s.Context.DstIP,
+		s.Context.SrcPort,
+		s.Context.DstPort,
 	})
 }
 
@@ -68,4 +76,8 @@ func init() {
 
 func (a SIP) Inc() {
 	sipMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *SIP) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

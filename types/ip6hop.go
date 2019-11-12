@@ -23,6 +23,8 @@ import (
 var fieldsIPv6HopByHop = []string{
 	"Timestamp",
 	"Options",
+	"SrcIP",        // string
+	"DstIP",        // string
 }
 
 func (l IPv6HopByHop) CSVHeader() []string {
@@ -37,6 +39,8 @@ func (l IPv6HopByHop) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(l.Timestamp),
 		strings.Join(opts, ""),
+		l.Context.SrcIP,
+		l.Context.DstIP,
 	})
 }
 
@@ -78,4 +82,8 @@ func init() {
 
 func (a IPv6HopByHop) Inc() {
 	ip6hopMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *IPv6HopByHop) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

@@ -35,6 +35,8 @@ var fieldsOSPFv2 = []string{
 	"LSR",            // []*LSReq
 	"DbDesc",         // *DbDescPkg
 	"HelloV2",        // *HelloPkgV2
+	"SrcIP",
+	"DstIP",
 }
 
 func (a OSPFv2) CSVHeader() []string {
@@ -67,6 +69,8 @@ func (a OSPFv2) CSVRecord() []string {
 		join(lsreqs...),               // []*LSReq
 		toString(a.DbDesc),            // *DbDescPkg
 		toString(a.HelloV2),           // *HelloPkgV2
+		a.Context.SrcIP,
+		a.Context.DstIP,
 	})
 }
 
@@ -461,4 +465,8 @@ func (a OSPFv2) Inc() {
 
 func (a OSPFv2) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
+}
+
+func (a *OSPFv2) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

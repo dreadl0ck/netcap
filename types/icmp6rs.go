@@ -23,6 +23,8 @@ import (
 var fieldsICMPv6RouterSolicitation = []string{
 	"Timestamp",
 	"Options",
+	"SrcIP",
+	"DstIP",
 }
 
 func (i ICMPv6RouterSolicitation) CSVHeader() []string {
@@ -37,6 +39,8 @@ func (i ICMPv6RouterSolicitation) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		strings.Join(opts, ""),
+		i.Context.SrcIP,
+		i.Context.DstIP,
 	})
 }
 
@@ -74,4 +78,8 @@ func init() {
 
 func (a ICMPv6RouterSolicitation) Inc() {
 	icmp6rsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *ICMPv6RouterSolicitation) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

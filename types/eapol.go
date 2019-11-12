@@ -62,3 +62,5 @@ func init() {
 func (a EAPOL) Inc() {
 	eapPolMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *EAPOL) SetPacketContext(ctx *PacketContext) {}

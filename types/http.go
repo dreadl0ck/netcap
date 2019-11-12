@@ -88,3 +88,5 @@ func init() {
 func (a HTTP) Inc() {
 	httpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *HTTP) SetPacketContext(ctx *PacketContext) {}

@@ -58,3 +58,5 @@ func init() {
 func (a EthernetCTP) Inc() {
 	ethernetCTPMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
+
+func (a *EthernetCTP) SetPacketContext(ctx *PacketContext) {}

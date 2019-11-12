@@ -24,6 +24,8 @@ var fieldsIPSecESP = []string{
 	"SPI",
 	"Seq",
 	"LenEncrypted",
+	"SrcIP",        // string
+	"DstIP",        // string
 }
 
 func (a IPSecESP) CSVHeader() []string {
@@ -36,6 +38,8 @@ func (a IPSecESP) CSVRecord() []string {
 		formatInt32(a.SPI),
 		formatInt32(a.Seq),
 		formatInt32(a.LenEncrypted),
+		a.Context.SrcIP,
+		a.Context.DstIP,
 	})
 }
 
@@ -61,4 +65,8 @@ func init() {
 
 func (a IPSecESP) Inc() {
 	ipSecEspMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *IPSecESP) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

@@ -163,6 +163,21 @@ message Batch {
 }
 
 /*
+ *  Utils
+ *
+ *  PacketContext allows to preserve context of the original packet
+ *  for audit records that would loose such information because they describe a layer without this info
+ *  this is used to add flow information to Transport and Application Layer Types
+ */
+
+message PacketContext {
+    string SrcIP    = 1;
+    string DstIP    = 2;
+    string SrcPort  = 3;
+    string DstPort  = 4;
+}
+
+/*
  * Network Flows
  */
 
@@ -268,16 +283,16 @@ message Ethernet {
 }
 
 message ARP {
-    string Timestamp         = 1;
-    int32 AddrType           = 2;
-    int32 Protocol           = 3;
-    int32  HwAddressSize     = 4;
-    int32  ProtAddressSize   = 5;
-    int32 Operation          = 6;
-    bytes  SrcHwAddress   = 7;
-    bytes  SrcProtAddress = 8;
-    bytes  DstHwAddress      = 9;
-    bytes  DstProtAddress    = 10;
+    string Timestamp          = 1;
+    int32  AddrType           = 2;
+    int32  Protocol           = 3;
+    int32  HwAddressSize      = 4;
+    int32  ProtAddressSize    = 5;
+    int32  Operation          = 6;
+    bytes  SrcHwAddress       = 7;
+    bytes  SrcProtAddress     = 8;
+    bytes  DstHwAddress       = 9;
+    bytes  DstProtAddress     = 10;
 }
 
 // Dot1Q is the packet layer for 802.1Q VLAN headers.
@@ -469,6 +484,8 @@ message IPv4 {
     repeated IPv4Option Options = 15;
     double PayloadEntropy = 16;
     int32  PayloadSize    = 17;
+
+    PacketContext Context = 18;
 }
 
 message IPv4Option {
@@ -490,6 +507,8 @@ message IPv6 {
     double PayloadEntropy = 10;
     int32  PayloadSize    = 11;
     IPv6HopByHop HopByHop = 12;
+
+    PacketContext Context = 13;
 }
 
 message IPv6Fragment {
@@ -499,7 +518,8 @@ message IPv6Fragment {
     int32         FragmentOffset   = 4;
     int32         Reserved2        = 5;    // Reserved2 is bits [29-31), from least to most significant, 0-indexed
     bool          MoreFragments    = 6;   
-    uint32        Identification   = 7;  
+    uint32        Identification   = 7;
+    PacketContext Context          = 8;
 }
 
 message ICMPv4 {
@@ -508,12 +528,16 @@ message ICMPv4 {
     int32 Checksum   = 3;
     int32 Id         = 4;
     int32 Seq        = 5;
+
+    PacketContext Context = 6;
 }
 
 message ICMPv6 {
     string Timestamp = 1;
     int32 TypeCode   = 2;
     int32 Checksum   = 3;
+
+    PacketContext Context = 4;
 }
 
 message ICMPv6NeighborAdvertisement {
@@ -521,6 +545,8 @@ message ICMPv6NeighborAdvertisement {
     int32 Flags                   = 2;
     string TargetAddress          = 3;
     repeated ICMPv6Option Options = 4;
+
+    PacketContext Context = 5;
 }
 
 message ICMPv6RouterAdvertisement {
@@ -531,6 +557,8 @@ message ICMPv6RouterAdvertisement {
     uint32 ReachableTime          = 5;
     uint32 RetransTimer           = 6;
     repeated ICMPv6Option Options = 7;
+
+    PacketContext Context = 8;
 }
 
 message ICMPv6Option {
@@ -551,6 +579,8 @@ message UDP {
     double PayloadEntropy = 6;
     int32  PayloadSize    = 7;
     bytes  Payload        = 8;
+
+    PacketContext Context = 9;
 }
 
 message TCP {
@@ -578,6 +608,8 @@ message TCP {
     double   PayloadEntropy    = 21;
     int32    PayloadSize       = 22;
     bytes    Payload           = 23;
+
+    PacketContext Context = 24;
 }
 
 message TCPOption {
@@ -592,6 +624,8 @@ message SCTP {
     uint32 DstPort         = 3;
     uint32 VerificationTag = 4;
     uint32 Checksum        = 5;
+
+    PacketContext Context = 6;
 }
 
 /*
@@ -623,6 +657,8 @@ message DNS {
 	repeated DNSResourceRecord Answers     = 16;
 	repeated DNSResourceRecord Authorities = 17;
     repeated DNSResourceRecord Additionals = 18;
+
+    PacketContext Context = 19;
 }
 
 message DNSResourceRecord {
@@ -697,6 +733,8 @@ message DHCPv4 {
     bytes ServerName             = 14;
     bytes File                   = 15;
     repeated DHCPOption Options  = 16;
+
+    PacketContext Context = 17;
 }
 
 message DHCPOption {
@@ -713,6 +751,8 @@ message DHCPv6 {
     string PeerAddr               = 5;
     bytes TransactionID           = 6;
     repeated DHCPv6Option Options = 7;
+
+    PacketContext Context = 8;
 }
 
 message DHCPv6Option {
@@ -749,6 +789,8 @@ message NTP {
     uint64 TransmitTimestamp  = 14; // Local time (on server) that request departed server host.
 
     bytes ExtensionBytes      = 15;  // Just put extensions in a byte slice.
+
+    PacketContext Context = 16;
 }
 
 // The Session Initiation Protocol (SIP) is a signalling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications
@@ -764,6 +806,8 @@ message SIP {
     bool IsResponse        = 5;
     int32 ResponseCode     = 6;
     string ResponseStatus  = 7;
+
+    PacketContext Context = 8;
 }
 
 message IGMP {
@@ -780,6 +824,8 @@ message IGMP {
     int32 NumberOfSources            = 11;
     repeated IGMPv3GroupRecord GroupRecords = 12;
     int32 Version                    = 13;
+
+    PacketContext Context = 14;
 }
 
 message IGMPv3GroupRecord {
@@ -793,6 +839,8 @@ message IGMPv3GroupRecord {
 message IPv6HopByHop {
     string Timestamp                    = 1;
     repeated IPv6HopByHopOption Options = 2;
+
+    PacketContext Context = 3;
 }
 
 message IPv6HopByHopOption {
@@ -822,17 +870,23 @@ message ICMPv6Echo {
     string Timestamp = 1;
     int32 Identifier = 2;
     int32 SeqNumber  = 3;
+
+    PacketContext Context = 4;
 }
 
 message ICMPv6NeighborSolicitation {
     string Timestamp = 1;
     string TargetAddress = 2;
     repeated ICMPv6Option Options = 3;
+
+    PacketContext Context = 4;
 }
 
 message ICMPv6RouterSolicitation {
     string Timestamp              = 1;
     repeated ICMPv6Option Options = 2;
+
+    PacketContext Context = 3;
 }
 
 // HTTP
@@ -906,6 +960,8 @@ message IPSecAH {
     int32    SPI                       = 3;
     int32    Seq                       = 4;
     bytes    AuthenticationData        = 5;
+
+    PacketContext Context = 6;
 }
 
 message IPSecESP {
@@ -913,6 +969,8 @@ message IPSecESP {
     int32    SPI                       = 2;
     int32    Seq                       = 3;
     int32    LenEncrypted              = 4;
+
+    PacketContext Context = 5;
 }
 
 message Geneve {
@@ -923,7 +981,9 @@ message Geneve {
     bool                  CriticalOption = 5;
     int32                 Protocol       = 6;
     uint32                VNI            = 7;
-    repeated GeneveOption Options        = 8;     
+    repeated GeneveOption Options        = 8;
+
+    PacketContext Context = 9;
 }
 
 message GeneveOption {
@@ -943,6 +1003,8 @@ message VXLAN {
     bool       GBPDontLearn         = 5;   // 'D' bit per Group Policy
     bool       GBPApplied           = 6;   // 'A' bit per Group Policy
     int32      GBPGroupPolicyID     = 7;   // 'Group Policy ID' 16 bits per Group Policy
+
+    PacketContext Context = 8;
 }
 
 message USB {
@@ -994,6 +1056,8 @@ message LCM {
     int32     TotalFragments       = 7;
     string    ChannelName          = 8;
     bool      Fragmented           = 9;
+
+    PacketContext Context = 10;
 }
 
 message MPLS {
@@ -1002,6 +1066,8 @@ message MPLS {
     int32   TrafficClass   = 3;
     bool    StackBottom    = 4;
     int32   TTL            = 5;
+
+    PacketContext Context = 6;
 }
 
 message ModbusTCP {
@@ -1011,6 +1077,8 @@ message ModbusTCP {
     int32  Length                = 4; // Number of following bytes (includes 1 byte for UnitIdentifier + Modbus data length
     int32  UnitIdentifier        = 5; // Identification of a remote slave connected on a serial line or on other buses
     bytes  Payload               = 6;
+
+    PacketContext Context = 7;
 }
 
 message OSPFv2 {
@@ -1030,6 +1098,8 @@ message OSPFv2 {
     repeated LSReq        LSR     = 12;
     DbDescPkg             DbDesc  = 13;
     HelloPkgV2            HelloV2 = 14;
+
+    PacketContext Context = 15;
 }
 
 message HelloPkg {
@@ -1060,7 +1130,7 @@ message DbDescPkg {
     int32                InterfaceMTU   = 2;
     int32                Flags          = 3;
     uint32               DDSeqNumber    = 4;
-    repeated LSAheader   LSAinfo        = 5;        
+    repeated LSAheader   LSAinfo        = 5;
 }
 
 message OSPFv3 {
@@ -1080,6 +1150,8 @@ message OSPFv3 {
     repeated LSReq        LSR       = 12;
     LSUpdate              LSU       = 13;
     repeated LSAheader    LSAs      = 14;
+
+    PacketContext Context = 15;
 }
 
 message LSAheader {
@@ -1107,6 +1179,8 @@ message LSA {
     ASExternalLSA        ASELSA           = 8;
     LinkLSA              LLSA             = 9;
     IntraAreaPrefixLSA   IntraAPrefixLSA  = 10;
+
+    PacketContext Context = 11;
 }
 
 message LSReq {
@@ -1226,6 +1300,8 @@ message BFD {
     int32         RequiredMinRxInterval    = 15;  // Minimum interval, in microseconds, between received BFD Control packets that this system is capable of supporting
     int32         RequiredMinEchoRxInterval = 16; // Minimum interval, in microseconds, between received BFD Echo packets that this system is capable of supporting
     BFDAuthHeader AuthHeader                = 17; // Authentication data, variable length.
+
+    PacketContext Context = 18;
 }
 
 message BFDAuthHeader {
@@ -1253,6 +1329,8 @@ message GRE {
     uint32       Seq               = 15;
     uint32       Ack               = 16;                                                           
     GRERouting   Routing           = 17;
+
+    PacketContext Context = 18;
 }
 
 message GRERouting {
@@ -1269,6 +1347,8 @@ message FDDI {
     int32   Priority         = 3;
     string  SrcMAC           = 4;
     string  DstMAC           = 5;
+
+    PacketContext Context    = 6;
 }
 
 // EAP defines an Extensible Authentication Protocol (rfc 3748) layer.
@@ -1283,7 +1363,7 @@ message EAP {
 
 // EAPOL defines an EAP over LAN (802.1x) layer.
 message EAPOL {
-    string   Timestamp  = 1;;
+    string   Timestamp  = 1;
     int32    Version    = 2;
     int32    Type       = 3;
     int32    Length     = 4;
@@ -1326,6 +1406,8 @@ message VRRPv2 {
     int32           AdverInt      = 8;  // The Advertisement interval indicates the time interval (in seconds) between ADVERTISEMENTS.  The default is 1 second
     int32           Checksum      = 9;  // used to detect data corruption in the VRRP message.
     repeated string IPAddress     = 10;  // one or more IP addresses associated with the virtual router. Specified in the CountIPAddr field.
+
+    PacketContext Context    = 11;
 }
 
 message CiscoDiscovery {
@@ -1454,4 +1536,6 @@ message NortelDiscovery {
     int32     Backplane    = 5;
     int32     State        = 6;
     int32     NumLinks     = 7;
+
+    PacketContext Context    = 8;
 }

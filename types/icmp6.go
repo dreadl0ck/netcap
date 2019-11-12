@@ -23,6 +23,8 @@ var fieldsICMPv6 = []string{
 	"Timestamp",
 	"TypeCode", // int32
 	"Checksum", // int32
+	"SrcIP",
+	"DstIP",
 }
 
 func (i ICMPv6) CSVHeader() []string {
@@ -34,6 +36,8 @@ func (i ICMPv6) CSVRecord() []string {
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.TypeCode),
 		formatInt32(i.Checksum),
+		i.Context.SrcIP,
+		i.Context.DstIP,
 	})
 }
 
@@ -59,4 +63,8 @@ func init() {
 
 func (a ICMPv6) Inc() {
 	icmp6Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *ICMPv6) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

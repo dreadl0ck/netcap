@@ -28,6 +28,8 @@ var fieldsIPv6Fragment = []string{
 	"Reserved2",
 	"MoreFragments",
 	"Identification",
+	"SrcIP",
+	"DstIP",
 }
 
 func (a IPv6Fragment) CSVHeader() []string {
@@ -43,6 +45,8 @@ func (a IPv6Fragment) CSVRecord() []string {
 		formatInt32(a.Reserved2),            // int32
 		strconv.FormatBool(a.MoreFragments), // bool
 		formatUint32(a.Identification),      // uint32
+		a.Context.SrcIP,
+		a.Context.DstIP,
 	})
 }
 
@@ -68,4 +72,7 @@ func init() {
 
 func (a IPv6Fragment) Inc() {
 	ipv6fragMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *IPv6Fragment) SetPacketContext(ctx *PacketContext) {
 }

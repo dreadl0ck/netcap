@@ -26,6 +26,8 @@ var fieldsMPLS = []string{
 	"TrafficClass",
 	"StackBottom",
 	"TTL",
+	"SrcIP",
+	"DstIP",
 }
 
 func (a MPLS) CSVHeader() []string {
@@ -39,6 +41,8 @@ func (a MPLS) CSVRecord() []string {
 		formatInt32(a.TrafficClass),       // int32
 		strconv.FormatBool(a.StackBottom), // bool
 		formatInt32(a.TTL),                // int32
+		a.Context.SrcIP,
+		a.Context.DstIP,
 	})
 }
 
@@ -64,4 +68,8 @@ func init() {
 
 func (a MPLS) Inc() {
 	mplsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *MPLS) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

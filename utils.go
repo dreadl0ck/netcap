@@ -16,6 +16,7 @@ package netcap
 import (
 	"bufio"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -51,7 +52,8 @@ func PrintLogo() {
 
 // Dump reads the specified netcap file
 // and dumps the output according to the configuration to stdout
-func Dump(path string, separator string, tsv bool, structured bool, table bool, selection string, utc bool, fields bool) {
+// TODO: add dumpConfig type, create default and pass this one instead
+func Dump(path string, separator string, tsv bool, structured bool, table bool, selection string, utc bool, fields bool, dumpJson bool) {
 
 	var (
 		count  = 0
@@ -99,12 +101,23 @@ func Dump(path string, separator string, tsv bool, structured bool, table bool, 
 		count++
 
 		if structured {
-			os.Stdout.WriteString(header.Type.String() + "\n")
-			os.Stdout.WriteString(proto.MarshalTextString(record) + "\n")
+			os.Stdout.WriteString(header.Type.String())
+			os.Stdout.WriteString("\n")
+			os.Stdout.WriteString(proto.MarshalTextString(record))
+			os.Stdout.WriteString("\n")
 			continue
 		}
 
 		if p, ok := record.(types.AuditRecord); ok {
+			if dumpJson {
+				marshaled, err := json.MarshalIndent(p, "  ", " ")
+				if err != nil {
+					log.Fatal("failed to marshal json:", err)
+				}
+				os.Stdout.WriteString(string(marshaled))
+				os.Stdout.WriteString("\n")
+				continue
+			}
 			if table {
 				rows = append(rows, p.CSVRecord())
 

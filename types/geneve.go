@@ -30,6 +30,10 @@ var fieldsGeneve = []string{
 	"Protocol",       // int32
 	"VNI",            // uint32
 	"Options",        // []*GeneveOption
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
 }
 
 func (i Geneve) CSVHeader() []string {
@@ -50,6 +54,10 @@ func (i Geneve) CSVRecord() []string {
 		formatInt32(i.Protocol),              // int32
 		formatUint32(i.VNI),                  // uint32
 		strings.Join(opts, ""),               // []*GeneveOption
+		i.Context.SrcIP,
+		i.Context.DstIP,
+		i.Context.SrcPort,
+		i.Context.DstPort,
 	})
 }
 
@@ -93,4 +101,8 @@ func init() {
 
 func (a Geneve) Inc() {
 	geneveMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *Geneve) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
 }

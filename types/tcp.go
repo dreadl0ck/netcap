@@ -45,6 +45,8 @@ var fieldsTCP = []string{
 	"PayloadEntropy",
 	"PayloadSize",
 	"Payload",
+	"SrcIP",
+	"DstIP",
 }
 
 func (t TCP) CSVHeader() []string {
@@ -76,6 +78,8 @@ func (t TCP) CSVRecord() []string {
 		strconv.FormatFloat(t.PayloadEntropy, 'f', 8, 64), // float64
 		formatInt32(t.PayloadSize),                        // int32
 		hex.EncodeToString(t.Payload),
+		t.Context.SrcIP,
+		t.Context.DstIP,
 	})
 }
 
@@ -183,4 +187,13 @@ func (a TCP) Inc() {
 	tcpMetric.WithLabelValues(a.metricValues()...).Inc()
 	tcpPayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
 	tcpPayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
+}
+
+func (a *TCP) SetPacketContext(ctx *PacketContext) {
+
+	// clear duplicate data for transport layer
+	ctx.SrcPort = ""
+	ctx.DstPort = ""
+
+	a.Context = ctx
 }

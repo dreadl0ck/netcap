@@ -30,6 +30,8 @@ var fieldsUDP = []string{
 	"PayloadEntropy",
 	"PayloadSize",
 	"Payload",
+	"SrcIP",
+	"DstIP",
 }
 
 func (u UDP) CSVHeader() []string {
@@ -46,6 +48,8 @@ func (u UDP) CSVRecord() []string {
 		strconv.FormatFloat(u.PayloadEntropy, 'f', 8, 64), // float64
 		formatInt32(u.PayloadSize),                        // int32
 		hex.EncodeToString(u.Payload),
+		u.Context.SrcIP,
+		u.Context.DstIP,
 	})
 }
 
@@ -107,4 +111,13 @@ func (u UDP) Inc() {
 	udpMetric.WithLabelValues(u.metricValues()...).Inc()
 	udpPayloadEntropy.WithLabelValues().Observe(u.PayloadEntropy)
 	udpPayloadSize.WithLabelValues().Observe(float64(u.PayloadSize))
+}
+
+func (a *UDP) SetPacketContext(ctx *PacketContext) {
+
+	// clear duplicate data for transport layer
+	ctx.SrcPort = ""
+	ctx.DstPort = ""
+
+	a.Context = ctx
 }
