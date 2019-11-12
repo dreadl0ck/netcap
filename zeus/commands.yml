@@ -152,7 +152,8 @@ commands:
     # a version.go file is generated on each release with the corresponding version number
     gen-version:
         description: generate the version.go file
-        exec: echo -e "// This file was generated. Do not edit.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"" > version.go
+        exec: |
+            echo -e "// Netcap is a framework for network packet processing at the protocol level. Learn more at https://netcap.io.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"" > version.go
 
     # build and push the Alpine docker container
     build-docker-alpine:
@@ -179,6 +180,9 @@ commands:
         description: bump framework version and add git version tag
         exec: |
             read -p "[WARNING] This will bump the version to $VERSION, as configured in the zeus/commands.yml. Are you sure? Hit [Enter] to proceed"
+
+            git status
+            read -p "[WARNING] The following changes will be added to version control. Hit [Enter] to proceed"
 
             git add .
             git tag -a v${VERSION} -m "v${VERSION} release"
