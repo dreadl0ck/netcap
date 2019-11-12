@@ -181,11 +181,11 @@ commands:
         exec: |
             read -p "[WARNING] This will bump the version to $VERSION, as configured in the zeus/commands.yml. Are you sure? Hit [Enter] to proceed"
 
-            git status
-            read -p "[WARNING] The following changes will be added to version control. Hit [Enter] to proceed"
+            #git status
+            #read -p "[WARNING] The following changes will be added to version control. Hit [Enter] to proceed"
+            #git add .
+            #git commit -m "v${VERSION} release"
 
-            git add .
-            git commit -m "v${VERSION} release"
             git tag -a v${VERSION} -m "v${VERSION} release"
             git push origin v${VERSION}
             
