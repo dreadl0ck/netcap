@@ -23,8 +23,8 @@ import (
 var fieldsIPv6HopByHop = []string{
 	"Timestamp",
 	"Options",
-	"SrcIP",        // string
-	"DstIP",        // string
+	"SrcIP", // string
+	"DstIP", // string
 }
 
 func (l IPv6HopByHop) CSVHeader() []string {

@@ -26,8 +26,8 @@ var fieldsIPSecAH = []string{
 	"SPI",
 	"Seq",
 	"AuthenticationData",
-	"SrcIP",        // string
-	"DstIP",        // string
+	"SrcIP", // string
+	"DstIP", // string
 }
 
 func (a IPSecAH) CSVHeader() []string {

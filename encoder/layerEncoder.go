@@ -11,6 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Implements encoders to transform network packets into protocol buffers for various protocols
 package encoder
 
 import (

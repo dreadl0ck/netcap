@@ -133,18 +133,18 @@ func GetCommand() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&flagDebug, "debug", "d", false, "toggle debug mode")
 	cmd.Flags().BoolVarP(&flagTrace, "trace", "t", false, "trace HTTP requests to retrieve additional information")
-	cmd.Flags().BoolVarP(&flagDump, "dump", "D", false, "dumps audit record as JSON to stdout")	
+	cmd.Flags().BoolVarP(&flagDump, "dump", "D", false, "dumps audit record as JSON to stdout")
 	cmd.Flags().BoolVarP(&flagSkipTLSVerify, "skipTlsVerify", "", false, "skip TLS verification")
 	cmd.Flags().BoolVarP(&flagDumpFormatted, "format", "f", true, "format when dumping JSON")
-	
+
 	cmd.Flags().StringVarP(&flagLocal, "local", "l", "", "set local endpoint")
 	cmd.Flags().StringVarP(&flagConfig, "config", "c", "net.proxy-config.yml", "set config file path")
 	cmd.Flags().StringVarP(&flagRemote, "remote", "r", "", "set remote endpoint")
 
-	cmd.Flags().IntVarP(&flagDialTimeout, "dialTimeout", "T", 30 ,"seconds until dialing to the backend times out")
-	cmd.Flags().IntVarP(&flagIdleConnTimeout, "idleConnTimeout", "i",90 , "seconds until a connection times out")
-	cmd.Flags().IntVarP(&flagTLSHandshakeTimeout, "tlsTimeout", "",15 , "seconds until a TLS handshake times out")
-	cmd.Flags().IntVarP(&flagMaxIdleConns, "maxIdle", "m",120 , "maximum number of idle connections")
+	cmd.Flags().IntVarP(&flagDialTimeout, "dialTimeout", "T", 30, "seconds until dialing to the backend times out")
+	cmd.Flags().IntVarP(&flagIdleConnTimeout, "idleConnTimeout", "i", 90, "seconds until a connection times out")
+	cmd.Flags().IntVarP(&flagTLSHandshakeTimeout, "tlsTimeout", "", 15, "seconds until a TLS handshake times out")
+	cmd.Flags().IntVarP(&flagMaxIdleConns, "maxIdle", "m", 120, "maximum number of idle connections")
 
 	return cmd
 }

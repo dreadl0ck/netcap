@@ -11,13 +11,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Implements IO primitives
 package io
 
 import (
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/netcap/delimited"
+	"github.com/golang/protobuf/proto"
 )
 
 /////////////////////////////

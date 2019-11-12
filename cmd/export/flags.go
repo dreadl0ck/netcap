@@ -39,5 +39,5 @@ var (
 	flagExclude        = flag.String("exclude", "LinkFlow,TransportFlow,NetworkFlow", "exclude specific encoders")
 	flagMemProfile     = flag.Bool("memprof", false, "create memory profile")
 	flagCSV            = flag.Bool("csv", false, "print output data as csv with header line")
-	flagContext = flag.Bool("context", true, "add packet flow context to selected audit records")
+	flagContext        = flag.Bool("context", true, "add packet flow context to selected audit records")
 )

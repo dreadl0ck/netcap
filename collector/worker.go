@@ -79,7 +79,7 @@ func (c *Collector) worker() chan gopacket.Packet {
 						if encoder.AddContext {
 
 							var (
-								netLayer = p.NetworkLayer()
+								netLayer       = p.NetworkLayer()
 								transportLayer = p.TransportLayer()
 							)
 							if netLayer != nil {
