@@ -1,5 +1,5 @@
 <a href="https://netcap.io">
-  <img src="docs/graphics/svg/Netcap-Logov2.svg" width="100%" height="300">
+  <img src="docs/graphics/Netcap-Logov2.jpg" width="100%" height="300">
 </a>
 
 <br>
