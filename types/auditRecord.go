@@ -94,7 +94,8 @@ func Select(msg proto.Message, vals string) {
 		if p, ok := msg.(AuditRecord); ok {
 			selection = selectFields(p.CSVHeader(), vals)
 		} else {
-			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			fmt.Printf("type: %#v\n", msg)
+			log.Fatal("type does not implement the types.AuditRecord interface")
 		}
 	}
 }

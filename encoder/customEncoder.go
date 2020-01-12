@@ -19,10 +19,10 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"github.com/dreadl0ck/gopacket"
 )
 
 var (
@@ -212,7 +212,8 @@ func (e *CustomEncoder) Encode(p gopacket.Packet) error {
 				// export metrics
 				p.Inc()
 			} else {
-				log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+				fmt.Printf("type: %#v\n", record)
+				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 		}
 	}

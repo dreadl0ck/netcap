@@ -263,7 +263,8 @@ func exportFile(path string) {
 			// increment metric
 			p.Inc()
 		} else {
-			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			fmt.Printf("type: %#v\n", record)
+			log.Fatal("type does not implement the types.AuditRecord interface")
 		}
 	}
 
