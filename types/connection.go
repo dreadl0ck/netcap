@@ -158,3 +158,5 @@ func (a Connection) Inc() {
 	connNumPackets.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.NumPackets))
 	connDuration.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.Duration))
 }
+
+func (a Connection) SetPacketContext(ctx *PacketContext) {}

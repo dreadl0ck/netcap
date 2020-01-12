@@ -158,3 +158,5 @@ func (a Flow) Inc() {
 	flowNumPackets.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.NumPackets))
 	flowDuration.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.Duration))
 }
+
+func (a Flow) SetPacketContext(ctx *PacketContext) {}

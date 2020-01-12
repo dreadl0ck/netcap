@@ -16,11 +16,11 @@ package encoder
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
-	"github.com/dreadl0ck/gopacket"
 	"log"
 	"strings"
 )
@@ -223,7 +223,8 @@ func (e *LayerEncoder) Encode(ctx *types.PacketContext, p gopacket.Packet, l gop
 			if p, ok := record.(types.AuditRecord); ok {
 				p.SetPacketContext(ctx)
 			} else {
-				log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+				fmt.Printf("type: %#v\n", record)
+				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 		}
 
@@ -247,7 +248,8 @@ func (e *LayerEncoder) Encode(ctx *types.PacketContext, p gopacket.Packet, l gop
 				// export metrics
 				p.Inc()
 			} else {
-				log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+				fmt.Printf("type: %#v\n", record)
+				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 		}
 	}
