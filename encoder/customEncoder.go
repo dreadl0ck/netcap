@@ -22,7 +22,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gopacket"
+	"github.com/dreadl0ck/gopacket"
 )
 
 var (

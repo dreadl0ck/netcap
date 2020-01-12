@@ -5,14 +5,14 @@ go 1.13
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1
-	github.com/dreadl0ck/ja3 v0.0.0-20190606204243-7c7af2548fd2
+	github.com/dreadl0ck/gopacket v1.1.16-0.20200112124841-257d0538ed04
+	github.com/dreadl0ck/ja3 v0.0.0-20200112130028-3e0281e06aec
 	github.com/dreadl0ck/tlsx v0.0.0-20181116232845-5334a78b2ee2
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evilsocket/islazy v1.10.4
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.0
 	github.com/golang/protobuf v1.3.2
-	github.com/google/gopacket v1.1.18-0.20191009163724-0ad7f2610e34
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b

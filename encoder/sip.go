@@ -18,8 +18,8 @@ import (
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
 )
 
 var sipEncoder = CreateLayerEncoder(types.Type_NC_SIP, layers.LayerTypeSIP, func(layer gopacket.Layer, timestamp string) proto.Message {
