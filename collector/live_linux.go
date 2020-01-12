@@ -19,7 +19,7 @@ import (
 	"io"
 
 	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/google/gopacket/pcapgo"
+	"github.com/dreadl0ck/gopacket/pcapgo"
 	"github.com/pkg/errors"
 )
 

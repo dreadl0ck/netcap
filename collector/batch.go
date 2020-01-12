@@ -18,8 +18,8 @@ import (
 
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/pcap"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/pcap"
 )
 
 // BatchInfo contains information about a Batch source.
