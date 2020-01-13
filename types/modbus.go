@@ -20,7 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-var fieldsModbusTCP = []string{
+var fieldsModbus = []string{
 	"Timestamp",
 	"TransactionIdentifier", // int32
 	"ProtocolIdentifier",    // int32
@@ -33,17 +33,17 @@ var fieldsModbusTCP = []string{
 	"DstPort",
 }
 
-func (a ModbusTCP) CSVHeader() []string {
-	return filter(fieldsModbusTCP)
+func (a Modbus) CSVHeader() []string {
+	return filter(fieldsModbus)
 }
 
-func (a ModbusTCP) CSVRecord() []string {
+func (a Modbus) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		formatInt32(a.TransactionIdentifier), // int32
-		formatInt32(a.ProtocolIdentifier),    // int32
-		formatInt32(a.Length),                // int32
-		formatInt32(a.UnitIdentifier),        // int32
+		formatInt32(a.TransactionID), // int32
+		formatInt32(a.ProtocolID),    // int32
+		formatInt32(a.Length),        // int32
+		formatInt32(a.UnitID),        // int32
 		hex.EncodeToString(a.Payload),
 		a.Context.SrcIP,
 		a.Context.DstIP,
@@ -52,30 +52,30 @@ func (a ModbusTCP) CSVRecord() []string {
 	})
 }
 
-func (a ModbusTCP) NetcapTimestamp() string {
+func (a Modbus) NetcapTimestamp() string {
 	return a.Timestamp
 }
 
-func (a ModbusTCP) JSON() (string, error) {
+func (a Modbus) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&a)
 }
 
 var modbusTcpMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_ModbusTCP.String()),
-		Help: Type_NC_ModbusTCP.String() + " audit records",
+		Name: strings.ToLower(Type_NC_Modbus.String()),
+		Help: Type_NC_Modbus.String() + " audit records",
 	},
-	fieldsModbusTCP[1:],
+	fieldsModbus[1:],
 )
 
 func init() {
 	prometheus.MustRegister(modbusTcpMetric)
 }
 
-func (a ModbusTCP) Inc() {
+func (a Modbus) Inc() {
 	modbusTcpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *ModbusTCP) SetPacketContext(ctx *PacketContext) {
+func (a *Modbus) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }

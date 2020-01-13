@@ -17,6 +17,8 @@ github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1 h1:hYYY4lT/J
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200112124841-257d0538ed04 h1:sZx5SOCbrOfLXXvaUXscwc8ZBYGyNb3B3x99KKJWrxw=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200112124841-257d0538ed04/go.mod h1:KBFGDQYW2zq081ooQxvs0vpaCqRHeeAF517Olq7oAI8=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200113223621-fe54a9364fd8 h1:E7UoTEmsY8BFVvlhpHle8TELUIIm6qEC42C31kgMfBI=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200113223621-fe54a9364fd8/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
 github.com/dreadl0ck/ja3 v0.0.0-20200112130028-3e0281e06aec h1:lSkWekeihd6+wxwTQqcO9wbJx0HfKvMb2+DM14Hmqk8=
 github.com/dreadl0ck/ja3 v0.0.0-20200112130028-3e0281e06aec/go.mod h1:bFTxOxVQ3qUC8u3PR+GfWwdhYb0x1g6d2nmqWKEJucM=
 github.com/dreadl0ck/tlsx v0.0.0-20181116232845-5334a78b2ee2 h1:7CANO0lLxbFsiuw+/CC0sVC99NtH1mqJ09Qtw/QWxO4=
@@ -42,6 +44,7 @@ github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5y
 github.com/google/go-cmp v0.3.0 h1:crn/baboCvb5fXaQ0IJ1SGTsTVrWpDsCWC8EGETZijY=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
+github.com/google/gopacket v1.1.17/go.mod h1:UdDNZ1OO62aGYVnPhxT1U6aI7ukYtA/kB8vaU0diBUM=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=

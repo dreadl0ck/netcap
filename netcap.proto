@@ -118,7 +118,7 @@ enum Type {
     NC_USB                         = 70;
     NC_LCM                         = 71;
     NC_MPLS                        = 72;
-    NC_ModbusTCP                   = 73;
+    NC_Modbus                      = 73;
     NC_OSPFv2                      = 74;
     NC_OSPFv3                      = 75;
     NC_BFD                         = 76;
@@ -1070,15 +1070,17 @@ message MPLS {
     PacketContext Context = 6;
 }
 
-message ModbusTCP {
-    string Timestamp      = 1;
-    int32  TransactionIdentifier = 2; // Identification of a MODBUS Request/Response transaction
-    int32  ProtocolIdentifier    = 3; // It is used for intra-system multiplexing
-    int32  Length                = 4; // Number of following bytes (includes 1 byte for UnitIdentifier + Modbus data length
-    int32  UnitIdentifier        = 5; // Identification of a remote slave connected on a serial line or on other buses
-    bytes  Payload               = 6;
-
-    PacketContext Context = 7;
+message Modbus {
+    string Timestamp     = 1;
+    int32  TransactionID = 2; // Identification of a MODBUS Request/Response transaction
+    int32  ProtocolID    = 3; // It is used for intra-system multiplexing
+    int32  Length        = 4; // Number of following bytes (includes 1 byte for UnitIdentifier + Modbus data length
+    int32  UnitID        = 5; // Identification of a remote slave connected on a serial line or on other buses
+    bytes  Payload       = 6;
+    bool   Exception     = 7;
+    int32  FunctionCode  = 8;
+    
+    PacketContext Context = 9;
 }
 
 message OSPFv2 {
