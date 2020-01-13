@@ -14,25 +14,27 @@
 package encoder
 
 import (
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/golang/protobuf/proto"
 )
 
-var modbusTCPEncoder = CreateLayerEncoder(types.Type_NC_ModbusTCP, layers.LayerTypeModbusTCP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if mtcp, ok := layer.(*layers.ModbusTCP); ok {
+var modbusTCPEncoder = CreateLayerEncoder(types.Type_NC_Modbus, layers.LayerTypeModbus, func(layer gopacket.Layer, timestamp string) proto.Message {
+	if m, ok := layer.(*layers.Modbus); ok {
 		var payload []byte
 		if CapturePayload {
-			payload = layer.LayerPayload()
+			payload = m.ReqResp
 		}
-		return &types.ModbusTCP{
-			Timestamp:             timestamp,
-			TransactionIdentifier: int32(mtcp.TransactionIdentifier),
-			ProtocolIdentifier:    int32(mtcp.ProtocolIdentifier),
-			Length:                int32(mtcp.Length),
-			UnitIdentifier:        int32(mtcp.UnitIdentifier),
-			Payload:               payload,
+		return &types.Modbus{
+			Timestamp:     timestamp,
+			TransactionID: int32(m.TransactionID),
+			ProtocolID:    int32(m.ProtocolID),
+			Length:        int32(m.Length),
+			UnitID:        int32(m.UnitID),
+			Payload:       payload,
+			Exception:     m.Exception,
+			FunctionCode:  int32(m.FunctionCode),
 		}
 	}
 	return nil

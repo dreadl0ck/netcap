@@ -116,8 +116,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.LCM)
 	case types.Type_NC_MPLS:
 		record = new(types.MPLS)
-	case types.Type_NC_ModbusTCP:
-		record = new(types.ModbusTCP)
+	case types.Type_NC_Modbus:
+		record = new(types.Modbus)
 	case types.Type_NC_OSPFv2:
 		record = new(types.OSPFv2)
 	case types.Type_NC_OSPFv3:
