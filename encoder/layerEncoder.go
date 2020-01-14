@@ -84,6 +84,7 @@ var (
 		usbRequestBlockSetupEncoder,
 		nortelDiscoveryEncoder,
 		cipEncoder,
+		ethernetIPEncoder,
 	}
 
 	// set via encoder config
@@ -185,6 +186,8 @@ func InitLayerEncoders(c Config) {
 			filename = "OSPFv2"
 		case types.Type_NC_OSPFv3:
 			filename = "OSPFv3"
+		case types.Type_NC_ENIP:
+			filename = "ENIP"
 		}
 		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
 
