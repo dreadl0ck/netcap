@@ -45,6 +45,8 @@ func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 		o = gopacket.Default
 	case "nocopy":
 		o = gopacket.NoCopy
+	case "datagrams":
+		o = gopacket.DecodeStreamsAsDatagrams
 	default:
 		log.Fatal("invalid decode options:", value)
 	}
