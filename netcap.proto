@@ -132,6 +132,7 @@ enum Type {
     NC_CiscoDiscoveryInfo          = 84;
     NC_USBRequestBlockSetup        = 85;
     NC_NortelDiscovery             = 86;
+    NC_CIP                         = 87;
 }
 
 /*
@@ -1541,3 +1542,16 @@ message NortelDiscovery {
 
     PacketContext Context    = 8;
 }
+
+message CIP {
+    string        Timestamp        = 1;
+    bool          Response         = 2; // false if request, true if response
+    int32         ServiceID        = 3; // The service specified for the request
+    uint32        ClassID          = 4; // request only
+    uint32        InstanceID       = 5; // request only
+    int32         Status           = 6; // Response only
+    repeated uint32 AdditionalStatus = 7; // Response only
+    bytes         Data             = 8; // Command data for request, reply data for response
+    PacketContext Context          = 9;
+}
+

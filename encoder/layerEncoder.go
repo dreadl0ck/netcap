@@ -83,6 +83,7 @@ var (
 		ciscoDiscoveryInfoEncoder,
 		usbRequestBlockSetupEncoder,
 		nortelDiscoveryEncoder,
+		cipEncoder,
 	}
 
 	// set via encoder config
