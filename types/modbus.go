@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"strconv"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -22,11 +23,13 @@ import (
 
 var fieldsModbus = []string{
 	"Timestamp",
-	"TransactionIdentifier", // int32
-	"ProtocolIdentifier",    // int32
-	"Length",                // int32
-	"UnitIdentifier",        // int32
-	"Payload",               // []byte
+	"TransactionID", // int32
+	"ProtocolID",    // int32
+	"Length",        // int32
+	"UnitID",        // int32
+	"Payload",       // []byte
+	"Exception",     // bool
+	"FunctionCode",  // int32
 	"SrcIP",
 	"DstIP",
 	"SrcPort",
@@ -45,6 +48,8 @@ func (a Modbus) CSVRecord() []string {
 		formatInt32(a.Length),        // int32
 		formatInt32(a.UnitID),        // int32
 		hex.EncodeToString(a.Payload),
+		strconv.FormatBool(a.Exception),
+		formatInt32(a.FunctionCode),
 		a.Context.SrcIP,
 		a.Context.DstIP,
 		a.Context.SrcPort,
