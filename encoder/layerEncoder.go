@@ -69,7 +69,7 @@ var (
 		usbEncoder,
 		lcmEncoder,
 		mplsEncoder,
-		modbusTCPEncoder,
+		modbusEncoder,
 		ospfv2Encoder,
 		ospfv3Encoder,
 		bfdEncoder,

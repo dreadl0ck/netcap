@@ -20,7 +20,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-var modbusTCPEncoder = CreateLayerEncoder(types.Type_NC_Modbus, layers.LayerTypeModbus, func(layer gopacket.Layer, timestamp string) proto.Message {
+var modbusEncoder = CreateLayerEncoder(types.Type_NC_Modbus, layers.LayerTypeModbus, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if m, ok := layer.(*layers.Modbus); ok {
 		var payload []byte
 		if CapturePayload {
