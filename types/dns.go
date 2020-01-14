@@ -52,7 +52,10 @@ func (d DNS) CSVHeader() []string {
 
 func (d DNS) CSVRecord() []string {
 	var (
-		questions, answers, authorities, additionals []string
+		questions   = make([]string, len(d.Questions))
+		answers     = make([]string, len(d.Answers))
+		authorities = make([]string, len(d.Authorities))
+		additionals = make([]string, len(d.Additionals))
 	)
 	for _, q := range d.Questions {
 		questions = append(questions, q.ToString())

@@ -26,7 +26,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
@@ -141,7 +140,6 @@ func main() {
 
 	b, ok := debug.ReadBuildInfo()
 	if ok {
-		spew.Dump(b)
 		for _, d := range b.Deps {
 			if path.Base(d.Path) == "gopacket" {
 				fmt.Println("> gopacket version:", d.Version)
