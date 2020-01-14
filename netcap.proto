@@ -133,6 +133,7 @@ enum Type {
     NC_USBRequestBlockSetup        = 85;
     NC_NortelDiscovery             = 86;
     NC_CIP                         = 87;
+    NC_ENIP                        = 88;
 }
 
 /*
@@ -1555,3 +1556,26 @@ message CIP {
     PacketContext Context          = 9;
 }
 
+// ENIP implements decoding of EtherNet/IP, a protocol used to transport the
+// Common Industrial Protocol over standard OSI networks. EtherNet/IP transports
+// over both TCP and UDP.
+// See the EtherNet/IP Developer's Guide for more information: https://www.odva.org/Portals/0/Library/Publications_Numbered/PUB00213R0_EtherNetIP_Developers_Guide.pdf
+message ENIP {
+    string                  Timestamp        = 1;
+    uint32                  Command          = 2; 
+	uint32                  Length           = 3;
+	uint32                  SessionHandle    = 4;
+	uint32                  Status           = 5;
+	bytes                   SenderContext    = 6;
+	uint32                  Options          = 7;
+	ENIPCommandSpecificData CommandSpecific  = 8;
+    PacketContext           Context          = 9;
+}
+
+
+// ENIPCommandSpecificData contains data specific to a command. This may
+// include another EtherNet/IP packet embedded within the Data structure.
+message ENIPCommandSpecificData {
+	uint32  Cmd  = 1;
+	bytes   Data = 2;
+}
