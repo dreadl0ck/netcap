@@ -42,7 +42,7 @@ func (e Ethernet) CSVRecord() []string {
 	})
 }
 
-func (e Ethernet) NetcapTimestamp() string {
+func (e Ethernet) Time() string {
 	return e.Timestamp
 }
 
@@ -105,3 +105,11 @@ func (a Ethernet) Inc() {
 }
 
 func (a *Ethernet) SetPacketContext(ctx *PacketContext) {}
+
+func (a Ethernet) Src() string {
+	return a.SrcMAC
+}
+
+func (a Ethernet) Dst() string {
+	return a.DstMAC
+}

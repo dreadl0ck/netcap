@@ -43,7 +43,7 @@ func (a USBRequestBlockSetup) CSVRecord() []string {
 	})
 }
 
-func (a USBRequestBlockSetup) NetcapTimestamp() string {
+func (a USBRequestBlockSetup) Time() string {
 	return a.Timestamp
 }
 
@@ -68,3 +68,13 @@ func (a USBRequestBlockSetup) Inc() {
 }
 
 func (a *USBRequestBlockSetup) SetPacketContext(ctx *PacketContext) {}
+
+// TODO return source DeviceAddress?
+func (a USBRequestBlockSetup) Src() string {
+	return ""
+}
+
+// TODO return destination DeviceAddress?
+func (a USBRequestBlockSetup) Dst() string {
+	return ""
+}

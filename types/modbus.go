@@ -57,7 +57,7 @@ func (a Modbus) CSVRecord() []string {
 	})
 }
 
-func (a Modbus) NetcapTimestamp() string {
+func (a Modbus) Time() string {
 	return a.Timestamp
 }
 
@@ -83,4 +83,18 @@ func (a Modbus) Inc() {
 
 func (a *Modbus) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a Modbus) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a Modbus) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

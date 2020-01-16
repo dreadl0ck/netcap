@@ -95,7 +95,7 @@ func (d DNS) CSVRecord() []string {
 	})
 }
 
-func (d DNS) NetcapTimestamp() string {
+func (d DNS) Time() string {
 	return d.Timestamp
 }
 
@@ -215,4 +215,18 @@ func (a DNS) Inc() {
 
 func (a *DNS) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a DNS) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a DNS) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

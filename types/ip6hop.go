@@ -44,7 +44,7 @@ func (l IPv6HopByHop) CSVRecord() []string {
 	})
 }
 
-func (l IPv6HopByHop) NetcapTimestamp() string {
+func (l IPv6HopByHop) Time() string {
 	return l.Timestamp
 }
 
@@ -86,4 +86,18 @@ func (a IPv6HopByHop) Inc() {
 
 func (a *IPv6HopByHop) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a IPv6HopByHop) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a IPv6HopByHop) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

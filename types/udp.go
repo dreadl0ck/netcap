@@ -53,7 +53,7 @@ func (u UDP) CSVRecord() []string {
 	})
 }
 
-func (u UDP) NetcapTimestamp() string {
+func (u UDP) Time() string {
 	return u.Timestamp
 }
 
@@ -120,4 +120,18 @@ func (a *UDP) SetPacketContext(ctx *PacketContext) {
 	ctx.DstPort = ""
 
 	a.Context = ctx
+}
+
+func (a UDP) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a UDP) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

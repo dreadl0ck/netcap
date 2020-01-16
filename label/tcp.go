@@ -129,7 +129,7 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 			if len(finalLabel) != 0 {
 
 				if strings.HasPrefix(finalLabel, " |") {
-					log.Fatal("BULLSHIT:", finalLabel)
+					log.Fatal("invalid label: ", finalLabel)
 				}
 
 				// add final label

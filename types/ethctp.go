@@ -35,7 +35,7 @@ func (i EthernetCTP) CSVRecord() []string {
 	})
 }
 
-func (i EthernetCTP) NetcapTimestamp() string {
+func (i EthernetCTP) Time() string {
 	return i.Timestamp
 }
 
@@ -60,3 +60,12 @@ func (a EthernetCTP) Inc() {
 }
 
 func (a *EthernetCTP) SetPacketContext(ctx *PacketContext) {}
+
+// TODO
+func (a EthernetCTP) Src() string {
+	return ""
+}
+
+func (a EthernetCTP) Dst() string {
+	return ""
+}

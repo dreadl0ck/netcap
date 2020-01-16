@@ -38,7 +38,7 @@ func (s SNAP) CSVRecord() []string {
 	})
 }
 
-func (s SNAP) NetcapTimestamp() string {
+func (s SNAP) Time() string {
 	return s.Timestamp
 }
 
@@ -63,3 +63,12 @@ func (a SNAP) Inc() {
 }
 
 func (a *SNAP) SetPacketContext(ctx *PacketContext) {}
+
+// TODO
+func (a SNAP) Src() string {
+	return ""
+}
+
+func (a SNAP) Dst() string {
+	return ""
+}
