@@ -59,7 +59,7 @@ func (l LinkLayerDiscoveryInfo) CSVRecord() []string {
 	})
 }
 
-func (l LinkLayerDiscoveryInfo) NetcapTimestamp() string {
+func (l LinkLayerDiscoveryInfo) Time() string {
 	return l.Timestamp
 }
 
@@ -156,3 +156,12 @@ func (a LinkLayerDiscoveryInfo) Inc() {
 }
 
 func (a *LinkLayerDiscoveryInfo) SetPacketContext(ctx *PacketContext) {}
+
+// TODO
+func (a LinkLayerDiscoveryInfo) Src() string {
+	return ""
+}
+
+func (a LinkLayerDiscoveryInfo) Dst() string {
+	return ""
+}

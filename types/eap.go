@@ -44,7 +44,7 @@ func (a EAP) CSVRecord() []string {
 	})
 }
 
-func (a EAP) NetcapTimestamp() string {
+func (a EAP) Time() string {
 	return a.Timestamp
 }
 
@@ -69,3 +69,12 @@ func (a EAP) Inc() {
 }
 
 func (a *EAP) SetPacketContext(ctx *PacketContext) {}
+
+// TODO: return Mac addr
+func (a EAP) Src() string {
+	return ""
+}
+
+func (a EAP) Dst() string {
+	return ""
+}

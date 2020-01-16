@@ -56,7 +56,7 @@ func (e ENIP) CSVRecord() []string {
 	})
 }
 
-func (e ENIP) NetcapTimestamp() string {
+func (e ENIP) Time() string {
 	return e.Timestamp
 }
 
@@ -84,4 +84,18 @@ func (a ENIP) Inc() {
 
 func (a *ENIP) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a ENIP) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a ENIP) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

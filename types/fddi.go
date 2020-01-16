@@ -41,7 +41,7 @@ func (a FDDI) CSVRecord() []string {
 	})
 }
 
-func (a FDDI) NetcapTimestamp() string {
+func (a FDDI) Time() string {
 	return a.Timestamp
 }
 
@@ -66,3 +66,11 @@ func (a FDDI) Inc() {
 }
 
 func (a *FDDI) SetPacketContext(ctx *PacketContext) {}
+
+func (a FDDI) Src() string {
+	return a.SrcMAC
+}
+
+func (a FDDI) Dst() string {
+	return a.DstMAC
+}

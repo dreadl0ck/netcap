@@ -58,7 +58,7 @@ func (d DHCPv6) CSVRecord() []string {
 	})
 }
 
-func (d DHCPv6) NetcapTimestamp() string {
+func (d DHCPv6) Time() string {
 	return d.Timestamp
 }
 
@@ -96,4 +96,18 @@ func (a DHCPv6) Inc() {
 
 func (a *DHCPv6) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a DHCPv6) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a DHCPv6) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

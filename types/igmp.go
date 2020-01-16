@@ -67,7 +67,7 @@ func (i IGMP) CSVRecord() []string {
 	})
 }
 
-func (i IGMP) NetcapTimestamp() string {
+func (i IGMP) Time() string {
 	return i.Timestamp
 }
 
@@ -111,4 +111,18 @@ func (a IGMP) Inc() {
 
 func (a *IGMP) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a IGMP) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a IGMP) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

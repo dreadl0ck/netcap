@@ -58,7 +58,7 @@ func (a LCM) CSVRecord() []string {
 	})
 }
 
-func (a LCM) NetcapTimestamp() string {
+func (a LCM) Time() string {
 	return a.Timestamp
 }
 
@@ -84,4 +84,18 @@ func (a LCM) Inc() {
 
 func (a *LCM) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a LCM) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a LCM) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

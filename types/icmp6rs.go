@@ -44,7 +44,7 @@ func (i ICMPv6RouterSolicitation) CSVRecord() []string {
 	})
 }
 
-func (i ICMPv6RouterSolicitation) NetcapTimestamp() string {
+func (i ICMPv6RouterSolicitation) Time() string {
 	return i.Timestamp
 }
 
@@ -82,4 +82,18 @@ func (a ICMPv6RouterSolicitation) Inc() {
 
 func (a *ICMPv6RouterSolicitation) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a ICMPv6RouterSolicitation) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a ICMPv6RouterSolicitation) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

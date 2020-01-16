@@ -50,7 +50,7 @@ func (f TransportFlow) CSVRecord() []string {
 	})
 }
 
-func (f TransportFlow) NetcapTimestamp() string {
+func (f TransportFlow) Time() string {
 	return f.TimestampFirst
 }
 
@@ -72,4 +72,14 @@ func init() {
 
 func (a TransportFlow) Inc() {
 	transportFlowMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *TransportFlow) SetPacketContext(ctx *PacketContext) {}
+
+func (a TransportFlow) Src() string {
+	return formatInt32(a.SrcPort)
+}
+
+func (a TransportFlow) Dst() string {
+	return formatInt32(a.DstPort)
 }

@@ -65,7 +65,7 @@ func (f Flow) CSVRecord() []string {
 	})
 }
 
-func (f Flow) NetcapTimestamp() string {
+func (f Flow) Time() string {
 	return f.TimestampFirst
 }
 
@@ -160,3 +160,11 @@ func (a Flow) Inc() {
 }
 
 func (a Flow) SetPacketContext(ctx *PacketContext) {}
+
+func (a Flow) Src() string {
+	return a.SrcIP
+}
+
+func (a Flow) Dst() string {
+	return a.DstIP
+}

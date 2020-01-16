@@ -65,7 +65,7 @@ func (c Connection) CSVRecord() []string {
 	})
 }
 
-func (c Connection) NetcapTimestamp() string {
+func (c Connection) Time() string {
 	return c.TimestampFirst
 }
 
@@ -160,3 +160,11 @@ func (a Connection) Inc() {
 }
 
 func (a Connection) SetPacketContext(ctx *PacketContext) {}
+
+func (a Connection) Src() string {
+	return a.SrcIP
+}
+
+func (a Connection) Dst() string {
+	return a.DstIP
+}

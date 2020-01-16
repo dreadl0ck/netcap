@@ -147,8 +147,8 @@ func TimeToString(t time.Time) string {
 
 // func sortSlice(values []types.AuditRecord) {
 // 	sort.Slice(values, func(i, j int) bool {
-// 		iTime := StringToTime(values[i].NetcapTimestamp())
-// 		jTime := StringToTime(values[j].NetcapTimestamp())
+// 		iTime := StringToTime(values[i].Time())
+// 		jTime := StringToTime(values[j].Time())
 // 		return iTime.date.Before(jTime.date)
 // 	})
 // }

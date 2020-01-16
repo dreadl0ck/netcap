@@ -55,7 +55,7 @@ func (a VRRPv2) CSVRecord() []string {
 	})
 }
 
-func (a VRRPv2) NetcapTimestamp() string {
+func (a VRRPv2) Time() string {
 	return a.Timestamp
 }
 
@@ -81,4 +81,18 @@ func (a VRRPv2) Inc() {
 
 func (a *VRRPv2) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a VRRPv2) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a VRRPv2) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

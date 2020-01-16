@@ -50,7 +50,7 @@ func (f NetworkFlow) CSVRecord() []string {
 	})
 }
 
-func (f NetworkFlow) NetcapTimestamp() string {
+func (f NetworkFlow) Time() string {
 	return f.TimestampFirst
 }
 
@@ -72,4 +72,14 @@ func init() {
 
 func (a NetworkFlow) Inc() {
 	networkFlowMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *NetworkFlow) SetPacketContext(ctx *PacketContext) {}
+
+func (a NetworkFlow) Src() string {
+	return a.SrcIP
+}
+
+func (a NetworkFlow) Dst() string {
+	return a.DstIP
 }

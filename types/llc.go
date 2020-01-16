@@ -44,7 +44,7 @@ func (l LLC) CSVRecord() []string {
 	})
 }
 
-func (l LLC) NetcapTimestamp() string {
+func (l LLC) Time() string {
 	return l.Timestamp
 }
 
@@ -69,3 +69,12 @@ func (a LLC) Inc() {
 }
 
 func (a *LLC) SetPacketContext(ctx *PacketContext) {}
+
+// TODO
+func (a LLC) Src() string {
+	return ""
+}
+
+func (a LLC) Dst() string {
+	return ""
+}

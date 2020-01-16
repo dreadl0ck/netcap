@@ -50,7 +50,7 @@ func (a IPv6Fragment) CSVRecord() []string {
 	})
 }
 
-func (a IPv6Fragment) NetcapTimestamp() string {
+func (a IPv6Fragment) Time() string {
 	return a.Timestamp
 }
 
@@ -75,4 +75,19 @@ func (a IPv6Fragment) Inc() {
 }
 
 func (a *IPv6Fragment) SetPacketContext(ctx *PacketContext) {
+	a.Context = ctx
+}
+
+func (a IPv6Fragment) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a IPv6Fragment) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }
