@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo "[INFO] building docker image"
+cp Dockerfile-alpine Dockerfile
 
 # in case of cache annoyances:
 # docker rm -f $(docker ps -a -q)
