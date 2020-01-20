@@ -16,20 +16,6 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1 h1:hYYY4lT/JWxWwaG0hmVAM24u6ElfO1StNGnLgWW/HHk=
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200112124841-257d0538ed04/go.mod h1:KBFGDQYW2zq081ooQxvs0vpaCqRHeeAF517Olq7oAI8=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114091121-ea15b21e72f5 h1:ZsCBxaotmAfrUm8YNT+qZetb4k3M3iGa/Lyn3hJCrOQ=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114091121-ea15b21e72f5/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114092859-209c7fdba7fa h1:PYgHpq7uxuJ8aMMMGuQKeOCTEQIEh6cd82qNGE1dYuw=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114092859-209c7fdba7fa/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114093040-1666564c0688 h1:lMJXfWUwQajEClqtHrhTZgII1xMU/TxAGx71dNDvOYI=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114093040-1666564c0688/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114093251-0bb419c50dec h1:MlQ8m4VTY2rEmveEz160rl1ejxEQRY1OxX0pPzzNeks=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114093251-0bb419c50dec/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114093510-09bbabed3850 h1:J4MXsyHRwEFBTWCiNDeekUzPcCpphCbAFG5youq6uzM=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114093510-09bbabed3850/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114093714-e84d1867fbdd h1:qjnRxVhyWUa/a1+dhpzGO3ml21/HtKfuDEGUwh5Aocw=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114093714-e84d1867fbdd/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114094642-53342e54149d h1:t157k82XsO/g4et0z09yKVlSsmsgyg1bUhsJQOiFe54=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200114094642-53342e54149d/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557 h1:m/rxJiRUgei39RuIVBMPipyRGokYe534vBfuARBcLnU=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
 github.com/dreadl0ck/ja3 v0.0.0-20200112130028-3e0281e06aec h1:lSkWekeihd6+wxwTQqcO9wbJx0HfKvMb2+DM14Hmqk8=
@@ -54,7 +40,6 @@ github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5y
 github.com/golang/protobuf v1.3.1/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
-github.com/google/go-cmp v0.3.0 h1:crn/baboCvb5fXaQ0IJ1SGTsTVrWpDsCWC8EGETZijY=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/gopacket v1.1.17 h1:rMrlX2ZY2UbvT+sdz3+6J+pp2z+msCq9MxTU6ymxbBY=
@@ -156,7 +141,6 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/cheggaaa/pb.v1 v1.0.28 h1:n1tBJnnK2r7g9OW2btFH91V92STTUevLXYFb8gy9EMk=
 gopkg.in/cheggaaa/pb.v1 v1.0.28/go.mod h1:V/YB90LKu/1FcN3WVnfiiE5oMCibMjukxqG/qStrOgw=
-gopkg.in/yaml.v2 v2.2.1 h1:mUhvW9EsL+naU5Q3cakzfE91YhliOondGd6ZrsDBHQE=
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
