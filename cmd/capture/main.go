@@ -138,6 +138,9 @@ func main() {
 
 	fmt.Println("> gopacket lib:", reflect.TypeOf(lt).PkgPath())
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	fmt.Println("> running with:", runtime.NumCPU(), "cores")
+
 	b, ok := debug.ReadBuildInfo()
 	if ok {
 		for _, d := range b.Deps {
