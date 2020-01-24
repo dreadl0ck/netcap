@@ -16,6 +16,7 @@ package label
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,7 +25,6 @@ import (
 	"sync"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/utils"
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
@@ -65,13 +65,14 @@ func SetExcluded(arg string) {
 }
 
 func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) {
-	// only add to summary if labels were added and no progress bars are being used
-	if labelsTotal != 0 && !UseProgressBars {
-		fmt.Println(" + " + utils.Pad(filepath.Base(f.Name()), 40) + "labels: " + strconv.Itoa(labelsTotal))
-	}
 
 	if UseProgressBars {
 		progress.Finish()
+	}
+
+	// only add to summary if labels were added and no progress bars are being used
+	if labelsTotal != 0 && !UseProgressBars {
+		fmt.Println(" + " + utils.Pad(filepath.Base(f.Name()), 40) + "labels: " + strconv.Itoa(labelsTotal))
 	}
 
 	if err := r.Close(); err != nil {
