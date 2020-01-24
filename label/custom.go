@@ -33,21 +33,32 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
-type Custom struct {
-	AttackNumber   int
-	StartTime      int64
-	EndTime        int64
-	AttackDuration time.Duration
-	AttackPoints   []string
-	Adresses       []string
-	AttackName     string
-	AttackType     string
-	Intent         string
-	ActualChange   string
-	Notes          string
+//type Custom struct {
+//	AttackNumber   int
+//	StartTime      int64
+//	EndTime        int64
+//	AttackDuration time.Duration
+//	AttackPoints   []string
+//	Adresses       []string
+//	AttackName     string
+//	AttackType     string
+//	Intent         string
+//	ActualChange   string
+//	Notes          string
+//}
+
+type AttackInfo struct {
+	Num int
+	Name string
+	Start time.Time
+	End time.Time
+	IPs []string
+	Proto string
+	Notes string
+	Category string
 }
 
-func ParseCustomConfig(path string) (labelMap map[string]*Custom, labels []*Custom) {
+func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*AttackInfo) {
 
 	f, err := os.Open(path)
 	if err != nil {
@@ -62,10 +73,10 @@ func ParseCustomConfig(path string) (labelMap map[string]*Custom, labels []*Cust
 	}
 
 	// alerts that have a duplicate timestamp
-	var duplicates = []*Custom{}
+	var duplicates = []*AttackInfo{}
 
 	// ts:alert
-	labelMap = make(map[string]*Custom)
+	labelMap = make(map[string]*AttackInfo)
 
 	for _, record := range records[1:] {
 
@@ -74,55 +85,52 @@ func ParseCustomConfig(path string) (labelMap map[string]*Custom, labels []*Cust
 			log.Fatal(err)
 		}
 
-		start, err := strconv.ParseInt(record[2], 10, 64)
+		start, err := time.Parse("2006/1/2 15:04:05", record[2])
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		end, err := strconv.ParseInt(record[3], 10, 64)
+		end, err :=  time.Parse("2006/1/2 15:04:05", record[3])
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		duration, err := time.ParseDuration(record[4])
-		if err != nil {
-			log.Fatal(err)
-		}
+		//duration, err := time.ParseDuration(record[4])
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
 
 		toArr := func(input string) []string {
-			return strings.Split(strings.Trim(input, "\""), ",")
+			return strings.Split(strings.Trim(input, "\""), ";")
 		}
 
-		custom := &Custom{
-			AttackNumber:   num,                        // int
-			StartTime:      time.Unix(start, 0).Unix(), // int64
-			EndTime:        time.Unix(end, 0).Unix(),   // int64
-			AttackDuration: duration,                   // time.Duration
-			AttackPoints:   toArr(record[5]),           // []string
-			Adresses:       toArr(record[6]),           // []string
-			AttackName:     record[7],                  // string
-			AttackType:     record[8],                  // string
-			Intent:         record[9],                  // string
-			ActualChange:   record[10],                 // string
-			Notes:          record[11],                 // string
+		custom := &AttackInfo{
+			Num:        num,                        // int
+			Start:      start, // time.Time
+			End:        end,   // time.Time
+			IPs:        toArr(record[4]),           // []string
+			Name:       record[1],                  // string
+			Proto:      record[5],                  // string
+			Notes:      record[6],                 // string
+			Category: record[7], // string
 		}
 
 		// ensure no alerts with empty name are collected
-		if custom.AttackName == "" || custom.AttackName == " " {
+		if custom.Name == "" || custom.Name == " " {
 			fmt.Println("skipping entry with empty name", custom)
 			continue
 		}
 
 		// count total occurrences of classification
-		ClassificationMap[custom.AttackName]++
+		ClassificationMap[custom.Name]++
 
 		// check if excluded
-		if !excluded[custom.AttackName] {
+		if !excluded[custom.Name] {
 
 			// append to collected alerts
 			labels = append(labels, custom)
 
-			startTsString := strconv.FormatInt(custom.StartTime, 10)
+			startTsString := strconv.FormatInt(custom.Start.Unix(), 10)
 
 			// add to label map
 			if _, ok := labelMap[startTsString]; ok {
@@ -146,7 +154,7 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 
 	var (
 		start            = time.Now()
-		labelMap, labels = ParseCustomConfig(pathMappingInfo)
+		labelMap, labels = ParseAttackInfos(pathMappingInfo)
 	)
 	if len(labels) == 0 {
 		fmt.Println("no labels found.")
@@ -157,7 +165,7 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 
 	rows := [][]string{}
 	for i, c := range labels {
-		rows = append(rows, []string{strconv.Itoa(i + 1), c.AttackName})
+		rows = append(rows, []string{strconv.Itoa(i + 1), c.Name})
 	}
 
 	// print alert summary
@@ -198,7 +206,7 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 				typ      = strings.TrimSuffix(strings.TrimSuffix(filename, ".ncap.gz"), ".ncap")
 			)
 
-			fmt.Println("type", typ)
+			//fmt.Println("type", typ)
 			pbs = append(pbs, CustomMap(&wg, filename, typ, labelMap, labels, outputPath, separator, selection))
 		}
 	}
@@ -233,7 +241,7 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 
 // CustomMap uses info from a csv file to label the data
 //func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Custom, labels []*Custom, outDir, separator, selection string) *pb.ProgressBar {
+func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*AttackInfo, labels []*AttackInfo, outDir, separator, selection string) *pb.ProgressBar {
 
 	var (
 		fname       = filepath.Join(outDir, file)
@@ -281,7 +289,6 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 		}
 
 		for {
-		nextRecord:
 			err := r.Next(record)
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				break
@@ -293,80 +300,69 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 				progress.Increment()
 			}
 
-			// collect labels for layer
-			// e.g: there are two alerts for the same timestamp with different classifications
-			// they label will then contain both separated by a pipe symbol
-			if CollectLabels {
+			var label string
 
-				var label string
+			// check if flow has a source or destination adress matching an alert
+			// if not label it as normal
+			for _, l := range labels {
 
-				// check if flow has a source or destination adress matching an alert
-				// if not label it as normal
-				for _, l := range labels {
+				var numMatches int
 
-					var match bool
-
-					//fmt.Println(p.Src(), p.Dst())
-
-					// check if any of the addresses from the labeling info
-					// is either source or destination of the current audit record
-					for _, addr := range l.Adresses {
-						if p.Src() == addr || p.Dst() == addr {
-							match = true
-						}
-					}
-					if !match {
-						// label as normal
-						f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
-						goto nextRecord
-					}
-
-					// verify time interval of audit record is within the attack period
-					start := time.Unix(l.StartTime, 0)
-					end := time.Unix(l.EndTime, 0)
-					auditRecordTime := utils.StringToTime(p.Time())
-
-					// fmt.Println("start", start)
-					// fmt.Println("end", end)
-					// fmt.Println("auditRecordTime", auditRecordTime)
-
-					// if the audit record has a timestamp in the attack period
-					if start.Before(auditRecordTime) && end.After(auditRecordTime) {
-
-						// only if it is not already part of the label
-						if !strings.Contains(label, l.AttackName) {
-							if label == "" {
-								label = l.AttackName
-							} else {
-								label += " | " + l.AttackName
-							}
-						}
+				// check if any of the addresses from the labeling info
+				// is either source or destination of the current audit record
+				for _, addr := range l.IPs {
+					if p.Src() == addr || p.Dst() == addr {
+						numMatches++
 					}
 				}
-
-				if len(label) != 0 {
-					if strings.HasPrefix(label, " |") {
-						log.Fatal("invalid label: ", label)
-					}
-
-					// add label
-					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + label + "\n")
-					labelsTotal++
-				} else {
+				if numMatches != 2 {
 					// label as normal
 					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
+					continue
 				}
+
+				// verify time interval of audit record is within the attack period
+				auditRecordTime := utils.StringToTime(p.Time()).UTC().Add(8*time.Hour)
+
+				// if the audit record has a timestamp in the attack period
+				if (l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime)) ||
+
+					// or matches exactly the one on the audit record
+					l.Start.Equal(auditRecordTime) || l.End.Equal(auditRecordTime) {
+
+					if Debug {
+						fmt.Println("-----------------------", typ, l.Name, l.Category)
+						fmt.Println("flow:", p.Src(), "->", p.Dst(), "addr:", "attack ips:", l.IPs)
+						fmt.Println("start", l.Start)
+						fmt.Println("end", l.End)
+						fmt.Println("auditRecordTime", auditRecordTime)
+						fmt.Println("(l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))", l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))
+						fmt.Println("l.Start.Equal(auditRecordTime)", l.Start.Equal(auditRecordTime))
+						fmt.Println("l.End.Equal(auditRecordTime))", l.End.Equal(auditRecordTime))
+					}
+
+					// only if it is not already part of the label
+					if !strings.Contains(label, l.Category) {
+						if label == "" {
+							label = l.Category
+						} else {
+							label += " | " + l.Category
+						}
+					}
+				}
+			}
+
+			if len(label) != 0 {
+				if strings.HasPrefix(label, " |") {
+					log.Fatal("invalid label: ", label)
+				}
+
+				// add label
+				f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + label + "\n")
+				labelsTotal++
 			} else {
-				// layers are mapped by timestamp
-				// this preserves only the first label seen for each timestamp
-				if a, ok := labelMap[p.Time()]; ok {
-					// add label
-					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + a.AttackName + "\n")
-					labelsTotal++
-				} else {
-					// label as normal
-					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
-				}
+				// label as normal
+				f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
 			}
 		}
 		finish(wg, r, f, labelsTotal, outFileName, progress)
