@@ -14,6 +14,7 @@
 package label
 
 import (
+	"compress/gzip"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -247,7 +248,7 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 		fname       = filepath.Join(outDir, file)
 		total       = netcap.Count(fname)
 		labelsTotal = 0
-		outFileName = filepath.Join(outDir, typ+"_labeled.csv")
+		outFileName = filepath.Join(outDir, typ+"_labeled.csv.gz")
 		progress    = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
 	)
 
@@ -268,6 +269,8 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 			panic(err)
 		}
 
+		gzipWriter := gzip.NewWriter(f)
+
 		var (
 			record = netcap.InitRecord(header.Type)
 			ok     bool
@@ -283,7 +286,7 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 		types.Select(record, selection)
 
 		// write header
-		_, err = f.WriteString(strings.Join(p.CSVHeader(), separator) + separator + "result" + "\n")
+		_, err = gzipWriter.Write([]byte(strings.Join(p.CSVHeader(), separator) + separator + "result" + "\n"))
 		if err != nil {
 			panic(err)
 		}
@@ -317,7 +320,7 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 				}
 				if numMatches != 2 {
 					// label as normal
-					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
+					gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + "normal\n"))
 					continue
 				}
 
@@ -358,12 +361,20 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 				}
 
 				// add label
-				f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + label + "\n")
+				gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + label + "\n"))
 				labelsTotal++
 			} else {
 				// label as normal
-				f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
+				gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + "normal\n"))
 			}
+		}
+		err = gzipWriter.Flush()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = gzipWriter.Close()
+		if err != nil {
+			log.Fatal(err)
 		}
 		finish(wg, r, f, labelsTotal, outFileName, progress)
 	}()
