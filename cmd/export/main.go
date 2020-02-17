@@ -44,6 +44,11 @@ func main() {
 		os.Exit(0)
 	}
 
+	if *flagListInterfaces {
+		utils.ListAllNetworkInterfaces()
+		return
+	}
+
 	// set data source
 	var source string
 	if *flagInput != "" {
