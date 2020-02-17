@@ -26,7 +26,7 @@ var (
 	flagPacketBuffer   = flag.Int("pbuf", 100, "set packet buffer size, for channels that feed data to workers")
 	flagIngoreUnknown  = flag.Bool("ignore-unknown", false, "disable writing unknown packets into a pcap file")
 	flagPromiscMode    = flag.Bool("promisc", true, "toggle promiscous mode for live capture")
-	flagSnapLen        = flag.Int("snaplen", 1024, "configure snaplen for live capture from interface")
+	flagSnapLen        = flag.Int("snaplen", 1514, "configure snaplen for live capture from interface")
 	flagVersion        = flag.Bool("version", false, "print netcap package version and exit")
 	flagBaseLayer      = flag.String("base", "ethernet", "select base layer")
 	flagDecodeOptions  = flag.String("opts", "lazy", "select decoding options")

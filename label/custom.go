@@ -151,8 +151,6 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 // CustomLabels uses info from a csv file to label the data
 func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separator, selection string) error {
 
-	fmt.Println("CustomLabels")
-
 	var (
 		start            = time.Now()
 		labelMap, labels = ParseAttackInfos(pathMappingInfo)
