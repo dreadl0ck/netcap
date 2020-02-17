@@ -11,7 +11,6 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
-	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -23,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type Type int32
 
@@ -333,7 +332,7 @@ func (m *Header) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Header.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -409,7 +408,7 @@ func (m *Batch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Batch.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -484,7 +483,7 @@ func (m *PacketContext) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_PacketContext.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -568,7 +567,7 @@ func (m *Flow) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Flow.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -744,7 +743,7 @@ func (m *Connection) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Connection.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -908,7 +907,7 @@ func (m *LinkFlow) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LinkFlow.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1016,7 +1015,7 @@ func (m *NetworkFlow) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_NetworkFlow.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1124,7 +1123,7 @@ func (m *TransportFlow) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_TransportFlow.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1229,7 +1228,7 @@ func (m *Ethernet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Ethernet.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1317,7 +1316,7 @@ func (m *ARP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_ARP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1429,7 +1428,7 @@ func (m *Dot1Q) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Dot1Q.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1516,7 +1515,7 @@ func (m *Dot11) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Dot11.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1654,7 +1653,7 @@ func (m *Dot11QOS) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Dot11QOS.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1722,7 +1721,7 @@ func (m *Dot11HTControl) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_Dot11HTControl.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1796,7 +1795,7 @@ func (m *Dot11HTControlVHT) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_Dot11HTControlVHT.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1908,7 +1907,7 @@ func (m *Dot11HTControlHT) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_Dot11HTControlHT.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1990,7 +1989,7 @@ func (m *Dot11HTControlMFB) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_Dot11HTControlMFB.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2060,7 +2059,7 @@ func (m *Dot11LinkAdapationControl) XXX_Marshal(b []byte, deterministic bool) ([
 		return xxx_messageInfo_Dot11LinkAdapationControl.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2140,7 +2139,7 @@ func (m *Dot11ASEL) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Dot11ASEL.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2195,7 +2194,7 @@ func (m *LinkLayerDiscovery) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_LinkLayerDiscovery.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2268,7 +2267,7 @@ func (m *LLDPChassisID) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_LLDPChassisID.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2320,7 +2319,7 @@ func (m *LLDPPortID) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LLDPPortID.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2373,7 +2372,7 @@ func (m *LinkLayerDiscoveryValue) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_LinkLayerDiscoveryValue.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2432,7 +2431,7 @@ func (m *EthernetCTP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_EthernetCTP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2486,7 +2485,7 @@ func (m *EthernetCTPReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_EthernetCTPReply.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2558,7 +2557,7 @@ func (m *LinkLayerDiscoveryInfo) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return xxx_messageInfo_LinkLayerDiscoveryInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2652,7 +2651,7 @@ func (m *LLDPSysCapabilities) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_LLDPSysCapabilities.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2713,7 +2712,7 @@ func (m *LLDPCapabilities) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_LLDPCapabilities.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2831,7 +2830,7 @@ func (m *LLDPMgmtAddress) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_LLDPMgmtAddress.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2905,7 +2904,7 @@ func (m *LLDPOrgSpecificTLV) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_LLDPOrgSpecificTLV.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2980,7 +2979,7 @@ func (m *IPv4) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_IPv4.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3145,7 +3144,7 @@ func (m *IPv4Option) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_IPv4Option.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3215,7 +3214,7 @@ func (m *IPv6) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_IPv6.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3350,7 +3349,7 @@ func (m *IPv6Fragment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_IPv6Fragment.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3448,7 +3447,7 @@ func (m *ICMPv4) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_ICMPv4.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3530,7 +3529,7 @@ func (m *ICMPv6) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_ICMPv6.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3599,7 +3598,7 @@ func (m *ICMPv6NeighborAdvertisement) XXX_Marshal(b []byte, deterministic bool) 
 		return xxx_messageInfo_ICMPv6NeighborAdvertisement.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3678,7 +3677,7 @@ func (m *ICMPv6RouterAdvertisement) XXX_Marshal(b []byte, deterministic bool) ([
 		return xxx_messageInfo_ICMPv6RouterAdvertisement.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3772,7 +3771,7 @@ func (m *ICMPv6Option) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_ICMPv6Option.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3831,7 +3830,7 @@ func (m *UDP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_UDP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3954,7 +3953,7 @@ func (m *TCP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_TCP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4161,7 +4160,7 @@ func (m *TCPOption) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_TCPOption.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4224,7 +4223,7 @@ func (m *SCTP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_SCTP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4323,7 +4322,7 @@ func (m *DNS) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DNS.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4509,7 +4508,7 @@ func (m *DNSResourceRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_DNSResourceRecord.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4652,7 +4651,7 @@ func (m *DNSSOA) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DNSSOA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4742,7 +4741,7 @@ func (m *DNSSRV) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DNSSRV.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4809,7 +4808,7 @@ func (m *DNSMX) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DNSMX.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4863,7 +4862,7 @@ func (m *DNSQuestion) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_DNSQuestion.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -4937,7 +4936,7 @@ func (m *DHCPv4) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DHCPv4.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5095,7 +5094,7 @@ func (m *DHCPOption) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DHCPOption.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5160,7 +5159,7 @@ func (m *DHCPv6) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DHCPv6.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5255,7 +5254,7 @@ func (m *DHCPv6Option) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_DHCPv6Option.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5320,7 +5319,7 @@ func (m *LLC) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LLC.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5414,7 +5413,7 @@ func (m *NTP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_NTP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5574,7 +5573,7 @@ func (m *SIP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_SIP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5680,7 +5679,7 @@ func (m *IGMP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_IGMP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5819,7 +5818,7 @@ func (m *IGMPv3GroupRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_IGMPv3GroupRecord.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5893,7 +5892,7 @@ func (m *IPv6HopByHop) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_IPv6HopByHop.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -5955,7 +5954,7 @@ func (m *IPv6HopByHopOption) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_IPv6HopByHopOption.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6028,7 +6027,7 @@ func (m *IPv6HopByHopOptionAlignment) XXX_Marshal(b []byte, deterministic bool) 
 		return xxx_messageInfo_IPv6HopByHopOptionAlignment.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6085,7 +6084,7 @@ func (m *SNAP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_SNAP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6146,7 +6145,7 @@ func (m *ICMPv6Echo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_ICMPv6Echo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6214,7 +6213,7 @@ func (m *ICMPv6NeighborSolicitation) XXX_Marshal(b []byte, deterministic bool) (
 		return xxx_messageInfo_ICMPv6NeighborSolicitation.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6281,7 +6280,7 @@ func (m *ICMPv6RouterSolicitation) XXX_Marshal(b []byte, deterministic bool) ([]
 		return xxx_messageInfo_ICMPv6RouterSolicitation.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6363,7 +6362,7 @@ func (m *HTTP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_HTTP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6589,7 +6588,7 @@ func (m *TLSClientHello) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_TLSClientHello.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6827,7 +6826,7 @@ func (m *IPSecAH) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_IPSecAH.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6910,7 +6909,7 @@ func (m *IPSecESP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_IPSecESP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -6990,7 +6989,7 @@ func (m *Geneve) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Geneve.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -7094,7 +7093,7 @@ func (m *GeneveOption) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_GeneveOption.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -7174,7 +7173,7 @@ func (m *VXLAN) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_VXLAN.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -7286,7 +7285,7 @@ func (m *USB) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_USB.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -7468,7 +7467,7 @@ func (m *USBRequestBlockSetup) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return xxx_messageInfo_USBRequestBlockSetup.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -7563,7 +7562,7 @@ func (m *LCM) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LCM.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -7675,7 +7674,7 @@ func (m *MPLS) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_MPLS.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -7762,7 +7761,7 @@ func (m *Modbus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Modbus.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -7877,7 +7876,7 @@ func (m *OSPFv2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_OSPFv2.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8026,7 +8025,7 @@ func (m *HelloPkg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_HelloPkg.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8127,7 +8126,7 @@ func (m *HelloPkgV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_HelloPkgV2.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8231,7 +8230,7 @@ func (m *DbDescPkg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DbDescPkg.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8318,7 +8317,7 @@ func (m *OSPFv3) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_OSPFv3.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8467,7 +8466,7 @@ func (m *LSAheader) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LSAheader.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8571,7 +8570,7 @@ func (m *LSA) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LSA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8687,7 +8686,7 @@ func (m *LSReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LSReq.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8746,7 +8745,7 @@ func (m *LSUpdate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LSUpdate.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8801,7 +8800,7 @@ func (m *IntraAreaPrefixLSA) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_IntraAreaPrefixLSA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8881,7 +8880,7 @@ func (m *ASExternalLSA) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_ASExternalLSA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -8984,7 +8983,7 @@ func (m *InterAreaPrefixLSA) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_InterAreaPrefixLSA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9051,7 +9050,7 @@ func (m *InterAreaRouterLSA) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_InterAreaRouterLSA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9113,7 +9112,7 @@ func (m *ASExternalLSAV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_ASExternalLSAV2.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9187,7 +9186,7 @@ func (m *RouterLSA) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_RouterLSA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9249,7 +9248,7 @@ func (m *Router) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Router.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9323,7 +9322,7 @@ func (m *RouterLSAV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_RouterLSAV2.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9384,7 +9383,7 @@ func (m *RouterV2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_RouterV2.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9450,7 +9449,7 @@ func (m *NetworkLSA) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_NetworkLSA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9505,7 +9504,7 @@ func (m *LinkLSA) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LinkLSA.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9580,7 +9579,7 @@ func (m *LSAPrefix) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LSAPrefix.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9662,7 +9661,7 @@ func (m *BFD) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_BFD.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9828,7 +9827,7 @@ func (m *BFDAuthHeader) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_BFDAuthHeader.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -9910,7 +9909,7 @@ func (m *GRE) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_GRE.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10077,7 +10076,7 @@ func (m *GRERouting) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_GRERouting.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10154,7 +10153,7 @@ func (m *FDDI) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_FDDI.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10239,7 +10238,7 @@ func (m *EAP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_EAP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10322,7 +10321,7 @@ func (m *EAPOL) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_EAPOL.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10409,7 +10408,7 @@ func (m *EAPOLKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_EAPOLKey.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10610,7 +10609,7 @@ func (m *VRRPv2) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_VRRPv2.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10728,7 +10727,7 @@ func (m *CiscoDiscovery) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_CiscoDiscovery.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10802,7 +10801,7 @@ func (m *CiscoDiscoveryValue) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_CiscoDiscoveryValue.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10861,7 +10860,7 @@ func (m *CDPVLANDialogue) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_CDPVLANDialogue.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10913,7 +10912,7 @@ func (m *CDPLocation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_CDPLocation.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -10966,7 +10965,7 @@ func (m *CDPPowerDialogue) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_CDPPowerDialogue.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -11027,7 +11026,7 @@ func (m *CDPSparePairPoE) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_CDPSparePairPoE.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -11118,7 +11117,7 @@ func (m *CiscoDiscoveryInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_CiscoDiscoveryInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -11355,7 +11354,7 @@ func (m *CDPHello) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_CDPHello.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -11491,7 +11490,7 @@ func (m *CDPEnergyWise) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_CDPEnergyWise.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -11648,7 +11647,7 @@ func (m *CDPCapabilities) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_CDPCapabilities.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -11749,7 +11748,7 @@ func (m *IPNet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_IPNet.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -11807,7 +11806,7 @@ func (m *NortelDiscovery) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_NortelDiscovery.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -11908,7 +11907,7 @@ func (m *CIP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_CIP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -12020,7 +12019,7 @@ func (m *ENIP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_ENIP.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -12123,7 +12122,7 @@ func (m *ENIPCommandSpecificData) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_ENIPCommandSpecificData.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := m.MarshalTo(b)
 		if err != nil {
 			return nil, err
 		}
@@ -12897,7 +12896,7 @@ var fileDescriptor_3068659fd5590671 = []byte{
 func (m *Header) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -12905,58 +12904,50 @@ func (m *Header) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Header) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Header) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
+	if len(m.Created) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Created)))
+		i += copy(dAtA[i:], m.Created)
+	}
+	if len(m.InputSource) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.InputSource)))
+		i += copy(dAtA[i:], m.InputSource)
+	}
+	if m.Type != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
+	}
+	if len(m.Version) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Version)))
+		i += copy(dAtA[i:], m.Version)
+	}
 	if m.ContainsPayloads {
-		i--
+		dAtA[i] = 0x28
+		i++
 		if m.ContainsPayloads {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x28
+		i++
 	}
-	if len(m.Version) > 0 {
-		i -= len(m.Version)
-		copy(dAtA[i:], m.Version)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Version)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x18
-	}
-	if len(m.InputSource) > 0 {
-		i -= len(m.InputSource)
-		copy(dAtA[i:], m.InputSource)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.InputSource)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Created) > 0 {
-		i -= len(m.Created)
-		copy(dAtA[i:], m.Created)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Created)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *Batch) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -12964,56 +12955,49 @@ func (m *Batch) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Batch) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Batch) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
+	if len(m.ClientID) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClientID)))
+		i += copy(dAtA[i:], m.ClientID)
+	}
+	if m.MessageType != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MessageType))
+	}
+	if m.TotalSize != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
+	}
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
+	}
 	if m.ContainsPayloads {
-		i--
+		dAtA[i] = 0x28
+		i++
 		if m.ContainsPayloads {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x28
+		i++
 	}
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.TotalSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.MessageType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MessageType))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.ClientID) > 0 {
-		i -= len(m.ClientID)
-		copy(dAtA[i:], m.ClientID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClientID)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *PacketContext) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13021,50 +13005,41 @@ func (m *PacketContext) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *PacketContext) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *PacketContext) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.DstPort) > 0 {
-		i -= len(m.DstPort)
-		copy(dAtA[i:], m.DstPort)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstPort)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.SrcPort) > 0 {
-		i -= len(m.SrcPort)
-		copy(dAtA[i:], m.SrcPort)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcPort)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.SrcIP) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+		i += copy(dAtA[i:], m.SrcIP)
 	}
 	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+		i += copy(dAtA[i:], m.DstIP)
 	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.SrcPort) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcPort)))
+		i += copy(dAtA[i:], m.SrcPort)
 	}
-	return len(dAtA) - i, nil
+	if len(m.DstPort) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstPort)))
+		i += copy(dAtA[i:], m.DstPort)
+	}
+	return i, nil
 }
 
 func (m *Flow) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13072,137 +13047,119 @@ func (m *Flow) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Flow) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Flow) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Duration != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x88
-	}
-	if len(m.TimestampLast) > 0 {
-		i -= len(m.TimestampLast)
-		copy(dAtA[i:], m.TimestampLast)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
-	}
-	if len(m.UID) > 0 {
-		i -= len(m.UID)
-		copy(dAtA[i:], m.UID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.UID)))
-		i--
-		dAtA[i] = 0x7a
-	}
-	if m.NumPackets != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.AppPayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AppPayloadSize))
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.TotalSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
-		i--
-		dAtA[i] = 0x60
-	}
-	if len(m.DstPort) > 0 {
-		i -= len(m.DstPort)
-		copy(dAtA[i:], m.DstPort)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstPort)))
-		i--
-		dAtA[i] = 0x5a
-	}
-	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
-		i--
-		dAtA[i] = 0x52
-	}
-	if len(m.SrcPort) > 0 {
-		i -= len(m.SrcPort)
-		copy(dAtA[i:], m.SrcPort)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcPort)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.DstMAC) > 0 {
-		i -= len(m.DstMAC)
-		copy(dAtA[i:], m.DstMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.SrcMAC) > 0 {
-		i -= len(m.SrcMAC)
-		copy(dAtA[i:], m.SrcMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.ApplicationProto) > 0 {
-		i -= len(m.ApplicationProto)
-		copy(dAtA[i:], m.ApplicationProto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ApplicationProto)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.TransportProto) > 0 {
-		i -= len(m.TransportProto)
-		copy(dAtA[i:], m.TransportProto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TransportProto)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.NetworkProto) > 0 {
-		i -= len(m.NetworkProto)
-		copy(dAtA[i:], m.NetworkProto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.NetworkProto)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.TimestampFirst) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
+		i += copy(dAtA[i:], m.TimestampFirst)
 	}
 	if len(m.LinkProto) > 0 {
-		i -= len(m.LinkProto)
-		copy(dAtA[i:], m.LinkProto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.LinkProto)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.LinkProto)))
+		i += copy(dAtA[i:], m.LinkProto)
 	}
-	if len(m.TimestampFirst) > 0 {
-		i -= len(m.TimestampFirst)
-		copy(dAtA[i:], m.TimestampFirst)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.NetworkProto) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.NetworkProto)))
+		i += copy(dAtA[i:], m.NetworkProto)
 	}
-	return len(dAtA) - i, nil
+	if len(m.TransportProto) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TransportProto)))
+		i += copy(dAtA[i:], m.TransportProto)
+	}
+	if len(m.ApplicationProto) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ApplicationProto)))
+		i += copy(dAtA[i:], m.ApplicationProto)
+	}
+	if len(m.SrcMAC) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
+		i += copy(dAtA[i:], m.SrcMAC)
+	}
+	if len(m.DstMAC) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
+		i += copy(dAtA[i:], m.DstMAC)
+	}
+	if len(m.SrcIP) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+		i += copy(dAtA[i:], m.SrcIP)
+	}
+	if len(m.SrcPort) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcPort)))
+		i += copy(dAtA[i:], m.SrcPort)
+	}
+	if len(m.DstIP) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+		i += copy(dAtA[i:], m.DstIP)
+	}
+	if len(m.DstPort) > 0 {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstPort)))
+		i += copy(dAtA[i:], m.DstPort)
+	}
+	if m.TotalSize != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
+	}
+	if m.AppPayloadSize != 0 {
+		dAtA[i] = 0x68
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AppPayloadSize))
+	}
+	if m.NumPackets != 0 {
+		dAtA[i] = 0x70
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
+	}
+	if len(m.UID) > 0 {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.UID)))
+		i += copy(dAtA[i:], m.UID)
+	}
+	if len(m.TimestampLast) > 0 {
+		dAtA[i] = 0x82
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
+		i += copy(dAtA[i:], m.TimestampLast)
+	}
+	if m.Duration != 0 {
+		dAtA[i] = 0x88
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
+	}
+	return i, nil
 }
 
 func (m *Connection) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13210,137 +13167,119 @@ func (m *Connection) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Connection) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Connection) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Duration != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x88
-	}
-	if len(m.TimestampLast) > 0 {
-		i -= len(m.TimestampLast)
-		copy(dAtA[i:], m.TimestampLast)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
-	}
-	if len(m.UID) > 0 {
-		i -= len(m.UID)
-		copy(dAtA[i:], m.UID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.UID)))
-		i--
-		dAtA[i] = 0x7a
-	}
-	if m.NumPackets != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.AppPayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AppPayloadSize))
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.TotalSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
-		i--
-		dAtA[i] = 0x60
-	}
-	if len(m.DstPort) > 0 {
-		i -= len(m.DstPort)
-		copy(dAtA[i:], m.DstPort)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstPort)))
-		i--
-		dAtA[i] = 0x5a
-	}
-	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
-		i--
-		dAtA[i] = 0x52
-	}
-	if len(m.SrcPort) > 0 {
-		i -= len(m.SrcPort)
-		copy(dAtA[i:], m.SrcPort)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcPort)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.DstMAC) > 0 {
-		i -= len(m.DstMAC)
-		copy(dAtA[i:], m.DstMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.SrcMAC) > 0 {
-		i -= len(m.SrcMAC)
-		copy(dAtA[i:], m.SrcMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.ApplicationProto) > 0 {
-		i -= len(m.ApplicationProto)
-		copy(dAtA[i:], m.ApplicationProto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ApplicationProto)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.TransportProto) > 0 {
-		i -= len(m.TransportProto)
-		copy(dAtA[i:], m.TransportProto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TransportProto)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.NetworkProto) > 0 {
-		i -= len(m.NetworkProto)
-		copy(dAtA[i:], m.NetworkProto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.NetworkProto)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.TimestampFirst) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
+		i += copy(dAtA[i:], m.TimestampFirst)
 	}
 	if len(m.LinkProto) > 0 {
-		i -= len(m.LinkProto)
-		copy(dAtA[i:], m.LinkProto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.LinkProto)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.LinkProto)))
+		i += copy(dAtA[i:], m.LinkProto)
 	}
-	if len(m.TimestampFirst) > 0 {
-		i -= len(m.TimestampFirst)
-		copy(dAtA[i:], m.TimestampFirst)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.NetworkProto) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.NetworkProto)))
+		i += copy(dAtA[i:], m.NetworkProto)
 	}
-	return len(dAtA) - i, nil
+	if len(m.TransportProto) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TransportProto)))
+		i += copy(dAtA[i:], m.TransportProto)
+	}
+	if len(m.ApplicationProto) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ApplicationProto)))
+		i += copy(dAtA[i:], m.ApplicationProto)
+	}
+	if len(m.SrcMAC) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
+		i += copy(dAtA[i:], m.SrcMAC)
+	}
+	if len(m.DstMAC) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
+		i += copy(dAtA[i:], m.DstMAC)
+	}
+	if len(m.SrcIP) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+		i += copy(dAtA[i:], m.SrcIP)
+	}
+	if len(m.SrcPort) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcPort)))
+		i += copy(dAtA[i:], m.SrcPort)
+	}
+	if len(m.DstIP) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+		i += copy(dAtA[i:], m.DstIP)
+	}
+	if len(m.DstPort) > 0 {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstPort)))
+		i += copy(dAtA[i:], m.DstPort)
+	}
+	if m.TotalSize != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
+	}
+	if m.AppPayloadSize != 0 {
+		dAtA[i] = 0x68
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AppPayloadSize))
+	}
+	if m.NumPackets != 0 {
+		dAtA[i] = 0x70
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
+	}
+	if len(m.UID) > 0 {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.UID)))
+		i += copy(dAtA[i:], m.UID)
+	}
+	if len(m.TimestampLast) > 0 {
+		dAtA[i] = 0x82
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
+		i += copy(dAtA[i:], m.TimestampLast)
+	}
+	if m.Duration != 0 {
+		dAtA[i] = 0x88
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
+	}
+	return i, nil
 }
 
 func (m *LinkFlow) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13348,77 +13287,67 @@ func (m *LinkFlow) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LinkFlow) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LinkFlow) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Duration != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.UID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UID))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.NumPackets != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.TotalSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
-		i--
-		dAtA[i] = 0x30
-	}
-	if len(m.DstMAC) > 0 {
-		i -= len(m.DstMAC)
-		copy(dAtA[i:], m.DstMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.SrcMAC) > 0 {
-		i -= len(m.SrcMAC)
-		copy(dAtA[i:], m.SrcMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Proto) > 0 {
-		i -= len(m.Proto)
-		copy(dAtA[i:], m.Proto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.TimestampFirst) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
+		i += copy(dAtA[i:], m.TimestampFirst)
 	}
 	if len(m.TimestampLast) > 0 {
-		i -= len(m.TimestampLast)
-		copy(dAtA[i:], m.TimestampLast)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
+		i += copy(dAtA[i:], m.TimestampLast)
 	}
-	if len(m.TimestampFirst) > 0 {
-		i -= len(m.TimestampFirst)
-		copy(dAtA[i:], m.TimestampFirst)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.Proto) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
+		i += copy(dAtA[i:], m.Proto)
 	}
-	return len(dAtA) - i, nil
+	if len(m.SrcMAC) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
+		i += copy(dAtA[i:], m.SrcMAC)
+	}
+	if len(m.DstMAC) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
+		i += copy(dAtA[i:], m.DstMAC)
+	}
+	if m.TotalSize != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
+	}
+	if m.NumPackets != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
+	}
+	if m.UID != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UID))
+	}
+	if m.Duration != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
+	}
+	return i, nil
 }
 
 func (m *NetworkFlow) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13426,77 +13355,67 @@ func (m *NetworkFlow) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *NetworkFlow) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *NetworkFlow) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Duration != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.UID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UID))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.NumPackets != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.TotalSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
-		i--
-		dAtA[i] = 0x30
-	}
-	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Proto) > 0 {
-		i -= len(m.Proto)
-		copy(dAtA[i:], m.Proto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.TimestampFirst) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
+		i += copy(dAtA[i:], m.TimestampFirst)
 	}
 	if len(m.TimestampLast) > 0 {
-		i -= len(m.TimestampLast)
-		copy(dAtA[i:], m.TimestampLast)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
+		i += copy(dAtA[i:], m.TimestampLast)
 	}
-	if len(m.TimestampFirst) > 0 {
-		i -= len(m.TimestampFirst)
-		copy(dAtA[i:], m.TimestampFirst)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.Proto) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
+		i += copy(dAtA[i:], m.Proto)
 	}
-	return len(dAtA) - i, nil
+	if len(m.SrcIP) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+		i += copy(dAtA[i:], m.SrcIP)
+	}
+	if len(m.DstIP) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+		i += copy(dAtA[i:], m.DstIP)
+	}
+	if m.TotalSize != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
+	}
+	if m.NumPackets != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
+	}
+	if m.UID != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UID))
+	}
+	if m.Duration != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
+	}
+	return i, nil
 }
 
 func (m *TransportFlow) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13504,73 +13423,65 @@ func (m *TransportFlow) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *TransportFlow) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *TransportFlow) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Duration != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.UID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UID))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.NumPackets != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.TotalSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.DstPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.SrcPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.Proto) > 0 {
-		i -= len(m.Proto)
-		copy(dAtA[i:], m.Proto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.TimestampFirst) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
+		i += copy(dAtA[i:], m.TimestampFirst)
 	}
 	if len(m.TimestampLast) > 0 {
-		i -= len(m.TimestampLast)
-		copy(dAtA[i:], m.TimestampLast)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampLast)))
+		i += copy(dAtA[i:], m.TimestampLast)
 	}
-	if len(m.TimestampFirst) > 0 {
-		i -= len(m.TimestampFirst)
-		copy(dAtA[i:], m.TimestampFirst)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TimestampFirst)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.Proto) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
+		i += copy(dAtA[i:], m.Proto)
 	}
-	return len(dAtA) - i, nil
+	if m.SrcPort != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
+	}
+	if m.DstPort != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
+	}
+	if m.TotalSize != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalSize))
+	}
+	if m.NumPackets != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumPackets))
+	}
+	if m.UID != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UID))
+	}
+	if m.Duration != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Duration))
+	}
+	return i, nil
 }
 
 func (m *Ethernet) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13578,59 +13489,51 @@ func (m *Ethernet) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Ethernet) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Ethernet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.PayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.PayloadEntropy != 0 {
-		i -= 8
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
-		i--
-		dAtA[i] = 0x29
-	}
-	if m.EthernetType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.EthernetType))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.DstMAC) > 0 {
-		i -= len(m.DstMAC)
-		copy(dAtA[i:], m.DstMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if len(m.SrcMAC) > 0 {
-		i -= len(m.SrcMAC)
-		copy(dAtA[i:], m.SrcMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
+		i += copy(dAtA[i:], m.SrcMAC)
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.DstMAC) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
+		i += copy(dAtA[i:], m.DstMAC)
 	}
-	return len(dAtA) - i, nil
+	if m.EthernetType != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.EthernetType))
+	}
+	if m.PayloadEntropy != 0 {
+		dAtA[i] = 0x29
+		i++
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
+		i += 8
+	}
+	if m.PayloadSize != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
+	}
+	return i, nil
 }
 
 func (m *ARP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13638,82 +13541,72 @@ func (m *ARP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ARP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ARP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.DstProtAddress) > 0 {
-		i -= len(m.DstProtAddress)
-		copy(dAtA[i:], m.DstProtAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstProtAddress)))
-		i--
-		dAtA[i] = 0x52
-	}
-	if len(m.DstHwAddress) > 0 {
-		i -= len(m.DstHwAddress)
-		copy(dAtA[i:], m.DstHwAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstHwAddress)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.SrcProtAddress) > 0 {
-		i -= len(m.SrcProtAddress)
-		copy(dAtA[i:], m.SrcProtAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcProtAddress)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.SrcHwAddress) > 0 {
-		i -= len(m.SrcHwAddress)
-		copy(dAtA[i:], m.SrcHwAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcHwAddress)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if m.Operation != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Operation))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.ProtAddressSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ProtAddressSize))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.HwAddressSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HwAddressSize))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Protocol != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Protocol))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.AddrType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AddrType))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AddrType))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Protocol != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Protocol))
 	}
-	return len(dAtA) - i, nil
+	if m.HwAddressSize != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HwAddressSize))
+	}
+	if m.ProtAddressSize != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ProtAddressSize))
+	}
+	if m.Operation != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Operation))
+	}
+	if len(m.SrcHwAddress) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcHwAddress)))
+		i += copy(dAtA[i:], m.SrcHwAddress)
+	}
+	if len(m.SrcProtAddress) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcProtAddress)))
+		i += copy(dAtA[i:], m.SrcProtAddress)
+	}
+	if len(m.DstHwAddress) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstHwAddress)))
+		i += copy(dAtA[i:], m.DstHwAddress)
+	}
+	if len(m.DstProtAddress) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstProtAddress)))
+		i += copy(dAtA[i:], m.DstProtAddress)
+	}
+	return i, nil
 }
 
 func (m *Dot1Q) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13721,54 +13614,48 @@ func (m *Dot1Q) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot1Q) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot1Q) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x28
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.VLANIdentifier != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.VLANIdentifier))
-		i--
-		dAtA[i] = 0x20
+	if m.Priority != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Priority))
 	}
 	if m.DropEligible {
-		i--
+		dAtA[i] = 0x18
+		i++
 		if m.DropEligible {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x18
+		i++
 	}
-	if m.Priority != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Priority))
-		i--
-		dAtA[i] = 0x10
+	if m.VLANIdentifier != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VLANIdentifier))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Type != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *Dot11) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13776,116 +13663,102 @@ func (m *Dot11) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot11) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot11) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.HTControl != nil {
-		{
-			size, err := m.HTControl.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x72
-	}
-	if m.QOS != nil {
-		{
-			size, err := m.QOS.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x6a
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.FragmentNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FragmentNumber))
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.SequenceNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SequenceNumber))
-		i--
-		dAtA[i] = 0x50
-	}
-	if len(m.Address4) > 0 {
-		i -= len(m.Address4)
-		copy(dAtA[i:], m.Address4)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address4)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.Address3) > 0 {
-		i -= len(m.Address3)
-		copy(dAtA[i:], m.Address3)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address3)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.Address2) > 0 {
-		i -= len(m.Address2)
-		copy(dAtA[i:], m.Address2)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address2)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.Address1) > 0 {
-		i -= len(m.Address1)
-		copy(dAtA[i:], m.Address1)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address1)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.DurationID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DurationID))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Proto != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Proto))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Proto != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Proto))
 	}
-	return len(dAtA) - i, nil
+	if m.Flags != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
+	}
+	if m.DurationID != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DurationID))
+	}
+	if len(m.Address1) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address1)))
+		i += copy(dAtA[i:], m.Address1)
+	}
+	if len(m.Address2) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address2)))
+		i += copy(dAtA[i:], m.Address2)
+	}
+	if len(m.Address3) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address3)))
+		i += copy(dAtA[i:], m.Address3)
+	}
+	if len(m.Address4) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address4)))
+		i += copy(dAtA[i:], m.Address4)
+	}
+	if m.SequenceNumber != 0 {
+		dAtA[i] = 0x50
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SequenceNumber))
+	}
+	if m.FragmentNumber != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FragmentNumber))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if m.QOS != nil {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.QOS.Size()))
+		n1, err := m.QOS.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if m.HTControl != nil {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HTControl.Size()))
+		n2, err := m.HTControl.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	return i, nil
 }
 
 func (m *Dot11QOS) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13893,47 +13766,42 @@ func (m *Dot11QOS) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot11QOS) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot11QOS) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.TXOP != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TXOP))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.AckPolicy != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AckPolicy))
-		i--
-		dAtA[i] = 0x18
+	if m.TID != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TID))
 	}
 	if m.EOSP {
-		i--
+		dAtA[i] = 0x10
+		i++
 		if m.EOSP {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x10
+		i++
 	}
-	if m.TID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TID))
-		i--
-		dAtA[i] = 0x8
+	if m.AckPolicy != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AckPolicy))
 	}
-	return len(dAtA) - i, nil
+	if m.TXOP != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TXOP))
+	}
+	return i, nil
 }
 
 func (m *Dot11HTControl) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -13941,66 +13809,57 @@ func (m *Dot11HTControl) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot11HTControl) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot11HTControl) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.HT != nil {
-		{
-			size, err := m.HT.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.VHT != nil {
-		{
-			size, err := m.VHT.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.RDGMorePPDU {
-		i--
-		if m.RDGMorePPDU {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.ACConstraint {
-		i--
+		dAtA[i] = 0x8
+		i++
 		if m.ACConstraint {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x8
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.RDGMorePPDU {
+		dAtA[i] = 0x10
+		i++
+		if m.RDGMorePPDU {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.VHT != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VHT.Size()))
+		n3, err := m.VHT.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if m.HT != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HT.Size()))
+		n4, err := m.HT.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
+	}
+	return i, nil
 }
 
 func (m *Dot11HTControlVHT) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14008,99 +13867,92 @@ func (m *Dot11HTControlVHT) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot11HTControlVHT) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot11HTControlVHT) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.FbTXBeamformed {
-		i--
-		if m.FbTXBeamformed {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.CodingType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.CodingType))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.GID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.GID))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.MFSI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MFSI))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.STBCIndication {
-		i--
-		if m.STBCIndication {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.CompressedMSI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.CompressedMSI))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.MFB != nil {
-		{
-			size, err := m.MFB.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.MSI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MSI))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.UnsolicitedMFB {
-		i--
-		if m.UnsolicitedMFB {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.MRQ {
-		i--
+		dAtA[i] = 0x8
+		i++
 		if m.MRQ {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x8
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.UnsolicitedMFB {
+		dAtA[i] = 0x10
+		i++
+		if m.UnsolicitedMFB {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.MSI != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MSI))
+	}
+	if m.MFB != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MFB.Size()))
+		n5, err := m.MFB.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
+	}
+	if m.CompressedMSI != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CompressedMSI))
+	}
+	if m.STBCIndication {
+		dAtA[i] = 0x30
+		i++
+		if m.STBCIndication {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.MFSI != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MFSI))
+	}
+	if m.GID != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.GID))
+	}
+	if m.CodingType != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CodingType))
+	}
+	if m.FbTXBeamformed {
+		dAtA[i] = 0x50
+		i++
+		if m.FbTXBeamformed {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	return i, nil
 }
 
 func (m *Dot11HTControlHT) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14108,69 +13960,62 @@ func (m *Dot11HTControlHT) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot11HTControlHT) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot11HTControlHT) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.DEI {
-		i--
-		if m.DEI {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
+	if m.LinkAdapationControl != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LinkAdapationControl.Size()))
+		n6, err := m.LinkAdapationControl.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x30
+		i += n6
+	}
+	if m.CalibrationPosition != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CalibrationPosition))
+	}
+	if m.CalibrationSequence != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CalibrationSequence))
+	}
+	if m.CSISteering != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CSISteering))
 	}
 	if m.NDPAnnouncement {
-		i--
+		dAtA[i] = 0x28
+		i++
 		if m.NDPAnnouncement {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x28
+		i++
 	}
-	if m.CSISteering != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.CSISteering))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.CalibrationSequence != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.CalibrationSequence))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.CalibrationPosition != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.CalibrationPosition))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.LinkAdapationControl != nil {
-		{
-			size, err := m.LinkAdapationControl.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+	if m.DEI {
+		dAtA[i] = 0x30
+		i++
+		if m.DEI {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0xa
+		i++
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *Dot11HTControlMFB) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14178,42 +14023,37 @@ func (m *Dot11HTControlMFB) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot11HTControlMFB) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot11HTControlMFB) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.SNR != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SNR))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.BW != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.BW))
-		i--
-		dAtA[i] = 0x18
+	if m.NumSTS != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumSTS))
 	}
 	if m.VHTMCS != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.VHTMCS))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VHTMCS))
 	}
-	if m.NumSTS != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumSTS))
-		i--
-		dAtA[i] = 0x8
+	if m.BW != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.BW))
 	}
-	return len(dAtA) - i, nil
+	if m.SNR != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SNR))
+	}
+	return i, nil
 }
 
 func (m *Dot11LinkAdapationControl) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14221,69 +14061,62 @@ func (m *Dot11LinkAdapationControl) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot11LinkAdapationControl) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot11LinkAdapationControl) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.MFB != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MFB))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.ASEL != nil {
-		{
-			size, err := m.ASEL.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.MFSI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MFSI))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.MSI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MSI))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.MRQ {
-		i--
-		if m.MRQ {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.TRQ {
-		i--
+		dAtA[i] = 0x8
+		i++
 		if m.TRQ {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x8
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.MRQ {
+		dAtA[i] = 0x10
+		i++
+		if m.MRQ {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.MSI != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MSI))
+	}
+	if m.MFSI != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MFSI))
+	}
+	if m.ASEL != nil {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ASEL.Size()))
+		n7, err := m.ASEL.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n7
+	}
+	if m.MFB != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MFB))
+	}
+	return i, nil
 }
 
 func (m *Dot11ASEL) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14291,32 +14124,27 @@ func (m *Dot11ASEL) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Dot11ASEL) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Dot11ASEL) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Data != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Data))
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.Command != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Command))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Command))
 	}
-	return len(dAtA) - i, nil
+	if m.Data != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Data))
+	}
+	return i, nil
 }
 
 func (m *LinkLayerDiscovery) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14324,72 +14152,60 @@ func (m *LinkLayerDiscovery) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LinkLayerDiscovery) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LinkLayerDiscovery) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Values) > 0 {
-		for iNdEx := len(m.Values) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Values[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if m.TTL != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.PortID != nil {
-		{
-			size, err := m.PortID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.ChassisID != nil {
-		{
-			size, err := m.ChassisID.MarshalToSizedBuffer(dAtA[:i])
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ChassisID.Size()))
+		n8, err := m.ChassisID.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n8
+	}
+	if m.PortID != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PortID.Size()))
+		n9, err := m.PortID.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n9
+	}
+	if m.TTL != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
+	}
+	if len(m.Values) > 0 {
+		for _, msg := range m.Values {
+			dAtA[i] = 0x2a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
-		dAtA[i] = 0x12
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *LLDPChassisID) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14397,34 +14213,28 @@ func (m *LLDPChassisID) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LLDPChassisID) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LLDPChassisID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.ID) > 0 {
-		i -= len(m.ID)
-		copy(dAtA[i:], m.ID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ID)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Subtype != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Subtype))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Subtype))
 	}
-	return len(dAtA) - i, nil
+	if len(m.ID) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
+	}
+	return i, nil
 }
 
 func (m *LLDPPortID) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14432,34 +14242,28 @@ func (m *LLDPPortID) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LLDPPortID) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LLDPPortID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.ID) > 0 {
-		i -= len(m.ID)
-		copy(dAtA[i:], m.ID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ID)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Subtype != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Subtype))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Subtype))
 	}
-	return len(dAtA) - i, nil
+	if len(m.ID) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
+	}
+	return i, nil
 }
 
 func (m *LinkLayerDiscoveryValue) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14467,39 +14271,33 @@ func (m *LinkLayerDiscoveryValue) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LinkLayerDiscoveryValue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LinkLayerDiscoveryValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Value) > 0 {
-		i -= len(m.Value)
-		copy(dAtA[i:], m.Value)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Value)))
-		i--
-		dAtA[i] = 0x1a
+	if m.Type != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
 	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
 	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x8
+	if len(m.Value) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Value)))
+		i += copy(dAtA[i:], m.Value)
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *EthernetCTP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14507,34 +14305,28 @@ func (m *EthernetCTP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *EthernetCTP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *EthernetCTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.SkipCount != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SkipCount))
-		i--
-		dAtA[i] = 0x10
-	}
 	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
 		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	return len(dAtA) - i, nil
+	if m.SkipCount != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SkipCount))
+	}
+	return i, nil
 }
 
 func (m *EthernetCTPReply) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14542,46 +14334,39 @@ func (m *EthernetCTPReply) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *EthernetCTPReply) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *EthernetCTPReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.ReceiptNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReceiptNumber))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Function != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Function))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Function))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.ReceiptNumber != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ReceiptNumber))
 	}
-	return len(dAtA) - i, nil
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
+	}
+	return i, nil
 }
 
 func (m *LinkLayerDiscoveryInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14589,102 +14374,85 @@ func (m *LinkLayerDiscoveryInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LinkLayerDiscoveryInfo) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LinkLayerDiscoveryInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Unknown) > 0 {
-		for iNdEx := len(m.Unknown) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Unknown[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x42
-		}
-	}
-	if len(m.OrgTLVs) > 0 {
-		for iNdEx := len(m.OrgTLVs) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.OrgTLVs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x3a
-		}
-	}
-	if m.MgmtAddress != nil {
-		{
-			size, err := m.MgmtAddress.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.SysCapabilities != nil {
-		{
-			size, err := m.SysCapabilities.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.SysDescription) > 0 {
-		i -= len(m.SysDescription)
-		copy(dAtA[i:], m.SysDescription)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SysDescription)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.SysName) > 0 {
-		i -= len(m.SysName)
-		copy(dAtA[i:], m.SysName)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SysName)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if len(m.PortDescription) > 0 {
-		i -= len(m.PortDescription)
-		copy(dAtA[i:], m.PortDescription)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.PortDescription)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.PortDescription)))
+		i += copy(dAtA[i:], m.PortDescription)
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.SysName) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SysName)))
+		i += copy(dAtA[i:], m.SysName)
 	}
-	return len(dAtA) - i, nil
+	if len(m.SysDescription) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SysDescription)))
+		i += copy(dAtA[i:], m.SysDescription)
+	}
+	if m.SysCapabilities != nil {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SysCapabilities.Size()))
+		n10, err := m.SysCapabilities.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n10
+	}
+	if m.MgmtAddress != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MgmtAddress.Size()))
+		n11, err := m.MgmtAddress.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n11
+	}
+	if len(m.OrgTLVs) > 0 {
+		for _, msg := range m.OrgTLVs {
+			dAtA[i] = 0x3a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Unknown) > 0 {
+		for _, msg := range m.Unknown {
+			dAtA[i] = 0x42
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
 }
 
 func (m *LLDPSysCapabilities) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14692,46 +14460,37 @@ func (m *LLDPSysCapabilities) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LLDPSysCapabilities) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LLDPSysCapabilities) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.EnabledCap != nil {
-		{
-			size, err := m.EnabledCap.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.SystemCap != nil {
-		{
-			size, err := m.SystemCap.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
 		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SystemCap.Size()))
+		n12, err := m.SystemCap.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n12
 	}
-	return len(dAtA) - i, nil
+	if m.EnabledCap != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.EnabledCap.Size()))
+		n13, err := m.EnabledCap.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n13
+	}
+	return i, nil
 }
 
 func (m *LLDPCapabilities) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14739,132 +14498,127 @@ func (m *LLDPCapabilities) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LLDPCapabilities) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LLDPCapabilities) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.TMPR {
-		i--
-		if m.TMPR {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.SVLAN {
-		i--
-		if m.SVLAN {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.CVLAN {
-		i--
-		if m.CVLAN {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.StationOnly {
-		i--
-		if m.StationOnly {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.DocSis {
-		i--
-		if m.DocSis {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.Phone {
-		i--
-		if m.Phone {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Router {
-		i--
-		if m.Router {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.WLANAP {
-		i--
-		if m.WLANAP {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Bridge {
-		i--
-		if m.Bridge {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Repeater {
-		i--
-		if m.Repeater {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.Other {
-		i--
+		dAtA[i] = 0x8
+		i++
 		if m.Other {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x8
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.Repeater {
+		dAtA[i] = 0x10
+		i++
+		if m.Repeater {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.Bridge {
+		dAtA[i] = 0x18
+		i++
+		if m.Bridge {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.WLANAP {
+		dAtA[i] = 0x20
+		i++
+		if m.WLANAP {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.Router {
+		dAtA[i] = 0x28
+		i++
+		if m.Router {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.Phone {
+		dAtA[i] = 0x30
+		i++
+		if m.Phone {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.DocSis {
+		dAtA[i] = 0x38
+		i++
+		if m.DocSis {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.StationOnly {
+		dAtA[i] = 0x40
+		i++
+		if m.StationOnly {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.CVLAN {
+		dAtA[i] = 0x48
+		i++
+		if m.CVLAN {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.SVLAN {
+		dAtA[i] = 0x50
+		i++
+		if m.SVLAN {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.TMPR {
+		dAtA[i] = 0x58
+		i++
+		if m.TMPR {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	return i, nil
 }
 
 func (m *LLDPMgmtAddress) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14872,51 +14626,44 @@ func (m *LLDPMgmtAddress) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LLDPMgmtAddress) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LLDPMgmtAddress) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.OID) > 0 {
-		i -= len(m.OID)
-		copy(dAtA[i:], m.OID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OID)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.InterfaceNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceNumber))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.InterfaceSubtype != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceSubtype))
-		i--
-		dAtA[i] = 0x18
+	if m.Subtype != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Subtype))
 	}
 	if len(m.Address) > 0 {
-		i -= len(m.Address)
-		copy(dAtA[i:], m.Address)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Address)))
+		i += copy(dAtA[i:], m.Address)
 	}
-	if m.Subtype != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Subtype))
-		i--
-		dAtA[i] = 0x8
+	if m.InterfaceSubtype != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceSubtype))
 	}
-	return len(dAtA) - i, nil
+	if m.InterfaceNumber != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceNumber))
+	}
+	if len(m.OID) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OID)))
+		i += copy(dAtA[i:], m.OID)
+	}
+	return i, nil
 }
 
 func (m *LLDPOrgSpecificTLV) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14924,39 +14671,33 @@ func (m *LLDPOrgSpecificTLV) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LLDPOrgSpecificTLV) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LLDPOrgSpecificTLV) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Info) > 0 {
-		i -= len(m.Info)
-		copy(dAtA[i:], m.Info)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Info)))
-		i--
-		dAtA[i] = 0x1a
+	if m.OUI != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OUI))
 	}
 	if m.SubType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SubType))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SubType))
 	}
-	if m.OUI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OUI))
-		i--
-		dAtA[i] = 0x8
+	if len(m.Info) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Info)))
+		i += copy(dAtA[i:], m.Info)
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *IPv4) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -14964,143 +14705,130 @@ func (m *IPv4) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPv4) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPv4) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.Version != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
+	}
+	if m.IHL != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.IHL))
+	}
+	if m.TOS != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TOS))
+	}
+	if m.Length != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	if m.Id != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Id))
+	}
+	if m.Flags != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
+	}
+	if m.FragOffset != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FragOffset))
+	}
+	if m.TTL != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
+	}
+	if m.Protocol != 0 {
+		dAtA[i] = 0x50
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Protocol))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if len(m.SrcIP) > 0 {
+		dAtA[i] = 0x62
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+		i += copy(dAtA[i:], m.SrcIP)
+	}
+	if len(m.DstIP) > 0 {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+		i += copy(dAtA[i:], m.DstIP)
+	}
+	if len(m.Padding) > 0 {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Padding)))
+		i += copy(dAtA[i:], m.Padding)
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x7a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x92
-	}
-	if m.PayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x88
 	}
 	if m.PayloadEntropy != 0 {
-		i -= 8
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
-		i--
-		dAtA[i] = 0x1
-		i--
 		dAtA[i] = 0x81
+		i++
+		dAtA[i] = 0x1
+		i++
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
+		i += 8
 	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x7a
+	if m.PayloadSize != 0 {
+		dAtA[i] = 0x88
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x92
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n14, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n14
 	}
-	if len(m.Padding) > 0 {
-		i -= len(m.Padding)
-		copy(dAtA[i:], m.Padding)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Padding)))
-		i--
-		dAtA[i] = 0x72
-	}
-	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
-		i--
-		dAtA[i] = 0x6a
-	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
-		i--
-		dAtA[i] = 0x62
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.Protocol != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Protocol))
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.TTL != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.FragOffset != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FragOffset))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.Id != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Id))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.TOS != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TOS))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.IHL != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.IHL))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *IPv4Option) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15108,39 +14836,33 @@ func (m *IPv4Option) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPv4Option) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPv4Option) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.OptionData) > 0 {
-		i -= len(m.OptionData)
-		copy(dAtA[i:], m.OptionData)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OptionData)))
-		i--
-		dAtA[i] = 0x1a
+	if m.OptionType != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionType))
 	}
 	if m.OptionLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionLength))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionLength))
 	}
-	if m.OptionType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionType))
-		i--
-		dAtA[i] = 0x8
+	if len(m.OptionData) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OptionData)))
+		i += copy(dAtA[i:], m.OptionData)
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *IPv6) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15148,108 +14870,96 @@ func (m *IPv6) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPv6) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPv6) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x6a
-	}
-	if m.HopByHop != nil {
-		{
-			size, err := m.HopByHop.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x62
-	}
-	if m.PayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.PayloadEntropy != 0 {
-		i -= 8
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
-		i--
-		dAtA[i] = 0x51
-	}
-	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.HopLimit != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HopLimit))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.NextHeader != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NextHeader))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.FlowLabel != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FlowLabel))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.TrafficClass != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TrafficClass))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.TrafficClass != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TrafficClass))
 	}
-	return len(dAtA) - i, nil
+	if m.FlowLabel != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FlowLabel))
+	}
+	if m.Length != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	if m.NextHeader != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NextHeader))
+	}
+	if m.HopLimit != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HopLimit))
+	}
+	if len(m.SrcIP) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+		i += copy(dAtA[i:], m.SrcIP)
+	}
+	if len(m.DstIP) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+		i += copy(dAtA[i:], m.DstIP)
+	}
+	if m.PayloadEntropy != 0 {
+		dAtA[i] = 0x51
+		i++
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
+		i += 8
+	}
+	if m.PayloadSize != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
+	}
+	if m.HopByHop != nil {
+		dAtA[i] = 0x62
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HopByHop.Size()))
+		n15, err := m.HopByHop.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n15
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n16, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n16
+	}
+	return i, nil
 }
 
 func (m *IPv6Fragment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15257,76 +14967,68 @@ func (m *IPv6Fragment) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPv6Fragment) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPv6Fragment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x42
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.Identification != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Identification))
-		i--
-		dAtA[i] = 0x38
+	if m.NextHeader != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NextHeader))
+	}
+	if m.Reserved1 != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Reserved1))
+	}
+	if m.FragmentOffset != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FragmentOffset))
+	}
+	if m.Reserved2 != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Reserved2))
 	}
 	if m.MoreFragments {
-		i--
+		dAtA[i] = 0x30
+		i++
 		if m.MoreFragments {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x30
+		i++
 	}
-	if m.Reserved2 != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Reserved2))
-		i--
-		dAtA[i] = 0x28
+	if m.Identification != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Identification))
 	}
-	if m.FragmentOffset != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FragmentOffset))
-		i--
-		dAtA[i] = 0x20
+	if m.Context != nil {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n17, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n17
 	}
-	if m.Reserved1 != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Reserved1))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.NextHeader != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NextHeader))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *ICMPv4) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15334,61 +15036,53 @@ func (m *ICMPv4) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ICMPv4) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ICMPv4) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.Seq != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Seq))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Id != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Id))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.TypeCode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TypeCode))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TypeCode))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Checksum != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
 	}
-	return len(dAtA) - i, nil
+	if m.Id != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Id))
+	}
+	if m.Seq != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Seq))
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n18, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n18
+	}
+	return i, nil
 }
 
 func (m *ICMPv6) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15396,51 +15090,43 @@ func (m *ICMPv6) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ICMPv6) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ICMPv6) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.TypeCode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TypeCode))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TypeCode))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Checksum != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
 	}
-	return len(dAtA) - i, nil
+	if m.Context != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n19, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n19
+	}
+	return i, nil
 }
 
 func (m *ICMPv6NeighborAdvertisement) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15448,67 +15134,56 @@ func (m *ICMPv6NeighborAdvertisement) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ICMPv6NeighborAdvertisement) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ICMPv6NeighborAdvertisement) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.Flags != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
+	}
+	if len(m.TargetAddress) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TargetAddress)))
+		i += copy(dAtA[i:], m.TargetAddress)
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x22
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
+	}
+	if m.Context != nil {
 		dAtA[i] = 0x2a
-	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n20, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n20
 	}
-	if len(m.TargetAddress) > 0 {
-		i -= len(m.TargetAddress)
-		copy(dAtA[i:], m.TargetAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TargetAddress)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *ICMPv6RouterAdvertisement) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15516,80 +15191,70 @@ func (m *ICMPv6RouterAdvertisement) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ICMPv6RouterAdvertisement) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ICMPv6RouterAdvertisement) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.HopLimit != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HopLimit))
+	}
+	if m.Flags != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
+	}
+	if m.RouterLifetime != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterLifetime))
+	}
+	if m.ReachableTime != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ReachableTime))
+	}
+	if m.RetransTimer != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RetransTimer))
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x3a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
+	}
+	if m.Context != nil {
 		dAtA[i] = 0x42
-	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n21, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n21
 	}
-	if m.RetransTimer != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RetransTimer))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.ReachableTime != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReachableTime))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.RouterLifetime != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterLifetime))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.HopLimit != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HopLimit))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *ICMPv6Option) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15597,34 +15262,28 @@ func (m *ICMPv6Option) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ICMPv6Option) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ICMPv6Option) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	return len(dAtA) - i, nil
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
+	}
+	return i, nil
 }
 
 func (m *UDP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15632,79 +15291,70 @@ func (m *UDP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UDP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UDP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.Payload) > 0 {
-		i -= len(m.Payload)
-		copy(dAtA[i:], m.Payload)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Payload)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.PayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.PayloadEntropy != 0 {
-		i -= 8
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
-		i--
-		dAtA[i] = 0x31
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.DstPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.SrcPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.DstPort != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
 	}
-	return len(dAtA) - i, nil
+	if m.Length != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if m.PayloadEntropy != 0 {
+		dAtA[i] = 0x31
+		i++
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
+		i += 8
+	}
+	if m.PayloadSize != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
+	}
+	if len(m.Payload) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Payload)))
+		i += copy(dAtA[i:], m.Payload)
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n22, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n22
+	}
+	return i, nil
 }
 
 func (m *TCP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15712,228 +15362,216 @@ func (m *TCP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *TCP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *TCP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xc2
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if len(m.Payload) > 0 {
-		i -= len(m.Payload)
-		copy(dAtA[i:], m.Payload)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Payload)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xba
+	if m.SrcPort != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
 	}
-	if m.PayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xb0
+	if m.DstPort != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
 	}
-	if m.PayloadEntropy != 0 {
-		i -= 8
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa9
+	if m.SeqNum != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SeqNum))
 	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0xa2
-		}
+	if m.AckNum != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AckNum))
 	}
-	if len(m.Padding) > 0 {
-		i -= len(m.Padding)
-		copy(dAtA[i:], m.Padding)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Padding)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x9a
-	}
-	if m.Urgent != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Urgent))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x90
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x88
-	}
-	if m.Window != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Window))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x80
-	}
-	if m.NS {
-		i--
-		if m.NS {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x78
-	}
-	if m.CWR {
-		i--
-		if m.CWR {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.ECE {
-		i--
-		if m.ECE {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.URG {
-		i--
-		if m.URG {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.ACK {
-		i--
-		if m.ACK {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.PSH {
-		i--
-		if m.PSH {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.RST {
-		i--
-		if m.RST {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.SYN {
-		i--
-		if m.SYN {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
+	if m.DataOffset != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DataOffset))
 	}
 	if m.FIN {
-		i--
+		dAtA[i] = 0x38
+		i++
 		if m.FIN {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x38
+		i++
 	}
-	if m.DataOffset != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DataOffset))
-		i--
-		dAtA[i] = 0x30
+	if m.SYN {
+		dAtA[i] = 0x40
+		i++
+		if m.SYN {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.AckNum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AckNum))
-		i--
-		dAtA[i] = 0x28
+	if m.RST {
+		dAtA[i] = 0x48
+		i++
+		if m.RST {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.SeqNum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SeqNum))
-		i--
-		dAtA[i] = 0x20
+	if m.PSH {
+		dAtA[i] = 0x50
+		i++
+		if m.PSH {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.DstPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
-		i--
-		dAtA[i] = 0x18
+	if m.ACK {
+		dAtA[i] = 0x58
+		i++
+		if m.ACK {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.SrcPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
-		i--
-		dAtA[i] = 0x10
+	if m.URG {
+		dAtA[i] = 0x60
+		i++
+		if m.URG {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.ECE {
+		dAtA[i] = 0x68
+		i++
+		if m.ECE {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.CWR {
+		dAtA[i] = 0x70
+		i++
+		if m.CWR {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.NS {
+		dAtA[i] = 0x78
+		i++
+		if m.NS {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.Window != 0 {
+		dAtA[i] = 0x80
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Window))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x88
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if m.Urgent != 0 {
+		dAtA[i] = 0x90
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Urgent))
+	}
+	if len(m.Padding) > 0 {
+		dAtA[i] = 0x9a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Padding)))
+		i += copy(dAtA[i:], m.Padding)
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0xa2
+			i++
+			dAtA[i] = 0x1
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.PayloadEntropy != 0 {
+		dAtA[i] = 0xa9
+		i++
+		dAtA[i] = 0x1
+		i++
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
+		i += 8
+	}
+	if m.PayloadSize != 0 {
+		dAtA[i] = 0xb0
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
+	}
+	if len(m.Payload) > 0 {
+		dAtA[i] = 0xba
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Payload)))
+		i += copy(dAtA[i:], m.Payload)
+	}
+	if m.Context != nil {
+		dAtA[i] = 0xc2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n23, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n23
+	}
+	return i, nil
 }
 
 func (m *TCPOption) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15941,39 +15579,33 @@ func (m *TCPOption) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *TCPOption) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *TCPOption) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.OptionData) > 0 {
-		i -= len(m.OptionData)
-		copy(dAtA[i:], m.OptionData)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OptionData)))
-		i--
-		dAtA[i] = 0x1a
+	if m.OptionType != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionType))
 	}
 	if m.OptionLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionLength))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionLength))
 	}
-	if m.OptionType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionType))
-		i--
-		dAtA[i] = 0x8
+	if len(m.OptionData) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OptionData)))
+		i += copy(dAtA[i:], m.OptionData)
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *SCTP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -15981,61 +15613,53 @@ func (m *SCTP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SCTP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SCTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.VerificationTag != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.VerificationTag))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.DstPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.SrcPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.DstPort != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
 	}
-	return len(dAtA) - i, nil
+	if m.VerificationTag != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VerificationTag))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n24, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n24
+	}
+	return i, nil
 }
 
 func (m *DNS) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16043,195 +15667,179 @@ func (m *DNS) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DNS) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DNS) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x9a
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if len(m.Additionals) > 0 {
-		for iNdEx := len(m.Additionals) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Additionals[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0x92
-		}
-	}
-	if len(m.Authorities) > 0 {
-		for iNdEx := len(m.Authorities) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Authorities[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0x8a
-		}
-	}
-	if len(m.Answers) > 0 {
-		for iNdEx := len(m.Answers) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Answers[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0x82
-		}
-	}
-	if len(m.Questions) > 0 {
-		for iNdEx := len(m.Questions) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Questions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x7a
-		}
-	}
-	if m.ARCount != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ARCount))
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.NSCount != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NSCount))
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.ANCount != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ANCount))
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.QDCount != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.QDCount))
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.ResponseCode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ResponseCode))
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.Z != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Z))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.RA {
-		i--
-		if m.RA {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.RD {
-		i--
-		if m.RD {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.TC {
-		i--
-		if m.TC {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.AA {
-		i--
-		if m.AA {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.OpCode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OpCode))
-		i--
-		dAtA[i] = 0x20
+	if m.ID != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
 	}
 	if m.QR {
-		i--
+		dAtA[i] = 0x18
+		i++
 		if m.QR {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x18
+		i++
 	}
-	if m.ID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x10
+	if m.OpCode != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OpCode))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.AA {
+		dAtA[i] = 0x28
+		i++
+		if m.AA {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.TC {
+		dAtA[i] = 0x30
+		i++
+		if m.TC {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.RD {
+		dAtA[i] = 0x38
+		i++
+		if m.RD {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.RA {
+		dAtA[i] = 0x40
+		i++
+		if m.RA {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.Z != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Z))
+	}
+	if m.ResponseCode != 0 {
+		dAtA[i] = 0x50
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ResponseCode))
+	}
+	if m.QDCount != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.QDCount))
+	}
+	if m.ANCount != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ANCount))
+	}
+	if m.NSCount != 0 {
+		dAtA[i] = 0x68
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NSCount))
+	}
+	if m.ARCount != 0 {
+		dAtA[i] = 0x70
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ARCount))
+	}
+	if len(m.Questions) > 0 {
+		for _, msg := range m.Questions {
+			dAtA[i] = 0x7a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Answers) > 0 {
+		for _, msg := range m.Answers {
+			dAtA[i] = 0x82
+			i++
+			dAtA[i] = 0x1
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Authorities) > 0 {
+		for _, msg := range m.Authorities {
+			dAtA[i] = 0x8a
+			i++
+			dAtA[i] = 0x1
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Additionals) > 0 {
+		for _, msg := range m.Additionals {
+			dAtA[i] = 0x92
+			i++
+			dAtA[i] = 0x1
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x9a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n25, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n25
+	}
+	return i, nil
 }
 
 func (m *DNSResourceRecord) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16239,129 +15847,111 @@ func (m *DNSResourceRecord) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DNSResourceRecord) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DNSResourceRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.TXTs) > 0 {
-		for iNdEx := len(m.TXTs) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.TXTs[iNdEx])
-			copy(dAtA[i:], m.TXTs[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.TXTs[iNdEx])))
-			i--
-			dAtA[i] = 0x72
-		}
-	}
-	if m.MX != nil {
-		{
-			size, err := m.MX.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x6a
-	}
-	if m.SRV != nil {
-		{
-			size, err := m.SRV.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x62
-	}
-	if m.SOA != nil {
-		{
-			size, err := m.SOA.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x5a
-	}
-	if len(m.PTR) > 0 {
-		i -= len(m.PTR)
-		copy(dAtA[i:], m.PTR)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.PTR)))
-		i--
-		dAtA[i] = 0x52
-	}
-	if len(m.CNAME) > 0 {
-		i -= len(m.CNAME)
-		copy(dAtA[i:], m.CNAME)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.CNAME)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.NS) > 0 {
-		i -= len(m.NS)
-		copy(dAtA[i:], m.NS)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.NS)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.IP) > 0 {
-		i -= len(m.IP)
-		copy(dAtA[i:], m.IP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IP)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.DataLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DataLength))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.TTL != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Class != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Class))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0xa
+	if m.Class != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Class))
 	}
-	return len(dAtA) - i, nil
+	if m.TTL != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
+	}
+	if m.DataLength != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DataLength))
+	}
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
+	}
+	if len(m.IP) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IP)))
+		i += copy(dAtA[i:], m.IP)
+	}
+	if len(m.NS) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.NS)))
+		i += copy(dAtA[i:], m.NS)
+	}
+	if len(m.CNAME) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.CNAME)))
+		i += copy(dAtA[i:], m.CNAME)
+	}
+	if len(m.PTR) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.PTR)))
+		i += copy(dAtA[i:], m.PTR)
+	}
+	if m.SOA != nil {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SOA.Size()))
+		n26, err := m.SOA.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n26
+	}
+	if m.SRV != nil {
+		dAtA[i] = 0x62
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SRV.Size()))
+		n27, err := m.SRV.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n27
+	}
+	if m.MX != nil {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MX.Size()))
+		n28, err := m.MX.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n28
+	}
+	if len(m.TXTs) > 0 {
+		for _, b := range m.TXTs {
+			dAtA[i] = 0x72
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(len(b)))
+			i += copy(dAtA[i:], b)
+		}
+	}
+	return i, nil
 }
 
 func (m *DNSSOA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16369,61 +15959,54 @@ func (m *DNSSOA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DNSSOA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DNSSOA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Minimum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Minimum))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.Expire != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Expire))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Retry != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Retry))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Refresh != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Refresh))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Serial != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Serial))
-		i--
-		dAtA[i] = 0x18
+	if len(m.MName) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.MName)))
+		i += copy(dAtA[i:], m.MName)
 	}
 	if len(m.RName) > 0 {
-		i -= len(m.RName)
-		copy(dAtA[i:], m.RName)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.RName)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.RName)))
+		i += copy(dAtA[i:], m.RName)
 	}
-	if len(m.MName) > 0 {
-		i -= len(m.MName)
-		copy(dAtA[i:], m.MName)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.MName)))
-		i--
-		dAtA[i] = 0xa
+	if m.Serial != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Serial))
 	}
-	return len(dAtA) - i, nil
+	if m.Refresh != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Refresh))
+	}
+	if m.Retry != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Retry))
+	}
+	if m.Expire != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Expire))
+	}
+	if m.Minimum != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Minimum))
+	}
+	return i, nil
 }
 
 func (m *DNSSRV) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16431,44 +16014,38 @@ func (m *DNSSRV) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DNSSRV) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DNSSRV) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Port != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Port))
-		i--
-		dAtA[i] = 0x18
+	if m.Priority != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Priority))
 	}
 	if m.Weight != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Weight))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Weight))
 	}
-	if m.Priority != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Priority))
-		i--
-		dAtA[i] = 0x8
+	if m.Port != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Port))
 	}
-	return len(dAtA) - i, nil
+	if len(m.Name) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	return i, nil
 }
 
 func (m *DNSMX) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16476,34 +16053,28 @@ func (m *DNSMX) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DNSMX) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DNSMX) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Preference != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Preference))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Preference))
 	}
-	return len(dAtA) - i, nil
+	if len(m.Name) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	return i, nil
 }
 
 func (m *DNSQuestion) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16511,39 +16082,33 @@ func (m *DNSQuestion) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DNSQuestion) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DNSQuestion) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Class != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Class))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0xa
+	if m.Class != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Class))
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *DHCPv4) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16551,143 +16116,126 @@ func (m *DHCPv4) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DHCPv4) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DHCPv4) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.Operation != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Operation))
+	}
+	if m.HardwareType != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HardwareType))
+	}
+	if m.HardwareLen != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HardwareLen))
+	}
+	if m.HardwareOpts != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HardwareOpts))
+	}
+	if m.Xid != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Xid))
+	}
+	if m.Secs != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Secs))
+	}
+	if m.Flags != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
+	}
+	if len(m.ClientIP) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClientIP)))
+		i += copy(dAtA[i:], m.ClientIP)
+	}
+	if len(m.YourClientIP) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.YourClientIP)))
+		i += copy(dAtA[i:], m.YourClientIP)
+	}
+	if len(m.NextServerIP) > 0 {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.NextServerIP)))
+		i += copy(dAtA[i:], m.NextServerIP)
+	}
+	if len(m.RelayAgentIP) > 0 {
+		dAtA[i] = 0x62
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.RelayAgentIP)))
+		i += copy(dAtA[i:], m.RelayAgentIP)
+	}
+	if len(m.ClientHWAddr) > 0 {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClientHWAddr)))
+		i += copy(dAtA[i:], m.ClientHWAddr)
+	}
+	if len(m.ServerName) > 0 {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ServerName)))
+		i += copy(dAtA[i:], m.ServerName)
+	}
+	if len(m.File) > 0 {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.File)))
+		i += copy(dAtA[i:], m.File)
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x82
+			i++
+			dAtA[i] = 0x1
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
-		dAtA[i] = 0x1
-		i--
+	}
+	if m.Context != nil {
 		dAtA[i] = 0x8a
-	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0x82
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n29, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n29
 	}
-	if len(m.File) > 0 {
-		i -= len(m.File)
-		copy(dAtA[i:], m.File)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.File)))
-		i--
-		dAtA[i] = 0x7a
-	}
-	if len(m.ServerName) > 0 {
-		i -= len(m.ServerName)
-		copy(dAtA[i:], m.ServerName)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ServerName)))
-		i--
-		dAtA[i] = 0x72
-	}
-	if len(m.ClientHWAddr) > 0 {
-		i -= len(m.ClientHWAddr)
-		copy(dAtA[i:], m.ClientHWAddr)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClientHWAddr)))
-		i--
-		dAtA[i] = 0x6a
-	}
-	if len(m.RelayAgentIP) > 0 {
-		i -= len(m.RelayAgentIP)
-		copy(dAtA[i:], m.RelayAgentIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.RelayAgentIP)))
-		i--
-		dAtA[i] = 0x62
-	}
-	if len(m.NextServerIP) > 0 {
-		i -= len(m.NextServerIP)
-		copy(dAtA[i:], m.NextServerIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.NextServerIP)))
-		i--
-		dAtA[i] = 0x5a
-	}
-	if len(m.YourClientIP) > 0 {
-		i -= len(m.YourClientIP)
-		copy(dAtA[i:], m.YourClientIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.YourClientIP)))
-		i--
-		dAtA[i] = 0x52
-	}
-	if len(m.ClientIP) > 0 {
-		i -= len(m.ClientIP)
-		copy(dAtA[i:], m.ClientIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClientIP)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.Secs != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Secs))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.Xid != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Xid))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.HardwareOpts != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HardwareOpts))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.HardwareLen != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HardwareLen))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.HardwareType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HardwareType))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Operation != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Operation))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *DHCPOption) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16695,39 +16243,33 @@ func (m *DHCPOption) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DHCPOption) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DHCPOption) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x1a
+	if m.Type != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
 	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
 	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x8
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *DHCPv6) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16735,86 +16277,73 @@ func (m *DHCPv6) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DHCPv6) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DHCPv6) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.MsgType != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MsgType))
+	}
+	if m.HopCount != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HopCount))
+	}
+	if len(m.LinkAddr) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.LinkAddr)))
+		i += copy(dAtA[i:], m.LinkAddr)
+	}
+	if len(m.PeerAddr) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.PeerAddr)))
+		i += copy(dAtA[i:], m.PeerAddr)
+	}
+	if len(m.TransactionID) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TransactionID)))
+		i += copy(dAtA[i:], m.TransactionID)
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x3a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
+	}
+	if m.Context != nil {
 		dAtA[i] = 0x42
-	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n30, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n30
 	}
-	if len(m.TransactionID) > 0 {
-		i -= len(m.TransactionID)
-		copy(dAtA[i:], m.TransactionID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TransactionID)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.PeerAddr) > 0 {
-		i -= len(m.PeerAddr)
-		copy(dAtA[i:], m.PeerAddr)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.PeerAddr)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.LinkAddr) > 0 {
-		i -= len(m.LinkAddr)
-		copy(dAtA[i:], m.LinkAddr)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.LinkAddr)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.HopCount != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HopCount))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.MsgType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MsgType))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *DHCPv6Option) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16822,39 +16351,33 @@ func (m *DHCPv6Option) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DHCPv6Option) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DHCPv6Option) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x1a
+	if m.Code != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Code))
 	}
 	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
 	}
-	if m.Code != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Code))
-		i--
-		dAtA[i] = 0x8
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *LLC) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16862,64 +16385,58 @@ func (m *LLC) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LLC) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LLC) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Control != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Control))
-		i--
-		dAtA[i] = 0x30
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.CR {
-		i--
-		if m.CR {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.SSAP != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SSAP))
-		i--
-		dAtA[i] = 0x20
+	if m.DSAP != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DSAP))
 	}
 	if m.IG {
-		i--
+		dAtA[i] = 0x18
+		i++
 		if m.IG {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x18
+		i++
 	}
-	if m.DSAP != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DSAP))
-		i--
-		dAtA[i] = 0x10
+	if m.SSAP != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SSAP))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.CR {
+		dAtA[i] = 0x28
+		i++
+		if m.CR {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.Control != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Control))
+	}
+	return i, nil
 }
 
 func (m *NTP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -16927,115 +16444,106 @@ func (m *NTP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *NTP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *NTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
-	}
-	if len(m.ExtensionBytes) > 0 {
-		i -= len(m.ExtensionBytes)
-		copy(dAtA[i:], m.ExtensionBytes)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ExtensionBytes)))
-		i--
-		dAtA[i] = 0x7a
-	}
-	if m.TransmitTimestamp != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TransmitTimestamp))
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.ReceiveTimestamp != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReceiveTimestamp))
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.OriginTimestamp != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OriginTimestamp))
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.ReferenceTimestamp != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReferenceTimestamp))
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.ReferenceID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReferenceID))
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.RootDispersion != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RootDispersion))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.RootDelay != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RootDelay))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.Precision != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Precision))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.Poll != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Poll))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Stratum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Stratum))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Mode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Mode))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.LeapIndicator != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LeapIndicator))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LeapIndicator))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Version != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
 	}
-	return len(dAtA) - i, nil
+	if m.Mode != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Mode))
+	}
+	if m.Stratum != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Stratum))
+	}
+	if m.Poll != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Poll))
+	}
+	if m.Precision != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Precision))
+	}
+	if m.RootDelay != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RootDelay))
+	}
+	if m.RootDispersion != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RootDispersion))
+	}
+	if m.ReferenceID != 0 {
+		dAtA[i] = 0x50
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ReferenceID))
+	}
+	if m.ReferenceTimestamp != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ReferenceTimestamp))
+	}
+	if m.OriginTimestamp != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OriginTimestamp))
+	}
+	if m.ReceiveTimestamp != 0 {
+		dAtA[i] = 0x68
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ReceiveTimestamp))
+	}
+	if m.TransmitTimestamp != 0 {
+		dAtA[i] = 0x70
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TransmitTimestamp))
+	}
+	if len(m.ExtensionBytes) > 0 {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ExtensionBytes)))
+		i += copy(dAtA[i:], m.ExtensionBytes)
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x82
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n31, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n31
+	}
+	return i, nil
 }
 
 func (m *SIP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17043,82 +16551,79 @@ func (m *SIP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SIP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SIP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.Version != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
+	}
+	if m.Method != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Method))
+	}
+	if len(m.Headers) > 0 {
+		for _, s := range m.Headers {
+			dAtA[i] = 0x22
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
 		}
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.ResponseStatus) > 0 {
-		i -= len(m.ResponseStatus)
-		copy(dAtA[i:], m.ResponseStatus)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResponseStatus)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if m.ResponseCode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ResponseCode))
-		i--
-		dAtA[i] = 0x30
 	}
 	if m.IsResponse {
-		i--
+		dAtA[i] = 0x28
+		i++
 		if m.IsResponse {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x28
+		i++
 	}
-	if len(m.Headers) > 0 {
-		for iNdEx := len(m.Headers) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Headers[iNdEx])
-			copy(dAtA[i:], m.Headers[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.Headers[iNdEx])))
-			i--
-			dAtA[i] = 0x22
+	if m.ResponseCode != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ResponseCode))
+	}
+	if len(m.ResponseStatus) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResponseStatus)))
+		i += copy(dAtA[i:], m.ResponseStatus)
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n32, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n32
 	}
-	if m.Method != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Method))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *IGMP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17126,121 +16631,116 @@ func (m *IGMP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IGMP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IGMP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x72
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x68
+	if m.Type != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	if len(m.GroupRecords) > 0 {
-		for iNdEx := len(m.GroupRecords) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.GroupRecords[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x62
-		}
+	if m.MaxResponseTime != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MaxResponseTime))
 	}
-	if m.NumberOfSources != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumberOfSources))
-		i--
-		dAtA[i] = 0x58
+	if m.Checksum != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
 	}
-	if m.NumberOfGroupRecords != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumberOfGroupRecords))
-		i--
-		dAtA[i] = 0x50
-	}
-	if len(m.SourceAddresses) > 0 {
-		for iNdEx := len(m.SourceAddresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.SourceAddresses[iNdEx])
-			copy(dAtA[i:], m.SourceAddresses[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.SourceAddresses[iNdEx])))
-			i--
-			dAtA[i] = 0x4a
-		}
-	}
-	if m.IntervalTime != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.IntervalTime))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.RobustnessValue != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RobustnessValue))
-		i--
-		dAtA[i] = 0x38
+	if len(m.GroupAddress) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.GroupAddress)))
+		i += copy(dAtA[i:], m.GroupAddress)
 	}
 	if m.SupressRouterProcessing {
-		i--
+		dAtA[i] = 0x30
+		i++
 		if m.SupressRouterProcessing {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x30
+		i++
 	}
-	if len(m.GroupAddress) > 0 {
-		i -= len(m.GroupAddress)
-		copy(dAtA[i:], m.GroupAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.GroupAddress)))
-		i--
-		dAtA[i] = 0x2a
+	if m.RobustnessValue != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RobustnessValue))
 	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x20
+	if m.IntervalTime != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.IntervalTime))
 	}
-	if m.MaxResponseTime != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MaxResponseTime))
-		i--
-		dAtA[i] = 0x18
+	if len(m.SourceAddresses) > 0 {
+		for _, s := range m.SourceAddresses {
+			dAtA[i] = 0x4a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
 	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x10
+	if m.NumberOfGroupRecords != 0 {
+		dAtA[i] = 0x50
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumberOfGroupRecords))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.NumberOfSources != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumberOfSources))
 	}
-	return len(dAtA) - i, nil
+	if len(m.GroupRecords) > 0 {
+		for _, msg := range m.GroupRecords {
+			dAtA[i] = 0x62
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.Version != 0 {
+		dAtA[i] = 0x68
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n33, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n33
+	}
+	return i, nil
 }
 
 func (m *IGMPv3GroupRecord) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17248,53 +16748,53 @@ func (m *IGMPv3GroupRecord) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IGMPv3GroupRecord) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IGMPv3GroupRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.SourceAddresses) > 0 {
-		for iNdEx := len(m.SourceAddresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.SourceAddresses[iNdEx])
-			copy(dAtA[i:], m.SourceAddresses[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.SourceAddresses[iNdEx])))
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if len(m.MulticastAddress) > 0 {
-		i -= len(m.MulticastAddress)
-		copy(dAtA[i:], m.MulticastAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.MulticastAddress)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.NumberOfSources != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumberOfSources))
-		i--
-		dAtA[i] = 0x18
+	if m.Type != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
 	if m.AuxDataLen != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AuxDataLen))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AuxDataLen))
 	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x8
+	if m.NumberOfSources != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumberOfSources))
 	}
-	return len(dAtA) - i, nil
+	if len(m.MulticastAddress) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.MulticastAddress)))
+		i += copy(dAtA[i:], m.MulticastAddress)
+	}
+	if len(m.SourceAddresses) > 0 {
+		for _, s := range m.SourceAddresses {
+			dAtA[i] = 0x2a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	return i, nil
 }
 
 func (m *IPv6HopByHop) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17302,55 +16802,45 @@ func (m *IPv6HopByHop) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPv6HopByHop) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPv6HopByHop) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x12
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
+	}
+	if m.Context != nil {
 		dAtA[i] = 0x1a
-	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n34, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n34
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *IPv6HopByHopOption) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17358,56 +16848,48 @@ func (m *IPv6HopByHopOption) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPv6HopByHopOption) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPv6HopByHopOption) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.OptionAlignment != nil {
-		{
-			size, err := m.OptionAlignment.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.OptionData) > 0 {
-		i -= len(m.OptionData)
-		copy(dAtA[i:], m.OptionData)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OptionData)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.ActualLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ActualLength))
-		i--
-		dAtA[i] = 0x18
+	if m.OptionType != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionType))
 	}
 	if m.OptionLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionLength))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionLength))
 	}
-	if m.OptionType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionType))
-		i--
-		dAtA[i] = 0x8
+	if m.ActualLength != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ActualLength))
 	}
-	return len(dAtA) - i, nil
+	if len(m.OptionData) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OptionData)))
+		i += copy(dAtA[i:], m.OptionData)
+	}
+	if m.OptionAlignment != nil {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionAlignment.Size()))
+		n35, err := m.OptionAlignment.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n35
+	}
+	return i, nil
 }
 
 func (m *IPv6HopByHopOptionAlignment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17415,32 +16897,27 @@ func (m *IPv6HopByHopOptionAlignment) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPv6HopByHopOptionAlignment) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPv6HopByHopOptionAlignment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Two != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Two))
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.One != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.One))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.One))
 	}
-	return len(dAtA) - i, nil
+	if m.Two != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Two))
+	}
+	return i, nil
 }
 
 func (m *SNAP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17448,41 +16925,34 @@ func (m *SNAP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SNAP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SNAP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if len(m.OrganizationalCode) > 0 {
-		i -= len(m.OrganizationalCode)
-		copy(dAtA[i:], m.OrganizationalCode)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OrganizationalCode)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OrganizationalCode)))
+		i += copy(dAtA[i:], m.OrganizationalCode)
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Type != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *ICMPv6Echo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17490,51 +16960,43 @@ func (m *ICMPv6Echo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ICMPv6Echo) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ICMPv6Echo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.SeqNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SeqNumber))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Identifier != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Identifier))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Identifier))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.SeqNumber != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SeqNumber))
 	}
-	return len(dAtA) - i, nil
+	if m.Context != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n36, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n36
+	}
+	return i, nil
 }
 
 func (m *ICMPv6NeighborSolicitation) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17542,62 +17004,51 @@ func (m *ICMPv6NeighborSolicitation) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ICMPv6NeighborSolicitation) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ICMPv6NeighborSolicitation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if len(m.TargetAddress) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TargetAddress)))
+		i += copy(dAtA[i:], m.TargetAddress)
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x1a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
+	}
+	if m.Context != nil {
 		dAtA[i] = 0x22
-	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n37, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n37
 	}
-	if len(m.TargetAddress) > 0 {
-		i -= len(m.TargetAddress)
-		copy(dAtA[i:], m.TargetAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TargetAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *ICMPv6RouterSolicitation) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17605,55 +17056,45 @@ func (m *ICMPv6RouterSolicitation) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ICMPv6RouterSolicitation) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ICMPv6RouterSolicitation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x12
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
+	}
+	if m.Context != nil {
 		dAtA[i] = 0x1a
-	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n38, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n38
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *HTTP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17661,189 +17102,182 @@ func (m *HTTP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HTTP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.TLSDoneAfter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TLSDoneAfter))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xb8
-	}
-	if m.FirstByteAfter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FirstByteAfter))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xb0
-	}
-	if m.DNSDoneAfter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DNSDoneAfter))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa8
-	}
-	if m.DoneAfter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DoneAfter))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa0
-	}
-	if len(m.ResContentType) > 0 {
-		i -= len(m.ResContentType)
-		copy(dAtA[i:], m.ResContentType)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResContentType)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x9a
-	}
-	if len(m.ResCookies) > 0 {
-		for iNdEx := len(m.ResCookies) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.ResCookies[iNdEx])
-			copy(dAtA[i:], m.ResCookies[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResCookies[iNdEx])))
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0x92
-		}
-	}
-	if len(m.ServerName) > 0 {
-		i -= len(m.ServerName)
-		copy(dAtA[i:], m.ServerName)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ServerName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x8a
-	}
-	if len(m.ResContentEncoding) > 0 {
-		i -= len(m.ResContentEncoding)
-		copy(dAtA[i:], m.ResContentEncoding)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResContentEncoding)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
-	}
-	if len(m.ReqContentEncoding) > 0 {
-		i -= len(m.ReqContentEncoding)
-		copy(dAtA[i:], m.ReqContentEncoding)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReqContentEncoding)))
-		i--
-		dAtA[i] = 0x7a
-	}
-	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
-		i--
-		dAtA[i] = 0x72
-	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
-		i--
-		dAtA[i] = 0x6a
-	}
-	if m.StatusCode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.StatusCode))
-		i--
-		dAtA[i] = 0x60
-	}
-	if len(m.ContentType) > 0 {
-		i -= len(m.ContentType)
-		copy(dAtA[i:], m.ContentType)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ContentType)))
-		i--
-		dAtA[i] = 0x5a
-	}
-	if m.ResContentLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ResContentLength))
-		i--
-		dAtA[i] = 0x50
-	}
-	if len(m.URL) > 0 {
-		i -= len(m.URL)
-		copy(dAtA[i:], m.URL)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.URL)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if m.ReqContentLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReqContentLength))
-		i--
-		dAtA[i] = 0x40
-	}
-	if len(m.ReqCookies) > 0 {
-		for iNdEx := len(m.ReqCookies) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.ReqCookies[iNdEx])
-			copy(dAtA[i:], m.ReqCookies[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReqCookies[iNdEx])))
-			i--
-			dAtA[i] = 0x3a
-		}
-	}
-	if len(m.Referer) > 0 {
-		i -= len(m.Referer)
-		copy(dAtA[i:], m.Referer)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Referer)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.UserAgent) > 0 {
-		i -= len(m.UserAgent)
-		copy(dAtA[i:], m.UserAgent)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.UserAgent)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.Host) > 0 {
-		i -= len(m.Host)
-		copy(dAtA[i:], m.Host)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Host)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Method) > 0 {
-		i -= len(m.Method)
-		copy(dAtA[i:], m.Method)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Method)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if len(m.Proto) > 0 {
-		i -= len(m.Proto)
-		copy(dAtA[i:], m.Proto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
+		i += copy(dAtA[i:], m.Proto)
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.Method) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Method)))
+		i += copy(dAtA[i:], m.Method)
 	}
-	return len(dAtA) - i, nil
+	if len(m.Host) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Host)))
+		i += copy(dAtA[i:], m.Host)
+	}
+	if len(m.UserAgent) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.UserAgent)))
+		i += copy(dAtA[i:], m.UserAgent)
+	}
+	if len(m.Referer) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Referer)))
+		i += copy(dAtA[i:], m.Referer)
+	}
+	if len(m.ReqCookies) > 0 {
+		for _, s := range m.ReqCookies {
+			dAtA[i] = 0x3a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	if m.ReqContentLength != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ReqContentLength))
+	}
+	if len(m.URL) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.URL)))
+		i += copy(dAtA[i:], m.URL)
+	}
+	if m.ResContentLength != 0 {
+		dAtA[i] = 0x50
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ResContentLength))
+	}
+	if len(m.ContentType) > 0 {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ContentType)))
+		i += copy(dAtA[i:], m.ContentType)
+	}
+	if m.StatusCode != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.StatusCode))
+	}
+	if len(m.SrcIP) > 0 {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+		i += copy(dAtA[i:], m.SrcIP)
+	}
+	if len(m.DstIP) > 0 {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+		i += copy(dAtA[i:], m.DstIP)
+	}
+	if len(m.ReqContentEncoding) > 0 {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReqContentEncoding)))
+		i += copy(dAtA[i:], m.ReqContentEncoding)
+	}
+	if len(m.ResContentEncoding) > 0 {
+		dAtA[i] = 0x82
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResContentEncoding)))
+		i += copy(dAtA[i:], m.ResContentEncoding)
+	}
+	if len(m.ServerName) > 0 {
+		dAtA[i] = 0x8a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ServerName)))
+		i += copy(dAtA[i:], m.ServerName)
+	}
+	if len(m.ResCookies) > 0 {
+		for _, s := range m.ResCookies {
+			dAtA[i] = 0x92
+			i++
+			dAtA[i] = 0x1
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	if len(m.ResContentType) > 0 {
+		dAtA[i] = 0x9a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResContentType)))
+		i += copy(dAtA[i:], m.ResContentType)
+	}
+	if m.DoneAfter != 0 {
+		dAtA[i] = 0xa0
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DoneAfter))
+	}
+	if m.DNSDoneAfter != 0 {
+		dAtA[i] = 0xa8
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DNSDoneAfter))
+	}
+	if m.FirstByteAfter != 0 {
+		dAtA[i] = 0xb0
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FirstByteAfter))
+	}
+	if m.TLSDoneAfter != 0 {
+		dAtA[i] = 0xb8
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TLSDoneAfter))
+	}
+	return i, nil
 }
 
 func (m *TLSClientHello) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -17851,19 +17285,93 @@ func (m *TLSClientHello) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *TLSClientHello) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *TLSClientHello) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Extensions) > 0 {
-		dAtA40 := make([]byte, len(m.Extensions)*10)
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.Type != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
+	}
+	if m.Version != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
+	}
+	if m.MessageLen != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MessageLen))
+	}
+	if m.HandshakeType != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HandshakeType))
+	}
+	if m.HandshakeLen != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HandshakeLen))
+	}
+	if m.HandshakeVersion != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HandshakeVersion))
+	}
+	if len(m.Random) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Random)))
+		i += copy(dAtA[i:], m.Random)
+	}
+	if m.SessionIDLen != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SessionIDLen))
+	}
+	if len(m.SessionID) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SessionID)))
+		i += copy(dAtA[i:], m.SessionID)
+	}
+	if m.CipherSuiteLen != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CipherSuiteLen))
+	}
+	if m.ExtensionLen != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ExtensionLen))
+	}
+	if len(m.SNI) > 0 {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SNI)))
+		i += copy(dAtA[i:], m.SNI)
+	}
+	if m.OSCP {
+		dAtA[i] = 0x70
+		i++
+		if m.OSCP {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if len(m.CipherSuites) > 0 {
+		dAtA40 := make([]byte, len(m.CipherSuites)*10)
 		var j39 int
-		for _, num1 := range m.Extensions {
+		for _, num1 := range m.CipherSuites {
 			num := uint64(num1)
 			for num >= 1<<7 {
 				dAtA40[j39] = uint8(uint64(num)&0x7f | 0x80)
@@ -17873,88 +17381,15 @@ func (m *TLSClientHello) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA40[j39] = uint8(num)
 			j39++
 		}
-		i -= j39
-		copy(dAtA[i:], dAtA40[:j39])
+		dAtA[i] = 0x7a
+		i++
 		i = encodeVarintNetcap(dAtA, i, uint64(j39))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xe2
+		i += copy(dAtA[i:], dAtA40[:j39])
 	}
-	if m.DstPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xd8
-	}
-	if m.SrcPort != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xd0
-	}
-	if len(m.DstMAC) > 0 {
-		i -= len(m.DstMAC)
-		copy(dAtA[i:], m.DstMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xca
-	}
-	if len(m.SrcMAC) > 0 {
-		i -= len(m.SrcMAC)
-		copy(dAtA[i:], m.SrcMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xc2
-	}
-	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xba
-	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xb2
-	}
-	if len(m.Ja3) > 0 {
-		i -= len(m.Ja3)
-		copy(dAtA[i:], m.Ja3)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Ja3)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xaa
-	}
-	if len(m.ALPNs) > 0 {
-		for iNdEx := len(m.ALPNs) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.ALPNs[iNdEx])
-			copy(dAtA[i:], m.ALPNs[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.ALPNs[iNdEx])))
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0xa2
-		}
-	}
-	if len(m.SupportedPoints) > 0 {
-		dAtA42 := make([]byte, len(m.SupportedPoints)*10)
+	if len(m.CompressMethods) > 0 {
+		dAtA42 := make([]byte, len(m.CompressMethods)*10)
 		var j41 int
-		for _, num1 := range m.SupportedPoints {
+		for _, num1 := range m.CompressMethods {
 			num := uint64(num1)
 			for num >= 1<<7 {
 				dAtA42[j41] = uint8(uint64(num)&0x7f | 0x80)
@@ -17964,18 +17399,17 @@ func (m *TLSClientHello) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA42[j41] = uint8(num)
 			j41++
 		}
-		i -= j41
-		copy(dAtA[i:], dAtA42[:j41])
-		i = encodeVarintNetcap(dAtA, i, uint64(j41))
-		i--
+		dAtA[i] = 0x82
+		i++
 		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x9a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j41))
+		i += copy(dAtA[i:], dAtA42[:j41])
 	}
-	if len(m.SupportedGroups) > 0 {
-		dAtA44 := make([]byte, len(m.SupportedGroups)*10)
+	if len(m.SignatureAlgs) > 0 {
+		dAtA44 := make([]byte, len(m.SignatureAlgs)*10)
 		var j43 int
-		for _, num1 := range m.SupportedGroups {
+		for _, num1 := range m.SignatureAlgs {
 			num := uint64(num1)
 			for num >= 1<<7 {
 				dAtA44[j43] = uint8(uint64(num)&0x7f | 0x80)
@@ -17985,18 +17419,17 @@ func (m *TLSClientHello) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA44[j43] = uint8(num)
 			j43++
 		}
-		i -= j43
-		copy(dAtA[i:], dAtA44[:j43])
-		i = encodeVarintNetcap(dAtA, i, uint64(j43))
-		i--
+		dAtA[i] = 0x8a
+		i++
 		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x92
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j43))
+		i += copy(dAtA[i:], dAtA44[:j43])
 	}
-	if len(m.SignatureAlgs) > 0 {
-		dAtA46 := make([]byte, len(m.SignatureAlgs)*10)
+	if len(m.SupportedGroups) > 0 {
+		dAtA46 := make([]byte, len(m.SupportedGroups)*10)
 		var j45 int
-		for _, num1 := range m.SignatureAlgs {
+		for _, num1 := range m.SupportedGroups {
 			num := uint64(num1)
 			for num >= 1<<7 {
 				dAtA46[j45] = uint8(uint64(num)&0x7f | 0x80)
@@ -18006,18 +17439,17 @@ func (m *TLSClientHello) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA46[j45] = uint8(num)
 			j45++
 		}
-		i -= j45
-		copy(dAtA[i:], dAtA46[:j45])
-		i = encodeVarintNetcap(dAtA, i, uint64(j45))
-		i--
+		dAtA[i] = 0x92
+		i++
 		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x8a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j45))
+		i += copy(dAtA[i:], dAtA46[:j45])
 	}
-	if len(m.CompressMethods) > 0 {
-		dAtA48 := make([]byte, len(m.CompressMethods)*10)
+	if len(m.SupportedPoints) > 0 {
+		dAtA48 := make([]byte, len(m.SupportedPoints)*10)
 		var j47 int
-		for _, num1 := range m.CompressMethods {
+		for _, num1 := range m.SupportedPoints {
 			num := uint64(num1)
 			for num >= 1<<7 {
 				dAtA48[j47] = uint8(uint64(num)&0x7f | 0x80)
@@ -18027,18 +17459,88 @@ func (m *TLSClientHello) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA48[j47] = uint8(num)
 			j47++
 		}
-		i -= j47
-		copy(dAtA[i:], dAtA48[:j47])
-		i = encodeVarintNetcap(dAtA, i, uint64(j47))
-		i--
+		dAtA[i] = 0x9a
+		i++
 		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j47))
+		i += copy(dAtA[i:], dAtA48[:j47])
 	}
-	if len(m.CipherSuites) > 0 {
-		dAtA50 := make([]byte, len(m.CipherSuites)*10)
+	if len(m.ALPNs) > 0 {
+		for _, s := range m.ALPNs {
+			dAtA[i] = 0xa2
+			i++
+			dAtA[i] = 0x1
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	if len(m.Ja3) > 0 {
+		dAtA[i] = 0xaa
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Ja3)))
+		i += copy(dAtA[i:], m.Ja3)
+	}
+	if len(m.SrcIP) > 0 {
+		dAtA[i] = 0xb2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+		i += copy(dAtA[i:], m.SrcIP)
+	}
+	if len(m.DstIP) > 0 {
+		dAtA[i] = 0xba
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+		i += copy(dAtA[i:], m.DstIP)
+	}
+	if len(m.SrcMAC) > 0 {
+		dAtA[i] = 0xc2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
+		i += copy(dAtA[i:], m.SrcMAC)
+	}
+	if len(m.DstMAC) > 0 {
+		dAtA[i] = 0xca
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
+		i += copy(dAtA[i:], m.DstMAC)
+	}
+	if m.SrcPort != 0 {
+		dAtA[i] = 0xd0
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SrcPort))
+	}
+	if m.DstPort != 0 {
+		dAtA[i] = 0xd8
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DstPort))
+	}
+	if len(m.Extensions) > 0 {
+		dAtA50 := make([]byte, len(m.Extensions)*10)
 		var j49 int
-		for _, num1 := range m.CipherSuites {
+		for _, num1 := range m.Extensions {
 			num := uint64(num1)
 			for num >= 1<<7 {
 				dAtA50[j49] = uint8(uint64(num)&0x7f | 0x80)
@@ -18048,102 +17550,20 @@ func (m *TLSClientHello) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA50[j49] = uint8(num)
 			j49++
 		}
-		i -= j49
-		copy(dAtA[i:], dAtA50[:j49])
+		dAtA[i] = 0xe2
+		i++
+		dAtA[i] = 0x1
+		i++
 		i = encodeVarintNetcap(dAtA, i, uint64(j49))
-		i--
-		dAtA[i] = 0x7a
+		i += copy(dAtA[i:], dAtA50[:j49])
 	}
-	if m.OSCP {
-		i--
-		if m.OSCP {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x70
-	}
-	if len(m.SNI) > 0 {
-		i -= len(m.SNI)
-		copy(dAtA[i:], m.SNI)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SNI)))
-		i--
-		dAtA[i] = 0x6a
-	}
-	if m.ExtensionLen != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ExtensionLen))
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.CipherSuiteLen != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.CipherSuiteLen))
-		i--
-		dAtA[i] = 0x58
-	}
-	if len(m.SessionID) > 0 {
-		i -= len(m.SessionID)
-		copy(dAtA[i:], m.SessionID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SessionID)))
-		i--
-		dAtA[i] = 0x52
-	}
-	if m.SessionIDLen != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SessionIDLen))
-		i--
-		dAtA[i] = 0x48
-	}
-	if len(m.Random) > 0 {
-		i -= len(m.Random)
-		copy(dAtA[i:], m.Random)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Random)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.HandshakeVersion != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HandshakeVersion))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.HandshakeLen != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HandshakeLen))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.HandshakeType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HandshakeType))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.MessageLen != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MessageLen))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *IPSecAH) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18151,63 +17571,54 @@ func (m *IPSecAH) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPSecAH) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPSecAH) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.AuthenticationData) > 0 {
-		i -= len(m.AuthenticationData)
-		copy(dAtA[i:], m.AuthenticationData)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.AuthenticationData)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.Seq != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Seq))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.SPI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SPI))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Reserved != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Reserved))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Reserved))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.SPI != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SPI))
 	}
-	return len(dAtA) - i, nil
+	if m.Seq != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Seq))
+	}
+	if len(m.AuthenticationData) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.AuthenticationData)))
+		i += copy(dAtA[i:], m.AuthenticationData)
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n51, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n51
+	}
+	return i, nil
 }
 
 func (m *IPSecESP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18215,56 +17626,48 @@ func (m *IPSecESP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPSecESP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPSecESP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.LenEncrypted != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LenEncrypted))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Seq != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Seq))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.SPI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SPI))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SPI))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Seq != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Seq))
 	}
-	return len(dAtA) - i, nil
+	if m.LenEncrypted != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LenEncrypted))
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n52, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n52
+	}
+	return i, nil
 }
 
 func (m *Geneve) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18272,95 +17675,85 @@ func (m *Geneve) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Geneve) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Geneve) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x4a
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if len(m.Options) > 0 {
-		for iNdEx := len(m.Options) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Options[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x42
-		}
+	if m.Version != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
 	}
-	if m.VNI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.VNI))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.Protocol != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Protocol))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.CriticalOption {
-		i--
-		if m.CriticalOption {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x28
+	if m.OptionsLength != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionsLength))
 	}
 	if m.OAMPacket {
-		i--
+		dAtA[i] = 0x20
+		i++
 		if m.OAMPacket {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x20
+		i++
 	}
-	if m.OptionsLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.OptionsLength))
-		i--
-		dAtA[i] = 0x18
+	if m.CriticalOption {
+		dAtA[i] = 0x28
+		i++
+		if m.CriticalOption {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x10
+	if m.Protocol != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Protocol))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.VNI != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VNI))
 	}
-	return len(dAtA) - i, nil
+	if len(m.Options) > 0 {
+		for _, msg := range m.Options {
+			dAtA[i] = 0x42
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n53, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n53
+	}
+	return i, nil
 }
 
 func (m *GeneveOption) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18368,49 +17761,43 @@ func (m *GeneveOption) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GeneveOption) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GeneveOption) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x18
+	if m.Class != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Class))
 	}
 	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	if m.Class != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Class))
-		i--
-		dAtA[i] = 0x8
+	if m.Flags != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
 	}
-	return len(dAtA) - i, nil
+	if m.Length != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
+	}
+	return i, nil
 }
 
 func (m *VXLAN) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18418,91 +17805,83 @@ func (m *VXLAN) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *VXLAN) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *VXLAN) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.GBPGroupPolicyID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.GBPGroupPolicyID))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.GBPApplied {
-		i--
-		if m.GBPApplied {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.GBPDontLearn {
-		i--
-		if m.GBPDontLearn {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.GBPExtension {
-		i--
-		if m.GBPExtension {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.VNI != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.VNI))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.ValidIDFlag {
-		i--
+		dAtA[i] = 0x10
+		i++
 		if m.ValidIDFlag {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x10
+		i++
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.VNI != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VNI))
 	}
-	return len(dAtA) - i, nil
+	if m.GBPExtension {
+		dAtA[i] = 0x20
+		i++
+		if m.GBPExtension {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.GBPDontLearn {
+		dAtA[i] = 0x28
+		i++
+		if m.GBPDontLearn {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.GBPApplied {
+		dAtA[i] = 0x30
+		i++
+		if m.GBPApplied {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.GBPGroupPolicyID != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.GBPGroupPolicyID))
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n54, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n54
+	}
+	return i, nil
 }
 
 func (m *USB) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18510,146 +17889,139 @@ func (m *USB) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *USB) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *USB) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Payload) > 0 {
-		i -= len(m.Payload)
-		copy(dAtA[i:], m.Payload)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Payload)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa2
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.IsoNumDesc != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.IsoNumDesc))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x98
+	if m.ID != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
 	}
-	if m.UrbCopyOfTransferFlags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbCopyOfTransferFlags))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x90
+	if m.EventType != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.EventType))
 	}
-	if m.UrbStartFrame != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbStartFrame))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x88
+	if m.TransferType != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TransferType))
 	}
-	if m.UrbInterval != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbInterval))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x80
+	if m.Direction != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Direction))
 	}
-	if m.UrbDataLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbDataLength))
-		i--
-		dAtA[i] = 0x78
+	if m.EndpointNumber != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.EndpointNumber))
 	}
-	if m.UrbLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbLength))
-		i--
-		dAtA[i] = 0x70
+	if m.DeviceAddress != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DeviceAddress))
 	}
-	if m.Status != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
-		i--
-		dAtA[i] = 0x68
+	if m.BusID != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.BusID))
 	}
-	if m.Data {
-		i--
-		if m.Data {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x60
+	if m.TimestampSec != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TimestampSec))
+	}
+	if m.TimestampUsec != 0 {
+		dAtA[i] = 0x50
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TimestampUsec))
 	}
 	if m.Setup {
-		i--
+		dAtA[i] = 0x58
+		i++
 		if m.Setup {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x58
+		i++
 	}
-	if m.TimestampUsec != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TimestampUsec))
-		i--
-		dAtA[i] = 0x50
+	if m.Data {
+		dAtA[i] = 0x60
+		i++
+		if m.Data {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.TimestampSec != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TimestampSec))
-		i--
-		dAtA[i] = 0x48
+	if m.Status != 0 {
+		dAtA[i] = 0x68
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
 	}
-	if m.BusID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.BusID))
-		i--
-		dAtA[i] = 0x40
+	if m.UrbLength != 0 {
+		dAtA[i] = 0x70
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbLength))
 	}
-	if m.DeviceAddress != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DeviceAddress))
-		i--
-		dAtA[i] = 0x38
+	if m.UrbDataLength != 0 {
+		dAtA[i] = 0x78
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbDataLength))
 	}
-	if m.EndpointNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.EndpointNumber))
-		i--
-		dAtA[i] = 0x30
+	if m.UrbInterval != 0 {
+		dAtA[i] = 0x80
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbInterval))
 	}
-	if m.Direction != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Direction))
-		i--
-		dAtA[i] = 0x28
+	if m.UrbStartFrame != 0 {
+		dAtA[i] = 0x88
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbStartFrame))
 	}
-	if m.TransferType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TransferType))
-		i--
-		dAtA[i] = 0x20
+	if m.UrbCopyOfTransferFlags != 0 {
+		dAtA[i] = 0x90
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UrbCopyOfTransferFlags))
 	}
-	if m.EventType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.EventType))
-		i--
-		dAtA[i] = 0x18
+	if m.IsoNumDesc != 0 {
+		dAtA[i] = 0x98
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.IsoNumDesc))
 	}
-	if m.ID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x10
+	if len(m.Payload) > 0 {
+		dAtA[i] = 0xa2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Payload)))
+		i += copy(dAtA[i:], m.Payload)
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *USBRequestBlockSetup) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18657,54 +18029,48 @@ func (m *USBRequestBlockSetup) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *USBRequestBlockSetup) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *USBRequestBlockSetup) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Index != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Index))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Value != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Value))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Request != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Request))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.RequestType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RequestType))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RequestType))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Request != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Request))
 	}
-	return len(dAtA) - i, nil
+	if m.Value != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Value))
+	}
+	if m.Index != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Index))
+	}
+	if m.Length != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	return i, nil
 }
 
 func (m *LCM) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18712,88 +18078,79 @@ func (m *LCM) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LCM) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LCM) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x52
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.Magic != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Magic))
+	}
+	if m.SequenceNumber != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SequenceNumber))
+	}
+	if m.PayloadSize != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
+	}
+	if m.FragmentOffset != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FragmentOffset))
+	}
+	if m.FragmentNumber != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FragmentNumber))
+	}
+	if m.TotalFragments != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalFragments))
+	}
+	if len(m.ChannelName) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ChannelName)))
+		i += copy(dAtA[i:], m.ChannelName)
 	}
 	if m.Fragmented {
-		i--
+		dAtA[i] = 0x48
+		i++
 		if m.Fragmented {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x48
+		i++
 	}
-	if len(m.ChannelName) > 0 {
-		i -= len(m.ChannelName)
-		copy(dAtA[i:], m.ChannelName)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ChannelName)))
-		i--
-		dAtA[i] = 0x42
+	if m.Context != nil {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n55, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n55
 	}
-	if m.TotalFragments != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TotalFragments))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.FragmentNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FragmentNumber))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.FragmentOffset != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FragmentOffset))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.PayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.SequenceNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SequenceNumber))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Magic != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Magic))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *MPLS) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18801,66 +18158,58 @@ func (m *MPLS) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MPLS) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MPLS) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.TTL != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x28
+	if m.Label != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Label))
+	}
+	if m.TrafficClass != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TrafficClass))
 	}
 	if m.StackBottom {
-		i--
+		dAtA[i] = 0x20
+		i++
 		if m.StackBottom {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x20
+		i++
 	}
-	if m.TrafficClass != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TrafficClass))
-		i--
-		dAtA[i] = 0x18
+	if m.TTL != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
 	}
-	if m.Label != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Label))
-		i--
-		dAtA[i] = 0x10
+	if m.Context != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n56, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n56
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *Modbus) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18868,83 +18217,74 @@ func (m *Modbus) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Modbus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Modbus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x4a
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.FunctionCode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FunctionCode))
-		i--
-		dAtA[i] = 0x40
+	if m.TransactionID != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TransactionID))
+	}
+	if m.ProtocolID != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ProtocolID))
+	}
+	if m.Length != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	if m.UnitID != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UnitID))
+	}
+	if len(m.Payload) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Payload)))
+		i += copy(dAtA[i:], m.Payload)
 	}
 	if m.Exception {
-		i--
+		dAtA[i] = 0x38
+		i++
 		if m.Exception {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x38
+		i++
 	}
-	if len(m.Payload) > 0 {
-		i -= len(m.Payload)
-		copy(dAtA[i:], m.Payload)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Payload)))
-		i--
-		dAtA[i] = 0x32
+	if m.FunctionCode != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FunctionCode))
 	}
-	if m.UnitID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UnitID))
-		i--
-		dAtA[i] = 0x28
+	if m.Context != nil {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n57, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n57
 	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.ProtocolID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ProtocolID))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.TransactionID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TransactionID))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *OSPFv2) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -18952,145 +18292,127 @@ func (m *OSPFv2) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *OSPFv2) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *OSPFv2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.Version != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
+	}
+	if m.Type != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
+	}
+	if m.PacketLength != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PacketLength))
+	}
+	if m.RouterID != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterID))
+	}
+	if m.AreaID != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AreaID))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if m.AuType != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AuType))
+	}
+	if m.Authentication != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Authentication))
+	}
+	if len(m.LSAs) > 0 {
+		for _, msg := range m.LSAs {
+			dAtA[i] = 0x52
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x7a
-	}
-	if m.HelloV2 != nil {
-		{
-			size, err := m.HelloV2.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x72
-	}
-	if m.DbDesc != nil {
-		{
-			size, err := m.DbDesc.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x6a
-	}
-	if len(m.LSR) > 0 {
-		for iNdEx := len(m.LSR) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.LSR[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x62
+			i += n
 		}
 	}
 	if m.LSU != nil {
-		{
-			size, err := m.LSU.MarshalToSizedBuffer(dAtA[:i])
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSU.Size()))
+		n58, err := m.LSU.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n58
+	}
+	if len(m.LSR) > 0 {
+		for _, msg := range m.LSR {
+			dAtA[i] = 0x62
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x5a
-	}
-	if len(m.LSAs) > 0 {
-		for iNdEx := len(m.LSAs) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.LSAs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x52
+			i += n
 		}
 	}
-	if m.Authentication != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Authentication))
-		i--
-		dAtA[i] = 0x48
+	if m.DbDesc != nil {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DbDesc.Size()))
+		n59, err := m.DbDesc.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n59
 	}
-	if m.AuType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AuType))
-		i--
-		dAtA[i] = 0x40
+	if m.HelloV2 != nil {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HelloV2.Size()))
+		n60, err := m.HelloV2.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n60
 	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x38
+	if m.Context != nil {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n61, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n61
 	}
-	if m.AreaID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AreaID))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.RouterID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterID))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.PacketLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PacketLength))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *HelloPkg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19098,15 +18420,45 @@ func (m *HelloPkg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HelloPkg) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *HelloPkg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
+	if m.InterfaceID != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceID))
+	}
+	if m.RtrPriority != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RtrPriority))
+	}
+	if m.Options != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
+	}
+	if m.HelloInterval != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HelloInterval))
+	}
+	if m.RouterDeadInterval != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterDeadInterval))
+	}
+	if m.DesignatedRouterID != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DesignatedRouterID))
+	}
+	if m.BackupDesignatedRouterID != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.BackupDesignatedRouterID))
+	}
 	if len(m.NeighborID) > 0 {
 		dAtA63 := make([]byte, len(m.NeighborID)*10)
 		var j62 int
@@ -19119,54 +18471,18 @@ func (m *HelloPkg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA63[j62] = uint8(num)
 			j62++
 		}
-		i -= j62
-		copy(dAtA[i:], dAtA63[:j62])
-		i = encodeVarintNetcap(dAtA, i, uint64(j62))
-		i--
 		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j62))
+		i += copy(dAtA[i:], dAtA63[:j62])
 	}
-	if m.BackupDesignatedRouterID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.BackupDesignatedRouterID))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.DesignatedRouterID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DesignatedRouterID))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.RouterDeadInterval != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterDeadInterval))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.HelloInterval != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HelloInterval))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.RtrPriority != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RtrPriority))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.InterfaceID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceID))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *HelloPkgV2) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19174,19 +18490,44 @@ func (m *HelloPkgV2) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HelloPkgV2) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *HelloPkgV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.NetworkMask != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NetworkMask))
-		i--
-		dAtA[i] = 0x48
+	if m.InterfaceID != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceID))
+	}
+	if m.RtrPriority != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RtrPriority))
+	}
+	if m.Options != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
+	}
+	if m.HelloInterval != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.HelloInterval))
+	}
+	if m.RouterDeadInterval != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterDeadInterval))
+	}
+	if m.DesignatedRouterID != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DesignatedRouterID))
+	}
+	if m.BackupDesignatedRouterID != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.BackupDesignatedRouterID))
 	}
 	if len(m.NeighborID) > 0 {
 		dAtA65 := make([]byte, len(m.NeighborID)*10)
@@ -19200,54 +18541,23 @@ func (m *HelloPkgV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA65[j64] = uint8(num)
 			j64++
 		}
-		i -= j64
-		copy(dAtA[i:], dAtA65[:j64])
-		i = encodeVarintNetcap(dAtA, i, uint64(j64))
-		i--
 		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j64))
+		i += copy(dAtA[i:], dAtA65[:j64])
 	}
-	if m.BackupDesignatedRouterID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.BackupDesignatedRouterID))
-		i--
-		dAtA[i] = 0x38
+	if m.NetworkMask != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NetworkMask))
 	}
-	if m.DesignatedRouterID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DesignatedRouterID))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.RouterDeadInterval != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterDeadInterval))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.HelloInterval != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.HelloInterval))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.RtrPriority != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RtrPriority))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.InterfaceID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceID))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *DbDescPkg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19255,56 +18565,49 @@ func (m *DbDescPkg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DbDescPkg) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DbDescPkg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.LSAinfo) > 0 {
-		for iNdEx := len(m.LSAinfo) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.LSAinfo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if m.DDSeqNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DDSeqNumber))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x18
+	if m.Options != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
 	}
 	if m.InterfaceMTU != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceMTU))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceMTU))
 	}
-	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
-		i--
-		dAtA[i] = 0x8
+	if m.Flags != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
 	}
-	return len(dAtA) - i, nil
+	if m.DDSeqNumber != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DDSeqNumber))
+	}
+	if len(m.LSAinfo) > 0 {
+		for _, msg := range m.LSAinfo {
+			dAtA[i] = 0x2a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
 }
 
 func (m *OSPFv3) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19312,145 +18615,127 @@ func (m *OSPFv3) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *OSPFv3) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *OSPFv3) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.Version != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
+	}
+	if m.Type != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
+	}
+	if m.PacketLength != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PacketLength))
+	}
+	if m.RouterID != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterID))
+	}
+	if m.AreaID != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AreaID))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if m.Instance != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Instance))
+	}
+	if m.Reserved != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Reserved))
+	}
+	if m.Hello != nil {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Hello.Size()))
+		n66, err := m.Hello.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n66
+	}
+	if m.DbDesc != nil {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DbDesc.Size()))
+		n67, err := m.DbDesc.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n67
+	}
+	if len(m.LSR) > 0 {
+		for _, msg := range m.LSR {
+			dAtA[i] = 0x62
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x7a
-	}
-	if len(m.LSAs) > 0 {
-		for iNdEx := len(m.LSAs) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.LSAs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x72
+			i += n
 		}
 	}
 	if m.LSU != nil {
-		{
-			size, err := m.LSU.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
 		dAtA[i] = 0x6a
-	}
-	if len(m.LSR) > 0 {
-		for iNdEx := len(m.LSR) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.LSR[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x62
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSU.Size()))
+		n68, err := m.LSU.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n68
 	}
-	if m.DbDesc != nil {
-		{
-			size, err := m.DbDesc.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.LSAs) > 0 {
+		for _, msg := range m.LSAs {
+			dAtA[i] = 0x72
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+			i += n
 		}
-		i--
-		dAtA[i] = 0x5a
 	}
-	if m.Hello != nil {
-		{
-			size, err := m.Hello.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+	if m.Context != nil {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n69, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x52
+		i += n69
 	}
-	if m.Reserved != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Reserved))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.Instance != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Instance))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.AreaID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AreaID))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.RouterID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RouterID))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.PacketLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PacketLength))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *LSAheader) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19458,62 +18743,57 @@ func (m *LSAheader) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LSAheader) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LSAheader) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.LSOptions != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LSOptions))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.LSChecksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LSChecksum))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.LSSeqNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LSSeqNumber))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.AdvRouter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AdvRouter))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.LinkStateID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LinkStateID))
-		i--
-		dAtA[i] = 0x18
+	if m.LSAge != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSAge))
 	}
 	if m.LSType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LSType))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSType))
 	}
-	if m.LSAge != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LSAge))
-		i--
-		dAtA[i] = 0x8
+	if m.LinkStateID != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LinkStateID))
 	}
-	return len(dAtA) - i, nil
+	if m.AdvRouter != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AdvRouter))
+	}
+	if m.LSSeqNumber != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSSeqNumber))
+	}
+	if m.LSChecksum != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSChecksum))
+	}
+	if m.Length != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	if m.LSOptions != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSOptions))
+	}
+	return i, nil
 }
 
 func (m *LSA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19521,154 +18801,127 @@ func (m *LSA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LSA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+	if m.Header != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Header.Size()))
+		n70, err := m.Header.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x5a
-	}
-	if m.IntraAPrefixLSA != nil {
-		{
-			size, err := m.IntraAPrefixLSA.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x52
-	}
-	if m.LLSA != nil {
-		{
-			size, err := m.LLSA.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x4a
-	}
-	if m.ASELSA != nil {
-		{
-			size, err := m.ASELSA.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.IARouterLSA != nil {
-		{
-			size, err := m.IARouterLSA.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x3a
-	}
-	if m.InterAPrefixLSA != nil {
-		{
-			size, err := m.InterAPrefixLSA.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.NLSA != nil {
-		{
-			size, err := m.NLSA.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.RLSA != nil {
-		{
-			size, err := m.RLSA.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.ASELSAV2 != nil {
-		{
-			size, err := m.ASELSAV2.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
+		i += n70
 	}
 	if m.RLSAV2 != nil {
-		{
-			size, err := m.RLSAV2.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
 		dAtA[i] = 0x12
-	}
-	if m.Header != nil {
-		{
-			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RLSAV2.Size()))
+		n71, err := m.RLSAV2.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i += n71
 	}
-	return len(dAtA) - i, nil
+	if m.ASELSAV2 != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ASELSAV2.Size()))
+		n72, err := m.ASELSAV2.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n72
+	}
+	if m.RLSA != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RLSA.Size()))
+		n73, err := m.RLSA.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n73
+	}
+	if m.NLSA != nil {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NLSA.Size()))
+		n74, err := m.NLSA.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n74
+	}
+	if m.InterAPrefixLSA != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.InterAPrefixLSA.Size()))
+		n75, err := m.InterAPrefixLSA.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n75
+	}
+	if m.IARouterLSA != nil {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.IARouterLSA.Size()))
+		n76, err := m.IARouterLSA.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n76
+	}
+	if m.ASELSA != nil {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ASELSA.Size()))
+		n77, err := m.ASELSA.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n77
+	}
+	if m.LLSA != nil {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LLSA.Size()))
+		n78, err := m.LLSA.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n78
+	}
+	if m.IntraAPrefixLSA != nil {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.IntraAPrefixLSA.Size()))
+		n79, err := m.IntraAPrefixLSA.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n79
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n80, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n80
+	}
+	return i, nil
 }
 
 func (m *LSReq) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19676,37 +18929,32 @@ func (m *LSReq) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LSReq) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LSReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.AdvRouter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AdvRouter))
-		i--
-		dAtA[i] = 0x18
+	if m.LSType != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSType))
 	}
 	if m.LSID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LSID))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LSID))
 	}
-	if m.LSType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LSType))
-		i--
-		dAtA[i] = 0x8
+	if m.AdvRouter != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AdvRouter))
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *LSUpdate) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19714,41 +18962,34 @@ func (m *LSUpdate) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LSUpdate) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LSUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
+	if m.NumOfLSAs != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumOfLSAs))
+	}
 	if len(m.LSAs) > 0 {
-		for iNdEx := len(m.LSAs) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.LSAs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
+		for _, msg := range m.LSAs {
 			dAtA[i] = 0x12
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
 		}
 	}
-	if m.NumOfLSAs != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumOfLSAs))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *IntraAreaPrefixLSA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19756,56 +18997,49 @@ func (m *IntraAreaPrefixLSA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IntraAreaPrefixLSA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IntraAreaPrefixLSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Prefixes) > 0 {
-		for iNdEx := len(m.Prefixes) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Prefixes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if m.RefAdvRouter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RefAdvRouter))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.RefLinkStateID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RefLinkStateID))
-		i--
-		dAtA[i] = 0x18
+	if m.NumOfPrefixes != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumOfPrefixes))
 	}
 	if m.RefLSType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RefLSType))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RefLSType))
 	}
-	if m.NumOfPrefixes != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumOfPrefixes))
-		i--
-		dAtA[i] = 0x8
+	if m.RefLinkStateID != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RefLinkStateID))
 	}
-	return len(dAtA) - i, nil
+	if m.RefAdvRouter != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RefAdvRouter))
+	}
+	if len(m.Prefixes) > 0 {
+		for _, msg := range m.Prefixes {
+			dAtA[i] = 0x2a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
 }
 
 func (m *ASExternalLSA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19813,71 +19047,64 @@ func (m *ASExternalLSA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ASExternalLSA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ASExternalLSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.RefLinkStateID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RefLinkStateID))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.ExternalRouteTag != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ExternalRouteTag))
-		i--
-		dAtA[i] = 0x40
-	}
-	if len(m.ForwardingAddress) > 0 {
-		i -= len(m.ForwardingAddress)
-		copy(dAtA[i:], m.ForwardingAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ForwardingAddress)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.AddressPrefix) > 0 {
-		i -= len(m.AddressPrefix)
-		copy(dAtA[i:], m.AddressPrefix)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.AddressPrefix)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.RefLSType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RefLSType))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.PrefixOptions != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixOptions))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.PrefixLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixLength))
-		i--
-		dAtA[i] = 0x18
+	if m.Flags != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
 	}
 	if m.Metric != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
 	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x8
+	if m.PrefixLength != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixLength))
 	}
-	return len(dAtA) - i, nil
+	if m.PrefixOptions != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixOptions))
+	}
+	if m.RefLSType != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RefLSType))
+	}
+	if len(m.AddressPrefix) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.AddressPrefix)))
+		i += copy(dAtA[i:], m.AddressPrefix)
+	}
+	if len(m.ForwardingAddress) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ForwardingAddress)))
+		i += copy(dAtA[i:], m.ForwardingAddress)
+	}
+	if m.ExternalRouteTag != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ExternalRouteTag))
+	}
+	if m.RefLinkStateID != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RefLinkStateID))
+	}
+	return i, nil
 }
 
 func (m *InterAreaPrefixLSA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19885,44 +19112,38 @@ func (m *InterAreaPrefixLSA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InterAreaPrefixLSA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *InterAreaPrefixLSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.AddressPrefix) > 0 {
-		i -= len(m.AddressPrefix)
-		copy(dAtA[i:], m.AddressPrefix)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.AddressPrefix)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.PrefixOptions != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixOptions))
-		i--
-		dAtA[i] = 0x18
+	if m.Metric != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
 	}
 	if m.PrefixLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixLength))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixLength))
 	}
-	if m.Metric != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
-		i--
-		dAtA[i] = 0x8
+	if m.PrefixOptions != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixOptions))
 	}
-	return len(dAtA) - i, nil
+	if len(m.AddressPrefix) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.AddressPrefix)))
+		i += copy(dAtA[i:], m.AddressPrefix)
+	}
+	return i, nil
 }
 
 func (m *InterAreaRouterLSA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19930,37 +19151,32 @@ func (m *InterAreaRouterLSA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InterAreaRouterLSA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *InterAreaRouterLSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.DestinationRouterID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DestinationRouterID))
-		i--
-		dAtA[i] = 0x18
+	if m.Options != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
 	}
 	if m.Metric != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
 	}
-	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
-		i--
-		dAtA[i] = 0x8
+	if m.DestinationRouterID != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DestinationRouterID))
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *ASExternalLSAV2) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -19968,47 +19184,42 @@ func (m *ASExternalLSAV2) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ASExternalLSAV2) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ASExternalLSAV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.ExternalRouteTag != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ExternalRouteTag))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.ForwardingAddress != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ForwardingAddress))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Metric != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
-		i--
-		dAtA[i] = 0x18
+	if m.NetworkMask != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NetworkMask))
 	}
 	if m.ExternalBit != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ExternalBit))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ExternalBit))
 	}
-	if m.NetworkMask != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NetworkMask))
-		i--
-		dAtA[i] = 0x8
+	if m.Metric != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
 	}
-	return len(dAtA) - i, nil
+	if m.ForwardingAddress != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ForwardingAddress))
+	}
+	if m.ExternalRouteTag != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ExternalRouteTag))
+	}
+	return i, nil
 }
 
 func (m *RouterLSA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20016,46 +19227,39 @@ func (m *RouterLSA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *RouterLSA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RouterLSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Routers) > 0 {
-		for iNdEx := len(m.Routers) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Routers[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
-		}
+	if m.Flags != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
 	}
 	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
 	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x8
+	if len(m.Routers) > 0 {
+		for _, msg := range m.Routers {
+			dAtA[i] = 0x1a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *Router) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20063,47 +19267,42 @@ func (m *Router) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Router) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Router) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.NeighborRouterID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NeighborRouterID))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.NeighborInterfaceID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NeighborInterfaceID))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.InterfaceID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceID))
-		i--
-		dAtA[i] = 0x18
+	if m.Type != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
 	if m.Metric != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
 	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x8
+	if m.InterfaceID != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.InterfaceID))
 	}
-	return len(dAtA) - i, nil
+	if m.NeighborInterfaceID != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NeighborInterfaceID))
+	}
+	if m.NeighborRouterID != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NeighborRouterID))
+	}
+	return i, nil
 }
 
 func (m *RouterLSAV2) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20111,46 +19310,39 @@ func (m *RouterLSAV2) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *RouterLSAV2) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RouterLSAV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Routers) > 0 {
-		for iNdEx := len(m.Routers) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Routers[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
-		}
+	if m.Flags != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
 	}
 	if m.Links != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Links))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Links))
 	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x8
+	if len(m.Routers) > 0 {
+		for _, msg := range m.Routers {
+			dAtA[i] = 0x1a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *RouterV2) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20158,42 +19350,37 @@ func (m *RouterV2) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *RouterV2) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RouterV2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Metric != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.LinkData != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LinkData))
-		i--
-		dAtA[i] = 0x18
+	if m.Type != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
 	if m.LinkID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.LinkID))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LinkID))
 	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x8
+	if m.LinkData != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.LinkData))
 	}
-	return len(dAtA) - i, nil
+	if m.Metric != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
+	}
+	return i, nil
 }
 
 func (m *NetworkLSA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20201,15 +19388,15 @@ func (m *NetworkLSA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *NetworkLSA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *NetworkLSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
+	if m.Options != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
+	}
 	if len(m.AttachedRouter) > 0 {
 		dAtA82 := make([]byte, len(m.AttachedRouter)*10)
 		var j81 int
@@ -20222,24 +19409,18 @@ func (m *NetworkLSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA82[j81] = uint8(num)
 			j81++
 		}
-		i -= j81
-		copy(dAtA[i:], dAtA82[:j81])
-		i = encodeVarintNetcap(dAtA, i, uint64(j81))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j81))
+		i += copy(dAtA[i:], dAtA82[:j81])
 	}
-	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *LinkLSA) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20247,58 +19428,50 @@ func (m *LinkLSA) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LinkLSA) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LinkLSA) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Prefixes) > 0 {
-		for iNdEx := len(m.Prefixes) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Prefixes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if m.NumOfPrefixes != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumOfPrefixes))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.LinkLocalAddress) > 0 {
-		i -= len(m.LinkLocalAddress)
-		copy(dAtA[i:], m.LinkLocalAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.LinkLocalAddress)))
-		i--
-		dAtA[i] = 0x1a
+	if m.RtrPriority != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RtrPriority))
 	}
 	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
 	}
-	if m.RtrPriority != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RtrPriority))
-		i--
-		dAtA[i] = 0x8
+	if len(m.LinkLocalAddress) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.LinkLocalAddress)))
+		i += copy(dAtA[i:], m.LinkLocalAddress)
 	}
-	return len(dAtA) - i, nil
+	if m.NumOfPrefixes != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumOfPrefixes))
+	}
+	if len(m.Prefixes) > 0 {
+		for _, msg := range m.Prefixes {
+			dAtA[i] = 0x2a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
 }
 
 func (m *LSAPrefix) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20306,44 +19479,38 @@ func (m *LSAPrefix) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LSAPrefix) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LSAPrefix) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.AddressPrefix) > 0 {
-		i -= len(m.AddressPrefix)
-		copy(dAtA[i:], m.AddressPrefix)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.AddressPrefix)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Metric != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
-		i--
-		dAtA[i] = 0x18
+	if m.PrefixLength != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixLength))
 	}
 	if m.PrefixOptions != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixOptions))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixOptions))
 	}
-	if m.PrefixLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PrefixLength))
-		i--
-		dAtA[i] = 0x8
+	if m.Metric != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Metric))
 	}
-	return len(dAtA) - i, nil
+	if len(m.AddressPrefix) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.AddressPrefix)))
+		i += copy(dAtA[i:], m.AddressPrefix)
+	}
+	return i, nil
 }
 
 func (m *BFD) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20351,164 +19518,154 @@ func (m *BFD) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *BFD) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *BFD) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x92
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.AuthHeader != nil {
-		{
-			size, err := m.AuthHeader.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x8a
+	if m.Version != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
 	}
-	if m.RequiredMinEchoRxInterval != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RequiredMinEchoRxInterval))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x80
+	if m.Diagnostic != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Diagnostic))
 	}
-	if m.RequiredMinRxInterval != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RequiredMinRxInterval))
-		i--
-		dAtA[i] = 0x78
-	}
-	if m.DesiredMinTxInterval != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DesiredMinTxInterval))
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.YourDiscriminator != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.YourDiscriminator))
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.MyDiscriminator != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MyDiscriminator))
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.DetectMultiplier != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DetectMultiplier))
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.Multipoint {
-		i--
-		if m.Multipoint {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.Demand {
-		i--
-		if m.Demand {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.AuthPresent {
-		i--
-		if m.AuthPresent {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.ControlPlaneIndependent {
-		i--
-		if m.ControlPlaneIndependent {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.Final {
-		i--
-		if m.Final {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
+	if m.State != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.State))
 	}
 	if m.Poll {
-		i--
+		dAtA[i] = 0x28
+		i++
 		if m.Poll {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x28
+		i++
 	}
-	if m.State != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.State))
-		i--
-		dAtA[i] = 0x20
+	if m.Final {
+		dAtA[i] = 0x30
+		i++
+		if m.Final {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.Diagnostic != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Diagnostic))
-		i--
-		dAtA[i] = 0x18
+	if m.ControlPlaneIndependent {
+		dAtA[i] = 0x38
+		i++
+		if m.ControlPlaneIndependent {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x10
+	if m.AuthPresent {
+		dAtA[i] = 0x40
+		i++
+		if m.AuthPresent {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Demand {
+		dAtA[i] = 0x48
+		i++
+		if m.Demand {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.Multipoint {
+		dAtA[i] = 0x50
+		i++
+		if m.Multipoint {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.DetectMultiplier != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DetectMultiplier))
+	}
+	if m.MyDiscriminator != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MyDiscriminator))
+	}
+	if m.YourDiscriminator != 0 {
+		dAtA[i] = 0x68
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.YourDiscriminator))
+	}
+	if m.DesiredMinTxInterval != 0 {
+		dAtA[i] = 0x70
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.DesiredMinTxInterval))
+	}
+	if m.RequiredMinRxInterval != 0 {
+		dAtA[i] = 0x78
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RequiredMinRxInterval))
+	}
+	if m.RequiredMinEchoRxInterval != 0 {
+		dAtA[i] = 0x80
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RequiredMinEchoRxInterval))
+	}
+	if m.AuthHeader != nil {
+		dAtA[i] = 0x8a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AuthHeader.Size()))
+		n83, err := m.AuthHeader.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n83
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x92
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n84, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n84
+	}
+	return i, nil
 }
 
 func (m *BFDAuthHeader) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20516,44 +19673,38 @@ func (m *BFDAuthHeader) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *BFDAuthHeader) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *BFDAuthHeader) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.SequenceNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SequenceNumber))
-		i--
-		dAtA[i] = 0x18
+	if m.AuthType != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AuthType))
 	}
 	if m.KeyID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyID))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyID))
 	}
-	if m.AuthType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AuthType))
-		i--
-		dAtA[i] = 0x8
+	if m.SequenceNumber != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SequenceNumber))
 	}
-	return len(dAtA) - i, nil
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
+	}
+	return i, nil
 }
 
 func (m *GRE) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20561,164 +19712,154 @@ func (m *GRE) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GRE) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GRE) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x92
-	}
-	if m.Routing != nil {
-		{
-			size, err := m.Routing.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x8a
-	}
-	if m.Ack != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Ack))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x80
-	}
-	if m.Seq != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Seq))
-		i--
-		dAtA[i] = 0x78
-	}
-	if m.Key != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Key))
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.Offset != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Offset))
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.Protocol != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Protocol))
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.Flags != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.RecursionControl != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RecursionControl))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.AckPresent {
-		i--
-		if m.AckPresent {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.StrictSourceRoute {
-		i--
-		if m.StrictSourceRoute {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.SeqPresent {
-		i--
-		if m.SeqPresent {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.KeyPresent {
-		i--
-		if m.KeyPresent {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.RoutingPresent {
-		i--
-		if m.RoutingPresent {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.ChecksumPresent {
-		i--
+		dAtA[i] = 0x10
+		i++
 		if m.ChecksumPresent {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x10
+		i++
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.RoutingPresent {
+		dAtA[i] = 0x18
+		i++
+		if m.RoutingPresent {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.KeyPresent {
+		dAtA[i] = 0x20
+		i++
+		if m.KeyPresent {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.SeqPresent {
+		dAtA[i] = 0x28
+		i++
+		if m.SeqPresent {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.StrictSourceRoute {
+		dAtA[i] = 0x30
+		i++
+		if m.StrictSourceRoute {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.AckPresent {
+		dAtA[i] = 0x38
+		i++
+		if m.AckPresent {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.RecursionControl != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RecursionControl))
+	}
+	if m.Flags != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Flags))
+	}
+	if m.Version != 0 {
+		dAtA[i] = 0x50
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
+	}
+	if m.Protocol != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Protocol))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if m.Offset != 0 {
+		dAtA[i] = 0x68
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Offset))
+	}
+	if m.Key != 0 {
+		dAtA[i] = 0x70
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Key))
+	}
+	if m.Seq != 0 {
+		dAtA[i] = 0x78
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Seq))
+	}
+	if m.Ack != 0 {
+		dAtA[i] = 0x80
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Ack))
+	}
+	if m.Routing != nil {
+		dAtA[i] = 0x8a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Routing.Size()))
+		n85, err := m.Routing.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n85
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x92
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n86, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n86
+	}
+	return i, nil
 }
 
 func (m *GRERouting) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20726,56 +19867,48 @@ func (m *GRERouting) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GRERouting) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GRERouting) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Next != nil {
-		{
-			size, err := m.Next.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.RoutingInformation) > 0 {
-		i -= len(m.RoutingInformation)
-		copy(dAtA[i:], m.RoutingInformation)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.RoutingInformation)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.SRELength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SRELength))
-		i--
-		dAtA[i] = 0x18
+	if m.AddressFamily != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AddressFamily))
 	}
 	if m.SREOffset != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SREOffset))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SREOffset))
 	}
-	if m.AddressFamily != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AddressFamily))
-		i--
-		dAtA[i] = 0x8
+	if m.SRELength != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SRELength))
 	}
-	return len(dAtA) - i, nil
+	if len(m.RoutingInformation) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.RoutingInformation)))
+		i += copy(dAtA[i:], m.RoutingInformation)
+	}
+	if m.Next != nil {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Next.Size()))
+		n87, err := m.Next.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n87
+	}
+	return i, nil
 }
 
 func (m *FDDI) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20783,65 +19916,55 @@ func (m *FDDI) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *FDDI) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *FDDI) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.DstMAC) > 0 {
-		i -= len(m.DstMAC)
-		copy(dAtA[i:], m.DstMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.SrcMAC) > 0 {
-		i -= len(m.SrcMAC)
-		copy(dAtA[i:], m.SrcMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Priority != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Priority))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.FrameControl != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FrameControl))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.FrameControl))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Priority != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Priority))
 	}
-	return len(dAtA) - i, nil
+	if len(m.SrcMAC) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
+		i += copy(dAtA[i:], m.SrcMAC)
+	}
+	if len(m.DstMAC) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
+		i += copy(dAtA[i:], m.DstMAC)
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n88, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n88
+	}
+	return i, nil
 }
 
 func (m *EAP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20849,56 +19972,49 @@ func (m *EAP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *EAP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *EAP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.TypeData) > 0 {
-		i -= len(m.TypeData)
-		copy(dAtA[i:], m.TypeData)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TypeData)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Id != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Id))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Code != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Code))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Code))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Id != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Id))
 	}
-	return len(dAtA) - i, nil
+	if m.Length != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	if m.Type != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
+	}
+	if len(m.TypeData) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.TypeData)))
+		i += copy(dAtA[i:], m.TypeData)
+	}
+	return i, nil
 }
 
 func (m *EAPOL) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20906,44 +20022,38 @@ func (m *EAPOL) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *EAPOL) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *EAPOL) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Type != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	return len(dAtA) - i, nil
+	if m.Length != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	}
+	return i, nil
 }
 
 func (m *EAPOLKey) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -20951,196 +20061,186 @@ func (m *EAPOLKey) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *EAPOLKey) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *EAPOLKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.EncryptedKeyData) > 0 {
-		i -= len(m.EncryptedKeyData)
-		copy(dAtA[i:], m.EncryptedKeyData)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.EncryptedKeyData)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xb2
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
-	if m.KeyDataLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyDataLength))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa8
+	if m.KeyDescriptorType != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyDescriptorType))
 	}
-	if len(m.MIC) > 0 {
-		i -= len(m.MIC)
-		copy(dAtA[i:], m.MIC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.MIC)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa2
+	if m.KeyDescriptorVersion != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyDescriptorVersion))
 	}
-	if m.ID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x98
+	if m.KeyType != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyType))
 	}
-	if m.RSC != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.RSC))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x90
-	}
-	if len(m.IV) > 0 {
-		i -= len(m.IV)
-		copy(dAtA[i:], m.IV)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IV)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x8a
-	}
-	if len(m.Nonce) > 0 {
-		i -= len(m.Nonce)
-		copy(dAtA[i:], m.Nonce)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Nonce)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
-	}
-	if m.ReplayCounter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReplayCounter))
-		i--
-		dAtA[i] = 0x78
-	}
-	if m.KeyLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyLength))
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.SMKMessage {
-		i--
-		if m.SMKMessage {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.HasEncryptedKeyData {
-		i--
-		if m.HasEncryptedKeyData {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.Request {
-		i--
-		if m.Request {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x58
-	}
-	if m.MICError {
-		i--
-		if m.MICError {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.Secure {
-		i--
-		if m.Secure {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.KeyMIC {
-		i--
-		if m.KeyMIC {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.KeyACK {
-		i--
-		if m.KeyACK {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x38
+	if m.KeyIndex != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyIndex))
 	}
 	if m.Install {
-		i--
+		dAtA[i] = 0x30
+		i++
 		if m.Install {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x30
+		i++
 	}
-	if m.KeyIndex != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyIndex))
-		i--
-		dAtA[i] = 0x28
+	if m.KeyACK {
+		dAtA[i] = 0x38
+		i++
+		if m.KeyACK {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.KeyType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyType))
-		i--
-		dAtA[i] = 0x20
+	if m.KeyMIC {
+		dAtA[i] = 0x40
+		i++
+		if m.KeyMIC {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.KeyDescriptorVersion != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyDescriptorVersion))
-		i--
-		dAtA[i] = 0x18
+	if m.Secure {
+		dAtA[i] = 0x48
+		i++
+		if m.Secure {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if m.KeyDescriptorType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyDescriptorType))
-		i--
-		dAtA[i] = 0x10
+	if m.MICError {
+		dAtA[i] = 0x50
+		i++
+		if m.MICError {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Request {
+		dAtA[i] = 0x58
+		i++
+		if m.Request {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.HasEncryptedKeyData {
+		dAtA[i] = 0x60
+		i++
+		if m.HasEncryptedKeyData {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.SMKMessage {
+		dAtA[i] = 0x68
+		i++
+		if m.SMKMessage {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.KeyLength != 0 {
+		dAtA[i] = 0x70
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyLength))
+	}
+	if m.ReplayCounter != 0 {
+		dAtA[i] = 0x78
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ReplayCounter))
+	}
+	if len(m.Nonce) > 0 {
+		dAtA[i] = 0x82
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Nonce)))
+		i += copy(dAtA[i:], m.Nonce)
+	}
+	if len(m.IV) > 0 {
+		dAtA[i] = 0x8a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IV)))
+		i += copy(dAtA[i:], m.IV)
+	}
+	if m.RSC != 0 {
+		dAtA[i] = 0x90
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.RSC))
+	}
+	if m.ID != 0 {
+		dAtA[i] = 0x98
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
+	}
+	if len(m.MIC) > 0 {
+		dAtA[i] = 0xa2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.MIC)))
+		i += copy(dAtA[i:], m.MIC)
+	}
+	if m.KeyDataLength != 0 {
+		dAtA[i] = 0xa8
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.KeyDataLength))
+	}
+	if len(m.EncryptedKeyData) > 0 {
+		dAtA[i] = 0xb2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.EncryptedKeyData)))
+		i += copy(dAtA[i:], m.EncryptedKeyData)
+	}
+	return i, nil
 }
 
 func (m *VRRPv2) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21148,90 +20248,88 @@ func (m *VRRPv2) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *VRRPv2) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *VRRPv2) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x5a
-	}
-	if len(m.IPAddress) > 0 {
-		for iNdEx := len(m.IPAddress) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.IPAddress[iNdEx])
-			copy(dAtA[i:], m.IPAddress[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.IPAddress[iNdEx])))
-			i--
-			dAtA[i] = 0x52
-		}
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.AdverInt != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AdverInt))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.AuthType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.AuthType))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.CountIPAddr != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.CountIPAddr))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Priority != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Priority))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.VirtualRtrID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.VirtualRtrID))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Type != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	return len(dAtA) - i, nil
+	if m.VirtualRtrID != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VirtualRtrID))
+	}
+	if m.Priority != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Priority))
+	}
+	if m.CountIPAddr != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CountIPAddr))
+	}
+	if m.AuthType != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AuthType))
+	}
+	if m.AdverInt != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.AdverInt))
+	}
+	if m.Checksum != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if len(m.IPAddress) > 0 {
+		for _, s := range m.IPAddress {
+			dAtA[i] = 0x52
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n89, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n89
+	}
+	return i, nil
 }
 
 func (m *CiscoDiscovery) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21239,58 +20337,50 @@ func (m *CiscoDiscovery) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CiscoDiscovery) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CiscoDiscovery) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Values) > 0 {
-		for iNdEx := len(m.Values) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Values[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if m.Checksum != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.TTL != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.TTL != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.TTL))
 	}
-	return len(dAtA) - i, nil
+	if m.Checksum != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Checksum))
+	}
+	if len(m.Values) > 0 {
+		for _, msg := range m.Values {
+			dAtA[i] = 0x2a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
 }
 
 func (m *CiscoDiscoveryValue) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21298,39 +20388,33 @@ func (m *CiscoDiscoveryValue) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CiscoDiscoveryValue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CiscoDiscoveryValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Value) > 0 {
-		i -= len(m.Value)
-		copy(dAtA[i:], m.Value)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Value)))
-		i--
-		dAtA[i] = 0x1a
+	if m.Type != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
 	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
 	}
-	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x8
+	if len(m.Value) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Value)))
+		i += copy(dAtA[i:], m.Value)
 	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *CDPVLANDialogue) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21338,32 +20422,27 @@ func (m *CDPVLANDialogue) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CDPVLANDialogue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CDPVLANDialogue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.VLAN != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.VLAN))
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.ID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
 	}
-	return len(dAtA) - i, nil
+	if m.VLAN != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VLAN))
+	}
+	return i, nil
 }
 
 func (m *CDPLocation) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21371,34 +20450,28 @@ func (m *CDPLocation) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CDPLocation) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CDPLocation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Location) > 0 {
-		i -= len(m.Location)
-		copy(dAtA[i:], m.Location)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Location)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Type != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Type))
 	}
-	return len(dAtA) - i, nil
+	if len(m.Location) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Location)))
+		i += copy(dAtA[i:], m.Location)
+	}
+	return i, nil
 }
 
 func (m *CDPPowerDialogue) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21406,15 +20479,20 @@ func (m *CDPPowerDialogue) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CDPPowerDialogue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CDPPowerDialogue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
+	if m.ID != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
+	}
+	if m.MgmtID != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MgmtID))
+	}
 	if len(m.Values) > 0 {
 		dAtA91 := make([]byte, len(m.Values)*10)
 		var j90 int
@@ -21427,29 +20505,18 @@ func (m *CDPPowerDialogue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA91[j90] = uint8(num)
 			j90++
 		}
-		i -= j90
-		copy(dAtA[i:], dAtA91[:j90])
-		i = encodeVarintNetcap(dAtA, i, uint64(j90))
-		i--
 		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j90))
+		i += copy(dAtA[i:], dAtA91[:j90])
 	}
-	if m.MgmtID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MgmtID))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.ID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *CDPSparePairPoE) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21457,62 +20524,57 @@ func (m *CDPSparePairPoE) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CDPSparePairPoE) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CDPSparePairPoE) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.PSEOn {
-		i--
-		if m.PSEOn {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.PDRequestOn {
-		i--
-		if m.PDRequestOn {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.PDArchShared {
-		i--
-		if m.PDArchShared {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.PSEFourWire {
-		i--
+		dAtA[i] = 0x8
+		i++
 		if m.PSEFourWire {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x8
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.PDArchShared {
+		dAtA[i] = 0x10
+		i++
+		if m.PDArchShared {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.PDRequestOn {
+		dAtA[i] = 0x18
+		i++
+		if m.PDRequestOn {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.PSEOn {
+		dAtA[i] = 0x20
+		i++
+		if m.PSEOn {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	return i, nil
 }
 
 func (m *CiscoDiscoveryInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21520,291 +20582,268 @@ func (m *CiscoDiscoveryInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CiscoDiscoveryInfo) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CiscoDiscoveryInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Unknown) > 0 {
-		for iNdEx := len(m.Unknown) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Unknown[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
+	}
+	if m.CDPHello != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CDPHello.Size()))
+		n92, err := m.CDPHello.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n92
+	}
+	if len(m.DeviceID) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DeviceID)))
+		i += copy(dAtA[i:], m.DeviceID)
+	}
+	if len(m.Addresses) > 0 {
+		for _, s := range m.Addresses {
+			dAtA[i] = 0x22
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
 			}
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0xda
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
 		}
 	}
-	if m.EnergyWise != nil {
-		{
-			size, err := m.EnergyWise.MarshalToSizedBuffer(dAtA[:i])
+	if len(m.PortID) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.PortID)))
+		i += copy(dAtA[i:], m.PortID)
+	}
+	if m.Capabilities != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Capabilities.Size()))
+		n93, err := m.Capabilities.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n93
+	}
+	if len(m.Version) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Version)))
+		i += copy(dAtA[i:], m.Version)
+	}
+	if len(m.Platform) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Platform)))
+		i += copy(dAtA[i:], m.Platform)
+	}
+	if len(m.IPPrefixes) > 0 {
+		for _, msg := range m.IPPrefixes {
+			dAtA[i] = 0x4a
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xd2
-	}
-	if m.SparePairPoe != nil {
-		{
-			size, err := m.SparePairPoe.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xca
-	}
-	if m.PowerAvailable != nil {
-		{
-			size, err := m.PowerAvailable.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xc2
-	}
-	if m.PowerRequest != nil {
-		{
-			size, err := m.PowerRequest.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xba
-	}
-	if m.Location != nil {
-		{
-			size, err := m.Location.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xb2
-	}
-	if len(m.MgmtAddresses) > 0 {
-		for iNdEx := len(m.MgmtAddresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.MgmtAddresses[iNdEx])
-			copy(dAtA[i:], m.MgmtAddresses[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.MgmtAddresses[iNdEx])))
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0xaa
+			i += n
 		}
 	}
-	if len(m.SysOID) > 0 {
-		i -= len(m.SysOID)
-		copy(dAtA[i:], m.SysOID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SysOID)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa2
+	if len(m.VTPDomain) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.VTPDomain)))
+		i += copy(dAtA[i:], m.VTPDomain)
 	}
-	if len(m.SysName) > 0 {
-		i -= len(m.SysName)
-		copy(dAtA[i:], m.SysName)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SysName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x9a
-	}
-	if m.UntrustedCOS != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.UntrustedCOS))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x90
-	}
-	if m.ExtendedTrust != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ExtendedTrust))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x88
-	}
-	if m.MTU != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.MTU))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x80
-	}
-	if m.PowerConsumption != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PowerConsumption))
-		i--
-		dAtA[i] = 0x78
-	}
-	if m.VLANQuery != nil {
-		{
-			size, err := m.VLANQuery.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x72
-	}
-	if m.VLANReply != nil {
-		{
-			size, err := m.VLANReply.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x6a
+	if m.NativeVLAN != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NativeVLAN))
 	}
 	if m.FullDuplex {
-		i--
+		dAtA[i] = 0x60
+		i++
 		if m.FullDuplex {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x60
+		i++
 	}
-	if m.NativeVLAN != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NativeVLAN))
-		i--
-		dAtA[i] = 0x58
+	if m.VLANReply != nil {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VLANReply.Size()))
+		n94, err := m.VLANReply.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n94
 	}
-	if len(m.VTPDomain) > 0 {
-		i -= len(m.VTPDomain)
-		copy(dAtA[i:], m.VTPDomain)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.VTPDomain)))
-		i--
-		dAtA[i] = 0x52
+	if m.VLANQuery != nil {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.VLANQuery.Size()))
+		n95, err := m.VLANQuery.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n95
 	}
-	if len(m.IPPrefixes) > 0 {
-		for iNdEx := len(m.IPPrefixes) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.IPPrefixes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintNetcap(dAtA, i, uint64(size))
+	if m.PowerConsumption != 0 {
+		dAtA[i] = 0x78
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PowerConsumption))
+	}
+	if m.MTU != 0 {
+		dAtA[i] = 0x80
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.MTU))
+	}
+	if m.ExtendedTrust != 0 {
+		dAtA[i] = 0x88
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ExtendedTrust))
+	}
+	if m.UntrustedCOS != 0 {
+		dAtA[i] = 0x90
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.UntrustedCOS))
+	}
+	if len(m.SysName) > 0 {
+		dAtA[i] = 0x9a
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SysName)))
+		i += copy(dAtA[i:], m.SysName)
+	}
+	if len(m.SysOID) > 0 {
+		dAtA[i] = 0xa2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SysOID)))
+		i += copy(dAtA[i:], m.SysOID)
+	}
+	if len(m.MgmtAddresses) > 0 {
+		for _, s := range m.MgmtAddresses {
+			dAtA[i] = 0xaa
+			i++
+			dAtA[i] = 0x1
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
 			}
-			i--
-			dAtA[i] = 0x4a
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
 		}
 	}
-	if len(m.Platform) > 0 {
-		i -= len(m.Platform)
-		copy(dAtA[i:], m.Platform)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Platform)))
-		i--
-		dAtA[i] = 0x42
+	if m.Location != nil {
+		dAtA[i] = 0xb2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Location.Size()))
+		n96, err := m.Location.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n96
 	}
-	if len(m.Version) > 0 {
-		i -= len(m.Version)
-		copy(dAtA[i:], m.Version)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Version)))
-		i--
-		dAtA[i] = 0x3a
+	if m.PowerRequest != nil {
+		dAtA[i] = 0xba
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PowerRequest.Size()))
+		n97, err := m.PowerRequest.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n97
 	}
-	if m.Capabilities != nil {
-		{
-			size, err := m.Capabilities.MarshalToSizedBuffer(dAtA[:i])
+	if m.PowerAvailable != nil {
+		dAtA[i] = 0xc2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.PowerAvailable.Size()))
+		n98, err := m.PowerAvailable.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n98
+	}
+	if m.SparePairPoe != nil {
+		dAtA[i] = 0xca
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SparePairPoe.Size()))
+		n99, err := m.SparePairPoe.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n99
+	}
+	if m.EnergyWise != nil {
+		dAtA[i] = 0xd2
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.EnergyWise.Size()))
+		n100, err := m.EnergyWise.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n100
+	}
+	if len(m.Unknown) > 0 {
+		for _, msg := range m.Unknown {
+			dAtA[i] = 0xda
+			i++
+			dAtA[i] = 0x1
+			i++
+			i = encodeVarintNetcap(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.PortID) > 0 {
-		i -= len(m.PortID)
-		copy(dAtA[i:], m.PortID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.PortID)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.Addresses) > 0 {
-		for iNdEx := len(m.Addresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Addresses[iNdEx])
-			copy(dAtA[i:], m.Addresses[iNdEx])
-			i = encodeVarintNetcap(dAtA, i, uint64(len(m.Addresses[iNdEx])))
-			i--
-			dAtA[i] = 0x22
+			i += n
 		}
 	}
-	if len(m.DeviceID) > 0 {
-		i -= len(m.DeviceID)
-		copy(dAtA[i:], m.DeviceID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DeviceID)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.CDPHello != nil {
-		{
-			size, err := m.CDPHello.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	return i, nil
 }
 
 func (m *CDPHello) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21812,92 +20851,82 @@ func (m *CDPHello) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CDPHello) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CDPHello) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.ManagementVLAN != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ManagementVLAN))
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.Unknown3 != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Unknown3))
-		i--
-		dAtA[i] = 0x58
-	}
-	if len(m.SwitchMAC) > 0 {
-		i -= len(m.SwitchMAC)
-		copy(dAtA[i:], m.SwitchMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SwitchMAC)))
-		i--
-		dAtA[i] = 0x52
-	}
-	if len(m.ClusterCommander) > 0 {
-		i -= len(m.ClusterCommander)
-		copy(dAtA[i:], m.ClusterCommander)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClusterCommander)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if m.Unknown2 != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Unknown2))
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.Status != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.SubVersion != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SubVersion))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Version != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
-		i--
-		dAtA[i] = 0x28
-	}
-	if len(m.Unknown1) > 0 {
-		i -= len(m.Unknown1)
-		copy(dAtA[i:], m.Unknown1)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Unknown1)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.ClusterMaster) > 0 {
-		i -= len(m.ClusterMaster)
-		copy(dAtA[i:], m.ClusterMaster)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClusterMaster)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.OUI) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OUI)))
+		i += copy(dAtA[i:], m.OUI)
 	}
 	if m.ProtocolID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ProtocolID))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ProtocolID))
 	}
-	if len(m.OUI) > 0 {
-		i -= len(m.OUI)
-		copy(dAtA[i:], m.OUI)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.OUI)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.ClusterMaster) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClusterMaster)))
+		i += copy(dAtA[i:], m.ClusterMaster)
 	}
-	return len(dAtA) - i, nil
+	if len(m.Unknown1) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Unknown1)))
+		i += copy(dAtA[i:], m.Unknown1)
+	}
+	if m.Version != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Version))
+	}
+	if m.SubVersion != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SubVersion))
+	}
+	if m.Status != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
+	}
+	if m.Unknown2 != 0 {
+		dAtA[i] = 0x40
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Unknown2))
+	}
+	if len(m.ClusterCommander) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ClusterCommander)))
+		i += copy(dAtA[i:], m.ClusterCommander)
+	}
+	if len(m.SwitchMAC) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SwitchMAC)))
+		i += copy(dAtA[i:], m.SwitchMAC)
+	}
+	if m.Unknown3 != 0 {
+		dAtA[i] = 0x58
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Unknown3))
+	}
+	if m.ManagementVLAN != 0 {
+		dAtA[i] = 0x60
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ManagementVLAN))
+	}
+	return i, nil
 }
 
 func (m *CDPEnergyWise) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -21905,130 +20934,112 @@ func (m *CDPEnergyWise) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CDPEnergyWise) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CDPEnergyWise) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.ReplyUnknown3) > 0 {
-		i -= len(m.ReplyUnknown3)
-		copy(dAtA[i:], m.ReplyUnknown3)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyUnknown3)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
-	}
-	if len(m.ReplyUnknown2) > 0 {
-		i -= len(m.ReplyUnknown2)
-		copy(dAtA[i:], m.ReplyUnknown2)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyUnknown2)))
-		i--
-		dAtA[i] = 0x7a
-	}
-	if len(m.ReplyAddress) > 0 {
-		i -= len(m.ReplyAddress)
-		copy(dAtA[i:], m.ReplyAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyAddress)))
-		i--
-		dAtA[i] = 0x72
-	}
-	if len(m.ReplyPort) > 0 {
-		i -= len(m.ReplyPort)
-		copy(dAtA[i:], m.ReplyPort)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyPort)))
-		i--
-		dAtA[i] = 0x6a
-	}
-	if len(m.ReplyUnknown1) > 0 {
-		i -= len(m.ReplyUnknown1)
-		copy(dAtA[i:], m.ReplyUnknown1)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyUnknown1)))
-		i--
-		dAtA[i] = 0x62
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x5a
-	}
-	if len(m.Domain) > 0 {
-		i -= len(m.Domain)
-		copy(dAtA[i:], m.Domain)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Domain)))
-		i--
-		dAtA[i] = 0x52
-	}
-	if len(m.Role) > 0 {
-		i -= len(m.Role)
-		copy(dAtA[i:], m.Role)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Role)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.Unknown3) > 0 {
-		i -= len(m.Unknown3)
-		copy(dAtA[i:], m.Unknown3)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Unknown3)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.SerialNum) > 0 {
-		i -= len(m.SerialNum)
-		copy(dAtA[i:], m.SerialNum)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SerialNum)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.HardwareID) > 0 {
-		i -= len(m.HardwareID)
-		copy(dAtA[i:], m.HardwareID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.HardwareID)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.Unknown2 != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Unknown2))
-		i--
-		dAtA[i] = 0x28
-	}
-	if len(m.ModelNumber) > 0 {
-		i -= len(m.ModelNumber)
-		copy(dAtA[i:], m.ModelNumber)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ModelNumber)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.SequenceNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SequenceNumber))
-		i--
-		dAtA[i] = 0x18
+	if len(m.EncryptedData) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.EncryptedData)))
+		i += copy(dAtA[i:], m.EncryptedData)
 	}
 	if m.Unknown1 != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Unknown1))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Unknown1))
 	}
-	if len(m.EncryptedData) > 0 {
-		i -= len(m.EncryptedData)
-		copy(dAtA[i:], m.EncryptedData)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.EncryptedData)))
-		i--
-		dAtA[i] = 0xa
+	if m.SequenceNumber != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SequenceNumber))
 	}
-	return len(dAtA) - i, nil
+	if len(m.ModelNumber) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ModelNumber)))
+		i += copy(dAtA[i:], m.ModelNumber)
+	}
+	if m.Unknown2 != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Unknown2))
+	}
+	if len(m.HardwareID) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.HardwareID)))
+		i += copy(dAtA[i:], m.HardwareID)
+	}
+	if len(m.SerialNum) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SerialNum)))
+		i += copy(dAtA[i:], m.SerialNum)
+	}
+	if len(m.Unknown3) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Unknown3)))
+		i += copy(dAtA[i:], m.Unknown3)
+	}
+	if len(m.Role) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Role)))
+		i += copy(dAtA[i:], m.Role)
+	}
+	if len(m.Domain) > 0 {
+		dAtA[i] = 0x52
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Domain)))
+		i += copy(dAtA[i:], m.Domain)
+	}
+	if len(m.Name) > 0 {
+		dAtA[i] = 0x5a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if len(m.ReplyUnknown1) > 0 {
+		dAtA[i] = 0x62
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyUnknown1)))
+		i += copy(dAtA[i:], m.ReplyUnknown1)
+	}
+	if len(m.ReplyPort) > 0 {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyPort)))
+		i += copy(dAtA[i:], m.ReplyPort)
+	}
+	if len(m.ReplyAddress) > 0 {
+		dAtA[i] = 0x72
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyAddress)))
+		i += copy(dAtA[i:], m.ReplyAddress)
+	}
+	if len(m.ReplyUnknown2) > 0 {
+		dAtA[i] = 0x7a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyUnknown2)))
+		i += copy(dAtA[i:], m.ReplyUnknown2)
+	}
+	if len(m.ReplyUnknown3) > 0 {
+		dAtA[i] = 0x82
+		i++
+		dAtA[i] = 0x1
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReplyUnknown3)))
+		i += copy(dAtA[i:], m.ReplyUnknown3)
+	}
+	return i, nil
 }
 
 func (m *CDPCapabilities) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -22036,112 +21047,107 @@ func (m *CDPCapabilities) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CDPCapabilities) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CDPCapabilities) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.RemotelyManaged {
-		i--
-		if m.RemotelyManaged {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x48
-	}
-	if m.IsPhone {
-		i--
-		if m.IsPhone {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.L1Repeater {
-		i--
-		if m.L1Repeater {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.IGMPFilter {
-		i--
-		if m.IGMPFilter {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.IsHost {
-		i--
-		if m.IsHost {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.L2Switch {
-		i--
-		if m.L2Switch {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.SPBridge {
-		i--
-		if m.SPBridge {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.TBBridge {
-		i--
-		if m.TBBridge {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.L3Router {
-		i--
+		dAtA[i] = 0x8
+		i++
 		if m.L3Router {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x8
+		i++
 	}
-	return len(dAtA) - i, nil
+	if m.TBBridge {
+		dAtA[i] = 0x10
+		i++
+		if m.TBBridge {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.SPBridge {
+		dAtA[i] = 0x18
+		i++
+		if m.SPBridge {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.L2Switch {
+		dAtA[i] = 0x20
+		i++
+		if m.L2Switch {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.IsHost {
+		dAtA[i] = 0x28
+		i++
+		if m.IsHost {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.IGMPFilter {
+		dAtA[i] = 0x30
+		i++
+		if m.IGMPFilter {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.L1Repeater {
+		dAtA[i] = 0x38
+		i++
+		if m.L1Repeater {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.IsPhone {
+		dAtA[i] = 0x40
+		i++
+		if m.IsPhone {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.RemotelyManaged {
+		dAtA[i] = 0x48
+		i++
+		if m.RemotelyManaged {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	return i, nil
 }
 
 func (m *IPNet) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -22149,36 +21155,29 @@ func (m *IPNet) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IPNet) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *IPNet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.IPMask) > 0 {
-		i -= len(m.IPMask)
-		copy(dAtA[i:], m.IPMask)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IPMask)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if len(m.IP) > 0 {
-		i -= len(m.IP)
-		copy(dAtA[i:], m.IP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IP)))
-		i--
 		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IP)))
+		i += copy(dAtA[i:], m.IP)
 	}
-	return len(dAtA) - i, nil
+	if len(m.IPMask) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IPMask)))
+		i += copy(dAtA[i:], m.IPMask)
+	}
+	return i, nil
 }
 
 func (m *NortelDiscovery) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -22186,75 +21185,65 @@ func (m *NortelDiscovery) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *NortelDiscovery) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *NortelDiscovery) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.NumLinks != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.NumLinks))
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.State != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.State))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Backplane != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Backplane))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Chassis != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Chassis))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.SegmentID) > 0 {
-		i -= len(m.SegmentID)
-		copy(dAtA[i:], m.SegmentID)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SegmentID)))
-		i--
-		dAtA[i] = 0x1a
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if len(m.IPAddress) > 0 {
-		i -= len(m.IPAddress)
-		copy(dAtA[i:], m.IPAddress)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IPAddress)))
-		i--
 		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.IPAddress)))
+		i += copy(dAtA[i:], m.IPAddress)
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if len(m.SegmentID) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SegmentID)))
+		i += copy(dAtA[i:], m.SegmentID)
 	}
-	return len(dAtA) - i, nil
+	if m.Chassis != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Chassis))
+	}
+	if m.Backplane != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Backplane))
+	}
+	if m.State != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.State))
+	}
+	if m.NumLinks != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.NumLinks))
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n101, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n101
+	}
+	return i, nil
 }
 
 func (m *CIP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -22262,96 +21251,86 @@ func (m *CIP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CIP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CIP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x4a
-	}
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if len(m.AdditionalStatus) > 0 {
-		dAtA104 := make([]byte, len(m.AdditionalStatus)*10)
-		var j103 int
-		for _, num := range m.AdditionalStatus {
-			for num >= 1<<7 {
-				dAtA104[j103] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j103++
-			}
-			dAtA104[j103] = uint8(num)
-			j103++
-		}
-		i -= j103
-		copy(dAtA[i:], dAtA104[:j103])
-		i = encodeVarintNetcap(dAtA, i, uint64(j103))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if m.Status != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.InstanceID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.InstanceID))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.ClassID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ClassID))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.ServiceID != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ServiceID))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Response {
-		i--
+		dAtA[i] = 0x10
+		i++
 		if m.Response {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i--
-		dAtA[i] = 0x10
+		i++
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.ServiceID != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ServiceID))
 	}
-	return len(dAtA) - i, nil
+	if m.ClassID != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.ClassID))
+	}
+	if m.InstanceID != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.InstanceID))
+	}
+	if m.Status != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
+	}
+	if len(m.AdditionalStatus) > 0 {
+		dAtA103 := make([]byte, len(m.AdditionalStatus)*10)
+		var j102 int
+		for _, num := range m.AdditionalStatus {
+			for num >= 1<<7 {
+				dAtA103[j102] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j102++
+			}
+			dAtA103[j102] = uint8(num)
+			j102++
+		}
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(j102))
+		i += copy(dAtA[i:], dAtA103[:j102])
+	}
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n104, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n104
+	}
+	return i, nil
 }
 
 func (m *ENIP) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -22359,85 +21338,74 @@ func (m *ENIP) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ENIP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ENIP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
-		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x4a
-	}
-	if m.CommandSpecific != nil {
-		{
-			size, err := m.CommandSpecific.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintNetcap(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
-		i--
-		dAtA[i] = 0x38
-	}
-	if len(m.SenderContext) > 0 {
-		i -= len(m.SenderContext)
-		copy(dAtA[i:], m.SenderContext)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SenderContext)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.Status != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.SessionHandle != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SessionHandle))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Timestamp) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+		i += copy(dAtA[i:], m.Timestamp)
 	}
 	if m.Command != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Command))
-		i--
 		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Command))
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
-		i--
-		dAtA[i] = 0xa
+	if m.Length != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
 	}
-	return len(dAtA) - i, nil
+	if m.SessionHandle != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.SessionHandle))
+	}
+	if m.Status != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
+	}
+	if len(m.SenderContext) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SenderContext)))
+		i += copy(dAtA[i:], m.SenderContext)
+	}
+	if m.Options != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
+	}
+	if m.CommandSpecific != nil {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.CommandSpecific.Size()))
+		n105, err := m.CommandSpecific.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n105
+	}
+	if m.Context != nil {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Context.Size()))
+		n106, err := m.Context.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n106
+	}
+	return i, nil
 }
 
 func (m *ENIPCommandSpecificData) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
@@ -22445,40 +21413,32 @@ func (m *ENIPCommandSpecificData) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ENIPCommandSpecificData) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ENIPCommandSpecificData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
+	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Cmd != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Cmd))
-		i--
 		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(m.Cmd))
 	}
-	return len(dAtA) - i, nil
+	if len(m.Data) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
+	}
+	return i, nil
 }
 
 func encodeVarintNetcap(dAtA []byte, offset int, v uint64) int {
-	offset -= sovNetcap(v)
-	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return base
+	return offset + 1
 }
 func (m *Header) Size() (n int) {
 	if m == nil {
@@ -26844,7 +25804,14 @@ func (m *ENIPCommandSpecificData) Size() (n int) {
 }
 
 func sovNetcap(x uint64) (n int) {
-	return (math_bits.Len64(x|1) + 6) / 7
+	for {
+		n++
+		x >>= 7
+		if x == 0 {
+			break
+		}
+	}
+	return n
 }
 func sozNetcap(x uint64) (n int) {
 	return sovNetcap(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -26864,7 +25831,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -26892,7 +25859,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -26902,9 +25869,6 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -26924,7 +25888,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -26934,9 +25898,6 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -26956,7 +25917,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= Type(b&0x7F) << shift
+				m.Type |= (Type(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -26975,7 +25936,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -26985,9 +25946,6 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27007,7 +25965,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27020,9 +25978,6 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -27052,7 +26007,7 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -27080,7 +26035,7 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27090,9 +26045,6 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27112,7 +26064,7 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MessageType |= Type(b&0x7F) << shift
+				m.MessageType |= (Type(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27131,7 +26083,7 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalSize |= int32(b&0x7F) << shift
+				m.TotalSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27150,7 +26102,7 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27159,9 +26111,6 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27184,7 +26133,7 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27197,9 +26146,6 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -27229,7 +26175,7 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -27257,7 +26203,7 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27267,9 +26213,6 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27289,7 +26232,7 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27299,9 +26242,6 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27321,7 +26261,7 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27331,9 +26271,6 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27353,7 +26290,7 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27363,9 +26300,6 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27378,9 +26312,6 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -27410,7 +26341,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -27438,7 +26369,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27448,9 +26379,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27470,7 +26398,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27480,9 +26408,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27502,7 +26427,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27512,9 +26437,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27534,7 +26456,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27544,9 +26466,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27566,7 +26485,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27576,9 +26495,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27598,7 +26514,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27608,9 +26524,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27630,7 +26543,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27640,9 +26553,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27662,7 +26572,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27672,9 +26582,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27694,7 +26601,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27704,9 +26611,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27726,7 +26630,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27736,9 +26640,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27758,7 +26659,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27768,9 +26669,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27790,7 +26688,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalSize |= int32(b&0x7F) << shift
+				m.TotalSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27809,7 +26707,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AppPayloadSize |= int32(b&0x7F) << shift
+				m.AppPayloadSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27828,7 +26726,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumPackets |= int32(b&0x7F) << shift
+				m.NumPackets |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27847,7 +26745,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27857,9 +26755,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27879,7 +26774,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27889,9 +26784,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -27911,7 +26803,7 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Duration |= int64(b&0x7F) << shift
+				m.Duration |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27923,9 +26815,6 @@ func (m *Flow) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -27955,7 +26844,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -27983,7 +26872,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -27993,9 +26882,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28015,7 +26901,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28025,9 +26911,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28047,7 +26930,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28057,9 +26940,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28079,7 +26959,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28089,9 +26969,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28111,7 +26988,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28121,9 +26998,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28143,7 +27017,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28153,9 +27027,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28175,7 +27046,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28185,9 +27056,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28207,7 +27075,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28217,9 +27085,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28239,7 +27104,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28249,9 +27114,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28271,7 +27133,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28281,9 +27143,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28303,7 +27162,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28313,9 +27172,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28335,7 +27191,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalSize |= int32(b&0x7F) << shift
+				m.TotalSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28354,7 +27210,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AppPayloadSize |= int32(b&0x7F) << shift
+				m.AppPayloadSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28373,7 +27229,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumPackets |= int32(b&0x7F) << shift
+				m.NumPackets |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28392,7 +27248,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28402,9 +27258,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28424,7 +27277,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28434,9 +27287,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28456,7 +27306,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Duration |= int64(b&0x7F) << shift
+				m.Duration |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28468,9 +27318,6 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -28500,7 +27347,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -28528,7 +27375,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28538,9 +27385,6 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28560,7 +27404,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28570,9 +27414,6 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28592,7 +27433,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28602,9 +27443,6 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28624,7 +27462,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28634,9 +27472,6 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28656,7 +27491,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28666,9 +27501,6 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28688,7 +27520,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalSize |= int64(b&0x7F) << shift
+				m.TotalSize |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28707,7 +27539,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumPackets |= int64(b&0x7F) << shift
+				m.NumPackets |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28726,7 +27558,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UID |= uint64(b&0x7F) << shift
+				m.UID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28745,7 +27577,7 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Duration |= int64(b&0x7F) << shift
+				m.Duration |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28757,9 +27589,6 @@ func (m *LinkFlow) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -28789,7 +27618,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -28817,7 +27646,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28827,9 +27656,6 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28849,7 +27675,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28859,9 +27685,6 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28881,7 +27704,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28891,9 +27714,6 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28913,7 +27733,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28923,9 +27743,6 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28945,7 +27762,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28955,9 +27772,6 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -28977,7 +27791,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalSize |= int64(b&0x7F) << shift
+				m.TotalSize |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -28996,7 +27810,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumPackets |= int64(b&0x7F) << shift
+				m.NumPackets |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29015,7 +27829,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UID |= uint64(b&0x7F) << shift
+				m.UID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29034,7 +27848,7 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Duration |= int64(b&0x7F) << shift
+				m.Duration |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29046,9 +27860,6 @@ func (m *NetworkFlow) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -29078,7 +27889,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -29106,7 +27917,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29116,9 +27927,6 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29138,7 +27946,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29148,9 +27956,6 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29170,7 +27975,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29180,9 +27985,6 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29202,7 +28004,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SrcPort |= int32(b&0x7F) << shift
+				m.SrcPort |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29221,7 +28023,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DstPort |= int32(b&0x7F) << shift
+				m.DstPort |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29240,7 +28042,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalSize |= int64(b&0x7F) << shift
+				m.TotalSize |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29259,7 +28061,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumPackets |= int64(b&0x7F) << shift
+				m.NumPackets |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29278,7 +28080,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UID |= uint64(b&0x7F) << shift
+				m.UID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29297,7 +28099,7 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Duration |= int64(b&0x7F) << shift
+				m.Duration |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29309,9 +28111,6 @@ func (m *TransportFlow) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -29341,7 +28140,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -29369,7 +28168,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29379,9 +28178,6 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29401,7 +28197,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29411,9 +28207,6 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29433,7 +28226,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29443,9 +28236,6 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29465,7 +28255,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.EthernetType |= int32(b&0x7F) << shift
+				m.EthernetType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29495,7 +28285,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PayloadSize |= int32(b&0x7F) << shift
+				m.PayloadSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29507,9 +28297,6 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -29539,7 +28326,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -29567,7 +28354,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29577,9 +28364,6 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29599,7 +28383,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AddrType |= int32(b&0x7F) << shift
+				m.AddrType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29618,7 +28402,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Protocol |= int32(b&0x7F) << shift
+				m.Protocol |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29637,7 +28421,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HwAddressSize |= int32(b&0x7F) << shift
+				m.HwAddressSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29656,7 +28440,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ProtAddressSize |= int32(b&0x7F) << shift
+				m.ProtAddressSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29675,7 +28459,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Operation |= int32(b&0x7F) << shift
+				m.Operation |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29694,7 +28478,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29703,9 +28487,6 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29728,7 +28509,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29737,9 +28518,6 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29762,7 +28540,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29771,9 +28549,6 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29796,7 +28571,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29805,9 +28580,6 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29823,9 +28595,6 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -29855,7 +28624,7 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -29883,7 +28652,7 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29893,9 +28662,6 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -29915,7 +28681,7 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Priority |= int32(b&0x7F) << shift
+				m.Priority |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29934,7 +28700,7 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29954,7 +28720,7 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.VLANIdentifier |= int32(b&0x7F) << shift
+				m.VLANIdentifier |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29973,7 +28739,7 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -29985,9 +28751,6 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -30017,7 +28780,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -30045,7 +28808,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30055,9 +28818,6 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30077,7 +28837,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30096,7 +28856,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Proto |= int32(b&0x7F) << shift
+				m.Proto |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30115,7 +28875,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30134,7 +28894,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DurationID |= int32(b&0x7F) << shift
+				m.DurationID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30153,7 +28913,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30163,9 +28923,6 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30185,7 +28942,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30195,9 +28952,6 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30217,7 +28971,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30227,9 +28981,6 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30249,7 +29000,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30259,9 +29010,6 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30281,7 +29029,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SequenceNumber |= int32(b&0x7F) << shift
+				m.SequenceNumber |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30300,7 +29048,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FragmentNumber |= int32(b&0x7F) << shift
+				m.FragmentNumber |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30319,7 +29067,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= uint32(b&0x7F) << shift
+				m.Checksum |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30338,7 +29086,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30347,9 +29095,6 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30374,7 +29119,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30383,9 +29128,6 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30403,9 +29145,6 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -30435,7 +29174,7 @@ func (m *Dot11QOS) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -30463,7 +29202,7 @@ func (m *Dot11QOS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TID |= int32(b&0x7F) << shift
+				m.TID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30482,7 +29221,7 @@ func (m *Dot11QOS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30502,7 +29241,7 @@ func (m *Dot11QOS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AckPolicy |= int32(b&0x7F) << shift
+				m.AckPolicy |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30521,7 +29260,7 @@ func (m *Dot11QOS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TXOP |= int32(b&0x7F) << shift
+				m.TXOP |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30533,9 +29272,6 @@ func (m *Dot11QOS) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -30565,7 +29301,7 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -30593,7 +29329,7 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30613,7 +29349,7 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30633,7 +29369,7 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30642,9 +29378,6 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30669,7 +29402,7 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30678,9 +29411,6 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30698,9 +29428,6 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -30730,7 +29457,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -30758,7 +29485,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30778,7 +29505,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30798,7 +29525,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MSI |= int32(b&0x7F) << shift
+				m.MSI |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30817,7 +29544,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30826,9 +29553,6 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -30853,7 +29577,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CompressedMSI |= int32(b&0x7F) << shift
+				m.CompressedMSI |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30872,7 +29596,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30892,7 +29616,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MFSI |= int32(b&0x7F) << shift
+				m.MFSI |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30911,7 +29635,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.GID |= int32(b&0x7F) << shift
+				m.GID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30930,7 +29654,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CodingType |= int32(b&0x7F) << shift
+				m.CodingType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30949,7 +29673,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -30962,9 +29686,6 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -30994,7 +29715,7 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -31022,7 +29743,7 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31031,9 +29752,6 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -31058,7 +29776,7 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CalibrationPosition |= int32(b&0x7F) << shift
+				m.CalibrationPosition |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31077,7 +29795,7 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CalibrationSequence |= int32(b&0x7F) << shift
+				m.CalibrationSequence |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31096,7 +29814,7 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CSISteering |= int32(b&0x7F) << shift
+				m.CSISteering |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31115,7 +29833,7 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31135,7 +29853,7 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31148,9 +29866,6 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -31180,7 +29895,7 @@ func (m *Dot11HTControlMFB) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -31208,7 +29923,7 @@ func (m *Dot11HTControlMFB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumSTS |= int32(b&0x7F) << shift
+				m.NumSTS |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31227,7 +29942,7 @@ func (m *Dot11HTControlMFB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.VHTMCS |= int32(b&0x7F) << shift
+				m.VHTMCS |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31246,7 +29961,7 @@ func (m *Dot11HTControlMFB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.BW |= int32(b&0x7F) << shift
+				m.BW |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31265,7 +29980,7 @@ func (m *Dot11HTControlMFB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SNR |= int32(b&0x7F) << shift
+				m.SNR |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31277,9 +29992,6 @@ func (m *Dot11HTControlMFB) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -31309,7 +30021,7 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -31337,7 +30049,7 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31357,7 +30069,7 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31377,7 +30089,7 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MSI |= int32(b&0x7F) << shift
+				m.MSI |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31396,7 +30108,7 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MFSI |= int32(b&0x7F) << shift
+				m.MFSI |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31415,7 +30127,7 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31424,9 +30136,6 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -31451,7 +30160,7 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MFB |= int32(b&0x7F) << shift
+				m.MFB |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31463,9 +30172,6 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -31495,7 +30201,7 @@ func (m *Dot11ASEL) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -31523,7 +30229,7 @@ func (m *Dot11ASEL) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Command |= int32(b&0x7F) << shift
+				m.Command |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31542,7 +30248,7 @@ func (m *Dot11ASEL) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Data |= int32(b&0x7F) << shift
+				m.Data |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31554,9 +30260,6 @@ func (m *Dot11ASEL) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -31586,7 +30289,7 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -31614,7 +30317,7 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31624,9 +30327,6 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -31646,7 +30346,7 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31655,9 +30355,6 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -31682,7 +30379,7 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31691,9 +30388,6 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -31718,7 +30412,7 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TTL |= int32(b&0x7F) << shift
+				m.TTL |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31737,7 +30431,7 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31746,9 +30440,6 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -31764,9 +30455,6 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -31796,7 +30484,7 @@ func (m *LLDPChassisID) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -31824,7 +30512,7 @@ func (m *LLDPChassisID) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Subtype |= int32(b&0x7F) << shift
+				m.Subtype |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31843,7 +30531,7 @@ func (m *LLDPChassisID) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31852,9 +30540,6 @@ func (m *LLDPChassisID) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -31870,9 +30555,6 @@ func (m *LLDPChassisID) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -31902,7 +30584,7 @@ func (m *LLDPPortID) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -31930,7 +30612,7 @@ func (m *LLDPPortID) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Subtype |= int32(b&0x7F) << shift
+				m.Subtype |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31949,7 +30631,7 @@ func (m *LLDPPortID) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -31958,9 +30640,6 @@ func (m *LLDPPortID) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -31976,9 +30655,6 @@ func (m *LLDPPortID) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -32008,7 +30684,7 @@ func (m *LinkLayerDiscoveryValue) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -32036,7 +30712,7 @@ func (m *LinkLayerDiscoveryValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32055,7 +30731,7 @@ func (m *LinkLayerDiscoveryValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32074,7 +30750,7 @@ func (m *LinkLayerDiscoveryValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32083,9 +30759,6 @@ func (m *LinkLayerDiscoveryValue) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32101,9 +30774,6 @@ func (m *LinkLayerDiscoveryValue) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -32133,7 +30803,7 @@ func (m *EthernetCTP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -32161,7 +30831,7 @@ func (m *EthernetCTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32171,9 +30841,6 @@ func (m *EthernetCTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32193,7 +30860,7 @@ func (m *EthernetCTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SkipCount |= int32(b&0x7F) << shift
+				m.SkipCount |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32205,9 +30872,6 @@ func (m *EthernetCTP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -32237,7 +30901,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -32265,7 +30929,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32275,9 +30939,6 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32297,7 +30958,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Function |= int32(b&0x7F) << shift
+				m.Function |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32316,7 +30977,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReceiptNumber |= int32(b&0x7F) << shift
+				m.ReceiptNumber |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32335,7 +30996,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32344,9 +31005,6 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32362,9 +31020,6 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -32394,7 +31049,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -32422,7 +31077,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32432,9 +31087,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32454,7 +31106,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32464,9 +31116,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32486,7 +31135,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32496,9 +31145,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32518,7 +31164,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32528,9 +31174,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32550,7 +31193,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32559,9 +31202,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32586,7 +31226,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32595,9 +31235,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32622,7 +31259,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32631,9 +31268,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32656,7 +31290,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32665,9 +31299,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32683,9 +31314,6 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -32715,7 +31343,7 @@ func (m *LLDPSysCapabilities) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -32743,7 +31371,7 @@ func (m *LLDPSysCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32752,9 +31380,6 @@ func (m *LLDPSysCapabilities) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32779,7 +31404,7 @@ func (m *LLDPSysCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32788,9 +31413,6 @@ func (m *LLDPSysCapabilities) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -32808,9 +31430,6 @@ func (m *LLDPSysCapabilities) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -32840,7 +31459,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -32868,7 +31487,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32888,7 +31507,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32908,7 +31527,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32928,7 +31547,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32948,7 +31567,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32968,7 +31587,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -32988,7 +31607,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33008,7 +31627,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33028,7 +31647,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33048,7 +31667,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33068,7 +31687,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33081,9 +31700,6 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -33113,7 +31729,7 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -33141,7 +31757,7 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Subtype |= int32(b&0x7F) << shift
+				m.Subtype |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33160,7 +31776,7 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33169,9 +31785,6 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33194,7 +31807,7 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InterfaceSubtype |= int32(b&0x7F) << shift
+				m.InterfaceSubtype |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33213,7 +31826,7 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InterfaceNumber |= uint32(b&0x7F) << shift
+				m.InterfaceNumber |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33232,7 +31845,7 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33242,9 +31855,6 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33257,9 +31867,6 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -33289,7 +31896,7 @@ func (m *LLDPOrgSpecificTLV) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -33317,7 +31924,7 @@ func (m *LLDPOrgSpecificTLV) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OUI |= uint32(b&0x7F) << shift
+				m.OUI |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33336,7 +31943,7 @@ func (m *LLDPOrgSpecificTLV) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SubType |= int32(b&0x7F) << shift
+				m.SubType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33355,7 +31962,7 @@ func (m *LLDPOrgSpecificTLV) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33364,9 +31971,6 @@ func (m *LLDPOrgSpecificTLV) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33382,9 +31986,6 @@ func (m *LLDPOrgSpecificTLV) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -33414,7 +32015,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -33442,7 +32043,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33452,9 +32053,6 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33474,7 +32072,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33493,7 +32091,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.IHL |= int32(b&0x7F) << shift
+				m.IHL |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33512,7 +32110,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TOS |= int32(b&0x7F) << shift
+				m.TOS |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33531,7 +32129,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33550,7 +32148,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Id |= int32(b&0x7F) << shift
+				m.Id |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33569,7 +32167,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33588,7 +32186,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FragOffset |= int32(b&0x7F) << shift
+				m.FragOffset |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33607,7 +32205,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TTL |= int32(b&0x7F) << shift
+				m.TTL |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33626,7 +32224,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Protocol |= int32(b&0x7F) << shift
+				m.Protocol |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33645,7 +32243,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33664,7 +32262,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33674,9 +32272,6 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33696,7 +32291,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33706,9 +32301,6 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33728,7 +32320,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33737,9 +32329,6 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33762,7 +32351,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33771,9 +32360,6 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33807,7 +32393,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PayloadSize |= int32(b&0x7F) << shift
+				m.PayloadSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33826,7 +32412,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33835,9 +32421,6 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33855,9 +32438,6 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -33887,7 +32467,7 @@ func (m *IPv4Option) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -33915,7 +32495,7 @@ func (m *IPv4Option) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OptionType |= int32(b&0x7F) << shift
+				m.OptionType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33934,7 +32514,7 @@ func (m *IPv4Option) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OptionLength |= int32(b&0x7F) << shift
+				m.OptionLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33953,7 +32533,7 @@ func (m *IPv4Option) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33962,9 +32542,6 @@ func (m *IPv4Option) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -33980,9 +32557,6 @@ func (m *IPv4Option) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -34012,7 +32586,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -34040,7 +32614,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34050,9 +32624,6 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34072,7 +32643,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34091,7 +32662,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TrafficClass |= int32(b&0x7F) << shift
+				m.TrafficClass |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34110,7 +32681,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FlowLabel |= uint32(b&0x7F) << shift
+				m.FlowLabel |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34129,7 +32700,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34148,7 +32719,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NextHeader |= int32(b&0x7F) << shift
+				m.NextHeader |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34167,7 +32738,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HopLimit |= int32(b&0x7F) << shift
+				m.HopLimit |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34186,7 +32757,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34196,9 +32767,6 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34218,7 +32786,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34228,9 +32796,6 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34261,7 +32826,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PayloadSize |= int32(b&0x7F) << shift
+				m.PayloadSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34280,7 +32845,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34289,9 +32854,6 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34316,7 +32878,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34325,9 +32887,6 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34345,9 +32904,6 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -34377,7 +32933,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -34405,7 +32961,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34415,9 +32971,6 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34437,7 +32990,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NextHeader |= int32(b&0x7F) << shift
+				m.NextHeader |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34456,7 +33009,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Reserved1 |= int32(b&0x7F) << shift
+				m.Reserved1 |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34475,7 +33028,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FragmentOffset |= int32(b&0x7F) << shift
+				m.FragmentOffset |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34494,7 +33047,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Reserved2 |= int32(b&0x7F) << shift
+				m.Reserved2 |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34513,7 +33066,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34533,7 +33086,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Identification |= uint32(b&0x7F) << shift
+				m.Identification |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34552,7 +33105,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34561,9 +33114,6 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34581,9 +33131,6 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -34613,7 +33160,7 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -34641,7 +33188,7 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34651,9 +33198,6 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34673,7 +33217,7 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TypeCode |= int32(b&0x7F) << shift
+				m.TypeCode |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34692,7 +33236,7 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34711,7 +33255,7 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Id |= int32(b&0x7F) << shift
+				m.Id |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34730,7 +33274,7 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Seq |= int32(b&0x7F) << shift
+				m.Seq |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34749,7 +33293,7 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34758,9 +33302,6 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34778,9 +33319,6 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -34810,7 +33348,7 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -34838,7 +33376,7 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34848,9 +33386,6 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34870,7 +33405,7 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TypeCode |= int32(b&0x7F) << shift
+				m.TypeCode |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34889,7 +33424,7 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34908,7 +33443,7 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -34917,9 +33452,6 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -34937,9 +33469,6 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -34969,7 +33498,7 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -34997,7 +33526,7 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35007,9 +33536,6 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35029,7 +33555,7 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35048,7 +33574,7 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35058,9 +33584,6 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35080,7 +33603,7 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35089,9 +33612,6 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35114,7 +33634,7 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35123,9 +33643,6 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35143,9 +33660,6 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35175,7 +33689,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -35203,7 +33717,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35213,9 +33727,6 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35235,7 +33746,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HopLimit |= int32(b&0x7F) << shift
+				m.HopLimit |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35254,7 +33765,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35273,7 +33784,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RouterLifetime |= int32(b&0x7F) << shift
+				m.RouterLifetime |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35292,7 +33803,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReachableTime |= uint32(b&0x7F) << shift
+				m.ReachableTime |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35311,7 +33822,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RetransTimer |= uint32(b&0x7F) << shift
+				m.RetransTimer |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35330,7 +33841,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35339,9 +33850,6 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35364,7 +33872,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35373,9 +33881,6 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35393,9 +33898,6 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35425,7 +33927,7 @@ func (m *ICMPv6Option) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -35453,7 +33955,7 @@ func (m *ICMPv6Option) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35472,7 +33974,7 @@ func (m *ICMPv6Option) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35481,9 +33983,6 @@ func (m *ICMPv6Option) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35499,9 +33998,6 @@ func (m *ICMPv6Option) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35531,7 +34027,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -35559,7 +34055,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35569,9 +34065,6 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35591,7 +34084,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SrcPort |= int32(b&0x7F) << shift
+				m.SrcPort |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35610,7 +34103,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DstPort |= int32(b&0x7F) << shift
+				m.DstPort |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35629,7 +34122,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35648,7 +34141,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35678,7 +34171,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PayloadSize |= int32(b&0x7F) << shift
+				m.PayloadSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35697,7 +34190,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35706,9 +34199,6 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35731,7 +34221,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35740,9 +34230,6 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35760,9 +34247,6 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35792,7 +34276,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -35820,7 +34304,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35830,9 +34314,6 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -35852,7 +34333,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SrcPort |= int32(b&0x7F) << shift
+				m.SrcPort |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35871,7 +34352,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DstPort |= int32(b&0x7F) << shift
+				m.DstPort |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35890,7 +34371,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SeqNum |= uint32(b&0x7F) << shift
+				m.SeqNum |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35909,7 +34390,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AckNum |= uint32(b&0x7F) << shift
+				m.AckNum |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35928,7 +34409,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DataOffset |= int32(b&0x7F) << shift
+				m.DataOffset |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35947,7 +34428,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35967,7 +34448,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -35987,7 +34468,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36007,7 +34488,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36027,7 +34508,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36047,7 +34528,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36067,7 +34548,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36087,7 +34568,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36107,7 +34588,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36127,7 +34608,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Window |= int32(b&0x7F) << shift
+				m.Window |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36146,7 +34627,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36165,7 +34646,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Urgent |= int32(b&0x7F) << shift
+				m.Urgent |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36184,7 +34665,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36193,9 +34674,6 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -36218,7 +34696,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36227,9 +34705,6 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -36263,7 +34738,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PayloadSize |= int32(b&0x7F) << shift
+				m.PayloadSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36282,7 +34757,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36291,9 +34766,6 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -36316,7 +34788,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36325,9 +34797,6 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -36345,9 +34814,6 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36377,7 +34843,7 @@ func (m *TCPOption) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -36405,7 +34871,7 @@ func (m *TCPOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OptionType |= int32(b&0x7F) << shift
+				m.OptionType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36424,7 +34890,7 @@ func (m *TCPOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OptionLength |= int32(b&0x7F) << shift
+				m.OptionLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36443,7 +34909,7 @@ func (m *TCPOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36452,9 +34918,6 @@ func (m *TCPOption) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -36470,9 +34933,6 @@ func (m *TCPOption) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36502,7 +34962,7 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -36530,7 +34990,7 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36540,9 +35000,6 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -36562,7 +35019,7 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SrcPort |= uint32(b&0x7F) << shift
+				m.SrcPort |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36581,7 +35038,7 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DstPort |= uint32(b&0x7F) << shift
+				m.DstPort |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36600,7 +35057,7 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.VerificationTag |= uint32(b&0x7F) << shift
+				m.VerificationTag |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36619,7 +35076,7 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= uint32(b&0x7F) << shift
+				m.Checksum |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36638,7 +35095,7 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36647,9 +35104,6 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -36667,9 +35121,6 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36699,7 +35150,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -36727,7 +35178,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36737,9 +35188,6 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -36759,7 +35207,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ID |= int32(b&0x7F) << shift
+				m.ID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36778,7 +35226,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36798,7 +35246,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OpCode |= int32(b&0x7F) << shift
+				m.OpCode |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36817,7 +35265,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36837,7 +35285,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36857,7 +35305,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36877,7 +35325,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36897,7 +35345,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Z |= int32(b&0x7F) << shift
+				m.Z |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36916,7 +35364,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ResponseCode |= int32(b&0x7F) << shift
+				m.ResponseCode |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36935,7 +35383,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.QDCount |= int32(b&0x7F) << shift
+				m.QDCount |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36954,7 +35402,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ANCount |= int32(b&0x7F) << shift
+				m.ANCount |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36973,7 +35421,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NSCount |= int32(b&0x7F) << shift
+				m.NSCount |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36992,7 +35440,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ARCount |= int32(b&0x7F) << shift
+				m.ARCount |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37011,7 +35459,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37020,9 +35468,6 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37045,7 +35490,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37054,9 +35499,6 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37079,7 +35521,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37088,9 +35530,6 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37113,7 +35552,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37122,9 +35561,6 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37147,7 +35583,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37156,9 +35592,6 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37176,9 +35609,6 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37208,7 +35638,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -37236,7 +35666,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37245,9 +35675,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37270,7 +35697,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37289,7 +35716,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Class |= int32(b&0x7F) << shift
+				m.Class |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37308,7 +35735,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TTL |= uint32(b&0x7F) << shift
+				m.TTL |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37327,7 +35754,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DataLength |= int32(b&0x7F) << shift
+				m.DataLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37346,7 +35773,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37355,9 +35782,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37380,7 +35804,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37390,9 +35814,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37412,7 +35833,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37421,9 +35842,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37446,7 +35864,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37455,9 +35873,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37480,7 +35895,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37489,9 +35904,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37514,7 +35926,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37523,9 +35935,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37550,7 +35959,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37559,9 +35968,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37586,7 +35992,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37595,9 +36001,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37622,7 +36025,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37631,9 +36034,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37647,9 +36047,6 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37679,7 +36076,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -37707,7 +36104,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37716,9 +36113,6 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37741,7 +36135,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37750,9 +36144,6 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -37775,7 +36166,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Serial |= uint32(b&0x7F) << shift
+				m.Serial |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37794,7 +36185,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Refresh |= uint32(b&0x7F) << shift
+				m.Refresh |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37813,7 +36204,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Retry |= uint32(b&0x7F) << shift
+				m.Retry |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37832,7 +36223,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Expire |= uint32(b&0x7F) << shift
+				m.Expire |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37851,7 +36242,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Minimum |= uint32(b&0x7F) << shift
+				m.Minimum |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37863,9 +36254,6 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37895,7 +36283,7 @@ func (m *DNSSRV) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -37923,7 +36311,7 @@ func (m *DNSSRV) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Priority |= int32(b&0x7F) << shift
+				m.Priority |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37942,7 +36330,7 @@ func (m *DNSSRV) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Weight |= int32(b&0x7F) << shift
+				m.Weight |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37961,7 +36349,7 @@ func (m *DNSSRV) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Port |= int32(b&0x7F) << shift
+				m.Port |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37980,7 +36368,7 @@ func (m *DNSSRV) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -37989,9 +36377,6 @@ func (m *DNSSRV) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38007,9 +36392,6 @@ func (m *DNSSRV) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -38039,7 +36421,7 @@ func (m *DNSMX) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -38067,7 +36449,7 @@ func (m *DNSMX) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Preference |= int32(b&0x7F) << shift
+				m.Preference |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38086,7 +36468,7 @@ func (m *DNSMX) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38095,9 +36477,6 @@ func (m *DNSMX) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38113,9 +36492,6 @@ func (m *DNSMX) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -38145,7 +36521,7 @@ func (m *DNSQuestion) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -38173,7 +36549,7 @@ func (m *DNSQuestion) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38182,9 +36558,6 @@ func (m *DNSQuestion) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38207,7 +36580,7 @@ func (m *DNSQuestion) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38226,7 +36599,7 @@ func (m *DNSQuestion) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Class |= int32(b&0x7F) << shift
+				m.Class |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38238,9 +36611,6 @@ func (m *DNSQuestion) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -38270,7 +36640,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -38298,7 +36668,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38308,9 +36678,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38330,7 +36697,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Operation |= int32(b&0x7F) << shift
+				m.Operation |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38349,7 +36716,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HardwareType |= int32(b&0x7F) << shift
+				m.HardwareType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38368,7 +36735,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HardwareLen |= int32(b&0x7F) << shift
+				m.HardwareLen |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38387,7 +36754,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HardwareOpts |= int32(b&0x7F) << shift
+				m.HardwareOpts |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38406,7 +36773,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Xid |= uint32(b&0x7F) << shift
+				m.Xid |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38425,7 +36792,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Secs |= int32(b&0x7F) << shift
+				m.Secs |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38444,7 +36811,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38463,7 +36830,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38473,9 +36840,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38495,7 +36859,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38505,9 +36869,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38527,7 +36888,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38537,9 +36898,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38559,7 +36917,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38569,9 +36927,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38591,7 +36946,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38601,9 +36956,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38623,7 +36975,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38632,9 +36984,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38657,7 +37006,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38666,9 +37015,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38691,7 +37037,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38700,9 +37046,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38725,7 +37068,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38734,9 +37077,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38754,9 +37094,6 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -38786,7 +37123,7 @@ func (m *DHCPOption) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -38814,7 +37151,7 @@ func (m *DHCPOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38833,7 +37170,7 @@ func (m *DHCPOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38852,7 +37189,7 @@ func (m *DHCPOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38861,9 +37198,6 @@ func (m *DHCPOption) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38879,9 +37213,6 @@ func (m *DHCPOption) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -38911,7 +37242,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -38939,7 +37270,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38949,9 +37280,6 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -38971,7 +37299,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MsgType |= int32(b&0x7F) << shift
+				m.MsgType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -38990,7 +37318,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HopCount |= int32(b&0x7F) << shift
+				m.HopCount |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39009,7 +37337,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39019,9 +37347,6 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39041,7 +37366,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39051,9 +37376,6 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39073,7 +37395,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39082,9 +37404,6 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39107,7 +37426,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39116,9 +37435,6 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39141,7 +37457,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39150,9 +37466,6 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39170,9 +37483,6 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39202,7 +37512,7 @@ func (m *DHCPv6Option) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -39230,7 +37540,7 @@ func (m *DHCPv6Option) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Code |= int32(b&0x7F) << shift
+				m.Code |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39249,7 +37559,7 @@ func (m *DHCPv6Option) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39268,7 +37578,7 @@ func (m *DHCPv6Option) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39277,9 +37587,6 @@ func (m *DHCPv6Option) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39295,9 +37602,6 @@ func (m *DHCPv6Option) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39327,7 +37631,7 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -39355,7 +37659,7 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39365,9 +37669,6 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39387,7 +37688,7 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DSAP |= int32(b&0x7F) << shift
+				m.DSAP |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39406,7 +37707,7 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39426,7 +37727,7 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SSAP |= int32(b&0x7F) << shift
+				m.SSAP |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39445,7 +37746,7 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39465,7 +37766,7 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Control |= int32(b&0x7F) << shift
+				m.Control |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39477,9 +37778,6 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39509,7 +37807,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -39537,7 +37835,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39547,9 +37845,6 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39569,7 +37864,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LeapIndicator |= int32(b&0x7F) << shift
+				m.LeapIndicator |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39588,7 +37883,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39607,7 +37902,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Mode |= int32(b&0x7F) << shift
+				m.Mode |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39626,7 +37921,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Stratum |= int32(b&0x7F) << shift
+				m.Stratum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39645,7 +37940,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Poll |= int32(b&0x7F) << shift
+				m.Poll |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39664,7 +37959,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Precision |= int32(b&0x7F) << shift
+				m.Precision |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39683,7 +37978,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RootDelay |= uint32(b&0x7F) << shift
+				m.RootDelay |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39702,7 +37997,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RootDispersion |= uint32(b&0x7F) << shift
+				m.RootDispersion |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39721,7 +38016,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReferenceID |= uint32(b&0x7F) << shift
+				m.ReferenceID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39740,7 +38035,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReferenceTimestamp |= uint64(b&0x7F) << shift
+				m.ReferenceTimestamp |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39759,7 +38054,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OriginTimestamp |= uint64(b&0x7F) << shift
+				m.OriginTimestamp |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39778,7 +38073,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReceiveTimestamp |= uint64(b&0x7F) << shift
+				m.ReceiveTimestamp |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39797,7 +38092,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TransmitTimestamp |= uint64(b&0x7F) << shift
+				m.TransmitTimestamp |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39816,7 +38111,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39825,9 +38120,6 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39850,7 +38142,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39859,9 +38151,6 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39879,9 +38168,6 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39911,7 +38197,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -39939,7 +38225,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39949,9 +38235,6 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -39971,7 +38254,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -39990,7 +38273,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Method |= int32(b&0x7F) << shift
+				m.Method |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40009,7 +38292,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40019,9 +38302,6 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40041,7 +38321,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40061,7 +38341,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ResponseCode |= int32(b&0x7F) << shift
+				m.ResponseCode |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40080,7 +38360,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40090,9 +38370,6 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40112,7 +38389,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40121,9 +38398,6 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40141,9 +38415,6 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -40173,7 +38444,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -40201,7 +38472,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40211,9 +38482,6 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40233,7 +38501,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40252,7 +38520,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MaxResponseTime |= uint64(b&0x7F) << shift
+				m.MaxResponseTime |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40271,7 +38539,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40290,7 +38558,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40299,9 +38567,6 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40324,7 +38589,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40344,7 +38609,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RobustnessValue |= int32(b&0x7F) << shift
+				m.RobustnessValue |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40363,7 +38628,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.IntervalTime |= uint64(b&0x7F) << shift
+				m.IntervalTime |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40382,7 +38647,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40392,9 +38657,6 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40414,7 +38676,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumberOfGroupRecords |= int32(b&0x7F) << shift
+				m.NumberOfGroupRecords |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40433,7 +38695,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumberOfSources |= int32(b&0x7F) << shift
+				m.NumberOfSources |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40452,7 +38714,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40461,9 +38723,6 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40486,7 +38745,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40505,7 +38764,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40514,9 +38773,6 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40534,9 +38790,6 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -40566,7 +38819,7 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -40594,7 +38847,7 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40613,7 +38866,7 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AuxDataLen |= int32(b&0x7F) << shift
+				m.AuxDataLen |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40632,7 +38885,7 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumberOfSources |= int32(b&0x7F) << shift
+				m.NumberOfSources |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40651,7 +38904,7 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40661,9 +38914,6 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40683,7 +38933,7 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40693,9 +38943,6 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40708,9 +38955,6 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -40740,7 +38984,7 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -40768,7 +39012,7 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40778,9 +39022,6 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40800,7 +39041,7 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40809,9 +39050,6 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40834,7 +39072,7 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40843,9 +39081,6 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -40863,9 +39098,6 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -40895,7 +39127,7 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -40923,7 +39155,7 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OptionType |= int32(b&0x7F) << shift
+				m.OptionType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40942,7 +39174,7 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OptionLength |= int32(b&0x7F) << shift
+				m.OptionLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40961,7 +39193,7 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ActualLength |= int32(b&0x7F) << shift
+				m.ActualLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40980,7 +39212,7 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -40989,9 +39221,6 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41014,7 +39243,7 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41023,9 +39252,6 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41043,9 +39269,6 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41075,7 +39298,7 @@ func (m *IPv6HopByHopOptionAlignment) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -41103,7 +39326,7 @@ func (m *IPv6HopByHopOptionAlignment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.One |= int32(b&0x7F) << shift
+				m.One |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41122,7 +39345,7 @@ func (m *IPv6HopByHopOptionAlignment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Two |= int32(b&0x7F) << shift
+				m.Two |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41134,9 +39357,6 @@ func (m *IPv6HopByHopOptionAlignment) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41166,7 +39386,7 @@ func (m *SNAP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -41194,7 +39414,7 @@ func (m *SNAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41204,9 +39424,6 @@ func (m *SNAP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41226,7 +39443,7 @@ func (m *SNAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41235,9 +39452,6 @@ func (m *SNAP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41260,7 +39474,7 @@ func (m *SNAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41272,9 +39486,6 @@ func (m *SNAP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41304,7 +39515,7 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -41332,7 +39543,7 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41342,9 +39553,6 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41364,7 +39572,7 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Identifier |= int32(b&0x7F) << shift
+				m.Identifier |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41383,7 +39591,7 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SeqNumber |= int32(b&0x7F) << shift
+				m.SeqNumber |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41402,7 +39610,7 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41411,9 +39619,6 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41431,9 +39636,6 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41463,7 +39665,7 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -41491,7 +39693,7 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41501,9 +39703,6 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41523,7 +39722,7 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41533,9 +39732,6 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41555,7 +39751,7 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41564,9 +39760,6 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41589,7 +39782,7 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41598,9 +39791,6 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41618,9 +39808,6 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41650,7 +39837,7 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -41678,7 +39865,7 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41688,9 +39875,6 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41710,7 +39894,7 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41719,9 +39903,6 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41744,7 +39925,7 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41753,9 +39934,6 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41773,9 +39951,6 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41805,7 +39980,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -41833,7 +40008,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41843,9 +40018,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41865,7 +40037,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41875,9 +40047,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41897,7 +40066,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41907,9 +40076,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41929,7 +40095,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41939,9 +40105,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41961,7 +40124,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -41971,9 +40134,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -41993,7 +40153,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42003,9 +40163,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42025,7 +40182,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42035,9 +40192,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42057,7 +40211,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReqContentLength |= int32(b&0x7F) << shift
+				m.ReqContentLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42076,7 +40230,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42086,9 +40240,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42108,7 +40259,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ResContentLength |= int32(b&0x7F) << shift
+				m.ResContentLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42127,7 +40278,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42137,9 +40288,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42159,7 +40307,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.StatusCode |= int32(b&0x7F) << shift
+				m.StatusCode |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42178,7 +40326,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42188,9 +40336,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42210,7 +40355,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42220,9 +40365,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42242,7 +40384,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42252,9 +40394,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42274,7 +40413,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42284,9 +40423,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42306,7 +40442,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42316,9 +40452,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42338,7 +40471,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42348,9 +40481,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42370,7 +40500,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42380,9 +40510,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42402,7 +40529,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DoneAfter |= int64(b&0x7F) << shift
+				m.DoneAfter |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42421,7 +40548,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DNSDoneAfter |= int64(b&0x7F) << shift
+				m.DNSDoneAfter |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42440,7 +40567,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FirstByteAfter |= int64(b&0x7F) << shift
+				m.FirstByteAfter |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42459,7 +40586,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TLSDoneAfter |= int64(b&0x7F) << shift
+				m.TLSDoneAfter |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42471,9 +40598,6 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -42503,7 +40627,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -42531,7 +40655,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42541,9 +40665,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42563,7 +40684,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42582,7 +40703,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42601,7 +40722,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MessageLen |= int32(b&0x7F) << shift
+				m.MessageLen |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42620,7 +40741,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HandshakeType |= int32(b&0x7F) << shift
+				m.HandshakeType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42639,7 +40760,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HandshakeLen |= uint32(b&0x7F) << shift
+				m.HandshakeLen |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42658,7 +40779,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HandshakeVersion |= int32(b&0x7F) << shift
+				m.HandshakeVersion |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42677,7 +40798,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42686,9 +40807,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42711,7 +40829,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SessionIDLen |= uint32(b&0x7F) << shift
+				m.SessionIDLen |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42730,7 +40848,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42739,9 +40857,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42764,7 +40879,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CipherSuiteLen |= int32(b&0x7F) << shift
+				m.CipherSuiteLen |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42783,7 +40898,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ExtensionLen |= int32(b&0x7F) << shift
+				m.ExtensionLen |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42802,7 +40917,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42812,9 +40927,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -42834,7 +40946,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -42852,7 +40964,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= int32(b&0x7F) << shift
+					v |= (int32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -42869,7 +40981,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -42878,15 +40990,12 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -42906,7 +41015,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= int32(b&0x7F) << shift
+						v |= (int32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -42928,7 +41037,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= int32(b&0x7F) << shift
+					v |= (int32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -42945,7 +41054,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -42954,15 +41063,12 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -42982,7 +41088,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= int32(b&0x7F) << shift
+						v |= (int32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -43004,7 +41110,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= int32(b&0x7F) << shift
+					v |= (int32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -43021,7 +41127,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -43030,15 +41136,12 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -43058,7 +41161,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= int32(b&0x7F) << shift
+						v |= (int32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -43080,7 +41183,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= int32(b&0x7F) << shift
+					v |= (int32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -43097,7 +41200,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -43106,15 +41209,12 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -43134,7 +41234,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= int32(b&0x7F) << shift
+						v |= (int32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -43156,7 +41256,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= int32(b&0x7F) << shift
+					v |= (int32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -43173,7 +41273,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -43182,15 +41282,12 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -43210,7 +41307,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= int32(b&0x7F) << shift
+						v |= (int32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -43234,7 +41331,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43244,9 +41341,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43266,7 +41360,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43276,9 +41370,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43298,7 +41389,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43308,9 +41399,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43330,7 +41418,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43340,9 +41428,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43362,7 +41447,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43372,9 +41457,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43394,7 +41476,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43404,9 +41486,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43426,7 +41505,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SrcPort |= int32(b&0x7F) << shift
+				m.SrcPort |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43445,7 +41524,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DstPort |= int32(b&0x7F) << shift
+				m.DstPort |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43462,7 +41541,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= int32(b&0x7F) << shift
+					v |= (int32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -43479,7 +41558,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -43488,15 +41567,12 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -43516,7 +41592,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= int32(b&0x7F) << shift
+						v |= (int32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -43533,9 +41609,6 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -43565,7 +41638,7 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -43593,7 +41666,7 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43603,9 +41676,6 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43625,7 +41695,7 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Reserved |= int32(b&0x7F) << shift
+				m.Reserved |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43644,7 +41714,7 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SPI |= int32(b&0x7F) << shift
+				m.SPI |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43663,7 +41733,7 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Seq |= int32(b&0x7F) << shift
+				m.Seq |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43682,7 +41752,7 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43691,9 +41761,6 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43716,7 +41783,7 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43725,9 +41792,6 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43745,9 +41809,6 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -43777,7 +41838,7 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -43805,7 +41866,7 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43815,9 +41876,6 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43837,7 +41895,7 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SPI |= int32(b&0x7F) << shift
+				m.SPI |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43856,7 +41914,7 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Seq |= int32(b&0x7F) << shift
+				m.Seq |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43875,7 +41933,7 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LenEncrypted |= int32(b&0x7F) << shift
+				m.LenEncrypted |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43894,7 +41952,7 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43903,9 +41961,6 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -43923,9 +41978,6 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -43955,7 +42007,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -43983,7 +42035,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -43993,9 +42045,6 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -44015,7 +42064,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44034,7 +42083,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.OptionsLength |= int32(b&0x7F) << shift
+				m.OptionsLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44053,7 +42102,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44073,7 +42122,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44093,7 +42142,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Protocol |= int32(b&0x7F) << shift
+				m.Protocol |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44112,7 +42161,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.VNI |= uint32(b&0x7F) << shift
+				m.VNI |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44131,7 +42180,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44140,9 +42189,6 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -44165,7 +42211,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44174,9 +42220,6 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -44194,9 +42237,6 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -44226,7 +42266,7 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -44254,7 +42294,7 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Class |= int32(b&0x7F) << shift
+				m.Class |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44273,7 +42313,7 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44292,7 +42332,7 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44311,7 +42351,7 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44330,7 +42370,7 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44339,9 +42379,6 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -44357,9 +42394,6 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -44389,7 +42423,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -44417,7 +42451,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44427,9 +42461,6 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -44449,7 +42480,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44469,7 +42500,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.VNI |= uint32(b&0x7F) << shift
+				m.VNI |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44488,7 +42519,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44508,7 +42539,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44528,7 +42559,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44548,7 +42579,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.GBPGroupPolicyID |= int32(b&0x7F) << shift
+				m.GBPGroupPolicyID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44567,7 +42598,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44576,9 +42607,6 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -44596,9 +42624,6 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -44628,7 +42653,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -44656,7 +42681,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44666,9 +42691,6 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -44688,7 +42710,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ID |= uint64(b&0x7F) << shift
+				m.ID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44707,7 +42729,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.EventType |= int32(b&0x7F) << shift
+				m.EventType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44726,7 +42748,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TransferType |= int32(b&0x7F) << shift
+				m.TransferType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44745,7 +42767,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Direction |= int32(b&0x7F) << shift
+				m.Direction |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44764,7 +42786,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.EndpointNumber |= int32(b&0x7F) << shift
+				m.EndpointNumber |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44783,7 +42805,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DeviceAddress |= int32(b&0x7F) << shift
+				m.DeviceAddress |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44802,7 +42824,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.BusID |= int32(b&0x7F) << shift
+				m.BusID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44821,7 +42843,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TimestampSec |= int64(b&0x7F) << shift
+				m.TimestampSec |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44840,7 +42862,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TimestampUsec |= int32(b&0x7F) << shift
+				m.TimestampUsec |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44859,7 +42881,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44879,7 +42901,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44899,7 +42921,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Status |= int32(b&0x7F) << shift
+				m.Status |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44918,7 +42940,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UrbLength |= uint32(b&0x7F) << shift
+				m.UrbLength |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44937,7 +42959,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UrbDataLength |= uint32(b&0x7F) << shift
+				m.UrbDataLength |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44956,7 +42978,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UrbInterval |= uint32(b&0x7F) << shift
+				m.UrbInterval |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44975,7 +42997,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UrbStartFrame |= uint32(b&0x7F) << shift
+				m.UrbStartFrame |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -44994,7 +43016,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UrbCopyOfTransferFlags |= uint32(b&0x7F) << shift
+				m.UrbCopyOfTransferFlags |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45013,7 +43035,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.IsoNumDesc |= uint32(b&0x7F) << shift
+				m.IsoNumDesc |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45032,7 +43054,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45041,9 +43063,6 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45059,9 +43078,6 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -45091,7 +43107,7 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -45119,7 +43135,7 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45129,9 +43145,6 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45151,7 +43164,7 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RequestType |= int32(b&0x7F) << shift
+				m.RequestType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45170,7 +43183,7 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Request |= int32(b&0x7F) << shift
+				m.Request |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45189,7 +43202,7 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Value |= int32(b&0x7F) << shift
+				m.Value |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45208,7 +43221,7 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Index |= int32(b&0x7F) << shift
+				m.Index |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45227,7 +43240,7 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45239,9 +43252,6 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -45271,7 +43281,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -45299,7 +43309,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45309,9 +43319,6 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45331,7 +43338,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Magic |= int32(b&0x7F) << shift
+				m.Magic |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45350,7 +43357,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SequenceNumber |= int32(b&0x7F) << shift
+				m.SequenceNumber |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45369,7 +43376,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PayloadSize |= int32(b&0x7F) << shift
+				m.PayloadSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45388,7 +43395,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FragmentOffset |= int32(b&0x7F) << shift
+				m.FragmentOffset |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45407,7 +43414,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FragmentNumber |= int32(b&0x7F) << shift
+				m.FragmentNumber |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45426,7 +43433,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalFragments |= int32(b&0x7F) << shift
+				m.TotalFragments |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45445,7 +43452,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45455,9 +43462,6 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45477,7 +43481,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45497,7 +43501,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45506,9 +43510,6 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45526,9 +43527,6 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -45558,7 +43556,7 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -45586,7 +43584,7 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45596,9 +43594,6 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45618,7 +43613,7 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Label |= int32(b&0x7F) << shift
+				m.Label |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45637,7 +43632,7 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TrafficClass |= int32(b&0x7F) << shift
+				m.TrafficClass |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45656,7 +43651,7 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45676,7 +43671,7 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TTL |= int32(b&0x7F) << shift
+				m.TTL |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45695,7 +43690,7 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45704,9 +43699,6 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45724,9 +43716,6 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -45756,7 +43745,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -45784,7 +43773,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45794,9 +43783,6 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45816,7 +43802,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TransactionID |= int32(b&0x7F) << shift
+				m.TransactionID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45835,7 +43821,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ProtocolID |= int32(b&0x7F) << shift
+				m.ProtocolID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45854,7 +43840,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45873,7 +43859,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UnitID |= int32(b&0x7F) << shift
+				m.UnitID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45892,7 +43878,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45901,9 +43887,6 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45926,7 +43909,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45946,7 +43929,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FunctionCode |= int32(b&0x7F) << shift
+				m.FunctionCode |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45965,7 +43948,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -45974,9 +43957,6 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -45994,9 +43974,6 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46026,7 +44003,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -46054,7 +44031,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46064,9 +44041,6 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -46086,7 +44060,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46105,7 +44079,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46124,7 +44098,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PacketLength |= int32(b&0x7F) << shift
+				m.PacketLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46143,7 +44117,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RouterID |= uint32(b&0x7F) << shift
+				m.RouterID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46162,7 +44136,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AreaID |= uint32(b&0x7F) << shift
+				m.AreaID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46181,7 +44155,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46200,7 +44174,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AuType |= int32(b&0x7F) << shift
+				m.AuType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46219,7 +44193,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Authentication |= int64(b&0x7F) << shift
+				m.Authentication |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46238,7 +44212,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46247,9 +44221,6 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -46272,7 +44243,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46281,9 +44252,6 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -46308,7 +44276,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46317,9 +44285,6 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -46342,7 +44307,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46351,9 +44316,6 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -46378,7 +44340,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46387,9 +44349,6 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -46414,7 +44373,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46423,9 +44382,6 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -46443,9 +44399,6 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46475,7 +44428,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -46503,7 +44456,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InterfaceID |= uint32(b&0x7F) << shift
+				m.InterfaceID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46522,7 +44475,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RtrPriority |= int32(b&0x7F) << shift
+				m.RtrPriority |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46541,7 +44494,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				m.Options |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46560,7 +44513,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HelloInterval |= int32(b&0x7F) << shift
+				m.HelloInterval |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46579,7 +44532,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RouterDeadInterval |= uint32(b&0x7F) << shift
+				m.RouterDeadInterval |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46598,7 +44551,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DesignatedRouterID |= uint32(b&0x7F) << shift
+				m.DesignatedRouterID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46617,7 +44570,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.BackupDesignatedRouterID |= uint32(b&0x7F) << shift
+				m.BackupDesignatedRouterID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46634,7 +44587,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= uint32(b&0x7F) << shift
+					v |= (uint32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -46651,7 +44604,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -46660,15 +44613,12 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -46688,7 +44638,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= uint32(b&0x7F) << shift
+						v |= (uint32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -46705,9 +44655,6 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46737,7 +44684,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -46765,7 +44712,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InterfaceID |= uint32(b&0x7F) << shift
+				m.InterfaceID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46784,7 +44731,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RtrPriority |= int32(b&0x7F) << shift
+				m.RtrPriority |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46803,7 +44750,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				m.Options |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46822,7 +44769,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.HelloInterval |= int32(b&0x7F) << shift
+				m.HelloInterval |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46841,7 +44788,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RouterDeadInterval |= uint32(b&0x7F) << shift
+				m.RouterDeadInterval |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46860,7 +44807,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DesignatedRouterID |= uint32(b&0x7F) << shift
+				m.DesignatedRouterID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46879,7 +44826,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.BackupDesignatedRouterID |= uint32(b&0x7F) << shift
+				m.BackupDesignatedRouterID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46896,7 +44843,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= uint32(b&0x7F) << shift
+					v |= (uint32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -46913,7 +44860,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -46922,15 +44869,12 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -46950,7 +44894,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= uint32(b&0x7F) << shift
+						v |= (uint32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -46974,7 +44918,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NetworkMask |= uint32(b&0x7F) << shift
+				m.NetworkMask |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46986,9 +44930,6 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -47018,7 +44959,7 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -47046,7 +44987,7 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				m.Options |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47065,7 +45006,7 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InterfaceMTU |= int32(b&0x7F) << shift
+				m.InterfaceMTU |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47084,7 +45025,7 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47103,7 +45044,7 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DDSeqNumber |= uint32(b&0x7F) << shift
+				m.DDSeqNumber |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47122,7 +45063,7 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47131,9 +45072,6 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47149,9 +45087,6 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -47181,7 +45116,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -47209,7 +45144,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47219,9 +45154,6 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47241,7 +45173,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47260,7 +45192,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47279,7 +45211,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PacketLength |= int32(b&0x7F) << shift
+				m.PacketLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47298,7 +45230,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RouterID |= uint32(b&0x7F) << shift
+				m.RouterID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47317,7 +45249,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AreaID |= uint32(b&0x7F) << shift
+				m.AreaID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47336,7 +45268,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47355,7 +45287,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Instance |= int32(b&0x7F) << shift
+				m.Instance |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47374,7 +45306,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Reserved |= int32(b&0x7F) << shift
+				m.Reserved |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47393,7 +45325,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47402,9 +45334,6 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47429,7 +45358,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47438,9 +45367,6 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47465,7 +45391,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47474,9 +45400,6 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47499,7 +45422,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47508,9 +45431,6 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47535,7 +45455,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47544,9 +45464,6 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47569,7 +45486,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47578,9 +45495,6 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47598,9 +45512,6 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -47630,7 +45541,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -47658,7 +45569,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LSAge |= int32(b&0x7F) << shift
+				m.LSAge |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47677,7 +45588,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LSType |= int32(b&0x7F) << shift
+				m.LSType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47696,7 +45607,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LinkStateID |= uint32(b&0x7F) << shift
+				m.LinkStateID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47715,7 +45626,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AdvRouter |= uint32(b&0x7F) << shift
+				m.AdvRouter |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47734,7 +45645,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LSSeqNumber |= uint32(b&0x7F) << shift
+				m.LSSeqNumber |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47753,7 +45664,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LSChecksum |= int32(b&0x7F) << shift
+				m.LSChecksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47772,7 +45683,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47791,7 +45702,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LSOptions |= int32(b&0x7F) << shift
+				m.LSOptions |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47803,9 +45714,6 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -47835,7 +45743,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -47863,7 +45771,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47872,9 +45780,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47899,7 +45804,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47908,9 +45813,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47935,7 +45837,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47944,9 +45846,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -47971,7 +45870,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47980,9 +45879,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48007,7 +45903,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48016,9 +45912,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48043,7 +45936,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48052,9 +45945,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48079,7 +45969,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48088,9 +45978,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48115,7 +46002,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48124,9 +46011,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48151,7 +46035,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48160,9 +46044,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48187,7 +46068,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48196,9 +46077,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48223,7 +46101,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48232,9 +46110,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48252,9 +46127,6 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -48284,7 +46156,7 @@ func (m *LSReq) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -48312,7 +46184,7 @@ func (m *LSReq) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LSType |= int32(b&0x7F) << shift
+				m.LSType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48331,7 +46203,7 @@ func (m *LSReq) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LSID |= uint32(b&0x7F) << shift
+				m.LSID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48350,7 +46222,7 @@ func (m *LSReq) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AdvRouter |= uint32(b&0x7F) << shift
+				m.AdvRouter |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48362,9 +46234,6 @@ func (m *LSReq) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -48394,7 +46263,7 @@ func (m *LSUpdate) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -48422,7 +46291,7 @@ func (m *LSUpdate) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumOfLSAs |= uint32(b&0x7F) << shift
+				m.NumOfLSAs |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48441,7 +46310,7 @@ func (m *LSUpdate) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48450,9 +46319,6 @@ func (m *LSUpdate) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48468,9 +46334,6 @@ func (m *LSUpdate) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -48500,7 +46363,7 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -48528,7 +46391,7 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumOfPrefixes |= int32(b&0x7F) << shift
+				m.NumOfPrefixes |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48547,7 +46410,7 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RefLSType |= int32(b&0x7F) << shift
+				m.RefLSType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48566,7 +46429,7 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RefLinkStateID |= uint32(b&0x7F) << shift
+				m.RefLinkStateID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48585,7 +46448,7 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RefAdvRouter |= uint32(b&0x7F) << shift
+				m.RefAdvRouter |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48604,7 +46467,7 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48613,9 +46476,6 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48631,9 +46491,6 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -48663,7 +46520,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -48691,7 +46548,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48710,7 +46567,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Metric |= uint32(b&0x7F) << shift
+				m.Metric |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48729,7 +46586,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PrefixLength |= int32(b&0x7F) << shift
+				m.PrefixLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48748,7 +46605,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PrefixOptions |= int32(b&0x7F) << shift
+				m.PrefixOptions |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48767,7 +46624,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RefLSType |= int32(b&0x7F) << shift
+				m.RefLSType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48786,7 +46643,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48795,9 +46652,6 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48820,7 +46674,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48829,9 +46683,6 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -48854,7 +46705,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ExternalRouteTag |= uint32(b&0x7F) << shift
+				m.ExternalRouteTag |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48873,7 +46724,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RefLinkStateID |= uint32(b&0x7F) << shift
+				m.RefLinkStateID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48885,9 +46736,6 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -48917,7 +46765,7 @@ func (m *InterAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -48945,7 +46793,7 @@ func (m *InterAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Metric |= uint32(b&0x7F) << shift
+				m.Metric |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48964,7 +46812,7 @@ func (m *InterAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PrefixLength |= int32(b&0x7F) << shift
+				m.PrefixLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -48983,7 +46831,7 @@ func (m *InterAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PrefixOptions |= int32(b&0x7F) << shift
+				m.PrefixOptions |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49002,7 +46850,7 @@ func (m *InterAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49011,9 +46859,6 @@ func (m *InterAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -49029,9 +46874,6 @@ func (m *InterAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49061,7 +46903,7 @@ func (m *InterAreaRouterLSA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -49089,7 +46931,7 @@ func (m *InterAreaRouterLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				m.Options |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49108,7 +46950,7 @@ func (m *InterAreaRouterLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Metric |= uint32(b&0x7F) << shift
+				m.Metric |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49127,7 +46969,7 @@ func (m *InterAreaRouterLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DestinationRouterID |= uint32(b&0x7F) << shift
+				m.DestinationRouterID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49139,9 +46981,6 @@ func (m *InterAreaRouterLSA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49171,7 +47010,7 @@ func (m *ASExternalLSAV2) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -49199,7 +47038,7 @@ func (m *ASExternalLSAV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NetworkMask |= uint32(b&0x7F) << shift
+				m.NetworkMask |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49218,7 +47057,7 @@ func (m *ASExternalLSAV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ExternalBit |= int32(b&0x7F) << shift
+				m.ExternalBit |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49237,7 +47076,7 @@ func (m *ASExternalLSAV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Metric |= uint32(b&0x7F) << shift
+				m.Metric |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49256,7 +47095,7 @@ func (m *ASExternalLSAV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ForwardingAddress |= uint32(b&0x7F) << shift
+				m.ForwardingAddress |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49275,7 +47114,7 @@ func (m *ASExternalLSAV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ExternalRouteTag |= uint32(b&0x7F) << shift
+				m.ExternalRouteTag |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49287,9 +47126,6 @@ func (m *ASExternalLSAV2) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49319,7 +47155,7 @@ func (m *RouterLSA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -49347,7 +47183,7 @@ func (m *RouterLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49366,7 +47202,7 @@ func (m *RouterLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				m.Options |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49385,7 +47221,7 @@ func (m *RouterLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49394,9 +47230,6 @@ func (m *RouterLSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -49412,9 +47245,6 @@ func (m *RouterLSA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49444,7 +47274,7 @@ func (m *Router) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -49472,7 +47302,7 @@ func (m *Router) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49491,7 +47321,7 @@ func (m *Router) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Metric |= int32(b&0x7F) << shift
+				m.Metric |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49510,7 +47340,7 @@ func (m *Router) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InterfaceID |= uint32(b&0x7F) << shift
+				m.InterfaceID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49529,7 +47359,7 @@ func (m *Router) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NeighborInterfaceID |= uint32(b&0x7F) << shift
+				m.NeighborInterfaceID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49548,7 +47378,7 @@ func (m *Router) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NeighborRouterID |= uint32(b&0x7F) << shift
+				m.NeighborRouterID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49560,9 +47390,6 @@ func (m *Router) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49592,7 +47419,7 @@ func (m *RouterLSAV2) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -49620,7 +47447,7 @@ func (m *RouterLSAV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49639,7 +47466,7 @@ func (m *RouterLSAV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Links |= int32(b&0x7F) << shift
+				m.Links |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49658,7 +47485,7 @@ func (m *RouterLSAV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49667,9 +47494,6 @@ func (m *RouterLSAV2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -49685,9 +47509,6 @@ func (m *RouterLSAV2) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49717,7 +47538,7 @@ func (m *RouterV2) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -49745,7 +47566,7 @@ func (m *RouterV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49764,7 +47585,7 @@ func (m *RouterV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LinkID |= uint32(b&0x7F) << shift
+				m.LinkID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49783,7 +47604,7 @@ func (m *RouterV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LinkData |= uint32(b&0x7F) << shift
+				m.LinkData |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49802,7 +47623,7 @@ func (m *RouterV2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Metric |= uint32(b&0x7F) << shift
+				m.Metric |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49814,9 +47635,6 @@ func (m *RouterV2) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49846,7 +47664,7 @@ func (m *NetworkLSA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -49874,7 +47692,7 @@ func (m *NetworkLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				m.Options |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -49891,7 +47709,7 @@ func (m *NetworkLSA) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= uint32(b&0x7F) << shift
+					v |= (uint32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -49908,7 +47726,7 @@ func (m *NetworkLSA) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -49917,15 +47735,12 @@ func (m *NetworkLSA) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -49945,7 +47760,7 @@ func (m *NetworkLSA) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= uint32(b&0x7F) << shift
+						v |= (uint32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -49962,9 +47777,6 @@ func (m *NetworkLSA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49994,7 +47806,7 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -50022,7 +47834,7 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RtrPriority |= int32(b&0x7F) << shift
+				m.RtrPriority |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50041,7 +47853,7 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				m.Options |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50060,7 +47872,7 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50069,9 +47881,6 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -50094,7 +47903,7 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumOfPrefixes |= uint32(b&0x7F) << shift
+				m.NumOfPrefixes |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50113,7 +47922,7 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50122,9 +47931,6 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -50140,9 +47946,6 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -50172,7 +47975,7 @@ func (m *LSAPrefix) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -50200,7 +48003,7 @@ func (m *LSAPrefix) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PrefixLength |= int32(b&0x7F) << shift
+				m.PrefixLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50219,7 +48022,7 @@ func (m *LSAPrefix) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PrefixOptions |= int32(b&0x7F) << shift
+				m.PrefixOptions |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50238,7 +48041,7 @@ func (m *LSAPrefix) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Metric |= int32(b&0x7F) << shift
+				m.Metric |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50257,7 +48060,7 @@ func (m *LSAPrefix) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50266,9 +48069,6 @@ func (m *LSAPrefix) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -50284,9 +48084,6 @@ func (m *LSAPrefix) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -50316,7 +48113,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -50344,7 +48141,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50354,9 +48151,6 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -50376,7 +48170,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50395,7 +48189,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Diagnostic |= int32(b&0x7F) << shift
+				m.Diagnostic |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50414,7 +48208,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.State |= int32(b&0x7F) << shift
+				m.State |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50433,7 +48227,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50453,7 +48247,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50473,7 +48267,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50493,7 +48287,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50513,7 +48307,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50533,7 +48327,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50553,7 +48347,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DetectMultiplier |= int32(b&0x7F) << shift
+				m.DetectMultiplier |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50572,7 +48366,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MyDiscriminator |= int32(b&0x7F) << shift
+				m.MyDiscriminator |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50591,7 +48385,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.YourDiscriminator |= int32(b&0x7F) << shift
+				m.YourDiscriminator |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50610,7 +48404,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DesiredMinTxInterval |= int32(b&0x7F) << shift
+				m.DesiredMinTxInterval |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50629,7 +48423,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RequiredMinRxInterval |= int32(b&0x7F) << shift
+				m.RequiredMinRxInterval |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50648,7 +48442,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RequiredMinEchoRxInterval |= int32(b&0x7F) << shift
+				m.RequiredMinEchoRxInterval |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50667,7 +48461,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50676,9 +48470,6 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -50703,7 +48494,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50712,9 +48503,6 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -50732,9 +48520,6 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -50764,7 +48549,7 @@ func (m *BFDAuthHeader) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -50792,7 +48577,7 @@ func (m *BFDAuthHeader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AuthType |= int32(b&0x7F) << shift
+				m.AuthType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50811,7 +48596,7 @@ func (m *BFDAuthHeader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.KeyID |= int32(b&0x7F) << shift
+				m.KeyID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50830,7 +48615,7 @@ func (m *BFDAuthHeader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SequenceNumber |= int32(b&0x7F) << shift
+				m.SequenceNumber |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50849,7 +48634,7 @@ func (m *BFDAuthHeader) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50858,9 +48643,6 @@ func (m *BFDAuthHeader) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -50876,9 +48658,6 @@ func (m *BFDAuthHeader) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -50908,7 +48687,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -50936,7 +48715,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50946,9 +48725,6 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -50968,7 +48744,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -50988,7 +48764,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51008,7 +48784,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51028,7 +48804,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51048,7 +48824,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51068,7 +48844,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51088,7 +48864,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RecursionControl |= int32(b&0x7F) << shift
+				m.RecursionControl |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51107,7 +48883,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Flags |= int32(b&0x7F) << shift
+				m.Flags |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51126,7 +48902,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51145,7 +48921,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Protocol |= int32(b&0x7F) << shift
+				m.Protocol |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51164,7 +48940,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51183,7 +48959,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Offset |= int32(b&0x7F) << shift
+				m.Offset |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51202,7 +48978,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Key |= uint32(b&0x7F) << shift
+				m.Key |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51221,7 +48997,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Seq |= uint32(b&0x7F) << shift
+				m.Seq |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51240,7 +49016,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Ack |= uint32(b&0x7F) << shift
+				m.Ack |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51259,7 +49035,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51268,9 +49044,6 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51295,7 +49068,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51304,9 +49077,6 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51324,9 +49094,6 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51356,7 +49123,7 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -51384,7 +49151,7 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AddressFamily |= int32(b&0x7F) << shift
+				m.AddressFamily |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51403,7 +49170,7 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SREOffset |= int32(b&0x7F) << shift
+				m.SREOffset |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51422,7 +49189,7 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SRELength |= int32(b&0x7F) << shift
+				m.SRELength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51441,7 +49208,7 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51450,9 +49217,6 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51475,7 +49239,7 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51484,9 +49248,6 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51504,9 +49265,6 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51536,7 +49294,7 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -51564,7 +49322,7 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51574,9 +49332,6 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51596,7 +49351,7 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FrameControl |= int32(b&0x7F) << shift
+				m.FrameControl |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51615,7 +49370,7 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Priority |= int32(b&0x7F) << shift
+				m.Priority |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51634,7 +49389,7 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51644,9 +49399,6 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51666,7 +49418,7 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51676,9 +49428,6 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51698,7 +49447,7 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51707,9 +49456,6 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51727,9 +49473,6 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51759,7 +49502,7 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -51787,7 +49530,7 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51797,9 +49540,6 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51819,7 +49559,7 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Code |= int32(b&0x7F) << shift
+				m.Code |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51838,7 +49578,7 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Id |= int32(b&0x7F) << shift
+				m.Id |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51857,7 +49597,7 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51876,7 +49616,7 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51895,7 +49635,7 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51904,9 +49644,6 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -51922,9 +49659,6 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51954,7 +49688,7 @@ func (m *EAPOL) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -51982,7 +49716,7 @@ func (m *EAPOL) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -51992,9 +49726,6 @@ func (m *EAPOL) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52014,7 +49745,7 @@ func (m *EAPOL) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52033,7 +49764,7 @@ func (m *EAPOL) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52052,7 +49783,7 @@ func (m *EAPOL) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52064,9 +49795,6 @@ func (m *EAPOL) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -52096,7 +49824,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -52124,7 +49852,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52134,9 +49862,6 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52156,7 +49881,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.KeyDescriptorType |= int32(b&0x7F) << shift
+				m.KeyDescriptorType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52175,7 +49900,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.KeyDescriptorVersion |= int32(b&0x7F) << shift
+				m.KeyDescriptorVersion |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52194,7 +49919,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.KeyType |= int32(b&0x7F) << shift
+				m.KeyType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52213,7 +49938,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.KeyIndex |= int32(b&0x7F) << shift
+				m.KeyIndex |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52232,7 +49957,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52252,7 +49977,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52272,7 +49997,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52292,7 +50017,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52312,7 +50037,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52332,7 +50057,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52352,7 +50077,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52372,7 +50097,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52392,7 +50117,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.KeyLength |= int32(b&0x7F) << shift
+				m.KeyLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52411,7 +50136,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReplayCounter |= uint64(b&0x7F) << shift
+				m.ReplayCounter |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52430,7 +50155,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52439,9 +50164,6 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52464,7 +50186,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52473,9 +50195,6 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52498,7 +50217,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RSC |= uint64(b&0x7F) << shift
+				m.RSC |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52517,7 +50236,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ID |= uint64(b&0x7F) << shift
+				m.ID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52536,7 +50255,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52545,9 +50264,6 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52570,7 +50286,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.KeyDataLength |= int32(b&0x7F) << shift
+				m.KeyDataLength |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52589,7 +50305,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52598,9 +50314,6 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52616,9 +50329,6 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -52648,7 +50358,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -52676,7 +50386,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52686,9 +50396,6 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52708,7 +50415,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52727,7 +50434,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52746,7 +50453,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.VirtualRtrID |= int32(b&0x7F) << shift
+				m.VirtualRtrID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52765,7 +50472,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Priority |= int32(b&0x7F) << shift
+				m.Priority |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52784,7 +50491,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CountIPAddr |= int32(b&0x7F) << shift
+				m.CountIPAddr |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52803,7 +50510,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AuthType |= int32(b&0x7F) << shift
+				m.AuthType |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52822,7 +50529,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.AdverInt |= int32(b&0x7F) << shift
+				m.AdverInt |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52841,7 +50548,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52860,7 +50567,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52870,9 +50577,6 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52892,7 +50596,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52901,9 +50605,6 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -52921,9 +50622,6 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -52953,7 +50651,7 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -52981,7 +50679,7 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -52991,9 +50689,6 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53013,7 +50708,7 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53032,7 +50727,7 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TTL |= int32(b&0x7F) << shift
+				m.TTL |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53051,7 +50746,7 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Checksum |= int32(b&0x7F) << shift
+				m.Checksum |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53070,7 +50765,7 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53079,9 +50774,6 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53097,9 +50789,6 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53129,7 +50818,7 @@ func (m *CiscoDiscoveryValue) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -53157,7 +50846,7 @@ func (m *CiscoDiscoveryValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53176,7 +50865,7 @@ func (m *CiscoDiscoveryValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= int32(b&0x7F) << shift
+				m.Length |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53195,7 +50884,7 @@ func (m *CiscoDiscoveryValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53204,9 +50893,6 @@ func (m *CiscoDiscoveryValue) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53222,9 +50908,6 @@ func (m *CiscoDiscoveryValue) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53254,7 +50937,7 @@ func (m *CDPVLANDialogue) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -53282,7 +50965,7 @@ func (m *CDPVLANDialogue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ID |= int32(b&0x7F) << shift
+				m.ID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53301,7 +50984,7 @@ func (m *CDPVLANDialogue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.VLAN |= int32(b&0x7F) << shift
+				m.VLAN |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53313,9 +50996,6 @@ func (m *CDPVLANDialogue) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53345,7 +51025,7 @@ func (m *CDPLocation) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -53373,7 +51053,7 @@ func (m *CDPLocation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= int32(b&0x7F) << shift
+				m.Type |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53392,7 +51072,7 @@ func (m *CDPLocation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53402,9 +51082,6 @@ func (m *CDPLocation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53417,9 +51094,6 @@ func (m *CDPLocation) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53449,7 +51123,7 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -53477,7 +51151,7 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ID |= int32(b&0x7F) << shift
+				m.ID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53496,7 +51170,7 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MgmtID |= int32(b&0x7F) << shift
+				m.MgmtID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53513,7 +51187,7 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= uint32(b&0x7F) << shift
+					v |= (uint32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -53530,7 +51204,7 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -53539,15 +51213,12 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -53567,7 +51238,7 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= uint32(b&0x7F) << shift
+						v |= (uint32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -53584,9 +51255,6 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53616,7 +51284,7 @@ func (m *CDPSparePairPoE) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -53644,7 +51312,7 @@ func (m *CDPSparePairPoE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53664,7 +51332,7 @@ func (m *CDPSparePairPoE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53684,7 +51352,7 @@ func (m *CDPSparePairPoE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53704,7 +51372,7 @@ func (m *CDPSparePairPoE) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53717,9 +51385,6 @@ func (m *CDPSparePairPoE) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53749,7 +51414,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -53777,7 +51442,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53787,9 +51452,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53809,7 +51471,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53818,9 +51480,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53845,7 +51504,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53855,9 +51514,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53877,7 +51533,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53887,9 +51543,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53909,7 +51562,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53919,9 +51572,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53941,7 +51591,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53950,9 +51600,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -53977,7 +51624,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -53987,9 +51634,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54009,7 +51653,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54019,9 +51663,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54041,7 +51682,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54050,9 +51691,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54075,7 +51713,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54085,9 +51723,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54107,7 +51742,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NativeVLAN |= int32(b&0x7F) << shift
+				m.NativeVLAN |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54126,7 +51761,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54146,7 +51781,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54155,9 +51790,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54182,7 +51814,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54191,9 +51823,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54218,7 +51847,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PowerConsumption |= int32(b&0x7F) << shift
+				m.PowerConsumption |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54237,7 +51866,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MTU |= uint32(b&0x7F) << shift
+				m.MTU |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54256,7 +51885,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ExtendedTrust |= int32(b&0x7F) << shift
+				m.ExtendedTrust |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54275,7 +51904,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.UntrustedCOS |= int32(b&0x7F) << shift
+				m.UntrustedCOS |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54294,7 +51923,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54304,9 +51933,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54326,7 +51952,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54336,9 +51962,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54358,7 +51981,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54368,9 +51991,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54390,7 +52010,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54399,9 +52019,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54426,7 +52043,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54435,9 +52052,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54462,7 +52076,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54471,9 +52085,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54498,7 +52109,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54507,9 +52118,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54534,7 +52142,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54543,9 +52151,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54570,7 +52175,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54579,9 +52184,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54597,9 +52199,6 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -54629,7 +52228,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -54657,7 +52256,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54666,9 +52265,6 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54691,7 +52287,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ProtocolID |= int32(b&0x7F) << shift
+				m.ProtocolID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54710,7 +52306,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54720,9 +52316,6 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54742,7 +52335,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54752,9 +52345,6 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54774,7 +52364,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Version |= int32(b&0x7F) << shift
+				m.Version |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54793,7 +52383,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SubVersion |= int32(b&0x7F) << shift
+				m.SubVersion |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54812,7 +52402,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Status |= int32(b&0x7F) << shift
+				m.Status |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54831,7 +52421,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Unknown2 |= int32(b&0x7F) << shift
+				m.Unknown2 |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54850,7 +52440,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54860,9 +52450,6 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54882,7 +52469,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54892,9 +52479,6 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -54914,7 +52498,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Unknown3 |= int32(b&0x7F) << shift
+				m.Unknown3 |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54933,7 +52517,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ManagementVLAN |= int32(b&0x7F) << shift
+				m.ManagementVLAN |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -54945,9 +52529,6 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -54977,7 +52558,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -55005,7 +52586,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55014,9 +52595,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55039,7 +52617,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Unknown1 |= uint32(b&0x7F) << shift
+				m.Unknown1 |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55058,7 +52636,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SequenceNumber |= uint32(b&0x7F) << shift
+				m.SequenceNumber |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55077,7 +52655,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55087,9 +52665,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55109,7 +52684,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Unknown2 |= int32(b&0x7F) << shift
+				m.Unknown2 |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55128,7 +52703,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55138,9 +52713,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55160,7 +52732,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55170,9 +52742,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55192,7 +52761,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55201,9 +52770,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55226,7 +52792,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55236,9 +52802,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55258,7 +52821,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55268,9 +52831,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55290,7 +52850,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55300,9 +52860,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55322,7 +52879,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55331,9 +52888,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55356,7 +52910,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55365,9 +52919,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55390,7 +52941,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55399,9 +52950,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55424,7 +52972,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55433,9 +52981,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55458,7 +53003,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55467,9 +53012,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55485,9 +53027,6 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -55517,7 +53056,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -55545,7 +53084,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55565,7 +53104,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55585,7 +53124,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55605,7 +53144,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55625,7 +53164,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55645,7 +53184,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55665,7 +53204,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55685,7 +53224,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55705,7 +53244,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55718,9 +53257,6 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -55750,7 +53286,7 @@ func (m *IPNet) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -55778,7 +53314,7 @@ func (m *IPNet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55788,9 +53324,6 @@ func (m *IPNet) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55810,7 +53343,7 @@ func (m *IPNet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55820,9 +53353,6 @@ func (m *IPNet) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55835,9 +53365,6 @@ func (m *IPNet) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -55867,7 +53394,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -55895,7 +53422,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55905,9 +53432,6 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55927,7 +53451,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55937,9 +53461,6 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55959,7 +53480,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -55968,9 +53489,6 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -55993,7 +53511,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Chassis |= int32(b&0x7F) << shift
+				m.Chassis |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56012,7 +53530,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Backplane |= int32(b&0x7F) << shift
+				m.Backplane |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56031,7 +53549,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.State |= int32(b&0x7F) << shift
+				m.State |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56050,7 +53568,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumLinks |= int32(b&0x7F) << shift
+				m.NumLinks |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56069,7 +53587,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56078,9 +53596,6 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56098,9 +53613,6 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56130,7 +53642,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -56158,7 +53670,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56168,9 +53680,6 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56190,7 +53699,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56210,7 +53719,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ServiceID |= int32(b&0x7F) << shift
+				m.ServiceID |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56229,7 +53738,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ClassID |= uint32(b&0x7F) << shift
+				m.ClassID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56248,7 +53757,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InstanceID |= uint32(b&0x7F) << shift
+				m.InstanceID |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56267,7 +53776,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Status |= int32(b&0x7F) << shift
+				m.Status |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56284,7 +53793,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= uint32(b&0x7F) << shift
+					v |= (uint32(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -56301,7 +53810,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= int(b&0x7F) << shift
+					packedLen |= (int(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -56310,15 +53819,12 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthNetcap
 				}
 				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthNetcap
-				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
+				for _, integer := range dAtA {
 					if integer < 128 {
 						count++
 					}
@@ -56338,7 +53844,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= uint32(b&0x7F) << shift
+						v |= (uint32(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -56362,7 +53868,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56371,9 +53877,6 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56396,7 +53899,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56405,9 +53908,6 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56425,9 +53925,6 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56457,7 +53954,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -56485,7 +53982,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56495,9 +53992,6 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56517,7 +54011,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Command |= uint32(b&0x7F) << shift
+				m.Command |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56536,7 +54030,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= uint32(b&0x7F) << shift
+				m.Length |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56555,7 +54049,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SessionHandle |= uint32(b&0x7F) << shift
+				m.SessionHandle |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56574,7 +54068,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Status |= uint32(b&0x7F) << shift
+				m.Status |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56593,7 +54087,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56602,9 +54096,6 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56627,7 +54118,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				m.Options |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56646,7 +54137,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56655,9 +54146,6 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56682,7 +54170,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56691,9 +54179,6 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56711,9 +54196,6 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56743,7 +54225,7 @@ func (m *ENIPCommandSpecificData) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= uint64(b&0x7F) << shift
+			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -56771,7 +54253,7 @@ func (m *ENIPCommandSpecificData) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Cmd |= uint32(b&0x7F) << shift
+				m.Cmd |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56790,7 +54272,7 @@ func (m *ENIPCommandSpecificData) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -56799,9 +54281,6 @@ func (m *ENIPCommandSpecificData) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthNetcap
 			}
 			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56819,9 +54298,6 @@ func (m *ENIPCommandSpecificData) Unmarshal(dAtA []byte) error {
 			if skippy < 0 {
 				return ErrInvalidLengthNetcap
 			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthNetcap
-			}
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -56837,7 +54313,6 @@ func (m *ENIPCommandSpecificData) Unmarshal(dAtA []byte) error {
 func skipNetcap(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
-	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -56869,8 +54344,10 @@ func skipNetcap(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
+			return iNdEx, nil
 		case 1:
 			iNdEx += 8
+			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -56887,34 +54364,53 @@ func skipNetcap(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
+			iNdEx += length
 			if length < 0 {
 				return 0, ErrInvalidLengthNetcap
 			}
-			iNdEx += length
+			return iNdEx, nil
 		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupNetcap
+			for {
+				var innerWire uint64
+				var start int = iNdEx
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return 0, ErrIntOverflowNetcap
+					}
+					if iNdEx >= l {
+						return 0, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					innerWire |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				innerWireType := int(innerWire & 0x7)
+				if innerWireType == 4 {
+					break
+				}
+				next, err := skipNetcap(dAtA[start:])
+				if err != nil {
+					return 0, err
+				}
+				iNdEx = start + next
 			}
-			depth--
+			return iNdEx, nil
+		case 4:
+			return iNdEx, nil
 		case 5:
 			iNdEx += 4
+			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthNetcap
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
 	}
-	return 0, io.ErrUnexpectedEOF
+	panic("unreachable")
 }
 
 var (
-	ErrInvalidLengthNetcap        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowNetcap          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupNetcap = fmt.Errorf("proto: unexpected end of group")
+	ErrInvalidLengthNetcap = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowNetcap   = fmt.Errorf("proto: integer overflow")
 )
