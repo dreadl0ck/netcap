@@ -1,6 +1,7 @@
 builds:
 - 
   main: ./cmd/capture
+  id: capture
   binary: net.capture
   env:
     - CGO_ENABLED=1
@@ -44,6 +45,7 @@ builds:
     #pre: rice embed-go
 -
   main: ./cmd/util
+  id: util
   binary: net.util
   env:
     - CGO_ENABLED=1
@@ -67,6 +69,7 @@ builds:
     - arm64
 - 
   main: ./cmd/label
+  id: label
   binary: net.label
   env:
     - CGO_ENABLED=1
@@ -90,6 +93,7 @@ builds:
     - arm64
 - 
   main: ./cmd/collect
+  id: collect
   binary: net.collect
   env:
     - CGO_ENABLED=1
@@ -113,6 +117,7 @@ builds:
     - arm64
 - 
   main: ./cmd/agent
+  id: agent
   binary: net.agent
   env:
     - CGO_ENABLED=1
@@ -136,6 +141,7 @@ builds:
     - arm64
 - 
   main: ./cmd/proxy
+  id: proxy
   binary: net.proxy
   env:
     - CGO_ENABLED=1
@@ -159,6 +165,7 @@ builds:
     - arm64
 - 
   main: ./cmd/export
+  id: export
   binary: net.export
   env:
     - CGO_ENABLED=1
@@ -182,6 +189,7 @@ builds:
     - arm64
 - 
   main: ./cmd/dump
+  id: dump
   binary: net.dump
   env:
     - CGO_ENABLED=1
