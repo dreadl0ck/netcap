@@ -50,9 +50,13 @@ func main() {
 	label.SetExcluded(*flagExcludeLabels)
 
 	// lets go
+	var err error
 	if *flagCustom != "" {
-		log.Fatal(label.CustomLabels(*flagCustom, *flagOutDir, *flagDescription, *flagSeparator, ""))
+		err = label.CustomLabels(*flagCustom, *flagOutDir, *flagDescription, *flagSeparator, "")
 	} else {
-		log.Fatal(label.Suricata(*flagInput, *flagOutDir, *flagDescription, *flagSeparator, ""))
+		err = label.Suricata(*flagInput, *flagOutDir, *flagDescription, *flagSeparator, "")
+	}
+	if err != nil {
+		log.Fatal(err)
 	}
 }
