@@ -69,6 +69,11 @@ func main() {
 		return
 	}
 
+	if *flagListInterfaces {
+		utils.ListAllNetworkInterfaces()
+		return
+	}
+
 	// create keypair
 	pub, priv, err := cryptoutils.GenerateKeypair()
 	if err != nil {

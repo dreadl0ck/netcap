@@ -54,6 +54,11 @@ func main() {
 		return
 	}
 
+	if *flagListInterfaces {
+		utils.ListAllNetworkInterfaces()
+		return
+	}
+
 	// configure CPU profiling
 	if *flagCPUProfile {
 		defer func() func() {

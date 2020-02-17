@@ -16,15 +16,33 @@ package utils
 import (
 	"fmt"
 	"log"
+	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/evilsocket/islazy/tui"
 	"github.com/gogo/protobuf/proto"
 )
 
+// ListAllNetworkInterfaces dumps a list of all visible network interfaces to stdout
+func ListAllNetworkInterfaces() {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		log.Fatal("failed to get network interfaces: ", err)
+	}
+
+	var rows = [][]string{}
+	for _, nic := range interfaces {
+		rows = append(rows, []string{strconv.Itoa(nic.Index), nic.Name, nic.Flags.String(), nic.HardwareAddr.String(), strconv.Itoa(nic.MTU)})
+	}
+	tui.Table(os.Stdout, []string{"Index", "Name", "Flags", "HardwareAddr", "MTU"}, rows)
+}
+
+// GetBaseLayer resolves a baselayer string to the gopacket.LayerType
 func GetBaseLayer(value string) (t gopacket.LayerType) {
 	switch value {
 	case "ethernet":
@@ -37,6 +55,7 @@ func GetBaseLayer(value string) (t gopacket.LayerType) {
 	return
 }
 
+// GetDecodeOptions resolves a decode option string to the gopacket.DecodeOptions type
 func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 	switch value {
 	case "lazy":

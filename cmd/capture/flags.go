@@ -50,5 +50,6 @@ var (
 	flagCSV     = flag.Bool("csv", false, "output data as CSV instead of audit records")
 	flagContext = flag.Bool("context", true, "add packet flow context to selected audit records")
 
-	flagMemBufferSize = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagMemBufferSize  = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagListInterfaces = flag.Bool("interfaces", false, "list all visible network interfaces")
 )

@@ -37,5 +37,6 @@ var (
 	flagVersion       = flag.Bool("version", false, "print netcap package version and exit")
 	flagContext       = flag.Bool("context", true, "add packet flow context to selected audit records")
 
-	flagMemBufferSize = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagMemBufferSize  = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagListInterfaces = flag.Bool("interfaces", false, "list all visible network interfaces")
 )
