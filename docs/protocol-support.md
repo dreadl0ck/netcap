@@ -4,5 +4,5 @@ description: An overview of supported protocols and available fields
 
 # Protocol Support
 
-![](.gitbook/assets/overview.pdf)
+{% file src=".gitbook/assets/overview \(2\).pdf" %}
 
