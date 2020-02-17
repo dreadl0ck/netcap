@@ -35,6 +35,10 @@ func (s SCTP) CSVHeader() []string {
 }
 
 func (s SCTP) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if s.Context == nil {
+		s.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(s.Timestamp),
 		strconv.FormatUint(uint64(s.SrcPort), 10),
@@ -72,11 +76,12 @@ func (a SCTP) Inc() {
 
 func (a *SCTP) SetPacketContext(ctx *PacketContext) {
 
-	// clear duplicate data
-	ctx.SrcIP = ""
-	ctx.DstIP = ""
-
-	a.Context = ctx
+	// create new context and only add information that is
+	// not yet present on the audit record type
+	a.Context = &PacketContext{
+		SrcPort: ctx.SrcPort,
+		DstPort: ctx.DstPort,
+	}
 }
 
 func (a SCTP) Src() string {

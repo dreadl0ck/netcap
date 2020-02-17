@@ -37,6 +37,10 @@ func (i ICMPv6NeighborAdvertisement) CSVRecord() []string {
 	for _, o := range i.Options {
 		opts = append(opts, o.ToString())
 	}
+	// prevent accessing nil pointer
+	if i.Context == nil {
+		i.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Flags),

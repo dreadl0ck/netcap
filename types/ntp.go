@@ -48,6 +48,10 @@ func (n NTP) CSVHeader() []string {
 }
 
 func (n NTP) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if n.Context == nil {
+		n.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(n.Timestamp),
 		formatInt32(n.LeapIndicator),                         // int32

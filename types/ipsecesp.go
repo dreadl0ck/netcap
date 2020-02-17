@@ -33,6 +33,10 @@ func (a IPSecESP) CSVHeader() []string {
 }
 
 func (a IPSecESP) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if a.Context == nil {
+		a.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.SPI),

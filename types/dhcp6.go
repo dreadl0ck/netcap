@@ -43,6 +43,10 @@ func (d DHCPv6) CSVRecord() []string {
 	for _, o := range d.Options {
 		opts = append(opts, o.ToString())
 	}
+	// prevent accessing nil pointer
+	if d.Context == nil {
+		d.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(d.Timestamp),        // string
 		formatInt32(d.MsgType),              // int32

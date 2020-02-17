@@ -54,6 +54,10 @@ func (a OSPFv2) CSVRecord() []string {
 	for _, l := range a.LSR {
 		lsreqs = append(lsreqs, toString(l))
 	}
+	// prevent accessing nil pointer
+	if a.Context == nil {
+		a.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.Version),        // int32

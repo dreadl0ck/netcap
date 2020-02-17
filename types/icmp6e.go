@@ -28,21 +28,20 @@ var fieldsICMPv6Echo = []string{
 }
 
 func (i ICMPv6Echo) CSVHeader() []string {
-	return filter([]string{
-		"Timestamp",
-		"Identifier", //  int32
-		"SeqNumber",  //  int32
-		i.Context.SrcIP,
-		i.Context.DstIP,
-	})
-
+	return filter(fieldsICMPv6Echo)
 }
 
 func (i ICMPv6Echo) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if i.Context == nil {
+		i.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Identifier),
 		formatInt32(i.SeqNumber),
+		i.Context.SrcIP,
+		i.Context.DstIP,
 	})
 }
 

@@ -39,6 +39,10 @@ func (s SIP) CSVHeader() []string {
 }
 
 func (s SIP) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if s.Context == nil {
+		s.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(s.Timestamp),
 		formatInt32(s.Version),           //  int32 `protobuf:"varint,2,opt,name=Version,proto3" json:"Version,omitempty"`

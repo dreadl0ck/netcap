@@ -37,6 +37,10 @@ func (a VXLAN) CSVHeader() []string {
 }
 
 func (a VXLAN) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if a.Context == nil {
+		a.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.ValidIDFlag),  //  bool

@@ -39,7 +39,10 @@ func (e ENIP) CSVHeader() []string {
 	return filter(fieldsENIP)
 }
 func (e ENIP) CSVRecord() []string {
-
+	// prevent accessing nil pointer
+	if e.Context == nil {
+		e.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(e.Timestamp),
 		formatUint32(e.Command),             // uint32
