@@ -47,7 +47,6 @@ package encoder
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -58,6 +57,8 @@ import (
 	"path"
 	"sync"
 	"sync/atomic"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"

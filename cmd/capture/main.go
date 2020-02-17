@@ -131,11 +131,13 @@ func main() {
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})
 
+	// TODO: add a utility function for this
+	// inject commit version at build time and log as well
 	netcap.PrintLogo()
 
 	fmt.Println("\n> go runtime version:", runtime.Version())
-	var lt gopacket.LayerType
 
+	var lt gopacket.LayerType
 	fmt.Println("> gopacket lib:", reflect.TypeOf(lt).PkgPath())
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -152,10 +154,11 @@ func main() {
 
 	// print configuration as table
 	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
-		{"Workers", strconv.Itoa(*flagWorkers)},
+		{"NumWorkers", strconv.Itoa(*flagWorkers)},
 		{"MemBuffer", strconv.FormatBool(*flagBuffer)},
+		{"MemBufferSize", strconv.Itoa(*flagMemBufferSize) + " bytes"},
 		{"Compression", strconv.FormatBool(*flagCompress)},
-		{"PacketBuffer", strconv.Itoa(*flagPacketBuffer)},
+		{"PacketBuffer", strconv.Itoa(*flagPacketBuffer) + " packets"},
 		{"PacketContext", strconv.FormatBool(*flagContext)},
 	})
 	fmt.Println() // add a newline

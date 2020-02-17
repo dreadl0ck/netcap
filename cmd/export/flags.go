@@ -40,4 +40,5 @@ var (
 	flagMemProfile     = flag.Bool("memprof", false, "create memory profile")
 	flagCSV            = flag.Bool("csv", false, "print output data as csv with header line")
 	flagContext        = flag.Bool("context", true, "add packet flow context to selected audit records")
+	flagMemBufferSize  = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
 )

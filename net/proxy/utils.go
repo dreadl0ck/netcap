@@ -15,7 +15,6 @@ package proxy
 
 import (
 	"bytes"
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -27,6 +26,8 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap"
 )

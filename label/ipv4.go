@@ -38,7 +38,7 @@ func IPv4(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 	)
 
 	go func() {
-		r, err := netcap.Open(fname)
+		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {
 			panic(err)
 		}

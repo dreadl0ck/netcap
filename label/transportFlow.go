@@ -38,7 +38,7 @@ func TransportFlow(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, out
 	)
 
 	go func() {
-		r, err := netcap.Open(fname)
+		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {
 			panic(err)
 		}

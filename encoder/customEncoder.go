@@ -144,7 +144,7 @@ func InitCustomEncoders(c Config) {
 	for _, e := range customEncoderSlice {
 
 		// fmt.Println("init custom encoder", e.name)
-		e.writer = netcap.NewWriter(e.Name, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
+		e.writer = netcap.NewWriter(e.Name, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
 
 		// call postinit func if set
 		if e.postinit != nil {

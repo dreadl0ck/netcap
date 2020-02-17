@@ -15,9 +15,10 @@ package netcap
 
 import (
 	"bufio"
-	"compress/gzip"
 	"os"
 	"path/filepath"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/types"
@@ -33,7 +34,7 @@ type Reader struct {
 }
 
 // Open a file
-func Open(file string) (*Reader, error) {
+func Open(file string, memBufSize int) (*Reader, error) {
 	r := &Reader{}
 
 	h, err := os.Open(file)
@@ -41,8 +42,12 @@ func Open(file string) (*Reader, error) {
 		return nil, err
 	}
 
+	if memBufSize <= 0 {
+		memBufSize = DefaultBufferSize
+	}
+
 	r.file = h
-	r.bReader = bufio.NewReader(h)
+	r.bReader = bufio.NewReaderSize(h, memBufSize)
 
 	if filepath.Ext(file) == ".gz" {
 		r.gReader, err = gzip.NewReader(r.bReader)

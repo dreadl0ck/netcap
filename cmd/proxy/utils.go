@@ -15,9 +15,9 @@ package main
 
 import (
 	"bytes"
-	"compress/gzip"
 	"flag"
 	"fmt"
+	gzip "github.com/klauspost/pgzip"
 	"io/ioutil"
 	"log"
 	"net"

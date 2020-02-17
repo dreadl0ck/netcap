@@ -15,11 +15,11 @@ package main
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/hex"
 	"flag"
 	"fmt"
+	gzip "github.com/klauspost/pgzip"
 	"io"
 	"io/ioutil"
 	"log"

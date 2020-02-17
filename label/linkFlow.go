@@ -46,7 +46,7 @@ func LinkFlow(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, 
 	)
 
 	go func() {
-		r, err := netcap.Open(fname)
+		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {
 			panic(err)
 		}

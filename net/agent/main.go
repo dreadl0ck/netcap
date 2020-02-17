@@ -15,12 +15,13 @@ package agent
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/dreadl0ck/netcap"

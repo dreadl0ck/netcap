@@ -14,7 +14,6 @@
 package label
 
 import (
-	"compress/gzip"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -26,6 +25,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -49,13 +50,13 @@ import (
 //}
 
 type AttackInfo struct {
-	Num int
-	Name string
-	Start time.Time
-	End time.Time
-	IPs []string
-	Proto string
-	Notes string
+	Num      int
+	Name     string
+	Start    time.Time
+	End      time.Time
+	IPs      []string
+	Proto    string
+	Notes    string
 	Category string
 }
 
@@ -91,7 +92,7 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 			log.Fatal(err)
 		}
 
-		end, err :=  time.Parse("2006/1/2 15:04:05", record[3])
+		end, err := time.Parse("2006/1/2 15:04:05", record[3])
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -106,14 +107,14 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 		}
 
 		custom := &AttackInfo{
-			Num:        num,                        // int
-			Start:      start, // time.Time
-			End:        end,   // time.Time
-			IPs:        toArr(record[4]),           // []string
-			Name:       record[1],                  // string
-			Proto:      record[5],                  // string
-			Notes:      record[6],                 // string
-			Category: record[7], // string
+			Num:      num,              // int
+			Start:    start,            // time.Time
+			End:      end,              // time.Time
+			IPs:      toArr(record[4]), // []string
+			Name:     record[1],        // string
+			Proto:    record[5],        // string
+			Notes:    record[6],        // string
+			Category: record[7],        // string
 		}
 
 		// ensure no alerts with empty name are collected
@@ -253,7 +254,7 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 	go func() {
 
 		// open layer data file
-		r, err := netcap.Open(fname)
+		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {
 			panic(err)
 		}
@@ -323,7 +324,7 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 				}
 
 				// verify time interval of audit record is within the attack period
-				auditRecordTime := utils.StringToTime(p.Time()).UTC().Add(8*time.Hour)
+				auditRecordTime := utils.StringToTime(p.Time()).UTC().Add(8 * time.Hour)
 
 				// if the audit record has a timestamp in the attack period
 				if (l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime)) ||

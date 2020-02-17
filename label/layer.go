@@ -43,7 +43,7 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 	go func() {
 
 		// open layer data file
-		r, err := netcap.Open(fname)
+		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {
 			panic(err)
 		}

@@ -156,7 +156,7 @@ func InitRecord(typ types.Type) (record proto.Message) {
 func Count(filename string) (count int64) {
 
 	// open audit record file
-	r, err := Open(filename)
+	r, err := Open(filename, DefaultBufferSize)
 	if err != nil {
 		panic(err)
 	}

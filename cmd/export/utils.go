@@ -165,7 +165,7 @@ func exportDir(path string) {
 // and return the timestamp of the first audit record in there
 func firstTimestamp(path string) time.Time {
 
-	r, err := netcap.Open(path)
+	r, err := netcap.Open(path, netcap.DefaultBufferSize)
 	if err != nil {
 		log.Fatal("failed to open netcap file:", err)
 	}
@@ -202,7 +202,7 @@ func exportFile(path string) {
 
 	var (
 		count  = 0
-		r, err = netcap.Open(path)
+		r, err = netcap.Open(path, *flagMemBufferSize)
 	)
 	if err != nil {
 		log.Fatal("failed to open netcap file:", err)
