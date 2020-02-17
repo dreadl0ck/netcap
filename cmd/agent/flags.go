@@ -27,7 +27,7 @@ var (
 	flagWorkers      = flag.Int("workers", 100, "number of encoder routines")
 	flagPacketBuffer = flag.Int("pbuf", 0, "set packet buffer size")
 	flagPromiscMode  = flag.Bool("promisc", true, "capture live in promisc mode")
-	flagSnapLen      = flag.Int("snaplen", 1024, "configure snaplen for live capture")
+	flagSnapLen      = flag.Int("snaplen", 1514, "configure snaplen for live capture")
 
 	flagServerPubKey  = flag.String("pubkey", "", "path to the hex encoded server public key on disk")
 	flagAddr          = flag.String("addr", "127.0.0.1:1335", "specify the address and port of the collection server")

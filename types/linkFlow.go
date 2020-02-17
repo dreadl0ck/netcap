@@ -50,7 +50,7 @@ func (f LinkFlow) CSVRecord() []string {
 	})
 }
 
-func (f LinkFlow) NetcapTimestamp() string {
+func (f LinkFlow) Time() string {
 	return f.TimestampFirst
 }
 
@@ -72,4 +72,14 @@ func init() {
 
 func (a LinkFlow) Inc() {
 	linkFlowMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *LinkFlow) SetPacketContext(ctx *PacketContext) {}
+
+func (a LinkFlow) Src() string {
+	return a.SrcMAC
+}
+
+func (a LinkFlow) Dst() string {
+	return a.DstMAC
 }

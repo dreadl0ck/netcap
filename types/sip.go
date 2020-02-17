@@ -54,7 +54,7 @@ func (s SIP) CSVRecord() []string {
 	})
 }
 
-func (s SIP) NetcapTimestamp() string {
+func (s SIP) Time() string {
 	return s.Timestamp
 }
 
@@ -80,4 +80,18 @@ func (a SIP) Inc() {
 
 func (a *SIP) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a SIP) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a SIP) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

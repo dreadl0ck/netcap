@@ -71,7 +71,7 @@ func (i IPv4) CSVRecord() []string {
 	})
 }
 
-func (i IPv4) NetcapTimestamp() string {
+func (i IPv4) Time() string {
 	return i.Timestamp
 }
 
@@ -170,4 +170,12 @@ func (a *IPv4) SetPacketContext(ctx *PacketContext) {
 	ctx.DstIP = ""
 
 	a.Context = ctx
+}
+
+func (a IPv4) Src() string {
+	return a.SrcIP
+}
+
+func (a IPv4) Dst() string {
+	return a.DstIP
 }

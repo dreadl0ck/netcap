@@ -45,7 +45,7 @@ func (i ICMPv4) CSVRecord() []string {
 	})
 }
 
-func (i ICMPv4) NetcapTimestamp() string {
+func (i ICMPv4) Time() string {
 	return i.Timestamp
 }
 
@@ -71,4 +71,18 @@ func (a ICMPv4) Inc() {
 
 func (a *ICMPv4) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a ICMPv4) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a ICMPv4) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

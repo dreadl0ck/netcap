@@ -101,7 +101,7 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 				for _, a := range labels {
 
 					// if the layer audit record has a timestamp of an alert
-					if a.Timestamp == p.NetcapTimestamp() {
+					if a.Timestamp == p.Time() {
 
 						// only if it is not already part of the label
 						if !strings.Contains(label, a.Classification) {
@@ -116,7 +116,7 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 
 				if len(label) != 0 {
 					if strings.HasPrefix(label, " |") {
-						log.Fatal("BULLSHIT:", label)
+						log.Fatal("invalid label: ", label)
 					}
 
 					// add label
@@ -129,7 +129,7 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 			} else {
 				// layers are mapped by timestamp
 				// this preserves only the first label seen for each timestamp
-				if a, ok := labelMap[p.NetcapTimestamp()]; ok {
+				if a, ok := labelMap[p.Time()]; ok {
 					// add label
 					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++

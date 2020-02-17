@@ -30,6 +30,7 @@ var (
 	flagSuricataConfigPath    = flag.String("suricata-config", "/usr/local/etc/suricata/suricata.yaml", "set the path to the suricata config file")
 
 	flagVersion = flag.Bool("version", false, "print netcap package version and exit")
+	flagCustom  = flag.String("custom", "", "use custom mappings at path")
 
 	// this wont work currently, because the Select() func will stop if there are fields that are not present on an audit record
 	// as labeling iterates over all available records, there will always be a record that does not have all selected fields

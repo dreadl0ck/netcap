@@ -14,27 +14,33 @@
 package encoder
 
 import (
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/golang/protobuf/proto"
 )
 
-var udpEncoder = CreateLayerEncoder(types.Type_NC_UDP, layers.LayerTypeUDP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if udp, ok := layer.(*layers.UDP); ok {
+var cipEncoder = CreateLayerEncoder(types.Type_NC_CIP, layers.LayerTypeCIP, func(layer gopacket.Layer, timestamp string) proto.Message {
+	if cip, ok := layer.(*layers.CIP); ok {
 		var payload []byte
 		if CapturePayload {
-			payload = layer.LayerPayload()
+			payload = cip.Data
 		}
-		return &types.UDP{
-			Timestamp:      timestamp,
-			SrcPort:        int32(udp.SrcPort),
-			DstPort:        int32(udp.DstPort),
-			Length:         int32(udp.Length),
-			Checksum:       int32(udp.Checksum),
-			PayloadEntropy: Entropy(udp.Payload),
-			PayloadSize:    int32(len(udp.Payload)),
-			Payload:        payload,
+		var additional []uint32
+		if cip.Response {
+			for _, v := range cip.AdditionalStatus {
+				additional = append(additional, uint32(v))
+			}
+		}
+		return &types.CIP{
+			Timestamp:        timestamp,
+			Response:         bool(cip.Response),
+			ServiceID:        int32(cip.ServiceID),
+			ClassID:          uint32(cip.ClassID),
+			InstanceID:       uint32(cip.InstanceID),
+			Status:           int32(cip.Status),
+			AdditionalStatus: additional,
+			Data:             payload,
 		}
 	}
 	return nil

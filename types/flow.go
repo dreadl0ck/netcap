@@ -65,7 +65,7 @@ func (f Flow) CSVRecord() []string {
 	})
 }
 
-func (f Flow) NetcapTimestamp() string {
+func (f Flow) Time() string {
 	return f.TimestampFirst
 }
 
@@ -157,4 +157,14 @@ func (a Flow) Inc() {
 	flowAppPayloadSize.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.AppPayloadSize))
 	flowNumPackets.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.NumPackets))
 	flowDuration.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.Duration))
+}
+
+func (a Flow) SetPacketContext(ctx *PacketContext) {}
+
+func (a Flow) Src() string {
+	return a.SrcIP
+}
+
+func (a Flow) Dst() string {
+	return a.DstIP
 }

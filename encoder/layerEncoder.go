@@ -16,11 +16,11 @@ package encoder
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gopacket"
 	"log"
 	"strings"
 )
@@ -69,7 +69,7 @@ var (
 		usbEncoder,
 		lcmEncoder,
 		mplsEncoder,
-		modbusTCPEncoder,
+		modbusEncoder,
 		ospfv2Encoder,
 		ospfv3Encoder,
 		bfdEncoder,
@@ -83,6 +83,8 @@ var (
 		ciscoDiscoveryInfoEncoder,
 		usbRequestBlockSetupEncoder,
 		nortelDiscoveryEncoder,
+		cipEncoder,
+		ethernetIPEncoder,
 	}
 
 	// set via encoder config
@@ -184,6 +186,8 @@ func InitLayerEncoders(c Config) {
 			filename = "OSPFv2"
 		case types.Type_NC_OSPFv3:
 			filename = "OSPFv3"
+		case types.Type_NC_ENIP:
+			filename = "ENIP"
 		}
 		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
 
@@ -223,7 +227,8 @@ func (e *LayerEncoder) Encode(ctx *types.PacketContext, p gopacket.Packet, l gop
 			if p, ok := record.(types.AuditRecord); ok {
 				p.SetPacketContext(ctx)
 			} else {
-				log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+				fmt.Printf("type: %#v\n", record)
+				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 		}
 
@@ -247,7 +252,8 @@ func (e *LayerEncoder) Encode(ctx *types.PacketContext, p gopacket.Packet, l gop
 				// export metrics
 				p.Inc()
 			} else {
-				log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+				fmt.Printf("type: %#v\n", record)
+				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 		}
 	}

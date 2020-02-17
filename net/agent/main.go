@@ -277,7 +277,7 @@ func GetCommand() *cobra.Command {
 	cmd.Flags().IntVarP(&flagMaxSize, "max", "m", 10*1024, "max size of packet") // max 65,507 bytes
 	cmd.Flags().IntVarP(&flagWorkers, "workers", "w", 100, "number of encoder routines")
 	cmd.Flags().IntVarP(&flagPacketBuffer, "pbuf", "", 0, "set packet buffer size")
-	cmd.Flags().IntVarP(&flagSnapLen, "snaplen", "s", 1024, "configure snaplen for live capture")
+	cmd.Flags().IntVarP(&flagSnapLen, "snaplen", "s", 1514, "configure snaplen for live capture")
 
 	return cmd
 }

@@ -77,7 +77,7 @@ func (a EAPOLKey) CSVRecord() []string {
 	})
 }
 
-func (a EAPOLKey) NetcapTimestamp() string {
+func (a EAPOLKey) Time() string {
 	return a.Timestamp
 }
 
@@ -102,3 +102,12 @@ func (a EAPOLKey) Inc() {
 }
 
 func (a *EAPOLKey) SetPacketContext(ctx *PacketContext) {}
+
+// TODO: return Mac addr
+func (a EAPOLKey) Src() string {
+	return ""
+}
+
+func (a EAPOLKey) Dst() string {
+	return ""
+}

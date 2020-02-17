@@ -22,8 +22,8 @@ import (
 
 	"github.com/dreadl0ck/tlsx"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
 )
 
 // ExtractTLSHandShake extracts a TLS HandShake from a TCP Packet

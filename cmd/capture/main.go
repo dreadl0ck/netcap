@@ -18,17 +18,22 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
+	"reflect"
+	"runtime"
+	"runtime/debug"
 	"runtime/pprof"
 	"strconv"
 	"time"
 
+	"github.com/dreadl0ck/gopacket"
+	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/tui"
 )
 
 func main() {
@@ -127,6 +132,23 @@ func main() {
 	})
 
 	netcap.PrintLogo()
+
+	fmt.Println("\n> go runtime version:", runtime.Version())
+	var lt gopacket.LayerType
+
+	fmt.Println("> gopacket lib:", reflect.TypeOf(lt).PkgPath())
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	fmt.Println("> running with:", runtime.NumCPU(), "cores")
+
+	b, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, d := range b.Deps {
+			if path.Base(d.Path) == "gopacket" {
+				fmt.Println("> gopacket version:", d.Version)
+			}
+		}
+	}
 
 	// print configuration as table
 	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{

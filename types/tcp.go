@@ -97,7 +97,7 @@ func (t TCP) GetOptionString() string {
 	return b.String()
 }
 
-func (f TCP) NetcapTimestamp() string {
+func (f TCP) Time() string {
 	return f.Timestamp
 }
 
@@ -196,4 +196,18 @@ func (a *TCP) SetPacketContext(ctx *PacketContext) {
 	ctx.DstPort = ""
 
 	a.Context = ctx
+}
+
+func (a TCP) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a TCP) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

@@ -14,20 +14,28 @@
 package encoder
 
 import (
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/golang/protobuf/proto"
 )
 
-var sctpEncoder = CreateLayerEncoder(types.Type_NC_SCTP, layers.LayerTypeSCTP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if sctp, ok := layer.(*layers.SCTP); ok {
-		return &types.SCTP{
+var ethernetIPEncoder = CreateLayerEncoder(types.Type_NC_ENIP, layers.LayerTypeENIP, func(layer gopacket.Layer, timestamp string) proto.Message {
+	if enip, ok := layer.(*layers.ENIP); ok {
+		var cmdSpecificData *types.ENIPCommandSpecificData
+		cmdSpecificData = &types.ENIPCommandSpecificData{
+			Cmd:  uint32(enip.CommandSpecific.Cmd),
+			Data: enip.CommandSpecific.Data,
+		}
+		return &types.ENIP{
 			Timestamp:       timestamp,
-			Checksum:        sctp.Checksum,
-			DstPort:         uint32(sctp.DstPort),
-			SrcPort:         uint32(sctp.SrcPort),
-			VerificationTag: sctp.VerificationTag,
+			Command:         uint32(enip.Command),
+			Length:          uint32(enip.Length),
+			SessionHandle:   uint32(enip.SessionHandle),
+			Status:          uint32(enip.Status),
+			SenderContext:   []byte(enip.SenderContext),
+			Options:         uint32(enip.Options),
+			CommandSpecific: cmdSpecificData,
 		}
 	}
 	return nil

@@ -46,7 +46,7 @@ func (a MPLS) CSVRecord() []string {
 	})
 }
 
-func (a MPLS) NetcapTimestamp() string {
+func (a MPLS) Time() string {
 	return a.Timestamp
 }
 
@@ -72,4 +72,18 @@ func (a MPLS) Inc() {
 
 func (a *MPLS) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a MPLS) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a MPLS) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

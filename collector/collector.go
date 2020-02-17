@@ -34,7 +34,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
-	"github.com/google/gopacket"
+	"github.com/dreadl0ck/gopacket"
 	"github.com/mgutz/ansi"
 )
 

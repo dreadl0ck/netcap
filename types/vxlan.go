@@ -50,7 +50,7 @@ func (a VXLAN) CSVRecord() []string {
 	})
 }
 
-func (a VXLAN) NetcapTimestamp() string {
+func (a VXLAN) Time() string {
 	return a.Timestamp
 }
 
@@ -76,4 +76,18 @@ func (a VXLAN) Inc() {
 
 func (a *VXLAN) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a VXLAN) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a VXLAN) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

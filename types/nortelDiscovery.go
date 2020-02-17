@@ -46,7 +46,7 @@ func (a NortelDiscovery) CSVRecord() []string {
 	})
 }
 
-func (a NortelDiscovery) NetcapTimestamp() string {
+func (a NortelDiscovery) Time() string {
 	return a.Timestamp
 }
 
@@ -71,3 +71,12 @@ func (a NortelDiscovery) Inc() {
 }
 
 func (a *NortelDiscovery) SetPacketContext(ctx *PacketContext) {}
+
+// TODO
+func (a NortelDiscovery) Src() string {
+	return ""
+}
+
+func (a NortelDiscovery) Dst() string {
+	return ""
+}

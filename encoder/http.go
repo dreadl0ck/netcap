@@ -28,10 +28,10 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/ip4defrag"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/reassembly"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/ip4defrag"
+	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/gopacket/reassembly"
 )
 
 var (

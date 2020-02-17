@@ -52,7 +52,7 @@ func (a ARP) CSVRecord() []string {
 	})
 }
 
-func (a ARP) NetcapTimestamp() string {
+func (a ARP) Time() string {
 	return a.Timestamp
 }
 
@@ -77,3 +77,13 @@ func (a ARP) Inc() {
 }
 
 func (a *ARP) SetPacketContext(ctx *PacketContext) {}
+
+// TODO: preserve source and destination mac adresses for ARP and return them here
+func (a ARP) Src() string {
+	return ""
+}
+
+// TODO: preserve source and destination mac adresses for ARP and return them here
+func (a ARP) Dst() string {
+	return ""
+}

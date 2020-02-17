@@ -75,7 +75,7 @@ func (a BFD) CSVRecord() []string {
 	})
 }
 
-func (a BFD) NetcapTimestamp() string {
+func (a BFD) Time() string {
 	return a.Timestamp
 }
 
@@ -115,4 +115,18 @@ func (a BFD) Inc() {
 
 func (a *BFD) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a BFD) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a BFD) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

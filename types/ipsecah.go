@@ -46,7 +46,7 @@ func (a IPSecAH) CSVRecord() []string {
 	})
 }
 
-func (a IPSecAH) NetcapTimestamp() string {
+func (a IPSecAH) Time() string {
 	return a.Timestamp
 }
 
@@ -72,4 +72,18 @@ func (a IPSecAH) Inc() {
 
 func (a *IPSecAH) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a IPSecAH) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a IPSecAH) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

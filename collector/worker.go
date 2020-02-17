@@ -18,7 +18,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/google/gopacket"
+	"github.com/dreadl0ck/gopacket"
 )
 
 // worker spawns a new worker goroutine

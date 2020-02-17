@@ -65,7 +65,7 @@ func (h HTTP) CSVRecord() []string {
 	})
 }
 
-func (f HTTP) NetcapTimestamp() string {
+func (f HTTP) Time() string {
 	return f.Timestamp
 }
 
@@ -90,3 +90,11 @@ func (a HTTP) Inc() {
 }
 
 func (a *HTTP) SetPacketContext(ctx *PacketContext) {}
+
+func (a HTTP) Src() string {
+	return a.SrcIP
+}
+
+func (a HTTP) Dst() string {
+	return a.DstIP
+}
