@@ -1,8 +1,6 @@
 # TODOs
 
-- label tool: remove Println(err) at the end
 - label tool: display a warning when nothing is there for mapping
-
 - use new 1.13 strings.ToValidUTF8()
 
 - remove length field from UDP and IPv6
