@@ -62,9 +62,9 @@ $ net.export .
 
 ## TCP Dashboard Preview
 
-![Grafana Dashboard TCP](.gitbook/assets/screenshot-2019-05-04-at-23.39.41.png)
+![Grafana Dashboard TCP](.gitbook/assets/screenshot-2019-05-04-at-23.39.41%20%281%29.png)
 
 ## HTTP Dashboard Preview
 
-![Grafana Dashboard HTTP](.gitbook/assets/screenshot-2019-05-04-at-23.40.05.png)
+![Grafana Dashboard HTTP](.gitbook/assets/screenshot-2019-05-04-at-23.40.05%20%281%29.png)
 

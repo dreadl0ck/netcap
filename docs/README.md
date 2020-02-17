@@ -4,9 +4,7 @@ description: A brief overview
 
 # Overview
 
-
-
-![](.gitbook/assets/screenshot-2019-05-05-at-13.41.40.png)
+![](.gitbook/assets/screenshot-2019-05-05-at-13.41.40%20%281%29.png)
 
 The _Netcap_ \(NETwork CAPture\) framework efficiently converts a stream of network packets into platform neutral type-safe structured audit records that represent specific protocols or custom abstractions. These audit records can be stored on disk or exchanged over the network, and are well suited as a data source for machine learning algorithms. Since parsing of untrusted input can be dangerous and network data is potentially malicious, implementation was performed in a programming language that provides a garbage collected memory safe runtime.
 
@@ -51,21 +49,15 @@ Currently there are 8 applications:
 
 A simple demonstration of generating audit records from a PCAP dump file, querying and displaying the collected information in various ways
 
-{% embed url="https://asciinema.org/a/217939" %}
-
-
+{% embed url="https://asciinema.org/a/217939" caption="" %}
 
 And live operation decoding traffic from my wireless network interface, while I am surfing the web
 
-{% embed url="https://asciinema.org/a/217941" %}
-
-
+{% embed url="https://asciinema.org/a/217941" caption="" %}
 
 Watch a quick demo of the deep neural network for classification of malicious behavior, on a small PCAP dump file with traffic from the LOKI Bot. First, the PCAP file is parsed with [netcap](https://github.com/dreadl0ck/netcap-tf-dnn/blob/master/github.com/dreadl0ck/netcap), in order to get audit records that will be labeled afterwards with the [netlabel](https://github.com/dreadl0ck/netcap#netlabel-command-line-tool) tool. The labeled CSV data for the TCP audit record type is then used for training \(75%\) and evaluation \(25%\) of the classification accuracy provided by the deep neural network.
 
-{% embed url="https://asciinema.org/a/217944" %}
-
-
+{% embed url="https://asciinema.org/a/217944" caption="" %}
 
 ## License
 

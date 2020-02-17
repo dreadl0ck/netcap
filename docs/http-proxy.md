@@ -37,7 +37,7 @@ proxies:
     local: 127.0.0.1:443
     remote: http://127.0.0.1:8080
     tls: true
-  
+
   service2:
     local: 127.0.0.1:9999
     remote: http://192.168.1.20
@@ -63,24 +63,22 @@ Usage of net.proxy:
   -version bool
         print netcap package version and exit
   -config string
-    	set config file path (default "net.proxy-config.yml")
+        set config file path (default "net.proxy-config.yml")
   -debug
-    	set debug mode
+        set debug mode
   -dialTimeout int
-    	seconds until dialing to the backend times out (default 30)
+        seconds until dialing to the backend times out (default 30)
   -idleConnTimeout int
-    	seconds until a connection times out (default 90)
+        seconds until a connection times out (default 90)
   -local string
-    	set local endpoint
+        set local endpoint
   -maxIdle int
-    	maximum number of idle connections (default 120)
+        maximum number of idle connections (default 120)
   -remote string
-    	set remote endpoint
+        set remote endpoint
   -skipTlsVerify
-    	skip TLS verification
+        skip TLS verification
   -tlsTimeout int
-    	seconds until a TLS handshake times out (default 15)
+        seconds until a TLS handshake times out (default 15)
 ```
-
-
 
