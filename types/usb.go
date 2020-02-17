@@ -73,7 +73,7 @@ func (u USB) CSVRecord() []string {
 	})
 }
 
-func (f USB) NetcapTimestamp() string {
+func (f USB) Time() string {
 	return f.Timestamp
 }
 
@@ -98,3 +98,13 @@ func (a USB) Inc() {
 }
 
 func (a *USB) SetPacketContext(ctx *PacketContext) {}
+
+// TODO return source DeviceAddress?
+func (a USB) Src() string {
+	return ""
+}
+
+// TODO return destination DeviceAddress?
+func (a USB) Dst() string {
+	return ""
+}

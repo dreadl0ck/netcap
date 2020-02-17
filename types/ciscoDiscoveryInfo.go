@@ -97,7 +97,7 @@ func (a CiscoDiscoveryInfo) CSVRecord() []string {
 	})
 }
 
-func (a CiscoDiscoveryInfo) NetcapTimestamp() string {
+func (a CiscoDiscoveryInfo) Time() string {
 	return a.Timestamp
 }
 
@@ -299,3 +299,12 @@ func (a CiscoDiscoveryInfo) Inc() {
 }
 
 func (a *CiscoDiscoveryInfo) SetPacketContext(ctx *PacketContext) {}
+
+// TODO
+func (a CiscoDiscoveryInfo) Src() string {
+	return ""
+}
+
+func (a CiscoDiscoveryInfo) Dst() string {
+	return ""
+}

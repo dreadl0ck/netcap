@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# make this script callable from project root dir
-cd docker
+cp Dockerfile-ubuntu Dockerfile
 
 echo "[INFO] building docker image"
 

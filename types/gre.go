@@ -75,7 +75,7 @@ func (a GRE) CSVRecord() []string {
 	})
 }
 
-func (a GRE) NetcapTimestamp() string {
+func (a GRE) Time() string {
 	return a.Timestamp
 }
 
@@ -124,4 +124,18 @@ func (a GRE) Inc() {
 
 func (a *GRE) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a GRE) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a GRE) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

@@ -35,7 +35,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *flagInput == "" {
+	if *flagInput == "" && *flagCustom == "" {
 		log.Fatal("no input file specified. Nothing to do.")
 	}
 
@@ -50,5 +50,9 @@ func main() {
 	label.SetExcluded(*flagExcludeLabels)
 
 	// lets go
-	log.Fatal(label.Suricata(*flagInput, *flagOutDir, *flagDescription, *flagSeparator, ""))
+	if *flagCustom != "" {
+		log.Fatal(label.CustomLabels(*flagCustom, *flagOutDir, *flagDescription, *flagSeparator, ""))
+	} else {
+		log.Fatal(label.Suricata(*flagInput, *flagOutDir, *flagDescription, *flagSeparator, ""))
+	}
 }

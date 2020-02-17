@@ -87,7 +87,7 @@ func (t TLSClientHello) CSVRecord() []string {
 	})
 }
 
-func (f TLSClientHello) NetcapTimestamp() string {
+func (f TLSClientHello) Time() string {
 	return f.Timestamp
 }
 
@@ -109,4 +109,15 @@ func init() {
 
 func (a TLSClientHello) Inc() {
 	tlsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+}
+
+func (a *TLSClientHello) SetPacketContext(ctx *PacketContext) {
+}
+
+func (a TLSClientHello) Src() string {
+	return a.SrcIP
+}
+
+func (a TLSClientHello) Dst() string {
+	return a.DstIP
 }

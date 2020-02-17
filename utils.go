@@ -95,7 +95,8 @@ func Dump(c DumpConfig) {
 		if p, ok := record.(types.AuditRecord); ok {
 			fmt.Println(strings.Join(p.CSVHeader(), c.Separator))
 		} else {
-			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			fmt.Printf("type: %#v\n", record)
+			log.Fatal("type does not implement the types.AuditRecord interface")
 		}
 
 		if c.Fields {
@@ -141,7 +142,8 @@ func Dump(c DumpConfig) {
 			}
 			os.Stdout.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
 		} else {
-			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			fmt.Printf("type: %#v\n", record)
+			log.Fatal("type does not implement the types.AuditRecord interface")
 		}
 
 	}
@@ -151,7 +153,8 @@ func Dump(c DumpConfig) {
 			tui.Table(os.Stdout, p.CSVHeader(), rows)
 			fmt.Println()
 		} else {
-			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			fmt.Printf("type: %#v\n", record)
+			log.Fatal("type does not implement the types.AuditRecord interface")
 		}
 	}
 

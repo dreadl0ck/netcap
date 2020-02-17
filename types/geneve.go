@@ -61,7 +61,7 @@ func (i Geneve) CSVRecord() []string {
 	})
 }
 
-func (i Geneve) NetcapTimestamp() string {
+func (i Geneve) Time() string {
 	return i.Timestamp
 }
 
@@ -105,4 +105,18 @@ func (a Geneve) Inc() {
 
 func (a *Geneve) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a Geneve) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a Geneve) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

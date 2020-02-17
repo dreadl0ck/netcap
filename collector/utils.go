@@ -21,9 +21,9 @@ import (
 
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/gopacket/pcap"
 	"golang.org/x/net/bpf"
 )
 

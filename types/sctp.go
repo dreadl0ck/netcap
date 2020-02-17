@@ -46,7 +46,7 @@ func (s SCTP) CSVRecord() []string {
 	})
 }
 
-func (s SCTP) NetcapTimestamp() string {
+func (s SCTP) Time() string {
 	return s.Timestamp
 }
 
@@ -77,4 +77,18 @@ func (a *SCTP) SetPacketContext(ctx *PacketContext) {
 	ctx.DstIP = ""
 
 	a.Context = ctx
+}
+
+func (a SCTP) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a SCTP) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

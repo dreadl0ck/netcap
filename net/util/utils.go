@@ -45,7 +45,8 @@ func checkFields(file string) {
 		numExpectedFields = len(p.CSVHeader())
 		allFieldNames = p.CSVHeader()
 	} else {
-		log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+		fmt.Printf("type: %#v\n", record)
+		log.Fatal("type does not implement the types.AuditRecord interface")
 	}
 
 	for {

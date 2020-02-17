@@ -52,7 +52,10 @@ func (d DNS) CSVHeader() []string {
 
 func (d DNS) CSVRecord() []string {
 	var (
-		questions, answers, authorities, additionals []string
+		questions   = make([]string, len(d.Questions))
+		answers     = make([]string, len(d.Answers))
+		authorities = make([]string, len(d.Authorities))
+		additionals = make([]string, len(d.Additionals))
 	)
 	for _, q := range d.Questions {
 		questions = append(questions, q.ToString())
@@ -92,7 +95,7 @@ func (d DNS) CSVRecord() []string {
 	})
 }
 
-func (d DNS) NetcapTimestamp() string {
+func (d DNS) Time() string {
 	return d.Timestamp
 }
 
@@ -212,4 +215,18 @@ func (a DNS) Inc() {
 
 func (a *DNS) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a DNS) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a DNS) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

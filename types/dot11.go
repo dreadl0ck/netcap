@@ -60,7 +60,7 @@ func (d Dot11) CSVRecord() []string {
 	})
 }
 
-func (d Dot11) NetcapTimestamp() string {
+func (d Dot11) Time() string {
 	return d.Timestamp
 }
 
@@ -199,3 +199,12 @@ func (a Dot11) Inc() {
 }
 
 func (a *Dot11) SetPacketContext(ctx *PacketContext) {}
+
+// TODO: return Mac addr
+func (a Dot11) Src() string {
+	return ""
+}
+
+func (a Dot11) Dst() string {
+	return ""
+}

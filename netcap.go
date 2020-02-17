@@ -116,8 +116,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.LCM)
 	case types.Type_NC_MPLS:
 		record = new(types.MPLS)
-	case types.Type_NC_ModbusTCP:
-		record = new(types.ModbusTCP)
+	case types.Type_NC_Modbus:
+		record = new(types.Modbus)
 	case types.Type_NC_OSPFv2:
 		record = new(types.OSPFv2)
 	case types.Type_NC_OSPFv3:
@@ -142,6 +142,10 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.CiscoDiscoveryInfo)
 	case types.Type_NC_NortelDiscovery:
 		record = new(types.NortelDiscovery)
+	case types.Type_NC_CIP:
+		record = new(types.CIP)
+	case types.Type_NC_ENIP:
+		record = new(types.ENIP)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

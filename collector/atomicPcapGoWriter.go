@@ -17,8 +17,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/pcapgo"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/pcapgo"
 )
 
 //////////////////////////

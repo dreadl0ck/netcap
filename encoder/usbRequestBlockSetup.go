@@ -16,8 +16,8 @@ package encoder
 import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
 )
 
 var usbRequestBlockSetupEncoder = CreateLayerEncoder(types.Type_NC_USBRequestBlockSetup, layers.LayerTypeUSBRequestBlockSetup, func(layer gopacket.Layer, timestamp string) proto.Message {

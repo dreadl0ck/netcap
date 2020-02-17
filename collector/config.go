@@ -15,7 +15,7 @@ package collector
 
 import (
 	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/google/gopacket"
+	"github.com/dreadl0ck/gopacket"
 )
 
 // Config contains configuration parameters

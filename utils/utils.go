@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 )
 
 func GetBaseLayer(value string) (t gopacket.LayerType) {
@@ -45,6 +45,8 @@ func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 		o = gopacket.Default
 	case "nocopy":
 		o = gopacket.NoCopy
+	case "datagrams":
+		o = gopacket.DecodeStreamsAsDatagrams
 	default:
 		log.Fatal("invalid decode options:", value)
 	}
@@ -145,8 +147,8 @@ func TimeToString(t time.Time) string {
 
 // func sortSlice(values []types.AuditRecord) {
 // 	sort.Slice(values, func(i, j int) bool {
-// 		iTime := StringToTime(values[i].NetcapTimestamp())
-// 		jTime := StringToTime(values[j].NetcapTimestamp())
+// 		iTime := StringToTime(values[i].Time())
+// 		jTime := StringToTime(values[j].Time())
 // 		return iTime.date.Before(jTime.date)
 // 	})
 // }

@@ -46,7 +46,17 @@ type AuditRecord interface {
 	CSVHeader() []string
 
 	// used to retrieve the timestamp of the audit record for labeling
-	NetcapTimestamp() string
+	Time() string
+
+	// Src returns the source of an audit record
+	// for Layer 2 records this shall be the MAC address
+	// for Layer 3+ records this shall be the IP address
+	Src() string
+
+	// Dst returns the source of an audit record
+	// for Layer 2 records this shall be the MAC address
+	// for Layer 3+ records this shall be the IP address
+	Dst() string
 
 	// increments the metric for the audit record
 	Inc()
@@ -94,7 +104,8 @@ func Select(msg proto.Message, vals string) {
 		if p, ok := msg.(AuditRecord); ok {
 			selection = selectFields(p.CSVHeader(), vals)
 		} else {
-			log.Fatal("netcap type does not implement the types.AuditRecord interface!")
+			fmt.Printf("type: %#v\n", msg)
+			log.Fatal("type does not implement the types.AuditRecord interface")
 		}
 	}
 }

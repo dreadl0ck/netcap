@@ -73,7 +73,7 @@ func (a OSPFv3) CSVRecord() []string {
 	})
 }
 
-func (a OSPFv3) NetcapTimestamp() string {
+func (a OSPFv3) Time() string {
 	return a.Timestamp
 }
 
@@ -128,4 +128,18 @@ func (a OSPFv3) JSON() (string, error) {
 
 func (a *OSPFv3) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
+}
+
+func (a OSPFv3) Src() string {
+	if a.Context != nil {
+		return a.Context.SrcIP
+	}
+	return ""
+}
+
+func (a OSPFv3) Dst() string {
+	if a.Context != nil {
+		return a.Context.DstIP
+	}
+	return ""
 }

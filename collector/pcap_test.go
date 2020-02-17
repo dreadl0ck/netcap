@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/gopacket/pcapgo"
+	"github.com/dreadl0ck/gopacket/pcapgo"
 )
 
 var ngFile = "pcaps/Monday-WorkingHours.pcapng"
