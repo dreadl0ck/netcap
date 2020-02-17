@@ -24,6 +24,7 @@ import (
 	"runtime/debug"
 	"runtime/pprof"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
@@ -97,7 +98,14 @@ func main() {
 	// abort if there is no input or no live capture
 	if *flagInput == "" && !live {
 		printHeader()
-		fmt.Println(ansi.Red + "> nothing to do. need a pcap or netcap file with the read flag (-r) or live mode and an interface (-iface)" + ansi.Reset)
+		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-r) or live mode and an interface (-iface)" + ansi.Reset)
+		os.Exit(1)
+	}
+
+	if strings.HasSuffix(*flagInput, ".ncap.gz") || strings.HasSuffix(*flagInput, ".ncap") {
+		printHeader()
+		fmt.Println(ansi.Red + "> the capture tool is used to create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
+		fmt.Println(ansi.Red + "> use the dump tool to read netcap audit records" + ansi.Reset)
 		os.Exit(1)
 	}
 

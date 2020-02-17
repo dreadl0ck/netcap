@@ -19,11 +19,13 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
+	"github.com/mgutz/ansi"
 )
 
 func main() {
@@ -36,6 +38,20 @@ func main() {
 	if *flagVersion {
 		fmt.Println(netcap.Version)
 		os.Exit(0)
+	}
+
+	// abort if there is no input or no live capture
+	if *flagInput == "" {
+		printHeader()
+		fmt.Println(ansi.Red + "> nothing to do. need a NETCAP audit record file (.ncap.gz or .ncap) with the read flag (-r)" + ansi.Reset)
+		os.Exit(1)
+	}
+
+	if strings.HasSuffix(*flagInput, ".pcap") || strings.HasSuffix(*flagInput, ".pcapng") {
+		printHeader()
+		fmt.Println(ansi.Red + "> the dump tool is used to read netcap audit records" + ansi.Reset)
+		fmt.Println(ansi.Red + "> use the capture tool create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
+		os.Exit(1)
 	}
 
 	// read dumpfile header and exit
