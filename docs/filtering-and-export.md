@@ -8,7 +8,7 @@ description: Process Netcap audit records and extract the data you are intereste
 
 Netcap offers a simple interface to filter for specific fields and select only those of interest. Filtering and exporting specific fields can be performed with all available audit record types, over a uniform command-line interface. By default, output is generated as CSV with the field names added as first line. It is also possible to use a custom separator string. Fields are exported in the order they are named in the select statement. Sub structures of audit records \(for example IPv4Options from an IPv4 packet\), are converted to a human readable string representation. More examples for using this feature on the command-line can be found in the usage section.
 
-![NETCAP filtering and export](.gitbook/assets/netcap-export.svg)
+![NETCAP filtering and export](.gitbook/assets/netcap-export%20%281%29.svg)
 
 Netcap offers a simple command-line interface to select fields of interest from the gathered audit records.
 
@@ -63,6 +63,4 @@ To save the output into a new file, simply redirect the standard output:
 ```text
 $ netcap -r UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc > UDP.csv
 ```
-
-#### 
 

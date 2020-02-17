@@ -12,7 +12,7 @@ To make use of multi-core processors, processing of packets should happen in an 
 
 [Workers](https://github.com/dreadl0ck/netcap/blob/master/collector/worker.go) are a core concept of _Netcap_, as they handle the actual task of decoding each packet. _Netcap_ can be configured to run with the desired amount of workers, the default is 1000, since this configuration has shown the best results on the development machine. Increasing the number of workers also increases the number of runtime operations for goroutine scheduling, thus performance might decrease with a huge amount of workers. It is recommended to experiment with different configurations on the target system, and choose the one that performs best. Packet data fetched from the input source is distributed to a worker pool for decoding in round robin style. Each worker decodes all layers of a packet and calls all available custom encoders. After decoding of each layer, the generated protocol buffer instance is written into the _Netcap_ data pipe. Packets that produced an error in the decoding phase or carry an unknown protocol are being written in the corresponding logs and dumpfiles.
 
-![NETCAP worker](.gitbook/assets/netcap-worker.svg)
+![NETCAP worker](.gitbook/assets/netcap-worker%20%281%29.svg)
 
 ## Buffering
 
