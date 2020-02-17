@@ -140,11 +140,12 @@ func (a IPv6) Inc() {
 
 func (a *IPv6) SetPacketContext(ctx *PacketContext) {
 
-	// clear those values explicitly to prevent duplicating them on the context
-	ctx.SrcIP = ""
-	ctx.DstIP = ""
-
-	a.Context = ctx
+	// create new context and only add information that is
+	// not yet present on the audit record type
+	a.Context = &PacketContext{
+		SrcPort: ctx.SrcPort,
+		DstPort: ctx.DstPort,
+	}
 }
 
 func (a IPv6) Src() string {

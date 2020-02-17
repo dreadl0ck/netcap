@@ -41,6 +41,10 @@ func (a Modbus) CSVHeader() []string {
 }
 
 func (a Modbus) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if a.Context == nil {
+		a.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.TransactionID), // int32

@@ -37,6 +37,10 @@ func (a IPv6Fragment) CSVHeader() []string {
 }
 
 func (a IPv6Fragment) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if a.Context == nil {
+		a.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.NextHeader),           // int32

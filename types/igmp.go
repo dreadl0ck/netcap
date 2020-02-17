@@ -48,6 +48,10 @@ func (i IGMP) CSVRecord() []string {
 	for _, r := range i.GroupRecords {
 		records = append(records, r.ToString())
 	}
+	// prevent accessing nil pointer
+	if i.Context == nil {
+		i.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Type),                           // int32

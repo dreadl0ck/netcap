@@ -47,6 +47,10 @@ func (a CIP) CSVRecord() []string {
 			additional = append(additional, formatUint32(v))
 		}
 	}
+	// prevent accessing nil pointer
+	if a.Context == nil {
+		a.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.Response), // bool

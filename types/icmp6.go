@@ -32,6 +32,10 @@ func (i ICMPv6) CSVHeader() []string {
 }
 
 func (i ICMPv6) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if i.Context == nil {
+		i.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.TypeCode),

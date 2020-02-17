@@ -69,6 +69,10 @@ func (d DNS) CSVRecord() []string {
 	for _, q := range d.Additionals {
 		additionals = append(questions, q.ToString())
 	}
+	// prevent accessing nil pointer
+	if d.Context == nil {
+		d.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(d.Timestamp),
 		formatInt32(d.ID),             // int32

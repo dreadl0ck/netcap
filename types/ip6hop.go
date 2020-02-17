@@ -36,6 +36,10 @@ func (l IPv6HopByHop) CSVRecord() []string {
 	for i, v := range l.Options {
 		opts[i] = v.ToString()
 	}
+	// prevent accessing nil pointer
+	if l.Context == nil {
+		l.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(l.Timestamp),
 		strings.Join(opts, ""),

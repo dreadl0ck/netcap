@@ -54,6 +54,10 @@ func (t TCP) CSVHeader() []string {
 }
 
 func (t TCP) CSVRecord() []string {
+	// prevent accessing nil pointer
+	if t.Context == nil {
+		t.Context = &PacketContext{}
+	}
 	return filter([]string{
 		formatTimestamp(t.Timestamp),                      // string
 		formatInt32(t.SrcPort),                            // int32
@@ -191,11 +195,12 @@ func (a TCP) Inc() {
 
 func (a *TCP) SetPacketContext(ctx *PacketContext) {
 
-	// clear duplicate data for transport layer
-	ctx.SrcPort = ""
-	ctx.DstPort = ""
-
-	a.Context = ctx
+	// create new context and only add information that is
+	// not yet present on the audit record type
+	a.Context = &PacketContext{
+		SrcIP: ctx.SrcIP,
+		DstIP: ctx.DstIP,
+	}
 }
 
 func (a TCP) Src() string {
