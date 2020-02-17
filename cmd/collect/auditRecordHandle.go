@@ -16,8 +16,9 @@ package main
 import (
 	"bufio"
 	"fmt"
-	gzip "github.com/klauspost/pgzip"
 	"os"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/delimited"
@@ -50,6 +51,7 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 		Source:          b.ClientID,
 		Version:         netcap.Version,
 		IncludePayloads: b.ContainsPayloads,
+		MemBufferSize:   *flagMemBufferSize,
 	}
 
 	var (

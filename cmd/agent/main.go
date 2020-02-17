@@ -98,6 +98,7 @@ func main() {
 			WriteChan:       true,
 			IncludePayloads: *flagPayload,
 			AddContext:      *flagContext,
+			MemBufferSize:   *flagMemBufferSize,
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
