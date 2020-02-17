@@ -4,11 +4,9 @@ description: This section focuses on gathering network packet information with n
 
 # Packet Collection
 
-
-
 Packets are fetched from an input source \(offline dump file or live from an interface\) and distributed via round-robin to a pool of workers. Each worker dissects all layers of a packet and writes the generated _protobuf_ audit records to the corresponding file. By default, the data is compressed with _gzip_ to save storage space and buffered to avoid an overhead due to excessive _syscalls_ for writing data to disk.
 
-![Packet collection process](.gitbook/assets/netcap.svg)
+![Packet collection process](.gitbook/assets/netcap%20%281%29.svg)
 
 ## Encoders
 
@@ -63,7 +61,7 @@ layer:
 + ICMPv4
 + ICMPv6
 + ICMPv6Echo
-...    
+...
 ```
 
 Include specific encoders \(only those named will be used\):
