@@ -39,7 +39,7 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 	)
 
 	go func() {
-		r, err := netcap.Open(fname)
+		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {
 			panic(err)
 		}

@@ -17,9 +17,10 @@ import "flag"
 
 var (
 	// util
-	flagCheckFields = flag.Bool("check", false, "check number of occurences of the separator, in fields of an audit record file")
-	flagToUTC       = flag.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
-	flagInput       = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
-	flagSeparator   = flag.String("sep", ",", "set separator string for csv output")
-	flagVersion     = flag.Bool("version", false, "print netcap package version and exit")
+	flagCheckFields   = flag.Bool("check", false, "check number of occurences of the separator, in fields of an audit record file")
+	flagToUTC         = flag.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
+	flagInput         = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagSeparator     = flag.String("sep", ",", "set separator string for csv output")
+	flagVersion       = flag.Bool("version", false, "print netcap package version and exit")
+	flagMemBufferSize = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
 )

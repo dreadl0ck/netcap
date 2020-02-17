@@ -42,7 +42,7 @@ func main() {
 	if *flagHeader {
 
 		// open input file for reading
-		r, err := netcap.Open(*flagInput)
+		r, err := netcap.Open(*flagInput, *flagMemBufferSize)
 		if err != nil {
 			panic(err)
 		}

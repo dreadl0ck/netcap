@@ -46,7 +46,7 @@ func printUsage() {
 // to prevent this breaking the generated CSV file
 func checkFields() {
 
-	r, err := netcap.Open(*flagInput)
+	r, err := netcap.Open(*flagInput, *flagMemBufferSize)
 	if err != nil {
 		panic(err)
 	}

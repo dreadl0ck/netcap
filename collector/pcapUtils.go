@@ -18,10 +18,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcapgo"
+	"github.com/dreadl0ck/netcap"
 	"github.com/pkg/errors"
 )
 
@@ -94,7 +94,7 @@ func (c *Collector) createUnknownPcap() error {
 		return err
 	}
 
-	c.unkownPcapWriterBuffered = bufio.NewWriterSize(c.unknownPcapFile, netcap.BlockSize)
+	c.unkownPcapWriterBuffered = bufio.NewWriterSize(c.unknownPcapFile, netcap.DefaultBufferSize)
 	pcapWriter := pcapgo.NewWriter(c.unkownPcapWriterBuffered)
 
 	// set global pcap writer
@@ -116,7 +116,7 @@ func (c *Collector) createErrorsPcap() error {
 		return err
 	}
 
-	c.errorsPcapWriterBuffered = bufio.NewWriterSize(c.errorsPcapFile, netcap.BlockSize)
+	c.errorsPcapWriterBuffered = bufio.NewWriterSize(c.errorsPcapFile, netcap.DefaultBufferSize)
 	pcapWriter := pcapgo.NewWriter(c.errorsPcapWriterBuffered)
 
 	// set global pcap writer

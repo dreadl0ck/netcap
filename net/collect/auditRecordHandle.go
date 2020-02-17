@@ -15,8 +15,8 @@ package main
 
 import (
 	"bufio"
-	"compress/gzip"
 	"fmt"
+	gzip "github.com/klauspost/pgzip"
 	"os"
 
 	"github.com/dreadl0ck/netcap"

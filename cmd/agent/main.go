@@ -15,13 +15,14 @@ package main
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/dreadl0ck/netcap"

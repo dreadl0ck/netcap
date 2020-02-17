@@ -38,7 +38,7 @@ func NetworkFlow(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 	)
 
 	go func() {
-		r, err := netcap.Open(fname)
+		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {
 			panic(err)
 		}

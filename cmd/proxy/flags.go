@@ -30,4 +30,5 @@ var (
 	flagDump                = flag.Bool("dump", false, "dumps audit record as JSON to stdout")
 	flagDumpFormatted       = flag.Bool("format", true, "format when dumping JSON")
 	flagVersion             = flag.Bool("version", false, "print netcap package version and exit")
+	flagMemBufferSize       = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
 )

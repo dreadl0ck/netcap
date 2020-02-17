@@ -15,7 +15,6 @@ package netcap
 
 import (
 	"bufio"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,6 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -52,15 +53,16 @@ func PrintLogo() {
 
 // DumpConfig contains all possible settings for dumping an audit records
 type DumpConfig struct {
-	Path         string
-	Separator    string
-	TabSeparated bool
-	Structured   bool
-	Table        bool
-	Selection    string
-	UTC          bool
-	Fields       bool
-	JSON         bool
+	Path          string
+	Separator     string
+	TabSeparated  bool
+	Structured    bool
+	Table         bool
+	Selection     string
+	UTC           bool
+	Fields        bool
+	JSON          bool
+	MemBufferSize int
 }
 
 // Dump reads the specified netcap file
@@ -69,7 +71,7 @@ func Dump(c DumpConfig) {
 
 	var (
 		count  = 0
-		r, err = Open(c.Path)
+		r, err = Open(c.Path, c.MemBufferSize)
 	)
 	if err != nil {
 		log.Fatal("failed to open audit record file: ", err)
@@ -249,7 +251,7 @@ func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 
 	// Check if audit record file contains records
 	// Open, read header and the first audit record and return
-	r, err := Open(name)
+	r, err := Open(name, DefaultBufferSize)
 	if err != nil {
 
 		// suppress errors for OSPF because the file handle will be closed twice

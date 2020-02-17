@@ -15,9 +15,10 @@ package netcap
 
 import (
 	"bufio"
-	"compress/gzip"
 	"os"
 	"path/filepath"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"
@@ -25,13 +26,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-const blockSizeDefault = 4096
-
-var (
-
-	// BlockSize is the file system block size
-	BlockSize int
-)
+const DefaultBufferSize = 1024 * 1024 * 10 // 10MB
 
 /*
  *	Type Definition
@@ -65,7 +60,7 @@ type Writer struct {
  */
 
 // NewWriter initializes and configures a new Writer
-func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bool) *Writer {
+func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bool, memBufferSize int) *Writer {
 
 	w := &Writer{}
 	w.Name = name
@@ -74,6 +69,10 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 	w.csv = csv
 	w.out = out
 	w.IsChanWriter = writeChan
+
+	if memBufferSize <= 0 {
+		memBufferSize = DefaultBufferSize
+	}
 
 	if csv {
 
@@ -86,7 +85,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 
 		if buffer {
 
-			w.bWriter = bufio.NewWriterSize(w.file, BlockSize)
+			w.bWriter = bufio.NewWriterSize(w.file, memBufferSize)
 
 			if compress {
 				w.gWriter = gzip.NewWriter(w.bWriter)
@@ -124,7 +123,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 	// buffer data?
 	if buffer {
 
-		w.bWriter = bufio.NewWriterSize(w.file, BlockSize)
+		w.bWriter = bufio.NewWriterSize(w.file, DefaultBufferSize)
 		if compress {
 			w.gWriter = gzip.NewWriter(w.bWriter)
 			w.dWriter = delimited.NewWriter(w.gWriter)

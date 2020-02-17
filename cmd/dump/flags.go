@@ -32,4 +32,5 @@ var (
 	flagInput           = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagVersion         = flag.Bool("version", false, "print netcap package version and exit")
 	flagJSON            = flag.Bool("json", false, "print as JSON")
+	flagMemBufferSize   = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
 )

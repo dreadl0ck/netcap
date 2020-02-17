@@ -16,13 +16,14 @@ package encoder
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
-	"log"
-	"strings"
 )
 
 var (
@@ -189,7 +190,7 @@ func InitLayerEncoders(c Config) {
 		case types.Type_NC_ENIP:
 			filename = "ENIP"
 		}
-		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan)
+		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
 
 		err := e.writer.WriteHeader(e.Type, c.Source, c.Version, c.IncludePayloads)
 		if err != nil {

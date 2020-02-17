@@ -28,4 +28,5 @@ type Config struct {
 	IncludePayloads bool
 	Export          bool
 	AddContext      bool
+	MemBufferSize   int
 }
