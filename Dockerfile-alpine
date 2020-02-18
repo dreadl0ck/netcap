@@ -20,5 +20,4 @@ RUN apk add --no-cache ca-certificates iptables libpcap-dev libnetfilter_queue $
 WORKDIR /netcap
 COPY --from=builder /netcap .
 RUN ls -la
-#ENTRYPOINT ["sh", "/bin/ash"]
-CMD ["/bin/sh"]
+CMD ["/bin/ash"]
