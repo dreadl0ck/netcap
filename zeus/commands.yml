@@ -39,39 +39,43 @@ commands:
     ## Compile Framework Components
     ##
 
+    ## linker flags
+    #   -w	disable DWARF generation
+    #   -s	disable symbol table
+
     net.capture:
         description: compile net.capture binary to $GOPATH/bin
         buildNumber: true
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.capture -i github.com/dreadl0ck/netcap/cmd/capture
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.capture -i github.com/dreadl0ck/netcap/cmd/capture
 
     net.label:
         description: compile net.label binary to $GOPATH/bin
         buildNumber: true
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.label -i github.com/dreadl0ck/netcap/cmd/label
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.label -i github.com/dreadl0ck/netcap/cmd/label
 
     net.agent:
         description: compile net.agent binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.agent -i github.com/dreadl0ck/netcap/cmd/agent
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.agent -i github.com/dreadl0ck/netcap/cmd/agent
 
     net.collect:
         description: compile net.collect binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.collect -i github.com/dreadl0ck/netcap/cmd/collect
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.collect -i github.com/dreadl0ck/netcap/cmd/collect
 
     net.proxy:
         description: compile net.proxy binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
     
     net.export:
         description: compile net.export binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.export -i github.com/dreadl0ck/netcap/cmd/export
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.export -i github.com/dreadl0ck/netcap/cmd/export
 
     net.dump:
         description: compile net.dump binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.dump -i github.com/dreadl0ck/netcap/cmd/dump
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.dump -i github.com/dreadl0ck/netcap/cmd/dump
 
     net.util:
         description: compile net.util binary to $GOPATH/bin
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o $(go env GOPATH)/bin/net.util -i github.com/dreadl0ck/netcap/cmd/util
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.util -i github.com/dreadl0ck/netcap/cmd/util
 
     ## Debug Builds
     ##
@@ -80,7 +84,7 @@ commands:
         description: install a netcap build with race detection enabled
         buildNumber: true
         help: Install the race build to the default system location
-        exec: go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
+        exec: go build -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o $(go env GOPATH)/bin/netcap -i github.com/dreadl0ck/netcap/cmd
 
     ## Containers
     ##
@@ -153,18 +157,11 @@ commands:
     gen-version:
         description: generate the version.go file
         exec: |
-            echo -e "// Netcap is a framework for network packet processing at the protocol level. Learn more at https://netcap.io.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"" > version.go
+            echo -e "// Netcap is a framework for network packet processing at the protocol level. Learn more at https://netcap.io.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"\nvar Commit = \"$(git rev-parse HEAD | tr -d "\n")\"" > version.go
 
     # build and push the Alpine docker container
-    build-docker-alpine:
-        description: builds the alpine docker container
-        exec: |
-            cd docker
-            echo "[INFO] building container for v${VERSION}"
-            docker build -t dreadl0ck/netcap:v${VERSION} .
-            # docker images
-            echo "[INFO] pushing container to docker registry"
-            docker push dreadl0ck/netcap
+    build-all-linux:
+        description: builds the alpine and ubuntu docker containers
     
     # check git version
     check-version:

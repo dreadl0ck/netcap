@@ -42,6 +42,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	netcap.PrintBuildInfo()
+
 	// check if flags have been used to configure a single instance proxy
 	if *flagLocal == "" || *flagRemote == "" {
 		// parse config file
