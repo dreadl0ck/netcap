@@ -27,6 +27,5 @@ RUN apt install -y libpcap-dev
 WORKDIR /netcap
 COPY --from=builder /netcap .
 RUN ls -la
-#ENTRYPOINT ["sh", "/bin/ash"]
 CMD ["/bin/sh"]
 

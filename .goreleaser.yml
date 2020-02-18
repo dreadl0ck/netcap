@@ -14,7 +14,7 @@ builds:
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
   ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+    - -L /usr/local/opt/libpcap/lib -s -w
 
   # GOARCH to build for.
   # For more info refer to: https://golang.org/doc/install/source#environment
@@ -36,12 +36,13 @@ builds:
     #   goarch: arm
     #   goarm: 7
 
-  # Hooks can be used to customize the final binary,
-  # for example, to run generators.
+  # Hooks can be used to customize the final binary,for example, to run generators.
   # Default is both hooks empty.
+  # NETCAP uses a post hook to build the linux binaries in docker containers
+  # and push the containers to the docker registry
   hooks:
-    # this hook is used to compile the linux version in a docker container
-    post: zeus build-all-alpine-docker
+    # this hook is used to compile the linux versions in a docker container
+    post: zeus build-all-linux
     #pre: rice embed-go
 -
   main: ./cmd/util
@@ -58,7 +59,7 @@ builds:
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
   ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+    - -L /usr/local/opt/libpcap/lib -s -w
 
   # GOARCH to build for.
   # For more info refer to: https://golang.org/doc/install/source#environment
@@ -82,7 +83,7 @@ builds:
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
   ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+    - -L /usr/local/opt/libpcap/lib -s -w
 
   # GOARCH to build for.
   # For more info refer to: https://golang.org/doc/install/source#environment
@@ -106,7 +107,7 @@ builds:
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
   ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+    - -L /usr/local/opt/libpcap/lib -s -w
 
   # GOARCH to build for.
   # For more info refer to: https://golang.org/doc/install/source#environment
@@ -130,7 +131,7 @@ builds:
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
   ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+    - -L /usr/local/opt/libpcap/lib -s -w
 
   # GOARCH to build for.
   # For more info refer to: https://golang.org/doc/install/source#environment
@@ -154,7 +155,7 @@ builds:
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
   ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+    - -L /usr/local/opt/libpcap/lib -s -w
 
   # GOARCH to build for.
   # For more info refer to: https://golang.org/doc/install/source#environment
@@ -178,7 +179,7 @@ builds:
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
   ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+    - -L /usr/local/opt/libpcap/lib -s -w
 
   # GOARCH to build for.
   # For more info refer to: https://golang.org/doc/install/source#environment
@@ -202,7 +203,7 @@ builds:
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
   ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w -X main.build={{.Version}}
+    - -L /usr/local/opt/libpcap/lib -s -w
 
   # GOARCH to build for.
   # For more info refer to: https://golang.org/doc/install/source#environment
