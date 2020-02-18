@@ -20,10 +20,15 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"reflect"
+	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 
+	"github.com/google/gopacket"
 	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -49,6 +54,30 @@ created by Philipp Mieden, 2018                   00/
 func PrintLogo() {
 	utils.ClearScreen()
 	fmt.Println(logo)
+}
+
+// PrintBuildInfo displays build information related to netcap
+func PrintBuildInfo() {
+
+	PrintLogo()
+
+	fmt.Println("\n> build commit:", Commit)
+	fmt.Println("> go runtime version:", runtime.Version())
+
+	var lt gopacket.LayerType
+	fmt.Println("> gopacket lib:", reflect.TypeOf(lt).PkgPath())
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	fmt.Println("> running with:", runtime.NumCPU(), "cores")
+
+	b, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, d := range b.Deps {
+			if path.Base(d.Path) == "gopacket" {
+				fmt.Println("> gopacket version:", d.Version)
+			}
+		}
+	}
 }
 
 // DumpConfig contains all possible settings for dumping an audit records

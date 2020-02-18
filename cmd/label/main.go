@@ -35,6 +35,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	netcap.PrintBuildInfo()
+
 	if *flagInput == "" && *flagCustom == "" {
 		log.Fatal("no input file specified. Nothing to do.")
 	}

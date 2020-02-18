@@ -18,16 +18,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
-	"reflect"
-	"runtime"
-	"runtime/debug"
 	"runtime/pprof"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 
@@ -145,26 +140,7 @@ func main() {
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})
 
-	// TODO: add a utility function for this
-	// inject commit version at build time and log as well
-	netcap.PrintLogo()
-
-	fmt.Println("\n> go runtime version:", runtime.Version())
-
-	var lt gopacket.LayerType
-	fmt.Println("> gopacket lib:", reflect.TypeOf(lt).PkgPath())
-
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	fmt.Println("> running with:", runtime.NumCPU(), "cores")
-
-	b, ok := debug.ReadBuildInfo()
-	if ok {
-		for _, d := range b.Deps {
-			if path.Base(d.Path) == "gopacket" {
-				fmt.Println("> gopacket version:", d.Version)
-			}
-		}
-	}
+	netcap.PrintBuildInfo()
 
 	// print configuration as table
 	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{

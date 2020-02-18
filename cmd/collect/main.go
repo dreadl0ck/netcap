@@ -19,7 +19,6 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	gzip "github.com/klauspost/pgzip"
 	"io"
 	"io/ioutil"
 	"log"
@@ -27,6 +26,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/dreadl0ck/netcap"
@@ -52,6 +53,8 @@ func main() {
 		fmt.Println(netcap.Version)
 		os.Exit(0)
 	}
+
+	netcap.PrintBuildInfo()
 
 	if *flagGenKeypair {
 

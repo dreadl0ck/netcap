@@ -45,6 +45,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	netcap.PrintBuildInfo()
+
 	// no server public key specified - no party
 	if *flagServerPubKey == "" {
 		fmt.Println("need public key of server")
