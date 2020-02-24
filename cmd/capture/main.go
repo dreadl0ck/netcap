@@ -19,11 +19,9 @@ import (
 	"log"
 	"os"
 	"runtime/pprof"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap"
@@ -141,17 +139,7 @@ func main() {
 	})
 
 	netcap.PrintBuildInfo()
-
-	// print configuration as table
-	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
-		{"NumWorkers", strconv.Itoa(*flagWorkers)},
-		{"MemBuffer", strconv.FormatBool(*flagBuffer)},
-		{"MemBufferSize", strconv.Itoa(*flagMemBufferSize) + " bytes"},
-		{"Compression", strconv.FormatBool(*flagCompress)},
-		{"PacketBuffer", strconv.Itoa(*flagPacketBuffer) + " packets"},
-		{"PacketContext", strconv.FormatBool(*flagContext)},
-	})
-	fmt.Println() // add a newline
+	c.PrintConfiguration()
 
 	// collect traffic live from named interface
 	if live {
