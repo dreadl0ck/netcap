@@ -30,11 +30,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/utils"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
-	"github.com/dreadl0ck/gopacket"
 	"github.com/mgutz/ansi"
 )
 
@@ -360,6 +360,7 @@ func (c *Collector) GetNumPackets() int64 {
 	return atomic.LoadInt64(&c.current)
 }
 
+// FreeOSMemory forces freeing memory
 func (c *Collector) FreeOSMemory() {
 	for {
 		select {
@@ -367,4 +368,20 @@ func (c *Collector) FreeOSMemory() {
 			debug.FreeOSMemory()
 		}
 	}
+}
+
+// PrintConfiguration dumps the current collector config to stdout
+func (c *Collector) PrintConfiguration() {
+
+	// print configuration as table
+	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
+		{"NumWorkers", strconv.Itoa(c.config.NumWorkers)},
+		{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
+		{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
+		{"Compression", strconv.FormatBool(c.config.EncoderConfig.Compression)},
+		{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
+		{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
+		{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
+	})
+	fmt.Println() // add a newline
 }
