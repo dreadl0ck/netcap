@@ -178,17 +178,24 @@ commands:
         exec: |
             read -p "[WARNING] This will bump the version to $VERSION, as configured in the zeus/commands.yml. Are you sure? Hit [Enter] to proceed"
 
-            #git status
-            #read -p "[WARNING] The following changes will be added to version control. Hit [Enter] to proceed"
-            #git add .
-            #git commit -m "v${VERSION} release"
+            git status
+            read -p "[WARNING] The following changes will be added to version control. Hit [Enter] to proceed"
+            git add .
+            git commit -m "v${VERSION} release"
 
             git tag -a v${VERSION} -m "v${VERSION} release"
             git push origin v${VERSION}
-            
 
             echo "[INFO] version bumped to v${VERSION}"
     
     static-analyze:
         description: run the golangci-lint static source code analyzer
         exec: golangci-lint run
+
+    delete-tag:
+        description: delete tag locally and remotely
+        arguments:
+            - tag:String
+        exec: |
+            git tag -d $tag
+            git push --delete origin $tag
