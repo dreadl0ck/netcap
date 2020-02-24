@@ -22,13 +22,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"runtime/debug"
 	"strings"
 	"time"
 
-	"github.com/google/gopacket"
 	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -64,9 +62,6 @@ func PrintBuildInfo() {
 	fmt.Println("\n> build commit:", Commit)
 	fmt.Println("> go runtime version:", runtime.Version())
 
-	var lt gopacket.LayerType
-	fmt.Println("> gopacket lib:", reflect.TypeOf(lt).PkgPath())
-
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	fmt.Println("> running with:", runtime.NumCPU(), "cores")
 
@@ -74,7 +69,7 @@ func PrintBuildInfo() {
 	if ok {
 		for _, d := range b.Deps {
 			if path.Base(d.Path) == "gopacket" {
-				fmt.Println("> gopacket version:", d.Version)
+				fmt.Println("> gopacket:", d.Path, "version:", d.Version)
 			}
 		}
 	}
