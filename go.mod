@@ -13,7 +13,6 @@ require (
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.0
 	github.com/golang/protobuf v1.3.2
-	github.com/google/gopacket v1.1.17
 	github.com/klauspost/compress v1.10.0 // indirect
 	github.com/klauspost/pgzip v1.2.1
 	github.com/mattn/go-colorable v0.1.2 // indirect
