@@ -196,9 +196,6 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		streamPool.Dump()
 	}
 
-	// TODO: remove after debugging
-	streamPool.Dump()
-
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)
 		if err != nil {
