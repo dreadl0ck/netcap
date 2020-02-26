@@ -103,6 +103,7 @@ func Progress(current, total int64) string {
 	return string(b)
 }
 
+// TrimFileExtension returns the netcap file name without file extension
 func TrimFileExtension(file string) string {
 	return strings.TrimSuffix(strings.TrimSuffix(file, ".gz"), ".ncap")
 }
