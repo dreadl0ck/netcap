@@ -101,13 +101,16 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 
 			// populate types.HTTP with all infos from response
 			h := newHTTPFromResponse(res)
+			atomic.AddInt64(&httpEncoder.numResponses, 1)
 
 			// now add request information
 			if res.Request != nil {
+				atomic.AddInt64(&httpEncoder.numRequests, 1)
 				setRequest(h, res.Request)
 			} else {
 				// response without matching request
 				// dont add to output for now
+				atomic.AddInt64(&httpEncoder.numUnmatchedResp, 1)
 				continue
 			}
 
@@ -116,6 +119,7 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 				h.Inc()
 			}
 
+			// write record to disk
 			atomic.AddInt64(&httpEncoder.numRecords, 1)
 			err := httpEncoder.writer.Write(h)
 			if err != nil {
@@ -128,7 +132,7 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 	}
 	resMutex.Unlock()
 
-	// flush from requests map
+	// flush unanswered requests from requests map
 	reqMutex.Lock()
 	if reqArr, ok := httpReqMap[c2s]; ok {
 		for _, req := range reqArr {
@@ -136,15 +140,22 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 				h := &types.HTTP{}
 				setRequest(h, req)
 
+				atomic.AddInt64(&httpEncoder.numRequests, 1)
+				atomic.AddInt64(&httpEncoder.numUnansweredRequests, 1)
+
 				// export metrics if configured
 				if httpEncoder.export {
 					h.Inc()
 				}
 
+				// write record to disk
+				atomic.AddInt64(&httpEncoder.numRecords, 1)
 				err := httpEncoder.writer.Write(h)
 				if err != nil {
 					errorMap.Inc(err.Error())
 				}
+			} else {
+				atomic.AddInt64(&httpEncoder.numNilRequests, 1)
 			}
 		}
 
@@ -196,58 +207,24 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 // HTTP Response
 
 func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
+
+	// try to read HTTP response from the buffered reader
 	res, err := http.ReadResponse(b, nil)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		Error("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
-	}
-
-	var (
-		req    *http.Request
-		reqURL string
-	)
-
-	h.parent.Lock()
-	if len(h.parent.requests) != 0 {
-		req, h.parent.requests = h.parent.requests[0], h.parent.requests[1:]
-	}
-	if len(h.parent.urls) == 0 {
-		reqURL = fmt.Sprintf("<no-request-seen>")
-	} else {
-		reqURL, h.parent.urls = h.parent.urls[0], h.parent.urls[1:]
-	}
-	h.parent.Unlock()
-
-	// set request instance on response
-	if req != nil {
-		res.Request = req
-
-		// create client stream
-		st := Stream{h.parent.net, h.parent.transport}
-
-		// remove request from map
-		reqMutex.Lock()
-		if requests, ok := httpReqMap[st]; ok {
-			for i, r := range requests {
-				if r == req {
-					requests = append(requests[:i], requests[i+1:]...)
-					httpReqMap[st] = requests
-					break
-				}
-			}
-		}
-		reqMutex.Unlock()
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	s := len(body)
 	if err != nil {
-		Error("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
+		logError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
+		// continue execution
 	}
 	if h.hexdump {
-		Info("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	}
 	res.Body.Close()
 	sym := ","
@@ -258,9 +235,13 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	if !ok {
 		contentType = []string{http.DetectContentType(body)}
 	}
-	encoding := res.Header["Content-Encoding"]
-	Info("HTTP/%s Response: %s URL:%s (%d%s%d%s) -> %s\n", h.ident, res.Status, reqURL, res.ContentLength, sym, s, contentType, encoding)
 
+	encoding := res.Header["Content-Encoding"]
+	reqURL := h.findRequest(res, s2c)
+
+	logInfo("HTTP/%s Response: %s URL:%s (%d%s%d%s) -> %s\n", h.ident, res.Status, reqURL, res.ContentLength, sym, s, contentType, encoding)
+
+	// increment counter
 	mu.Lock()
 	responses++
 	mu.Unlock()
@@ -276,6 +257,57 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	}
 
 	return nil
+}
+
+func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
+
+	// try to find the matching HTTP request for the response
+	var (
+		req    *http.Request
+		reqURL string
+	)
+
+	h.parent.Lock()
+	if len(h.parent.requests) != 0 {
+		// take the request from the parent stream and delete it from there
+		req, h.parent.requests = h.parent.requests[0], h.parent.requests[1:]
+		reqURL = req.URL.String()
+	}
+	h.parent.Unlock()
+
+	// set request instance on response
+	if req != nil {
+
+		res.Request = req
+		atomic.AddInt64(&httpEncoder.numFoundRequests, 1)
+
+		// create client stream
+		c2s := Stream{h.parent.net, h.parent.transport}
+
+		// remove request from map
+		reqMutex.Lock()
+		if requests, ok := httpReqMap[c2s]; ok {
+			for i, r := range requests {
+				if r == req {
+					atomic.AddInt64(&httpEncoder.numRemovedRequests, 1)
+
+					requests = append(requests[:i], requests[i+1:]...)
+					httpReqMap[c2s] = requests
+					break
+				}
+			}
+		} else {
+			atomic.AddInt64(&httpEncoder.numClientStreamNotFound, 1)
+			logError("Unknown Client Stream", c2s.String(), req.Host, req.URL)
+
+			// TODO
+			fmt.Println("Unknown Client Stream", c2s.String(), req.Host, req.URL)
+		}
+
+		reqMutex.Unlock()
+	}
+
+	return reqURL
 }
 
 func (h *httpReader) saveResponse(err error, body []byte, encoding []string, reqURL string) error {
@@ -313,7 +345,7 @@ func (h *httpReader) saveResponse(err error, body []byte, encoding []string, req
 
 	f, err := os.Create(target)
 	if err != nil {
-		Error("HTTP-create", "Cannot create %s: %s\n", target, err)
+		logError("HTTP-create", "Cannot create %s: %s\n", target, err)
 		return err
 	}
 
@@ -325,7 +357,7 @@ func (h *httpReader) saveResponse(err error, body []byte, encoding []string, req
 	if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
 		r, err = gzip.NewReader(r)
 		if err != nil {
-			Error("HTTP-gunzip", "Failed to gzip decode: %s", err)
+			logError("HTTP-gunzip", "Failed to gzip decode: %s", err)
 		}
 	}
 	if err == nil {
@@ -335,9 +367,9 @@ func (h *httpReader) saveResponse(err error, body []byte, encoding []string, req
 		}
 		f.Close()
 		if err != nil {
-			Error("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
+			logError("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
 		} else {
-			Info("%s: Saved %s (l:%d)\n", h.ident, target, w)
+			logInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
 		}
 	}
 
@@ -351,30 +383,33 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		Error("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
 	}
 
 	body, err := ioutil.ReadAll(req.Body)
 	s := len(body)
 	if err != nil {
-		Error("HTTP-request-body", "Got body err: %s\n", err)
+		logError("HTTP-request-body", "Got body err: %s\n", err)
+		// continue execution
 	} else if h.hexdump {
-		Info("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	}
 	req.Body.Close()
 
-	Info("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
+	logInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
+
+	// set some infos for netcap on the HTTP request header
 	req.Header.Set("netcap-ts", utils.TimeToString(h.parent.firstPacket))
 	req.Header.Set("netcap-clientip", h.parent.net.Src().String())
 	req.Header.Set("netcap-serverip", h.parent.net.Dst().String())
 
+	// increase counter
 	mu.Lock()
 	requests++
 	mu.Unlock()
 
 	h.parent.Lock()
-	h.parent.urls = append(h.parent.urls, req.URL.String())
 	h.parent.requests = append(h.parent.requests, req)
 	h.parent.Unlock()
 
