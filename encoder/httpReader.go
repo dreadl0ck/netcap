@@ -91,22 +91,39 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	return l, nil
 }
 
-func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
+func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 
-	// flush from response map
-	resMutex.Lock()
-	if resArr, ok := httpResMap[s2c]; ok {
+	h.parent.Lock()
+	if !h.parent.last {
 
-		for _, res := range resArr {
+		// signal wait group
+		wg.Done()
+
+		h.parent.last = true
+		h.parent.Unlock()
+
+		return
+	}
+	h.parent.Unlock()
+
+	// cleanup() is called twice - once for each direction of the stream
+	// execute the audit record collection only once for the client stream
+	// it will collect all requests and responses that have been collected
+	if h.parent.last {
+
+		for _, res := range h.parent.responses {
 
 			// populate types.HTTP with all infos from response
-			h := newHTTPFromResponse(res)
+			ht := newHTTPFromResponse(res)
+
+			_ = h.findRequest(res, s2c)
+
 			atomic.AddInt64(&httpEncoder.numResponses, 1)
 
 			// now add request information
 			if res.Request != nil {
 				atomic.AddInt64(&httpEncoder.numRequests, 1)
-				setRequest(h, res.Request)
+				setRequest(ht, res.Request)
 			} else {
 				// response without matching request
 				// dont add to output for now
@@ -116,26 +133,18 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 
 			// export metrics if configured
 			if httpEncoder.export {
-				h.Inc()
+				ht.Inc()
 			}
 
 			// write record to disk
 			atomic.AddInt64(&httpEncoder.numRecords, 1)
-			err := httpEncoder.writer.Write(h)
+			err := httpEncoder.writer.Write(ht)
 			if err != nil {
 				errorMap.Inc(err.Error())
 			}
 		}
 
-		// clean up
-		delete(httpResMap, s2c)
-	}
-	resMutex.Unlock()
-
-	// flush unanswered requests from requests map
-	reqMutex.Lock()
-	if reqArr, ok := httpReqMap[c2s]; ok {
-		for _, req := range reqArr {
+		for _, req := range h.parent.requests {
 			if req != nil {
 				h := &types.HTTP{}
 				setRequest(h, req)
@@ -158,17 +167,13 @@ func cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 				atomic.AddInt64(&httpEncoder.numNilRequests, 1)
 			}
 		}
-
-		// clean up
-		delete(httpReqMap, c2s)
 	}
-	reqMutex.Unlock()
 
 	// signal wait group
 	wg.Done()
 }
 
-// run starts decoding a HTTP in a single direction
+// run starts decoding HTTP traffic in a single direction
 func (h *httpReader) run(wg *sync.WaitGroup) {
 
 	// create streams
@@ -180,7 +185,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 	)
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer cleanup(wg, s2c, c2s)
+	defer h.cleanup(wg, s2c, c2s)
 
 	var (
 		err error
@@ -227,33 +232,33 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	}
 	res.Body.Close()
+
 	sym := ","
 	if res.ContentLength > 0 && res.ContentLength != int64(s) {
 		sym = "!="
 	}
+
+	// determine content type
 	contentType, ok := res.Header["Content-Type"]
 	if !ok {
 		contentType = []string{http.DetectContentType(body)}
 	}
 
 	encoding := res.Header["Content-Encoding"]
-	reqURL := h.findRequest(res, s2c)
-
-	logInfo("HTTP/%s Response: %s URL:%s (%d%s%d%s) -> %s\n", h.ident, res.Status, reqURL, res.ContentLength, sym, s, contentType, encoding)
+	logInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 
 	// increment counter
 	mu.Lock()
 	responses++
 	mu.Unlock()
 
-	// add to map
-	resMutex.Lock()
-	httpResMap[s2c] = append(httpResMap[s2c], res)
-	resMutex.Unlock()
+	h.parent.Lock()
+	h.parent.responses = append(h.parent.responses, res)
+	h.parent.Unlock()
 
 	// write responses to disk if configured
 	if (err == nil || *writeincomplete) && *output != "" {
-		return h.saveResponse(err, body, encoding, reqURL)
+		return h.saveResponse(err, body, encoding, h.ident)
 	}
 
 	return nil
@@ -277,34 +282,8 @@ func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 
 	// set request instance on response
 	if req != nil {
-
 		res.Request = req
 		atomic.AddInt64(&httpEncoder.numFoundRequests, 1)
-
-		// create client stream
-		c2s := Stream{h.parent.net, h.parent.transport}
-
-		// remove request from map
-		reqMutex.Lock()
-		if requests, ok := httpReqMap[c2s]; ok {
-			for i, r := range requests {
-				if r == req {
-					atomic.AddInt64(&httpEncoder.numRemovedRequests, 1)
-
-					requests = append(requests[:i], requests[i+1:]...)
-					httpReqMap[c2s] = requests
-					break
-				}
-			}
-		} else {
-			atomic.AddInt64(&httpEncoder.numClientStreamNotFound, 1)
-			logError("Unknown Client Stream", c2s.String(), req.Host, req.URL)
-
-			// TODO
-			fmt.Println("Unknown Client Stream", c2s.String(), req.Host, req.URL)
-		}
-
-		reqMutex.Unlock()
 	}
 
 	return reqURL
@@ -335,7 +314,6 @@ func (h *httpReader) saveResponse(err error, body []byte, encoding []string, req
 	)
 	for {
 		_, err := os.Stat(target)
-		//if os.IsNotExist(err) != nil {
 		if err != nil {
 			break
 		}
@@ -412,11 +390,6 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	h.parent.Lock()
 	h.parent.requests = append(h.parent.requests, req)
 	h.parent.Unlock()
-
-	// add to map
-	reqMutex.Lock()
-	httpReqMap[c2s] = append(httpReqMap[c2s], req)
-	reqMutex.Unlock()
 
 	return nil
 }
