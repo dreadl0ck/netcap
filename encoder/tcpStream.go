@@ -196,9 +196,9 @@ type tcpStream struct {
 	requests  []*http.Request
 	responses []*http.Response
 
+	// if set, indicates that either client or server http reader was closed already
 	last bool
 
-	urls []string
 	sync.Mutex
 }
 
