@@ -14,8 +14,8 @@
 package collector
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/encoder"
 )
 
 // Config contains configuration parameters
@@ -24,7 +24,6 @@ type Config struct {
 	Live                bool
 	WriteUnknownPackets bool
 	Workers             int
-	NumWorkers          int
 	PacketBufferSize    int
 	SnapLen             int
 	Promisc             bool

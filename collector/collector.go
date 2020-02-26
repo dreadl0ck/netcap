@@ -190,7 +190,7 @@ func (c *Collector) handlePacket(p gopacket.Packet) {
 	c.workers[c.next] <- p
 
 	// increment or reset next
-	if c.config.NumWorkers >= c.next+1 {
+	if c.config.Workers >= c.next+1 {
 		// reset
 		c.next = 1
 	} else {
@@ -311,9 +311,6 @@ func (c *Collector) Init() (err error) {
 	c.workers = c.initWorkers()
 	fmt.Println("spawned", c.config.Workers, "workers")
 
-	// set number of workers
-	c.config.NumWorkers = len(c.workers)
-
 	// create full output directory path if set
 	if c.config.EncoderConfig.Out != "" {
 		err = os.MkdirAll(c.config.EncoderConfig.Out, 0755)
@@ -375,7 +372,7 @@ func (c *Collector) PrintConfiguration() {
 
 	// print configuration as table
 	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
-		{"NumWorkers", strconv.Itoa(c.config.NumWorkers)},
+		{"NumWorkers", strconv.Itoa(c.config.Workers)},
 		{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
 		{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
 		{"Compression", strconv.FormatBool(c.config.EncoderConfig.Compression)},
