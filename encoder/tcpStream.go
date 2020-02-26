@@ -77,17 +77,13 @@ var (
 
 	flagCloseTimeOut = flag.Int("tcp-close-timeout", 0, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
 	flagTimeOut      = flag.Int("tcp-timeout", 600, "close streams waiting for packets older than X seconds")
-)
 
-var (
 	outputLevel int
 	numErrors   uint
 	requests    = 0
 	responses   = 0
 	mu          sync.Mutex
-)
 
-var (
 	closeTimeout time.Duration = time.Second * time.Duration(*flagCloseTimeOut) // Closing inactive
 	timeout      time.Duration = time.Second * time.Duration(*flagTimeOut)      // Pending bytes
 )
@@ -121,7 +117,7 @@ type tcpStreamFactory struct {
 
 func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
-	Debug("* NEW: %s %s\n", net, transport)
+	logDebug("* NEW: %s %s\n", net, transport)
 	fsmOptions := reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: *allowmissinginit,
 	}
@@ -206,7 +202,7 @@ type tcpStream struct {
 func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
 	// FSM
 	if !t.tcpstate.CheckState(tcp, dir) {
-		Error("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
+		logError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
 		reassemblyStats.rejectFsm++
 		if !t.fsmerr {
 			t.fsmerr = true
@@ -219,7 +215,7 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 	// Options
 	err := t.optchecker.Accept(tcp, ci, dir, nextSeq, start)
 	if err != nil {
-		Error("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
+		logError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
 		reassemblyStats.rejectOpt++
 		if !*nooptcheck {
 			return false
@@ -230,10 +226,10 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 	if *checksum {
 		c, err := tcp.ComputeChecksum()
 		if err != nil {
-			Error("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, err)
+			logError("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, err)
 			accept = false
 		} else if c != 0x0 {
-			Error("Checksum", "%s: Invalid checksum: 0x%x\n", t.ident, c)
+			logError("Checksum", "%s: Invalid checksum: 0x%x\n", t.ident, c)
 			accept = false
 		}
 	}
@@ -281,7 +277,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 		ident = fmt.Sprintf("%v %v(%s): ", t.net.Reverse(), t.transport.Reverse(), dir)
 	}
 
-	Debug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
+	logDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
 	if skip == -1 && *allowmissinginit {
 		// this is allowed
 	} else if skip != 0 {
@@ -308,10 +304,10 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 			missing = int(dnsSize) - len(data[2:])
 		)
 
-		Debug("dnsSize: %d, missing: %d\n", dnsSize, missing)
+		logDebug("dnsSize: %d, missing: %d\n", dnsSize, missing)
 
 		if missing > 0 {
-			Info("Missing some bytes: %d\n", missing)
+			logInfo("Missing some bytes: %d\n", missing)
 			sg.KeepFrom(0)
 			return
 		}
@@ -321,9 +317,9 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 			err = p.DecodeLayers(data[2:], &decoded)
 		)
 		if err != nil {
-			Error("DNS-parser", "Failed to decode DNS: %v\n", err)
+			logError("DNS-parser", "Failed to decode DNS: %v\n", err)
 		} else {
-			Debug("DNS: %s\n", gopacket.LayerDump(dns))
+			logDebug("DNS: %s\n", gopacket.LayerDump(dns))
 		}
 		if len(data) > 2+int(dnsSize) {
 			sg.KeepFrom(2 + int(dnsSize))
@@ -331,7 +327,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 	} else if t.isHTTP {
 		if length > 0 {
 			if *hexdump {
-				Debug("Feeding http with:\n%s", hex.Dump(data))
+				logDebug("Feeding http with:\n%s", hex.Dump(data))
 			}
 			if dir == reassembly.TCPDirClientToServer && !t.reversed {
 				t.client.bytes <- data
@@ -343,7 +339,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 }
 
 func (t *tcpStream) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
-	Debug("%s: Connection closed\n", t.ident)
+	logDebug("%s: Connection closed\n", t.ident)
 	if t.isHTTP {
 		// closing here causes a panic sometimes because the channel is already closed
 		// as a temporary bugfix, closing the channels was omitted.

@@ -60,6 +60,16 @@ type (
 		// used to keep track of the number of generated audit records
 		numRecords int64
 
+		// HTTP specific stats
+		numRequests             int64
+		numResponses            int64
+		numUnmatchedResp        int64
+		numNilRequests          int64
+		numFoundRequests        int64
+		numRemovedRequests      int64
+		numUnansweredRequests   int64
+		numClientStreamNotFound int64
+
 		writer *netcap.Writer
 		export bool
 	}

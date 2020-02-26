@@ -372,7 +372,7 @@ func (c *Collector) PrintConfiguration() {
 
 	// print configuration as table
 	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
-		{"NumWorkers", strconv.Itoa(c.config.Workers)},
+		{"Workers", strconv.Itoa(c.config.Workers)},
 		{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
 		{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
 		{"Compression", strconv.FormatBool(c.config.EncoderConfig.Compression)},

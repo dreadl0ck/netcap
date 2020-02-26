@@ -104,12 +104,12 @@ func DecodeHTTP(packet gopacket.Packet) {
 		if err != nil {
 			log.Fatalln("Error while de-fragmenting", err)
 		} else if newip4 == nil {
-			Debug("Fragment...\n")
+			logDebug("Fragment...\n")
 			return
 		}
 		if newip4.Length != l {
 			reassemblyStats.ipdefrag++
-			Debug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
+			logDebug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
 			pb, ok := packet.(gopacket.PacketBuilder)
 			if !ok {
 				panic("Not a PacketBuilder")
@@ -176,11 +176,35 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
 	errorsMapMutex.Unlock()
 
+	dumpResp := false
+	if *output != "" || *writeincomplete {
+		dumpResp = true
+	}
+
+	// print configuration
+	// print configuration as table
+	tui.Table(os.Stdout, []string{"TCP Reassembly Setting", "Value"}, [][]string{
+		{"FlushEvery", strconv.Itoa(*flushevery)},
+		{"CloseTimeout", closeTimeout.String()},
+		{"Timeout", timeout.String()},
+		{"AllowMissingInit", strconv.FormatBool(*allowmissinginit)},
+		{"DumpResponses", strconv.FormatBool(dumpResp)},
+		{"IgnoreFsmErr", strconv.FormatBool(*ignorefsmerr)},
+		{"NoOptCheck", strconv.FormatBool(*nooptcheck)},
+		{"Checksum", strconv.FormatBool(*checksum)},
+		{"NoDefrag", strconv.FormatBool(*nodefrag)},
+		{"WriteIncomplete", strconv.FormatBool(*writeincomplete)},
+	})
+	fmt.Println() // add a newline
+
 	closed := assembler.FlushAll()
 	fmt.Printf("Final flush: %d closed\n", closed)
 	if outputLevel >= 2 {
 		streamPool.Dump()
 	}
+
+	// TODO: remove after debugging
+	streamPool.Dump()
 
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)
@@ -196,7 +220,7 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	}
 
 	streamFactory.WaitGoRoutines()
-	Debug("%s\n", assembler.Dump())
+	logDebug("%s\n", assembler.Dump())
 
 	reqMutex.Lock()
 	resMutex.Lock()
@@ -206,8 +230,9 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		sum         = int64(len(httpResMap) + len(httpReqMap))
 	)
 
+	fmt.Println("leftover requests and responses:", sum)
+
 	if sum == 0 {
-		fmt.Println("NO RESPONSES OR REQUESTS LEFT OVER")
 		goto done
 	}
 
@@ -251,7 +276,6 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	}
 
 	// TODO: process all leftover responses
-	fmt.Println("NUM LEFTOVER HTTP RESPONSES", len(httpResMap))
 	// for _, resArr := range httpResMap {
 	// 	printProgress(total, sum)
 	// 	for _, res := range resArr {
@@ -324,19 +348,25 @@ done:
 	rows = append(rows, []string{"overlap packets", strconv.Itoa(reassemblyStats.overlapPackets)})
 	rows = append(rows, []string{"overlap bytes", strconv.Itoa(reassemblyStats.overlapBytes)})
 
-	fmt.Println("TCP stats:")
-	tui.Table(os.Stdout, []string{"Description", "Value"}, rows)
+	tui.Table(os.Stdout, []string{"TCP Stat", "Value"}, rows)
 
 	if numErrors != 0 {
 		rows = [][]string{}
-		fmt.Printf("\nErrors: %d\n", numErrors)
 		for e := range errorsMap {
 			rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
 		}
-		tui.Table(os.Stdout, []string{"Error", "Count"}, rows)
+		tui.Table(os.Stdout, []string{"Error Subject", "Count"}, rows)
 	}
 
-	fmt.Println("\nflushed", total, "http events.", "requests", requests, "responses", responses)
+	fmt.Println("\nflushed", total, "http events, encountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
+	fmt.Println("httpEncoder.numRequests", e.numRequests)
+	fmt.Println("httpEncoder.numResponses", e.numResponses)
+	fmt.Println("httpEncoder.numUnmatchedResp", e.numUnmatchedResp)
+	fmt.Println("httpEncoder.numNilRequests", e.numNilRequests)
+	fmt.Println("httpEncoder.numFoundRequests", e.numFoundRequests)
+	fmt.Println("httpEncoder.numRemovedRequests", e.numRemovedRequests)
+	fmt.Println("httpEncoder.numUnansweredRequests", e.numUnansweredRequests)
+	fmt.Println("httpEncoder.numClientStreamNotFound", e.numClientStreamNotFound)
 
 	return nil
 })
@@ -377,7 +407,7 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 	}
 }
 
-func Error(t string, s string, a ...interface{}) {
+func logError(t string, s string, a ...interface{}) {
 	errorsMapMutex.Lock()
 	numErrors++
 	nb := errorsMap[t]
@@ -388,13 +418,13 @@ func Error(t string, s string, a ...interface{}) {
 	}
 }
 
-func Info(s string, a ...interface{}) {
+func logInfo(s string, a ...interface{}) {
 	if outputLevel >= 1 {
 		fmt.Printf(s, a...)
 	}
 }
 
-func Debug(s string, a ...interface{}) {
+func logDebug(s string, a ...interface{}) {
 	if outputLevel >= 2 {
 		fmt.Printf(s, a...)
 	}

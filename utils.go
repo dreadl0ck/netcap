@@ -59,7 +59,8 @@ func PrintBuildInfo() {
 
 	PrintLogo()
 
-	fmt.Println("\n> build commit:", Commit)
+	fmt.Println("\n> Date:", time.Now().UTC())
+	fmt.Println("> NETCAP build commit:", Commit)
 	fmt.Println("> go runtime version:", runtime.Version())
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
