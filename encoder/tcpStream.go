@@ -60,7 +60,7 @@ import (
 
 // flags
 var (
-	flushevery       = flag.Int("flushevery", 10000, "flush assembler every N packets")
+	flushevery       = flag.Int("flushevery", 100000, "flush assembler every N packets")
 	nodefrag         = flag.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
 	checksum         = flag.Bool("checksum", false, "check TCP checksum")
 	nooptcheck       = flag.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
@@ -75,8 +75,8 @@ var (
 	hexdump          = flag.Bool("dump", false, "dump HTTP request/response as hex")
 	memprofile       = flag.String("memprofile", "", "write memory profile")
 
-	flagCloseTimeOut = flag.Int("tcp-close-timeout", 180, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
-	flagTimeOut      = flag.Int("tcp-timeout", 120, "close streams waiting for packets older than X seconds")
+	flagCloseTimeOut = flag.Int("tcp-close-timeout", 0, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
+	flagTimeOut      = flag.Int("tcp-timeout", 600, "close streams waiting for packets older than X seconds")
 )
 
 var (
@@ -140,19 +140,20 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 
 	if stream.isHTTP {
 		stream.client = httpReader{
-			bytes:    make(chan []byte, 1),
+			bytes:    make(chan []byte),
 			ident:    fmt.Sprintf("%s %s", net, transport),
 			hexdump:  *hexdump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = httpReader{
-			bytes:   make(chan []byte, 1),
+			bytes:   make(chan []byte),
 			ident:   fmt.Sprintf("%s %s", net.Reverse(), transport.Reverse()),
 			hexdump: *hexdump,
 			parent:  stream,
 		}
 
+		// kickoff http decoders for client and server
 		factory.wg.Add(2)
 		go stream.client.run(&factory.wg)
 		go stream.server.run(&factory.wg)
@@ -181,20 +182,24 @@ func (c *Context) GetCaptureInfo() gopacket.CaptureInfo {
 
 /* It's a connection (bidirectional) */
 type tcpStream struct {
-	tcpstate       *reassembly.TCPSimpleFSM
-	fsmerr         bool
-	optchecker     reassembly.TCPOptionCheck
+	tcpstate   *reassembly.TCPSimpleFSM
+	optchecker reassembly.TCPOptionCheck
+
 	net, transport gopacket.Flow
-	isDNS          bool
-	isHTTP         bool
-	reversed       bool
-	client         httpReader
-	server         httpReader
-	ident          string
+
+	fsmerr   bool
+	isDNS    bool
+	isHTTP   bool
+	reversed bool
+	ident    string
+
+	client httpReader
+	server httpReader
 
 	firstPacket time.Time
-	urls        []string
-	requests    []*http.Request
+
+	requests []*http.Request
+	urls     []string
 	sync.Mutex
 }
 

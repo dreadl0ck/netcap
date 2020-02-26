@@ -25,13 +25,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/evilsocket/islazy/tui"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/ip4defrag"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/reassembly"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/evilsocket/islazy/tui"
+	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -49,11 +49,12 @@ var (
 
 	// HTTPActive must be set to true to decode HTTP traffic
 	HTTPActive bool
-	reqMutex   sync.Mutex
-	httpReqMap = make(map[Stream][]*http.Request)
 
-	resMutex   sync.Mutex
+	httpReqMap = make(map[Stream][]*http.Request)
 	httpResMap = make(map[Stream][]*http.Response)
+
+	reqMutex sync.Mutex
+	resMutex sync.Mutex
 )
 
 // Stream contains both unidirectional flows for a connection
@@ -147,6 +148,10 @@ func DecodeHTTP(packet gopacket.Packet) {
 
 var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *CustomEncoder) error {
 
+	// postinit:
+	// set debug level
+	// and ensure HTTP collection is enabled
+
 	if *debug {
 		outputLevel = 2
 	} else if *verbose {
@@ -159,8 +164,13 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
+	// actual decoder is nil, because the processing happens after TCP stream reassembly
 	return nil
 }, func(e *CustomEncoder) error {
+
+	// deinit:
+	// finshes processing
+	// and prints statistics
 
 	errorsMapMutex.Lock()
 	fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
@@ -197,6 +207,7 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	)
 
 	if sum == 0 {
+		fmt.Println("NO RESPONSES OR REQUESTS LEFT OVER")
 		goto done
 	}
 
@@ -240,6 +251,7 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	}
 
 	// TODO: process all leftover responses
+	fmt.Println("NUM LEFTOVER HTTP RESPONSES", len(httpResMap))
 	// for _, resArr := range httpResMap {
 	// 	printProgress(total, sum)
 	// 	for _, res := range resArr {
@@ -362,5 +374,28 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		StatusCode:         int32(res.StatusCode),
 		ServerName:         res.Header.Get("Server"),
 		ResContentEncoding: res.Header.Get("Content-Encoding"),
+	}
+}
+
+func Error(t string, s string, a ...interface{}) {
+	errorsMapMutex.Lock()
+	numErrors++
+	nb := errorsMap[t]
+	errorsMap[t] = nb + 1
+	errorsMapMutex.Unlock()
+	if outputLevel >= 0 {
+		fmt.Printf(s, a...)
+	}
+}
+
+func Info(s string, a ...interface{}) {
+	if outputLevel >= 1 {
+		fmt.Printf(s, a...)
+	}
+}
+
+func Debug(s string, a ...interface{}) {
+	if outputLevel >= 2 {
+		fmt.Printf(s, a...)
 	}
 }
