@@ -93,13 +93,17 @@ func (h *httpReader) Read(p []byte) (int, error) {
 
 func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 
+	// determine if one side of the stream has already been closed
 	h.parent.Lock()
 	if !h.parent.last {
 
 		// signal wait group
 		wg.Done()
 
+		// indicate close on the parent tcpStream
 		h.parent.last = true
+
+		// free lock
 		h.parent.Unlock()
 
 		return
@@ -107,8 +111,8 @@ func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 	h.parent.Unlock()
 
 	// cleanup() is called twice - once for each direction of the stream
-	// execute the audit record collection only once for the client stream
-	// it will collect all requests and responses that have been collected
+	// this check ensures the audit record collection is executed only if one side has been closed already
+	// to ensure all necessary requests and responses are present
 	if h.parent.last {
 
 		for _, res := range h.parent.responses {
