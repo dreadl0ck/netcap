@@ -161,13 +161,12 @@ func (factory *tcpStreamFactory) WaitGoRoutines() {
 	factory.wg.Wait()
 }
 
-/*
- * The assembler context
- */
+// Context is the assembler context
 type Context struct {
 	CaptureInfo gopacket.CaptureInfo
 }
 
+// GetCaptureInfo returns the gopacket.CaptureInfo from the context
 func (c *Context) GetCaptureInfo() gopacket.CaptureInfo {
 	return c.CaptureInfo
 }
@@ -194,8 +193,12 @@ type tcpStream struct {
 
 	firstPacket time.Time
 
-	requests []*http.Request
-	urls     []string
+	requests  []*http.Request
+	responses []*http.Response
+
+	last bool
+
+	urls []string
 	sync.Mutex
 }
 

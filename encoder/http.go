@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
@@ -49,12 +48,6 @@ var (
 
 	// HTTPActive must be set to true to decode HTTP traffic
 	HTTPActive bool
-
-	httpReqMap = make(map[Stream][]*http.Request)
-	httpResMap = make(map[Stream][]*http.Response)
-
-	reqMutex sync.Mutex
-	resMutex sync.Mutex
 )
 
 // Stream contains both unidirectional flows for a connection
@@ -222,110 +215,6 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	streamFactory.WaitGoRoutines()
 	logDebug("%s\n", assembler.Dump())
 
-	reqMutex.Lock()
-	resMutex.Lock()
-
-	var (
-		total int64 = 0
-		sum         = int64(len(httpResMap) + len(httpReqMap))
-	)
-
-	fmt.Println("leftover requests and responses:", sum)
-
-	if sum == 0 {
-		goto done
-	}
-
-	// range responses
-	for s, resArr := range httpResMap {
-
-		printProgress(total, sum)
-
-		var newRes []*http.Response
-		for _, res := range resArr {
-
-			// populate types.HTTP with all infos from response
-			h := newHTTPFromResponse(res)
-
-			// add request information if available
-			if res.Request != nil {
-
-				// add request info
-				setRequest(h, res.Request)
-
-				// export metrics if configured
-				if e.export {
-					h.Inc()
-				}
-
-				// write to disk
-				atomic.AddInt64(&e.numRecords, 1)
-				err := e.writer.Write(h)
-				if err != nil {
-					errorMap.Inc(err.Error())
-				}
-
-				total++
-			} else {
-				newRes = append(newRes, res)
-			}
-		}
-
-		// newRes are all responses for which there is no request
-		httpResMap[s] = newRes
-	}
-
-	// TODO: process all leftover responses
-	// for _, resArr := range httpResMap {
-	// 	printProgress(total, sum)
-	// 	for _, res := range resArr {
-
-	// 		// populate types.HTTP with all infos from response
-	// 		h := &types.HTTP{
-	// 			ResContentLength: int32(res.ContentLength),
-	// 			ContentType:      res.Header.Get("Content-Type"),
-	// 			StatusCode:       int32(res.StatusCode),
-	// 		}
-
-	// 		err := d.aWriter.PutProto(h)
-	// 		if err != nil {
-	// 			errorMap.Inc(err.Error())
-	// 		}
-	// 		total++
-	// 	}
-	// }
-
-	// process all leftover requests
-	for _, reqArr := range httpReqMap {
-		printProgress(total, sum)
-		for _, req := range reqArr {
-			total++
-			if req != nil {
-
-				// add request info
-				h := &types.HTTP{}
-				setRequest(h, req)
-
-				// export metrics if configured
-				if e.export {
-					h.Inc()
-				}
-
-				// write to disk
-				atomic.AddInt64(&e.numRecords, 1)
-				err := e.writer.Write(h)
-				if err != nil {
-					errorMap.Inc(err.Error())
-				}
-			}
-		}
-	}
-
-done:
-
-	reqMutex.Unlock()
-	resMutex.Unlock()
-
 	printProgress(1, 1)
 	fmt.Println("")
 
@@ -358,15 +247,13 @@ done:
 		tui.Table(os.Stdout, []string{"Error Subject", "Count"}, rows)
 	}
 
-	fmt.Println("\nflushed", total, "http events, encountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
+	fmt.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
 	fmt.Println("httpEncoder.numRequests", e.numRequests)
 	fmt.Println("httpEncoder.numResponses", e.numResponses)
 	fmt.Println("httpEncoder.numUnmatchedResp", e.numUnmatchedResp)
 	fmt.Println("httpEncoder.numNilRequests", e.numNilRequests)
 	fmt.Println("httpEncoder.numFoundRequests", e.numFoundRequests)
-	fmt.Println("httpEncoder.numRemovedRequests", e.numRemovedRequests)
 	fmt.Println("httpEncoder.numUnansweredRequests", e.numUnansweredRequests)
-	fmt.Println("httpEncoder.numClientStreamNotFound", e.numClientStreamNotFound)
 
 	return nil
 })
