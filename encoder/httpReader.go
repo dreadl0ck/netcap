@@ -48,13 +48,13 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -293,11 +293,39 @@ func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 	return reqURL
 }
 
-func (h *httpReader) saveResponse(err error, body []byte, encoding []string, reqURL string) error {
+func fileExtensionForContentType(typ string) string {
+	switch typ {
+	case "application/x-gzip":
+		return ".gz"
+	case "image/jpeg":
+		return ".jpeg"
+	case "image/jpg":
+		return ".jpg"
+	case "image/gif":
+		return ".gif"
+	case "image/png":
+		return ".png"
+	case "text/html":
+		return ".html"
+	case "text/javascript":
+		return ".js"
+	case "text/css":
+		return ".css"
+	case "font/woff2":
+		return ".woff"
+	case "text/plain; charset=utf-8":
+		return ".txt"
+	case "text/plain":
+		return ".txt"
+	}
+	return ""
+}
+
+func (h *httpReader) saveResponse(err error, body []byte, encoding []string, ident string) error {
 	var (
 		ctype = http.DetectContentType(body)
 		root  = path.Join(*output, ctype)
-		base  = url.QueryEscape(path.Base(reqURL))
+		base  = filepath.Clean(path.Base(ident)) + fileExtensionForContentType(ctype)
 	)
 	if err != nil {
 		base = "incomplete-" + base
@@ -321,7 +349,8 @@ func (h *httpReader) saveResponse(err error, body []byte, encoding []string, req
 		if err != nil {
 			break
 		}
-		target = fmt.Sprintf("%s-%d", base, n)
+
+		target = filepath.Clean(path.Base(ident)) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype)
 		n++
 	}
 
