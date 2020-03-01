@@ -73,5 +73,6 @@ func LookupManufacturer(mac string) string {
 	if res, ok := macDB[oui]; ok {
 		return res.CompanyName
 	}
-	return "unknown"
+
+	return ""
 }
