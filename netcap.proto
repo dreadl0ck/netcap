@@ -231,6 +231,7 @@ message Connection {
     int64  Duration           = 17;
 }
 
+// Flow information for the Link Layer only
 message LinkFlow {
     string TimestampFirst = 1;
     string TimestampLast  = 2;
@@ -243,6 +244,7 @@ message LinkFlow {
     int64  Duration       = 9;
 }
 
+// Flow information for the Network Layer only
 message NetworkFlow {
     string TimestampFirst = 1;
     string TimestampLast  = 2;
@@ -255,6 +257,7 @@ message NetworkFlow {
     int64  Duration       = 9;
 }
 
+// Flow information for the Transport Layer only
 message TransportFlow {
     string TimestampFirst  = 1;
     string TimestampLast   = 2;
@@ -276,6 +279,10 @@ message TransportFlow {
  * Link Layer
  */
 
+// Ethernet is a family of computer networking technologies commonly used in local area networks (LAN), metropolitan area networks (MAN) and wide area networks (WAN).
+// It was commercially introduced in 1980 and first standardized in 1983 as IEEE 802.3. 
+// Ethernet has since retained a good deal of backward compatibility and has been refined to support higher bit rates, a greater number of nodes, and longer link distances. 
+// Over time, Ethernet has largely replaced competing wired LAN technologies such as Token Ring, FDDI and ARCNET.
 message Ethernet {
     string Timestamp      = 1;
     string SrcMAC         = 2;
@@ -285,6 +292,8 @@ message Ethernet {
     int32  PayloadSize    = 6;
 }
 
+// The Address Resolution Protocol (ARP) is a communication protocol used for discovering the link layer address, 
+// such as a MAC address, associated with a given internet layer address, typically an IPv4 address.
 message ARP {
     string Timestamp          = 1;
     int32  AddrType           = 2;
@@ -384,6 +393,12 @@ message Dot11ASEL {
     int32 Data    = 2;
 }
 
+// The Link Layer Discovery Protocol (LLDP) is a vendor-neutral link layer protocol 
+// used by network devices for advertising their identity, capabilities, and neighbors 
+// on a local area network based on IEEE 802 technology, principally wired Ethernet.
+// The protocol is formally referred to by the IEEE as Station and Media Access Control Connectivity
+// Discovery specified in IEEE 802.1AB and IEEE 802.3 section 6 clause 79.
+// LLDP performs functions similar to several proprietary protocols, such as Cisco Discovery Protocol, Foundry Discovery Protocol, Nortel Discovery Protocol and Link Layer Topology Discovery.
 message LinkLayerDiscovery {
     string Timestamp        = 1;
     LLDPChassisID ChassisID = 2;
@@ -468,6 +483,12 @@ message LLDPOrgSpecificTLV {
  *  Network Layer
  */
 
+// Internet Protocol version 4 (IPv4) is the fourth version of the Internet Protocol (IP). 
+// It is one of the core protocols of standards-based internetworking methods in the Internet and other packet-switched networks. 
+// IPv4 was the first version deployed for production in the ARPANET in 1983. 
+// It still routes most Internet traffic today, despite the ongoing deployment of a successor protocol, IPv6. 
+// IPv4 is described in IETF publication RFC 791 (September 1981), replacing an earlier definition (RFC 760, January 1980).
+// IPv4 uses a 32-bit address space, which limits the number of unique hosts to 4,294,967,296 (232), but large blocks are reserved for special networking methods.
 message IPv4 {
     string  Timestamp     = 1;
     int32  Version        = 2;
@@ -497,6 +518,11 @@ message IPv4Option {
     bytes OptionData   = 3;
 }
 
+// Internet Protocol version 6 (IPv6) is the most recent version of the Internet Protocol (IP),
+// the communications protocol that provides an identification and location system for computers 
+// on networks and routes traffic across the Internet. IPv6 was developed by the Internet Engineering 
+// Task Force (IETF) to deal with the long-anticipated problem of IPv4 address exhaustion.
+// IPv6 is intended to replace IPv4.
 message IPv6 {
     string  Timestamp     = 1;
     int32  Version        = 2;
@@ -573,6 +599,11 @@ message ICMPv6Option {
  * Transport Layer
  */
 
+// The User Datagram Protocol (UDP) is one of the core members of the Internet 
+// protocol suite. The protocol was designed by David P. Reed in 1980 and formally 
+// defined in RFC 768. With UDP, computer applications can send messages, in this 
+// case referred to as datagrams, to other hosts on an Internet Protocol (IP) network. 
+// Prior communications are not required in order to set up communication channels or data paths.
 message UDP {
     string Timestamp      = 1;
     int32  SrcPort        = 2;
@@ -586,6 +617,14 @@ message UDP {
     PacketContext Context = 9;
 }
 
+// The Transmission Control Protocol (TCP) is one of the main protocols of the Internet 
+// protocol suite. It originated in the initial network implementation in which it 
+// complemented the Internet Protocol (IP). Therefore, the entire suite is commonly 
+// referred to as TCP/IP. TCP provides reliable, ordered, and error-checked delivery of 
+// a stream of octets (bytes) between applications running on hosts communicating via an 
+// IP network. Major internet applications such as the World Wide Web, email, remote 
+// administration, and file transfer rely on TCP, which is part of the Transport Layer 
+// of the TCP/IP suite. SSL/TLS often runs on top of TCP.
 message TCP {
     string  Timestamp = 1;
     int32  SrcPort    = 2;
@@ -635,6 +674,14 @@ message SCTP {
  * Application Layer
  */
 
+// The Domain Name System (DNS) is a hierarchical and decentralized naming system 
+// for computers, services, or other resources connected to the Internet or a private 
+// network. It associates various information with domain names assigned to each of 
+// the participating entities. Most prominently, it translates more readily memorized 
+// domain names to the numerical IP addresses needed for locating and identifying 
+// computer services and devices with the underlying network protocols. By providing a 
+// worldwide, distributed directory service, the Domain Name System has been an essential 
+// component of the functionality of the Internet since 1985.
 message DNS {
     string Timestamp = 1;
 
@@ -775,6 +822,10 @@ message LLC {
     int32 Control    = 6;
 }
 
+// The Network Time Protocol (NTP) is a networking protocol for clock 
+// synchronization between computer systems over packet-switched, variable-latency 
+// data networks. In operation since before 1985, NTP is one of the oldest Internet 
+// protocols in current use. NTP was designed by David L. Mills of the University of Delaware.
 message NTP {
     string Timestamp          = 1;
     int32  LeapIndicator      = 2;  // [0,3]. Indicates whether leap second(s) is to be added.
@@ -813,6 +864,14 @@ message SIP {
     PacketContext Context = 8;
 }
 
+// The Internet Group Management Protocol (IGMP) is a communications protocol 
+// used by hosts and adjacent routers on IPv4 networks to establish multicast 
+// group memberships. IGMP is an integral part of IP multicast.
+// IGMP can be used for one-to-many networking applications such as online streaming
+// video and gaming, and allows more efficient use of resources when supporting these
+// types of applications. IGMP is used on IPv4 networks. Multicast management on IPv6 
+// networks is handled by Multicast Listener Discovery (MLD) which is a part of ICMPv6 
+// in contrast to IGMP's bare IP encapsulation.
 message IGMP {
     string Timestamp                 = 1;
     int32 Type                       = 2;
@@ -892,8 +951,9 @@ message ICMPv6RouterSolicitation {
     PacketContext Context = 3;
 }
 
-// HTTP
-
+// The Hypertext Transfer Protocol (HTTP) is an application protocol for distributed, 
+// collaborative, hypermedia information systems. HTTP is the foundation of data 
+// communication for the World Wide Web.
 message HTTP {
     string Timestamp           = 1;
     string Proto               = 2;
@@ -1010,6 +1070,11 @@ message VXLAN {
     PacketContext Context = 8;
 }
 
+// Universal Serial Bus (USB) is an industry standard that establishes specifications 
+// for cables and connectors and protocols for connection, communication and power 
+// supply between computers, peripheral devices and other computers. Released in 1996, 
+// the USB standard is currently maintained by the USB Implementers Forum (USB-IF). 
+// There have been four generations of USB specifications: USB 1.x, USB 2.0, USB 3.x and USB4.
 message USB {
     string      Timestamp                 = 1;
     uint64      ID                        = 2;
@@ -1073,6 +1138,15 @@ message MPLS {
     PacketContext Context = 6;
 }
 
+// Modbus is a serial communications protocol originally published by Modicon 
+// (now Schneider Electric) in 1979 for use with its programmable logic controllers (PLCs). 
+// Modbus has become a de facto standard communication protocol and is now a commonly 
+// available means of connecting industrial electronic devices. Modbus is popular 
+// in industrial environments because it is openly published and royalty-free. 
+// It was developed for industrial applications, is relatively easy to deploy and 
+// maintain compared to other standards, and places few restrictions other than the
+// size on the format of the data to be transmitted. The Modbus uses the RS485 as its physical layer. 
+// It is possible to use the DC-BUS as power line communication physical layer to save wires.
 message Modbus {
     string Timestamp     = 1;
     int32  TransactionID = 2; // Identification of a MODBUS Request/Response transaction
@@ -1287,6 +1361,10 @@ message LSAPrefix {
     bytes  AddressPrefix = 4;
 }
 
+// BFD is a detection protocol designed to provide fast forwarding path 
+// failure detection times for all media types, encapsulations, topologies,
+// and routing protocols. In addition to fast forwarding path failure detection, 
+// BFD provides a consistent failure detection method for network administrators.
 message BFD {
     string        Timestamp                = 1;
     int32         Version                  = 2;  // Version of the BFD protocol.
@@ -1316,6 +1394,10 @@ message BFDAuthHeader {
     bytes Data           = 4;
 }
 
+// Generic Routing Encapsulation is a tunneling protocol developed by 
+// Cisco Systems that can encapsulate a wide variety of network layer 
+// protocols inside virtual point-to-point links or point-to-multipoint 
+// links over an Internet Protocol network.
 message GRE {
     string       Timestamp         = 1;
     bool         ChecksumPresent   = 2;
@@ -1400,6 +1482,11 @@ message EAPOLKey {
     bytes     EncryptedKeyData     = 22;
 }
 
+// The Virtual Router Redundancy Protocol (VRRP) is a computer 
+// networking protocol that provides for automatic assignment of 
+// available Internet Protocol (IP) routers to participating hosts. 
+// This increases the availability and reliability of routing paths via 
+// automatic default gateway selections on an IP subnetwork.
 message VRRPv2 {
     string          Timestamp     = 1;     
     int32           Version       = 2;  // The version field specifies the VRRP protocol version of this packet (v2)
@@ -1415,6 +1502,10 @@ message VRRPv2 {
     PacketContext Context    = 11;
 }
 
+// Cisco Discovery Protocol is a proprietary Data Link Layer protocol 
+// developed by Cisco Systems in 1994 by Keith McCloghrie and Dino Farinacci. 
+// It is used to share information about other directly connected Cisco equipment, 
+// such as the operating system version and IP address.
 message CiscoDiscovery {
     string                       Timestamp   = 1;
     int32                        Version     = 2;
@@ -1545,6 +1636,10 @@ message NortelDiscovery {
     PacketContext Context    = 8;
 }
 
+// The Common Industrial Protocol (CIP) is an industrial protocol for industrial automation applications. 
+// CIP encompasses a comprehensive suite of messages and services for the collection of manufacturing 
+// automation applications – control, safety, synchronization, motion, configuration and information. 
+// It allows users to integrate these manufacturing applications with enterprise-level Ethernet networks and the Internet.
 message CIP {
     string        Timestamp        = 1;
     bool          Response         = 2; // false if request, true if response
