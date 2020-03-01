@@ -134,6 +134,7 @@ enum Type {
     NC_NortelDiscovery             = 86;
     NC_CIP                         = 87;
     NC_ENIP                        = 88;
+    NC_DeviceProfile               = 89;
 }
 
 /*
@@ -1578,4 +1579,24 @@ message ENIP {
 message ENIPCommandSpecificData {
 	uint32  Cmd  = 1;
 	bytes   Data = 2;
+}
+
+// Device Profiling
+message DeviceProfile {
+    string MacAddr      = 1;
+	string DeviceManufacturer = 2;
+	repeated IPProfile DeviceIPs = 3;
+    repeated IPProfile Contacts = 4;
+    int64 NumPackets = 5;
+}
+
+message IPProfile {
+    string Addr = 1;
+    int64 NumPackets = 2;
+    string Geolocation = 3;
+    repeated string DNSNames = 4;
+    string TimestampFirst = 5;
+    string TimestampLast = 6;
+    repeated string Applications = 7;
+    repeated DeviceProfile Devices = 8;
 }
