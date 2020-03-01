@@ -39,6 +39,7 @@ var (
 		httpEncoder,
 		flowEncoder,
 		connectionEncoder,
+		profileEncoder,
 	}
 )
 

@@ -146,6 +146,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.CIP)
 	case types.Type_NC_ENIP:
 		record = new(types.ENIP)
+	case types.Type_NC_DeviceProfile:
+		record = new(types.DeviceProfile)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
