@@ -117,7 +117,7 @@ func Dump(c DumpConfig) {
 	types.Select(record, c.Selection)
 	types.UTC = c.UTC
 
-	if !c.Structured && !c.Table {
+	if !c.Structured && !c.Table && !c.JSON {
 
 		if p, ok := record.(types.AuditRecord); ok {
 			fmt.Println(strings.Join(p.CSVHeader(), c.Separator))
