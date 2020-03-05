@@ -1697,4 +1697,5 @@ message IPProfile {
     repeated DeviceProfile Devices         = 8; // TODO
     repeated string        Ja3Hashes       = 9;
     repeated string        Ja3Descriptions = 10;
+    map<string, uint64>    Protocols       = 11;
 }
