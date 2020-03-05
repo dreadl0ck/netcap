@@ -14,6 +14,10 @@
 package encoder
 
 import (
+	"fmt"
+	godpi "github.com/dreadl0ck/go-dpi"
+	"github.com/dreadl0ck/go-dpi/modules/wrappers"
+	//dpitypes "github.com/dreadl0ck/go-dpi/types"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -137,7 +141,23 @@ type idents struct {
 	dstIP  string
 }
 
+var nDPI *wrappers.NDPIWrapper
+
 var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DeviceProfile", func(d *CustomEncoder) error {
+
+	// init DPI
+	godpi.Initialize()
+	nDPI = wrappers.NewNDPIWrapper()
+	switch errCode := nDPI.InitializeWrapper(); errCode {
+		case 0:
+			// all good
+			fmt.Println("nDPI OK")
+		case -0x1000: // errorLibraryDisabled
+			// do nothing if library is disabled
+			log.Fatal("nDPI is disabled")
+		default:
+			log.Fatal("nDPI initialization returned error code: ", errCode)
+	}
 
 	// init resolvers
 	resolvers.InitMACResolver()
@@ -170,6 +190,21 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 
 	return nil
 }, func(e *CustomEncoder) error {
+
+	if nDPI != nil {
+		fmt.Println("destroying nDPI")
+		if err := nDPI.DestroyWrapper(); err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	//for _, e := range godpi.Destroy() {
+		// fmt.Println("destroying goDPI")
+	//	if e != nil {
+	//		fmt.Println(e)
+	//	}
+	//}
+
 	if !e.writer.IsChanWriter {
 		for _, c := range Profiles.Items {
 			writeProfile(c)
