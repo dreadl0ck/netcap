@@ -94,6 +94,8 @@ func NewDeviceProfile(i *idents) *types.DeviceProfile {
 		Contacts: []*types.IPProfile{
 			getIPProfile(i.dstMAC, i.dstIP, i),
 		},
+		Timestamp: i.timestamp,
+		NumPackets: 1,
 	}
 }
 
@@ -127,6 +129,8 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 }
 
 type idents struct {
+	p gopacket.Packet
+	timestamp string
 	srcMAC string
 	dstMAC string
 	srcIP  string
@@ -135,7 +139,10 @@ type idents struct {
 
 var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DeviceProfile", func(d *CustomEncoder) error {
 
+	// init resolvers
 	resolvers.InitMACResolver()
+	resolvers.InitJa3Resolver()
+
 	profileEncoderInstance = d
 
 	//profileFlushInterval = int64(*flagProfileFlushInterval)
@@ -144,6 +151,8 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 }, func(p gopacket.Packet) proto.Message {
 
 	var i = new(idents)
+	i.timestamp = p.Metadata().Timestamp.UTC().String()
+	i.p = p
 	if ll := p.LinkLayer(); ll != nil {
 		i.srcMAC = ll.LinkFlow().Src().String()
 		i.dstMAC = ll.LinkFlow().Dst().String()
@@ -151,6 +160,10 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	if nl := p.NetworkLayer(); nl != nil {
 		i.srcIP = nl.NetworkFlow().Src().String()
 		i.dstIP = nl.NetworkFlow().Dst().String()
+	} else {
+		// ignore packets that do not have a network layer for now
+		// e.g: ARP
+		return nil
 	}
 
 	UpdateDeviceProfile(i)

@@ -14,6 +14,7 @@
 package encoder
 
 import (
+	"github.com/dreadl0ck/ja3"
 	"sync"
 
 	"github.com/dreadl0ck/netcap/resolvers"
@@ -43,10 +44,44 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 
 	if p, ok := ipProfiles.Items[ipAddr]; ok {
 		p.NumPackets++
+		p.TimestampLast = i.timestamp
+
+		if i.srcIP == ipAddr {
+			ja3Hash := ja3.DigestHexPacket(i.p)
+			if ja3Hash == "" {
+				ja3Hash = ja3.DigestHexPacketJa3s(i.p)
+			}
+
+			if ja3Hash != "" {
+				for _, h := range p.Ja3Hashes {
+					if h == ja3Hash {
+						// hash is already known, skip
+						return p
+					}
+				}
+				p.Ja3Hashes = append(p.Ja3Hashes, ja3Hash)
+				p.Ja3Descriptions = append(p.Ja3Descriptions, resolvers.LookupJa3(ja3Hash))
+			}
+		}
+
 		return p
 	}
 
 	loc, _ := resolvers.LookupGeolocation(ipAddr)
+
+	// Ja3
+	var descriptions []string
+	var hashes []string
+	if i.srcIP == ipAddr {
+		ja3Hash := ja3.DigestHexPacket(i.p)
+		if ja3Hash == "" {
+			ja3Hash = ja3.DigestHexPacketJa3s(i.p)
+		}
+		if ja3Hash != "" {
+			descriptions = []string{resolvers.LookupJa3(ja3Hash)}
+			hashes = []string{ja3Hash}
+		}
+	}
 
 	// create new profile
 	p := &types.IPProfile{
@@ -54,6 +89,9 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		NumPackets:  1,
 		Geolocation: loc,
 		DNSNames:    resolvers.LookupDNSNames(ipAddr),
+		TimestampFirst: i.timestamp,
+		Ja3Hashes: hashes,
+		Ja3Descriptions: descriptions,
 		// Devices: []*types.DeviceProfile{
 		// 	GetDeviceProfile(macAddr, i),
 		// },
