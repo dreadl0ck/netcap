@@ -20,10 +20,10 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 
-	"github.com/dreadl0ck/tlsx"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/tlsx"
+	"github.com/golang/protobuf/proto"
 )
 
 // ExtractTLSHandShake extracts a TLS HandShake from a TCP Packet
@@ -48,7 +48,7 @@ func ExtractTLSHandShake(tcp *layers.TCP) (*tlsx.ClientHello, bool) {
 		// data packet
 		var (
 			hello = tlsx.ClientHello{}
-			err   = hello.Unmarshall(tcp.LayerPayload())
+			err   = hello.Unmarshal(tcp.LayerPayload())
 		)
 
 		switch err {
@@ -76,6 +76,7 @@ var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, f
 			if hello, ok := ExtractTLSHandShake(tcp); ok {
 
 				var (
+					// TODO: use make() and prealloc arrays
 					cipherSuites    []int32
 					compressMethods []int32
 					signatureAlgs   []int32
@@ -128,7 +129,7 @@ var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, f
 					SupportedGroups:  supportedGroups,
 					SupportedPoints:  supportedPoints,
 					ALPNs:            hello.ALPNs,
-					Ja3:              ja3.DigestHex(hello),
+					Ja3:              ja3.DigestHexPacket(p),
 					SrcIP:            p.NetworkLayer().NetworkFlow().Src().String(),
 					DstIP:            p.NetworkLayer().NetworkFlow().Dst().String(),
 					SrcMAC:           p.LinkLayer().LinkFlow().Src().String(),
