@@ -14,7 +14,6 @@
 package encoder
 
 import (
-	"fmt"
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/ja3"
 	"sync"
@@ -53,14 +52,12 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 			ja3Hash = ja3.DigestHexPacketJa3s(i.p)
 		}
 
+		// DPI
 		flow, _ := godpi.GetPacketFlow(i.p)
-		result, err := nDPI.ClassifyFlow(flow)
-		if err != nil {
-			fmt.Println(err)
-		}
-		if result != "" {
-			p.Protocols[string(result)]++
-			//fmt.Println("nDPI detected protocol", result)
+		results := godpi.ClassifyFlowAllModules(flow)
+		for _, r := range results {
+			result := string(r.Source) + ": " + string(r.Protocol)
+			p.Protocols[result]++
 		}
 
 		if ja3Hash != "" {
@@ -94,14 +91,13 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		descriptions = []string{resolvers.LookupJa3(ja3Hash)}
 		hashes = []string{ja3Hash}
 	}
+
+	// DPI
 	flow, _ := godpi.GetPacketFlow(i.p)
-	result, err := nDPI.ClassifyFlow(flow)
-	if err != nil {
-		fmt.Println(err)
-	}
-	if result != "" {
-		protos[string(result)]++
-		//fmt.Println("nDPI detected protocol", result)
+	results := godpi.ClassifyFlowAllModules(flow)
+	for _, r := range results {
+		result := string(r.Source) + ": " + string(r.Protocol)
+		protos[result]++
 	}
 
 	// create new profile
