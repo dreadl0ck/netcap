@@ -26,6 +26,7 @@ func main() {
 	lt := maltego.ParseLocalArguments(os.Args)
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]
+	ipaddr := lt.Values["ipaddr"]
 
 	// print version and exit
 	if *flagVersion {

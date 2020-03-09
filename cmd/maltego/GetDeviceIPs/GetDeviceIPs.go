@@ -94,10 +94,14 @@ func main() {
 					ent = trx.AddEntity("netcap.ExternalDeviceIP", ip.Addr)
 					ent.SetType("netcap.ExternalDeviceIP")
 				}
-				ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + strings.Join(ip.DNSNames, "\n"))
+				dnsNames := strings.Join(ip.DNSNames, "\n")
+				ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + dnsNames)
 
 				di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
+
+				ent.AddProperty("geolocation", "Geolocation", "strict", ip.Geolocation)
+				ent.AddProperty("dnsNames", "DNS Names", "strict", dnsNames)
 
 				ent.AddProperty("mac", "MacAddress", "strict", mac)
 				ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
@@ -106,7 +110,7 @@ func main() {
 
 				ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts\n" + humanize.Bytes(ip.Bytes))
 				ent.SetLinkColor("#000000")
-				ent.SetLinkThickness(getThickness(ip.NumPackets))
+				ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 
 				//ip.SrcPorts = nil
 				//ip.DstPorts = nil
@@ -120,21 +124,4 @@ func main() {
 
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())
-}
-
-func getThickness(val int64) int {
-	switch {
-	case val < 10:
-		return 1
-	case val < 100:
-		return 2
-	case val < 1000:
-		return 3
-	case val < 10000:
-		return 4
-	case val < 100000:
-		return 5
-	default:
-		return 1
-	}
 }

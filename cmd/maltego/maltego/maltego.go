@@ -33,6 +33,24 @@ const (
 	UIM_DEBUG   = "Debug"
 )
 
+// TODO: use minmax/5
+func GetThickness(val int64) int {
+	switch {
+	case val < 10:
+		return 1
+	case val < 100:
+		return 2
+	case val < 1000:
+		return 3
+	case val < 10000:
+		return 4
+	case val < 100000:
+		return 5
+	default:
+		return 1
+	}
+}
+
 /* First we handle the MaltegoEntity conversion from Python */
 
 type MaltegoEntityObj struct {

@@ -90,6 +90,7 @@ func main() {
 
 						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
 						ent.SetLinkColor("#000000")
+						ent.SetLinkThickness(maltego.GetThickness(int64(count)))
 					}
 
 					break
@@ -109,6 +110,7 @@ func main() {
 
 						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
 						ent.SetLinkColor("#000000")
+						ent.SetLinkThickness(maltego.GetThickness(int64(count)))
 					}
 
 					break

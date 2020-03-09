@@ -96,7 +96,7 @@ func main() {
 				}
 				ent.SetValue(ip.Addr)
 
-				di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
+				di := "<h3>DNS Names</h3><p>Timestamp: " + profile.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
 
 				ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(profile.NumPackets, 10))

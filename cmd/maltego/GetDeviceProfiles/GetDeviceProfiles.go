@@ -93,7 +93,7 @@ func main() {
 	ent.SetType("netcap.DeviceProfiles")
 	ent.SetValue("DeviceProfile.ncap.gz")
 
-	di := "<h3>Heading</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
+	di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 	ent.AddDisplayInformation(di, "Other")
 
 	ent.AddProperty("path", "Path", "strict", ident)

@@ -87,7 +87,7 @@ func main() {
 		ent.SetType("netcap.Device")
 		ent.SetValue(ident)
 
-		di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
+		di := "<h3>Device</h3><p>Ident: "+ ident +"</p><p>MacAddr: "+ profile.MacAddr +"</p><p>DeviceManufacturer: "+ profile.DeviceManufacturer +"</p><p>Timestamp: " + profile.Timestamp + "</p>"
 		ent.AddDisplayInformation(di, "Other")
 
 		ent.AddProperty("path", "Path", "strict", profilesFile)
@@ -95,34 +95,9 @@ func main() {
 
 		ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
 		ent.SetLinkColor("#000000")
-		ent.SetLinkThickness(getThickness(profile.NumPackets))
-
-		profile.DeviceIPs = nil
-		profile.Contacts = nil
-		note := strings.ReplaceAll(proto.MarshalTextString(profile), "\"", "'")
-		note = strings.ReplaceAll(note, "<", "")
-		note = strings.ReplaceAll(note, ">", "")
-		ent.SetNote(note)
+		ent.SetLinkThickness(maltego.GetThickness(profile.NumPackets))
 	}
 
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())
-}
-
-// TODO: move into util pkg
-func getThickness(val int64) int {
-	switch {
-	case val < 10:
-		return 1
-	case val < 100:
-		return 2
-	case val < 1000:
-		return 3
-	case val < 10000:
-		return 4
-	case val < 100000:
-		return 5
-	default:
-		return 1
-	}
 }
