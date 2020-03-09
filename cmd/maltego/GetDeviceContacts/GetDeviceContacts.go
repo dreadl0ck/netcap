@@ -87,17 +87,24 @@ func main() {
 			for _, ip := range profile.Contacts {
 
 				var ent *maltego.MaltegoEntityObj
+				var contactType string
 				if resolvers.IsPrivateIP(net.ParseIP(ip.Addr)) {
 					ent = trx.AddEntity("netcap.InternalContact", ip.Addr)
 					ent.SetType("netcap.InternalContact")
+					contactType = "InternalContact"
 				} else {
 					ent = trx.AddEntity("netcap.ExternalContact", ip.Addr)
 					ent.SetType("netcap.ExternalContact")
+					contactType = "ExternalContact"
 				}
-				ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + strings.Join(ip.DNSNames, "\n"))
 
-				di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
-				ent.AddDisplayInformation(di, "Other")
+				dnsNames := strings.Join(ip.DNSNames, "\n")
+				ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + dnsNames)
+				ent.AddDisplayInformation("<h3>" + contactType + "</h3><p>" + ip.Addr + "</p><p>" + ip.Geolocation + "</p><p>" + dnsNames + "</p><p>Timestamp: " + profile.Timestamp + "</p>", "Other")
+
+				ent.AddProperty("geolocation", "Geolocation", "strict", ip.Geolocation)
+				ent.AddProperty("dnsNames", "DNS Names", "strict", dnsNames)
+				ent.AddProperty("timestamp", "Timestamp", "strict", profile.Timestamp)
 
 				ent.AddProperty("mac", "MacAddress", "strict", mac)
 				ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
@@ -106,35 +113,11 @@ func main() {
 
 				ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts\n" + humanize.Bytes(ip.Bytes))
 				ent.SetLinkColor("#000000")
-				ent.SetLinkThickness(getThickness(ip.NumPackets))
-
-				//ip.SrcPorts = nil
-				//ip.DstPorts = nil
-				//note := strings.ReplaceAll(proto.MarshalTextString(ip), "\"", "'")
-				//note = strings.ReplaceAll(note, "<", "")
-				//note = strings.ReplaceAll(note, ">", "")
-				//ent.SetNote(note)
+				ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 			}
 		}
 	}
 
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())
-}
-
-func getThickness(val int64) int {
-	switch {
-	case val < 10:
-		return 1
-	case val < 100:
-		return 2
-	case val < 1000:
-		return 3
-	case val < 10000:
-		return 4
-	case val < 100000:
-		return 5
-	default:
-		return 1
-	}
 }

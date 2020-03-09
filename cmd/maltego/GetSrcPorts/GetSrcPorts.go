@@ -85,11 +85,12 @@ func main() {
 						ent.SetType("netcap.SrcPort")
 						ent.SetValue(port)
 
-						di := "<h3>Heading</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
+						di := "<h3>Source Port</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
 						ent.AddDisplayInformation(di, "Other")
 
 						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
 						ent.SetLinkColor("#000000")
+						ent.SetLinkThickness(maltego.GetThickness(int64(count)))
 					}
 
 					break
@@ -104,11 +105,12 @@ func main() {
 						ent.SetType("netcap.SrcPort")
 						ent.SetValue(port)
 
-						di := "<h3>Heading</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
+						di := "<h3>Source Port</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
 						ent.AddDisplayInformation(di, "Other")
 
 						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
 						ent.SetLinkColor("#000000")
+						ent.SetLinkThickness(maltego.GetThickness(int64(count)))
 					}
 
 					break
