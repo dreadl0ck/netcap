@@ -25,6 +25,8 @@ github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e h1:MH2FO9xZNYalSbAdc
 github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e/go.mod h1:fx+OQWsL+18RTODZIJrIXsPCMKYeJl1io+N91HpRXTk=
 github.com/dreadl0ck/tlsx v0.0.0-20200303221230-8cb859306e07 h1:ZPbZ1CELNcwKr0D/MHZK0oPRrb4hH28AKldTWknV6lg=
 github.com/dreadl0ck/tlsx v0.0.0-20200303221230-8cb859306e07/go.mod h1:amAb73WEEgPHWniMfwro6UpN6St3e5ypgq2tXM89IOo=
+github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78 h1:K3JafAWz7cxpVYyOWlX5jb0HXWnr/VaqTiZXFKVeTgo=
+github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78/go.mod h1:sBTlLV54BjDf/gqC3YuFIhs5DKslo/BW/M/mHkCkNM4=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/evilsocket/islazy v1.10.4 h1:Z5373Kn5Gh2EWch1Tb/Qxb6vyQ7lw704bmKi7sY4Ecs=
@@ -89,6 +91,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJ
 github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
+github.com/noobiedog/maltegolocal v0.0.0-20160225102457-fb0f37ce517c h1:+4Y1kfX/t2o2Z6ZhY9T6bmF5gyj4/CcfqEOwJ+oj28Q=
+github.com/noobiedog/maltegolocal v0.0.0-20160225102457-fb0f37ce517c/go.mod h1:lr+NG30Ha9FYcNiM3OLlbCzf56yyvYtDd6EJi6SRUNc=
 github.com/oschwald/maxminddb-golang v1.6.0 h1:KAJSjdHQ8Kv45nFIbtoLGrGWqHFajOIm7skTyz/+Dls=
 github.com/oschwald/maxminddb-golang v1.6.0/go.mod h1:DUJFucBg2cvqx42YmDa/+xHvb0elJtOm3o4aFQ/nb/w=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=

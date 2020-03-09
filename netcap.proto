@@ -1684,6 +1684,7 @@ message DeviceProfile {
     repeated IPProfile Contacts           = 4;
     int64              NumPackets         = 5;
     string             Timestamp          = 6; // first seen
+    uint64             Bytes              = 7;
 }
 
 message IPProfile {
@@ -1695,7 +1696,10 @@ message IPProfile {
     string                 TimestampLast   = 6;
     repeated string        Applications    = 7;
     repeated DeviceProfile Devices         = 8; // TODO
-    repeated string        Ja3Hashes       = 9;
-    repeated string        Ja3Descriptions = 10;
-    map<string, uint64>    Protocols       = 11;
+    map<string, string>    Ja3             = 9; // ja3 to lookup
+    map<string, uint64>    Protocols       = 10;
+    uint64                 Bytes           = 11;
+    map<string, uint64>    DstPorts        = 12; // Ports to bytes
+    map<string, uint64>    SrcPorts        = 13; // Ports to bytes
+    map<string, int64>     SNIs            = 14;
 }
