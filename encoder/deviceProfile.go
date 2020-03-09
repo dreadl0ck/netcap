@@ -101,6 +101,7 @@ func NewDeviceProfile(i *idents) *types.DeviceProfile {
 		},
 		Timestamp: i.timestamp,
 		NumPackets: 1,
+		Bytes: uint64(len(i.p.Data())),
 	}
 }
 
@@ -130,6 +131,7 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 		p.Contacts = append(p.Contacts, getIPProfile(i.dstMAC, i.dstIP, i))
 	}
 
+	p.Bytes += uint64(len(i.p.Data()))
 	p.NumPackets++
 }
 
@@ -144,18 +146,16 @@ type idents struct {
 
 var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DeviceProfile", func(d *CustomEncoder) error {
 
-	nDPI := wrappers.NewNDPIWrapper()
-	lPI := wrappers.NewLPIWrapper()
-	goDPI := classifiers.NewClassifierModule()
-
-	wm := wrappers.NewWrapperModule()
-	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{nDPI, lPI}})
-
-	godpi.SetModules([]dpitypes.Module{wm, goDPI})
+	var (
+		nDPI = wrappers.NewNDPIWrapper()
+		lPI = wrappers.NewLPIWrapper()
+		goDPI = classifiers.NewClassifierModule()
+		wm = wrappers.NewWrapperModule()
+	)
 
 	// init DPI
-	godpi.Initialize()
-
+	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{nDPI, lPI}})
+	godpi.SetModules([]dpitypes.Module{wm, goDPI})
 	if err := godpi.Initialize(); err != nil {
 		log.Fatal("goDPI initialization returned error: ", err)
 	}
@@ -165,7 +165,6 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	resolvers.InitJa3Resolver()
 
 	profileEncoderInstance = d
-
 	//profileFlushInterval = int64(*flagProfileFlushInterval)
 
 	return nil

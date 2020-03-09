@@ -16,6 +16,7 @@ package encoder
 import (
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/ja3"
+	"github.com/dreadl0ck/tlsx"
 	"sync"
 
 	"github.com/dreadl0ck/netcap/resolvers"
@@ -56,19 +57,30 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		flow, _ := godpi.GetPacketFlow(i.p)
 		results := godpi.ClassifyFlowAllModules(flow)
 		for _, r := range results {
-			result := string(r.Source) + ": " + string(r.Protocol)
+			//result := string(r.Source) + ": " + string(r.Protocol)
+			result := string(r.Protocol)
 			p.Protocols[result]++
 		}
 
+		dataLen := uint64(len(i.p.Data()))
+		p.Bytes += dataLen
+
+		if tl := i.p.TransportLayer(); tl != nil {
+			p.SrcPorts[tl.TransportFlow().Src().String()] += dataLen
+			p.DstPorts[tl.TransportFlow().Dst().String()] += dataLen
+		}
+
+		ch := tlsx.GetClientHelloBasic(i.p)
+		if ch != nil {
+			p.SNIs[ch.SNI]++
+		}
+
 		if ja3Hash != "" {
-			for _, h := range p.Ja3Hashes {
-				if h == ja3Hash {
-					// hash is already known, skip
-					return p
-				}
+			if _, ok := p.Ja3[ja3Hash]; ok {
+				// hash is already known, skip
+				return p
 			}
-			p.Ja3Hashes = append(p.Ja3Hashes, ja3Hash)
-			p.Ja3Descriptions = append(p.Ja3Descriptions, resolvers.LookupJa3(ja3Hash))
+			p.Ja3[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 		}
 
 		return p
@@ -77,10 +89,8 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 	loc, _ := resolvers.LookupGeolocation(ipAddr)
 
 	var (
-		// Ja3
-		hashes []string
-		descriptions []string
 		protos = make(map[string]uint64)
+		ja3Map = make(map[string]string)
 	)
 
 	ja3Hash := ja3.DigestHexPacket(i.p)
@@ -88,16 +98,33 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
 	}
 	if ja3Hash != "" {
-		descriptions = []string{resolvers.LookupJa3(ja3Hash)}
-		hashes = []string{ja3Hash}
+		ja3Map[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 	}
 
 	// DPI
 	flow, _ := godpi.GetPacketFlow(i.p)
 	results := godpi.ClassifyFlowAllModules(flow)
 	for _, r := range results {
-		result := string(r.Source) + ": " + string(r.Protocol)
+		//result := string(r.Source) + ": " + string(r.Protocol)
+		result := string(r.Protocol)
 		protos[result]++
+	}
+
+	var (
+		dataLen = uint64(len(i.p.Data()))
+		srcPorts = make(map[string]uint64)
+		dstPorts = make(map[string]uint64)
+		sniMap = make(map[string]int64)
+	)
+
+	ch := tlsx.GetClientHelloBasic(i.p)
+	if ch != nil {
+		sniMap[ch.SNI] = 1
+	}
+
+	if tl := i.p.TransportLayer(); tl != nil {
+		srcPorts[tl.TransportFlow().Src().String()] += dataLen
+		dstPorts[tl.TransportFlow().Dst().String()] += dataLen
 	}
 
 	// create new profile
@@ -107,9 +134,12 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		Geolocation: loc,
 		DNSNames:    resolvers.LookupDNSNames(ipAddr),
 		TimestampFirst: i.timestamp,
-		Ja3Hashes: hashes,
-		Ja3Descriptions: descriptions,
+		Ja3:       ja3Map,
 		Protocols: protos,
+		Bytes: dataLen,
+		SrcPorts : srcPorts,
+		DstPorts: dstPorts,
+		SNIs: sniMap,
 		// Devices: []*types.DeviceProfile{
 		// 	GetDeviceProfile(macAddr, i),
 		// },
