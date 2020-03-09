@@ -85,24 +85,24 @@ func main() {
 
 	os.Stdout = stdout
 
-	TRX := maltego.MaltegoTransform{}
+	trx := maltego.MaltegoTransform{}
 
 	ident := filepath.Join(baseDir, "DeviceProfile.ncap.gz")
 
-	NewEnt := TRX.AddEntity("netcap.DeviceProfiles", ident)
-	NewEnt.SetType("netcap.DeviceProfiles")
-	NewEnt.SetValue("DeviceProfile.ncap.gz")
+	ent := trx.AddEntity("netcap.DeviceProfiles", ident)
+	ent.SetType("netcap.DeviceProfiles")
+	ent.SetValue("DeviceProfile.ncap.gz")
 
 	di := "<h3>Heading</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
-	NewEnt.AddDisplayInformation(di, "Other")
+	ent.AddDisplayInformation(di, "Other")
 
-	NewEnt.AddProperty("path", "Path", "strict", ident)
-	NewEnt.AddProperty("description", "Description", "strict", "DeviceProfile.ncap.gz")
+	ent.AddProperty("path", "Path", "strict", ident)
+	ent.AddProperty("description", "Description", "strict", "DeviceProfile.ncap.gz")
 
-	NewEnt.SetLinkLabel("GetDeviceProfiles") // TODO: add num profiles here?
-	NewEnt.SetLinkColor("#000000")
-	NewEnt.SetNote(ident)
+	ent.SetLinkLabel("DeviceProfiles") // TODO: add num profiles here?
+	ent.SetLinkColor("#000000")
+	ent.SetNote(ident)
 
-	TRX.AddUIMessage("completed!","Inform")
-	fmt.Println(TRX.ReturnOutput())
+	trx.AddUIMessage("completed!","Inform")
+	fmt.Println(trx.ReturnOutput())
 }

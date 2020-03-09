@@ -57,7 +57,7 @@ func main() {
 		profile = new(types.DeviceProfile)
 		pm  proto.Message
 		ok  bool
-		TRX = maltego.MaltegoTransform{}
+		trx = maltego.MaltegoTransform{}
 	)
 	pm = profile
 
@@ -78,7 +78,7 @@ func main() {
 			for _, ip := range profile.Contacts {
 
 				var (
-					NewEnt *maltego.MaltegoEntityObj
+					ent *maltego.MaltegoEntityObj
 					addr = net.ParseIP(ip.Addr)
 				)
 				if addr == nil {
@@ -87,27 +87,28 @@ func main() {
 				}
 				if v4 := addr.To4(); v4 == nil {
 					// v6
-					NewEnt = TRX.AddEntity("maltego.IPv6Address", ip.Addr)
-					NewEnt.SetType("maltego.IPv6Address")
+					ent = trx.AddEntity("maltego.IPv6Address", ip.Addr)
+					ent.SetType("maltego.IPv6Address")
 				} else {
-					NewEnt.SetType("maltego.IPv4Address")
+					ent = trx.AddEntity("maltego.IPv4Address", ip.Addr)
+					ent.SetType("maltego.IPv4Address")
 				}
-				NewEnt.SetValue(ip.Addr)
+				ent.SetValue(ip.Addr)
 
 				di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
-				NewEnt.AddDisplayInformation(di, "Other")
+				ent.AddDisplayInformation(di, "Other")
 
-				NewEnt.SetLinkLabel("GetDeviceIPs")
-				NewEnt.SetLinkColor("#000000")
+				ent.SetLinkLabel("GetDeviceIPs")
+				ent.SetLinkColor("#000000")
 
 				note := strings.ReplaceAll(proto.MarshalTextString(ip), "\"", "'")
 				note = strings.ReplaceAll(note, "<", "")
 				note = strings.ReplaceAll(note, ">", "")
-				NewEnt.SetNote(note)
+				ent.SetNote(note)
 			}
 		}
 	}
 
-	TRX.AddUIMessage("completed!","Inform")
-	fmt.Println(TRX.ReturnOutput())
+	trx.AddUIMessage("completed!","Inform")
+	fmt.Println(trx.ReturnOutput())
 }
