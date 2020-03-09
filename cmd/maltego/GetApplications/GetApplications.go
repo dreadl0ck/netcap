@@ -2,14 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/dreadl0ck/netcap"
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
-	"fmt"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
-	"net"
 	"os"
 	"strconv"
 
@@ -26,6 +25,9 @@ func main() {
 	lt := maltego.ParseLocalArguments(os.Args)
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]
+	ipaddr := lt.Values["ipaddr"]
+
+	log.Println(profilesFile, mac, ipaddr)
 
 	// print version and exit
 	if *flagVersion {
@@ -78,36 +80,41 @@ func main() {
 
 			for _, ip := range profile.Contacts {
 
-				var (
-					ent *maltego.MaltegoEntityObj
-					addr = net.ParseIP(ip.Addr)
-				)
-				if addr == nil {
-					fmt.Println(err)
-					continue
+				if ip.Addr == ipaddr {
+
+					for proto, count := range ip.Protocols {
+						ent := trx.AddEntity("maltego.Service", proto)
+						ent.SetType("maltego.Service")
+						ent.SetValue(proto)
+
+						di := "<h3>Heading</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
+						ent.AddDisplayInformation(di, "Other")
+
+						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
+						ent.SetLinkColor("#000000")
+					}
+
+					break
 				}
-				if v4 := addr.To4(); v4 == nil {
-					// v6
-					ent = trx.AddEntity("maltego.IPv6Address", ip.Addr)
-					ent.SetType("maltego.IPv6Address")
-				} else {
-					ent = trx.AddEntity("maltego.IPv4Address", ip.Addr)
-					ent.SetType("maltego.IPv4Address")
+			}
+			for _, ip := range profile.DeviceIPs {
+
+				if ip.Addr == ipaddr {
+
+					for proto, count := range ip.Protocols {
+						ent := trx.AddEntity("maltego.Service", proto)
+						ent.SetType("maltego.Service")
+						ent.SetValue(proto)
+
+						di := "<h3>Heading</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
+						ent.AddDisplayInformation(di, "Other")
+
+						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
+						ent.SetLinkColor("#000000")
+					}
+
+					break
 				}
-				ent.SetValue(ip.Addr)
-
-				di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
-				ent.AddDisplayInformation(di, "Other")
-
-				ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(profile.NumPackets, 10))
-
-				ent.SetLinkLabel("GetDeviceIPs")
-				ent.SetLinkColor("#000000")
-
-				note := strings.ReplaceAll(proto.MarshalTextString(ip), "\"", "'")
-				note = strings.ReplaceAll(note, "<", "")
-				note = strings.ReplaceAll(note, ">", "")
-				ent.SetNote(note)
 			}
 		}
 	}
