@@ -94,12 +94,13 @@ func main() {
 					ent = trx.AddEntity("netcap.ExternalContact", ip.Addr)
 					ent.SetType("netcap.ExternalContact")
 				}
-				ent.SetValue(ip.Addr + "\n" + ip.Geolocation)
+				ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + strings.Join(ip.DNSNames, "\n"))
 
 				di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
 
-				ent.AddProperty("addr", "Address", "strict", ip.Addr)
+				ent.AddProperty("mac", "MacAddress", "strict", mac)
+				ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
 				ent.AddProperty("path", "Path", "strict", profilesFile)
 				ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(profile.NumPackets, 10))
 
@@ -107,12 +108,12 @@ func main() {
 				ent.SetLinkColor("#000000")
 				ent.SetLinkThickness(getThickness(ip.NumPackets))
 
-				ip.SrcPorts = nil
-				ip.DstPorts = nil
-				note := strings.ReplaceAll(proto.MarshalTextString(ip), "\"", "'")
-				note = strings.ReplaceAll(note, "<", "")
-				note = strings.ReplaceAll(note, ">", "")
-				ent.SetNote(note)
+				//ip.SrcPorts = nil
+				//ip.DstPorts = nil
+				//note := strings.ReplaceAll(proto.MarshalTextString(ip), "\"", "'")
+				//note = strings.ReplaceAll(note, "<", "")
+				//note = strings.ReplaceAll(note, ">", "")
+				//ent.SetNote(note)
 			}
 		}
 	}
