@@ -6,6 +6,7 @@ import (
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"fmt"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dustin/go-humanize"
 	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
@@ -62,9 +63,9 @@ func main() {
 
 	var (
 		profile = new(types.DeviceProfile)
-		pm  proto.Message
-		ok  bool
-		TRX = maltego.MaltegoTransform{}
+		pm      proto.Message
+		ok      bool
+		trx     = maltego.MaltegoTransform{}
 	)
 	pm = profile
 
@@ -82,30 +83,30 @@ func main() {
 
 		ident := profile.MacAddr + "\n" + profile.DeviceManufacturer
 
-		NewEnt := TRX.AddEntity("netcap.Device", ident)
-		NewEnt.SetType("netcap.Device")
-		NewEnt.SetValue(ident)
+		ent := trx.AddEntity("netcap.Device", ident)
+		ent.SetType("netcap.Device")
+		ent.SetValue(ident)
 
 		di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
-		NewEnt.AddDisplayInformation(di, "Other")
+		ent.AddDisplayInformation(di, "Other")
 
-		NewEnt.AddProperty("path", "Path", "strict", profilesFile)
-		NewEnt.AddProperty("mac", "Mac Address", "strict", profile.MacAddr)
+		ent.AddProperty("path", "Path", "strict", profilesFile)
+		ent.AddProperty("mac", "Mac Address", "strict", profile.MacAddr)
 
-		NewEnt.SetLinkLabel("GetDevices ("+ strconv.FormatInt(profile.NumPackets, 10)+")")
-		NewEnt.SetLinkColor("#000000")
-		NewEnt.SetLinkThickness(getThickness(profile.NumPackets))
+		ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
+		ent.SetLinkColor("#000000")
+		ent.SetLinkThickness(getThickness(profile.NumPackets))
 
 		profile.DeviceIPs = nil
 		profile.Contacts = nil
 		note := strings.ReplaceAll(proto.MarshalTextString(profile), "\"", "'")
 		note = strings.ReplaceAll(note, "<", "")
 		note = strings.ReplaceAll(note, ">", "")
-		NewEnt.SetNote(note)
+		ent.SetNote(note)
 	}
 
-	TRX.AddUIMessage("completed!","Inform")
-	fmt.Println(TRX.ReturnOutput())
+	trx.AddUIMessage("completed!","Inform")
+	fmt.Println(trx.ReturnOutput())
 }
 
 // TODO: move into util pkg
