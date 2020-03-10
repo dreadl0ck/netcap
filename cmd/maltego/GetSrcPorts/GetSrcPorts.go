@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"io"
@@ -66,6 +67,8 @@ func main() {
 		panic("type does not implement types.AuditRecord interface")
 	}
 
+	resolvers.InitServiceDB()
+
 	for {
 		err := r.Next(profile)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
@@ -80,17 +83,32 @@ func main() {
 
 				if ip.Addr == ipaddr {
 
-					for port, count := range ip.SrcPorts {
-						ent := trx.AddEntity("netcap.SrcPort", port)
+					for portStr, port := range ip.SrcPorts {
+						ent := trx.AddEntity("netcap.SrcPort", portStr)
 						ent.SetType("netcap.SrcPort")
-						ent.SetValue(port)
+						np, err := strconv.Atoi(portStr)
+						if err != nil {
+							fmt.Println(err)
+							np = 0
+						}
 
-						di := "<h3>Source Port</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
+						var typ string
+						if port.NumTCP > 0 {
+							typ = "TCP"
+						} else if port.NumUDP > 0 {
+							typ = "UDP"
+						}
+						serviceName := resolvers.LookupServiceByPort(np, typ)
+						ent.SetValue(portStr)
+
+						di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
 						ent.AddDisplayInformation(di, "Other")
 
-						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
+						ent.AddProperty("label", "Label", "strict", portStr + "\n" + serviceName)
+
+						ent.SetLinkLabel(strconv.FormatInt(int64(port.NumTotal), 10) + " pkts")
 						ent.SetLinkColor("#000000")
-						ent.SetLinkThickness(maltego.GetThickness(int64(count)))
+						ent.SetLinkThickness(maltego.GetThickness(int64(port.NumTotal)))
 					}
 
 					break
@@ -100,17 +118,32 @@ func main() {
 
 				if ip.Addr == ipaddr {
 
-					for port, count := range ip.SrcPorts {
-						ent := trx.AddEntity("netcap.SrcPort", port)
+					for portStr, port := range ip.SrcPorts {
+						ent := trx.AddEntity("netcap.SrcPort", portStr)
 						ent.SetType("netcap.SrcPort")
-						ent.SetValue(port)
+						np, err := strconv.Atoi(portStr)
+						if err != nil {
+							fmt.Println(err)
+							np = 0
+						}
 
-						di := "<h3>Source Port</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
+						var typ string
+						if port.NumTCP > 0 {
+							typ = "TCP"
+						} else if port.NumUDP > 0 {
+							typ = "UDP"
+						}
+						serviceName := resolvers.LookupServiceByPort(np, typ)
+						ent.SetValue(portStr)
+
+						di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
 						ent.AddDisplayInformation(di, "Other")
 
-						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
+						ent.AddProperty("label", "Label", "strict", portStr + "\n" + serviceName)
+
+						ent.SetLinkLabel(strconv.FormatInt(int64(port.NumTotal), 10) + " pkts")
 						ent.SetLinkColor("#000000")
-						ent.SetLinkThickness(maltego.GetThickness(int64(count)))
+						ent.SetLinkThickness(maltego.GetThickness(int64(port.NumTotal)))
 					}
 
 					break

@@ -15,6 +15,7 @@ package encoder
 
 import (
 	godpi "github.com/dreadl0ck/go-dpi"
+	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/tlsx"
 	"sync"
@@ -41,38 +42,54 @@ var ipProfiles = &AtomicIPProfileMap{
 	Items: make(map[string]*types.IPProfile),
 }
 
+var portMu sync.Mutex
+
 // GetIPProfile fetches a known profile and updates it or returns a new one
 func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 
 	if p, ok := ipProfiles.Items[ipAddr]; ok {
+
 		p.NumPackets++
 		p.TimestampLast = i.timestamp
-
-		ja3Hash := ja3.DigestHexPacket(i.p)
-		if ja3Hash == "" {
-			ja3Hash = ja3.DigestHexPacketJa3s(i.p)
-		}
-
-		// DPI
-		flow, _ := godpi.GetPacketFlow(i.p)
-		results := godpi.ClassifyFlowAllModules(flow)
-		for _, r := range results {
-			//result := string(r.Source) + ": " + string(r.Protocol)
-			result := string(r.Protocol)
-			p.Protocols[result]++
-		}
 
 		dataLen := uint64(len(i.p.Data()))
 		p.Bytes += dataLen
 
+		// Transport Layer
 		if tl := i.p.TransportLayer(); tl != nil {
-			p.SrcPorts[tl.TransportFlow().Src().String()] += dataLen
-			p.DstPorts[tl.TransportFlow().Dst().String()] += dataLen
+
+			portMu.Lock()
+
+			if port, ok := p.SrcPorts[tl.TransportFlow().Src().String()]; ok {
+				port.NumTotal += dataLen
+				if tl.LayerType() == layers.LayerTypeTCP {
+					port.NumTCP++
+				} else if tl.LayerType() == layers.LayerTypeUDP {
+					port.NumUDP++
+				}
+			}
+
+			if port, ok := p.DstPorts[tl.TransportFlow().Dst().String()]; ok {
+				port.NumTotal += dataLen
+				if tl.LayerType() == layers.LayerTypeTCP {
+					port.NumTCP++
+				} else if tl.LayerType() == layers.LayerTypeUDP {
+					port.NumUDP++
+				}
+			}
+
+			portMu.Unlock()
 		}
 
+		// Session Layer: TLS
 		ch := tlsx.GetClientHelloBasic(i.p)
 		if ch != nil {
 			p.SNIs[ch.SNI]++
+		}
+
+		ja3Hash := ja3.DigestHexPacket(i.p)
+		if ja3Hash == "" {
+			ja3Hash = ja3.DigestHexPacketJa3s(i.p)
 		}
 
 		if ja3Hash != "" {
@@ -81,6 +98,15 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 				return p
 			}
 			p.Ja3[ja3Hash] = resolvers.LookupJa3(ja3Hash)
+		}
+
+		// Application Layer: DPI
+		flow, _ := godpi.GetPacketFlow(i.p)
+		results := godpi.ClassifyFlowAllModules(flow)
+		for _, r := range results {
+			//result := string(r.Source) + ": " + string(r.Protocol)
+			result := string(r.Protocol)
+			p.Protocols[result]++
 		}
 
 		return p
@@ -112,8 +138,8 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 
 	var (
 		dataLen = uint64(len(i.p.Data()))
-		srcPorts = make(map[string]uint64)
-		dstPorts = make(map[string]uint64)
+		srcPorts = make(map[string]*types.Port)
+		dstPorts = make(map[string]*types.Port)
 		sniMap = make(map[string]int64)
 	)
 
@@ -123,8 +149,28 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 	}
 
 	if tl := i.p.TransportLayer(); tl != nil {
-		srcPorts[tl.TransportFlow().Src().String()] += dataLen
-		dstPorts[tl.TransportFlow().Dst().String()] += dataLen
+
+		srcPort := &types.Port{
+			NumTotal: dataLen,
+		}
+
+		if tl.LayerType() == layers.LayerTypeTCP {
+			srcPort.NumTCP++
+		} else if tl.LayerType() == layers.LayerTypeUDP {
+			srcPort.NumUDP++
+		}
+
+		srcPorts[tl.TransportFlow().Src().String()] = srcPort
+
+		dstPort := &types.Port{
+			NumTotal: dataLen,
+		}
+		if tl.LayerType() == layers.LayerTypeTCP {
+			dstPort.NumTCP++
+		} else if tl.LayerType() == layers.LayerTypeUDP {
+			dstPort.NumUDP++
+		}
+		dstPorts[tl.TransportFlow().Dst().String()] = dstPort
 	}
 
 	// create new profile

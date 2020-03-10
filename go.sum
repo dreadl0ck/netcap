@@ -17,8 +17,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1 h1:hYYY4lT/JWxWwaG0hmVAM24u6ElfO1StNGnLgWW/HHk=
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
-github.com/dreadl0ck/go-dpi v0.0.0-20200305165929-839208fa1df4 h1:izjq+XlUX+f6gsICff6RYLQ3+p4Dyxo0SF9pMn7p9Hk=
-github.com/dreadl0ck/go-dpi v0.0.0-20200305165929-839208fa1df4/go.mod h1:ygzpshKgBvy4NjrQA+2RTHObjQceTqSBlhrJ87emEq8=
+github.com/dreadl0ck/go-dpi v0.0.0-20200309234442-9ee8ceebae78 h1:axH5c+ePbVndCDXBkzTXra4P2VW9lytzZ+t04BiKO/k=
+github.com/dreadl0ck/go-dpi v0.0.0-20200309234442-9ee8ceebae78/go.mod h1:ygzpshKgBvy4NjrQA+2RTHObjQceTqSBlhrJ87emEq8=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557 h1:m/rxJiRUgei39RuIVBMPipyRGokYe534vBfuARBcLnU=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
 github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e h1:MH2FO9xZNYalSbAdcfH9M5eNH3W5VX3yQeDrQi4i9qM=
@@ -91,8 +91,6 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJ
 github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
-github.com/noobiedog/maltegolocal v0.0.0-20160225102457-fb0f37ce517c h1:+4Y1kfX/t2o2Z6ZhY9T6bmF5gyj4/CcfqEOwJ+oj28Q=
-github.com/noobiedog/maltegolocal v0.0.0-20160225102457-fb0f37ce517c/go.mod h1:lr+NG30Ha9FYcNiM3OLlbCzf56yyvYtDd6EJi6SRUNc=
 github.com/oschwald/maxminddb-golang v1.6.0 h1:KAJSjdHQ8Kv45nFIbtoLGrGWqHFajOIm7skTyz/+Dls=
 github.com/oschwald/maxminddb-golang v1.6.0/go.mod h1:DUJFucBg2cvqx42YmDa/+xHvb0elJtOm3o4aFQ/nb/w=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=

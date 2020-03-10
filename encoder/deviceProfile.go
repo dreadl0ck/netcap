@@ -163,6 +163,7 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	// init resolvers
 	resolvers.InitMACResolver()
 	resolvers.InitJa3Resolver()
+	resolvers.InitServiceDB()
 
 	profileEncoderInstance = d
 	//profileFlushInterval = int64(*flagProfileFlushInterval)

@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1
-	github.com/dreadl0ck/go-dpi v0.0.0-20200305165929-839208fa1df4
+	github.com/dreadl0ck/go-dpi v0.0.0-20200309234442-9ee8ceebae78
 	github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557
 	github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e
 	github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78
@@ -20,7 +20,6 @@ require (
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
-	github.com/noobiedog/maltegolocal v0.0.0-20160225102457-fb0f37ce517c // indirect
 	github.com/oschwald/maxminddb-golang v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
