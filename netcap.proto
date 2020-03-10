@@ -1687,6 +1687,12 @@ message DeviceProfile {
     uint64             Bytes              = 7;
 }
 
+message Port {
+    uint64 numTCP = 1;
+    uint64 numUDP = 2;
+    uint64 numTotal = 3;
+}
+
 message IPProfile {
     string                 Addr            = 1;
     int64                  NumPackets      = 2;
@@ -1699,7 +1705,7 @@ message IPProfile {
     map<string, string>    Ja3             = 9; // ja3 to lookup
     map<string, uint64>    Protocols       = 10;
     uint64                 Bytes           = 11;
-    map<string, uint64>    DstPorts        = 12; // Ports to bytes
-    map<string, uint64>    SrcPorts        = 13; // Ports to bytes
+    map<string, Port>      DstPorts        = 12; // Ports to bytes
+    map<string, Port>      SrcPorts        = 13; // Ports to bytes
     map<string, int64>     SNIs            = 14;
 }
