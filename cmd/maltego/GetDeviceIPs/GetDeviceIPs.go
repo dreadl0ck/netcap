@@ -97,7 +97,7 @@ func main() {
 				dnsNames := strings.Join(ip.DNSNames, "\n")
 				ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + dnsNames)
 
-				di := "<h3>Heading</h3><p>Timestamp: " + profile.Timestamp + "</p>"
+				di := "<h3>Device IP</h3><p>Timestamp: " + profile.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
 
 				ent.AddProperty("geolocation", "Geolocation", "strict", ip.Geolocation)
