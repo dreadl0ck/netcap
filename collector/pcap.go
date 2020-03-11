@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/gopacket/layers"
 	"io"
 	"log"
 	"os"
@@ -117,6 +118,21 @@ func (c *Collector) CollectPcap(path string) error {
 		return err
 	}
 	defer f.Close()
+
+	fmt.Println("detected link type:", r.LinkType())
+
+	switch r.LinkType() {
+	case layers.LinkTypeEthernet:
+		c.config.BaseLayer = layers.LayerTypeEthernet
+	case layers.LinkTypeRaw:
+		c.config.BaseLayer = layers.LayerTypeIPv4
+	case layers.LinkTypeIPv4:
+		c.config.BaseLayer = layers.LayerTypeIPv4
+	case layers.LinkTypeIPv6:
+		c.config.BaseLayer = layers.LayerTypeIPv6
+	default:
+		log.Fatal("unhandled link type: ", r.LinkType())
+	}
 
 	// initialize collector
 	if err := c.Init(); err != nil {
