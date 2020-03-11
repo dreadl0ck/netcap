@@ -84,8 +84,8 @@ func main() {
 				if ip.Addr == ipaddr {
 
 					for portStr, port := range ip.SrcPorts {
-						ent := trx.AddEntity("netcap.SrcPort", portStr)
-						ent.SetType("netcap.SrcPort")
+						ent := trx.AddEntity("netcap.SourcePort", portStr)
+						ent.SetType("netcap.SourcePort")
 						np, err := strconv.Atoi(portStr)
 						if err != nil {
 							fmt.Println(err)
@@ -119,8 +119,8 @@ func main() {
 				if ip.Addr == ipaddr {
 
 					for portStr, port := range ip.SrcPorts {
-						ent := trx.AddEntity("netcap.SrcPort", portStr)
-						ent.SetType("netcap.SrcPort")
+						ent := trx.AddEntity("netcap.SourcePort", portStr)
+						ent.SetType("netcap.SourcePort")
 						np, err := strconv.Atoi(portStr)
 						if err != nil {
 							fmt.Println(err)
