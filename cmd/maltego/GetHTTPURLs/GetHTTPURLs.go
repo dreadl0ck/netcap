@@ -87,7 +87,7 @@ func main() {
 
 				ent.AddProperty("url", "URL", "strict", bareURL)
 
-				di := "<h3>Port</h3><p>Timestamp: " + http.Timestamp + "</p>"
+				di := "<h3>URL</h3><p>Timestamp: " + http.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
 
 				//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")

@@ -82,7 +82,7 @@ func main() {
 				ent.SetType("netcap.UserAgent")
 				ent.SetValue(http.UserAgent)
 
-				di := "<h3>UserAgent</h3><p>Timestamp: " + http.Timestamp + "</p>"
+				di := "<h3>User Agent</h3><p>Timestamp: " + http.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
 
 				//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")

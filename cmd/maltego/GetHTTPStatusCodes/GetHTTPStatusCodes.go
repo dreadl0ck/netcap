@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
+
 	//"strconv"
 	"strings"
 )
@@ -76,13 +78,14 @@ func main() {
 		}
 
 		if http.SrcIP == ipaddr {
-			if http.ServerName != "" {
+			if http.StatusCode != 0 {
 
-				ent := trx.AddEntity("netcap.ServerName", http.ServerName)
-				ent.SetType("netcap.ServerName")
-				ent.SetValue(http.ServerName)
+				val := strconv.FormatInt(int64(http.StatusCode), 10)
+				ent := trx.AddEntity("netcap.HTTPStatusCode", val)
+				ent.SetType("netcap.HTTPStatusCode")
+				ent.SetValue(val)
 
-				di := "<h3>Server Name</h3><p>Timestamp: " + http.Timestamp + "</p>"
+				di := "<h3>HTTP Status Code</h3><p>Timestamp: " + http.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
 
 				//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
