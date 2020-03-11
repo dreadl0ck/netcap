@@ -101,52 +101,35 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		}
 
 		// Application Layer: DPI
+		var uniqueResults = make(map[string]struct{})
 		flow, _ := godpi.GetPacketFlow(i.p)
 		results := godpi.ClassifyFlowAllModules(flow)
+
+		// when using all modules we might receive duplicate classifications
+		// so they will be deduplicated before counting them
 		for _, r := range results {
-			//result := string(r.Source) + ": " + string(r.Protocol)
-			result := string(r.Protocol)
-			p.Protocols[result]++
+			uniqueResults[string(r.Protocol)] = struct{}{}
+		}
+		for proto := range uniqueResults {
+			p.Protocols[proto]++
 		}
 
 		return p
 	}
 
-	loc, _ := resolvers.LookupGeolocation(ipAddr)
-
 	var (
 		protos = make(map[string]uint64)
 		ja3Map = make(map[string]string)
-	)
-
-	ja3Hash := ja3.DigestHexPacket(i.p)
-	if ja3Hash == "" {
-		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
-	}
-	if ja3Hash != "" {
-		ja3Map[ja3Hash] = resolvers.LookupJa3(ja3Hash)
-	}
-
-	// DPI
-	flow, _ := godpi.GetPacketFlow(i.p)
-	results := godpi.ClassifyFlowAllModules(flow)
-	for _, r := range results {
-		//result := string(r.Source) + ": " + string(r.Protocol)
-		result := string(r.Protocol)
-		protos[result]++
-	}
-
-	var (
 		dataLen = uint64(len(i.p.Data()))
 		srcPorts = make(map[string]*types.Port)
 		dstPorts = make(map[string]*types.Port)
 		sniMap = make(map[string]int64)
 	)
 
-	ch := tlsx.GetClientHelloBasic(i.p)
-	if ch != nil {
-		sniMap[ch.SNI] = 1
-	}
+	// Network Layer: IP Geolocation
+	loc, _ := resolvers.LookupGeolocation(ipAddr)
+
+	// Transport Layer: Port information
 
 	if tl := i.p.TransportLayer(); tl != nil {
 
@@ -171,6 +154,34 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 			dstPort.NumUDP++
 		}
 		dstPorts[tl.TransportFlow().Dst().String()] = dstPort
+	}
+
+	// Session Layer: TLS
+
+	ja3Hash := ja3.DigestHexPacket(i.p)
+	if ja3Hash == "" {
+		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
+	}
+	if ja3Hash != "" {
+		ja3Map[ja3Hash] = resolvers.LookupJa3(ja3Hash)
+	}
+
+	ch := tlsx.GetClientHelloBasic(i.p)
+	if ch != nil {
+		sniMap[ch.SNI] = 1
+	}
+
+	// Application Layer: DPI
+	var uniqueResults = make(map[string]struct{})
+	flow, _ := godpi.GetPacketFlow(i.p)
+	results := godpi.ClassifyFlowAllModules(flow)
+	// when using all modules we might receive duplicate classifications
+	// so they will be deduplicated before counting them
+	for _, r := range results {
+		uniqueResults[string(r.Protocol)] = struct{}{}
+	}
+	for proto := range uniqueResults {
+		protos[proto]++
 	}
 
 	// create new profile
