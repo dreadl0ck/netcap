@@ -8,9 +8,11 @@ import (
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dustin/go-humanize"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -89,6 +91,11 @@ func main() {
 
 	ident := filepath.Join(baseDir, "DeviceProfile.ncap.gz")
 
+	stat, err := os.Stat(ident)
+	if err != nil {
+		log.Fatal("invalid path: ", err)
+	}
+
 	ent := trx.AddEntity("netcap.DeviceProfiles", ident)
 	ent.SetType("netcap.DeviceProfiles")
 	ent.SetValue("DeviceProfile.ncap.gz")
@@ -101,7 +108,7 @@ func main() {
 
 	ent.SetLinkLabel("DeviceProfiles") // TODO: add num profiles here?
 	ent.SetLinkColor("#000000")
-	ent.SetNote(ident)
+	ent.SetNote("File Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10)) // TODO: add link type of input pcap!
 
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())
