@@ -1,5 +1,14 @@
 # TODOs
 
+# maltego
+
+- transferred files integration
+- add wrapper to reduce boilerplate code in plugins
+- calculate min/max/5 for line thickness
+- update DisplayInformation to allow tracking updates to an entity over time
+- add zeus command to compile executables for mac/linux/windows
+- export entities and transforms 
+
 - label tool: display a warning when nothing is there for mapping
 - use new 1.13 strings.ToValidUTF8()
 
