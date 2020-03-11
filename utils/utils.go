@@ -47,6 +47,10 @@ func GetBaseLayer(value string) (t gopacket.LayerType) {
 	switch value {
 	case "ethernet":
 		t = layers.LayerTypeEthernet
+	case "ipv4":
+		t = layers.LayerTypeIPv4
+	case "ipv6":
+		t = layers.LayerTypeIPv6
 	case "usb":
 		t = layers.LayerTypeUSB
 	default:

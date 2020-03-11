@@ -68,6 +68,10 @@ func InitMACResolver() {
 // LookupManufacturer resolves a MAC addr to the manufacturer
 func LookupManufacturer(mac string) string {
 
+	if len(mac) < 8 {
+		return ""
+	}
+
 	oui := strings.ToUpper(mac[:8])
 
 	if res, ok := macDB[oui]; ok {
