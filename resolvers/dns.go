@@ -9,10 +9,12 @@ import (
 )
 
 var (
-	timeout = 30 * time.Second
+	timeout = 10 * time.Second
 	dnsNamesDB = make(map[string][]string)
 	dnsNamesMu sync.Mutex
 )
+
+var DisableReverseDNS bool
 
 var privateIPBlocks []*net.IPNet
 
@@ -53,6 +55,10 @@ func IsPrivateIP(ip net.IP) bool {
 
 // LookupDNSNames retrieves the DNS names associated with an IP addr
 func LookupDNSNames(ip string) []string {
+
+	if DisableReverseDNS {
+		return []string{}
+	}
 
 	// check if ip is valid
 	i := net.ParseIP(ip)

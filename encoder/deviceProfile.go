@@ -19,6 +19,7 @@ import (
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
 	"github.com/dreadl0ck/go-dpi/modules/wrappers"
 	dpitypes "github.com/dreadl0ck/go-dpi/types"
+	"github.com/dreadl0ck/gopacket/layers"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -165,7 +166,11 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	resolvers.InitJa3Resolver()
 	resolvers.InitServiceDB()
 
+	layers.EthernetTypeMetadata[0x7f00] = layers.EnumMetadata{DecodeWith: gopacket.DecodersByLayerName[layers.LayerTypeIPv4.String()], Name: "IPv4", LayerType: layers.LayerTypeIPv4}
+
 	profileEncoderInstance = d
+
+	resolvers.DisableReverseDNS = true
 	//profileFlushInterval = int64(*flagProfileFlushInterval)
 
 	return nil
