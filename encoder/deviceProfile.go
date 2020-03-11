@@ -167,7 +167,7 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 
 	profileEncoderInstance = d
 
-	resolvers.DisableReverseDNS = true
+	//resolvers.DisableReverseDNS = true
 	//profileFlushInterval = int64(*flagProfileFlushInterval)
 
 	return nil
