@@ -51,7 +51,7 @@ func main() {
 			Buffer:          true,
 			Compression:     true,
 			CSV:             false,
-			IncludeEncoders: "DeviceProfile",
+			IncludeEncoders: "",
 			ExcludeEncoders: "",
 			Out:             baseDir,
 			Source:          inputFile,
@@ -85,17 +85,18 @@ func main() {
 		}
 	}
 
+	// restore stdout
 	os.Stdout = stdout
-
-	trx := maltego.MaltegoTransform{}
 
 	ident := filepath.Join(baseDir, "DeviceProfile.ncap.gz")
 
+	// stat generated profiles
 	stat, err := os.Stat(ident)
 	if err != nil {
 		log.Fatal("invalid path: ", err)
 	}
 
+	trx := maltego.MaltegoTransform{}
 	ent := trx.AddEntity("netcap.DeviceProfiles", ident)
 	ent.SetType("netcap.DeviceProfiles")
 	ent.SetValue("DeviceProfile.ncap.gz")
