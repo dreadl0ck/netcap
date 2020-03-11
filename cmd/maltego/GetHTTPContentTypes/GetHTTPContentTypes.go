@@ -82,7 +82,7 @@ func main() {
 				ent.SetType("netcap.ContentType")
 				ent.SetValue(http.ContentType)
 
-				di := "<h3>ContentType</h3><p>Timestamp: " + http.Timestamp + "</p>"
+				di := "<h3>Content Type</h3><p>Timestamp: " + http.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
 
 				//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")

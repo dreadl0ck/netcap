@@ -80,7 +80,7 @@ func main() {
 				ent.SetType("maltego.Website")
 				ent.SetValue(http.Host)
 
-				di := "<h3>Port</h3><p>Timestamp: " + http.Timestamp + "</p>"
+				di := "<h3>Host</h3><p>Timestamp: " + http.Timestamp + "</p>"
 				ent.AddDisplayInformation(di, "Other")
 
 				//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")

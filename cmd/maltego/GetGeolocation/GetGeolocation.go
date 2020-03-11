@@ -86,7 +86,7 @@ func main() {
 					ent.SetType("maltego.Location")
 					ent.SetValue(ip.Geolocation)
 
-					di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
+					di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
 					ent.AddDisplayInformation(di, "Other")
 
 					ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")
@@ -103,7 +103,7 @@ func main() {
 					ent.SetType("maltego.Location")
 					ent.SetValue(ip.Geolocation)
 
-					di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
+					di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
 					ent.AddDisplayInformation(di, "Other")
 
 					ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")

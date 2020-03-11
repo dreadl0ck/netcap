@@ -81,7 +81,7 @@ func main() {
 					ent.SetType("maltego.DNSName")
 					ent.SetValue(string(q.Name))
 
-					di := "<h3>Port</h3><p>Timestamp: " + dns.Timestamp + "</p>"
+					di := "<h3>DNS Question</h3><p>Timestamp: " + dns.Timestamp + "</p>"
 					ent.AddDisplayInformation(di, "Other")
 
 					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
