@@ -26,8 +26,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// openPcap opens pcap files.
-func openPcap(file string) (*pcapgo.Reader, *os.File, error) {
+// OpenPCAP opens a Packet Capture file
+func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	// get file handle
 	f, err := os.Open(file)
 	if err != nil {
@@ -65,7 +65,7 @@ func IsPcap(file string) (bool, error) {
 // countPackets returns the number of packets in a PCAP file
 func countPackets(path string) (count int64, err error) {
 	// get reader and file handle
-	r, f, err := openPcap(path)
+	r, f, err := OpenPCAP(path)
 	if err != nil {
 		return
 	}
@@ -113,7 +113,7 @@ func (c *Collector) CollectPcap(path string) error {
 	clearLine()
 	fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
-	r, f, err := openPcap(path)
+	r, f, err := OpenPCAP(path)
 	if err != nil {
 		return err
 	}
