@@ -247,7 +247,11 @@ archives:
     - types/swift/*
     - types/netcap.pb.go
 
-# before:
+  format_overrides:
+    - goos: windows
+      format: zip
+
+    # before:
 #   hooks:
     # you may remove this if you don't use vgo
     #- go mod download
