@@ -33,21 +33,58 @@ const (
 	UIM_DEBUG   = "Debug"
 )
 
-// TODO: use minmax/5
-func GetThickness(val int64) int {
+func GetThicknessInterval(val, min, max uint64) int {
+
+	if min == max {
+		min = 0
+	}
+
+	interval := (max-min)/5
+
 	switch {
-	case val < 10:
+	case val <= interval:
 		return 1
-	case val < 100:
+	case val <= interval*2:
 		return 2
-	case val < 1000:
+	case val <= interval*3:
 		return 3
-	case val < 10000:
+	case val <= interval*4:
 		return 4
-	case val < 100000:
+	case val <= interval*5:
+		return 5
+	default: // bigger than interval*5
+		return 5
+	}
+}
+
+
+func GetThickness(val, min, max uint64) int {
+
+	if min == max {
+		min = 0
+	}
+
+	delta := max-min
+
+	//log.Println("delta=", delta, "float64(delta)*0.01 = ", float64(delta)*0.01)
+	//log.Println("delta=", delta, "float64(delta)*0.1 = ", float64(delta)*0.1)
+	//log.Println("delta=", delta, "float64(delta)*0.5 = ", float64(delta)*0.5)
+	//log.Println("delta=", delta, "float64(delta)*1 = ", float64(delta)*1)
+	//log.Println("delta=", delta, "float64(delta)*2 = ", float64(delta)*2)
+
+	switch {
+	case float64(val) <= float64(delta)*0.001:
+		return 1
+	case float64(val) <= float64(delta)*0.01:
+		return 2
+	case float64(val) <= float64(delta)*0.1:
+		return 3
+	case float64(val) <= float64(delta)*0.5:
+		return 4
+	case float64(val) <= float64(delta)*0.8:
 		return 5
 	default:
-		return 1
+		return 5
 	}
 }
 
