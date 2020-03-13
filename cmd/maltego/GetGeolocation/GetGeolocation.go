@@ -1,119 +1,46 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"github.com/dreadl0ck/netcap"
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
-	"io"
-	"log"
-	"os"
 	"strconv"
-
-	//"strconv"
-	"strings"
-)
-
-var (
-	flagVersion = flag.Bool("version", false, "print version and exit")
 )
 
 func main() {
-
-	lt := maltego.ParseLocalArguments(os.Args)
-	profilesFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
-
-	log.Println(profilesFile, mac, ipaddr)
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
-	}
-
-	f, err := os.Open(profilesFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// check if its an audit record file
-	if !strings.HasSuffix(f.Name(), ".ncap.gz") && !strings.HasSuffix(f.Name(), ".ncap") {
-		log.Fatal("input file must be an audit record file")
-	}
-
-	r, err := netcap.Open(profilesFile, netcap.DefaultBufferSize)
-	if err != nil {
-		panic(err)
-	}
-
-	// read netcap header
-	header := r.ReadHeader()
-	if header.Type != types.Type_NC_DeviceProfile {
-		panic("file does not contain DeviceProfile records: " + header.Type.String())
-	}
-
-	var (
-		profile = new(types.DeviceProfile)
-		pm  proto.Message
-		ok  bool
-		trx = maltego.MaltegoTransform{}
+	maltego.IPTransform(
+		nil,
+		func(trx *maltego.MaltegoTransform, profile *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
+			if profile.MacAddr == mac {
+				for _, ip := range profile.Contacts {
+					if ip.Addr == ipaddr {
+						if ip.Geolocation == "" {
+							continue
+						}
+						addGeolocation(trx, ip, minPackets, maxPackets)
+					}
+				}
+				for _, ip := range profile.DeviceIPs {
+					if ip.Addr == ipaddr {
+						if ip.Geolocation == "" {
+							continue
+						}
+						addGeolocation(trx, ip, minPackets, maxPackets)
+					}
+				}
+			}
+		},
 	)
-	pm = profile
+}
 
-	if _, ok = pm.(types.AuditRecord); !ok {
-		panic("type does not implement types.AuditRecord interface")
-	}
+func addGeolocation(trx *maltego.MaltegoTransform, ip *types.IPProfile, minPackets, maxPackets uint64) {
+	ent := trx.AddEntity("maltego.Location", ip.Geolocation)
+	ent.SetType("maltego.Location")
+	ent.SetValue(ip.Geolocation)
 
-	for {
-		err := r.Next(profile)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			break
-		} else if err != nil {
-			panic(err)
-		}
+	di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
+	ent.AddDisplayInformation(di, "Netcap Info")
 
-		if profile.MacAddr == mac {
-			for _, ip := range profile.Contacts {
-				if ip.Addr == ipaddr {
-					if ip.Geolocation == "" {
-						continue
-					}
-					ent := trx.AddEntity("maltego.Location", ip.Geolocation)
-					ent.SetType("maltego.Location")
-					ent.SetValue(ip.Geolocation)
-
-					di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
-					ent.AddDisplayInformation(di, "Other")
-
-					ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")
-					ent.SetLinkColor("#000000")
-					ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
-				}
-			}
-			for _, ip := range profile.DeviceIPs {
-				if ip.Addr == ipaddr {
-					if ip.Geolocation == "" {
-						continue
-					}
-					ent := trx.AddEntity("maltego.Location", ip.Geolocation)
-					ent.SetType("maltego.Location")
-					ent.SetValue(ip.Geolocation)
-
-					di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
-					ent.AddDisplayInformation(di, "Other")
-
-					ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")
-					ent.SetLinkColor("#000000")
-					ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
-				}
-			}
-		}
-	}
-
-	trx.AddUIMessage("completed!","Inform")
-	fmt.Println(trx.ReturnOutput())
+	ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")
+	ent.SetLinkColor("#000000")
+	ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), minPackets, maxPackets))
 }

@@ -1,10 +1,18 @@
 # TODOs
 
+- flag.FlagSet instead of cobra for subcommands?
+
+- fix windows: remove errors.pcap file in use error
+- windows: tar.gz decompression for releases fails?
+- http content type: detect and add second field 
+
 # maltego
 
+- warn if transformation produced more than 12 results 
 - point src to dst ports?
 - transferred files integration
 - add wrapper to reduce boilerplate code in plugins
+- http parameters + values
 
 - update DisplayInformation to allow tracking updates to an entity over time
 - calculate min/max/5 for line thickness

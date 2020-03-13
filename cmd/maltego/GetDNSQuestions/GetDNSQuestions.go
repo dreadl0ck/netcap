@@ -82,9 +82,9 @@ func main() {
 					ent.SetValue(string(q.Name))
 
 					di := "<h3>DNS Question</h3><p>Timestamp: " + dns.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Other")
+					ent.AddDisplayInformation(di, "Netcap Info")
 
-					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
+					//ent.SetLinkLabel(strconv.FormatInt(dns.NumPackets, 10) + " pkts")
 					ent.SetLinkColor("#000000")
 					//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 				}

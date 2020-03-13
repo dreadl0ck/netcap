@@ -1,125 +1,57 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"github.com/dreadl0ck/netcap"
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
-	"io"
-	"log"
-	"os"
 	"strconv"
-
-	//"strconv"
-	"strings"
-)
-
-var (
-	flagVersion = flag.Bool("version", false, "print version and exit")
 )
 
 func main() {
+	maltego.IPTransform(
+		nil,
+		func(trx *maltego.MaltegoTransform, profile *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
+			if profile.MacAddr == mac {
 
-	lt := maltego.ParseLocalArguments(os.Args)
-	profilesFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
+				for _, ip := range profile.Contacts {
 
-	log.Println(profilesFile, mac, ipaddr)
+					if ip.Addr == ipaddr {
 
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
-	}
+						for proto, count := range ip.Protocols {
+							ent := trx.AddEntity("maltego.Service", proto)
+							ent.SetType("maltego.Service")
+							ent.SetValue(proto)
 
-	f, err := os.Open(profilesFile)
-	if err != nil {
-		log.Fatal(err)
-	}
+							di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
+							ent.AddDisplayInformation(di, "Netcap Info")
 
-	// check if its an audit record file
-	if !strings.HasSuffix(f.Name(), ".ncap.gz") && !strings.HasSuffix(f.Name(), ".ncap") {
-		log.Fatal("input file must be an audit record file")
-	}
+							ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
+							ent.SetLinkColor("#000000")
+						}
 
-	r, err := netcap.Open(profilesFile, netcap.DefaultBufferSize)
-	if err != nil {
-		panic(err)
-	}
+						break
+					}
+				}
+				for _, ip := range profile.DeviceIPs {
 
-	// read netcap header
-	header := r.ReadHeader()
-	if header.Type != types.Type_NC_DeviceProfile {
-		panic("file does not contain DeviceProfile records: " + header.Type.String())
-	}
+					if ip.Addr == ipaddr {
 
-	var (
-		profile = new(types.DeviceProfile)
-		pm  proto.Message
-		ok  bool
-		trx = maltego.MaltegoTransform{}
+						for protocol, count := range ip.Protocols {
+							ent := trx.AddEntity("maltego.Service", protocol)
+							ent.SetType("maltego.Service")
+							ent.SetValue(protocol)
+
+							di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
+							ent.AddDisplayInformation(di, "Netcap Info")
+
+							ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
+							ent.SetLinkColor("#000000")
+							ent.SetLinkThickness(maltego.GetThickness(count, minPackets, maxPackets))
+						}
+
+						break
+					}
+				}
+			}
+		},
 	)
-	pm = profile
-
-	if _, ok = pm.(types.AuditRecord); !ok {
-		panic("type does not implement types.AuditRecord interface")
-	}
-
-	for {
-		err := r.Next(profile)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			break
-		} else if err != nil {
-			panic(err)
-		}
-
-		if profile.MacAddr == mac {
-
-			for _, ip := range profile.Contacts {
-
-				if ip.Addr == ipaddr {
-
-					for proto, count := range ip.Protocols {
-						ent := trx.AddEntity("maltego.Service", proto)
-						ent.SetType("maltego.Service")
-						ent.SetValue(proto)
-
-						di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
-						ent.AddDisplayInformation(di, "Other")
-
-						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
-						ent.SetLinkColor("#000000")
-					}
-
-					break
-				}
-			}
-			for _, ip := range profile.DeviceIPs {
-
-				if ip.Addr == ipaddr {
-
-					for proto, count := range ip.Protocols {
-						ent := trx.AddEntity("maltego.Service", proto)
-						ent.SetType("maltego.Service")
-						ent.SetValue(proto)
-
-						di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
-						ent.AddDisplayInformation(di, "Other")
-
-						ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
-						ent.SetLinkColor("#000000")
-						ent.SetLinkThickness(maltego.GetThickness(int64(count)))
-					}
-
-					break
-				}
-			}
-		}
-	}
-
-	trx.AddUIMessage("completed!","Inform")
-	fmt.Println(trx.ReturnOutput())
 }

@@ -1,99 +1,33 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"github.com/dreadl0ck/netcap"
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
-	"io"
-	"log"
-	"os"
-
-	//"strconv"
-	"strings"
-)
-
-var (
-	flagVersion = flag.Bool("version", false, "print version and exit")
 )
 
 func main() {
+	maltego.IPTransform(
+		maltego.CountPacketsContactIPs,
+		func(trx *maltego.MaltegoTransform, profile *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
+			if profile.MacAddr == mac {
+				for _, ip := range profile.Contacts {
+					if ip.Addr == ipaddr {
+						if len(ip.SNIs) != 0 {
+							for sni, count := range ip.SNIs {
+								ent := trx.AddEntity("maltego.Domain", sni)
+								ent.SetType("maltego.Domain")
+								ent.SetValue(sni)
 
-	lt := maltego.ParseLocalArguments(os.Args)
-	profilesFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
-	}
-
-	f, err := os.Open(profilesFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// check if its an audit record file
-	if !strings.HasSuffix(f.Name(), ".ncap.gz") && !strings.HasSuffix(f.Name(), ".ncap") {
-		log.Fatal("input file must be an audit record file")
-	}
-
-	r, err := netcap.Open(profilesFile, netcap.DefaultBufferSize)
-	if err != nil {
-		panic(err)
-	}
-
-	// read netcap header
-	header := r.ReadHeader()
-	if header.Type != types.Type_NC_DeviceProfile {
-		panic("file does not contain DeviceProfile records: " + header.Type.String())
-	}
-
-	var (
-		profile = new(types.DeviceProfile)
-		pm  proto.Message
-		ok  bool
-		trx = maltego.MaltegoTransform{}
-	)
-	pm = profile
-
-	if _, ok = pm.(types.AuditRecord); !ok {
-		panic("type does not implement types.AuditRecord interface")
-	}
-
-	for {
-		err := r.Next(profile)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			break
-		} else if err != nil {
-			panic(err)
-		}
-
-		if profile.MacAddr == mac {
-			for _, ip := range profile.Contacts {
-				if ip.Addr == ipaddr {
-					if len(ip.SNIs) != 0 {
-						for sni, count := range ip.SNIs {
-							ent := trx.AddEntity("maltego.Domain", sni)
-							ent.SetType("maltego.Domain")
-							ent.SetValue(sni)
-
-							di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
-							ent.AddDisplayInformation(di, "Other")
-							ent.SetLinkColor("#000000")
-							ent.SetLinkThickness(maltego.GetThickness(count))
+								di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
+								ent.AddDisplayInformation(di, "Netcap Info")
+								ent.SetLinkColor("#000000")
+								ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
+							}
 						}
 					}
 				}
+				// TODO: range device ips?
 			}
-			// TODO: range device ips?
-		}
-	}
-
-	trx.AddUIMessage("completed!","Inform")
-	fmt.Println(trx.ReturnOutput())
+		},
+	)
 }
