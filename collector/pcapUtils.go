@@ -40,6 +40,13 @@ func (c *Collector) closePcapFiles() error {
 		return err
 	}
 
+	if err := c.unknownPcapFile.Sync(); err != nil {
+		return err
+	}
+	if err := c.unknownPcapFile.Close(); err != nil {
+		return err
+	}
+
 	// if file is empty, or a pcap with just the header
 	if i.Size() == 0 || i.Size() == 24 {
 		//println("removing", fd.Name())
@@ -47,13 +54,6 @@ func (c *Collector) closePcapFiles() error {
 		if err != nil {
 			return errors.Wrap(err, "failed to remove file: "+c.unknownPcapFile.Name())
 		}
-	}
-
-	if err := c.unknownPcapFile.Sync(); err != nil {
-		return err
-	}
-	if err := c.unknownPcapFile.Close(); err != nil {
-		return err
 	}
 
 	// errors.pcap
@@ -67,6 +67,13 @@ func (c *Collector) closePcapFiles() error {
 		return err
 	}
 
+	if err := c.errorsPcapFile.Sync(); err != nil {
+		return err
+	}
+	if err := c.errorsPcapFile.Close(); err != nil {
+		return err
+	}
+
 	// if file is empty, or a pcap with just the header
 	if i.Size() == 0 || i.Size() == 24 {
 		//println("removing", fd.Name())
@@ -74,12 +81,7 @@ func (c *Collector) closePcapFiles() error {
 			return err
 		}
 	}
-	if err := c.errorsPcapFile.Sync(); err != nil {
-		return err
-	}
-	if err := c.errorsPcapFile.Close(); err != nil {
-		return err
-	}
+
 	return nil
 }
 
