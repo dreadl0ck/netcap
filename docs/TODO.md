@@ -13,9 +13,6 @@
 - extract http parameters + values: GetHTTPParameters
 
 - update DisplayInformation to allow tracking updates to an entity over time
-- calculate min/max/5 for line thickness
-
-- add zeus command to compile executables for mac/linux/windows
 - export entities and transforms 
 
 - net.split: split pcap files by days, possibly also hours

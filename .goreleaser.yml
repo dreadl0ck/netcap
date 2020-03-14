@@ -218,6 +218,361 @@ builds:
     - amd64
     - arm
     - arm64
+## MALTEGO
+## Plugins
+#
+-
+  main: ./cmd/maltego/GetApplications
+  id: GetApplications
+  binary: GetApplications
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetDeviceContacts
+  id: GetDeviceContacts
+  binary: GetDeviceContacts
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetDeviceIPs
+  id: GetDeviceIPs
+  binary: GetDeviceIPs
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetDeviceProfiles
+  id: GetDeviceProfiles
+  binary: GetDeviceProfiles
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetDevices
+  id: GetDevices
+  binary: GetDevices
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetDNSQuestions
+  id: GetDNSQuestions
+  binary: GetDNSQuestions
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetDstPorts
+  id: GetDstPorts
+  binary: GetDstPorts
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetGeolocation
+  id: GetGeolocation
+  binary: GetGeolocation
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetHTTPContentTypes
+  id: GetHTTPContentTypes
+  binary: GetHTTPContentTypes
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetHTTPHosts
+  id: GetHTTPHosts
+  binary: GetHTTPHosts
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetHTTPServerNames
+  id: GetHTTPServerNames
+  binary: GetHTTPServerNames
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetHTTPStatusCodes
+  id: GetHTTPStatusCodes
+  binary: GetHTTPStatusCodes
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetHTTPURLs
+  id: GetHTTPURLs
+  binary: GetHTTPURLs
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetHTTPUserAgents
+  id: GetHTTPUserAgents
+  binary: GetHTTPUserAgents
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetSNIs
+  id: GetSNIs
+  binary: GetSNIs
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
+-
+  main: ./cmd/maltego/GetSrcPorts
+  id: GetSrcPorts
+  binary: GetSrcPorts
+  env:
+    - CGO_ENABLED=1
+
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  goos:
+    - darwin
+    - windows
+
+  # Custom ldflags templates.
+  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+  ldflags:
+    - -L /usr/local/opt/libpcap/lib -s -w
+
+  # GOARCH to build for.
+  # For more info refer to: https://golang.org/doc/install/source#environment
+  # Defaults are 386 and amd64.
+  goarch:
+    - amd64
 
 brew:
   github:
