@@ -1,10 +1,7 @@
-FROM ubuntu:18.04 as builder
-RUN apt-get update
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository ppa:longsleep/golang-backports
-RUN apt-get update
-RUN apt-get install -y golang-go
-RUN apt install -y gcc libpcap-dev linux-headers-generic git vim
+FROM golang:1.13-alpine as builder
+RUN apk update
+RUN apk search ndpi
+RUN apk add --no-cache gcc libpcap-dev libnetfilter_queue-dev linux-headers musl-dev git vim
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -36,13 +33,10 @@ RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Versio
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetSNIs -i github.com/dreadl0ck/netcap/cmd/maltego/GetSNIs
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetSrcPorts -i github.com/dreadl0ck/netcap/cmd/maltego/GetSrcPorts
 
-FROM ubuntu:18.04
+FROM alpine:3.10.2
 ARG IPV6_SUPPORT=true
-RUN apt-get update
-RUN apt install -y libpcap-dev
-#RUN update-ca-certificates
+RUN apk add --no-cache ca-certificates iptables libpcap-dev libnetfilter_queue ${IPV6_SUPPORT:+ip6tables}
 WORKDIR /netcap
 COPY --from=builder /netcap .
 RUN ls -la
-CMD ["/bin/sh"]
-
+CMD ["/bin/ash"]
