@@ -1,10 +1,16 @@
 builds:
-- 
+-
   main: ./cmd/capture
   id: capture
   binary: net.capture
   env:
     - CGO_ENABLED=1
+    # experiments to compile godpi with nDPI module
+#    - CC=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-gcc
+#    - CXX=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-g++
+#    - LDFLAGS="-L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib"
+#    - CPPFLAGS="-I/usr/local/opt/libpcap/include -I/usr/local/Cellar/liblinear/2.30/include"
+#    - PKG_CONFIG_PATH="/usr/local/opt/libpcap/lib/pkgconfig"
 
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:

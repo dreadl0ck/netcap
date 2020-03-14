@@ -1,5 +1,6 @@
 # TODOs
 
+- fully integrate libprotoident codes
 - flag.FlagSet instead of cobra for subcommands?
 
 - fix windows: remove errors.pcap file in use error
