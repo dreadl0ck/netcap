@@ -1,19 +1,16 @@
 # TODOs
 
-- fully integrate libprotoident codes
+- maltego: GetDeviceProfiles: add ethertype of the pcap file that was used to generate the audit records as note 
+- go-dpi: fully integrate libprotoident codes
 - flag.FlagSet instead of cobra for subcommands?
-
-- fix windows: remove errors.pcap file in use error
-- windows: tar.gz decompression for releases fails?
 - http content type: detect and add second field 
 
 # maltego
 
-- warn if transformation produced more than 12 results 
-- point src to dst ports?
+- warn if transformation produced more than 12 results? 
+- link src to dst ports?
 - transferred files integration
-- add wrapper to reduce boilerplate code in plugins
-- http parameters + values
+- extract http parameters + values: GetHTTPParameters
 
 - update DisplayInformation to allow tracking updates to an entity over time
 - calculate min/max/5 for line thickness
