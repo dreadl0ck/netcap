@@ -14,9 +14,9 @@
 package encoder
 
 import (
-	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
+	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/tlsx"
 	"sync"
 
@@ -101,15 +101,7 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		}
 
 		// Application Layer: DPI
-		var uniqueResults = make(map[string]struct{})
-		flow, _ := godpi.GetPacketFlow(i.p)
-		results := godpi.ClassifyFlowAllModules(flow)
-
-		// when using all modules we might receive duplicate classifications
-		// so they will be deduplicated before counting them
-		for _, r := range results {
-			uniqueResults[string(r.Protocol)] = struct{}{}
-		}
+		uniqueResults := dpi.GetProtocols(i.p)
 		for proto := range uniqueResults {
 			p.Protocols[proto]++
 		}
@@ -172,14 +164,7 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 	}
 
 	// Application Layer: DPI
-	var uniqueResults = make(map[string]struct{})
-	flow, _ := godpi.GetPacketFlow(i.p)
-	results := godpi.ClassifyFlowAllModules(flow)
-	// when using all modules we might receive duplicate classifications
-	// so they will be deduplicated before counting them
-	for _, r := range results {
-		uniqueResults[string(r.Protocol)] = struct{}{}
-	}
+	uniqueResults := dpi.GetProtocols(i.p)
 	for proto := range uniqueResults {
 		protos[proto]++
 	}

@@ -19,6 +19,10 @@ github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1 h1:hYYY4lT/J
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
 github.com/dreadl0ck/go-dpi v0.0.0-20200309234442-9ee8ceebae78 h1:axH5c+ePbVndCDXBkzTXra4P2VW9lytzZ+t04BiKO/k=
 github.com/dreadl0ck/go-dpi v0.0.0-20200309234442-9ee8ceebae78/go.mod h1:ygzpshKgBvy4NjrQA+2RTHObjQceTqSBlhrJ87emEq8=
+github.com/dreadl0ck/go-dpi v0.0.0-20200314125343-b81305255650 h1:/pqrqGRNw8KEyaotUafegUBePToF4l0Xm5uU8oTf14g=
+github.com/dreadl0ck/go-dpi v0.0.0-20200314125343-b81305255650/go.mod h1:A1XL//Kcupt5gweOhhstLhu3zcSuw3Cj/M0xa3FyIOI=
+github.com/dreadl0ck/go-dpi v0.0.0-20200314132339-6f9677453da9 h1:wTWjfX9tikT9/L0l41lRrFkffXfkUxsYVj4GGffx+ec=
+github.com/dreadl0ck/go-dpi v0.0.0-20200314132339-6f9677453da9/go.mod h1:A1XL//Kcupt5gweOhhstLhu3zcSuw3Cj/M0xa3FyIOI=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557 h1:m/rxJiRUgei39RuIVBMPipyRGokYe534vBfuARBcLnU=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200311123819-c796be880f6d h1:ZTfH34XVD9T2X9734XcgoaSLRc3kP+QX5ouxmxnCmOQ=
