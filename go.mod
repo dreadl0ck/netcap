@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1
-	github.com/dreadl0ck/go-dpi v0.0.0-20200315114030-55b51cfd9e84
+	github.com/dreadl0ck/go-dpi v0.0.0-20200315202737-e92288ce288a
 	github.com/dreadl0ck/gopacket v1.1.16-0.20200315164012-8b5d3d6a4c74
 	github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e
 	github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78
@@ -14,7 +14,6 @@ require (
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.0
 	github.com/golang/protobuf v1.3.2
-	github.com/google/gopacket v1.1.17 // indirect
 	github.com/klauspost/compress v1.10.0 // indirect
 	github.com/klauspost/pgzip v1.2.1
 	github.com/kr/pretty v0.1.0 // indirect
@@ -25,7 +24,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
 	github.com/sirupsen/logrus v1.2.0
-	github.com/spf13/cobra v0.0.5
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0
