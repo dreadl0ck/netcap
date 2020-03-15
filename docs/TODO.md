@@ -2,7 +2,6 @@
 
 # maltego
 
-- GetDeviceProfiles: add ethertype of the pcap file that was used to generate the audit records as note
 - HTTP audit record: http content type: detect and add second field 
 - extract http parameters + values: GetHTTPParameters
 - link src to dst ports?
