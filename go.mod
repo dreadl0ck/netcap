@@ -6,7 +6,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1
 	github.com/dreadl0ck/go-dpi v0.0.0-20200315114030-55b51cfd9e84
-	github.com/dreadl0ck/gopacket v1.1.16-0.20200311123819-c796be880f6d
+	github.com/dreadl0ck/gopacket v1.1.16-0.20200315164012-8b5d3d6a4c74
 	github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e
 	github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78
 	github.com/dustin/go-humanize v1.0.0
@@ -14,6 +14,7 @@ require (
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.0
 	github.com/golang/protobuf v1.3.2
+	github.com/google/gopacket v1.1.17 // indirect
 	github.com/klauspost/compress v1.10.0 // indirect
 	github.com/klauspost/pgzip v1.2.1
 	github.com/kr/pretty v0.1.0 // indirect
