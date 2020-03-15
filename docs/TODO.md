@@ -1,21 +1,17 @@
 # TODOs
 
-- use nDPI 3.2 and libpotoident latest version
-- maltego: GetDeviceProfiles: add ethertype of the pcap file that was used to generate the audit records as note 
-
-- http content type: detect and add second field 
-- extract http parameters + values: GetHTTPParameters
-
 # maltego
 
-- warn if transformation produced more than 12 results? 
+- GetDeviceProfiles: add ethertype of the pcap file that was used to generate the audit records as note
+- HTTP audit record: http content type: detect and add second field 
+- extract http parameters + values: GetHTTPParameters
 - link src to dst ports?
-- transferred files integration
+- transferred files integration: custom type
 - update DisplayInformation to allow tracking updates to an entity over time
-- export entities and transforms
 
 ## General
 
+- use nDPI 3.2 and libpotoident latest version
 - test on the ultimate pcap file
 - move cobra experiments to feature branch and verify go get works
 - log num profiles
