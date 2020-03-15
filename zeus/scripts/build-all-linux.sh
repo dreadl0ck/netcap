@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # musl
-VERSION=${VERSION} zeus/scripts/build-all-alpine-docker.sh
+#VERSION=${VERSION} zeus/scripts/build-all-alpine-docker.sh
 
 # glibc
 VERSION=${VERSION} zeus/scripts/build-all-ubuntu-docker.sh
