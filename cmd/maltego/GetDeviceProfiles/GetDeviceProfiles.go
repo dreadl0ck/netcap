@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/gopacket/pcap"
 	"github.com/dreadl0ck/netcap"
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"github.com/dreadl0ck/netcap/collector"
@@ -85,6 +86,12 @@ func main() {
 		}
 	}
 
+	r, err := pcap.OpenOffline(inputFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer r.Close()
+
 	// restore stdout
 	os.Stdout = stdout
 
@@ -109,7 +116,7 @@ func main() {
 
 	ent.SetLinkLabel("DeviceProfiles") // TODO: add num profiles here?
 	ent.SetLinkColor("#000000")
-	ent.SetNote("File Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10)) // TODO: add link type of input pcap!
+	ent.SetNote("File Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String())
 
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())
