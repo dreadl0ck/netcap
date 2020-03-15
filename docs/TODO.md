@@ -1,20 +1,25 @@
 # TODOs
 
+- use nDPI 3.2 and libpotoident latest version
 - maltego: GetDeviceProfiles: add ethertype of the pcap file that was used to generate the audit records as note 
-- go-dpi: fully integrate libprotoident codes
-- flag.FlagSet instead of cobra for subcommands?
+
 - http content type: detect and add second field 
+- extract http parameters + values: GetHTTPParameters
 
 # maltego
 
 - warn if transformation produced more than 12 results? 
 - link src to dst ports?
 - transferred files integration
-- extract http parameters + values: GetHTTPParameters
-
 - update DisplayInformation to allow tracking updates to an entity over time
-- export entities and transforms 
+- export entities and transforms
 
+## General
+
+- test on the ultimate pcap file
+- move cobra experiments to feature branch and verify go get works
+- log num profiles
+- flag.FlagSet instead of cobra for subcommands? 
 - net.split: split pcap files by days, possibly also hours
 - label tool: display a warning when nothing is there for mapping
 - use new 1.13 strings.ToValidUTF8()
