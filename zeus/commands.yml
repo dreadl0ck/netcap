@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.4.7
+    VERSION: 0.4.8
 
 # command data
 commands:
@@ -119,9 +119,9 @@ commands:
         description: test run to release a new version
         dependencies:
             - gen-version
-            #- check-version
+            - version-bump-test
             - gen-proto-release
-        exec: goreleaser release --rm-dist --skip-publish --skip-validate #--debug
+        exec: goreleaser release --rm-dist --skip-publish --skip-validate; zeus version-bump-test-undo
 
     ## Utils
     ##
@@ -187,6 +187,20 @@ commands:
             git push origin v${VERSION}
 
             echo "[INFO] version bumped to v${VERSION}"
+
+    # bump the git version tag
+    version-bump-test:
+        description: bump framework version and add git version tag
+        exec: |
+            git tag -a v${VERSION} -m "v${VERSION} release test"
+            echo "[INFO] added test tag v${VERSION}"
+
+    # bump the git version tag
+    version-bump-test-undo:
+        description: bump framework version and add git version tag
+        exec: |
+            git tag -d v${VERSION}
+            echo "[INFO] removed test tag v${VERSION}"
     
     static-analyze:
         description: run the golangci-lint static source code analyzer
