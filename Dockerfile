@@ -31,7 +31,7 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-ENV VERSION "0.4.7"
+ENV VERSION "0.4.8"
 
 ENV CFLAGS -I/usr/local/lib
 ENV CPPFLAGS -I/usr/local/lib
