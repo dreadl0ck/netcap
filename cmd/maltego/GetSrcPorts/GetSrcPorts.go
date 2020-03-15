@@ -16,14 +16,14 @@ func main() {
 		nil,
 		func(trx *maltego.MaltegoTransform, profile *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
-				for _, ip := range profile.Contacts {
-					if ip.Addr == ipaddr {
-						for portStr, port := range ip.DstPorts {
-							addSourcePort(trx, portStr, port, minPackets, maxPackets, ip)
-						}
-						break
-					}
-				}
+				//for _, ip := range profile.Contacts {
+				//	if ip.Addr == ipaddr {
+				//		for portStr, port := range ip.DstPorts {
+				//			addSourcePort(trx, portStr, port, minPackets, maxPackets, ip)
+				//		}
+				//		break
+				//	}
+				//}
 				for _, ip := range profile.DeviceIPs {
 					if ip.Addr == ipaddr {
 						for portStr, port := range ip.DstPorts {
