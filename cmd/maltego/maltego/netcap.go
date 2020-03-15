@@ -119,7 +119,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 		err = r.Close()
 		if err != nil {
-			log.Fatal("failed to close audit record file: ", err)
+			log.Println("failed to close audit record file: ", err)
 		}
 	}
 
@@ -145,7 +145,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 	err = r.Close()
 	if err != nil {
-		log.Fatal("failed to close audit record file: ", err)
+		log.Println("failed to close audit record file: ", err)
 	}
 
 	trx.AddUIMessage("completed!","Inform")
@@ -218,7 +218,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 
 		err = r.Close()
 		if err != nil {
-			log.Fatal("failed to close audit record file: ", err)
+			log.Println("failed to close audit record file: ", err)
 		}
 
 		r, err = netcap.Open(profilesFile, netcap.DefaultBufferSize)
@@ -243,7 +243,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 
 	err = r.Close()
 	if err != nil {
-		log.Fatal("failed to close audit record file: ", err)
+		log.Println("failed to close audit record file: ", err)
 	}
 
 	trx.AddUIMessage("completed!","Inform")
@@ -313,7 +313,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 
 		err = r.Close()
 		if err != nil {
-			log.Fatal("failed to close audit record file: ", err)
+			log.Println("failed to close audit record file: ", err)
 		}
 	}
 
@@ -339,7 +339,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 
 	err = r.Close()
 	if err != nil {
-		log.Fatal("failed to close audit record file: ", err)
+		log.Println("failed to close audit record file: ", err)
 	}
 
 	trx.AddUIMessage("completed!","Inform")
