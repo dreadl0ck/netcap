@@ -237,12 +237,15 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	}
 	res.Body.Close()
 
+	// Restore body so it can be read again
+	res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
 	sym := ","
 	if res.ContentLength > 0 && res.ContentLength != int64(s) {
 		sym = "!="
 	}
 
-	// determine content type
+	// determine content type for debug log
 	contentType, ok := res.Header["Content-Type"]
 	if !ok {
 		contentType = []string{http.DetectContentType(body)}
@@ -262,7 +265,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 
 	// write responses to disk if configured
 	if (err == nil || *writeincomplete) && *output != "" {
-		return h.saveResponse(err, body, encoding, h.ident)
+		return h.saveFile(err, body, encoding, h.ident)
 	}
 
 	return nil
@@ -294,34 +297,167 @@ func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 }
 
 func fileExtensionForContentType(typ string) string {
+
+	// types from: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
 	switch typ {
 	case "application/x-gzip":
 		return ".gz"
-	case "image/jpeg":
-		return ".jpeg"
 	case "image/jpg":
 		return ".jpg"
-	case "image/gif":
-		return ".gif"
-	case "image/png":
-		return ".png"
-	case "text/html":
-		return ".html"
-	case "text/javascript":
-		return ".js"
-	case "text/css":
-		return ".css"
-	case "font/woff2":
-		return ".woff"
 	case "text/plain; charset=utf-8":
 		return ".txt"
+	case "text/plain; charset=UTF-8":
+		return ".txt"
+	case "text/html; charset=utf-8":
+		return ".html"
+	case "text/html; charset=UTF-8":
+		return ".html"
+	case "image/x-icon":
+		return ".ico"
+	case "audio/aac":
+		return ".aac"
+	case "application/x-abiword":
+		return ".abw"
+	case "application/x-freearc":
+		return ".arc"
+	case "video/x-msvideo":
+		return ".avi"
+	case "application/vnd.amazon.ebook":
+		return ".azw"
+	case "application/octet-stream":
+		return ".bin"
+	case "image/bmp":
+		return ".bmp"
+	case "application/x-bzip":
+		return ".bz"
+	case "application/x-bzip2":
+		return ".bz2"
+	case "application/x-csh":
+		return ".csh"
+	case "text/css":
+		return ".css"
+	case "text/csv":
+		return ".csv"
+	case "application/msword":
+		return ".doc"
+	case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+		return ".docx"
+	case "application/vnd.ms-fontobject":
+		return ".eot"
+	case "application/epub+zip":
+		return ".epub"
+	case "application/gzip":
+		return ".gz"
+	case "image/gif":
+		return ".gif"
+	case "text/html":
+		return ".html"
+	case "image/vnd.microsoft.icon":
+		return ".ico"
+	case "text/calendar":
+		return ".ics"
+	case "application/java-archive":
+		return ".jar"
+	case "image/jpeg":
+		return ".jpg"
+	case "text/javascript":
+		return ".js"
+	case "application/json":
+		return ".json"
+	case "application/ld+json":
+		return ".jsonld"
+	case "audio/midi audio/x-midi":
+		return ".midi"
+	case "audio/mpeg":
+		return ".mp3"
+	case "video/mpeg":
+		return ".mpeg"
+	case "application/vnd.apple.installer+xml":
+		return ".mpkg"
+	case "application/vnd.oasis.opendocument.presentation":
+		return ".odp"
+	case "application/vnd.oasis.opendocument.spreadsheet":
+		return ".ods"
+	case "application/vnd.oasis.opendocument.text":
+		return ".odt"
+	case "audio/ogg":
+		return ".oga"
+	case "video/ogg":
+		return ".ogv"
+	case "application/ogg":
+		return ".ogx"
+	case "audio/opus":
+		return ".opus"
+	case "font/otf":
+		return ".otf"
+	case "image/png":
+		return ".png"
+	case "application/pdf":
+		return ".pdf"
+	case "application/php":
+		return ".php"
+	case "application/vnd.ms-powerpoint":
+		return ".ppt"
+	case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+		return ".pptx"
+	case "application/vnd.rar":
+		return ".rar"
+	case "application/rtf":
+		return ".rtf"
+	case "application/x-sh":
+		return ".sh"
+	case "image/svg+xml":
+		return ".svg"
+	case "application/x-shockwave-flash":
+		return ".swf"
+	case "application/x-tar":
+		return ".tar"
+	case "image/tiff":
+		return ".tiff"
+	case "video/mp2t":
+		return ".ts"
+	case "font/ttf":
+		return ".ttf"
 	case "text/plain":
 		return ".txt"
+	case "application/vnd.visio":
+		return ".vsd"
+	case "audio/wav":
+		return ".wav"
+	case "audio/webm":
+		return ".weba"
+	case "video/webm":
+		return ".webm"
+	case "image/webp":
+		return ".webp"
+	case "font/woff":
+		return ".woff"
+	case "font/woff2":
+		return ".woff2"
+	case "application/xhtml+xml":
+		return ".xhtml"
+	case "application/vnd.ms-excel":
+		return ".xls"
+	case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+		return ".xlsx"
+	case "application/xml":
+		return ".xml"
+	case "application/vnd.mozilla.xul+xml":
+		return ".xul"
+	case "application/zip":
+		return ".zip"
+	case "video/3gpp":
+		return ".3gp"
+	case "video/3gpp2":
+		return ".3g2"
+	case "application/x-7z-compressed":
+		return ".7z"
 	}
+
 	return ""
 }
 
-func (h *httpReader) saveResponse(err error, body []byte, encoding []string, ident string) error {
+func (h *httpReader) saveFile(err error, body []byte, encoding []string, ident string) error {
 	var (
 		ctype = http.DetectContentType(body)
 		root  = path.Join(*output, ctype)
@@ -350,9 +486,11 @@ func (h *httpReader) saveResponse(err error, body []byte, encoding []string, ide
 			break
 		}
 
-		target = filepath.Clean(path.Base(ident)) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype)
+		target = path.Join(root, filepath.Clean(ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
 		n++
 	}
+
+	//fmt.Println("saving file:", target)
 
 	f, err := os.Create(target)
 	if err != nil {
@@ -408,8 +546,12 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	}
 	req.Body.Close()
 
+	// Restore body so it can be read again
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
 	logInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
 
+	// TODO: create a wrapper struct that contains these fields and keeps a reference to the http.Request
 	// set some infos for netcap on the HTTP request header
 	req.Header.Set("netcap-ts", utils.TimeToString(h.parent.firstPacket))
 	req.Header.Set("netcap-clientip", h.parent.net.Src().String())
@@ -423,6 +565,13 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	h.parent.Lock()
 	h.parent.requests = append(h.parent.requests, req)
 	h.parent.Unlock()
+
+	if req.Method == "POST" {
+		// write request payload to disk if configured
+		if (err == nil || *writeincomplete) && *output != "" {
+			return h.saveFile(err, body, req.Header["Content-Encoding"], h.ident)
+		}
+	}
 
 	return nil
 }

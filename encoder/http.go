@@ -14,7 +14,10 @@
 package encoder
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -270,6 +273,28 @@ func setRequest(h *types.HTTP, req *http.Request) {
 	h.ReqContentLength = int32(req.ContentLength)
 	h.ReqContentEncoding = req.Header.Get("Content-Encoding")
 
+	h.ContentType = req.Header.Get("Content-Type")
+
+	// detect content type for HTTP POST
+	if req.Method == "POST" {
+
+		// decompress if required
+		body, err := ioutil.ReadAll(req.Body)
+		if err == nil {
+			if h.ReqContentEncoding == "gzip" {
+				r, err := gzip.NewReader(bytes.NewReader(body))
+				if err == nil {
+					body, err = ioutil.ReadAll(r)
+					if err == nil {
+						h.ReqContentTypeDetected = http.DetectContentType(body)
+					}
+				}
+			} else {
+				h.ReqContentTypeDetected = http.DetectContentType(body)
+			}
+		}
+	}
+
 	// manually replace commas, to avoid breaking them the CSV
 	// use the -check flag to validate the generated CSV output and find errors quickly
 	h.UserAgent = strings.Replace(req.UserAgent(), ",", "(comma)", -1)
@@ -282,12 +307,40 @@ func setRequest(h *types.HTTP, req *http.Request) {
 }
 
 func newHTTPFromResponse(res *http.Response) *types.HTTP {
+
+	var detected string
+	var contentLength = int32(res.ContentLength)
+
+	// read body data
+	body, err := ioutil.ReadAll(res.Body)
+	if err == nil {
+
+		if contentLength == -1 {
+			// determine length manually
+			contentLength = int32(len(body))
+		}
+
+		// decompress payload if required
+		if res.Header.Get("Content-Encoding") == "gzip" {
+			r, err := gzip.NewReader(bytes.NewReader(body))
+			if err == nil {
+				body, err = ioutil.ReadAll(r)
+				if err == nil {
+					detected = http.DetectContentType(body)
+				}
+	 		}
+		} else {
+			detected = http.DetectContentType(body)
+		}
+	}
+
 	return &types.HTTP{
-		ResContentLength:   int32(res.ContentLength),
-		ContentType:        res.Header.Get("Content-Type"),
+		ResContentLength:   contentLength,
+		ResContentType:     res.Header.Get("Content-Type"),
 		StatusCode:         int32(res.StatusCode),
 		ServerName:         res.Header.Get("Server"),
 		ResContentEncoding: res.Header.Get("Content-Encoding"),
+		ResContentTypeDetected: detected,
 	}
 }
 

@@ -981,6 +981,9 @@ message HTTP {
     int64  DNSDoneAfter        = 21;
     int64  FirstByteAfter      = 22;
     int64  TLSDoneAfter        = 23;
+
+    string ContentTypeDetected    = 24;
+    string ResContentTypeDetected = 25;
 }
 
 // TLS Client Hello
