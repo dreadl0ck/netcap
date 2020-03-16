@@ -15,7 +15,7 @@ import (
 func main() {
 	maltego.DeviceProfileTransform(
 		maltego.CountPacketsContactIPs,
-		func(trx *maltego.MaltegoTransform, profile *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string) {
 			if profile.MacAddr == mac {
 
 				for _, ip := range profile.Contacts {

@@ -8,7 +8,7 @@ import (
 func main() {
 	maltego.HTTPTransform(
 		nil,
-		func(trx *maltego.MaltegoTransform, http *types.HTTP, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
 				if http.Host != "" {
 					ent := trx.AddEntity("maltego.Website", http.Host)

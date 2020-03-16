@@ -2,20 +2,23 @@
 
 # maltego
 
-- extract http parameters + values: GetHTTPParameters
-- GetHTTP Files
+- GetFiles
+- GetHTTPCookies
+
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
 - SMTP audit record type
+- transform progress indication?
+- define triggers to highlight links in red
 
 ## General
 
+- single binary as plugin / framework
 - create profiles for Link Layer only devices as well
 - use nDPI 3.2 and libpotoident latest version
 - test on the ultimate pcap file
-- move cobra experiments to feature branch and verify go get works
-- log num profiles
-- flag.FlagSet instead of cobra for subcommands? 
+
+- flag.FlagSet instead of cobra for subcommands?
 - net.split: split pcap files by days, possibly also hours
 - label tool: display a warning when nothing is there for mapping
 - use new 1.13 strings.ToValidUTF8()

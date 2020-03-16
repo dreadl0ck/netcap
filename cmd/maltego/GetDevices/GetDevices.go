@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	maltego.DeviceProfileTransform(maltego.CountPacketsDevices, func(trx *maltego.MaltegoTransform, profile *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string) {
+	maltego.DeviceProfileTransform(maltego.CountPacketsDevices, func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string) {
 
 		ident := profile.MacAddr + "\n" + profile.DeviceManufacturer
 		ent := trx.AddEntity("netcap.Device", ident)

@@ -151,7 +151,8 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())
 }
-type DeviceProfileTransformationFunc = func(trx *MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
+
+type DeviceProfileTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
 
 func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformationFunc) {
 
@@ -238,7 +239,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 			panic(err)
 		}
 
-		transform(&trx, profile, minPackets, maxPackets, profilesFile, mac)
+		transform(lt, &trx, profile, minPackets, maxPackets, profilesFile, mac)
 	}
 
 	err = r.Close()
@@ -250,7 +251,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 	fmt.Println(trx.ReturnOutput())
 }
 
-type HTTPTransformationFunc = func(trx *MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
+type HTTPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
 
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 
@@ -334,7 +335,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 			panic(err)
 		}
 
-		transform(&trx, http, minPackets, maxPackets, profilesFile, ipaddr)
+		transform(lt, &trx, http, minPackets, maxPackets, profilesFile, ipaddr)
 	}
 
 	err = r.Close()
