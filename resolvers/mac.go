@@ -62,7 +62,7 @@ func InitMACResolver() {
 		sums++
 	}
 
-	fmt.Println("read", sums, "mac summaries")
+	fmt.Println("loaded", sums, "OUI summaries")
 }
 
 // LookupManufacturer resolves a MAC addr to the manufacturer

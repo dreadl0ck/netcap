@@ -34,6 +34,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	start := time.Now()
+
 	baseDir := strings.TrimSuffix(inputFile, ".pcap")
 	os.MkdirAll(baseDir, 0700)
 
@@ -116,7 +118,7 @@ func main() {
 
 	ent.SetLinkLabel("DeviceProfiles") // TODO: add num profiles here?
 	ent.SetLinkColor("#000000")
-	ent.SetNote("File Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String())
+	ent.SetNote("File Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
 
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())

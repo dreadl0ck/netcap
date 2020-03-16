@@ -962,7 +962,7 @@ message HTTP {
 	string Host                = 4;
 	string UserAgent           = 5;
 	string Referer             = 6;
-	repeated string ReqCookies = 7;
+    repeated HTTPCookie ReqCookies = 7;
 	int32  ReqContentLength    = 8;
     string URL                 = 9;
     int32  ResContentLength    = 10;
@@ -973,7 +973,7 @@ message HTTP {
     string ReqContentEncoding  = 15;
     string ResContentEncoding  = 16;
     string ServerName          = 17;
-    repeated string ResCookies = 18;
+    repeated HTTPCookie ResCookies = 18;
     string ResContentType      = 19;
 
     // Time Deltas (Nanoseconds)
@@ -985,6 +985,18 @@ message HTTP {
 
     string ContentTypeDetected    = 24;
     string ResContentTypeDetected = 25;
+}
+
+message HTTPCookie {
+    string Name     = 1;
+    string Value    = 2;
+    string Path     = 3;       // optional
+    string Domain   = 4;     // optional
+	uint64 Expires  = 5;    // optional
+    int32  MaxAge   = 6;
+	bool   Secure   = 7;
+	bool   HttpOnly = 8;
+	int32  SameSite = 9;
 }
 
 // TLS Client Hello

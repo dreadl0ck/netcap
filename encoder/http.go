@@ -304,6 +304,28 @@ func setRequest(h *types.HTTP, req *http.Request) {
 	// retrieve ip adresses set on the request while processing
 	h.SrcIP = req.Header.Get("netcap-clientip")
 	h.DstIP = req.Header.Get("netcap-serverip")
+
+	h.ReqCookies = readCookies(req.Cookies())
+}
+
+func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
+	var cks = make([]*types.HTTPCookie, 0)
+	for _, c := range cookies {
+		if c != nil {
+			cks = append(cks, &types.HTTPCookie{
+				Name:     c.Name,
+				Value:    c.Value,
+				Path:     c.Path,
+				Domain:   c.Domain,
+				Expires:  uint64(c.Expires.Unix()),
+				MaxAge:   int32(c.MaxAge),
+				Secure:   c.Secure,
+				HttpOnly: c.HttpOnly,
+				SameSite: int32(c.SameSite),
+			})
+		}
+	}
+	return cks
 }
 
 func newHTTPFromResponse(res *http.Response) *types.HTTP {
@@ -341,6 +363,7 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		ServerName:         res.Header.Get("Server"),
 		ResContentEncoding: res.Header.Get("Content-Encoding"),
 		ResContentTypeDetected: detected,
+		ResCookies:         readCookies(res.Cookies()),
 	}
 }
 

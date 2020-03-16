@@ -116,10 +116,8 @@ func InitServiceDB() {
 		}
 	}
 
-	log.Println(len(tcpPortMap), " TCP service records loaded.")
-	//log.Println(tcpPortMap)
-	log.Println(len(udpPortMap), " UDP service records loaded.")
-	//log.Println(udpPortMap)
+	fmt.Println("loaded", len(tcpPortMap), "TCP service records")
+	fmt.Println("loaded", len(udpPortMap), "UDP service records")
 }
 
 func LookupServiceByPort(port int, typ string) string {
