@@ -12,19 +12,24 @@ func main() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
-				if http.URL != "" {
 
-					bareURL := http.Host + StripQueryString(http.URL)
-					log.Println(bareURL)
+				url, err := url.Parse(http.URL)
+				if err != nil {
+					log.Println(err)
+					return
+				}
 
-					ent := trx.AddEntity("maltego.URL", bareURL)
-					ent.SetType("maltego.URL")
-					ent.SetValue(bareURL)
+				// map[string][]string
+				for key, _ := range url.Query() {
+					ent := trx.AddEntity("netcap.HTTPParameter", key)
+					ent.SetType("netcap.HTTPParameter")
+					ent.SetValue(key)
 
-					ent.AddProperty("url", "URL", "strict", bareURL)
-
-					di := "<h3>URL</h3><p>Timestamp: " + http.Timestamp + "</p>"
+					di := "<h3>HTTP Parameter</h3><p>Timestamp: " + http.Timestamp + "</p>"
 					ent.AddDisplayInformation(di, "Netcap Info")
+
+					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+					ent.AddProperty("path", "Path", "strict", profilesFile)
 
 					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
 					ent.SetLinkColor("#000000")
@@ -33,13 +38,4 @@ func main() {
 			}
 		},
 	)
-}
-
-func StripQueryString(inputUrl string) string {
-	u, err := url.Parse(inputUrl)
-	if err != nil {
-		panic(err)
-	}
-	u.RawQuery = ""
-	return u.String()
 }
