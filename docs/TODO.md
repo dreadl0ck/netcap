@@ -2,10 +2,8 @@
 
 # maltego
 
-- HTTP audit record: http content type: detect and add second field 
-- extract http parameters + values: GetHTTPParameters
+ - extract http parameters + values: GetHTTPParameters
 - link src to dst ports?
-- transferred files integration: custom type
 - update DisplayInformation to allow tracking updates to an entity over time
 
 ## General

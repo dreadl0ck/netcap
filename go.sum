@@ -10,12 +10,6 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1 h1:hYYY4lT/JWxWwaG0hmVAM24u6ElfO1StNGnLgWW/HHk=
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
-github.com/dreadl0ck/go-dpi v0.0.0-20200315114030-55b51cfd9e84 h1:6u4aK+/2DnJcPHNH7FrKkgphw8x31Kvli+uJiyr/+9I=
-github.com/dreadl0ck/go-dpi v0.0.0-20200315114030-55b51cfd9e84/go.mod h1:ygzpshKgBvy4NjrQA+2RTHObjQceTqSBlhrJ87emEq8=
-github.com/dreadl0ck/go-dpi v0.0.0-20200315202737-e92288ce288a h1:IfAiSsRZFZ0l+FC9W3oZzS9fg5mHkQoku98PwCLJRtU=
-github.com/dreadl0ck/go-dpi v0.0.0-20200315202737-e92288ce288a/go.mod h1:ygzpshKgBvy4NjrQA+2RTHObjQceTqSBlhrJ87emEq8=
-github.com/dreadl0ck/go-dpi v0.0.0-20200315212118-041d3383399a h1:2CKrCL5rZxhNRObdVYLW8+3I4yteaQHRnoKXda+BWZ4=
-github.com/dreadl0ck/go-dpi v0.0.0-20200315212118-041d3383399a/go.mod h1:ygzpshKgBvy4NjrQA+2RTHObjQceTqSBlhrJ87emEq8=
 github.com/dreadl0ck/go-dpi v0.0.0-20200315212222-897615d860af h1:ow3ptziedBsb50LzscDJYJIpofUu2cUL25eJEG+rAik=
 github.com/dreadl0ck/go-dpi v0.0.0-20200315212222-897615d860af/go.mod h1:ygzpshKgBvy4NjrQA+2RTHObjQceTqSBlhrJ87emEq8=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557 h1:m/rxJiRUgei39RuIVBMPipyRGokYe534vBfuARBcLnU=

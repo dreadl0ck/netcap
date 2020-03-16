@@ -135,6 +135,7 @@ enum Type {
     NC_CIP                         = 87;
     NC_ENIP                        = 88;
     NC_DeviceProfile               = 89;
+    NC_File                        = 90;
 }
 
 /*
@@ -1711,4 +1712,16 @@ message IPProfile {
     map<string, Port>      DstPorts        = 12; // Ports to bytes
     map<string, Port>      SrcPorts        = 13; // Ports to bytes
     map<string, int64>     SNIs            = 14;
+}
+
+message File {
+    string Timestamp       = 1;
+    string Name            = 2;
+    int64  Length          = 3;
+    string Hash            = 4;
+    string Location        = 5;
+    string Ident           = 6;
+    string Source          = 7;
+    string ContentType     = 8;
+    PacketContext Context  = 9;
 }

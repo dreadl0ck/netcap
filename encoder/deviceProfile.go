@@ -14,16 +14,14 @@
 package encoder
 
 import (
-	"github.com/dreadl0ck/netcap/dpi"
-	"log"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
+	"log"
+	"sync"
+	"sync/atomic"
 )
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
@@ -51,8 +49,8 @@ var (
 	// flags for flushing intervals - no flushing for now.
 	//flagProfileFlushInterval = flag.Int("profile-flush-interval", 10000, "flush connections every X flows")
 
-	profileFlushInterval int64
-	profileTimeOut       time.Duration
+	//profileFlushInterval int64
+	//profileTimeOut       time.Duration
 )
 
 // GetDeviceProfile fetches a known profile and updates it or returns a new one

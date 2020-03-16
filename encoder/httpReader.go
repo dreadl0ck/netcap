@@ -48,6 +48,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
+	"github.com/dreadl0ck/cryptoutils"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -265,7 +266,24 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 
 	// write responses to disk if configured
 	if (err == nil || *writeincomplete) && *output != "" {
-		return h.saveFile(err, body, encoding, h.ident)
+
+		var (
+			name = "unknown"
+			numResponses = len(h.parent.responses)
+		)
+
+		// check if there is a matching request for the current stream
+		if len(h.parent.requests) >= numResponses {
+
+			// fetch it
+			req := h.parent.requests[numResponses-1]
+			if req != nil {
+				name = path.Base(req.URL.Path)
+			}
+		}
+
+		// save file to disk
+		return h.saveFile("HTTP RESPONSE", name, err, body, encoding)
 	}
 
 	return nil
@@ -457,20 +475,39 @@ func fileExtensionForContentType(typ string) string {
 	return ""
 }
 
-func (h *httpReader) saveFile(err error, body []byte, encoding []string, ident string) error {
+func (h *httpReader) saveFile(source, name string, err error, body []byte, encoding []string) error {
 
 	// prevent saving zero bytes
 	if len(body) == 0 {
 		return nil
 	}
 
+	if name == "" || name == "/" {
+		name = "unknown"
+	}
+
 	var (
+		fileName string
+
+		// detected content type
 		ctype = http.DetectContentType(body)
+
+		// root path
 		root  = path.Join(*output, ctype)
-		base  = filepath.Clean(path.Base(ident)) + fileExtensionForContentType(ctype)
+
+		// file extension
+		ext = fileExtensionForContentType(ctype)
+
+		// file basename
+		base  = filepath.Clean(name + "-" + path.Base(h.ident)) + ext
 	)
 	if err != nil {
 		base = "incomplete-" + base
+	}
+	if filepath.Ext(name) == "" {
+		fileName = name + ext
+	} else {
+		fileName = name
 	}
 
 	// make sure root path exists
@@ -492,7 +529,12 @@ func (h *httpReader) saveFile(err error, body []byte, encoding []string, ident s
 			break
 		}
 
-		target = path.Join(root, filepath.Clean(ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+		if err != nil {
+			target = path.Join(root, filepath.Clean("incomplete-" + name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+		} else {
+			target = path.Join(root, filepath.Clean("incomplete-" + name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+		}
+
 		n++
 	}
 
@@ -527,6 +569,24 @@ func (h *httpReader) saveFile(err error, body []byte, encoding []string, ident s
 			logInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
 		}
 	}
+
+	// write file to disk
+	writeFile(&types.File{
+		Timestamp: h.parent.firstPacket.String(),
+		Name:      fileName,
+		Length:    int64(len(body)),
+		Hash:      hex.EncodeToString(cryptoutils.MD5Data(body)),
+		Location:  target,
+		Ident:     h.ident,
+		Source:    source,
+		ContentType: ctype,
+		Context:  &types.PacketContext{
+			SrcIP:   h.parent.net.Src().String(),
+			DstIP:   h.parent.net.Dst().String(),
+			SrcPort: h.parent.transport.Src().String(),
+			DstPort: h.parent.transport.Dst().String(),
+		},
+	})
 
 	return nil
 }
@@ -575,7 +635,13 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	if req.Method == "POST" {
 		// write request payload to disk if configured
 		if (err == nil || *writeincomplete) && *output != "" {
-			return h.saveFile(err, body, req.Header["Content-Encoding"], h.ident)
+			return h.saveFile(
+				"HTTP POST REQUEST",
+				path.Base(req.URL.Path),
+				err,
+				body,
+				req.Header["Content-Encoding"],
+			)
 		}
 	}
 
