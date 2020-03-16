@@ -182,9 +182,6 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		SrcPorts : srcPorts,
 		DstPorts: dstPorts,
 		SNIs: sniMap,
-		// Devices: []*types.DeviceProfile{
-		// 	GetDeviceProfile(macAddr, i),
-		// },
 	}
 
 	ipProfiles.Items[ipAddr] = p

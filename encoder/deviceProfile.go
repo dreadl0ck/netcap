@@ -167,6 +167,7 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 		i.dstIP = nl.NetworkFlow().Dst().String()
 	} else {
 		// ignore packets that do not have a network layer for now
+		// TODO: create profiles for Link Layer only devices as well!
 		// e.g: ARP
 		return nil
 	}

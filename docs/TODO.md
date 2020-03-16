@@ -2,12 +2,15 @@
 
 # maltego
 
- - extract http parameters + values: GetHTTPParameters
+- extract http parameters + values: GetHTTPParameters
+- GetHTTP Files
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
+- SMTP audit record type
 
 ## General
 
+- create profiles for Link Layer only devices as well
 - use nDPI 3.2 and libpotoident latest version
 - test on the ultimate pcap file
 - move cobra experiments to feature branch and verify go get works
@@ -22,8 +25,7 @@
 - replace AuditRecordHandle in net.collect with netcap.Writer
 - colorize tool output
 
-- include pre generated protocol buffer definitions in release
-- check TODOs
+- check TODOs in source code
 - add YARA support for labels
 
 - add contributions welcome to README

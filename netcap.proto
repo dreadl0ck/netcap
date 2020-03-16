@@ -1705,13 +1705,12 @@ message IPProfile {
     string                 TimestampFirst  = 5;
     string                 TimestampLast   = 6;
     repeated string        Applications    = 7;
-    repeated DeviceProfile Devices         = 8; // TODO
-    map<string, string>    Ja3             = 9; // ja3 to lookup
-    map<string, uint64>    Protocols       = 10;
-    uint64                 Bytes           = 11;
-    map<string, Port>      DstPorts        = 12; // Ports to bytes
-    map<string, Port>      SrcPorts        = 13; // Ports to bytes
-    map<string, int64>     SNIs            = 14;
+    map<string, string>    Ja3             = 8; // ja3 to lookup
+    map<string, uint64>    Protocols       = 9;
+    uint64                 Bytes           = 10;
+    map<string, Port>      DstPorts        = 11; // Ports to bytes
+    map<string, Port>      SrcPorts        = 12; // Ports to bytes
+    map<string, int64>     SNIs            = 13;
 }
 
 message File {
