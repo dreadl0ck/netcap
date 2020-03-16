@@ -7,6 +7,8 @@
 - SMTP audit record type
 - transform progress indication?
 - define triggers to highlight links in red
+- http: basic auth extraction from URL: GetHTTPBasicAuth?
+- destination ips: queries for audit records must use DstIP == ipaddr !
 
 ## General
 

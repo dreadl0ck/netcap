@@ -51,7 +51,7 @@ var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, minP
 	}
 }
 
-type IPTransformationFunc = func(trx *MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ip string)
+type IPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ip string)
 
 func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
@@ -140,7 +140,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 			panic(err)
 		}
 
-		transform(&trx, profile, minPackets, maxPackets, profilesFile, mac, ipaddr)
+		transform(lt, &trx, profile, minPackets, maxPackets, profilesFile, mac, ipaddr)
 	}
 
 	err = r.Close()
