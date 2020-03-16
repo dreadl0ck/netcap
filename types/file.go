@@ -86,9 +86,17 @@ func (a File) Inc() {
 func (a *File) SetPacketContext(ctx *PacketContext) {}
 
 func (a File) Src() string {
-	return ""
+	// prevent accessing nil pointer
+	if a.Context == nil {
+		a.Context = &PacketContext{}
+	}
+	return a.Context.SrcIP
 }
 
 func (a File) Dst() string {
-	return ""
+	// prevent accessing nil pointer
+	if a.Context == nil {
+		a.Context = &PacketContext{}
+	}
+	return a.Context.DstIP
 }

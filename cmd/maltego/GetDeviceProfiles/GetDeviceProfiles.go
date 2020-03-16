@@ -50,6 +50,7 @@ func main() {
 		WriteUnknownPackets: false,
 		Promisc:             false,
 		SnapLen:             1514,
+		FileStorage: 		 filepath.Join(baseDir, "files"),
 		EncoderConfig: encoder.Config{
 			Buffer:          true,
 			Compression:     true,
@@ -118,7 +119,7 @@ func main() {
 
 	ent.SetLinkLabel("DeviceProfiles") // TODO: add num profiles here?
 	ent.SetLinkColor("#000000")
-	ent.SetNote("File Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
+	ent.SetNote("Storage Path: " + baseDir + "\nFile Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
 
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())

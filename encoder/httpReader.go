@@ -265,7 +265,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	h.parent.Unlock()
 
 	// write responses to disk if configured
-	if (err == nil || *writeincomplete) && *output != "" {
+	if (err == nil || *writeincomplete) && FileStorage != "" {
 
 		var (
 			name = "unknown"
@@ -493,7 +493,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		ctype = http.DetectContentType(body)
 
 		// root path
-		root  = path.Join(*output, ctype)
+		root  = path.Join(FileStorage, ctype)
 
 		// file extension
 		ext = fileExtensionForContentType(ctype)
@@ -516,8 +516,8 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 	if len(base) > 250 {
 		base = base[:250] + "..."
 	}
-	if base == *output {
-		base = path.Join(*output, "noname")
+	if base == FileStorage {
+		base = path.Join(FileStorage, "noname")
 	}
 	var (
 		target = base
@@ -634,7 +634,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 
 	if req.Method == "POST" {
 		// write request payload to disk if configured
-		if (err == nil || *writeincomplete) && *output != "" {
+		if (err == nil || *writeincomplete) && FileStorage != "" {
 			return h.saveFile(
 				"HTTP POST REQUEST",
 				path.Base(req.URL.Path),

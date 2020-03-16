@@ -30,4 +30,5 @@ type Config struct {
 	EncoderConfig       encoder.Config
 	BaseLayer           gopacket.LayerType
 	DecodeOptions       gopacket.DecodeOptions
+	FileStorage         string
 }

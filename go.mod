@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1
-	github.com/dreadl0ck/go-dpi v0.0.0-20200316173709-8036dca4b910
+	github.com/dreadl0ck/go-dpi v0.0.0-20200316202619-1ef173ca5da2
 	github.com/dreadl0ck/gopacket v1.1.16-0.20200315164012-8b5d3d6a4c74
 	github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e
 	github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78

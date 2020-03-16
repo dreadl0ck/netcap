@@ -347,4 +347,99 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 	fmt.Println(trx.ReturnOutput())
 }
 
+type FilesCountFunc func()
+type FilesTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ip string)
 
+func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
+
+	lt := ParseLocalArguments(os.Args)
+	profilesFile := lt.Values["path"]
+	ipaddr := lt.Values["ipaddr"]
+
+	dir := filepath.Dir(profilesFile)
+	httpAuditRecords := filepath.Join(dir, "File.ncap.gz")
+	f, err := os.Open(httpAuditRecords)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// check if its an audit record file
+	if !strings.HasSuffix(f.Name(), ".ncap.gz") && !strings.HasSuffix(f.Name(), ".ncap") {
+		log.Fatal("input file must be an audit record file")
+	}
+
+	r, err := netcap.Open(httpAuditRecords, netcap.DefaultBufferSize)
+	if err != nil {
+		panic(err)
+	}
+
+	// read netcap header
+	header := r.ReadHeader()
+	if header.Type != types.Type_NC_File {
+		panic("file does not contain HTTP records: " + header.Type.String())
+	}
+
+	var (
+		file = new(types.File)
+		pm  proto.Message
+		ok  bool
+		trx = MaltegoTransform{}
+	)
+	pm = file
+
+	if _, ok = pm.(types.AuditRecord); !ok {
+		panic("type does not implement types.AuditRecord interface")
+	}
+
+	var (
+		minPackets uint64 = 10000000
+		maxPackets uint64 = 0
+	)
+
+	if count != nil {
+
+		for {
+			err := r.Next(file)
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				break
+			} else if err != nil {
+				panic(err)
+			}
+
+			count()
+		}
+
+		err = r.Close()
+		if err != nil {
+			log.Println("failed to close audit record file: ", err)
+		}
+	}
+
+
+	r, err = netcap.Open(httpAuditRecords, netcap.DefaultBufferSize)
+	if err != nil {
+		panic(err)
+	}
+
+	// read netcap header - ignore err as it has been checked before
+	r.ReadHeader()
+
+	for {
+		err := r.Next(file)
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+
+		transform(lt, &trx, file, minPackets, maxPackets, profilesFile, ipaddr)
+	}
+
+	err = r.Close()
+	if err != nil {
+		log.Println("failed to close audit record file: ", err)
+	}
+
+	trx.AddUIMessage("completed!","Inform")
+	fmt.Println(trx.ReturnOutput())
+}
