@@ -321,6 +321,9 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
+	// set
+	encoder.FileStorage = c.config.FileStorage
+
 	// initialize encoders
 	encoder.InitLayerEncoders(c.config.EncoderConfig)
 	encoder.InitCustomEncoders(c.config.EncoderConfig)
@@ -381,6 +384,7 @@ func (c *Collector) PrintConfiguration() {
 		{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
 		{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
 		{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
+		{"FileStorage", c.config.FileStorage},
 	})
 	fmt.Println() // add a newline
 }

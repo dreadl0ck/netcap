@@ -51,6 +51,7 @@ var (
 
 	// HTTPActive must be set to true to decode HTTP traffic
 	HTTPActive bool
+	FileStorage string
 )
 
 // Stream contains both unidirectional flows for a connection
@@ -158,6 +159,11 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 
 	HTTPActive = true
 
+	// set file storage via flag
+	if *fileStorage != "" {
+		FileStorage = *fileStorage
+	}
+
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
 	// actual decoder is nil, because the processing happens after TCP stream reassembly
@@ -172,11 +178,6 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
 	errorsMapMutex.Unlock()
 
-	dumpResp := false
-	if *output != "" || *writeincomplete {
-		dumpResp = true
-	}
-
 	// print configuration
 	// print configuration as table
 	tui.Table(os.Stdout, []string{"TCP Reassembly Setting", "Value"}, [][]string{
@@ -184,7 +185,6 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		{"CloseTimeout", closeTimeout.String()},
 		{"Timeout", timeout.String()},
 		{"AllowMissingInit", strconv.FormatBool(*allowmissinginit)},
-		{"DumpResponses", strconv.FormatBool(dumpResp)},
 		{"IgnoreFsmErr", strconv.FormatBool(*ignorefsmerr)},
 		{"NoOptCheck", strconv.FormatBool(*nooptcheck)},
 		{"Checksum", strconv.FormatBool(*checksum)},

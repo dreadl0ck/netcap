@@ -70,7 +70,7 @@ var (
 	debug            = flag.Bool("debug", false, "display debug information")
 	quiet            = flag.Bool("quiet", true, "be quiet regarding errors")
 	nohttp           = flag.Bool("nohttp", false, "disable HTTP parsing")
-	output           = flag.String("files", "", "path to create file for HTTP 200 OK responses")
+	fileStorage      = flag.String("fileStorage", "", "path to create file for HTTP 200 OK responses")
 	writeincomplete  = flag.Bool("writeincomplete", false, "write incomplete response")
 	hexdump          = flag.Bool("dump", false, "dump HTTP request/response as hex")
 	memprofile       = flag.String("memprofile", "", "write memory profile")

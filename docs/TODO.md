@@ -2,9 +2,6 @@
 
 # maltego
 
-- GetFiles
-- GetHTTPCookies
-
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
 - SMTP audit record type
