@@ -13,37 +13,50 @@
 
 package types
 
+import "strconv"
+
 var fieldsDeviceProfile = []string{
+	"Timestamp",
 	"MacAddr",
 	"DeviceManufacturer",
-	"DeviceIPs",
-	"Contacts",
+	"NumDeviceIPs",
+	"NumContacts",
+	"NumPackets",
+	"Bytes",
 }
 
-func (c DeviceProfile) CSVHeader() []string {
+func (d DeviceProfile) CSVHeader() []string {
 	return filter(fieldsDeviceProfile)
 }
 
-func (c DeviceProfile) CSVRecord() []string {
-	return filter([]string{})
+func (d DeviceProfile) CSVRecord() []string {
+	return filter([]string{
+		d.Timestamp,
+		d.MacAddr,
+		d.DeviceManufacturer,
+		strconv.Itoa(len(d.DeviceIPs)),
+		strconv.Itoa(len(d.Contacts)),
+		formatInt64(d.NumPackets),
+		formatUint64(d.Bytes),
+	})
 }
 
-func (c DeviceProfile) Time() string {
+func (d DeviceProfile) Time() string {
 	return ""
 }
 
-func (a DeviceProfile) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (d DeviceProfile) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(&d)
 }
 
-func (a DeviceProfile) Inc() {}
+func (d DeviceProfile) Inc() {}
 
-func (a DeviceProfile) SetPacketContext(ctx *PacketContext) {}
+func (d DeviceProfile) SetPacketContext(ctx *PacketContext) {}
 
-func (a DeviceProfile) Src() string {
+func (d DeviceProfile) Src() string {
 	return ""
 }
 
-func (a DeviceProfile) Dst() string {
+func (d DeviceProfile) Dst() string {
 	return ""
 }

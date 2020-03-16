@@ -286,11 +286,11 @@ func setRequest(h *types.HTTP, req *http.Request) {
 				if err == nil {
 					body, err = ioutil.ReadAll(r)
 					if err == nil {
-						h.ReqContentTypeDetected = http.DetectContentType(body)
+						h.ContentTypeDetected = http.DetectContentType(body)
 					}
 				}
 			} else {
-				h.ReqContentTypeDetected = http.DetectContentType(body)
+				h.ContentTypeDetected = http.DetectContentType(body)
 			}
 		}
 	}

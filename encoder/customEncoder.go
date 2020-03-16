@@ -40,6 +40,7 @@ var (
 		flowEncoder,
 		connectionEncoder,
 		profileEncoder,
+		fileEncoder,
 	}
 )
 
