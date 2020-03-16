@@ -283,7 +283,7 @@ func (c *Collector) printProgress() {
 
 	// increment atomic packet counter
 	atomic.AddInt64(&c.current, 1)
-	if c.current%10000 == 0 {
+	if c.current%1000 == 0 {
 
 		// using a strings.Builder for assembling string for performance
 		// TODO: could be refactored to use a byte slice with a fixed length instead
@@ -296,6 +296,8 @@ func (c *Collector) printProgress() {
 		b.WriteString(strconv.Itoa(encoder.Flows.Size()))
 		b.WriteString(" connections: ")
 		b.WriteString(strconv.Itoa(encoder.Connections.Size()))
+		b.WriteString(" profiles: ")
+		b.WriteString(strconv.Itoa(encoder.Profiles.Size()))
 
 		// print
 		clearLine()
