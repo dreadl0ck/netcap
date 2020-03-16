@@ -64,5 +64,5 @@ func InitJa3Resolver() {
 		sums++
 	}
 
-	fmt.Println("read", sums, "ja3 summaries")
+	fmt.Println("loaded", sums, "JA3 summaries")
 }
