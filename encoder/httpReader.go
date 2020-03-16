@@ -458,6 +458,12 @@ func fileExtensionForContentType(typ string) string {
 }
 
 func (h *httpReader) saveFile(err error, body []byte, encoding []string, ident string) error {
+
+	// prevent saving zero bytes
+	if len(body) == 0 {
+		return nil
+	}
+
 	var (
 		ctype = http.DetectContentType(body)
 		root  = path.Join(*output, ctype)
