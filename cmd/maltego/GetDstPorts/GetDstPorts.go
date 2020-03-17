@@ -5,25 +5,29 @@ import (
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"os"
 	"strconv"
 )
 
 func main() {
 
+	stdOut := os.Stdout
+	os.Stdout = os.Stderr
 	resolvers.InitServiceDB()
+	os.Stdout = stdOut
 
 	maltego.IPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
-				//for _, ip := range profile.Contacts {
-				//	if ip.Addr == ipaddr {
-				//		for portStr, port := range ip.DstPorts {
-				//			addDestinationPort(trx, portStr, port, minPackets, maxPackets, ip)
-				//		}
-				//		break
-				//	}
-				//}
+				for _, ip := range profile.Contacts {
+					if ip.Addr == ipaddr {
+						for portStr, port := range ip.DstPorts {
+							addDestinationPort(trx, portStr, port, minPackets, maxPackets, ip)
+						}
+						break
+					}
+				}
 				for _, ip := range profile.DeviceIPs {
 					if ip.Addr == ipaddr {
 						for portStr, port := range ip.DstPorts {
