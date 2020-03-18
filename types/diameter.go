@@ -82,7 +82,7 @@ var diameterMetric = prometheus.NewCounterVec(
 )
 
 func init() {
-	prometheus.MustRegister(arpMetric)
+	prometheus.MustRegister(diameterMetric)
 }
 
 func (a Diameter) Inc() {
