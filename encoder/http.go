@@ -174,29 +174,34 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	// finshes processing
 	// and prints statistics
 
-	errorsMapMutex.Lock()
-	fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
-	errorsMapMutex.Unlock()
+	if !Quiet {
+		errorsMapMutex.Lock()
+		fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
+		errorsMapMutex.Unlock()
 
-	// print configuration
-	// print configuration as table
-	tui.Table(os.Stdout, []string{"TCP Reassembly Setting", "Value"}, [][]string{
-		{"FlushEvery", strconv.Itoa(*flushevery)},
-		{"CloseTimeout", closeTimeout.String()},
-		{"Timeout", timeout.String()},
-		{"AllowMissingInit", strconv.FormatBool(*allowmissinginit)},
-		{"IgnoreFsmErr", strconv.FormatBool(*ignorefsmerr)},
-		{"NoOptCheck", strconv.FormatBool(*nooptcheck)},
-		{"Checksum", strconv.FormatBool(*checksum)},
-		{"NoDefrag", strconv.FormatBool(*nodefrag)},
-		{"WriteIncomplete", strconv.FormatBool(*writeincomplete)},
-	})
-	fmt.Println() // add a newline
+		// print configuration
+		// print configuration as table
+		tui.Table(os.Stdout, []string{"TCP Reassembly Setting", "Value"}, [][]string{
+			{"FlushEvery", strconv.Itoa(*flushevery)},
+			{"CloseTimeout", closeTimeout.String()},
+			{"Timeout", timeout.String()},
+			{"AllowMissingInit", strconv.FormatBool(*allowmissinginit)},
+			{"IgnoreFsmErr", strconv.FormatBool(*ignorefsmerr)},
+			{"NoOptCheck", strconv.FormatBool(*nooptcheck)},
+			{"Checksum", strconv.FormatBool(*checksum)},
+			{"NoDefrag", strconv.FormatBool(*nodefrag)},
+			{"WriteIncomplete", strconv.FormatBool(*writeincomplete)},
+		})
+		fmt.Println() // add a newline
+	}
 
 	closed := assembler.FlushAll()
-	fmt.Printf("Final flush: %d closed\n", closed)
-	if outputLevel >= 2 {
-		streamPool.Dump()
+
+	if !Quiet {
+		fmt.Printf("Final flush: %d closed\n", closed)
+		if outputLevel >= 2 {
+			streamPool.Dump()
+		}
 	}
 
 	if *memprofile != "" {
@@ -213,47 +218,49 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	}
 
 	streamFactory.WaitGoRoutines()
-	logDebug("%s\n", assembler.Dump())
 
-	printProgress(1, 1)
-	fmt.Println("")
+	if !Quiet {
+		logDebug("%s\n", assembler.Dump())
+		printProgress(1, 1)
+		fmt.Println("")
 
-	rows := [][]string{}
-	if !*nodefrag {
-		rows = append(rows, []string{"IPdefrag", strconv.Itoa(reassemblyStats.ipdefrag)})
-	}
-	rows = append(rows, []string{"missed bytes", strconv.Itoa(reassemblyStats.missedBytes)})
-	rows = append(rows, []string{"total packets", strconv.Itoa(reassemblyStats.pkt)})
-	rows = append(rows, []string{"rejected FSM", strconv.Itoa(reassemblyStats.rejectFsm)})
-	rows = append(rows, []string{"rejected Options", strconv.Itoa(reassemblyStats.rejectOpt)})
-	rows = append(rows, []string{"reassembled bytes", strconv.Itoa(reassemblyStats.sz)})
-	rows = append(rows, []string{"total TCP bytes", strconv.Itoa(reassemblyStats.totalsz)})
-	rows = append(rows, []string{"conn rejected FSM", strconv.Itoa(reassemblyStats.rejectConnFsm)})
-	rows = append(rows, []string{"reassembled chunks", strconv.Itoa(reassemblyStats.reassembled)})
-	rows = append(rows, []string{"out-of-order packets", strconv.Itoa(reassemblyStats.outOfOrderPackets)})
-	rows = append(rows, []string{"out-of-order bytes", strconv.Itoa(reassemblyStats.outOfOrderBytes)})
-	rows = append(rows, []string{"biggest-chunk packets", strconv.Itoa(reassemblyStats.biggestChunkPackets)})
-	rows = append(rows, []string{"biggest-chunk bytes", strconv.Itoa(reassemblyStats.biggestChunkBytes)})
-	rows = append(rows, []string{"overlap packets", strconv.Itoa(reassemblyStats.overlapPackets)})
-	rows = append(rows, []string{"overlap bytes", strconv.Itoa(reassemblyStats.overlapBytes)})
-
-	tui.Table(os.Stdout, []string{"TCP Stat", "Value"}, rows)
-
-	if numErrors != 0 {
-		rows = [][]string{}
-		for e := range errorsMap {
-			rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
+		rows := [][]string{}
+		if !*nodefrag {
+			rows = append(rows, []string{"IPdefrag", strconv.Itoa(reassemblyStats.ipdefrag)})
 		}
-		tui.Table(os.Stdout, []string{"Error Subject", "Count"}, rows)
-	}
+		rows = append(rows, []string{"missed bytes", strconv.Itoa(reassemblyStats.missedBytes)})
+		rows = append(rows, []string{"total packets", strconv.Itoa(reassemblyStats.pkt)})
+		rows = append(rows, []string{"rejected FSM", strconv.Itoa(reassemblyStats.rejectFsm)})
+		rows = append(rows, []string{"rejected Options", strconv.Itoa(reassemblyStats.rejectOpt)})
+		rows = append(rows, []string{"reassembled bytes", strconv.Itoa(reassemblyStats.sz)})
+		rows = append(rows, []string{"total TCP bytes", strconv.Itoa(reassemblyStats.totalsz)})
+		rows = append(rows, []string{"conn rejected FSM", strconv.Itoa(reassemblyStats.rejectConnFsm)})
+		rows = append(rows, []string{"reassembled chunks", strconv.Itoa(reassemblyStats.reassembled)})
+		rows = append(rows, []string{"out-of-order packets", strconv.Itoa(reassemblyStats.outOfOrderPackets)})
+		rows = append(rows, []string{"out-of-order bytes", strconv.Itoa(reassemblyStats.outOfOrderBytes)})
+		rows = append(rows, []string{"biggest-chunk packets", strconv.Itoa(reassemblyStats.biggestChunkPackets)})
+		rows = append(rows, []string{"biggest-chunk bytes", strconv.Itoa(reassemblyStats.biggestChunkBytes)})
+		rows = append(rows, []string{"overlap packets", strconv.Itoa(reassemblyStats.overlapPackets)})
+		rows = append(rows, []string{"overlap bytes", strconv.Itoa(reassemblyStats.overlapBytes)})
 
-	fmt.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
-	fmt.Println("httpEncoder.numRequests", e.numRequests)
-	fmt.Println("httpEncoder.numResponses", e.numResponses)
-	fmt.Println("httpEncoder.numUnmatchedResp", e.numUnmatchedResp)
-	fmt.Println("httpEncoder.numNilRequests", e.numNilRequests)
-	fmt.Println("httpEncoder.numFoundRequests", e.numFoundRequests)
-	fmt.Println("httpEncoder.numUnansweredRequests", e.numUnansweredRequests)
+		tui.Table(os.Stdout, []string{"TCP Stat", "Value"}, rows)
+
+		if numErrors != 0 {
+			rows = [][]string{}
+			for e := range errorsMap {
+				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
+			}
+			tui.Table(os.Stdout, []string{"Error Subject", "Count"}, rows)
+		}
+
+		fmt.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
+		fmt.Println("httpEncoder.numRequests", e.numRequests)
+		fmt.Println("httpEncoder.numResponses", e.numResponses)
+		fmt.Println("httpEncoder.numUnmatchedResp", e.numUnmatchedResp)
+		fmt.Println("httpEncoder.numNilRequests", e.numNilRequests)
+		fmt.Println("httpEncoder.numFoundRequests", e.numFoundRequests)
+		fmt.Println("httpEncoder.numUnansweredRequests", e.numUnansweredRequests)
+	}
 
 	return nil
 })

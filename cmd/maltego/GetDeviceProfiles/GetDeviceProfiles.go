@@ -34,6 +34,9 @@ func main() {
 		os.Exit(0)
 	}
 
+	stdout := os.Stdout
+	os.Stdout = os.Stderr
+
 	start := time.Now()
 
 	baseDir := strings.TrimSuffix(inputFile, ".pcap")
@@ -64,7 +67,7 @@ func main() {
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("lazy"),
-		Quiet: true,
+		Quiet: false,
 	})
 
 	// if not, use native pcapgo version
@@ -100,6 +103,8 @@ func main() {
 	if err != nil {
 		log.Fatal("invalid path: ", err)
 	}
+
+	os.Stdout = stdout
 
 	trx := maltego.MaltegoTransform{}
 	ent := trx.AddEntity("netcap.DeviceProfiles", ident)
