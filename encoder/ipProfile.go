@@ -84,7 +84,9 @@ func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
 		// Session Layer: TLS
 		ch := tlsx.GetClientHelloBasic(i.p)
 		if ch != nil {
-			p.SNIs[ch.SNI]++
+			if ch.SNI != "" {
+				p.SNIs[ch.SNI]++
+			}
 		}
 
 		ja3Hash := ja3.DigestHexPacket(i.p)
