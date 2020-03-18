@@ -90,6 +90,7 @@ var (
 		cipEncoder,
 		ethernetIPEncoder,
 		smtpEncoder,
+		diameterEncoder,
 	}
 
 	// set via encoder config
