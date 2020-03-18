@@ -85,15 +85,15 @@ func GetThickness(val, min, max uint64) int {
 	//log.Println("delta=", delta, "float64(delta)*2 = ", float64(delta)*2)
 
 	switch {
-	case float64(val) <= float64(delta)*0.001:
-		return 1
 	case float64(val) <= float64(delta)*0.01:
-		return 2
+		return 1
 	case float64(val) <= float64(delta)*0.1:
+		return 2
+	case float64(val) <= float64(delta)*0.3:
 		return 3
-	case float64(val) <= float64(delta)*0.5:
+	case float64(val) <= float64(delta)*0.6:
 		return 4
-	case float64(val) <= float64(delta)*0.8:
+	case float64(val) <= float64(delta)*0.9:
 		return 5
 	default:
 		return 5
