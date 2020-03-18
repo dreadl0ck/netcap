@@ -116,8 +116,10 @@ func InitServiceDB() {
 		}
 	}
 
-	fmt.Println("loaded", len(tcpPortMap), "TCP service records")
-	fmt.Println("loaded", len(udpPortMap), "UDP service records")
+	if !Quiet {
+		fmt.Println("loaded", len(tcpPortMap), "TCP service records")
+		fmt.Println("loaded", len(udpPortMap), "UDP service records")
+	}
 }
 
 func LookupServiceByPort(port int, typ string) string {
@@ -130,6 +132,8 @@ func LookupServiceByPort(port int, typ string) string {
 			return res.service
 		}
 	}
-	log.Println("no result for", port, typ)
+	if !Quiet {
+		log.Println("no result for", port, typ)
+	}
 	return ""
 }

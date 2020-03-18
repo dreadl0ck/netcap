@@ -64,7 +64,7 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 
 	// read packets in background routine
 	go func() {
-		print("decoding packets... ")
+		c.printStdOut("decoding packets... ")
 		for pack := range ps.Packets() {
 			c.printProgressLive()
 

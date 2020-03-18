@@ -136,9 +136,9 @@ func main() {
 		},
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
+		Quiet: *flagQuiet,
 	})
 
-	netcap.PrintBuildInfo()
 	c.PrintConfiguration()
 
 	// collect traffic live from named interface

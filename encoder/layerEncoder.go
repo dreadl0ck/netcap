@@ -111,7 +111,7 @@ type (
 )
 
 // InitLayerEncoders initializes all layer encoders
-func InitLayerEncoders(c Config) {
+func InitLayerEncoders(c Config, quiet bool) {
 
 	var (
 		// values from command-line flags
@@ -203,7 +203,10 @@ func InitLayerEncoders(c Config) {
 		// add to layer encoders map
 		LayerEncoders[e.Layer] = append(LayerEncoders[e.Layer], e)
 	}
-	fmt.Println("initialized", len(LayerEncoders), "layer encoders")
+
+	if !quiet {
+		fmt.Println("initialized", len(LayerEncoders), "layer encoders")
+	}
 }
 
 // CreateLayerEncoder returns a new LayerEncoder instance
