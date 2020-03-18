@@ -137,6 +137,7 @@ enum Type {
     NC_DeviceProfile               = 89;
     NC_File                        = 90;
     NC_SMTP                        = 91;
+    NC_Diameter                    = 92;
 }
 
 /*
@@ -1759,4 +1760,44 @@ message SMTP {
     repeated SMTPResponse ResponseLines = 4;
     SMTPCommand Command                 = 5;
     PacketContext Context               = 6;
+}
+
+// Diameter is an authentication, authorization, and accounting protocol for computer networks.
+// It evolved from the earlier RADIUS protocol.
+// It belongs to the application layer protocols in the internet protocol suite.
+message Diameter {
+    string Timestamp = 1;
+
+    // Diameter Header Information
+    uint32  Version        = 2;
+    uint32  Flags          = 3;
+    uint32 MessageLen      = 4;
+    uint32 CommandCode     = 5;
+    uint32 ApplicationID   = 6;
+    uint32 HopByHopID      = 7;
+    uint32 EndToEndID      = 8;
+
+    // Diameter AVPs
+    repeated AVP AVPs     = 9;
+    PacketContext Context = 10;
+}
+
+// Attribute Value Pair
+message AVP {
+    // Value in the header section of the AVP
+    uint32   AttributeCode   = 1;
+    string   AttributeName   = 2;
+    string   AttributeFormat = 3;
+    uint32   Flags           = 4;
+    uint32   HeaderLen       = 5;
+    uint32   Len             = 6;
+    uint32   VendorCode      = 7;
+    string   VendorName      = 8;
+    string   VendorID        = 9;
+
+    // the value associated with the Attribute, padding with zeros is sometimes added after the value in some case
+    string   DecodedValue = 10;
+    uint32   Padding      = 11;
+    bytes    Value        = 12;
+	uint32   ValueLen     = 13;
 }
