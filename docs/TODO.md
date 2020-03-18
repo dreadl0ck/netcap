@@ -2,12 +2,14 @@
 
 # maltego
 
+- attach files (preview?) and open them by click
 - add GetHTTPContentTypes -> GetFiles
+- DPI: GetApplicationCategories -> GetApplications?
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
-- SMTP audit record type
-- transform progress indication?
+- SMTP audit record type: IMAP, POP3
 - define triggers to highlight links in red
+- MIME type: check if executables are properly detected
 - http: basic auth extraction from URL: GetHTTPBasicAuth?
 - destination ips: queries for audit records must use DstIP == ipaddr !
 

@@ -122,7 +122,7 @@ func (c *Collector) cleanup() {
 	}
 
 	clearLine()
-	println("done.\n")
+	c.printStdOut("done.\n")
 	c.stopWorkers()
 
 	// sync pcap file
@@ -288,24 +288,25 @@ func (c *Collector) printProgress() {
 	// increment atomic packet counter
 	atomic.AddInt64(&c.current, 1)
 	if c.current%1000 == 0 {
+		if !c.config.Quiet {
+			// using a strings.Builder for assembling string for performance
+			// TODO: could be refactored to use a byte slice with a fixed length instead
+			// also only print flows and collections when the corresponding encoders are active
+			var b strings.Builder
+			b.Grow(65)
+			b.WriteString("decoding packets... (")
+			b.WriteString(utils.Progress(c.current, c.numPackets))
+			b.WriteString(") flows: ")
+			b.WriteString(strconv.Itoa(encoder.Flows.Size()))
+			b.WriteString(" connections: ")
+			b.WriteString(strconv.Itoa(encoder.Connections.Size()))
+			b.WriteString(" profiles: ")
+			b.WriteString(strconv.Itoa(encoder.Profiles.Size()))
 
-		// using a strings.Builder for assembling string for performance
-		// TODO: could be refactored to use a byte slice with a fixed length instead
-		// also only print flows and collections when the corresponding encoders are active
-		var b strings.Builder
-		b.Grow(65)
-		b.WriteString("decoding packets... (")
-		b.WriteString(utils.Progress(c.current, c.numPackets))
-		b.WriteString(") flows: ")
-		b.WriteString(strconv.Itoa(encoder.Flows.Size()))
-		b.WriteString(" connections: ")
-		b.WriteString(strconv.Itoa(encoder.Connections.Size()))
-		b.WriteString(" profiles: ")
-		b.WriteString(strconv.Itoa(encoder.Profiles.Size()))
-
-		// print
-		clearLine()
-		os.Stdout.WriteString(b.String())
+			// print
+			clearLine()
+			os.Stdout.WriteString(b.String())
+		}
 	}
 }
 
@@ -330,6 +331,7 @@ func (c *Collector) Init() (err error) {
 
 	// set quiet mode
 	resolvers.Quiet = c.config.Quiet
+	encoder.Quiet = c.config.Quiet
 
 	// initialize encoders
 	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)

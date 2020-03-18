@@ -29,7 +29,6 @@ func Init() {
 }
 
 func Destroy() {
-	fmt.Println("destroying goDPI")
 	for _, e := range godpi.Destroy() {
 		if e != nil {
 			fmt.Println(e)

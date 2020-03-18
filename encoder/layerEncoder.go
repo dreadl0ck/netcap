@@ -27,6 +27,9 @@ import (
 )
 
 var (
+	// Quiet disables logging to stdout
+	Quiet bool
+
 	// LayerEncoders map contains initialized encoders at runtime
 	// for usage from other packages
 	LayerEncoders = map[gopacket.LayerType][]*LayerEncoder{}
