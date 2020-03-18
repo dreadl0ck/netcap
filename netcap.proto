@@ -136,6 +136,7 @@ enum Type {
     NC_ENIP                        = 88;
     NC_DeviceProfile               = 89;
     NC_File                        = 90;
+    NC_SMTP                        = 91;
 }
 
 /*
@@ -1735,4 +1736,27 @@ message File {
     string Source          = 7;
     string ContentType     = 8;
     PacketContext Context  = 9;
+}
+
+// SMTPResponse SMTP response type
+// with status code and parameter
+message SMTPResponse {
+    int32 ResponseCode = 1;
+    string Parameter   = 2;
+}
+
+// SMTPCommand represents a SMTP command
+message SMTPCommand {
+    int32 Command    = 1;
+    string Parameter = 2;
+}
+
+// Simple Mail Transfer Protocol
+message SMTP {
+    string Timestamp                    = 1;
+    bool IsEncrypted                    = 2;
+    bool IsResponse                     = 3;
+    repeated SMTPResponse ResponseLines = 4;
+    SMTPCommand Command                 = 5;
+    PacketContext Context               = 6;
 }

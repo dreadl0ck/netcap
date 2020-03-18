@@ -44,7 +44,7 @@ var (
 	flagVersion = flag.Bool("version", false, "print netcap package version and exit")
 
 	flagBaseLayer     = flag.String("base", "ethernet", "select base layer")
-	flagDecodeOptions = flag.String("opts", "lazy", "select decoding options")
+	flagDecodeOptions = flag.String("opts", "datagrams", "select decoding options")
 	flagPayload       = flag.Bool("payload", false, "capture payload for supported layers")
 
 	flagCSV     = flag.Bool("csv", false, "output data as CSV instead of audit records")

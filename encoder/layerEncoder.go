@@ -89,6 +89,7 @@ var (
 		nortelDiscoveryEncoder,
 		cipEncoder,
 		ethernetIPEncoder,
+		smtpEncoder,
 	}
 
 	// set via encoder config

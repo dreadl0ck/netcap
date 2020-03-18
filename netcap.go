@@ -150,6 +150,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.DeviceProfile)
 	case types.Type_NC_File:
 		record = new(types.File)
+	case types.Type_NC_SMTP:
+		record = new(types.SMTP)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
