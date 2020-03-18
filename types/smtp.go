@@ -49,7 +49,7 @@ func (a SMTP) CSVRecord() []string {
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.IsEncrypted),   // bool
 		strconv.FormatBool(a.IsResponse),    // bool
-		strings.Join(responses, "|"), // []*SMTPResponse
+		join(responses...), // []*SMTPResponse
 		a.Command.GetString(),       // *SMTPCommand
 		a.Context.SrcIP,
 		a.Context.DstIP,
