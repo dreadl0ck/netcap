@@ -2,9 +2,12 @@
 
 # maltego
 
-- attach files (preview?) and open them by click
+- HTTP: GetHTTPHost -> GetURLs
+- HTTP: GetHTTPHost -> GetParameters
+- HTTP: GetHTTPHost -> GetCookies
 - add GetHTTPContentTypes -> GetFiles
 - DPI: GetApplicationCategories -> GetApplications?
+- attach files (preview?) and open them by click
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
 - SMTP audit record type: IMAP, POP3

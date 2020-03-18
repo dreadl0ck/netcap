@@ -24,9 +24,10 @@ var (
 
 func main() {
 
-	lt := maltego.ParseLocalArguments(os.Args)
-	//inputFile := lt.Value
-	inputFile := lt.Values["path"]
+	var (
+		lt = maltego.ParseLocalArguments(os.Args)
+		inputFile = lt.Values["path"]
+	)
 
 	// print version and exit
 	if *flagVersion {
@@ -34,12 +35,16 @@ func main() {
 		os.Exit(0)
 	}
 
+	// redirect stdout filedescriptor to stderr
+	// since all stdout get interpreted as XML from maltego
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
 
+	// create storage path for audit records
 	start := time.Now()
-
 	baseDir := strings.TrimSuffix(inputFile, ".pcap")
+
+	// TODO: error ignored, files will be overwritten if there are any
 	os.MkdirAll(baseDir, 0700)
 
 	// init collector
@@ -55,7 +60,7 @@ func main() {
 			Buffer:          true,
 			Compression:     true,
 			CSV:             false,
-			IncludeEncoders: "",
+			IncludeEncoders: "DeviceProfile,File,HTTP,DNS",
 			ExcludeEncoders: "",
 			Out:             baseDir,
 			Source:          inputFile,
@@ -90,6 +95,7 @@ func main() {
 		}
 	}
 
+	// open PCAP file
 	r, err := pcap.OpenOffline(inputFile)
 	if err != nil {
 		log.Fatal(err)
@@ -104,8 +110,10 @@ func main() {
 		log.Fatal("invalid path: ", err)
 	}
 
+	// restore stdout
 	os.Stdout = stdout
 
+	// generate maltego transform
 	trx := maltego.MaltegoTransform{}
 	ent := trx.AddEntity("netcap.DeviceProfiles", ident)
 	ent.SetType("netcap.DeviceProfiles")
@@ -117,7 +125,7 @@ func main() {
 	ent.AddProperty("path", "Path", "strict", ident)
 	ent.AddProperty("description", "Description", "strict", "DeviceProfile.ncap.gz")
 
-	ent.SetLinkLabel("DeviceProfiles") // TODO: add num profiles here?
+	ent.SetLinkLabel("DeviceProfiles")
 	ent.SetLinkColor("#000000")
 	ent.SetNote("Storage Path: " + baseDir + "\nFile Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
 
