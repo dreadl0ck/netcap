@@ -279,25 +279,20 @@ func setRequest(h *types.HTTP, req *http.Request) {
 	h.Host = req.Host
 	h.ReqContentLength = int32(req.ContentLength)
 	h.ReqContentEncoding = req.Header.Get("Content-Encoding")
-
 	h.ContentType = req.Header.Get("Content-Type")
 
-	// detect content type for HTTP POST
-	if req.Method == "POST" {
+	body, err := ioutil.ReadAll(req.Body)
+	if err == nil {
+		h.ContentTypeDetected = http.DetectContentType(body)
 
 		// decompress if required
-		body, err := ioutil.ReadAll(req.Body)
-		if err == nil {
-			if h.ReqContentEncoding == "gzip" {
-				r, err := gzip.NewReader(bytes.NewReader(body))
+		if h.ReqContentEncoding == "gzip" {
+			r, err := gzip.NewReader(bytes.NewReader(body))
+			if err == nil {
+				body, err = ioutil.ReadAll(r)
 				if err == nil {
-					body, err = ioutil.ReadAll(r)
-					if err == nil {
-						h.ContentTypeDetected = http.DetectContentType(body)
-					}
+					h.ContentTypeDetected = http.DetectContentType(body)
 				}
-			} else {
-				h.ContentTypeDetected = http.DetectContentType(body)
 			}
 		}
 	}
