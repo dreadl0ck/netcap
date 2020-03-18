@@ -243,7 +243,7 @@ func (m *MaltegoEntityObj) ReturnEntity() string {
 		r += "<AdditionalFields>\n"
 		for _, e := range m.AdditionalFields {
 			fieldName_, displayName_, matchingRule_, value_ := e[0], e[1], e[2], e[3]
-			if matchingRule_ == "stirct" {
+			if matchingRule_ == "strict" {
 				r += "<Field Name=\"" + fieldName_ + "\" DisplayName=\"" + displayName_ + "\">" + value_ + "</Field>\n"
 			} else {
 				r += "<Field MatchingRule=\"" + matchingRule_ + "\" Name=\"" + fieldName_ + "\" DisplayName=\"" + displayName_ + "\">" + value_ + "</Field>\n"
