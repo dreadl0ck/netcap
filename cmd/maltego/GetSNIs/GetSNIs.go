@@ -26,7 +26,22 @@ func main() {
 						}
 					}
 				}
-				// TODO: range device ips?
+				for _, ip := range profile.DeviceIPs {
+					if ip.Addr == ipaddr {
+						if len(ip.SNIs) != 0 {
+							for sni, count := range ip.SNIs {
+								ent := trx.AddEntity("maltego.Domain", sni)
+								ent.SetType("maltego.Domain")
+								ent.SetValue(sni)
+
+								di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
+								ent.AddDisplayInformation(di, "Netcap Info")
+								ent.SetLinkColor("#000000")
+								ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
+							}
+						}
+					}
+				}
 			}
 		},
 	)
