@@ -18,6 +18,9 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"os/signal"
@@ -32,7 +35,6 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/dreadl0ck/netcap/utils"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
@@ -241,34 +243,36 @@ func (c *Collector) closeErrorLogFile() {
 // Stats prints collector statistics.
 func (c *Collector) Stats() {
 
-	rows := [][]string{}
+	if !c.config.Quiet {
+		rows := [][]string{}
 
-	for k, v := range c.allProtosAtomic.Items {
-		if _, ok := c.unknownProtosAtomic.Items[k]; ok {
-			rows = append(rows, []string{ansi.Yellow + k, fmt.Sprint(v), share(v, c.numPackets) + ansi.Reset})
-		} else {
-			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
+		for k, v := range c.allProtosAtomic.Items {
+			if _, ok := c.unknownProtosAtomic.Items[k]; ok {
+				rows = append(rows, []string{ansi.Yellow + k, fmt.Sprint(v), share(v, c.numPackets) + ansi.Reset})
+			} else {
+				rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
+			}
 		}
-	}
-	tui.Table(os.Stdout, []string{"Layer", "NumRecords", "Share"}, rows)
+		tui.Table(os.Stdout, []string{"Layer", "NumRecords", "Share"}, rows)
 
-	if len(encoder.CustomEncoders) > 0 {
-		rows = [][]string{}
-		for _, e := range encoder.CustomEncoders {
-			rows = append(rows, []string{e.Name, strconv.FormatInt(e.NumRecords(), 10), share(e.NumRecords(), c.numPackets)})
+		if len(encoder.CustomEncoders) > 0 {
+			rows = [][]string{}
+			for _, e := range encoder.CustomEncoders {
+				rows = append(rows, []string{e.Name, strconv.FormatInt(e.NumRecords(), 10), share(e.NumRecords(), c.numPackets)})
+			}
+			tui.Table(os.Stdout, []string{"CustomEncoder", "NumRecords", "Share"}, rows)
 		}
-		tui.Table(os.Stdout, []string{"CustomEncoder", "NumRecords", "Share"}, rows)
-	}
 
-	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
-	if c.unkownPcapWriterAtomic.count > 0 {
-		res += "-> " + share(c.unkownPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.unkownPcapWriterAtomic.count, 10) + ") written to unknown.pcap\n"
-	}
+		res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
+		if c.unkownPcapWriterAtomic.count > 0 {
+			res += "-> " + share(c.unkownPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.unkownPcapWriterAtomic.count, 10) + ") written to unknown.pcap\n"
+		}
 
-	if c.errorsPcapWriterAtomic.count > 0 {
-		res += "-> " + share(c.errorsPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.errorsPcapWriterAtomic.count, 10) + ") written to errors.pcap\n"
+		if c.errorsPcapWriterAtomic.count > 0 {
+			res += "-> " + share(c.errorsPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.errorsPcapWriterAtomic.count, 10) + ") written to errors.pcap\n"
+		}
+		fmt.Println(res)
 	}
-	fmt.Println(res)
 }
 
 // updates the progress indicator and writes to stdout.
@@ -311,7 +315,7 @@ func (c *Collector) Init() (err error) {
 
 	// start workers
 	c.workers = c.initWorkers()
-	fmt.Println("spawned", c.config.Workers, "workers")
+	c.printStdOut("spawned", c.config.Workers, "workers")
 
 	// create full output directory path if set
 	if c.config.EncoderConfig.Out != "" {
@@ -321,12 +325,15 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
-	// set
+	// set file storage
 	encoder.FileStorage = c.config.FileStorage
 
+	// set quiet mode
+	resolvers.Quiet = c.config.Quiet
+
 	// initialize encoders
-	encoder.InitLayerEncoders(c.config.EncoderConfig)
-	encoder.InitCustomEncoders(c.config.EncoderConfig)
+	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)
+	encoder.InitCustomEncoders(c.config.EncoderConfig, c.config.Quiet)
 
 	// set payload capture
 	encoder.CapturePayload = c.config.EncoderConfig.IncludePayloads
@@ -375,16 +382,20 @@ func (c *Collector) FreeOSMemory() {
 // PrintConfiguration dumps the current collector config to stdout
 func (c *Collector) PrintConfiguration() {
 
-	// print configuration as table
-	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
-		{"Workers", strconv.Itoa(c.config.Workers)},
-		{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
-		{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
-		{"Compression", strconv.FormatBool(c.config.EncoderConfig.Compression)},
-		{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
-		{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
-		{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
-		{"FileStorage", c.config.FileStorage},
-	})
-	fmt.Println() // add a newline
+	if !c.config.Quiet {
+		netcap.PrintBuildInfo()
+
+		// print configuration as table
+		tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
+			{"Workers", strconv.Itoa(c.config.Workers)},
+			{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
+			{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
+			{"Compression", strconv.FormatBool(c.config.EncoderConfig.Compression)},
+			{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
+			{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
+			{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
+			{"FileStorage", c.config.FileStorage},
+		})
+		fmt.Println() // add a newline
+	}
 }

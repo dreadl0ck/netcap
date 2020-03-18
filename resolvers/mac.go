@@ -61,8 +61,9 @@ func InitMACResolver() {
 		macDB[sum.OUI] = sum
 		sums++
 	}
-
-	fmt.Println("loaded", sums, "OUI summaries")
+	if !Quiet {
+		fmt.Println("loaded", sums, "OUI summaries")
+	}
 }
 
 // LookupManufacturer resolves a MAC addr to the manufacturer

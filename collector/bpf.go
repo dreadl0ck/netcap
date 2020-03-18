@@ -14,14 +14,12 @@
 package collector
 
 import (
-	"io"
-	"log"
-
-	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/pkg/errors"
+	"io"
 )
 
 // CollectBPF open the named PCAP file and sets the specified BPF filter.
@@ -42,7 +40,7 @@ func (c *Collector) CollectBPF(path string, bpf string) error {
 	}
 
 	// read packets
-	log.Println("decoding packets... ")
+	c.printStdOut("decoding packets... ")
 	for {
 
 		// fetch the next packetdata and packetheader

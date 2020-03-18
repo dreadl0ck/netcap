@@ -90,7 +90,7 @@ func init() {
 }
 
 // InitCustomEncoders initializes all custom encoders
-func InitCustomEncoders(c Config) {
+func InitCustomEncoders(c Config, quiet bool) {
 
 	var (
 		// values from command-line flags
@@ -178,7 +178,10 @@ func InitCustomEncoders(c Config) {
 		// append to custom encoders slice
 		CustomEncoders = append(CustomEncoders, e)
 	}
-	fmt.Println("initialized", len(CustomEncoders), "custom encoders")
+
+	if !quiet {
+		fmt.Println("initialized", len(CustomEncoders), "custom encoders")
+	}
 }
 
 // CreateCustomEncoder returns a new CustomEncoder instance

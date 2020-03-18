@@ -39,9 +39,6 @@ func main() {
 	baseDir := strings.TrimSuffix(inputFile, ".pcap")
 	os.MkdirAll(baseDir, 0700)
 
-	stdout := os.Stdout
-	os.Stdout = os.Stderr
-
 	// init collector
 	c := collector.New(collector.Config{
 		Live:                false,
@@ -67,6 +64,7 @@ func main() {
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("lazy"),
+		Quiet: true,
 	})
 
 	// if not, use native pcapgo version
@@ -94,9 +92,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer r.Close()
-
-	// restore stdout
-	os.Stdout = stdout
 
 	ident := filepath.Join(baseDir, "DeviceProfile.ncap.gz")
 

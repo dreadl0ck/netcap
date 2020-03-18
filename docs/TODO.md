@@ -2,6 +2,7 @@
 
 # maltego
 
+- add GetHTTPContentTypes -> GetFiles
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
 - SMTP audit record type
@@ -12,6 +13,7 @@
 
 ## General
 
+- add quiet switch when openening netcap dump files via the Open() call, update transforms
 - single binary as plugin / framework
 - create profiles for Link Layer only devices as well
 - use nDPI 3.2 and libpotoident latest version

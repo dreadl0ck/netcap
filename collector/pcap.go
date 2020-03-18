@@ -14,7 +14,6 @@
 package collector
 
 import (
-	"fmt"
 	"github.com/dreadl0ck/gopacket/layers"
 	"io"
 	"log"
@@ -98,20 +97,23 @@ func (c *Collector) CollectPcap(path string) error {
 
 	// file exists.
 	clearLine()
-	println("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
+	c.printStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
 
 	// set input filesize on collector
 	c.inputSize = stat.Size()
 
 	// display total packet count
-	print("counting packets...")
+	c.printStdOut("counting packets...")
 	start := time.Now()
 	c.numPackets, err = countPackets(path)
 	if err != nil {
 		return err
 	}
-	clearLine()
-	fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
+
+	if !c.config.Quiet {
+		clearLine()
+	}
+	c.printStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
 	r, f, err := OpenPCAP(path)
 	if err != nil {
@@ -119,7 +121,7 @@ func (c *Collector) CollectPcap(path string) error {
 	}
 	defer f.Close()
 
-	fmt.Println("detected link type:", r.LinkType())
+	c.printStdOut("detected link type:", r.LinkType())
 
 	switch r.LinkType() {
 	case layers.LinkTypeEthernet:
@@ -139,7 +141,7 @@ func (c *Collector) CollectPcap(path string) error {
 		return err
 	}
 
-	print("decoding packets... ")
+	c.printStdOut("decoding packets... ")
 	for {
 
 		// fetch the next packetdata and packetheader

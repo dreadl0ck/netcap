@@ -14,13 +14,12 @@
 package collector
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"time"
 
-	humanize "github.com/dustin/go-humanize"
 	"github.com/dreadl0ck/gopacket/pcapgo"
+	humanize "github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 )
 
@@ -77,20 +76,20 @@ func (c *Collector) CollectPcapNG(path string) error {
 
 	// file exists.
 	clearLine()
-	println("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
+	c.printStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
 
 	// set input filesize on collector
 	c.inputSize = stat.Size()
 
 	// display total packet count
-	print("counting packets...")
+	c.printStdOut("counting packets...")
 	start := time.Now()
 	c.numPackets, err = countPacketsNG(path)
 	if err != nil {
 		return err
 	}
 	clearLine()
-	fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
+	c.printStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
 	r, f, err := openPcapNG(path)
 	if err != nil {
@@ -103,7 +102,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 		return err
 	}
 
-	print("decoding packets... ")
+	c.printStdOut("decoding packets... ")
 	for {
 		// fetch the next packetdata and packetheader
 		// for pcapNG this uses ZeroCopyReadPacketData()

@@ -1,7 +1,7 @@
 package main
 
 import (
-	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
+	"github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dustin/go-humanize"
 	"strconv"
@@ -9,7 +9,6 @@ import (
 
 func main() {
 	maltego.DeviceProfileTransform(maltego.CountPacketsDevices, func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string) {
-
 		ident := profile.MacAddr + "\n" + profile.DeviceManufacturer
 		ent := trx.AddEntity("netcap.Device", ident)
 		ent.SetType("netcap.Device")

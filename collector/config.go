@@ -31,4 +31,5 @@ type Config struct {
 	BaseLayer           gopacket.LayerType
 	DecodeOptions       gopacket.DecodeOptions
 	FileStorage         string
+	Quiet               bool
 }

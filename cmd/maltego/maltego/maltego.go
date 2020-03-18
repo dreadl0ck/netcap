@@ -57,6 +57,18 @@ func GetThicknessInterval(val, min, max uint64) int {
 	}
 }
 
+// Sets the progressbar in Maltego
+// this is documented in the old versions of the Maltego manual
+// but does not seem to work with the current version
+//func (m *MaltegoTransform) PrintProgress(percentage int) {
+//
+//	if percentage < 0 || percentage > 100 {
+//		fmt.Println("invalid percentage value:", percentage)
+//		return
+//	}
+//
+//	os.Stderr.WriteString("%" + strconv.Itoa(percentage) + "\n")
+//}
 
 func GetThickness(val, min, max uint64) int {
 
