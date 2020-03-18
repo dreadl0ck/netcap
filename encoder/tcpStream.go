@@ -68,7 +68,7 @@ var (
 	allowmissinginit = flag.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
 	verbose          = flag.Bool("verbose", false, "be verbose")
 	debug            = flag.Bool("debug", false, "display debug information")
-	quiet            = flag.Bool("quiet", true, "be quiet regarding errors")
+	quiet            = flag.Bool("tcpstream-quiet", true, "be quiet regarding errors")
 	nohttp           = flag.Bool("nohttp", false, "disable HTTP parsing")
 	fileStorage      = flag.String("fileStorage", "", "path to create file for HTTP 200 OK responses")
 	writeincomplete  = flag.Bool("writeincomplete", false, "write incomplete response")
