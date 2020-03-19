@@ -14,7 +14,6 @@
 package encoder
 
 import (
-	"fmt"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
@@ -38,13 +37,6 @@ var pop3Encoder = CreateCustomEncoder(types.Type_NC_POP3, "POP3", func(d *Custom
 
 	// de-init: finishes processing
 	// and prints statistics
-
-	fmt.Println("pop3Encoder.numRequests", e.numRequests)
-	fmt.Println("pop3Encoder.numResponses", e.numResponses)
-	fmt.Println("pop3Encoder.numUnmatchedResp", e.numUnmatchedResp)
-	fmt.Println("pop3Encoder.numNilRequests", e.numNilRequests)
-	fmt.Println("pop3Encoder.numFoundRequests", e.numFoundRequests)
-	fmt.Println("pop3Encoder.numUnansweredRequests", e.numUnansweredRequests)
 
 	return nil
 })
