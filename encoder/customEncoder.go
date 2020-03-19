@@ -41,6 +41,7 @@ var (
 		connectionEncoder,
 		profileEncoder,
 		fileEncoder,
+		pop3Encoder,
 	}
 )
 

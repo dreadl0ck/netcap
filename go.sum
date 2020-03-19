@@ -30,6 +30,10 @@ github.com/dreadl0ck/tlsx v0.0.0-20200303221230-8cb859306e07 h1:ZPbZ1CELNcwKr0D/
 github.com/dreadl0ck/tlsx v0.0.0-20200303221230-8cb859306e07/go.mod h1:amAb73WEEgPHWniMfwro6UpN6St3e5ypgq2tXM89IOo=
 github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78 h1:K3JafAWz7cxpVYyOWlX5jb0HXWnr/VaqTiZXFKVeTgo=
 github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78/go.mod h1:sBTlLV54BjDf/gqC3YuFIhs5DKslo/BW/M/mHkCkNM4=
+github.com/dreadl0ck/tlsx v0.0.0-20200319094001-17ffceb577c0 h1:C3qr/nBdqP8DOOGT8mojGIKS6KbWlsn8vqLKLA/KfEA=
+github.com/dreadl0ck/tlsx v0.0.0-20200319094001-17ffceb577c0/go.mod h1:sBTlLV54BjDf/gqC3YuFIhs5DKslo/BW/M/mHkCkNM4=
+github.com/dreadl0ck/tlsx v0.0.0-20200319094332-919ca4aee420 h1:KRAJSsOP5MClxUs51vL+aq1HrcNqyTXuZ8MhsQUcMag=
+github.com/dreadl0ck/tlsx v0.0.0-20200319094332-919ca4aee420/go.mod h1:sBTlLV54BjDf/gqC3YuFIhs5DKslo/BW/M/mHkCkNM4=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/evilsocket/islazy v1.10.4 h1:Z5373Kn5Gh2EWch1Tb/Qxb6vyQ7lw704bmKi7sY4Ecs=

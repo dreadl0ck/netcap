@@ -58,6 +58,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	gzip "github.com/klauspost/pgzip"
 
@@ -81,7 +82,11 @@ type httpReader struct {
 func (h *httpReader) Read(p []byte) (int, error) {
 	ok := true
 	for ok && len(h.data) == 0 {
-		h.data, ok = <-h.bytes
+		select {
+			case h.data, ok = <-h.bytes:
+			case <-time.After(time.Duration(*flagFlowTimeOut) * time.Second):
+				return 0, io.EOF
+		}
 	}
 	if !ok || len(h.data) == 0 {
 		return 0, io.EOF
@@ -92,7 +97,11 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	return l, nil
 }
 
-func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
+func (h *httpReader) BytesChan() chan []byte {
+	return h.bytes
+}
+
+func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -179,7 +188,7 @@ func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 }
 
 // run starts decoding HTTP traffic in a single direction
-func (h *httpReader) run(wg *sync.WaitGroup) {
+func (h *httpReader) Run(wg *sync.WaitGroup) {
 
 	// create streams
 	var (
@@ -190,7 +199,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 	)
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.cleanup(wg, s2c, c2s)
+	defer h.Cleanup(wg, s2c, c2s)
 
 	var (
 		err error
@@ -524,15 +533,15 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		n      = 0
 	)
 	for {
-		_, err := os.Stat(target)
-		if err != nil {
+		_, errStat := os.Stat(target)
+		if errStat != nil {
 			break
 		}
 
 		if err != nil {
 			target = path.Join(root, filepath.Clean("incomplete-" + name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
 		} else {
-			target = path.Join(root, filepath.Clean("incomplete-" + name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean(name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
 		}
 
 		n++

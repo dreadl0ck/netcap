@@ -2,29 +2,37 @@
 
 # maltego
 
+- Add tests for POP3
+
+- text Content types: add GetLinks and GetEmails
 - HTTP: GetHTTPHost -> GetURLs
 - HTTP: GetHTTPHost -> GetParameters
 - HTTP: GetHTTPHost -> GetCookies
 - add GetHTTPContentTypes -> GetFiles
 - DPI: GetApplicationCategories -> GetApplications?
+- add GetMails / GetMailContacts 
+
 - attach files (preview?) and open them by click
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
-- SMTP audit record type: IMAP, POP3
 - define triggers to highlight links in red
 - MIME type: check if executables are properly detected
-- http: basic auth extraction from URL: GetHTTPBasicAuth?
 - destination ips: queries for audit records must use DstIP == ipaddr !
 
 ## General
 
-- add quiet switch when openening netcap dump files via the Open() call, update transforms
-- single binary as plugin / framework
+- remove DNS logic from stream reassembly
+- move Stream type into separate file, rename to Connection to unify wording
+- add flag to toggle DNS resolving
+- add quiet switch when opening netcap dump files via the Open() call, update transforms
 - create profiles for Link Layer only devices as well
-- use nDPI 3.2 and libpotoident latest version
+- http: basic auth extraction from URL: GetHTTPBasicAuth?
+ 
+- single binary as plugin / framework
+- use nDPI 3.2 and libprotoident latest version
 - test on the ultimate pcap file
 
-- flag.FlagSet instead of cobra for subcommands?
+- flag.FlagSet instead of cobra for sub commands?
 - net.split: split pcap files by days, possibly also hours
 - label tool: display a warning when nothing is there for mapping
 - use new 1.13 strings.ToValidUTF8()
