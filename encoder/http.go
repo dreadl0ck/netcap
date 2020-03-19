@@ -54,6 +54,7 @@ var (
 	FileStorage string
 )
 
+// TODO: move into separate file, rename to Connection to unify wording
 // Stream contains both unidirectional flows for a connection
 type Stream struct {
 	a gopacket.Flow
@@ -166,12 +167,11 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
-	// actual decoder is nil, because the processing happens after TCP stream reassembly
+	// encoding func is nil, because the processing happens after TCP stream reassemblyis nil, because the processing happens after TCP stream reassembly
 	return nil
 }, func(e *CustomEncoder) error {
 
-	// deinit:
-	// finshes processing
+	// de-init: finishes processing
 	// and prints statistics
 
 	if !Quiet {
@@ -303,7 +303,7 @@ func setRequest(h *types.HTTP, req *http.Request) {
 	h.Referer = strings.Replace(req.Referer(), ",", "(comma)", -1)
 	h.URL = strings.Replace(req.URL.String(), ",", "(comma)", -1)
 
-	// retrieve ip adresses set on the request while processing
+	// retrieve ip addresses set on the request while processing
 	h.SrcIP = req.Header.Get("netcap-clientip")
 	h.DstIP = req.Header.Get("netcap-serverip")
 
@@ -369,25 +369,3 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 	}
 }
 
-func logError(t string, s string, a ...interface{}) {
-	errorsMapMutex.Lock()
-	numErrors++
-	nb := errorsMap[t]
-	errorsMap[t] = nb + 1
-	errorsMapMutex.Unlock()
-	if outputLevel >= 0 {
-		fmt.Printf(s, a...)
-	}
-}
-
-func logInfo(s string, a ...interface{}) {
-	if outputLevel >= 1 {
-		fmt.Printf(s, a...)
-	}
-}
-
-func logDebug(s string, a ...interface{}) {
-	if outputLevel >= 2 {
-		fmt.Printf(s, a...)
-	}
-}

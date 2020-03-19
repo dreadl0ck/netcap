@@ -154,6 +154,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.SMTP)
 	case types.Type_NC_Diameter:
 		record = new(types.Diameter)
+	case types.Type_NC_POP3:
+		record = new(types.POP3)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

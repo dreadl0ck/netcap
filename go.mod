@@ -8,7 +8,7 @@ require (
 	github.com/dreadl0ck/go-dpi v0.0.0-20200316202619-1ef173ca5da2
 	github.com/dreadl0ck/gopacket v1.1.16-0.20200318203142-a149d241470b
 	github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e
-	github.com/dreadl0ck/tlsx v0.0.0-20200308211605-1312538fcc78
+	github.com/dreadl0ck/tlsx v0.0.0-20200319094332-919ca4aee420
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evilsocket/islazy v1.10.4
 	github.com/fatih/color v1.7.0 // indirect

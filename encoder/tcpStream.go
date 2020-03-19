@@ -49,6 +49,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/netcap/types"
 	"net/http"
 	"sync"
 	"time"
@@ -106,6 +107,13 @@ var reassemblyStats struct {
 	overlapPackets      int
 }
 
+type StreamReader interface {
+	Read(p []byte) (int, error)
+	Run(wg *sync.WaitGroup)
+	BytesChan() chan []byte
+	Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream)
+}
+
 /*
  * The TCP factory: returns a new Stream
  */
@@ -127,6 +135,7 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 		transport:   transport,
 		isDNS:       tcp.SrcPort == 53 || tcp.DstPort == 53,
 		isHTTP:      (tcp.SrcPort == 80 || tcp.DstPort == 80) && factory.doHTTP,
+		isPOP3:      tcp.SrcPort == 110 || tcp.DstPort == 110,
 		reversed:    tcp.SrcPort == 80,
 		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
 		ident:       fmt.Sprintf("%s:%s", net, transport),
@@ -135,14 +144,14 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 	}
 
 	if stream.isHTTP {
-		stream.client = httpReader{
+		stream.client = &httpReader{
 			bytes:    make(chan []byte),
 			ident:    fmt.Sprintf("%s %s", net, transport),
 			hexdump:  *hexdump,
 			parent:   stream,
 			isClient: true,
 		}
-		stream.server = httpReader{
+		stream.server = &httpReader{
 			bytes:   make(chan []byte),
 			ident:   fmt.Sprintf("%s %s", net.Reverse(), transport.Reverse()),
 			hexdump: *hexdump,
@@ -151,9 +160,31 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 
 		// kickoff http decoders for client and server
 		factory.wg.Add(2)
-		go stream.client.run(&factory.wg)
-		go stream.server.run(&factory.wg)
+		go stream.client.Run(&factory.wg)
+		go stream.server.Run(&factory.wg)
 	}
+
+	if stream.isPOP3 {
+		stream.client = &pop3Reader{
+			bytes:    make(chan []byte),
+			ident:    fmt.Sprintf("%s %s", net, transport),
+			hexdump:  *hexdump,
+			parent:   stream,
+			isClient: true,
+		}
+		stream.server = &pop3Reader{
+			bytes:   make(chan []byte),
+			ident:   fmt.Sprintf("%s %s", net.Reverse(), transport.Reverse()),
+			hexdump: *hexdump,
+			parent:  stream,
+		}
+
+		// kickoff http decoders for client and server
+		factory.wg.Add(2)
+		go stream.client.Run(&factory.wg)
+		go stream.server.Run(&factory.wg)
+	}
+
 	return stream
 }
 
@@ -185,16 +216,20 @@ type tcpStream struct {
 	fsmerr   bool
 	isDNS    bool
 	isHTTP   bool
+	isPOP3   bool
 	reversed bool
 	ident    string
 
-	client httpReader
-	server httpReader
+	client StreamReader
+	server StreamReader
 
 	firstPacket time.Time
 
 	requests  []*http.Request
 	responses []*http.Response
+
+	pop3Requests  []*types.POP3Request
+	pop3Responses []*types.POP3Response
 
 	// if set, indicates that either client or server http reader was closed already
 	last bool
@@ -333,9 +368,18 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 				logDebug("Feeding http with:\n%s", hex.Dump(data))
 			}
 			if dir == reassembly.TCPDirClientToServer && !t.reversed {
-				t.client.bytes <- data
+				t.client.BytesChan() <- data
 			} else {
-				t.server.bytes <- data
+				t.server.BytesChan() <- data
+			}
+		}
+	} else if t.isPOP3 {
+		if length > 0 {
+			//fmt.Printf("Feeding POP3 with:\n%s", hex.Dump(data))
+			if dir == reassembly.TCPDirClientToServer && !t.reversed {
+				t.client.BytesChan() <- data
+			} else {
+				t.server.BytesChan() <- data
 			}
 		}
 	}
@@ -360,11 +404,11 @@ func (t *tcpStream) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
 		// I created a snippet to verify: https://goplay.space/#m8-zwTuGrgS
 		func() {
 			defer recovery()
-			close(t.client.bytes)
+			close(t.client.BytesChan())
 		}()
 		func() {
 			defer recovery()
-			close(t.server.bytes)
+			close(t.server.BytesChan())
 		}()
 	}
 	// do not remove the connection to allow last ACK

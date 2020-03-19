@@ -51,7 +51,7 @@ var (
 
 	// flags for flushing intervals
 	flagConnFlushInterval = flag.Int("conn-flush-interval", 10000, "flush connections every X flows")
-	flagConnTimeOut       = flag.Int("conn-timeout", 60, "close connections older than X seconds")
+	flagConnTimeOut       = flag.Int("conn-timeout", 10, "close connections older than X seconds")
 
 	connFlushInterval int64
 	connTimeOut       time.Duration

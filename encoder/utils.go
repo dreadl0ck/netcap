@@ -115,3 +115,26 @@ func Entropy(data []byte) (entropy float64) {
 func pad(in interface{}, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
 }
+
+func logError(t string, s string, a ...interface{}) {
+	errorsMapMutex.Lock()
+	numErrors++
+	nb := errorsMap[t]
+	errorsMap[t] = nb + 1
+	errorsMapMutex.Unlock()
+	if outputLevel >= 0 {
+		fmt.Printf(s, a...)
+	}
+}
+
+func logInfo(s string, a ...interface{}) {
+	if outputLevel >= 1 {
+		fmt.Printf(s, a...)
+	}
+}
+
+func logDebug(s string, a ...interface{}) {
+	if outputLevel >= 2 {
+		fmt.Printf(s, a...)
+	}
+}
