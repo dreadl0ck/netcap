@@ -31,6 +31,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
 
 	gzip "github.com/klauspost/pgzip"
 
@@ -41,7 +42,7 @@ import (
  * POP3 part
  */
 
-const pop3Debug = false
+const pop3Debug = true
 
 type pop3Reader struct {
 	ident    string
@@ -53,6 +54,8 @@ type pop3Reader struct {
 
 	reqIndex int
 	resIndex int
+
+	user, pass, token string
 }
 
 func (h *pop3Reader) Read(p []byte) (int, error) {
@@ -102,14 +105,17 @@ func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 	// this check ensures the audit record collection is executed only if one side has been closed already
 	// to ensure all necessary requests and responses are present
 	if h.parent.last {
-
+		mails, user, pass, token := h.parseMails()
 		pop3Msg := &types.POP3{
 			Timestamp: h.parent.firstPacket.String(),
-			Requests:  h.parent.pop3Requests,
-			Responses: h.parent.pop3Responses,
 			Client:    h.parent.net.Src().String(),
 			Server:    h.parent.net.Dst().String(),
-			Mails:      h.parseMails(),
+			AuthToken: token,
+			User:      user,
+			Pass:      pass,
+			//Requests:  h.parent.pop3Requests,
+			//Responses: h.parent.pop3Responses,
+			Mails:     mails,
 		}
 
 		// export metrics if configured
@@ -124,8 +130,10 @@ func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 			errorMap.Inc(err.Error())
 		}
 
-		// TODO: remove debug formatting
-		fmt.Println()
+		if pop3Debug {
+			// TODO: remove debug
+			fmt.Println()
+		}
 	}
 
 	// signal wait group
@@ -166,31 +174,6 @@ func (h *pop3Reader) Run(wg *sync.WaitGroup) {
 			continue
 		}
 	}
-}
-
-func (h *pop3Reader) findRequest(res *http.Response, s2c Stream) string {
-
-	// try to find the matching POP3 request for the response
-	var (
-		req    *http.Request
-		reqURL string
-	)
-
-	h.parent.Lock()
-	if len(h.parent.requests) != 0 {
-		// take the request from the parent stream and delete it from there
-		req, h.parent.requests = h.parent.requests[0], h.parent.requests[1:]
-		reqURL = req.URL.String()
-	}
-	h.parent.Unlock()
-
-	// set request instance on response
-	if req != nil {
-		res.Request = req
-		atomic.AddInt64(&pop3Encoder.numFoundRequests, 1)
-	}
-
-	return reqURL
 }
 
 func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encoding []string) error {
@@ -429,23 +412,22 @@ const (
     StateDataTransfer
 )
 
-func (h *pop3Reader) parseMails() []string {
+func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string) {
 
 	if len(h.parent.pop3Responses) == 0 || len(h.parent.pop3Requests) == 0 {
-		return nil
+		return
 	}
 
 	// check if server hello
 	serverHello := h.parent.pop3Responses[0]
 	if serverHello.Command != "+OK" {
-		return nil
+		return
 	}
 	if !strings.HasPrefix(serverHello.Message, "POP server ready") {
-		return nil
+		return
 	}
 
 	var (
-		mails []string
 		state POP3State = StateNotAuthenticated
 		numMails int
 		next = func() *types.POP3Request {
@@ -456,7 +438,7 @@ func (h *pop3Reader) parseMails() []string {
 
 	for {
 		if h.reqIndex == len(h.parent.pop3Requests) {
-			return mails
+			return
 		}
 		r := next()
 		h.reqIndex++
@@ -484,8 +466,7 @@ func (h *pop3Reader) parseMails() []string {
 					var n int
 					for _, reply := range h.parent.pop3Responses[h.resIndex:] {
 						if reply.Command == "." {
-							//fmt.Println("finished reading mail!", mailBuf)
-							mails = append(mails, mailBuf)
+							mails = append(mails, parseMail([]byte(mailBuf)))
 							mailBuf = ""
 							numMails++
 							h.resIndex++
@@ -497,16 +478,14 @@ func (h *pop3Reader) parseMails() []string {
 					h.resIndex = h.resIndex + n
 					continue
 				case "QUIT":
-					return mails
+					return
 			}
 		case StateNotAuthenticated:
 			switch r.Command {
 			case "USER":
 				reply := h.parent.pop3Responses[h.resIndex+1]
-				//fmt.Println("CHECKING USER", reply.Command, reply.Message)
 				if reply.Command == "+OK" {
-					// TODO: save correct username
-					//fmt.Println("VALID USER")
+					user = r.Argument
 				}
 				h.resIndex++
 				continue
@@ -524,31 +503,113 @@ func (h *pop3Reader) parseMails() []string {
 				continue
 			case "AUTH":
 				reply := h.parent.pop3Responses[h.resIndex+1]
-				//fmt.Println("CHECKING AUTH", reply.Command, reply.Message)
 				if reply.Command == "+OK" {
-					//fmt.Println("AUTHENTICATED")
 					state = StateAuthenticated
+					r := h.parent.pop3Requests[h.reqIndex]
+					if r != nil {
+						token = r.Command
+					}
 				}
 				h.resIndex++
 				continue
 			case "PASS":
 				reply := h.parent.pop3Responses[h.resIndex+1]
-				//fmt.Println("CHECKING AUTH", reply.Command, reply.Message)
 				if reply.Command == "+OK" {
-					//fmt.Println("AUTHENTICATED")
 					state = StateAuthenticated
+					pass = r.Argument
+				}
+				h.resIndex++
+				continue
+			case "APOP": // example: APOP mrose c4c9334bac560ecc979e58001b3e22fb
+				reply := h.parent.pop3Responses[h.resIndex+1]
+				if reply.Command == "+OK" {
+					state = StateAuthenticated
+					parts := strings.Split(r.Argument, " ")
+					if len(parts) > 1 {
+						user = parts[0]
+						token = parts[1]
+					}
 				}
 				h.resIndex++
 				continue
 			case "QUIT":
-				return mails
+				return
 			}
 		}
 		h.resIndex++
 	}
 }
 
-// TODO: test auth via PASS cmd
+func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
+
+	var (
+		header = make(map[string]string)
+		r = textproto.NewReader(bufio.NewReader(bytes.NewReader(buf)))
+		body string
+		lastHeader string
+		collectBody bool
+	)
+
+	for {
+		line, err := r.ReadLine()
+		if err != nil {
+			return header, body
+		}
+
+		if collectBody {
+			body += line + "\n"
+			continue
+		}
+
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Split(line, ": ")
+		if len(parts) == 0 {
+			header[lastHeader] += "\n" + line
+			continue
+		}
+
+		// should be an uppercase char if header field
+		// multi line values start with a whitespace
+		if unicode.IsUpper(rune(parts[0][0])) {
+			if parts[0] == "Envelope-To" {
+				collectBody = true
+			}
+			header[parts[0]] = strings.Join(parts[1:], ": ")
+			lastHeader = parts[0]
+		} else {
+			// multiline
+			header[lastHeader] += "\n" + line
+		}
+	}
+}
+
+func parseMail(buf []byte) *types.Mail {
+	header, body := splitMailHeaderAndBody(buf)
+	mail := &types.Mail{
+		ReturnPath:      header["Return-Path"],
+		DeliveryDate:    header["Delivery-Date"],
+		From:            header["From"],
+		To:              header["To"],
+		CC:              header["CC"],
+		Subject:         header["Subject"],
+		Date:            header["Date"],
+		MessageID:       header["Message-ID"],
+		References:      header["References"],
+		InReplyTo:       header["In-Reply-To"],
+		ContentLanguage: header["Content-Language"],
+		//HasAttachments:header[  ]fal//se,
+		XOriginatingIP:  header["x-originating-ip"],
+		ContentType:     header["Content-Type"],
+		EnvelopeTo:      header["Envelope-To"],
+		Body:            body,
+	}
+	return mail
+}
+
+// TODO: write unit test for this
 //< +OK POP3 server ready <mailserver.mydomain.com>
 //>USER user1
 //< +OK
@@ -559,16 +620,16 @@ func (h *pop3Reader) parseMails() []string {
 //> LIST
 //< +OK 2 messages
 
-// TODO: save token
+// save token
 // request: AUTH PLAIN
 // next command is token
 
-// TODO: parse user and MD5 from APOP cmd
+// parse user and MD5 from APOP cmd
 //S: +OK POP3 server ready <1896.697170952@dbc.mtview.ca.us>
 //C: APOP mrose c4c9334bac560ecc979e58001b3e22fb
 //S: +OK maildrop has 1 message (369 octets)
 
-// TODO: save USER name and PASS
+// save USER name and PASS
 //Possible Responses:
 //+OK name is a valid mailbox
 //-ERR never heard of mailbox name
@@ -580,7 +641,7 @@ func (h *pop3Reader) parseMails() []string {
 //C: USER mrose
 //S: +OK mrose is a real hoopy frood
 
-//TODO: test PASS cmd
+// test wrong and corrrect PASS cmd usage
 //Possible Responses:
 //+OK maildrop locked and ready
 //-ERR invalid password

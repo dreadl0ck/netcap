@@ -1812,7 +1812,26 @@ message POP3 {
     string   Pass                   = 6;
     repeated POP3Request  Requests  = 7;
     repeated POP3Response Responses = 8;
-    repeated string       Mails     = 9;
+    repeated Mail         Mails     = 9;
+}
+
+message Mail {
+    string ReturnPath            = 1;
+    string DeliveryDate          = 2;
+    string From                  = 3;
+    string To                    = 4;
+    string CC                    = 5;
+    string Subject               = 6;
+    string Date                  = 7;
+    string MessageID             = 8;
+    string References            = 9;
+    string InReplyTo             = 10;
+    string ContentLanguage       = 11;
+    bool   HasAttachments        = 12;
+    string XOriginatingIP        = 13;
+    string ContentType           = 14;
+    string EnvelopeTo            = 15;
+    string Body                  = 16;
 }
 
 message POP3Request {

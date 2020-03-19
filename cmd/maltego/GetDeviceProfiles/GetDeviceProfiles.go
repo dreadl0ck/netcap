@@ -60,7 +60,7 @@ func main() {
 			Buffer:          true,
 			Compression:     true,
 			CSV:             false,
-			IncludeEncoders: "DeviceProfile,File,HTTP,DNS",
+			IncludeEncoders: "DeviceProfile,File,HTTP,DNS,POP3,SMTP",
 			ExcludeEncoders: "",
 			Out:             baseDir,
 			Source:          inputFile,

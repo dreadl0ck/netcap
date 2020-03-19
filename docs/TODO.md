@@ -2,15 +2,21 @@
 
 # maltego
 
-- Add tests for POP3
+- add tests for POP3
+- add file extraction for POP3 emails and attachments
+- set attachments on mail audit record type
+- add mail header fields to maltego entity 
 
+- Email: GetAttachments
+- GetDHCP for device identification
+- GetUsers from POP3 / BasicAuth etc
 - text Content types: add GetLinks and GetEmails
 - HTTP: GetHTTPHost -> GetURLs
 - HTTP: GetHTTPHost -> GetParameters
 - HTTP: GetHTTPHost -> GetCookies
 - add GetHTTPContentTypes -> GetFiles
 - DPI: GetApplicationCategories -> GetApplications?
-- add GetMails / GetMailContacts 
+- add GetMails / GetMailContacts
 
 - attach files (preview?) and open them by click
 - link src to dst ports?
@@ -21,6 +27,7 @@
 
 ## General
 
+- finish types implementation for POP3
 - remove DNS logic from stream reassembly
 - move Stream type into separate file, rename to Connection to unify wording
 - add flag to toggle DNS resolving
