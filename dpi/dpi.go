@@ -12,6 +12,8 @@ import (
 	"log"
 )
 
+var disableDPI = false
+
 func Init() {
 	var (
 		nDPI = wrappers.NewNDPIWrapper()
@@ -28,6 +30,8 @@ func Init() {
 	}
 }
 
+// Destroy tears down godpi and frees the memory allocated for cgo
+// returned errors are logged to stdout
 func Destroy() {
 	for _, e := range godpi.Destroy() {
 		if e != nil {
@@ -36,9 +40,17 @@ func Destroy() {
 	}
 }
 
+// GetProtocols returns a map of all the identified protocol names
+// to the accumulated number of hits for each protocol
+// packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
 func GetProtocols(packet gopacket.Packet) map[string]struct{} {
 
 	var uniqueResults = make(map[string]struct{})
+
+	if disableDPI {
+		return uniqueResults
+	}
+
 	flow, _ := godpi.GetPacketFlow(packet)
 	results := godpi.ClassifyFlowAllModules(flow)
 

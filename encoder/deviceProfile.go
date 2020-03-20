@@ -88,10 +88,10 @@ func NewDeviceProfile(i *idents) *types.DeviceProfile {
 		MacAddr:            i.srcMAC,
 		DeviceManufacturer: resolvers.LookupManufacturer(i.srcMAC),
 		DeviceIPs: []*types.IPProfile{
-			getIPProfile(i.srcMAC, i.srcIP, i),
+			getIPProfile(i.srcIP, i),
 		},
 		Contacts: []*types.IPProfile{
-			getIPProfile(i.dstMAC, i.dstIP, i),
+			getIPProfile(i.dstIP, i),
 		},
 		Timestamp: i.timestamp,
 		NumPackets: 1,
@@ -104,25 +104,29 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 	// deviceIPs
 	var found bool
 	for _, pr := range p.DeviceIPs {
-		if pr.Addr == i.srcIP {
-			pr = getIPProfile(i.srcMAC, i.srcIP, i)
-			found = true
+		if pr != nil {
+			if pr.Addr == i.srcIP {
+				pr = getIPProfile(i.srcIP, i)
+				found = true
+			}
 		}
 	}
 	if !found {
-		p.DeviceIPs = append(p.DeviceIPs, getIPProfile(i.srcMAC, i.srcIP, i))
+		p.DeviceIPs = append(p.DeviceIPs, getIPProfile(i.srcIP, i))
 	}
 
 	// contacts
 	found = false
 	for _, pr := range p.Contacts {
-		if pr.Addr == i.dstIP {
-			pr = getIPProfile(i.dstMAC, i.dstIP, i)
-			found = true
+		if pr != nil {
+			if pr.Addr == i.dstIP {
+				pr = getIPProfile(i.dstIP, i)
+				found = true
+			}
 		}
 	}
 	if !found {
-		p.Contacts = append(p.Contacts, getIPProfile(i.dstMAC, i.dstIP, i))
+		p.Contacts = append(p.Contacts, getIPProfile(i.dstIP, i))
 	}
 
 	p.Bytes += uint64(len(i.p.Data()))
@@ -155,6 +159,7 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
+	// determine base info
 	var i = new(idents)
 	i.timestamp = p.Metadata().Timestamp.UTC().String()
 	i.p = p
@@ -165,20 +170,18 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	if nl := p.NetworkLayer(); nl != nil {
 		i.srcIP = nl.NetworkFlow().Src().String()
 		i.dstIP = nl.NetworkFlow().Dst().String()
-	} else {
-		// ignore packets that do not have a network layer for now
-		// TODO: create profiles for Link Layer only devices as well!
-		// e.g: ARP
-		return nil
 	}
 
+	// handle packet
 	UpdateDeviceProfile(i)
 
 	return nil
 }, func(e *CustomEncoder) error {
 
+	// teardown DPI C libs
 	dpi.Destroy()
 
+	// flush writer
 	if !e.writer.IsChanWriter {
 		for _, c := range Profiles.Items {
 			writeProfile(c)

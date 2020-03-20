@@ -14,7 +14,7 @@ var (
 	dnsNamesMu sync.Mutex
 )
 
-var DisableReverseDNS bool
+var DisableReverseDNS = true
 
 var privateIPBlocks []*net.IPNet
 

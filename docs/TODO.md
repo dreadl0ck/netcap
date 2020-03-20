@@ -2,10 +2,20 @@
 
 # maltego
 
+filter packets with bpf:
+
+    tcpdump -r tcpdumpep1.pcap -w output.txt host 184.107.41.72 and port 80
+
+Split into 25k packets parts:
+
+    editcap -c 25000 all.cap 25k.cap
+    
+- there is a deadl0ck in all.pcap around 21k packets...
+
 - add tests for POP3
 - add file extraction for POP3 emails and attachments
 - set attachments on mail audit record type
-- add mail header fields to maltego entity 
+- add mail header fields to maltego entity
 
 - Email: GetAttachments
 - GetDHCP for device identification
@@ -27,12 +37,12 @@
 
 ## General
 
+- fix hardcoded version number in dockerfiles
 - finish types implementation for POP3
 - remove DNS logic from stream reassembly
 - move Stream type into separate file, rename to Connection to unify wording
 - add flag to toggle DNS resolving
 - add quiet switch when opening netcap dump files via the Open() call, update transforms
-- create profiles for Link Layer only devices as well
 - http: basic auth extraction from URL: GetHTTPBasicAuth?
  
 - single binary as plugin / framework

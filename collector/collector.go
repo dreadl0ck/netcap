@@ -287,10 +287,11 @@ func (c *Collector) printProgress() {
 
 	// increment atomic packet counter
 	atomic.AddInt64(&c.current, 1)
-	if c.current%1000 == 0 {
+	if c.current%100 == 0 {
 		if !c.config.Quiet {
 			// using a strings.Builder for assembling string for performance
 			// TODO: could be refactored to use a byte slice with a fixed length instead
+			// TODO: add Builder to collector and flush it every cycle to reduce allocations
 			// also only print flows and collections when the corresponding encoders are active
 			var b strings.Builder
 			b.Grow(65)
@@ -302,6 +303,8 @@ func (c *Collector) printProgress() {
 			b.WriteString(strconv.Itoa(encoder.Connections.Size()))
 			b.WriteString(" profiles: ")
 			b.WriteString(strconv.Itoa(encoder.Profiles.Size()))
+			b.WriteString(" packets: ")
+			b.WriteString(strconv.Itoa(int(c.current)))
 
 			// print
 			clearLine()
