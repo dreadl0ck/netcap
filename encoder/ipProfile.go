@@ -18,10 +18,9 @@ import (
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/tlsx"
-	"sync"
-
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"sync"
 )
 
 // AtomicIPProfileMap contains all connections and provides synchronized access
@@ -45,7 +44,11 @@ var ipProfiles = &AtomicIPProfileMap{
 var portMu sync.Mutex
 
 // GetIPProfile fetches a known profile and updates it or returns a new one
-func getIPProfile(macAddr, ipAddr string, i *idents) *types.IPProfile {
+func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
+
+	if len(ipAddr) == 0 {
+		return nil
+	}
 
 	if p, ok := ipProfiles.Items[ipAddr]; ok {
 
