@@ -9,15 +9,11 @@ filter packets with bpf:
 Split into 25k packets parts:
 
     editcap -c 25000 all.cap 25k.cap
-    
-- there is a deadl0ck in all.pcap around 21k packets...
 
 - add tests for POP3
 - add file extraction for POP3 emails and attachments
 - set attachments on mail audit record type
-- add mail header fields to maltego entity
 
-- Email: GetAttachments
 - GetDHCP for device identification
 - GetUsers from POP3 / BasicAuth etc
 - text Content types: add GetLinks and GetEmails
@@ -25,7 +21,6 @@ Split into 25k packets parts:
 - HTTP: GetHTTPHost -> GetParameters
 - HTTP: GetHTTPHost -> GetCookies
 - add GetHTTPContentTypes -> GetFiles
-- DPI: GetApplicationCategories -> GetApplications?
 - add GetMails / GetMailContacts
 
 - attach files (preview?) and open them by click
@@ -34,6 +29,7 @@ Split into 25k packets parts:
 - define triggers to highlight links in red
 - MIME type: check if executables are properly detected
 - destination ips: queries for audit records must use DstIP == ipaddr !
+- reverse link order for deviceIPs and contactIPs when iterating over both?
 
 ## General
 

@@ -106,13 +106,20 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 	for _, pr := range p.DeviceIPs {
 		if pr != nil {
 			if pr.Addr == i.srcIP {
+				// update existing ip profile
 				pr = getIPProfile(i.srcIP, i)
 				found = true
 			}
 		}
 	}
+	// if no existing one has been updated, its a new one
 	if !found {
-		p.DeviceIPs = append(p.DeviceIPs, getIPProfile(i.srcIP, i))
+		ip := getIPProfile(i.srcIP, i)
+		// if the packet has no network layer we wont get an IP here
+		// prevent adding a nil pointer to the array
+		if ip != nil {
+			p.DeviceIPs = append(p.DeviceIPs, ip)
+		}
 	}
 
 	// contacts
@@ -120,13 +127,21 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 	for _, pr := range p.Contacts {
 		if pr != nil {
 			if pr.Addr == i.dstIP {
+				// update existing ip profile
 				pr = getIPProfile(i.dstIP, i)
 				found = true
 			}
 		}
 	}
+	// if no existing one has been updated, its a new one
 	if !found {
-		p.Contacts = append(p.Contacts, getIPProfile(i.dstIP, i))
+		ip := getIPProfile(i.dstIP, i)
+
+		// if the packet has no network layer we wont get an IP here
+		// prevent adding a nil pointer to the array
+		if ip != nil {
+			p.Contacts = append(p.Contacts, ip)
+		}
 	}
 
 	p.Bytes += uint64(len(i.p.Data()))
