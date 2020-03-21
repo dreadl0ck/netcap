@@ -16,15 +16,15 @@ func main() {
 
 					if ip.Addr == ipaddr {
 
-						for proto, count := range ip.Protocols {
-							ent := trx.AddEntity("maltego.Service", proto)
+						for protoName, proto := range ip.Protocols {
+							ent := trx.AddEntity("maltego.Service", protoName)
 							ent.SetType("maltego.Service")
-							ent.SetValue(proto)
+							ent.SetValue(protoName)
 
 							di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
 							ent.AddDisplayInformation(di, "Netcap Info")
 
-							ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
+							ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 							ent.SetLinkColor("#000000")
 						}
 
@@ -35,17 +35,16 @@ func main() {
 
 					if ip.Addr == ipaddr {
 
-						for protocol, count := range ip.Protocols {
-							ent := trx.AddEntity("maltego.Service", protocol)
+						for protoName, proto := range ip.Protocols {
+							ent := trx.AddEntity("maltego.Service", protoName)
 							ent.SetType("maltego.Service")
-							ent.SetValue(protocol)
+							ent.SetValue(protoName)
 
 							di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
 							ent.AddDisplayInformation(di, "Netcap Info")
 
-							ent.SetLinkLabel(strconv.FormatInt(int64(count), 10) + " pkts")
+							ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 							ent.SetLinkColor("#000000")
-							ent.SetLinkThickness(maltego.GetThickness(count, minPackets, maxPackets))
 						}
 
 						break

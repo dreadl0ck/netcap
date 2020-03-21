@@ -42,7 +42,7 @@ import (
  * POP3 part
  */
 
-const pop3Debug = true
+const pop3Debug = false
 
 type pop3Reader struct {
 	ident    string

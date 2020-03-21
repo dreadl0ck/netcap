@@ -43,22 +43,22 @@ func Destroy() {
 // GetProtocols returns a map of all the identified protocol names
 // to the accumulated number of hits for each protocol
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
-func GetProtocols(packet gopacket.Packet) map[string]struct{} {
+func GetProtocols(packet gopacket.Packet) (map[string]types.ClassificationResult) {
 
-	var uniqueResults = make(map[string]struct{})
+	protocols := make(map[string]types.ClassificationResult)
 
 	if disableDPI {
-		return uniqueResults
+		return protocols
 	}
 
 	flow, _ := godpi.GetPacketFlow(packet)
 	results := godpi.ClassifyFlowAllModules(flow)
 
 	// when using all modules we might receive duplicate classifications
-	// so they will be deduplicated before counting them
+	// so they will be deduplicated by protocol name before counting them later
 	for _, r := range results {
-		uniqueResults[string(r.Protocol)] = struct{}{}
+		protocols[string(r.Protocol)] = r
 	}
 
-	return uniqueResults
+	return protocols
 }

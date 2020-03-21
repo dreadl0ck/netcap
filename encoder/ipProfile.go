@@ -107,15 +107,24 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 
 		// Application Layer: DPI
 		uniqueResults := dpi.GetProtocols(i.p)
-		for proto := range uniqueResults {
-			p.Protocols[proto]++
+		for proto, res := range uniqueResults {
+			// check if proto exists already
+			if prot, ok := p.Protocols[proto]; ok {
+				prot.Packets++
+			} else {
+				// add new
+				p.Protocols[proto] = &types.Protocol{
+					Packets:  1,
+					Category: string(res.Class),
+				}
+			}
 		}
 
 		return p
 	}
 
 	var (
-		protos = make(map[string]uint64)
+		protos = make(map[string]*types.Protocol)
 		ja3Map = make(map[string]string)
 		dataLen = uint64(len(i.p.Data()))
 		srcPorts = make(map[string]*types.Port)
@@ -170,8 +179,11 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 
 	// Application Layer: DPI
 	uniqueResults := dpi.GetProtocols(i.p)
-	for proto := range uniqueResults {
-		protos[proto]++
+	for proto, res := range uniqueResults {
+		protos[proto] = &types.Protocol{
+			Packets:  1,
+			Category: string(res.Class),
+		}
 	}
 
 	// create new profile
