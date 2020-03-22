@@ -20,13 +20,8 @@ import (
 )
 
 var pop3Encoder = CreateCustomEncoder(types.Type_NC_POP3, "POP3", func(d *CustomEncoder) error {
-
-	// TODO: pop3 should not depend on HTTP decoder
-	HTTPActive = true
-
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
-	// encoding func is nil, because the processing happens after TCP stream reassembly
 	return nil
 }, func(e *CustomEncoder) error {
 
