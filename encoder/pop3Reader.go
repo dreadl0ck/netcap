@@ -676,7 +676,7 @@ func parseParts(body string) []*types.MailPart {
 
 				// its content
 				} else {
-					currentPart.Content += line
+					currentPart.Content += line + "\n"
 					mailDebug(ansi.Blue, "adding content", line, ansi.Reset)
 				}
 				continue

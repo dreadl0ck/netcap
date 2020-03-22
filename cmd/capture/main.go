@@ -117,7 +117,7 @@ func main() {
 		Live:                live,
 		Workers:             *flagWorkers,
 		PacketBufferSize:    *flagPacketBuffer,
-		WriteUnknownPackets: !*flagIngoreUnknown,
+		WriteUnknownPackets: !*flagIgnoreUnknown,
 		Promisc:             *flagPromiscMode,
 		SnapLen:             *flagSnapLen,
 		BaseLayer:           utils.GetBaseLayer(*flagBaseLayer),

@@ -86,15 +86,20 @@ func UpdateDeviceProfile(i *idents) {
 
 // NewDeviceProfile creates a new device specifc profile
 func NewDeviceProfile(i *idents) *types.DeviceProfile {
+	var contacts []*types.IPProfile
+	if ip := getIPProfile(i.dstIP, i); ip != nil {
+		contacts = append(contacts, ip)
+	}
+	var devices []*types.IPProfile
+	if ip := getIPProfile(i.srcIP, i); ip != nil {
+		devices = append(devices, ip)
+	}
+
 	return &types.DeviceProfile{
 		MacAddr:            i.srcMAC,
 		DeviceManufacturer: resolvers.LookupManufacturer(i.srcMAC),
-		DeviceIPs: []*types.IPProfile{
-			getIPProfile(i.srcIP, i),
-		},
-		Contacts: []*types.IPProfile{
-			getIPProfile(i.dstIP, i),
-		},
+		DeviceIPs: devices,
+		Contacts: contacts,
 		Timestamp:  i.timestamp,
 		NumPackets: 1,
 		Bytes:      uint64(len(i.p.Data())),

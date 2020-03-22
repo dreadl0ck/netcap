@@ -1,6 +1,8 @@
 package maltego
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -11,6 +13,15 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+func EscapeText(text string) string {
+	var buf bytes.Buffer
+	err := xml.EscapeText(&buf, []byte(text))
+	if err != nil {
+		fmt.Println(err)
+	}
+	return buf.String()
+}
 
 type HTTPCountFunc = func(http *types.HTTP, minPackets, maxPackets *uint64)
 
@@ -66,7 +77,10 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 	f, err := os.Open(profilesFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		trx := MaltegoTransform{}
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
 	// check if its an audit record file
@@ -166,7 +180,10 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 
 	f, err := os.Open(profilesFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		trx := MaltegoTransform{}
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
 	// check if its an audit record file
@@ -263,7 +280,10 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 	httpAuditRecords := filepath.Join(dir, "HTTP.ncap.gz")
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		trx := MaltegoTransform{}
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
 	// check if its an audit record file
@@ -360,7 +380,10 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	httpAuditRecords := filepath.Join(dir, "File.ncap.gz")
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		trx := MaltegoTransform{}
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
 	// check if its an audit record file
@@ -457,7 +480,10 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	httpAuditRecords := filepath.Join(dir, "POP3.ncap.gz")
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		trx := MaltegoTransform{}
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
 	// check if its an audit record file

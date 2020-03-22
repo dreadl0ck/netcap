@@ -35,7 +35,10 @@ func main() {
 	dnsAuditRecords := filepath.Join(dir, "DNS.ncap.gz")
 	f, err := os.Open(dnsAuditRecords)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		trx := maltego.MaltegoTransform{}
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
 	// check if its an audit record file

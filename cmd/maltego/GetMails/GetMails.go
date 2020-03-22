@@ -7,6 +7,7 @@ import (
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"log"
+	"strings"
 )
 
 func main() {
@@ -33,9 +34,16 @@ func main() {
 					ent.SetLinkColor("#000000")
 					//ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
 
+					var body string
+					for _, p := range m.Body {
+						if strings.HasPrefix(p.Header["Content-Type"], "text/plain") {
+							body += p.Content + "\n"
+						}
+					}
+
 					// escape XML
 					buf.Reset()
-					err = xml.EscapeText(&buf, []byte(m.Body))
+					err = xml.EscapeText(&buf, []byte(body))
 					if err != nil {
 						fmt.Println(err)
 					}
