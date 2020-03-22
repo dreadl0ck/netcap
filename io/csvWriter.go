@@ -14,13 +14,12 @@
 package io
 
 import (
-	"io"
-	"strings"
-	"sync"
-
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
+	"sync"
+	"io"
+	"strings"
 )
 
 type CSVWriter struct {

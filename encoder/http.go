@@ -24,7 +24,6 @@ import (
 	"runtime/pprof"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
@@ -34,6 +33,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/golang/protobuf/proto"
+	"sync"
 )
 
 var (
@@ -50,7 +50,7 @@ var (
 	errorsMapMutex sync.Mutex
 
 	// HTTPActive must be set to true to decode HTTP traffic
-	HTTPActive bool
+	HTTPActive  bool
 	FileStorage string
 )
 
@@ -132,14 +132,31 @@ func DecodeHTTP(packet gopacket.Packet) {
 			CaptureInfo: packet.Metadata().CaptureInfo,
 		}
 		reassemblyStats.totalsz += len(tcp.Payload)
-		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
+
+		//fmt.Println("AssembleWithContext")
+
+		done := make(chan bool, 1)
+		go func() {
+			assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
+			done <- true
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(3 * time.Second):
+			fmt.Println("assembler context timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
+			//fmt.Println("closed", assembler.FlushAll())
+		}
+		//fmt.Println("AssembleWithContext done")
 	}
 
 	// flush connections in interval
 	if count%*flushevery == 0 {
 		ref := packet.Metadata().CaptureInfo.Timestamp
 		// flushed, closed :=
+		//fmt.Println("FlushWithOptions")
 		assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-timeout), TC: ref.Add(-closeTimeout)})
+		//fmt.Println("FlushWithOptions done")
 		// fmt.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref, ref.Add(-timeout))
 	}
 }
@@ -352,20 +369,19 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 				if err == nil {
 					detected = http.DetectContentType(body)
 				}
-	 		}
+			}
 		} else {
 			detected = http.DetectContentType(body)
 		}
 	}
 
 	return &types.HTTP{
-		ResContentLength:   contentLength,
-		ResContentType:     res.Header.Get("Content-Type"),
-		StatusCode:         int32(res.StatusCode),
-		ServerName:         res.Header.Get("Server"),
-		ResContentEncoding: res.Header.Get("Content-Encoding"),
+		ResContentLength:       contentLength,
+		ResContentType:         res.Header.Get("Content-Type"),
+		StatusCode:             int32(res.StatusCode),
+		ServerName:             res.Header.Get("Server"),
+		ResContentEncoding:     res.Header.Get("Content-Encoding"),
 		ResContentTypeDetected: detected,
-		ResCookies:         readCookies(res.Cookies()),
+		ResCookies:             readCookies(res.Cookies()),
 	}
 }
-

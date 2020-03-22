@@ -14,14 +14,15 @@
 package encoder
 
 import (
+	"log"
+	"sync/atomic"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"log"
 	"sync"
-	"sync/atomic"
 )
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
@@ -93,9 +94,9 @@ func NewDeviceProfile(i *idents) *types.DeviceProfile {
 		Contacts: []*types.IPProfile{
 			getIPProfile(i.dstIP, i),
 		},
-		Timestamp: i.timestamp,
+		Timestamp:  i.timestamp,
 		NumPackets: 1,
-		Bytes: uint64(len(i.p.Data())),
+		Bytes:      uint64(len(i.p.Data())),
 	}
 }
 
@@ -149,12 +150,31 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 }
 
 type idents struct {
-	p gopacket.Packet
+	p         gopacket.Packet
 	timestamp string
-	srcMAC string
-	dstMAC string
-	srcIP  string
-	dstIP  string
+	srcMAC    string
+	dstMAC    string
+	srcIP     string
+	dstIP     string
+}
+
+func DecodeDeviceProfile(p gopacket.Packet) {
+
+	// determine base info
+	var i = new(idents)
+	i.timestamp = p.Metadata().Timestamp.UTC().String()
+	i.p = p
+	if ll := p.LinkLayer(); ll != nil {
+		i.srcMAC = ll.LinkFlow().Src().String()
+		i.dstMAC = ll.LinkFlow().Dst().String()
+	}
+	if nl := p.NetworkLayer(); nl != nil {
+		i.srcIP = nl.NetworkFlow().Src().String()
+		i.dstIP = nl.NetworkFlow().Dst().String()
+	}
+
+	// handle packet
+	UpdateDeviceProfile(i)
 }
 
 var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DeviceProfile", func(d *CustomEncoder) error {
@@ -173,23 +193,6 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 
 	return nil
 }, func(p gopacket.Packet) proto.Message {
-
-	// determine base info
-	var i = new(idents)
-	i.timestamp = p.Metadata().Timestamp.UTC().String()
-	i.p = p
-	if ll := p.LinkLayer(); ll != nil {
-		i.srcMAC = ll.LinkFlow().Src().String()
-		i.dstMAC = ll.LinkFlow().Dst().String()
-	}
-	if nl := p.NetworkLayer(); nl != nil {
-		i.srcIP = nl.NetworkFlow().Src().String()
-		i.dstIP = nl.NetworkFlow().Dst().String()
-	}
-
-	// handle packet
-	UpdateDeviceProfile(i)
-
 	return nil
 }, func(e *CustomEncoder) error {
 

@@ -17,9 +17,9 @@ import (
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/tlsx"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/tlsx"
 	"sync"
 )
 
@@ -106,7 +106,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 		}
 
 		// Application Layer: DPI
-		uniqueResults := dpi.GetProtocols(i.p)
+		uniqueResults := dpi.GetProtocolsTimeout(i.p)
 		for proto, res := range uniqueResults {
 			// check if proto exists already
 			if prot, ok := p.Protocols[proto]; ok {
@@ -178,7 +178,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 	}
 
 	// Application Layer: DPI
-	uniqueResults := dpi.GetProtocols(i.p)
+	uniqueResults := dpi.GetProtocolsTimeout(i.p)
 	for proto, res := range uniqueResults {
 		protos[proto] = &types.Protocol{
 			Packets:  1,

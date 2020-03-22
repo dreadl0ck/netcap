@@ -49,10 +49,11 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/dreadl0ck/netcap/types"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
@@ -61,23 +62,25 @@ import (
 
 // flags
 var (
-	flushevery       = flag.Int("flushevery", 100000, "flush assembler every N packets")
+	flushevery       = flag.Int("flushevery", 1000, "flush assembler every N packets")
+	flagCloseTimeOut = flag.Int("tcp-close-timeout", 0, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
+	flagTimeOut      = flag.Int("tcp-timeout", 600, "close streams waiting for packets older than X seconds")
+
 	nodefrag         = flag.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
-	checksum         = flag.Bool("checksum", false, "check TCP checksum")
+	checksum         = flag.Bool("checksum", true, "check TCP checksum")
 	nooptcheck       = flag.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
 	ignorefsmerr     = flag.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
 	allowmissinginit = flag.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
-	verbose          = flag.Bool("verbose", false, "be verbose")
-	debug            = flag.Bool("debug", false, "display debug information")
-	quiet            = flag.Bool("tcpstream-quiet", true, "be quiet regarding errors")
-	nohttp           = flag.Bool("nohttp", false, "disable HTTP parsing")
-	fileStorage      = flag.String("fileStorage", "", "path to create file for HTTP 200 OK responses")
-	writeincomplete  = flag.Bool("writeincomplete", false, "write incomplete response")
-	hexdump          = flag.Bool("dump", false, "dump HTTP request/response as hex")
-	memprofile       = flag.String("memprofile", "", "write memory profile")
 
-	flagCloseTimeOut = flag.Int("tcp-close-timeout", 0, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
-	flagTimeOut      = flag.Int("tcp-timeout", 600, "close streams waiting for packets older than X seconds")
+	verbose = flag.Bool("verbose", false, "be verbose")                       // TODO: unify
+	debug   = flag.Bool("debug", false, "display debug information")          // TODO: unify
+	quiet   = flag.Bool("tcpstream-quiet", true, "be quiet regarding errors") // TODO: unify
+	hexdump = flag.Bool("dump", false, "dump HTTP request/response as hex")   // TODO: unify
+	nohttp  = flag.Bool("nohttp", false, "disable HTTP parsing")
+
+	fileStorage     = flag.String("fileStorage", "", "path to create file for HTTP 200 OK responses")
+	writeincomplete = flag.Bool("writeincomplete", false, "write incomplete response")
+	memprofile      = flag.String("memprofile", "", "write memory profile")
 
 	outputLevel int
 	numErrors   uint

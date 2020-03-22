@@ -18,8 +18,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/cryptoutils"
-	"github.com/mgutz/ansi"
 	"io"
 	"net/http"
 	"net/textproto"
@@ -32,6 +30,9 @@ import (
 	"sync/atomic"
 	"time"
 	"unicode"
+
+	"github.com/dreadl0ck/cryptoutils"
+	"github.com/mgutz/ansi"
 
 	gzip "github.com/klauspost/pgzip"
 
@@ -62,9 +63,9 @@ func (h *pop3Reader) Read(p []byte) (int, error) {
 	ok := true
 	for ok && len(h.data) == 0 {
 		select {
-			case h.data, ok = <-h.bytes:
-			case <-time.After(time.Duration(*flagFlowTimeOut) * time.Second):
-				return 0, io.EOF
+		case h.data, ok = <-h.bytes:
+		case <-time.After(time.Duration(*flagFlowTimeOut) * time.Second):
+			return 0, io.EOF
 		}
 	}
 	if !ok || len(h.data) == 0 {
@@ -115,7 +116,7 @@ func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 			Pass:      pass,
 			//Requests:  h.parent.pop3Requests,
 			//Responses: h.parent.pop3Responses,
-			Mails:     mails,
+			Mails: mails,
 		}
 
 		// export metrics if configured
@@ -194,13 +195,13 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		ctype = http.DetectContentType(body)
 
 		// root path
-		root  = path.Join(FileStorage, ctype)
+		root = path.Join(FileStorage, ctype)
 
 		// file extension
 		ext = fileExtensionForContentType(ctype)
 
 		// file basename
-		base  = filepath.Clean(name + "-" + path.Base(h.ident)) + ext
+		base = filepath.Clean(name+"-"+path.Base(h.ident)) + ext
 	)
 	if err != nil {
 		base = "incomplete-" + base
@@ -231,9 +232,9 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		}
 
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-" + name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+h.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		} else {
-			target = path.Join(root, filepath.Clean(name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean(name+"-"+h.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		}
 
 		n++
@@ -273,15 +274,15 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 	// write file to disk
 	writeFile(&types.File{
-		Timestamp: h.parent.firstPacket.String(),
-		Name:      fileName,
-		Length:    int64(len(body)),
-		Hash:      hex.EncodeToString(cryptoutils.MD5Data(body)),
-		Location:  target,
-		Ident:     h.ident,
-		Source:    source,
+		Timestamp:   h.parent.firstPacket.String(),
+		Name:        fileName,
+		Length:      int64(len(body)),
+		Hash:        hex.EncodeToString(cryptoutils.MD5Data(body)),
+		Location:    target,
+		Ident:       h.ident,
+		Source:      source,
 		ContentType: ctype,
-		Context:  &types.PacketContext{
+		Context: &types.PacketContext{
 			SrcIP:   h.parent.net.Src().String(),
 			DstIP:   h.parent.net.Dst().String(),
 			SrcPort: h.parent.transport.Src().String(),
@@ -313,7 +314,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
 
 	h.parent.Lock()
 	h.parent.pop3Requests = append(h.parent.pop3Requests, &types.POP3Request{
-		Command: cmd,
+		Command:  cmd,
 		Argument: strings.Join(args, " "),
 	})
 	h.parent.Unlock()
@@ -409,7 +410,7 @@ const (
 	StateNotAuthenticated POP3State = iota
 	StateNotIdentified
 	StateAuthenticated
-    StateDataTransfer
+	StateDataTransfer
 )
 
 func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string) {
@@ -428,9 +429,9 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 	}
 
 	var (
-		state POP3State = StateNotAuthenticated
+		state    POP3State = StateNotAuthenticated
 		numMails int
-		next = func() *types.POP3Request {
+		next     = func() *types.POP3Request {
 			return h.parent.pop3Requests[h.reqIndex]
 		}
 		mailBuf string
@@ -447,38 +448,38 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 		switch state {
 		case StateAuthenticated:
 			switch r.Command {
-				case "STAT":
-					h.resIndex++
-					continue
-				case "LIST", "UIDL":
-					var n int
-					for _, reply := range h.parent.pop3Responses[h.resIndex:] {
-						if reply.Command == "." {
-							numMails++
-							h.resIndex++
-							break
-						}
-						n++
+			case "STAT":
+				h.resIndex++
+				continue
+			case "LIST", "UIDL":
+				var n int
+				for _, reply := range h.parent.pop3Responses[h.resIndex:] {
+					if reply.Command == "." {
+						numMails++
+						h.resIndex++
+						break
 					}
-					h.resIndex = h.resIndex + n
-					continue
-				case "RETR":
-					var n int
-					for _, reply := range h.parent.pop3Responses[h.resIndex:] {
-						if reply.Command == "." {
-							mails = append(mails, parseMail([]byte(mailBuf)))
-							mailBuf = ""
-							numMails++
-							h.resIndex++
-							break
-						}
-						mailBuf += reply.Message + "\n"
-						n++
+					n++
+				}
+				h.resIndex = h.resIndex + n
+				continue
+			case "RETR":
+				var n int
+				for _, reply := range h.parent.pop3Responses[h.resIndex:] {
+					if reply.Command == "." {
+						mails = append(mails, parseMail([]byte(mailBuf)))
+						mailBuf = ""
+						numMails++
+						h.resIndex++
+						break
 					}
-					h.resIndex = h.resIndex + n
-					continue
-				case "QUIT":
-					return
+					mailBuf += reply.Message + "\n"
+					n++
+				}
+				h.resIndex = h.resIndex + n
+				continue
+			case "QUIT":
+				return
 			}
 		case StateNotAuthenticated:
 			switch r.Command {
@@ -543,10 +544,10 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 
 	var (
-		header = make(map[string]string)
-		r = textproto.NewReader(bufio.NewReader(bytes.NewReader(buf)))
-		body string
-		lastHeader string
+		header      = make(map[string]string)
+		r           = textproto.NewReader(bufio.NewReader(bytes.NewReader(buf)))
+		body        string
+		lastHeader  string
 		collectBody bool
 	)
 
@@ -601,10 +602,10 @@ func parseMail(buf []byte) *types.Mail {
 		InReplyTo:       header["In-Reply-To"],
 		ContentLanguage: header["Content-Language"],
 		//HasAttachments:header[  ]fal//se,
-		XOriginatingIP:  header["x-originating-ip"],
-		ContentType:     header["Content-Type"],
-		EnvelopeTo:      header["Envelope-To"],
-		Body:            body,
+		XOriginatingIP: header["x-originating-ip"],
+		ContentType:    header["Content-Type"],
+		EnvelopeTo:     header["Envelope-To"],
+		Body:           body,
 	}
 	return mail
 }

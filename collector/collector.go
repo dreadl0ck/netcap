@@ -18,9 +18,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"os/signal"
@@ -28,10 +25,15 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"sync"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/encoder"
@@ -166,15 +168,25 @@ func (c *Collector) handleSignals() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
+	var exiting = false
+
 	// start signal handler and cleanup routine
 	go func() {
 		sig := <-sigs
 
-		fmt.Println("reiceived signal:", sig)
-		fmt.Println("exiting")
+		fmt.Println("received signal:", sig)
 
-		c.cleanup()
-		os.Exit(0)
+		if exiting {
+			fmt.Println("force quitting")
+			os.Exit(0)
+		} else {
+			exiting = true
+
+			fmt.Println("exiting")
+
+			c.cleanup()
+			os.Exit(0)
+		}
 	}()
 }
 
@@ -190,6 +202,26 @@ func (c *Collector) handlePacket(p gopacket.Packet) {
 
 	// send the packetInfo to the encoder routine
 	c.workers[c.next] <- p
+
+	// increment or reset next
+	if c.config.Workers >= c.next+1 {
+		// reset
+		c.next = 1
+	} else {
+		c.next++
+	}
+}
+
+// to decode incoming packets in parallel
+// they are passed to several worker goroutines in round robin style.
+func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
+
+	select {
+	// send the packetInfo to the encoder routine
+	case c.workers[c.next] <- p:
+	case <-time.After(3 * time.Second):
+		fmt.Println("handle packet timeout", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
+	}
 
 	// increment or reset next
 	if c.config.Workers >= c.next+1 {

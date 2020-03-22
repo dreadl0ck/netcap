@@ -10,6 +10,7 @@ import (
 	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/dreadl0ck/gopacket"
 	"log"
+	"time"
 )
 
 var disableDPI = false
@@ -23,7 +24,7 @@ func Init() {
 	)
 
 	// init DPI
-	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{nDPI, lPI}})
+	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{lPI, nDPI}})
 	godpi.SetModules([]types.Module{wm, goDPI})
 	if err := godpi.Initialize(); err != nil {
 		log.Fatal("goDPI initialization returned error: ", err)
@@ -40,8 +41,7 @@ func Destroy() {
 	}
 }
 
-// GetProtocols returns a map of all the identified protocol names
-// to the accumulated number of hits for each protocol
+// GetProtocols returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
 func GetProtocols(packet gopacket.Packet) (map[string]types.ClassificationResult) {
 
@@ -51,13 +51,54 @@ func GetProtocols(packet gopacket.Packet) (map[string]types.ClassificationResult
 		return protocols
 	}
 
+	//fmt.Println("DPI", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
 	flow, _ := godpi.GetPacketFlow(packet)
 	results := godpi.ClassifyFlowAllModules(flow)
+
+	//fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete")
 
 	// when using all modules we might receive duplicate classifications
 	// so they will be deduplicated by protocol name before counting them later
 	for _, r := range results {
 		protocols[string(r.Protocol)] = r
+	}
+
+	return protocols
+}
+
+// GetProtocolsTimeout returns a map of all the identified protocol names to a result datastructure
+// packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
+// this function spawn a goroutine to allow setting a timeout for each packet
+func GetProtocolsTimeout(packet gopacket.Packet) (map[string]types.ClassificationResult) {
+
+	protocols := make(map[string]types.ClassificationResult)
+
+	if disableDPI {
+		return protocols
+	}
+
+	var (
+		results = make(chan []types.ClassificationResult, 1)
+	)
+	go func() {
+		flow, _ := godpi.GetPacketFlow(packet)
+		results <- godpi.ClassifyFlowAllModules(flow)
+	}()
+
+	//start := time.Now()
+
+	select {
+	case res := <-results:
+
+		//fmt.Println("got result after", time.Since(start))
+
+		// when using all modules we might receive duplicate classifications
+		// so they will be deduplicated by protocol name before counting them later
+		for _, r := range res {
+			protocols[string(r.Protocol)] = r
+		}
+	case <-time.After(3 * time.Second):
+		fmt.Println("get protocols timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
 	}
 
 	return protocols

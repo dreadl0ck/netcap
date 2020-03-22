@@ -240,15 +240,15 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	s := len(body)
 	if err != nil {
 		logError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
-		// continue execution
+	} else {
+		res.Body.Close()
+
+		// Restore body so it can be read again
+		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
 	if h.hexdump {
 		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	}
-	res.Body.Close()
-
-	// Restore body so it can be read again
-	res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
 	sym := ","
 	if res.ContentLength > 0 && res.ContentLength != int64(s) {
@@ -276,16 +276,21 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	// write responses to disk if configured
 	if (err == nil || *writeincomplete) && FileStorage != "" {
 
+		h.parent.Lock()
 		var (
 			name = "unknown"
 			numResponses = len(h.parent.responses)
+			numRequests = len(h.parent.requests)
 		)
+		h.parent.Unlock()
 
 		// check if there is a matching request for the current stream
-		if len(h.parent.requests) >= numResponses {
+		if numRequests >= numResponses {
 
 			// fetch it
+			h.parent.Lock()
 			req := h.parent.requests[numResponses-1]
+			h.parent.Unlock()
 			if req != nil {
 				name = path.Base(req.URL.Path)
 			}
@@ -616,13 +621,15 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	if err != nil {
 		logError("HTTP-request-body", "Got body err: %s\n", err)
 		// continue execution
-	} else if h.hexdump {
+	} else {
+		req.Body.Close()
+
+		// Restore body so it can be read again
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	}
+	if h.hexdump {
 		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	}
-	req.Body.Close()
-
-	// Restore body so it can be read again
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
 	logInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
 
