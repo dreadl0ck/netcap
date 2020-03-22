@@ -4,23 +4,24 @@ package dpi
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
 	"github.com/dreadl0ck/go-dpi/modules/wrappers"
 	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/dreadl0ck/gopacket"
-	"log"
-	"time"
 )
 
 var disableDPI = false
 
 func Init() {
 	var (
-		nDPI = wrappers.NewNDPIWrapper()
-		lPI = wrappers.NewLPIWrapper()
+		nDPI  = wrappers.NewNDPIWrapper()
+		lPI   = wrappers.NewLPIWrapper()
 		goDPI = classifiers.NewClassifierModule()
-		wm = wrappers.NewWrapperModule()
+		wm    = wrappers.NewWrapperModule()
 	)
 
 	// init DPI
@@ -43,7 +44,7 @@ func Destroy() {
 
 // GetProtocols returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
-func GetProtocols(packet gopacket.Packet) (map[string]types.ClassificationResult) {
+func GetProtocols(packet gopacket.Packet) map[string]types.ClassificationResult {
 
 	protocols := make(map[string]types.ClassificationResult)
 
@@ -69,7 +70,7 @@ func GetProtocols(packet gopacket.Packet) (map[string]types.ClassificationResult
 // GetProtocolsTimeout returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
 // this function spawn a goroutine to allow setting a timeout for each packet
-func GetProtocolsTimeout(packet gopacket.Packet) (map[string]types.ClassificationResult) {
+func GetProtocolsTimeout(packet gopacket.Packet) map[string]types.ClassificationResult {
 
 	protocols := make(map[string]types.ClassificationResult)
 
