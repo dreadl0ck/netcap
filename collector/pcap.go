@@ -97,14 +97,14 @@ func (c *Collector) CollectPcap(path string) error {
 
 	// file exists.
 	clearLine()
-	c.printStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
+	c.printlnStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
 
 	// set input filesize on collector
 	c.inputSize = stat.Size()
 
 	// display total packet count
-	c.printStdOut("counting packets...")
 	start := time.Now()
+	c.printStdOut("counting packets...")
 	c.numPackets, err = countPackets(path)
 	if err != nil {
 		return err
@@ -113,7 +113,7 @@ func (c *Collector) CollectPcap(path string) error {
 	if !c.config.Quiet {
 		clearLine()
 	}
-	c.printStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
+	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
 	r, f, err := OpenPCAP(path)
 	if err != nil {
@@ -121,7 +121,7 @@ func (c *Collector) CollectPcap(path string) error {
 	}
 	defer f.Close()
 
-	c.printStdOut("detected link type:", r.LinkType())
+	c.printlnStdOut("detected link type:", r.LinkType())
 
 	switch r.LinkType() {
 	case layers.LinkTypeEthernet:
@@ -141,7 +141,6 @@ func (c *Collector) CollectPcap(path string) error {
 		return err
 	}
 
-	c.printStdOut("decoding packets... ")
 	for {
 
 		// fetch the next packetdata and packetheader

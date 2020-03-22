@@ -19,10 +19,9 @@ filter packets with bpf:
     # DHCP
     tcpdump -r all.pcap -w dhcp.pcap "(udp and port 67) or (udp and port 68)"
     
-Filter out HTTP streams that cause trouble:
+    # UDP
+    tcpdump -r all.pcap -w udp.pcap udp
 
-    tcpdump -r http.pcap -w badhttp.pcap "(host 192.168.0.51 and (port 47458 or port 51121 or port 51122 or port 47523))"
-    tcpdump -r http.pcap -w goodhttp.pcap "not (host 192.168.0.51 and (port 47458 or port 51121 or port 51122 or port 47523))"
 
 Split into 25k packets parts:
 
@@ -31,7 +30,6 @@ Split into 25k packets parts:
 - add file extraction for POP3 emails and attachments
 - set attachments on mail audit record type
 
-- GetDHCP for device identification
 - GetUsers from POP3 / BasicAuth etc
 - text Content types: add GetLinks and GetEmails
 - HTTP: GetHTTPHost -> GetURLs

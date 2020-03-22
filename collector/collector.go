@@ -124,7 +124,7 @@ func (c *Collector) cleanup() {
 	}
 
 	clearLine()
-	c.printStdOut("done.\n")
+	c.printlnStdOut("done.\n")
 	c.stopWorkers()
 
 	// sync pcap file
@@ -347,7 +347,7 @@ func (c *Collector) Init() (err error) {
 
 	// start workers
 	c.workers = c.initWorkers()
-	c.printStdOut("spawned", c.config.Workers, "workers")
+	c.printlnStdOut("spawned", c.config.Workers, "workers")
 
 	// create full output directory path if set
 	if c.config.EncoderConfig.Out != "" {

@@ -44,10 +44,11 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 					// cleanup reassembly
 					if reassembleStreams {
-						closed := assembler.FlushAll()
-						if !c.config.Quiet {
-							fmt.Printf("assembler final flush: %d closed\n", closed)
-						}
+						assembler.FlushAll()
+						//closed := assembler.FlushAll()
+						//if !c.config.Quiet {
+						//	fmt.Printf("assembler final flush: %d closed\n", closed)
+						//}
 					}
 
 					return
