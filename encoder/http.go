@@ -177,14 +177,9 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 
 	HTTPActive = true
 
-	// set file storage via flag
-	if *fileStorage != "" {
-		FileStorage = *fileStorage
-	}
-
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
-	// encoding func is nil, because the processing happens after TCP stream reassemblyis nil, because the processing happens after TCP stream reassembly
+	// encoding func is nil, because the processing happens after TCP stream reassembly is nil, because the processing happens after TCP stream reassembly
 	return nil
 }, func(e *CustomEncoder) error {
 

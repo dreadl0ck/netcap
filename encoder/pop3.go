@@ -24,11 +24,6 @@ var pop3Encoder = CreateCustomEncoder(types.Type_NC_POP3, "POP3", func(d *Custom
 	// TODO: pop3 should not depend on HTTP decoder
 	HTTPActive = true
 
-	// TODO: also done in HTTP decoder set file storage via flag
-	if *fileStorage != "" {
-		FileStorage = *fileStorage
-	}
-
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
 	// encoding func is nil, because the processing happens after TCP stream reassembly

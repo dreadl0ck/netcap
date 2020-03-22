@@ -53,4 +53,6 @@ var (
 	flagMemBufferSize  = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
 	flagListInterfaces = flag.Bool("interfaces", false, "list all visible network interfaces")
 	flagQuiet          = flag.Bool("quiet", false, "don't print infos to stdout")
+
+	flagFileStorage     = flag.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
 )

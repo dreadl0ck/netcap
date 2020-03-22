@@ -120,6 +120,10 @@ func main() {
 		WriteUnknownPackets: !*flagIngoreUnknown,
 		Promisc:             *flagPromiscMode,
 		SnapLen:             *flagSnapLen,
+		BaseLayer:           utils.GetBaseLayer(*flagBaseLayer),
+		DecodeOptions:       utils.GetDecodeOptions(*flagDecodeOptions),
+		FileStorage:         *flagFileStorage,
+		Quiet:               *flagQuiet,
 		EncoderConfig: encoder.Config{
 			Buffer:          *flagBuffer,
 			Compression:     *flagCompress,
@@ -134,9 +138,6 @@ func main() {
 			AddContext:      *flagContext,
 			MemBufferSize:   *flagMemBufferSize,
 		},
-		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
-		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
-		Quiet: *flagQuiet,
 	})
 
 	c.PrintConfiguration()
