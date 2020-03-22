@@ -131,10 +131,8 @@ func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 			errorMap.Inc(err.Error())
 		}
 
-		if pop3Debug {
-			// TODO: remove debug
-			fmt.Println()
-		}
+		// inserts a newline to increase readability
+		mailDebug()
 	}
 
 	// signal wait group
@@ -293,6 +291,12 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	return nil
 }
 
+func mailDebug(args ...interface{}) {
+	if pop3Debug {
+		fmt.Println(args...)
+	}
+}
+
 func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
 
 	tp := textproto.NewReader(b)
@@ -306,9 +310,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
 		return err
 	}
 
-	if pop3Debug {
-		fmt.Println(ansi.Red, h.ident, "readRequest", line, ansi.Reset)
-	}
+	mailDebug(ansi.Red, h.ident, "readRequest", line, ansi.Reset)
 
 	cmd, args := getCommand(line)
 
@@ -339,9 +341,7 @@ func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Stream) error {
 		return err
 	}
 
-	if pop3Debug {
-		fmt.Println(ansi.Blue, h.ident, "readResponse", line, ansi.Reset)
-	}
+	mailDebug(ansi.Blue, h.ident, "readResponse", line, ansi.Reset)
 
 	cmd, args := getCommand(line)
 
@@ -605,9 +605,111 @@ func parseMail(buf []byte) *types.Mail {
 		XOriginatingIP: header["x-originating-ip"],
 		ContentType:    header["Content-Type"],
 		EnvelopeTo:     header["Envelope-To"],
-		Body:           body,
+		Body:           parseParts(body),
 	}
 	return mail
+}
+
+const partIdent = "------=_Part_"
+
+func parseParts(body string) []*types.MailPart {
+
+	var parts []*types.MailPart
+	var currentPart *types.MailPart
+	var parsePayload bool
+
+	tr := textproto.NewReader(bufio.NewReader(bytes.NewReader([]byte(body))))
+
+	for {
+		line, err := tr.ReadLine()
+		if err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				break
+			} else {
+				fmt.Println(err)
+				return parts
+			}
+		}
+
+		mailDebug("readLine", line)
+
+		if currentPart != nil {
+			if parsePayload {
+				// check if its an end marker for the current part
+				if strings.HasSuffix(line, currentPart.ID + "--") {
+					mailDebug(ansi.Cyan, "end", currentPart.ID, ansi.Reset)
+					parts = append(parts, &types.MailPart{
+						ID:       currentPart.ID,
+						Header:   currentPart.Header,
+						Content:  currentPart.Content,
+					})
+					parsePayload = false
+					currentPart = nil
+
+				// check if its the start of another part, marker type 1
+				} else if strings.HasPrefix(line, partIdent) {
+					parts = append(parts, &types.MailPart{
+						ID:      currentPart.ID,
+						Header:  currentPart.Header,
+						Content: currentPart.Content,
+					})
+					currentPart = &types.MailPart{
+						ID:     strings.TrimPrefix(line, partIdent),
+						Header: make(map[string]string),
+					}
+					parsePayload = false
+					mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+
+				// second type of start marker
+				} else if strings.HasPrefix(line, "--") && len(line) > 31 && !strings.Contains(line, ">") {
+					parts = append(parts, &types.MailPart{
+						ID:       currentPart.ID,
+						Header:   currentPart.Header,
+						Content:  currentPart.Content,
+					})
+					currentPart = &types.MailPart{
+						ID:      strings.TrimPrefix(line, "--"),
+						Header:  make(map[string]string),
+					}
+					parsePayload = false
+					mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+
+				// its content
+				} else {
+					currentPart.Content += line
+					mailDebug(ansi.Blue, "adding content", line, ansi.Reset)
+				}
+				continue
+			}
+			pts := strings.Split(line, ": ")
+			if len(pts) == 2 {
+				currentPart.Header[pts[0]] = pts[1]
+				mailDebug(ansi.Yellow, "parsed header field", pts[0], ansi.Reset)
+			}
+			if line == "\n" || line == "" {
+				parsePayload = true
+				mailDebug(ansi.Green, "start parsing payload", ansi.Reset)
+			}
+		}
+		// start marker type 1
+		if strings.HasPrefix(line, partIdent) {
+			currentPart = &types.MailPart{
+				ID:      strings.TrimPrefix(line, partIdent),
+				Header:  make(map[string]string),
+			}
+			mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+		}
+		// start marker type 2
+		if strings.HasPrefix(line, "--") && len(line) > 31 && !strings.Contains(line, ">") {
+			currentPart = &types.MailPart{
+				ID:      strings.TrimPrefix(line, "--"),
+				Header:  make(map[string]string),
+			}
+			mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+		}
+	}
+
+	return parts
 }
 
 // TODO: write unit test for this
