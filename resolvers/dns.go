@@ -15,7 +15,7 @@ var (
 )
 
 // TODO: make configurable
-var DisableReverseDNS = true
+var DisableReverseDNS = false
 
 var privateIPBlocks []*net.IPNet
 

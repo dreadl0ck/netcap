@@ -39,7 +39,6 @@ func (c *Collector) CollectBPF(path string, bpf string) error {
 	}
 
 	// read packets
-	c.printStdOut("decoding packets... ")
 	for {
 
 		// fetch the next packetdata and packetheader

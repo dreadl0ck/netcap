@@ -84,8 +84,14 @@ func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 	return raw, nil
 }
 
-func (c *Collector) printStdOut(args ...interface{}) {
+func (c *Collector) printlnStdOut(args ...interface{}) {
 	if !c.config.Quiet {
 		fmt.Println(args...)
+	}
+}
+
+func (c *Collector) printStdOut(args ...interface{}) {
+	if !c.config.Quiet {
+		fmt.Print(args...)
 	}
 }
