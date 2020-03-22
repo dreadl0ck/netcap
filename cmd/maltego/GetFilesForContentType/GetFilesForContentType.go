@@ -3,6 +3,7 @@ package main
 import (
 	maltego "github.com/dreadl0ck/netcap/cmd/maltego/maltego"
 	"github.com/dreadl0ck/netcap/types"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -29,7 +30,7 @@ func main() {
 						di := "<h3>File</h3><p>Timestamp: " + file.Timestamp + "</p><p>Source: " + file.Source + "</p><p>MD5: " + file.Hash + "</p><p>ContentType: " + file.ContentType + "</p><p>Length: " + strconv.Itoa(int(file.Length)) + "</p><p>Ident: " + file.Ident + "</p><p>SrcIP: " + file.Context.SrcIP + "</p><p>DstIP: " + file.Context.DstIP + "</p><p>SrcPort: " + file.Context.SrcPort + "</p><p>DstPort: " + file.Context.DstPort + "</p><p>Location: " + file.Location + "</p>"
 						ent.AddDisplayInformation(di, "Netcap Info")
 
-						ent.SetIconURL("file://" + file.Location)
+						ent.SetIconURL("file://" + filepath.Join(filepath.Join(filepath.Dir(profilesFile), ".."), file.Location))
 						ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
 						ent.AddProperty("path", "Path", "strict", profilesFile)
 						ent.AddProperty("location", "Location", "strict", file.Location)
