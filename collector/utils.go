@@ -43,11 +43,14 @@ func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
 	// therefore the http decoding must not happen in a worker thread
 	// and instead be performed here to guarantee packets are being processed sequentially
 	if encoder.HTTPActive {
+		encoder.DecodeDeviceProfile(p)
+		//fmt.Println("DecodeHTTP", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
 		encoder.DecodeHTTP(p)
+		//fmt.Println("DecodeHTTP done", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
 	}
 
 	// pass packet to a worker routine
-	c.handlePacket(p)
+	c.handlePacketTimeout(p)
 }
 
 // printProgressLive prints live statistics.

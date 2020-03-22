@@ -3,18 +3,19 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"net"
 	"sync"
+	"net"
 	"time"
 )
-
+ 
 var (
 	timeout = 10 * time.Second
 	dnsNamesDB = make(map[string][]string)
 	dnsNamesMu sync.Mutex
 )
 
-var DisableReverseDNS = true
+// TODO: make configurable
+var DisableReverseDNS = false
 
 var privateIPBlocks []*net.IPNet
 

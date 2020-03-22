@@ -4,7 +4,25 @@
 
 filter packets with bpf:
 
-    tcpdump -r tcpdumpep1.pcap -w output.txt host 184.107.41.72 and port 80
+    # HTTP
+    tcpdump -r all.pcap -w http.pcap port 80
+    
+    # HTTPS
+    tcpdump -r all.pcap -w https.pcap port 443
+    
+    # POP3 & SMTP
+    tcpdump -r all.pcap -w mail.pcap port 110 or port 25 or port 465 or port 587 or port 995
+    
+    # DNS
+    tcpdump -r all.pcap -w dns.pcap port 53
+    
+    # DHCP
+    tcpdump -r all.pcap -w dhcp.pcap "(udp and port 67) or (udp and port 68)"
+    
+Filter out HTTP streams that cause trouble:
+
+    tcpdump -r http.pcap -w badhttp.pcap "(host 192.168.0.51 and (port 47458 or port 51121 or port 51122 or port 47523))"
+    tcpdump -r http.pcap -w goodhttp.pcap "not (host 192.168.0.51 and (port 47458 or port 51121 or port 51122 or port 47523))"
 
 Split into 25k packets parts:
 
@@ -33,6 +51,10 @@ Split into 25k packets parts:
 
 ## General
 
+- disable debug timeouts in handlePacket, GetProtocols and AssembleWithContext
+- net.capture: log PID on startup
+- merge debug modes: -verbose, -debug, -output etc ...
+- constconf: generate a configuration with constant values -> compiler can optimize better
 - fix hardcoded version number in dockerfiles
 - finish types implementation for POP3
 - remove DNS logic from stream reassembly
