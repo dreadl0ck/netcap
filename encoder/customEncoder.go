@@ -28,10 +28,7 @@ import (
 var (
 	// CustomEncoders slice contains initialized encoders at runtime
 	// for usage from other packages
-	CustomEncoders = []*CustomEncoder{}
-
-	// contains all available custom encoders
-	customEncoderSlice = []*CustomEncoder{
+	CustomEncoders, customEncoderSlice = []*CustomEncoder{}, []*CustomEncoder{
 		tlsEncoder,
 		linkFlowEncoder,
 		networkFlowEncoder,
@@ -42,7 +39,7 @@ var (
 		profileEncoder,
 		fileEncoder,
 		pop3Encoder,
-	}
+	} // contains all available custom encoders
 )
 
 type (

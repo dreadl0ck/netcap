@@ -14,11 +14,12 @@
 package encoder
 
 import (
+	"log"
+	"sync/atomic"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"log"
-	"sync/atomic"
 )
 
 var (

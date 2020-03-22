@@ -20,11 +20,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"sync"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
-	"sync"
 )
 
 // AtomicConnMap contains all connections and provides synchronized access

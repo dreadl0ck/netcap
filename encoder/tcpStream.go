@@ -45,10 +45,11 @@
 package encoder
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/gopacket/ip4defrag"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -62,12 +63,12 @@ import (
 
 // flags
 var (
-	flushevery       = flag.Int("flushevery", 1000, "flush assembler every N packets")
-	flagCloseTimeOut = flag.Int("tcp-close-timeout", 0, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
-	flagTimeOut      = flag.Int("tcp-timeout", 600, "close streams waiting for packets older than X seconds")
+	flushevery       = flag.Int("flushevery", 100, "flush assembler every N packets")
+	flagCloseTimeOut = flag.Int("tcp-close-timeout", 60, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
+	flagTimeOut      = flag.Int("tcp-timeout", 60, "close streams waiting for packets older than X seconds")
 
 	nodefrag         = flag.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
-	checksum         = flag.Bool("checksum", true, "check TCP checksum")
+	checksum         = flag.Bool("checksum", false, "check TCP checksum")
 	nooptcheck       = flag.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
 	ignorefsmerr     = flag.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
 	allowmissinginit = flag.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
@@ -88,8 +89,21 @@ var (
 	responses   = 0
 	mu          sync.Mutex
 
-	closeTimeout time.Duration = time.Second * time.Duration(*flagCloseTimeOut) // Closing inactive
-	timeout      time.Duration = time.Second * time.Duration(*flagTimeOut)      // Pending bytes
+	closeTimeout time.Duration = time.Hour * 24 // time.Duration(*flagCloseTimeOut) // Closing inactive
+	timeout      time.Duration = time.Minute * 5 // * time.Duration(*flagTimeOut)      // Pending bytes
+
+	defragger     = ip4defrag.NewIPv4Defragmenter()
+	streamFactory = &tcpStreamFactory{doHTTP: !*nohttp}
+	StreamPool    = reassembly.NewStreamPool(streamFactory)
+
+	count     = 0
+	dataBytes = int64(0)
+	start     = time.Now()
+
+	errorsMap      = make(map[string]uint)
+	errorsMapMutex sync.Mutex
+
+	FileStorage string
 )
 
 var reassemblyStats struct {
@@ -117,6 +131,25 @@ type StreamReader interface {
 	Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream)
 }
 
+// TODO: move into separate file, rename to Connection to unify wording
+// Stream contains both unidirectional flows for a connection
+type Stream struct {
+	a gopacket.Flow
+	b gopacket.Flow
+}
+
+// Reverse flips source and destination
+func (s Stream) Reverse() Stream {
+	return Stream{
+		s.a.Reverse(),
+		s.b.Reverse(),
+	}
+}
+
+func (s Stream) String() string {
+	return s.a.String() + " : " + s.b.String()
+}
+
 /*
  * The TCP factory: returns a new Stream
  */
@@ -136,7 +169,6 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 	stream := &tcpStream{
 		net:         net,
 		transport:   transport,
-		isDNS:       tcp.SrcPort == 53 || tcp.DstPort == 53,
 		isHTTP:      (tcp.SrcPort == 80 || tcp.DstPort == 80) && factory.doHTTP,
 		isPOP3:      tcp.SrcPort == 110 || tcp.DstPort == 110,
 		reversed:    tcp.SrcPort == 80,
@@ -161,7 +193,7 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 			parent:  stream,
 		}
 
-		// kickoff http decoders for client and server
+		// kickoff decoders for client and server
 		factory.wg.Add(2)
 		go stream.client.Run(&factory.wg)
 		go stream.server.Run(&factory.wg)
@@ -182,11 +214,11 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 			parent:  stream,
 		}
 
-		// kickoff http decoders for client and server
+		// kickoff decoders for client and server
 		factory.wg.Add(2)
 		go stream.client.Run(&factory.wg)
 		go stream.server.Run(&factory.wg)
-	}
+	}	
 
 	return stream
 }
@@ -328,44 +360,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 
 	// TODO add types and call handler to allow decoding several app layer protocols
 	data := sg.Fetch(length)
-	if t.isDNS {
-		var (
-			dns     = &layers.DNS{}
-			decoded []gopacket.LayerType
-		)
-		if len(data) < 2 {
-			if len(data) > 0 {
-				sg.KeepFrom(0)
-			}
-			return
-		}
-
-		var (
-			dnsSize = binary.BigEndian.Uint16(data[:2])
-			missing = int(dnsSize) - len(data[2:])
-		)
-
-		logDebug("dnsSize: %d, missing: %d\n", dnsSize, missing)
-
-		if missing > 0 {
-			logInfo("Missing some bytes: %d\n", missing)
-			sg.KeepFrom(0)
-			return
-		}
-
-		var (
-			p   = gopacket.NewDecodingLayerParser(layers.LayerTypeDNS, dns)
-			err = p.DecodeLayers(data[2:], &decoded)
-		)
-		if err != nil {
-			logError("DNS-parser", "Failed to decode DNS: %v\n", err)
-		} else {
-			logDebug("DNS: %s\n", gopacket.LayerDump(dns))
-		}
-		if len(data) > 2+int(dnsSize) {
-			sg.KeepFrom(2 + int(dnsSize))
-		}
-	} else if t.isHTTP {
+	if t.isHTTP {
 		if length > 0 {
 			if *hexdump {
 				logDebug("Feeding http with:\n%s", hex.Dump(data))
@@ -416,4 +411,90 @@ func (t *tcpStream) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
 	}
 	// do not remove the connection to allow last ACK
 	return false
+}
+
+func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
+	data := packet.Data()
+
+	// lock to sync with read on destroy
+	errorsMapMutex.Lock()
+	count++
+	dataBytes += int64(len(data))
+	errorsMapMutex.Unlock()
+
+	// defrag the IPv4 packet if required
+	if !*nodefrag {
+		ip4Layer := packet.Layer(layers.LayerTypeIPv4)
+		if ip4Layer == nil {
+			return
+		}
+
+		var (
+			ip4         = ip4Layer.(*layers.IPv4)
+			l           = ip4.Length
+			newip4, err = defragger.DefragIPv4(ip4)
+		)
+		if err != nil {
+			log.Fatalln("Error while de-fragmenting", err)
+		} else if newip4 == nil {
+			logDebug("Fragment...\n")
+			return
+		}
+		if newip4.Length != l {
+			reassemblyStats.ipdefrag++
+			logDebug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
+			pb, ok := packet.(gopacket.PacketBuilder)
+			if !ok {
+				panic("Not a PacketBuilder")
+			}
+			nextDecoder := newip4.NextLayerType()
+			if err := nextDecoder.Decode(newip4.Payload, pb); err != nil {
+				fmt.Println("failed to decode ipv4:", err)
+			}
+		}
+	}
+
+	tcp := packet.Layer(layers.LayerTypeTCP)
+	if tcp != nil {
+		tcp := tcp.(*layers.TCP)
+		if *checksum {
+			err := tcp.SetNetworkLayerForChecksum(packet.NetworkLayer())
+			if err != nil {
+				log.Fatalf("Failed to set network layer for checksum: %s\n", err)
+			}
+		}
+		c := Context{
+			CaptureInfo: packet.Metadata().CaptureInfo,
+		}
+		reassemblyStats.totalsz += len(tcp.Payload)
+
+		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
+
+		//fmt.Println("AssembleWithContext")
+
+		//done := make(chan bool, 1)
+		//go func() {
+		//	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
+		//	done <- true
+		//}()
+		//
+		//select {
+		//case <-done:
+		//case <-time.After(5 * time.Second):
+		//	fmt.Println("HTTP AssembleWithContext timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
+		//	fmt.Println(assembler.Dump())
+		//}
+
+		//fmt.Println("AssembleWithContext done")
+	}
+
+	// flush connections in interval
+	if count%*flushevery == 0 {
+		ref := packet.Metadata().CaptureInfo.Timestamp
+		// flushed, closed :=
+		//fmt.Println("FlushWithOptions")
+		assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-timeout), TC: ref.Add(-closeTimeout)})
+		//fmt.Println("FlushWithOptions done")
+		// fmt.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref, ref.Add(-timeout))
+	}
 }

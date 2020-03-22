@@ -19,9 +19,10 @@ import (
 	"sort"
 	"sync/atomic"
 
+	"sync"
+
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"sync"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/golang/protobuf/proto"

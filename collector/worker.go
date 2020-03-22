@@ -15,15 +15,20 @@ package collector
 
 import (
 	"fmt"
+
+	"github.com/dreadl0ck/gopacket/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 
-	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/encoder"
 )
+
+// TODO make this configurable
+const reassembleStreams = true
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
-func (c *Collector) worker() chan gopacket.Packet {
+func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet {
 
 	// init channel to receive input packets
 	chanInput := make(chan gopacket.Packet, c.config.PacketBufferSize)
@@ -36,7 +41,21 @@ func (c *Collector) worker() chan gopacket.Packet {
 
 				// nil packet is used to exit goroutine
 				if p == nil {
+
+					// cleanup reassembly
+					if reassembleStreams {
+						closed := assembler.FlushAll()
+						if !c.config.Quiet {
+							fmt.Printf("assembler final flush: %d closed\n", closed)
+						}
+					}
+
 					return
+				}
+
+				// pass packet to reassembly
+				if reassembleStreams {
+					encoder.ReassemblePacket(p, assembler)
 				}
 
 				// iterate over all layers
@@ -165,7 +184,7 @@ func (c *Collector) worker() chan gopacket.Packet {
 func (c *Collector) initWorkers() []chan gopacket.Packet {
 	workers := make([]chan gopacket.Packet, c.config.Workers)
 	for i := range workers {
-		workers[i] = c.worker()
+		workers[i] = c.worker(reassembly.NewAssembler(encoder.StreamPool))
 	}
 	return workers
 }

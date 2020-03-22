@@ -105,8 +105,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 	c.printStdOut("decoding packets... ")
 	for {
 		// fetch the next packetdata and packetheader
-		// for pcapNG this uses ZeroCopyReadPacketData()
-		data, ci, err := r.ZeroCopyReadPacketData()
+		data, ci, err := r.ReadPacketData()
 		if err != nil {
 			if err == io.EOF {
 				break

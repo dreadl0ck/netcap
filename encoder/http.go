@@ -27,139 +27,10 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/ip4defrag"
-	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/dreadl0ck/gopacket/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/golang/protobuf/proto"
-	"sync"
 )
-
-var (
-	defragger     = ip4defrag.NewIPv4Defragmenter()
-	streamFactory = &tcpStreamFactory{doHTTP: !*nohttp}
-	streamPool    = reassembly.NewStreamPool(streamFactory)
-	assembler     = reassembly.NewAssembler(streamPool)
-
-	count     = 0
-	dataBytes = int64(0)
-	start     = time.Now()
-
-	errorsMap      = make(map[string]uint)
-	errorsMapMutex sync.Mutex
-
-	// HTTPActive must be set to true to decode HTTP traffic
-	HTTPActive  bool
-	FileStorage string
-)
-
-// TODO: move into separate file, rename to Connection to unify wording
-// Stream contains both unidirectional flows for a connection
-type Stream struct {
-	a gopacket.Flow
-	b gopacket.Flow
-}
-
-// Reverse flips source and destination
-func (s Stream) Reverse() Stream {
-	return Stream{
-		s.a.Reverse(),
-		s.b.Reverse(),
-	}
-}
-
-func (s Stream) String() string {
-	return s.a.String() + " : " + s.b.String()
-}
-
-// DecodeHTTP passes TCP packets to the TCP stream reassembler
-// in order to decode HTTP request and responses
-// CAUTION: this function must be called sequentially,
-// because the stream reassembly implementation currently does not handle out of order packets
-func DecodeHTTP(packet gopacket.Packet) {
-
-	count++
-	data := packet.Data()
-
-	// lock to sync with read on destroy
-	errorsMapMutex.Lock()
-	dataBytes += int64(len(data))
-	errorsMapMutex.Unlock()
-
-	// defrag the IPv4 packet if required
-	if !*nodefrag {
-		ip4Layer := packet.Layer(layers.LayerTypeIPv4)
-		if ip4Layer == nil {
-			return
-		}
-
-		var (
-			ip4         = ip4Layer.(*layers.IPv4)
-			l           = ip4.Length
-			newip4, err = defragger.DefragIPv4(ip4)
-		)
-		if err != nil {
-			log.Fatalln("Error while de-fragmenting", err)
-		} else if newip4 == nil {
-			logDebug("Fragment...\n")
-			return
-		}
-		if newip4.Length != l {
-			reassemblyStats.ipdefrag++
-			logDebug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
-			pb, ok := packet.(gopacket.PacketBuilder)
-			if !ok {
-				panic("Not a PacketBuilder")
-			}
-			nextDecoder := newip4.NextLayerType()
-			if err := nextDecoder.Decode(newip4.Payload, pb); err != nil {
-				fmt.Println("failed to decode ipv4:", err)
-			}
-		}
-	}
-
-	tcp := packet.Layer(layers.LayerTypeTCP)
-	if tcp != nil {
-		tcp := tcp.(*layers.TCP)
-		if *checksum {
-			err := tcp.SetNetworkLayerForChecksum(packet.NetworkLayer())
-			if err != nil {
-				log.Fatalf("Failed to set network layer for checksum: %s\n", err)
-			}
-		}
-		c := Context{
-			CaptureInfo: packet.Metadata().CaptureInfo,
-		}
-		reassemblyStats.totalsz += len(tcp.Payload)
-
-		//fmt.Println("AssembleWithContext")
-
-		done := make(chan bool, 1)
-		go func() {
-			assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
-			done <- true
-		}()
-
-		select {
-		case <-done:
-		case <-time.After(3 * time.Second):
-			fmt.Println("assembler context timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
-			//fmt.Println("closed", assembler.FlushAll())
-		}
-		//fmt.Println("AssembleWithContext done")
-	}
-
-	// flush connections in interval
-	if count%*flushevery == 0 {
-		ref := packet.Metadata().CaptureInfo.Timestamp
-		// flushed, closed :=
-		//fmt.Println("FlushWithOptions")
-		assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-timeout), TC: ref.Add(-closeTimeout)})
-		//fmt.Println("FlushWithOptions done")
-		// fmt.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref, ref.Add(-timeout))
-	}
-}
 
 var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *CustomEncoder) error {
 
@@ -175,11 +46,12 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		outputLevel = -1
 	}
 
-	HTTPActive = true
+	// TODO:
+	//assembler.AssemblerOptions.MaxBufferedPagesPerConnection = 12
+	//assembler.AssemblerOptions.MaxBufferedPagesTotal = 128
 
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
-	// encoding func is nil, because the processing happens after TCP stream reassembly is nil, because the processing happens after TCP stream reassembly
 	return nil
 }, func(e *CustomEncoder) error {
 
@@ -207,15 +79,6 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		fmt.Println() // add a newline
 	}
 
-	closed := assembler.FlushAll()
-
-	if !Quiet {
-		fmt.Printf("Final flush: %d closed\n", closed)
-		if outputLevel >= 2 {
-			streamPool.Dump()
-		}
-	}
-
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)
 		if err != nil {
@@ -232,7 +95,6 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 	streamFactory.WaitGoRoutines()
 
 	if !Quiet {
-		logDebug("%s\n", assembler.Dump())
 		printProgress(1, 1)
 		fmt.Println("")
 
