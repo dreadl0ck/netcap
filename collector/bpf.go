@@ -17,7 +17,6 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcap"
-	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/pkg/errors"
 	"io"
 )
@@ -58,13 +57,6 @@ func (c *Collector) CollectBPF(path string, bpf string) error {
 		p.Metadata().Timestamp = ci.Timestamp
 		p.Metadata().CaptureInfo = ci
 
-		// if HTTP capture is desired, tcp stream reassembly needs to be performed.
-		// the gopacket/reassembly implementation does not allow packets to arrive out of order
-		// therefore the http decoding must not happen in a worker thread
-		// and instead be performed here to guarantee packets are being processed sequentially
-		if encoder.HTTPActive {
-			encoder.DecodeHTTP(p)
-		}
 		c.handlePacket(p)
 	}
 	c.cleanup()

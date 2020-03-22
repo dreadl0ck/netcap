@@ -16,8 +16,8 @@ package encoder
 import (
 	"flag"
 	"fmt"
-	"sync"
 	"log"
+	"sync"
 	"sync/atomic"
 	"time"
 

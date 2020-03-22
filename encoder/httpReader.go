@@ -84,7 +84,7 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 			case h.data, ok = <-h.bytes:
-			case <-time.After(time.Duration(*flagFlowTimeOut) * time.Second):
+			case <-time.After(timeout):
 				return 0, io.EOF
 		}
 	}

@@ -1734,58 +1734,58 @@ message Protocol {
 }
 
 message File {
-    string Timestamp       = 1;
-    string Name            = 2;
-    int64  Length          = 3;
-    string Hash            = 4;
-    string Location        = 5;
-    string Ident           = 6;
-    string Source          = 7;
-    string ContentType     = 8;
-    PacketContext Context  = 9;
+    string        Timestamp   = 1;
+    string        Name        = 2;
+    int64         Length      = 3;
+    string        Hash        = 4;
+    string        Location    = 5;
+    string        Ident       = 6;
+    string        Source      = 7;
+    string        ContentType = 8;
+    PacketContext Context     = 9;
 }
 
 // SMTPResponse SMTP response type
 // with status code and parameter
 message SMTPResponse {
-    int32 ResponseCode = 1;
-    string Parameter   = 2;
+    int32  ResponseCode = 1;
+    string Parameter    = 2;
 }
 
 // SMTPCommand represents a SMTP command
 message SMTPCommand {
-    int32 Command    = 1;
+    int32  Command   = 1;
     string Parameter = 2;
 }
 
 // Simple Mail Transfer Protocol
 message SMTP {
-    string Timestamp                    = 1;
-    bool IsEncrypted                    = 2;
-    bool IsResponse                     = 3;
-    repeated SMTPResponse ResponseLines = 4;
-    SMTPCommand Command                 = 5;
-    PacketContext Context               = 6;
+    string                 Timestamp     = 1;
+    bool                   IsEncrypted   = 2;
+    bool                   IsResponse    = 3;
+    repeated SMTPResponse  ResponseLines = 4;
+    SMTPCommand            Command       = 5;
+    PacketContext          Context       = 6;
 }
 
 // Diameter is an authentication, authorization, and accounting protocol for computer networks.
 // It evolved from the earlier RADIUS protocol.
 // It belongs to the application layer protocols in the internet protocol suite.
 message Diameter {
-    string Timestamp = 1;
+    string        Timestamp       = 1;
 
     // Diameter Header Information
-    uint32  Version        = 2;
-    uint32  Flags          = 3;
-    uint32 MessageLen      = 4;
-    uint32 CommandCode     = 5;
-    uint32 ApplicationID   = 6;
-    uint32 HopByHopID      = 7;
-    uint32 EndToEndID      = 8;
+    uint32        Version         = 2;
+    uint32        Flags           = 3;
+    uint32        MessageLen      = 4;
+    uint32        CommandCode     = 5;
+    uint32        ApplicationID   = 6;
+    uint32        HopByHopID      = 7;
+    uint32        EndToEndID      = 8;
 
     // Diameter AVPs
-    repeated AVP AVPs     = 9;
-    PacketContext Context = 10;
+    repeated AVP  AVPs            = 9;
+    PacketContext Context         = 10;
 }
 
 // Attribute Value Pair
@@ -1821,22 +1821,28 @@ message POP3 {
 }
 
 message Mail {
-    string ReturnPath            = 1;
-    string DeliveryDate          = 2;
-    string From                  = 3;
-    string To                    = 4;
-    string CC                    = 5;
-    string Subject               = 6;
-    string Date                  = 7;
-    string MessageID             = 8;
-    string References            = 9;
-    string InReplyTo             = 10;
-    string ContentLanguage       = 11;
-    bool   HasAttachments        = 12;
-    string XOriginatingIP        = 13;
-    string ContentType           = 14;
-    string EnvelopeTo            = 15;
-    string Body                  = 16;
+    string            ReturnPath            = 1;
+    string            DeliveryDate          = 2;
+    string            From                  = 3;
+    string            To                    = 4;
+    string            CC                    = 5;
+    string            Subject               = 6;
+    string            Date                  = 7;
+    string            MessageID             = 8;
+    string            References            = 9;
+    string            InReplyTo             = 10;
+    string            ContentLanguage       = 11;
+    bool              HasAttachments        = 12;
+    string            XOriginatingIP        = 13;
+    string            ContentType           = 14;
+    string            EnvelopeTo            = 15;
+    repeated MailPart Body                  = 16;
+}
+
+message MailPart {
+    string              ID      = 1;
+    map<string, string> Header  = 2;
+    string              Content = 3;
 }
 
 message POP3Request {

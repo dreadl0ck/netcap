@@ -19,11 +19,12 @@ import (
 	"sort"
 	"sync/atomic"
 
+	"sync"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
-	"sync"
 )
 
 type AtomicLinkFlowMap struct {

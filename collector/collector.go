@@ -168,25 +168,21 @@ func (c *Collector) handleSignals() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	var exiting = false
-
 	// start signal handler and cleanup routine
 	go func() {
 		sig := <-sigs
 
 		fmt.Println("received signal:", sig)
+		fmt.Println("exiting")
 
-		if exiting {
-			fmt.Println("force quitting")
+		go func() {
+			sig := <-sigs
+			fmt.Println("force quitting, signal:", sig)
 			os.Exit(0)
-		} else {
-			exiting = true
+		}()
 
-			fmt.Println("exiting")
-
-			c.cleanup()
-			os.Exit(0)
-		}
+		c.cleanup()
+		os.Exit(0)
 	}()
 }
 
@@ -194,11 +190,11 @@ func (c *Collector) handleSignals() {
 // they are passed to several worker goroutines in round robin style.
 func (c *Collector) handlePacket(p gopacket.Packet) {
 
-	// make it work for 1 worker only
-	// if len(c.workers) == 1 {
-	// 	c.workers[0] <- p
-	// 	return
-	// }
+	// make it work for 1 worker only, can be used for debugging
+	//if len(c.workers) == 1 {
+	//	c.workers[0] <- p
+	//	return
+	//}
 
 	// send the packetInfo to the encoder routine
 	c.workers[c.next] <- p

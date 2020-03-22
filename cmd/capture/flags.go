@@ -32,7 +32,7 @@ var (
 	flagInterface    = flag.String("iface", "", "attach to network interface and capture in live mode")
 	flagCompress     = flag.Bool("comp", true, "compress output with gzip")
 	flagBuffer       = flag.Bool("buf", true, "buffer data in memory before writing to disk")
-	flagWorkers      = flag.Int("workers", 1000, "number of workers")
+	flagWorkers      = flag.Int("workers", 12, "number of workers")
 	flagPacketBuffer = flag.Int("pbuf", 100, "set packet buffer size, for channels that feed data to workers")
 
 	flagCPUProfile    = flag.Bool("cpuprof", false, "create cpu profile")

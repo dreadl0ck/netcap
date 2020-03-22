@@ -28,8 +28,6 @@ Split into 25k packets parts:
 
     editcap -c 25000 all.cap 25k.cap
 
-- pop3 should not depend on HTTP decoder
-- add tests for POP3
 - add file extraction for POP3 emails and attachments
 - set attachments on mail audit record type
 
@@ -52,6 +50,8 @@ Split into 25k packets parts:
 
 ## General
 
+- pop3 should not depend on HTTP decoder: make stream decoding interface generic
+- add tests for POP3
 - disable debug timeouts in handlePacket, GetProtocols and AssembleWithContext
 - net.capture: log PID on startup
 - merge debug modes: -verbose, -debug, -output etc ...
