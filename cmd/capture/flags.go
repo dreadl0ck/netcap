@@ -37,7 +37,7 @@ var (
 
 	flagCPUProfile    = flag.Bool("cpuprof", false, "create cpu profile")
 	flagMemProfile    = flag.Bool("memprof", false, "create memory profile")
-	flagIngoreUnknown = flag.Bool("ignore-unknown", false, "disable writing unknown packets into a pcap file")
+	flagIgnoreUnknown = flag.Bool("ignore-unknown", true, "disable writing unknown packets into a pcap file")
 	flagPromiscMode   = flag.Bool("promisc", true, "toggle promiscous mode for live capture")
 	flagSnapLen       = flag.Int("snaplen", 1514, "configure snaplen for live capture from interface")
 

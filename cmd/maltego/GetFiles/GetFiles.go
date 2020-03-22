@@ -12,10 +12,10 @@ func main() {
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
 			if file.Context.SrcIP == ipaddr {
 				if file.Name != "" {
-					ent := trx.AddEntity("maltego.File", file.Name)
+					escapedName := maltego.EscapeText(file.Name)
+					ent := trx.AddEntity("maltego.File", escapedName)
 					ent.SetType("maltego.File")
-
-					ent.SetValue(file.Name + "\n" + file.ContentType)
+					ent.SetValue(escapedName + "\n" + file.ContentType)
 
 					di := "<h3>File</h3><p>Timestamp: " + file.Timestamp + "</p><p>Source: " + file.Source + "</p><p>MD5: " + file.Hash + "</p><p>ContentType: " + file.ContentType + "</p><p>Length: " + strconv.Itoa(int(file.Length)) + "</p><p>Ident: " + file.Ident + "</p><p>SrcIP: " + file.Context.SrcIP + "</p><p>DstIP: " + file.Context.DstIP + "</p><p>SrcPort: " + file.Context.SrcPort + "</p><p>DstPort: " + file.Context.DstPort + "</p><p>Location: " + file.Location + "</p>"
 					ent.AddDisplayInformation(di, "Netcap Info")

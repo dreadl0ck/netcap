@@ -30,13 +30,13 @@ Split into 25k packets parts:
 - add file extraction for POP3 emails and attachments
 - set attachments on mail audit record type
 
-- GetUsers from POP3 / BasicAuth etc
+- add GetMails / GetMailContacts
+- GetUsers from HTTP BasicAuth
 - text Content types: add GetLinks and GetEmails
 - HTTP: GetHTTPHost -> GetURLs
 - HTTP: GetHTTPHost -> GetParameters
 - HTTP: GetHTTPHost -> GetCookies
-- add GetHTTPContentTypes -> GetFiles
-- add GetMails / GetMailContacts
+- netcap.File -> GetMD5
 
 - attach files (preview?) and open them by click
 - link src to dst ports?

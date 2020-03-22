@@ -21,6 +21,9 @@ func main() {
 					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
 					ent.SetLinkColor("#000000")
 					//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
+
+					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+					ent.AddProperty("path", "Path", "strict", profilesFile)
 				}
 			}
 		},
