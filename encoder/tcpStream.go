@@ -78,7 +78,7 @@ var (
 	hexdump = flag.Bool("dump", false, "dump HTTP request/response as hex")   // TODO: unify
 	nohttp  = flag.Bool("nohttp", false, "disable HTTP parsing")
 
-	fileStorage     = flag.String("fileStorage", "", "path to create file for HTTP 200 OK responses")
+
 	writeincomplete = flag.Bool("writeincomplete", false, "write incomplete response")
 	memprofile      = flag.String("memprofile", "", "write memory profile")
 

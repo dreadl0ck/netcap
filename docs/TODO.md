@@ -28,6 +28,7 @@ Split into 25k packets parts:
 
     editcap -c 25000 all.cap 25k.cap
 
+- pop3 should not depend on HTTP decoder
 - add tests for POP3
 - add file extraction for POP3 emails and attachments
 - set attachments on mail audit record type
