@@ -37,8 +37,8 @@ func addGeolocation(trx *maltego.MaltegoTransform, ip *types.IPProfile, minPacke
 	ent.SetType("maltego.Location")
 	ent.SetValue(ip.Geolocation)
 
-	di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
-	ent.AddDisplayInformation(di, "Netcap Info")
+	// di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
+	// ent.AddDisplayInformation(di, "Netcap Info")
 
 	ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")
 	ent.SetLinkColor("#000000")

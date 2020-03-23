@@ -92,6 +92,10 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
 		}
 	}
 
+	// TODO: dump number of pending streams
+	// TODO: this + reassembly stats printing should be done independently of HTTP decoder
+	fmt.Println("waiting for last streams to finish or time-out, timeout:", timeout)
+	StreamPool.Dump()
 	streamFactory.WaitGoRoutines()
 
 	if !Quiet {

@@ -26,8 +26,8 @@ func addCookie(trx *maltego.MaltegoTransform, c *types.HTTPCookie, timestamp str
 	ent.SetType("netcap.HTTPCookie")
 	ent.SetValue(c.Name)
 
-	di := "<h3>HTTP Cookie</h3><p>Timestamp: " + timestamp + "</p>"
-	ent.AddDisplayInformation(di, "Netcap Info")
+	// di := "<h3>HTTP Cookie</h3><p>Timestamp: " + timestamp + "</p>"
+	// ent.AddDisplayInformation(di, "Netcap Info")
 
 	ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
 	ent.AddProperty("path", "Path", "strict", profilesFile)

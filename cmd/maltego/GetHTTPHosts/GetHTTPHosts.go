@@ -15,8 +15,8 @@ func main() {
 					ent.SetType("maltego.Website")
 					ent.SetValue(http.Host)
 
-					di := "<h3>Host</h3><p>Timestamp: " + http.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Netcap Info")
+					// di := "<h3>Host</h3><p>Timestamp: " + http.Timestamp + "</p>"
+					// ent.AddDisplayInformation(di, "Netcap Info")
 
 					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
 					ent.SetLinkColor("#000000")

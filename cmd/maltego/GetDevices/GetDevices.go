@@ -14,8 +14,8 @@ func main() {
 		ent.SetType("netcap.Device")
 		ent.SetValue(ident)
 
-		di := "<h3>Device</h3><p>Ident: "+ ident +"</p><p>MacAddr: "+ profile.MacAddr +"</p><p>DeviceManufacturer: "+ profile.DeviceManufacturer +"</p><p>Timestamp: " + profile.Timestamp + "</p>"
-		ent.AddDisplayInformation(di, "Netcap Info")
+		// di := "<h3>Device</h3><p>Ident: "+ ident +"</p><p>MacAddr: "+ profile.MacAddr +"</p><p>DeviceManufacturer: "+ profile.DeviceManufacturer +"</p><p>Timestamp: " + profile.Timestamp + "</p>"
+		// ent.AddDisplayInformation(di, "Netcap Info")
 
 		ent.AddProperty("path", "Path", "strict", profilesFile)
 		ent.AddProperty("mac", "Mac Address", "strict", profile.MacAddr)

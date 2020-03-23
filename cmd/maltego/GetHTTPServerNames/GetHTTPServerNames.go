@@ -16,8 +16,8 @@ func main() {
 					ent.SetType("netcap.ServerName")
 					ent.SetValue(http.ServerName)
 
-					di := "<h3>Server Name</h3><p>Timestamp: " + http.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Netcap Info")
+					// di := "<h3>Server Name</h3><p>Timestamp: " + http.Timestamp + "</p>"
+					// ent.AddDisplayInformation(di, "Netcap Info")
 
 					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
 					ent.SetLinkColor("#000000")

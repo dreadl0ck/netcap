@@ -59,8 +59,8 @@ func addDestinationPort(trx *maltego.MaltegoTransform, portStr string, port *typ
 	serviceName := resolvers.LookupServiceByPort(np, typ)
 	ent.SetValue(portStr)
 
-	di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
-	ent.AddDisplayInformation(di, "Netcap Info")
+	// di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
+	// ent.AddDisplayInformation(di, "Netcap Info")
 
 	ent.AddProperty("label", "Label", "strict", portStr + "\n" + serviceName)
 

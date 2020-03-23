@@ -16,8 +16,8 @@ func main() {
 					ent.SetType("maltego.Person")
 					ent.SetValue(escapedName)
 
-					di := "<h3>Mail User</h3><p>Timestamp First: " + pop3.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Netcap Info")
+					// di := "<h3>Mail User</h3><p>Timestamp First: " + pop3.Timestamp + "</p>"
+					// ent.AddDisplayInformation(di, "Netcap Info")
 					ent.SetLinkColor("#000000")
 					//ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
 

@@ -29,8 +29,8 @@ func main() {
 					ent.SetType("maltego.Email")
 					ent.SetValue(buf.String())
 
-					di := "<h3>EMail</h3><p>Timestamp First: " + pop3.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Netcap Info")
+					// di := "<h3>EMail</h3><p>Timestamp First: " + pop3.Timestamp + "</p>"
+					// ent.AddDisplayInformation(di, "Netcap Info")
 					ent.SetLinkColor("#000000")
 					//ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
 
