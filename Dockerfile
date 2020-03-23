@@ -1,4 +1,5 @@
 FROM ubuntu:18.04 as builder
+RUN apt-get clean
 RUN apt-get update
 RUN apt-get install -y software-properties-common
 RUN add-apt-repository ppa:longsleep/golang-backports
@@ -41,22 +42,41 @@ RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Versio
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/net.dump -i github.com/dreadl0ck/netcap/cmd/dump
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/net.util -i github.com/dreadl0ck/netcap/cmd/util
 
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetApplicationCategories -i github.com/dreadl0ck/netcap/cmd/maltego/GetApplicationCategories
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetApplications -i github.com/dreadl0ck/netcap/cmd/maltego/GetApplications
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetApplicationsForCategory -i github.com/dreadl0ck/netcap/cmd/maltego/GetApplicationsForCategory
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetCookieValues -i github.com/dreadl0ck/netcap/cmd/maltego/GetCookieValues
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetCookiesForHTTPHost -i github.com/dreadl0ck/netcap/cmd/maltego/GetCookiesForHTTPHost
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetDHCP -i github.com/dreadl0ck/netcap/cmd/maltego/GetDHCP
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetDNSQuestions -i github.com/dreadl0ck/netcap/cmd/maltego/GetDNSQuestions
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetDeviceContacts -i github.com/dreadl0ck/netcap/cmd/maltego/GetDeviceContacts
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetDeviceIPs -i github.com/dreadl0ck/netcap/cmd/maltego/GetDeviceIPs
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetDeviceProfiles -i github.com/dreadl0ck/netcap/cmd/maltego/GetDeviceProfiles
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetDevices -i github.com/dreadl0ck/netcap/cmd/maltego/GetDevices
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetDstPorts -i github.com/dreadl0ck/netcap/cmd/maltego/GetDstPorts
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetFileTypes -i github.com/dreadl0ck/netcap/cmd/maltego/GetFileTypes
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetFiles -i github.com/dreadl0ck/netcap/cmd/maltego/GetFiles
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetFilesForContentType -i github.com/dreadl0ck/netcap/cmd/maltego/GetFilesForContentType
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetGeolocation -i github.com/dreadl0ck/netcap/cmd/maltego/GetGeolocation
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetHTTPContentTypes -i github.com/dreadl0ck/netcap/cmd/maltego/GetHTTPContentTypes
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetHTTPCookies -i github.com/dreadl0ck/netcap/cmd/maltego/GetHTTPCookies
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetHTTPHosts -i github.com/dreadl0ck/netcap/cmd/maltego/GetHTTPHosts
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetHTTPParameters -i github.com/dreadl0ck/netcap/cmd/maltego/GetHTTPParameters
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetHTTPServerNames -i github.com/dreadl0ck/netcap/cmd/maltego/GetHTTPServerNames
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetHTTPStatusCodes -i github.com/dreadl0ck/netcap/cmd/maltego/GetHTTPStatusCodes
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetHTTPURLs -i github.com/dreadl0ck/netcap/cmd/maltego/GetHTTPURLs
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetHTTPUserAgents -i github.com/dreadl0ck/netcap/cmd/maltego/GetHTTPUserAgents
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetMailAuthTokens -i github.com/dreadl0ck/netcap/cmd/maltego/GetMailAuthTokens
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetMailFrom -i github.com/dreadl0ck/netcap/cmd/maltego/GetMailFrom
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetMailTo -i github.com/dreadl0ck/netcap/cmd/maltego/GetMailTo
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetMailUserPassword -i github.com/dreadl0ck/netcap/cmd/maltego/GetMailUserPassword
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetMailUsers -i github.com/dreadl0ck/netcap/cmd/maltego/GetMailUsers
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetMails -i github.com/dreadl0ck/netcap/cmd/maltego/GetMails
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetParameterValues -i github.com/dreadl0ck/netcap/cmd/maltego/GetParameterValues
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetParametersForHTTPHost -i github.com/dreadl0ck/netcap/cmd/maltego/GetParametersForHTTPHost
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetSNIs -i github.com/dreadl0ck/netcap/cmd/maltego/GetSNIs
 RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetSrcPorts -i github.com/dreadl0ck/netcap/cmd/maltego/GetSrcPorts
+RUN go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/GetURLsForHTTPHost -i github.com/dreadl0ck/netcap/cmd/maltego/GetURLsForHTTPHost
 
 FROM ubuntu:18.04
 ARG IPV6_SUPPORT=true

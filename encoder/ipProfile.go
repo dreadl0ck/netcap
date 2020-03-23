@@ -106,7 +106,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 		}
 
 		// Application Layer: DPI
-		uniqueResults := dpi.GetProtocolsTimeout(i.p)
+		uniqueResults := dpi.GetProtocols(i.p)
 		for proto, res := range uniqueResults {
 			// check if proto exists already
 			if prot, ok := p.Protocols[proto]; ok {
@@ -178,7 +178,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 	}
 
 	// Application Layer: DPI
-	uniqueResults := dpi.GetProtocolsTimeout(i.p)
+	uniqueResults := dpi.GetProtocols(i.p)
 	for proto, res := range uniqueResults {
 		protos[proto] = &types.Protocol{
 			Packets:  1,
