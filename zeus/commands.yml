@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION:  0.4.10
+    VERSION:  0.4.11
 
 # command data
 commands:
@@ -34,6 +34,7 @@ commands:
             - net.export
             - net.dump
             - net.util
+            - net.transform
         exec: echo done
 
     ## Compile Framework Components
@@ -76,6 +77,10 @@ commands:
     net.util:
         description: compile net.util binary to $GOPATH/bin
         exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.util -i github.com/dreadl0ck/netcap/cmd/util
+
+    net.transform:
+        description: compile net.transform binary to $GOPATH/bin
+        exec: go build -ldflags "-s -w" -o /usr/local/bin/net.transform -i github.com/dreadl0ck/netcap/cmd/transform
 
     ## Debug Builds
     ##

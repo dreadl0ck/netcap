@@ -8,6 +8,9 @@
 - text Content types: add GetLinks and GetEmails
 - netcap.File -> GetMD5
 
+/usr/local/bin/net.transform
+
+- GetHTTPHeaders
 - attach files (preview?) and open them by click
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
