@@ -26,7 +26,7 @@ import (
 // AtomicIPProfileMap contains all connections and provides synchronized access
 type AtomicIPProfileMap struct {
 	// SrcIP to Profiles
-	Items map[string]*types.IPProfile
+	Items map[string]*profile
 	sync.Mutex
 }
 
@@ -38,10 +38,13 @@ func (a *AtomicIPProfileMap) Size() int {
 }
 
 var ipProfiles = &AtomicIPProfileMap{
-	Items: make(map[string]*types.IPProfile),
+	Items: make(map[string]*profile),
 }
 
-var portMu sync.Mutex
+type profile struct {
+	ip *types.IPProfile
+	sync.Mutex
+}
 
 // GetIPProfile fetches a known profile and updates it or returns a new one
 func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
@@ -52,43 +55,63 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 
 	if p, ok := ipProfiles.Items[ipAddr]; ok {
 
-		p.NumPackets++
-		p.TimestampLast = i.timestamp
+		p.Lock()
+
+		p.ip.NumPackets++
+		p.ip.TimestampLast = i.timestamp
 
 		dataLen := uint64(len(i.p.Data()))
-		p.Bytes += dataLen
+		p.ip.Bytes += dataLen
 
 		// Transport Layer
 		if tl := i.p.TransportLayer(); tl != nil {
 
-			portMu.Lock()
+			//log.Println(i.p.NetworkLayer().NetworkFlow().String() + " " + tl.TransportFlow().String())
 
-			if port, ok := p.SrcPorts[tl.TransportFlow().Src().String()]; ok {
+			if port, ok := p.ip.SrcPorts[tl.TransportFlow().Src().String()]; ok {
 				port.NumTotal += dataLen
 				if tl.LayerType() == layers.LayerTypeTCP {
 					port.NumTCP++
 				} else if tl.LayerType() == layers.LayerTypeUDP {
 					port.NumUDP++
 				}
+			} else {
+				port := &types.Port{
+					NumTotal: dataLen,
+				}
+				if tl.LayerType() == layers.LayerTypeTCP {
+					port.NumTCP++
+				} else if tl.LayerType() == layers.LayerTypeUDP {
+					port.NumUDP++
+				}
+				p.ip.SrcPorts[tl.TransportFlow().Src().String()] = port
 			}
 
-			if port, ok := p.DstPorts[tl.TransportFlow().Dst().String()]; ok {
+			if port, ok := p.ip.DstPorts[tl.TransportFlow().Dst().String()]; ok {
 				port.NumTotal += dataLen
 				if tl.LayerType() == layers.LayerTypeTCP {
 					port.NumTCP++
 				} else if tl.LayerType() == layers.LayerTypeUDP {
 					port.NumUDP++
 				}
+			} else {
+				port := &types.Port{
+					NumTotal: dataLen,
+				}
+				if tl.LayerType() == layers.LayerTypeTCP {
+					port.NumTCP++
+				} else if tl.LayerType() == layers.LayerTypeUDP {
+					port.NumUDP++
+				}
+				p.ip.SrcPorts[tl.TransportFlow().Dst().String()] = port
 			}
-
-			portMu.Unlock()
 		}
 
 		// Session Layer: TLS
 		ch := tlsx.GetClientHelloBasic(i.p)
 		if ch != nil {
 			if ch.SNI != "" {
-				p.SNIs[ch.SNI]++
+				p.ip.SNIs[ch.SNI]++
 			}
 		}
 
@@ -98,29 +121,30 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 		}
 
 		if ja3Hash != "" {
-			if _, ok := p.Ja3[ja3Hash]; ok {
-				// hash is already known, skip
-				return p
+			// add hash to profile if not already present
+			if _, ok := p.ip.Ja3[ja3Hash]; !ok {
+				p.ip.Ja3[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 			}
-			p.Ja3[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 		}
 
 		// Application Layer: DPI
 		uniqueResults := dpi.GetProtocols(i.p)
 		for proto, res := range uniqueResults {
 			// check if proto exists already
-			if prot, ok := p.Protocols[proto]; ok {
+			if prot, ok := p.ip.Protocols[proto]; ok {
 				prot.Packets++
 			} else {
 				// add new
-				p.Protocols[proto] = &types.Protocol{
+				p.ip.Protocols[proto] = &types.Protocol{
 					Packets:  1,
 					Category: string(res.Class),
 				}
 			}
 		}
 
-		return p
+		p.Unlock()
+
+		return p.ip
 	}
 
 	var (
@@ -187,21 +211,23 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 	}
 
 	// create new profile
-	p := &types.IPProfile{
-		Addr:        ipAddr,
-		NumPackets:  1,
-		Geolocation: loc,
-		DNSNames:    resolvers.LookupDNSNames(ipAddr),
-		TimestampFirst: i.timestamp,
-		Ja3:       ja3Map,
-		Protocols: protos,
-		Bytes: dataLen,
-		SrcPorts : srcPorts,
-		DstPorts: dstPorts,
-		SNIs: sniMap,
+	p := &profile{
+		ip: &types.IPProfile{
+			Addr:        ipAddr,
+			NumPackets:  1,
+			Geolocation: loc,
+			DNSNames:    resolvers.LookupDNSNames(ipAddr),
+			TimestampFirst: i.timestamp,
+			Ja3:       ja3Map,
+			Protocols: protos,
+			Bytes: dataLen,
+			SrcPorts : srcPorts,
+			DstPorts: dstPorts,
+			SNIs: sniMap,
+		},
 	}
 
 	ipProfiles.Items[ipAddr] = p
 
-	return p
+	return p.ip
 }
