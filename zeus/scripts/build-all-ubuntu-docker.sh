@@ -56,7 +56,7 @@ docker cp $CONTAINER_ID:/netcap/GetDNSQuestions dist/linux_amd64_libc/GetDNSQues
 docker cp $CONTAINER_ID:/netcap/GetDeviceContacts dist/linux_amd64_libc/GetDeviceContacts
 docker cp $CONTAINER_ID:/netcap/GetDeviceIPs dist/linux_amd64_libc/GetDeviceIPs
 docker cp $CONTAINER_ID:/netcap/GetDeviceProfiles dist/linux_amd64_libc/GetDeviceProfiles
-docker cp $CONTAINER_ID:/netcap/GetDevices dist/linux_amd64_libc/GetDevices
+docker cp $CONTAINER_ID:/netcap/getDevices dist/linux_amd64_libc/getDevices
 docker cp $CONTAINER_ID:/netcap/GetDstPorts dist/linux_amd64_libc/GetDstPorts
 docker cp $CONTAINER_ID:/netcap/GetFileTypes dist/linux_amd64_libc/GetFileTypes
 docker cp $CONTAINER_ID:/netcap/GetFiles dist/linux_amd64_libc/GetFiles
