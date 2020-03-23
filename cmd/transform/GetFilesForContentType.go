@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GetFiles() {
+func GetFilesForContentType() {
 	maltego.FilesTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
