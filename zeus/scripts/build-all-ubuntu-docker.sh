@@ -45,7 +45,7 @@ docker cp $CONTAINER_ID:/netcap/net.proxy dist/linux_amd64_libc/net.proxy
 docker cp $CONTAINER_ID:/netcap/net.export dist/linux_amd64_libc/net.export
 docker cp $CONTAINER_ID:/netcap/net.dump dist/linux_amd64_libc/net.dump
 docker cp $CONTAINER_ID:/netcap/net.util dist/linux_amd64_libc/net.util
-docker cp $CONTAINER_ID:/netcap/net.transform dist/linux_amd64/net.transform
+docker cp $CONTAINER_ID:/netcap/net.transform dist/linux_amd64_libc/net.transform
 
 # remove container
 docker rm $CONTAINER_ID
