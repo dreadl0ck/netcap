@@ -28,8 +28,8 @@ func main() {
 					dnsNames := strings.Join(ip.DNSNames, "\n")
 					ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + dnsNames)
 
-					di := "<h3>Device IP</h3><p>Timestamp: " + profile.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Netcap Info")
+					// di := "<h3>Device IP</h3><p>Timestamp: " + profile.Timestamp + "</p>"
+					// ent.AddDisplayInformation(di, "Netcap Info")
 
 					ent.AddProperty("geolocation", "Geolocation", "strict", ip.Geolocation)
 					ent.AddProperty("dnsNames", "DNS Names", "strict", dnsNames)

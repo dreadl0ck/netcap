@@ -49,8 +49,8 @@ func main() {
 						ent.SetType("netcap.Device")
 						ent.SetValue(typ + ": "+ buf.String())
 
-						di := "<h3>DHCP Option</h3><p>Timestamp First: " + dhcp.Timestamp + "</p>"
-						ent.AddDisplayInformation(di, "Netcap Info")
+						// di := "<h3>DHCP Option</h3><p>Timestamp First: " + dhcp.Timestamp + "</p>"
+						// ent.AddDisplayInformation(di, "Netcap Info")
 						ent.SetLinkColor("#000000")
 						//ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
 					}

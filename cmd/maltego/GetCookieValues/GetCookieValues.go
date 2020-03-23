@@ -27,12 +27,13 @@ func main() {
 }
 
 func addCookieValue(trx *maltego.MaltegoTransform, c *types.HTTPCookie, timestamp string) {
-	ent := trx.AddEntity("netcap.HTTPCookieValue", c.Value)
+	escapedName := maltego.EscapeText(c.Value)
+	ent := trx.AddEntity("netcap.HTTPCookieValue", escapedName)
 	ent.SetType("netcap.HTTPCookieValue")
-	ent.SetValue(c.Value)
+	ent.SetValue(escapedName)
 
-	di := "<h3>HTTP Cookie</h3><p>Timestamp: " + timestamp + "</p>"
-	ent.AddDisplayInformation(di, "Netcap Info")
+	// di := "<h3>HTTP Cookie</h3><p>Timestamp: " + timestamp + "</p>"
+	// ent.AddDisplayInformation(di, "Netcap Info")
 
 	//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
 	ent.SetLinkColor("#000000")

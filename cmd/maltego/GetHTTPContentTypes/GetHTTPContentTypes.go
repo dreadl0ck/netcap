@@ -17,8 +17,8 @@ func main() {
 					ent.SetType("netcap.ContentType")
 					ent.SetValue(http.ContentTypeDetected)
 
-					di := "<h3>Content Type</h3><p>Timestamp: " + http.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Netcap Info")
+					// di := "<h3>Content Type</h3><p>Timestamp: " + http.Timestamp + "</p>"
+					// ent.AddDisplayInformation(di, "Netcap Info")
 
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
 					ent.AddProperty("path", "Path", "strict", profilesFile)
@@ -33,8 +33,8 @@ func main() {
 					ent.SetType("netcap.ContentType")
 					ent.SetValue(http.ResContentTypeDetected)
 
-					di := "<h3>Content Type</h3><p>Timestamp: " + http.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Netcap Info")
+					// di := "<h3>Content Type</h3><p>Timestamp: " + http.Timestamp + "</p>"
+					// ent.AddDisplayInformation(di, "Netcap Info")
 
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
 					ent.AddProperty("path", "Path", "strict", profilesFile)

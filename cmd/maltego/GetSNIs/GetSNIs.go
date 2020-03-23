@@ -18,8 +18,8 @@ func main() {
 								ent.SetType("maltego.Domain")
 								ent.SetValue(sni)
 
-								di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
-								ent.AddDisplayInformation(di, "Netcap Info")
+								// di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
+								// ent.AddDisplayInformation(di, "Netcap Info")
 								ent.SetLinkColor("#000000")
 								ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
 							}
@@ -34,8 +34,8 @@ func main() {
 								ent.SetType("maltego.Domain")
 								ent.SetValue(sni)
 
-								di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
-								ent.AddDisplayInformation(di, "Netcap Info")
+								// di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
+								// ent.AddDisplayInformation(di, "Netcap Info")
 								ent.SetLinkColor("#000000")
 								ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
 							}

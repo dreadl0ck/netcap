@@ -27,8 +27,8 @@ func main() {
 						ent.SetType("netcap.HTTPParameter")
 						ent.SetValue(key)
 
-						di := "<h3>HTTP Parameter</h3><p>Timestamp: " + http.Timestamp + "</p>"
-						ent.AddDisplayInformation(di, "Netcap Info")
+						// di := "<h3>HTTP Parameter</h3><p>Timestamp: " + http.Timestamp + "</p>"
+						// ent.AddDisplayInformation(di, "Netcap Info")
 
 						ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
 						ent.AddProperty("path", "Path", "strict", profilesFile)

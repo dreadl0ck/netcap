@@ -23,8 +23,8 @@ func main() {
 								ent.SetType("maltego.Service")
 								ent.SetValue(protoName)
 
-								di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
-								ent.AddDisplayInformation(di, "Netcap Info")
+								// di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
+								// ent.AddDisplayInformation(di, "Netcap Info")
 
 								ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 								ent.SetLinkColor("#000000")
@@ -45,8 +45,8 @@ func main() {
 								ent.SetType("maltego.Service")
 								ent.SetValue(protoName)
 
-								di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
-								ent.AddDisplayInformation(di, "Netcap Info")
+								// di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
+								// ent.AddDisplayInformation(di, "Netcap Info")
 
 								ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 								ent.SetLinkColor("#000000")

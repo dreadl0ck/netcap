@@ -2,31 +2,6 @@
 
 # maltego
 
-filter packets with bpf:
-
-    # HTTP
-    tcpdump -r all.pcap -w http.pcap port 80
-    
-    # HTTPS
-    tcpdump -r all.pcap -w https.pcap port 443
-    
-    # POP3 & SMTP
-    tcpdump -r all.pcap -w mail.pcap port 110 or port 25 or port 465 or port 587 or port 995
-    
-    # DNS
-    tcpdump -r all.pcap -w dns.pcap port 53
-    
-    # DHCP
-    tcpdump -r all.pcap -w dhcp.pcap "(udp and port 67) or (udp and port 68)"
-    
-    # UDP
-    tcpdump -r all.pcap -w udp.pcap udp
-
-
-Split into 25k packets parts:
-
-    editcap -c 25000 all.cap 25k.cap
-
 - add file extraction for POP3 emails and attachments
 - set attachments on mail audit record type
 - GetUsers from HTTP BasicAuth

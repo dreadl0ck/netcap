@@ -23,8 +23,8 @@ func main() {
 
 					ent.AddProperty("url", "URL", "strict", bareURL)
 
-					di := "<h3>URL</h3><p>Timestamp: " + http.Timestamp + "</p>"
-					ent.AddDisplayInformation(di, "Netcap Info")
+					// di := "<h3>URL</h3><p>Timestamp: " + http.Timestamp + "</p>"
+					// ent.AddDisplayInformation(di, "Netcap Info")
 
 					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
 					ent.SetLinkColor("#000000")

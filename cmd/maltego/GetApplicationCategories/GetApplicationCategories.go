@@ -22,8 +22,8 @@ func main() {
 								ent.SetType("maltego.Service")
 								ent.SetValue(proto.Category)
 
-								di := "<h3>Traffic Category</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
-								ent.AddDisplayInformation(di, "Netcap Info")
+								// di := "<h3>Traffic Category</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
+								// ent.AddDisplayInformation(di, "Netcap Info")
 
 								ent.AddProperty("mac", "MacAddress", "strict", mac)
 								ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
@@ -47,8 +47,8 @@ func main() {
 								ent.SetType("maltego.Service")
 								ent.SetValue(proto.Category)
 
-								di := "<h3>Traffic Category</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
-								ent.AddDisplayInformation(di, "Netcap Info")
+								// di := "<h3>Traffic Category</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
+								// ent.AddDisplayInformation(di, "Netcap Info")
 
 								ent.AddProperty("mac", "MacAddress", "strict", mac)
 								ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
