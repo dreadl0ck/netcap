@@ -29,8 +29,6 @@ Split into 25k packets parts:
 
 - add file extraction for POP3 emails and attachments
 - set attachments on mail audit record type
-
-- add GetMails / GetMailContacts
 - GetUsers from HTTP BasicAuth
 - text Content types: add GetLinks and GetEmails
 - netcap.File -> GetMD5
