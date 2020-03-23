@@ -21,15 +21,15 @@ func main() {
 				for _, ip := range profile.Contacts {
 
 					var ent *maltego.MaltegoEntityObj
-					var contactType string
+					//var contactType string
 					if resolvers.IsPrivateIP(net.ParseIP(ip.Addr)) {
 						ent = trx.AddEntity("netcap.InternalContact", ip.Addr)
 						ent.SetType("netcap.InternalContact")
-						contactType = "InternalContact"
+						//contactType = "InternalContact"
 					} else {
 						ent = trx.AddEntity("netcap.ExternalContact", ip.Addr)
 						ent.SetType("netcap.ExternalContact")
-						contactType = "ExternalContact"
+						//contactType = "ExternalContact"
 					}
 
 					dnsNames := strings.Join(ip.DNSNames, "\n")
