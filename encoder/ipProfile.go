@@ -103,7 +103,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 				} else if tl.LayerType() == layers.LayerTypeUDP {
 					port.NumUDP++
 				}
-				p.ip.SrcPorts[tl.TransportFlow().Dst().String()] = port
+				p.ip.DstPorts[tl.TransportFlow().Dst().String()] = port
 			}
 		}
 
