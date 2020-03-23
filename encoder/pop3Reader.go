@@ -64,7 +64,10 @@ func (h *pop3Reader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 		case h.data, ok = <-h.bytes:
-		case <-time.After(time.Duration(*flagFlowTimeOut) * time.Second):
+		// time out streams that never send any data
+		// for HTTP this is not done currently, because it caused the assembler to lock up for some datasets
+		// TODO: test empty TCP conn over HTTP port (will this lock up the reassembly?)
+		case <-time.After(timeout):
 			return 0, io.EOF
 		}
 	}

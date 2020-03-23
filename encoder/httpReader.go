@@ -49,6 +49,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"github.com/dreadl0ck/cryptoutils"
+	gzip "github.com/klauspost/pgzip"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -58,9 +59,6 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-	"time"
-
-	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -84,8 +82,8 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 			case h.data, ok = <-h.bytes:
-			case <-time.After(timeout):
-				return 0, io.EOF
+			//case <-time.After(timeout):
+			//	return 0, io.EOF
 		}
 	}
 	if !ok || len(h.data) == 0 {

@@ -15,7 +15,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -60,7 +60,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -84,7 +84,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -108,7 +108,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -132,7 +132,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -156,7 +156,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -180,7 +180,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -204,7 +204,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -231,7 +231,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -253,7 +253,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -275,7 +275,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -297,7 +297,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -319,7 +319,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -341,7 +341,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -363,7 +363,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -385,7 +385,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -407,7 +407,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -429,7 +429,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -451,7 +451,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -473,7 +473,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -495,7 +495,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -517,7 +517,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -539,7 +539,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -561,7 +561,7 @@ builds:
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
     - darwin
-    - windows
+    #- windows
 
   # Custom ldflags templates.
   # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.

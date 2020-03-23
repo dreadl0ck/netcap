@@ -40,6 +40,7 @@ Split into 25k packets parts:
 - MIME type: check if executables are properly detected
 - destination ips: queries for audit records must use DstIP == ipaddr !
 - reverse link order for deviceIPs and contactIPs when iterating over both?
+- test empty TCP conn over HTTP port (will this lock up the reassembly?)
 
 ## General
 
