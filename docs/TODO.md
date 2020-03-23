@@ -33,9 +33,6 @@ Split into 25k packets parts:
 - add GetMails / GetMailContacts
 - GetUsers from HTTP BasicAuth
 - text Content types: add GetLinks and GetEmails
-- HTTP: GetHTTPHost -> GetURLs
-- HTTP: GetHTTPHost -> GetParameters
-- HTTP: GetHTTPHost -> GetCookies
 - netcap.File -> GetMD5
 
 - attach files (preview?) and open them by click
