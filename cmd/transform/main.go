@@ -60,6 +60,8 @@ func main() {
 			GetFileTypes()
 		case "GetFiles":
 			GetFiles()
+		case "GetFileType":
+			GetFileType()
 		case "GetFilesForContentType":
 			GetFilesForContentType()
 		case "GetGeolocation":
