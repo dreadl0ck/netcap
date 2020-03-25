@@ -13,7 +13,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 )
 
-var disableDPI = false
+var disableDPI = true
 
 func Init() {
 	var (

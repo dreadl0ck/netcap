@@ -13,7 +13,7 @@ import (
 func GetDeviceIPs() {
 	maltego.DeviceProfileTransform(
 		maltego.CountPacketsDeviceIPs,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.DeviceIPs {
 
@@ -41,7 +41,7 @@ func GetDeviceIPs() {
 
 					ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts\n" + humanize.Bytes(ip.Bytes))
 					ent.SetLinkColor("#000000")
-					ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), minPackets, maxPackets))
+					ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), min, max))
 				}
 			}
 		},

@@ -18,19 +18,19 @@ func GetSrcPorts() {
 
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
 						for portStr, port := range ip.SrcPorts {
-							addSourcePort(trx, portStr, port, minPackets, maxPackets, ip)
+							addSourcePort(trx, portStr, port, min, max, ip)
 						}
 					}
 				}
 				for _, ip := range profile.DeviceIPs {
 					if ip.Addr == ipaddr {
 						for portStr, port := range ip.SrcPorts {
-							addSourcePort(trx, portStr, port, minPackets, maxPackets, ip)
+							addSourcePort(trx, portStr, port, min, max, ip)
 						}
 					}
 				}
@@ -39,7 +39,7 @@ func GetSrcPorts() {
 	)
 }
 
-func addSourcePort(trx *maltego.MaltegoTransform, portStr string, port *types.Port, minPackets uint64, maxPackets uint64, ip *types.IPProfile) {
+func addSourcePort(trx *maltego.MaltegoTransform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile) {
 
 	ent := trx.AddEntity("netcap.SourcePort", portStr)
 	ent.SetType("netcap.SourcePort")
@@ -58,13 +58,13 @@ func addSourcePort(trx *maltego.MaltegoTransform, portStr string, port *types.Po
 	serviceName := resolvers.LookupServiceByPort(np, typ)
 	ent.SetValue(portStr)
 
-	// di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
-	// ent.AddDisplayInformation(di, "Netcap Info")
+	di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
+	ent.AddDisplayInformation(di, "Netcap Info")
 
 	escapedName := maltego.EscapeText(portStr + "\n" + serviceName)
 	ent.AddProperty("label", "Label", "strict", escapedName)
 
 	ent.SetLinkLabel(strconv.FormatInt(int64(port.NumTotal), 10) + " pkts")
 	ent.SetLinkColor("#000000")
-	ent.SetLinkThickness(maltego.GetThickness(port.NumTotal, minPackets, maxPackets))
+	ent.SetLinkThickness(maltego.GetThickness(port.NumTotal, min, max))
 }

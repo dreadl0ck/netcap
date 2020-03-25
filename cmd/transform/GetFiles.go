@@ -9,7 +9,7 @@ import (
 func GetFiles() {
 	maltego.FilesTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
 			if file.Context.SrcIP == ipaddr {
 				if file.Name != "" {
 					escapedName := maltego.EscapeText(file.Name)

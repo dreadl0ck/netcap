@@ -9,14 +9,14 @@ import (
 func GetGeolocation() {
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
 						if ip.Geolocation == "" {
 							continue
 						}
-						addGeolocation(trx, ip, minPackets, maxPackets)
+						addGeolocation(trx, ip, min, max)
 					}
 				}
 				for _, ip := range profile.DeviceIPs {
@@ -24,7 +24,7 @@ func GetGeolocation() {
 						if ip.Geolocation == "" {
 							continue
 						}
-						addGeolocation(trx, ip, minPackets, maxPackets)
+						addGeolocation(trx, ip, min, max)
 					}
 				}
 			}
@@ -32,7 +32,7 @@ func GetGeolocation() {
 	)
 }
 
-func addGeolocation(trx *maltego.MaltegoTransform, ip *types.IPProfile, minPackets, maxPackets uint64) {
+func addGeolocation(trx *maltego.MaltegoTransform, ip *types.IPProfile, min, max uint64) {
 	ent := trx.AddEntity("maltego.Location", ip.Geolocation)
 	ent.SetType("maltego.Location")
 	ent.SetValue(ip.Geolocation)
@@ -42,5 +42,5 @@ func addGeolocation(trx *maltego.MaltegoTransform, ip *types.IPProfile, minPacke
 
 	ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")
 	ent.SetLinkColor("#000000")
-	ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), minPackets, maxPackets))
+	ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), min, max))
 }

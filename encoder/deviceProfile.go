@@ -173,6 +173,10 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	resolvers.InitJa3Resolver()
 	resolvers.InitServiceDB()
 
+	if localDNS {
+		resolvers.InitLocalDNS()
+	}
+
 	profileEncoderInstance = d
 
 	//resolvers.DisableReverseDNS = true

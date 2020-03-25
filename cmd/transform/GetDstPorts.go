@@ -18,12 +18,12 @@ func GetDstPorts() {
 
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
 						for portStr, port := range ip.DstPorts {
-							addDestinationPort(trx, portStr, port, minPackets, maxPackets, ip)
+							addDestinationPort(trx, portStr, port, min, max, ip)
 						}
 						break
 					}
@@ -31,7 +31,7 @@ func GetDstPorts() {
 				for _, ip := range profile.DeviceIPs {
 					if ip.Addr == ipaddr {
 						for portStr, port := range ip.DstPorts {
-							addDestinationPort(trx, portStr, port, minPackets, maxPackets, ip)
+							addDestinationPort(trx, portStr, port, min, max, ip)
 						}
 						break
 					}
@@ -41,7 +41,7 @@ func GetDstPorts() {
 	)
 }
 
-func addDestinationPort(trx *maltego.MaltegoTransform, portStr string, port *types.Port, minPackets, maxPackets uint64, ip *types.IPProfile) {
+func addDestinationPort(trx *maltego.MaltegoTransform, portStr string, port *types.Port, min, max uint64, ip *types.IPProfile) {
 	ent := trx.AddEntity("netcap.DestinationPort", portStr)
 	ent.SetType("netcap.DestinationPort")
 	np, err := strconv.Atoi(portStr)
@@ -59,13 +59,13 @@ func addDestinationPort(trx *maltego.MaltegoTransform, portStr string, port *typ
 	serviceName := resolvers.LookupServiceByPort(np, typ)
 	ent.SetValue(portStr)
 
-	// di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
-	// ent.AddDisplayInformation(di, "Netcap Info")
+	di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
+	ent.AddDisplayInformation(di, "Netcap Info")
 
 	escapedName := maltego.EscapeText(portStr + "\n" + serviceName)
 	ent.AddProperty("label", "Label", "strict", escapedName)
 
 	ent.SetLinkLabel(strconv.FormatInt(int64(port.NumTotal), 10) + " pkts")
 	ent.SetLinkColor("#000000")
-	ent.SetLinkThickness(maltego.GetThickness(port.NumTotal, minPackets, maxPackets))
+	ent.SetLinkThickness(maltego.GetThickness(port.NumTotal, min, max))
 }

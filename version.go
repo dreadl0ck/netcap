@@ -3,4 +3,4 @@ package netcap
 
 // Netcap version.
 var Version = "v0.4.13"
-var Commit = "b2e32b808d00f163853d26a60f863bfa2b060725"
+var Commit = "2ec21cc4badb3d3614309ced327021b69b1b1ab9"

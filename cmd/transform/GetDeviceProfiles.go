@@ -57,7 +57,7 @@ func GetDeviceProfiles() {
 			Buffer:          true,
 			Compression:     true,
 			CSV:             false,
-			IncludeEncoders: "DeviceProfile,File,HTTP,DNS,POP3,SMTP,DHCPv4",
+			IncludeEncoders: "DeviceProfile,File,HTTP,DNS,POP3,SMTP,DHCPv4,Flow",
 			ExcludeEncoders: "",
 			Out:             outDir,
 			Source:          inputFile,

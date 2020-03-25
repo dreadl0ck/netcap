@@ -16,7 +16,7 @@ func GetDHCP() {
 
 	maltego.DHCPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, dhcp *types.DHCPv4, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
 			if dhcp.ClientIP == ipaddr {
 				for _, o := range dhcp.Options {
 					if utf8.Valid(o.Data) && len(o.Data) != 1 {
@@ -52,7 +52,7 @@ func GetDHCP() {
 						// di := "<h3>DHCP Option</h3><p>Timestamp First: " + dhcp.Timestamp + "</p>"
 						// ent.AddDisplayInformation(di, "Netcap Info")
 						ent.SetLinkColor("#000000")
-						//ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
+						//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 					}
 				}
 			}
