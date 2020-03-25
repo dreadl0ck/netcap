@@ -14,8 +14,6 @@
 package collector
 
 import (
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcap"
 	"github.com/pkg/errors"
 	"io"
@@ -52,11 +50,10 @@ func (c *Collector) CollectBPF(path string, bpf string) error {
 
 		c.printProgress()
 
-		p := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Lazy)
-		p.Metadata().Timestamp = ci.Timestamp
-		p.Metadata().CaptureInfo = ci
-
-		c.handlePacket(p)
+		c.handlePacket(&packet{
+			data: data,
+			ci:   ci,
+		})
 	}
 	c.cleanup()
 	return nil

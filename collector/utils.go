@@ -26,21 +26,21 @@ import (
 	"golang.org/x/net/bpf"
 )
 
+type packet struct {
+	data []byte
+	ci gopacket.CaptureInfo
+}
+
 func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
 
 	// show progress
 	c.printProgress()
 
-	// create a new gopacket
-	// base layer is by default Ethernet
-	p := gopacket.NewPacket(data, c.config.BaseLayer, c.config.DecodeOptions)
-	p.Metadata().Timestamp = ci.Timestamp
-	p.Metadata().CaptureInfo = ci
-	p.Metadata().Length = ci.Length
-	p.Metadata().CaptureLength = ci.CaptureLength
-
 	// pass packet to a worker routine
-	c.handlePacket(p)
+	c.handlePacket(&packet{
+		data: data,
+		ci: ci,
+	})
 }
 
 // printProgressLive prints live statistics.

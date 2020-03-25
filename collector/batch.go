@@ -64,9 +64,14 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 
 	// read packets in background routine
 	go func() {
-		for pack := range ps.Packets() {
+		for p := range ps.Packets() {
 			c.printProgressLive()
-			c.handlePacket(pack)
+
+			// TODO: avoid duplicate alloc
+			c.handlePacket(&packet{
+				data: p.Data(),
+				ci:   p.Metadata().CaptureInfo,
+			})
 		}
 	}()
 
