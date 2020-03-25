@@ -64,8 +64,8 @@ import (
 // flags
 var (
 	flushevery       = flag.Int("flushevery", 100, "flush assembler every N packets")
-	flagCloseTimeOut = flag.Int("tcp-close-timeout", 60, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
-	flagTimeOut      = flag.Int("tcp-timeout", 60, "close streams waiting for packets older than X seconds")
+	//flagCloseTimeOut = flag.Int("tcp-close-timeout", 60, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
+	//flagTimeOut      = flag.Int("tcp-timeout", 60, "close streams waiting for packets older than X seconds")
 
 	nodefrag         = flag.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
 	checksum         = flag.Bool("checksum", false, "check TCP checksum")
@@ -90,7 +90,7 @@ var (
 	mu          sync.Mutex
 
 	closeTimeout time.Duration = time.Hour * 24 // time.Duration(*flagCloseTimeOut) // Closing inactive
-	timeout      time.Duration = time.Minute * 5 // * time.Duration(*flagTimeOut)      // Pending bytes
+	timeout      time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
 
 	defragger     = ip4defrag.NewIPv4Defragmenter()
 	streamFactory = &tcpStreamFactory{doHTTP: !*nohttp}

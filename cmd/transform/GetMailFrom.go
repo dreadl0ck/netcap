@@ -13,8 +13,8 @@ func GetMailFrom() {
 				for _, m := range pop3.Mails {
 					if m.From != "" {
 						escapedName := maltego.EscapeText(m.From)
-						ent := trx.AddEntity("maltego.EmailAddress", escapedName)
-						ent.SetType("maltego.EmailAddress")
+						ent := trx.AddEntity("netcap.Email", escapedName)
+						ent.SetType("netcap.Email")
 						ent.SetValue(escapedName)
 
 						// di := "<h3>EMail Address</h3><p>Timestamp First: " + pop3.Timestamp + "</p>"

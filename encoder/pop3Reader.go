@@ -604,11 +604,16 @@ func parseMail(buf []byte) *types.Mail {
 		References:      header["References"],
 		InReplyTo:       header["In-Reply-To"],
 		ContentLanguage: header["Content-Language"],
-		//HasAttachments:header[  ]fal//se,
 		XOriginatingIP: header["x-originating-ip"],
 		ContentType:    header["Content-Type"],
 		EnvelopeTo:     header["Envelope-To"],
 		Body:           parseParts(body),
+	}
+	for _, p := range mail.Body {
+		if strings.Contains(p.Header["Content-Disposition"], "attachment") {
+			mail.HasAttachments = true
+			break
+		}
 	}
 	return mail
 }
@@ -641,20 +646,24 @@ func parseParts(body string) []*types.MailPart {
 				// check if its an end marker for the current part
 				if strings.HasSuffix(line, currentPart.ID + "--") {
 					mailDebug(ansi.Cyan, "end", currentPart.ID, ansi.Reset)
+					// TODO: create a constructor for MailPart
 					parts = append(parts, &types.MailPart{
 						ID:       currentPart.ID,
 						Header:   currentPart.Header,
 						Content:  currentPart.Content,
+						Filename: currentPart.Filename,
 					})
 					parsePayload = false
 					currentPart = nil
 
 				// check if its the start of another part, marker type 1
 				} else if strings.HasPrefix(line, partIdent) {
+					// TODO: create a constructor for MailPart
 					parts = append(parts, &types.MailPart{
 						ID:      currentPart.ID,
 						Header:  currentPart.Header,
 						Content: currentPart.Content,
+						Filename: currentPart.Filename,
 					})
 					currentPart = &types.MailPart{
 						ID:     strings.TrimPrefix(line, partIdent),
@@ -665,10 +674,12 @@ func parseParts(body string) []*types.MailPart {
 
 				// second type of start marker
 				} else if strings.HasPrefix(line, "--") && len(line) > 31 && !strings.Contains(line, ">") {
+					// TODO: create a constructor for MailPart
 					parts = append(parts, &types.MailPart{
 						ID:       currentPart.ID,
 						Header:   currentPart.Header,
 						Content:  currentPart.Content,
+						Filename: currentPart.Filename,
 					})
 					currentPart = &types.MailPart{
 						ID:      strings.TrimPrefix(line, "--"),
@@ -688,6 +699,12 @@ func parseParts(body string) []*types.MailPart {
 			if len(pts) == 2 {
 				currentPart.Header[pts[0]] = pts[1]
 				mailDebug(ansi.Yellow, "parsed header field", pts[0], ansi.Reset)
+			} else {
+				pts = strings.Split(line, "filename=")
+				if len(pts) == 2 {
+					currentPart.Filename = strings.Trim(pts[1], "\"")
+					mailDebug(ansi.Yellow, "parsed filename field", currentPart.Filename, ansi.Reset)
+				}
 			}
 			if line == "\n" || line == "" {
 				parsePayload = true

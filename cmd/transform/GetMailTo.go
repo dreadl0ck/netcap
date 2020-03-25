@@ -13,12 +13,12 @@ func GetMailTo() {
 				for _, m := range pop3.Mails {
 					if m.To != "" {
 						escapedName := maltego.EscapeText(m.To)
-						ent := trx.AddEntity("maltego.EmailAddress", escapedName)
-						ent.SetType("maltego.EmailAddress")
+						ent := trx.AddEntity("netcap.Email", escapedName)
+						ent.SetType("netcap.Email")
 						ent.SetValue(escapedName)
 
-						// di := "<h3>EMail Address</h3><p>Timestamp First: " + pop3.Timestamp + "</p>"
-						// ent.AddDisplayInformation(di, "Netcap Info")
+						//di := "<h3>EMail Address</h3><p>Timestamp First: " + pop3.Timestamp + "</p>"
+						//ent.AddDisplayInformation(di, "Netcap Info")
 						ent.SetLinkColor("#000000")
 						//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 

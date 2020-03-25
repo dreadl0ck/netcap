@@ -25,14 +25,20 @@ func GetMails() {
 						fmt.Println(err)
 					}
 
-					ent := trx.AddEntity("maltego.Email", buf.String())
-					ent.SetType("maltego.Email")
+					ent := trx.AddEntity("netcap.Email", buf.String())
+					ent.SetType("netcap.Email")
 					ent.SetValue(buf.String())
 
-					// di := "<h3>EMail</h3><p>Timestamp First: " + pop3.Timestamp + "</p>"
-					// ent.AddDisplayInformation(di, "Netcap Info")
-					ent.SetLinkColor("#000000")
-					//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
+					var attachments string
+					for _, p := range m.Body {
+						cType := p.Header["Content-Type"]
+						if cType != "" && strings.Contains(p.Header["Content-Disposition"], "attachment") {
+							attachments += "<br>Attachment Content Type: " + cType + "<br>"
+							if p.Content != "" && p.Content != "\n" {
+								attachments += p.Content + "<br>"
+							}
+						}
+					}
 
 					var body string
 					for _, p := range m.Body {
@@ -47,7 +53,12 @@ func GetMails() {
 					if err != nil {
 						fmt.Println(err)
 					}
-					ent.SetNote(buf.String())
+
+					di := "<h3>EMail: " + m.Subject + "</h3><p>Timestamp First: " + pop3.Timestamp + "</p><p>From: " + m.From + "</p><p>To: " + m.To + "</p><p>Text: " + buf.String() + "</p><p>Additional parts: " + attachments + "</p>"
+					ent.AddDisplayInformation(di, "Netcap Info")
+
+					ent.SetLinkColor("#000000")
+					//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 				}
 			}
 		},
