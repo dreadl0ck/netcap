@@ -28,19 +28,19 @@ const reassembleStreams = true
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
-func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet {
+func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 	// init channel to receive input packets
-	chanInput := make(chan gopacket.Packet, c.config.PacketBufferSize)
+	chanInput := make(chan *packet, c.config.PacketBufferSize)
 
 	// start worker
 	go func() {
 		for {
 			select {
-			case p := <-chanInput:
+			case packet := <-chanInput:
 
 				// nil packet is used to exit goroutine
-				if p == nil {
+				if packet == nil {
 
 					// cleanup reassembly
 					if reassembleStreams {
@@ -53,6 +53,14 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 					return
 				}
+
+				// create a new gopacket
+				// base layer is by default Ethernet
+				p := gopacket.NewPacket(packet.data, c.config.BaseLayer, c.config.DecodeOptions)
+				p.Metadata().Timestamp = packet.ci.Timestamp
+				p.Metadata().CaptureInfo = packet.ci
+				p.Metadata().Length = packet.ci.Length
+				p.Metadata().CaptureLength = packet.ci.CaptureLength
 
 				// pass packet to reassembly
 				if reassembleStreams {
@@ -182,8 +190,8 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 }
 
 // spawn the configured number of workers
-func (c *Collector) initWorkers() []chan gopacket.Packet {
-	workers := make([]chan gopacket.Packet, c.config.Workers)
+func (c *Collector) initWorkers() []chan *packet {
+	workers := make([]chan *packet, c.config.Workers)
 	for i := range workers {
 		workers[i] = c.worker(reassembly.NewAssembler(encoder.StreamPool))
 	}

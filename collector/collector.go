@@ -35,7 +35,6 @@ import (
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 
-	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/encoder"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
@@ -48,7 +47,7 @@ var flagFreeOSMemory = flag.Int("free-os-mem", 0, "free OS memory every X minute
 type Collector struct {
 
 	// input channels for the worker pool
-	workers []chan gopacket.Packet
+	workers []chan *packet
 
 	// synchronization
 	statMutex sync.Mutex
@@ -188,7 +187,7 @@ func (c *Collector) handleSignals() {
 
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines in round robin style.
-func (c *Collector) handlePacket(p gopacket.Packet) {
+func (c *Collector) handlePacket(p *packet) {
 
 	// make it work for 1 worker only, can be used for debugging
 	//if len(c.workers) == 1 {
@@ -210,13 +209,14 @@ func (c *Collector) handlePacket(p gopacket.Packet) {
 
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines in round robin style.
-func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
+func (c *Collector) handlePacketTimeout(p *packet) {
 
 	select {
 	// send the packetInfo to the encoder routine
 	case c.workers[c.next] <- p:
 	case <-time.After(3 * time.Second):
-		fmt.Println("handle packet timeout", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
+		// TODO:
+		//fmt.Println("handle packet timeout", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
 	}
 
 	// increment or reset next
