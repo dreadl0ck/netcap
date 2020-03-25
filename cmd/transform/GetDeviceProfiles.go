@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -37,10 +36,13 @@ func GetDeviceProfiles() {
 
 	// create storage path for audit records
 	start := time.Now()
-	baseDir := strings.TrimSuffix(inputFile, ".pcap")
+
+	// create the output directory in the same place as the input file
+	// the directory for this will be named like the input file with an added .net extension
+	outDir := inputFile + ".net"
 
 	// TODO: error ignored, files will be overwritten if there are any
-	os.MkdirAll(baseDir, 0700)
+	os.MkdirAll(outDir, 0700)
 
 	// init collector
 	c := collector.New(collector.Config{
@@ -50,14 +52,14 @@ func GetDeviceProfiles() {
 		WriteUnknownPackets: false,
 		Promisc:             false,
 		SnapLen:             1514,
-		FileStorage: 		 filepath.Join(baseDir, "files"),
+		FileStorage: 		 filepath.Join(outDir, "files"),
 		EncoderConfig: encoder.Config{
 			Buffer:          true,
 			Compression:     true,
 			CSV:             false,
-			IncludeEncoders: "DeviceProfile,File,HTTP,DNS,POP3,SMTP",
+			IncludeEncoders: "DeviceProfile,File,HTTP,DNS,POP3,SMTP,DHCPv4",
 			ExcludeEncoders: "",
-			Out:             baseDir,
+			Out:             outDir,
 			Source:          inputFile,
 			Version:         netcap.Version,
 			IncludePayloads: false,
@@ -97,7 +99,7 @@ func GetDeviceProfiles() {
 	}
 	defer r.Close()
 
-	ident := filepath.Join(baseDir, "DeviceProfile.ncap.gz")
+	ident := filepath.Join(outDir, "DeviceProfile.ncap.gz")
 
 	// stat generated profiles
 	stat, err := os.Stat(ident)
@@ -122,7 +124,7 @@ func GetDeviceProfiles() {
 
 	ent.SetLinkLabel("DeviceProfiles")
 	ent.SetLinkColor("#000000")
-	ent.SetNote("Storage Path: " + baseDir + "\nFile Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
+	ent.SetNote("Storage Path: " + outDir + "\nFile Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
 
 	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())

@@ -8,6 +8,16 @@
 - text Content types: add GetLinks and GetEmails
 - netcap.File -> GetMD5
 
+- File: Add Host to info
+- HTTP: which URLs how often?
+- HTTP: show GET VS POST
+- File: ident src,dst wrong? check frog.jpg file screenshot
+- Cookies + Params: add counters to indicate flow volume
+- files need a reference to their URL
+- HTTP POST parameter extraction? name= does not show up
+
+- GetFilesForHTTPHost
+- GetApplicationsForCategory is broken
 - GetHTTPHeaders
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time

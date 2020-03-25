@@ -77,10 +77,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 	f, err := os.Open(profilesFile)
 	if err != nil {
-		log.Println(err)
-		trx := MaltegoTransform{}
-		fmt.Println(trx.ReturnOutput())
-		return
+		log.Fatal(err)
 	}
 
 	// check if its an audit record file
@@ -180,10 +177,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 
 	f, err := os.Open(profilesFile)
 	if err != nil {
-		log.Println(err)
-		trx := MaltegoTransform{}
-		fmt.Println(trx.ReturnOutput())
-		return
+		log.Fatal(err)
 	}
 
 	// check if its an audit record file
@@ -280,6 +274,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 	httpAuditRecords := filepath.Join(dir, "HTTP.ncap.gz")
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
+		// write an empty reply if the audit record file was not found.
 		log.Println(err)
 		trx := MaltegoTransform{}
 		fmt.Println(trx.ReturnOutput())
@@ -380,6 +375,7 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	httpAuditRecords := filepath.Join(dir, "File.ncap.gz")
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
+		// write an empty reply if the audit record file was not found.
 		log.Println(err)
 		trx := MaltegoTransform{}
 		fmt.Println(trx.ReturnOutput())
@@ -480,6 +476,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	httpAuditRecords := filepath.Join(dir, "POP3.ncap.gz")
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
+		// write an empty reply if the audit record file was not found.
 		log.Println(err)
 		trx := MaltegoTransform{}
 		fmt.Println(trx.ReturnOutput())
@@ -580,7 +577,10 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 	httpAuditRecords := filepath.Join(dir, "DHCPv4.ncap.gz")
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		trx := MaltegoTransform{}
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
 	// check if its an audit record file
