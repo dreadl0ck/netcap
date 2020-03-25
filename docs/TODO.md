@@ -8,17 +8,23 @@
 - text Content types: add GetLinks and GetEmails
 - netcap.File -> GetMD5
 
-- File: Add Host to info
-- HTTP: which URLs how often?
-- HTTP: show GET VS POST
-- File: ident src,dst wrong? check frog.jpg file screenshot
+- HTTP parameters: mark if source was GET or POST
+- addGetHTTPHeaders
+
+- HTTP: which URLs how often? count in GetHTTPURLs via map?
+- HTTP: show GET VS POST? count in GetHTTP* via map?
 - Cookies + Params: add counters to indicate flow volume
-- files need a reference to their URL
-- HTTP POST parameter extraction? name= does not show up
+
+- improve file type detection: detect script languages and executables, use the file extension for first guess 
+- File: ident src,dst wrong? check frog.jpg file screenshot
+- dump all raw TCP streams that are not HTTP or POP3 to catch reverse shell
+- use TLS fingerprint: GetJa3?
+- GetLongRunningSessions
+
+- enable DPI based on env var
 
 - GetFilesForHTTPHost
 - GetApplicationsForCategory is broken
-- GetHTTPHeaders
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
 - define triggers to highlight links in red

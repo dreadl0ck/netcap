@@ -3,8 +3,6 @@ package main
 import (
 	maltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"log"
-	"net/url"
 )
 
 func GetHTTPParameters() {
@@ -12,15 +10,7 @@ func GetHTTPParameters() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
-
-				url, err := url.Parse(http.URL)
-				if err != nil {
-					log.Println(err)
-					return
-				}
-
-				// map[string][]string
-				for key, _ := range url.Query() {
+				for key, _ := range http.Parameters {
 					ent := trx.AddEntity("netcap.HTTPParameter", key)
 					ent.SetType("netcap.HTTPParameter")
 					ent.SetValue(key)

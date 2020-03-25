@@ -57,6 +57,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -277,6 +278,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 		h.parent.Lock()
 		var (
 			name = "unknown"
+			host string
+			source = "HTTP RESPONSE"
+			ctype string
 			numResponses = len(h.parent.responses)
 			numRequests = len(h.parent.requests)
 		)
@@ -291,11 +295,14 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 			h.parent.Unlock()
 			if req != nil {
 				name = path.Base(req.URL.Path)
+				source += " from " + req.URL.Path
+				host = req.Host
+				ctype = strings.Join(req.Header["Content-Type"], " ")
 			}
 		}
 
 		// save file to disk
-		return h.saveFile("HTTP RESPONSE", name, err, body, encoding)
+		return h.saveFile(host, source, name, err, body, encoding, ctype)
 	}
 
 	return nil
@@ -328,19 +335,20 @@ func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 
 func fileExtensionForContentType(typ string) string {
 
+	parts := strings.Split(typ, ";")
+	if len(typ) > 1 {
+		typ = parts[0]
+	}
+
 	// types from: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
 	switch typ {
 	case "application/x-gzip":
 		return ".gz"
 	case "image/jpg":
 		return ".jpg"
-	case "text/plain; charset=utf-8":
+	case "text/plain":
 		return ".txt"
-	case "text/plain; charset=UTF-8":
-		return ".txt"
-	case "text/html; charset=utf-8":
-		return ".html"
-	case "text/html; charset=UTF-8":
+	case "text/html":
 		return ".html"
 	case "image/x-icon":
 		return ".ico"
@@ -380,8 +388,6 @@ func fileExtensionForContentType(typ string) string {
 		return ".gz"
 	case "image/gif":
 		return ".gif"
-	case "text/html":
-		return ".html"
 	case "image/vnd.microsoft.icon":
 		return ".ico"
 	case "text/calendar":
@@ -402,6 +408,8 @@ func fileExtensionForContentType(typ string) string {
 		return ".mp3"
 	case "video/mpeg":
 		return ".mpeg"
+	case "text/xml":
+		return ".xml"
 	case "application/vnd.apple.installer+xml":
 		return ".mpkg"
 	case "application/vnd.oasis.opendocument.presentation":
@@ -448,8 +456,6 @@ func fileExtensionForContentType(typ string) string {
 		return ".ts"
 	case "font/ttf":
 		return ".ttf"
-	case "text/plain":
-		return ".txt"
 	case "application/vnd.visio":
 		return ".vsd"
 	case "audio/wav":
@@ -487,7 +493,7 @@ func fileExtensionForContentType(typ string) string {
 	return ""
 }
 
-func (h *httpReader) saveFile(source, name string, err error, body []byte, encoding []string) error {
+func (h *httpReader) saveFile(host, source, name string, err error, body []byte, encoding []string, contentType string) error {
 
 	// prevent saving zero bytes
 	if len(body) == 0 {
@@ -591,7 +597,8 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		Location:  target,
 		Ident:     h.ident,
 		Source:    source,
-		ContentType: ctype,
+		ContentTypeDetected: ctype,
+		ContentType: contentType,
 		Context:  &types.PacketContext{
 			SrcIP:   h.parent.net.Src().String(),
 			DstIP:   h.parent.net.Dst().String(),
@@ -637,6 +644,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	req.Header.Set("netcap-clientip", h.parent.net.Src().String())
 	req.Header.Set("netcap-serverip", h.parent.net.Dst().String())
 
+	// parse form values
+	req.ParseForm()
+
 	// increase counter
 	mu.Lock()
 	requests++
@@ -650,11 +660,13 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 		// write request payload to disk if configured
 		if (err == nil || *writeincomplete) && FileStorage != "" {
 			return h.saveFile(
-				"HTTP POST REQUEST",
+				req.Host,
+				"HTTP POST REQUEST to " + req.URL.Path,
 				path.Base(req.URL.Path),
 				err,
 				body,
 				req.Header["Content-Encoding"],
+				strings.Join(req.Header["Content-Type"], " "),
 			)
 		}
 	}
