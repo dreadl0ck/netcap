@@ -35,6 +35,8 @@
 
 ## General
 
+- batch DPI calls per flow?
+
 - pop3 should not depend on HTTP decoder: make stream decoding interface generic
 - add tests for POP3
 - disable debug timeouts in handlePacket, GetProtocols and AssembleWithContext

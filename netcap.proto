@@ -1846,9 +1846,10 @@ message Mail {
 }
 
 message MailPart {
-    string              ID      = 1;
-    map<string, string> Header  = 2;
-    string              Content = 3;
+    string              ID       = 1;
+    map<string, string> Header   = 2;
+    string              Content  = 3;
+    string              Filename = 4;
 }
 
 message POP3Request {

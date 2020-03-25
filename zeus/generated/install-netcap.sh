@@ -3,7 +3,7 @@
 # Timestamp: [Wed Sep 25 17:38:19 2019]
 
 
-VERSION="0.4.2"
+VERSION="0.4.4"
 GOOS=linux go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/net.capture -i github.com/dreadl0ck/netcap/cmd/capture
 GOOS=linux go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/net.label -i github.com/dreadl0ck/netcap/cmd/label
 GOOS=linux go build -ldflags "-X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/net.collect -i github.com/dreadl0ck/netcap/cmd/collect
