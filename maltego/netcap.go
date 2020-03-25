@@ -5,12 +5,14 @@ import (
 	"encoding/xml"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -23,40 +25,40 @@ func EscapeText(text string) string {
 	return buf.String()
 }
 
-type HTTPCountFunc = func(http *types.HTTP, minPackets, maxPackets *uint64)
+type HTTPCountFunc = func(http *types.HTTP, min, max *uint64)
 
-type CountFunc = func(profile *types.DeviceProfile, mac string, minPackets, maxPackets *uint64)
+type CountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64)
 
-var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, minPackets, maxPackets *uint64) {
-	if uint64(profile.NumPackets) < *minPackets {
-		*minPackets = uint64(profile.NumPackets)
+var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
+	if uint64(profile.NumPackets) < *min {
+		*min = uint64(profile.NumPackets)
 	}
-	if uint64(profile.NumPackets) > *maxPackets {
-		*maxPackets = uint64(profile.NumPackets)
+	if uint64(profile.NumPackets) > *max {
+		*max = uint64(profile.NumPackets)
 	}
 }
 
-var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, minPackets, maxPackets *uint64) {
+var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
 	if profile.MacAddr == mac {
 		for _, ip := range profile.DeviceIPs {
-			if uint64(ip.NumPackets) < *minPackets {
-				*minPackets = uint64(ip.NumPackets)
+			if uint64(ip.NumPackets) < *min {
+				*min = uint64(ip.NumPackets)
 			}
-			if uint64(ip.NumPackets) > *maxPackets {
-				*maxPackets = uint64(ip.NumPackets)
+			if uint64(ip.NumPackets) > *max {
+				*max = uint64(ip.NumPackets)
 			}
 		}
 	}
 }
 
-var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, minPackets, maxPackets *uint64) {
+var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
 	if profile.MacAddr == mac {
 		for _, ip := range profile.Contacts {
-			if uint64(ip.NumPackets) < *minPackets {
-				*minPackets = uint64(ip.NumPackets)
+			if uint64(ip.NumPackets) < *min {
+				*min = uint64(ip.NumPackets)
 			}
-			if uint64(ip.NumPackets) > *maxPackets {
-				*maxPackets = uint64(ip.NumPackets)
+			if uint64(ip.NumPackets) > *max {
+				*max = uint64(ip.NumPackets)
 			}
 		}
 	}
@@ -111,8 +113,8 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 	}
 
 	var (
-		minPackets uint64 = 10000000
-		maxPackets uint64 = 0
+		min uint64 = 10000000
+		max uint64 = 0
 	)
 
 	if count != nil {
@@ -125,7 +127,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 				panic(err)
 			}
 
-			count(profile, mac, &minPackets, &maxPackets)
+			count(profile, mac, &min, &max)
 		}
 
 		err = r.Close()
@@ -151,7 +153,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, profile, minPackets, maxPackets, profilesFile, mac, ipaddr)
+		transform(lt, &trx, profile, min, max, profilesFile, mac, ipaddr)
 	}
 
 	err = r.Close()
@@ -211,8 +213,8 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 	}
 
 	var (
-		minPackets uint64 = 10000000
-		maxPackets uint64 = 0
+		min uint64 = 10000000
+		max uint64 = 0
 	)
 
 	if count != nil {
@@ -225,7 +227,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 				panic(err)
 			}
 
-			count(profile, mac, &minPackets, &maxPackets)
+			count(profile, mac, &min, &max)
 		}
 
 		err = r.Close()
@@ -250,7 +252,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 			panic(err)
 		}
 
-		transform(lt, &trx, profile, minPackets, maxPackets, profilesFile, mac)
+		transform(lt, &trx, profile, min, max, profilesFile, mac)
 	}
 
 	err = r.Close()
@@ -310,8 +312,8 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 	}
 
 	var (
-		minPackets uint64 = 10000000
-		maxPackets uint64 = 0
+		min uint64 = 10000000
+		max uint64 = 0
 	)
 
 	if count != nil {
@@ -324,7 +326,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 				panic(err)
 			}
 
-			count(http, &minPackets, &maxPackets)
+			count(http, &min, &max)
 		}
 
 		err = r.Close()
@@ -350,7 +352,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, http, minPackets, maxPackets, profilesFile, ipaddr)
+		transform(lt, &trx, http, min, max, profilesFile, ipaddr)
 	}
 
 	err = r.Close()
@@ -411,8 +413,8 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	}
 
 	var (
-		minPackets uint64 = 10000000
-		maxPackets uint64 = 0
+		min uint64 = 10000000
+		max uint64 = 0
 	)
 
 	if count != nil {
@@ -451,7 +453,7 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, file, minPackets, maxPackets, profilesFile, ipaddr)
+		transform(lt, &trx, file, min, max, profilesFile, ipaddr)
 	}
 
 	err = r.Close()
@@ -512,8 +514,8 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	}
 
 	var (
-		minPackets uint64 = 10000000
-		maxPackets uint64 = 0
+		min uint64 = 10000000
+		max uint64 = 0
 	)
 
 	if count != nil {
@@ -552,7 +554,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, pop3, minPackets, maxPackets, profilesFile, ipaddr)
+		transform(lt, &trx, pop3, min, max, profilesFile, ipaddr)
 	}
 
 	err = r.Close()
@@ -612,8 +614,8 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 	}
 
 	var (
-		minPackets uint64 = 10000000
-		maxPackets uint64 = 0
+		min uint64 = 10000000
+		max uint64 = 0
 	)
 
 	if count != nil {
@@ -652,7 +654,230 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, dhcp, minPackets, maxPackets, profilesFile, ipaddr)
+		transform(lt, &trx, dhcp, min, max, profilesFile, ipaddr)
+	}
+
+	err = r.Close()
+	if err != nil {
+		log.Println("failed to close audit record file: ", err)
+	}
+
+	trx.AddUIMessage("completed!","Inform")
+	fmt.Println(trx.ReturnOutput())
+}
+
+type FlowCountFunc = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int)
+
+var CountIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+	if flow.DstIP == ipaddr {
+
+		*sizes = append(*sizes, int(flow.TotalSize))
+
+		if uint64(flow.TotalSize) < *min {
+			*min = uint64(flow.TotalSize)
+		}
+		if uint64(flow.TotalSize) > *max {
+			*max = uint64(flow.TotalSize)
+		}
+	}
+}
+
+var CountIncomingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+	if flow.DstIP == ipaddr {
+		name := resolvers.LookupDNSNameLocal(flow.SrcIP)
+		if name != "" {
+			if !resolvers.IsWhitelisted(name) {
+				*sizes = append(*sizes, int(flow.TotalSize))
+
+				if uint64(flow.TotalSize) < *min {
+					*min = uint64(flow.TotalSize)
+				}
+				if uint64(flow.TotalSize) > *max {
+					*max = uint64(flow.TotalSize)
+				}
+			}
+		} else {
+			// bare IP
+			*sizes = append(*sizes, int(flow.TotalSize))
+
+			if uint64(flow.TotalSize) < *min {
+				*min = uint64(flow.TotalSize)
+			}
+			if uint64(flow.TotalSize) > *max {
+				*max = uint64(flow.TotalSize)
+			}
+		}
+	}
+}
+
+var CountIncomingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+	if flow.DstIP == ipaddr {
+
+		*sizes = append(*sizes, int(flow.TotalSize))
+
+		if uint64(flow.NumPackets) < *min {
+			*min = uint64(flow.NumPackets)
+		}
+		if uint64(flow.NumPackets) > *max {
+			*max = uint64(flow.NumPackets)
+		}
+	}
+}
+
+var CountOutgoingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+	if flow.SrcIP == ipaddr {
+
+		*sizes = append(*sizes, int(flow.TotalSize))
+
+		if uint64(flow.TotalSize) < *min {
+			*min = uint64(flow.TotalSize)
+		}
+		if uint64(flow.TotalSize) > *max {
+			*max = uint64(flow.TotalSize)
+		}
+	}
+}
+
+var CountOutgoingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+	if flow.SrcIP == ipaddr {
+		name := resolvers.LookupDNSNameLocal(flow.DstIP)
+		if name != "" {
+			if !resolvers.IsWhitelisted(name) {
+				*sizes = append(*sizes, int(flow.TotalSize))
+
+				if uint64(flow.TotalSize) < *min {
+					*min = uint64(flow.TotalSize)
+				}
+				if uint64(flow.TotalSize) > *max {
+					*max = uint64(flow.TotalSize)
+				}
+			}
+		} else {
+			// bare IP
+			*sizes = append(*sizes, int(flow.TotalSize))
+
+			if uint64(flow.TotalSize) < *min {
+				*min = uint64(flow.TotalSize)
+			}
+			if uint64(flow.TotalSize) > *max {
+				*max = uint64(flow.TotalSize)
+			}
+		}
+	}
+}
+
+var CountOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+	if flow.SrcIP == ipaddr {
+
+		*sizes = append(*sizes, int(flow.TotalSize))
+
+		if uint64(flow.NumPackets) < *min {
+			*min = uint64(flow.NumPackets)
+		}
+		if uint64(flow.NumPackets) > *max {
+			*max = uint64(flow.NumPackets)
+		}
+	}
+}
+
+type FlowTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ip string, sizes *[]int)
+
+func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
+
+	lt := ParseLocalArguments(os.Args)
+	profilesFile := lt.Values["path"]
+	mac := lt.Values["mac"]
+	ipaddr := lt.Values["ipaddr"]
+
+	stdout := os.Stdout
+	os.Stdout = os.Stderr
+	netcap.PrintBuildInfo()
+
+	dir := filepath.Dir(profilesFile)
+	flowAuditRecords := filepath.Join(dir, "Flow.ncap.gz")
+	log.Println("open", flowAuditRecords)
+	f, err := os.Open(flowAuditRecords)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// check if its an audit record file
+	if !strings.HasSuffix(f.Name(), ".ncap.gz") && !strings.HasSuffix(f.Name(), ".ncap") {
+		log.Fatal("input file must be an audit record file")
+	}
+
+	os.Stdout = stdout
+
+	r, err := netcap.Open(flowAuditRecords, netcap.DefaultBufferSize)
+	if err != nil {
+		panic(err)
+	}
+
+	// read netcap header
+	header := r.ReadHeader()
+	if header.Type != types.Type_NC_Flow {
+		panic("file does not contain Flow records: " + header.Type.String())
+	}
+
+	var (
+		flow = new(types.Flow)
+		pm  proto.Message
+		ok  bool
+		trx = MaltegoTransform{}
+	)
+	pm = flow
+
+	if _, ok = pm.(types.AuditRecord); !ok {
+		panic("type does not implement types.AuditRecord interface")
+	}
+
+	var (
+		min uint64 = 10000000
+		max uint64 = 0
+		sizes []int
+	)
+
+	if count != nil {
+
+		for {
+			err := r.Next(flow)
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				break
+			} else if err != nil {
+				panic(err)
+			}
+
+			count(flow, ipaddr, &min, &max, &sizes)
+		}
+
+		err = r.Close()
+		if err != nil {
+			log.Println("failed to close audit record file: ", err)
+		}
+
+		sort.Ints(sizes)
+	}
+
+	r, err = netcap.Open(flowAuditRecords, netcap.DefaultBufferSize)
+	if err != nil {
+		panic(err)
+	}
+
+	// read netcap header - ignore err as it has been checked before
+	r.ReadHeader()
+
+	top12 := sizes[len(sizes)-13:]
+	log.Println("==> top12", top12)
+
+	for {
+		err := r.Next(flow)
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+
+		transform(lt, &trx, flow, min, max, profilesFile, mac, ipaddr, &top12)
 	}
 
 	err = r.Close()

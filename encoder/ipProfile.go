@@ -23,6 +23,8 @@ import (
 	"sync"
 )
 
+const localDNS = true
+
 // AtomicIPProfileMap contains all connections and provides synchronized access
 type AtomicIPProfileMap struct {
 	// SrcIP to Profiles
@@ -210,13 +212,22 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 		}
 	}
 
+	var names []string
+	if localDNS {
+		if name := resolvers.LookupDNSNameLocal(ipAddr); len(name) != 0 {
+			names = append(names, name)
+		}
+	} else {
+		names = resolvers.LookupDNSNames(ipAddr)
+	}
+
 	// create new profile
 	p := &profile{
 		ip: &types.IPProfile{
 			Addr:        ipAddr,
 			NumPackets:  1,
 			Geolocation: loc,
-			DNSNames:    resolvers.LookupDNSNames(ipAddr),
+			DNSNames:    names,
 			TimestampFirst: i.timestamp,
 			Ja3:       ja3Map,
 			Protocols: protos,

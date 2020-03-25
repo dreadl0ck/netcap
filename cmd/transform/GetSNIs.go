@@ -8,7 +8,7 @@ import (
 func GetSNIs() {
 	maltego.IPTransform(
 		maltego.CountPacketsContactIPs,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
@@ -21,7 +21,7 @@ func GetSNIs() {
 								// di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
 								// ent.AddDisplayInformation(di, "Netcap Info")
 								ent.SetLinkColor("#000000")
-								ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
+								ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 							}
 						}
 					}
@@ -37,7 +37,7 @@ func GetSNIs() {
 								// di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
 								// ent.AddDisplayInformation(di, "Netcap Info")
 								ent.SetLinkColor("#000000")
-								ent.SetLinkThickness(maltego.GetThickness(uint64(count), minPackets, maxPackets))
+								ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 							}
 						}
 					}

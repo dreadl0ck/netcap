@@ -48,10 +48,14 @@ func main() {
 			GetDeviceIPs()
 		case "GetDeviceProfiles":
 			GetDeviceProfiles()
+		case "GetHTTPHostsFiltered":
+			GetHTTPHostsFiltered()
 		case "GetDevices":
 			GetDevices()
 		case "GetDstPorts":
 			GetDstPorts()
+		case "GetIncomingFlowsFiltered":
+			GetIncomingFlowsFiltered()
 		case "GetFileTypes":
 			GetFileTypes()
 		case "GetFiles":
@@ -96,7 +100,9 @@ func main() {
 			GetSNIs()
 		case "GetSrcPorts":
 			GetSrcPorts()
-	case "GetURLsForHTTPHost":
-			GetURLsForHTTPHost()
+		case "GetOutgoingFlowsFiltered":
+			GetOutgoingFlowsFiltered()
+		case "GetURLsForHTTPHost":
+				GetURLsForHTTPHost()
 	}
 }

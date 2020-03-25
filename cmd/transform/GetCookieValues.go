@@ -8,7 +8,7 @@ import (
 func GetCookieValues() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, minPackets, maxPackets uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			cookieName := lt.Values["properties.httpcookie"]
 			if http.SrcIP == ipaddr {
 				for _, c := range http.ReqCookies {

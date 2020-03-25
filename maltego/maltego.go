@@ -225,6 +225,11 @@ func (m *MaltegoEntityObj) SetNote(note string) {
 	m.AddProperty("notes#", "Notes", "", note)
 }
 
+func (m *MaltegoEntityObj) SetLinkDirection(dir string) {
+	m.AddProperty("link#maltego.link.direction", "Direction", "loose", dir)
+	//me.addProperty('link#maltego.link.direction','link#maltego.link.direction','loose','output-to-input')
+}
+
 func (m *MaltegoEntityObj) ReturnEntity() string {
 	r := "<Entity Type=\"" + m.entityType + "\">\n"
 	r += "<Value>" + m.value + "</Value>\n"

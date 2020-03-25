@@ -8,7 +8,7 @@ import (
 )
 
 func GetDevices() {
-	maltego.DeviceProfileTransform(maltego.CountPacketsDevices, func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, minPackets, maxPackets uint64, profilesFile string, mac string) {
+	maltego.DeviceProfileTransform(maltego.CountPacketsDevices, func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
 		ident := profile.MacAddr + "\n" + profile.DeviceManufacturer
 		ent := trx.AddEntity("netcap.Device", ident)
 		ent.SetType("netcap.Device")
@@ -22,6 +22,6 @@ func GetDevices() {
 
 		ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
 		ent.SetLinkColor("#000000")
-		ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), minPackets, maxPackets))
+		ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
 	})
 }
