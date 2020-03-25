@@ -34,6 +34,7 @@ func GetMails() {
 						cType := p.Header["Content-Type"]
 						if cType != "" && strings.Contains(p.Header["Content-Disposition"], "attachment") {
 							attachments += "<br>Attachment Content Type: " + cType + "<br>"
+							attachments += "Filename: " + p.Filename + "<br><br>"
 							if p.Content != "" && p.Content != "\n" {
 								attachments += p.Content + "<br>"
 							}
