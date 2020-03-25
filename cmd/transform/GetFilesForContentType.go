@@ -45,7 +45,7 @@ func GetFilesForContentType() {
 							ent.SetIconURL("file://" + filepath.Join(filepath.Join(filepath.Dir(profilesFile), ".."), file.Location))
 						}
 						ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-						ent.AddProperty("path", "Path", "strict", profilesFile)
+						ent.AddProperty("path", "Path", "strict", file.Location)
 						ent.AddProperty("location", "Location", "strict", file.Location)
 
 						//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
