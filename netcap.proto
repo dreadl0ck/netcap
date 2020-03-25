@@ -988,6 +988,10 @@ message HTTP {
 
     string ContentTypeDetected    = 24;
     string ResContentTypeDetected = 25;
+
+    map<string, string> RequestHeader  = 26;
+    map<string, string> ResponseHeader = 27;
+    map<string, string> Parameters     = 28;
 }
 
 message HTTPCookie {
@@ -1743,6 +1747,8 @@ message File {
     string        Source      = 7;
     string        ContentType = 8;
     PacketContext Context     = 9;
+    string        Host        = 10;
+    string        ContentTypeDetected = 11;
 }
 
 // SMTPResponse SMTP response type

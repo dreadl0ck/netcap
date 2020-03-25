@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime/pprof"
 	"strconv"
@@ -158,6 +159,7 @@ func setRequest(h *types.HTTP, req *http.Request) {
 	h.ReqContentLength = int32(req.ContentLength)
 	h.ReqContentEncoding = req.Header.Get("Content-Encoding")
 	h.ContentType = req.Header.Get("Content-Type")
+	h.RequestHeader = readHeader(req.Header)
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err == nil {
@@ -186,6 +188,7 @@ func setRequest(h *types.HTTP, req *http.Request) {
 	h.DstIP = req.Header.Get("netcap-serverip")
 
 	h.ReqCookies = readCookies(req.Cookies())
+	h.Parameters = readParameters(req.Form)
 }
 
 func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
@@ -210,8 +213,10 @@ func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
 
 func newHTTPFromResponse(res *http.Response) *types.HTTP {
 
-	var detected string
-	var contentLength = int32(res.ContentLength)
+	var (
+		detected string
+		contentLength = int32(res.ContentLength)
+	)
 
 	// read body data
 	body, err := ioutil.ReadAll(res.Body)
@@ -244,5 +249,22 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		ResContentEncoding:     res.Header.Get("Content-Encoding"),
 		ResContentTypeDetected: detected,
 		ResCookies:             readCookies(res.Cookies()),
+		ResponseHeader:         readHeader(res.Header),
 	}
+}
+
+func readHeader(h http.Header) map[string]string {
+	m := make(map[string]string)
+	for k, vals := range h {
+		m[k] = strings.Join(vals, " ")
+	}
+	return m
+}
+
+func readParameters(h url.Values) map[string]string {
+	m := make(map[string]string)
+	for k, vals := range h {
+		m[k] = strings.Join(vals, " ")
+	}
+	return m
 }
