@@ -2,41 +2,58 @@
 
 # maltego
 
-- add file extraction for POP3 emails and attachments
-- set attachments on mail audit record type
-- GetUsers from HTTP BasicAuth
-- text Content types: add GetLinks and GetEmails
-- netcap.File -> GetMD5
-
+- GetUsers from HTTP BasicAuth + GetPassword
 - HTTP parameters: mark if source was GET or POST
 - addGetHTTPHeaders
-
+- GetFilesForHTTPHost
 - HTTP: which URLs how often? count in GetHTTPURLs via map?
 - HTTP: show GET VS POST? count in GetHTTP* via map?
 - Cookies + Params: add counters to indicate flow volume
 
+- OpenFile: prevent accidental execution of executables
+- OpenFile: linux support; use env var to make app configurable + defaults
+- Add OpenFolder
+- Add GetExifData
+- add file extraction for POP3 emails and attachments
+- add netcap.File entity
 - improve file type detection: detect script languages and executables, use the file extension for first guess 
 - File: ident src,dst wrong? check frog.jpg file screenshot
-- dump all raw TCP streams that are not HTTP or POP3 to catch reverse shell
+- netcap.File -> GetMD5
+
+- implement raw streamReader for all other streams to catch reverse shells 
 - use TLS fingerprint: GetJa3?
 - GetLongRunningSessions
 
+- text file types: add GetLinks and GetEmails, GetPhonenumbers etc
 - enable DPI based on env var
+- enable DNS lookups based on env var
 
-- GetFilesForHTTPHost
 - GetApplicationsForCategory is broken
+
 - link src to dst ports?
 - update DisplayInformation to allow tracking updates to an entity over time
 - define triggers to highlight links in red
 - MIME type: check if executables are properly detected
+
 - destination ips: queries for audit records must use DstIP == ipaddr !
-- reverse link order for deviceIPs and contactIPs when iterating over both?
+- reverse link order for deviceIPs and contactIPs?
 - test empty TCP conn over HTTP port (will this lock up the reassembly?)
+
+- custom icon set for netcap entities
 
 ## General
 
-- batch DPI calls per flow?
+- check TODOs
 
+Reassembly: 2 Options
+1) One assembler per worker + 1 shared connection pool (currently implemented)
+2) One global assembler per protocol with a dedicated stream pool for that protocol (reduces lock contention)
+
+- add constants in maltego pkg for netcap entity names
+- implement passive dns hosts mapping generation in netcap
+- check if order of values in maltego list matches the expectation
+- broadcast address: mark as part of the internal network?
+- Application: add timestamps when packets have been seen, currently the first seen timestamp for the asscociated ip profile is repeated
 - pop3 should not depend on HTTP decoder: make stream decoding interface generic
 - add tests for POP3
 - disable debug timeouts in handlePacket, GetProtocols and AssembleWithContext
@@ -44,16 +61,14 @@
 - merge debug modes: -verbose, -debug, -output etc ...
 - constconf: generate a configuration with constant values -> compiler can optimize better
 - fix hardcoded version number in dockerfiles
-- finish types implementation for POP3
-- remove DNS logic from stream reassembly
+
 - move Stream type into separate file, rename to Connection to unify wording
 - add flag to toggle DNS resolving
 - add quiet switch when opening netcap dump files via the Open() call, update transforms
-- http: basic auth extraction from URL: GetHTTPBasicAuth?
- 
-- single binary as plugin / framework
-- use nDPI 3.2 and libprotoident latest version
-- test on the ultimate pcap file
+
+- batch DPI calls per flow? 
+- use nDPI 3.2
+- add unit tests on the ultimate pcap file
 
 - flag.FlagSet instead of cobra for sub commands?
 - net.split: split pcap files by days, possibly also hours

@@ -8,24 +8,20 @@ import (
 	"os/exec"
 )
 
-func GetFileType() {
+func OpenFile() {
 
 	lt := maltego.ParseLocalArguments(os.Args)
 	trx := &maltego.MaltegoTransform{}
 
 	log.Println("path:", lt.Values["path"])
 
-	out, err := exec.Command("file", "-b", "\"" + lt.Values["path"] + "\"").CombinedOutput()
+	out, err := exec.Command("open", lt.Values["path"]).CombinedOutput()
 	if err != nil {
 		log.Println(string(out))
 		log.Fatal(err)
 	}
+	log.Println(string(out))
 
-	name := maltego.EscapeText(string(out))
-	ent := trx.AddEntity("netcap.FileType", name)
-	ent.SetType("netcap.FileType")
-	ent.SetValue(name)
-	ent.SetLinkColor("#000000")
-
+	trx.AddUIMessage("completed!","Inform")
 	fmt.Println(trx.ReturnOutput())
 }

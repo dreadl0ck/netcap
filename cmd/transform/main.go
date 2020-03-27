@@ -34,6 +34,8 @@ func main() {
 			GetApplications()
 		case "GetApplicationsForCategory":
 			GetApplicationsForCategory()
+		case "OpenFile":
+			OpenFile()
 		case "GetCookieValues":
 			GetCookieValues()
 		case "GetCookiesForHTTPHost":
