@@ -51,6 +51,7 @@ import (
 	"github.com/dreadl0ck/gopacket/ip4defrag"
 	"log"
 	"net/http"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -162,6 +163,8 @@ type tcpStreamFactory struct {
 func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
 	logDebug("* NEW: %s %s\n", net, transport)
+
+	// TODO: alloc fsmOptions once
 	fsmOptions := reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: *allowmissinginit,
 	}
@@ -173,7 +176,7 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 		isPOP3:      tcp.SrcPort == 110 || tcp.DstPort == 110,
 		reversed:    tcp.SrcPort == 80,
 		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
-		ident:       fmt.Sprintf("%s:%s", net, transport),
+		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),
 		firstPacket: ac.GetCaptureInfo().Timestamp,
 	}
@@ -181,14 +184,14 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 	if stream.isHTTP {
 		stream.client = &httpReader{
 			bytes:    make(chan []byte),
-			ident:    fmt.Sprintf("%s %s", net, transport),
+			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 			hexdump:  *hexdump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &httpReader{
 			bytes:   make(chan []byte),
-			ident:   fmt.Sprintf("%s %s", net.Reverse(), transport.Reverse()),
+			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 			hexdump: *hexdump,
 			parent:  stream,
 		}
@@ -202,14 +205,14 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 	if stream.isPOP3 {
 		stream.client = &pop3Reader{
 			bytes:    make(chan []byte),
-			ident:    fmt.Sprintf("%s %s", net, transport),
+			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 			hexdump:  *hexdump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &pop3Reader{
 			bytes:   make(chan []byte),
-			ident:   fmt.Sprintf("%s %s", net.Reverse(), transport.Reverse()),
+			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 			hexdump: *hexdump,
 			parent:  stream,
 		}
@@ -218,7 +221,7 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 		factory.wg.Add(2)
 		go stream.client.Run(&factory.wg)
 		go stream.server.Run(&factory.wg)
-	}	
+	}
 
 	return stream
 }
@@ -249,7 +252,6 @@ type tcpStream struct {
 	net, transport gopacket.Flow
 
 	fsmerr   bool
-	isDNS    bool
 	isHTTP   bool
 	isPOP3   bool
 	reversed bool
@@ -470,6 +472,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 
 		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
 
+		// TODO: add wrapper func for timeout debugging util
 		//fmt.Println("AssembleWithContext")
 
 		//done := make(chan bool, 1)

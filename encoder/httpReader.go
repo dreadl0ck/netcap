@@ -493,6 +493,14 @@ func fileExtensionForContentType(typ string) string {
 	return ""
 }
 
+func trimEncoding(ctype string) string {
+	parts := strings.Split(ctype, ";")
+	if len(parts) > 1 {
+		return parts[0]
+	}
+	return ctype
+}
+
 func (h *httpReader) saveFile(host, source, name string, err error, body []byte, encoding []string, contentType string) error {
 
 	// prevent saving zero bytes
@@ -508,7 +516,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		fileName string
 
 		// detected content type
-		ctype = http.DetectContentType(body)
+		ctype = trimEncoding(http.DetectContentType(body))
 
 		// root path
 		root  = path.Join(FileStorage, ctype)

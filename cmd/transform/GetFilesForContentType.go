@@ -13,9 +13,13 @@ func GetFilesForContentType() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
 			if file.Context.SrcIP == ipaddr || file.Context.DstIP == ipaddr {
-					ct := lt.Values["properties.contenttype"]
 
-					typ := file.ContentTypeDetected
+					var (
+						ct = lt.Values["properties.contenttype"]
+						typ = file.ContentTypeDetected
+					)
+
+					// ignore encoding value when matching
 					parts := strings.Split(file.ContentTypeDetected, ";")
 					if len(parts) > 1 {
 						typ = parts[0]
@@ -23,9 +27,10 @@ func GetFilesForContentType() {
 
 					if typ == ct {
 
-						escapedName := maltego.EscapeText(file.Name)
-
-						var ent *maltego.MaltegoEntityObj
+						var (
+							escapedName = maltego.EscapeText(file.Name)
+							ent *maltego.MaltegoEntityObj
+						)
 						if strings.HasPrefix(ct, "image/") {
 							ent = trx.AddEntity("maltego.Image", escapedName)
 							ent.SetType("maltego.Image")
