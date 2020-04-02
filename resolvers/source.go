@@ -1,6 +1,9 @@
 package resolvers
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
 var (
 	Quiet bool
@@ -27,10 +30,18 @@ func Init(c Config, quiet bool) {
 
 	if c.ReverseDNS {
 		disableReverseDNS = false
+	} else {
+		var hostsFound bool
+		_, err := os.Stat(filepath.Join(dataBaseSource, "hosts"))
+		if err == nil {
+			hostsFound = true
+		}
+
+		if c.LocalDNS || hostsFound {
+			InitLocalDNS()
+		}
 	}
-	if c.LocalDNS {
-		InitLocalDNS()
-	}
+
 	if c.MACDB {
 		InitMACResolver()
 	}
