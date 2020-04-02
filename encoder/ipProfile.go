@@ -23,7 +23,7 @@ import (
 	"sync"
 )
 
-const localDNS = true
+var LocalDNS = true
 
 // AtomicIPProfileMap contains all connections and provides synchronized access
 type AtomicIPProfileMap struct {
@@ -213,7 +213,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 	}
 
 	var names []string
-	if localDNS {
+	if LocalDNS {
 		if name := resolvers.LookupDNSNameLocal(ipAddr); len(name) != 0 {
 			names = append(names, name)
 		}

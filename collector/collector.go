@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/netcap/dpi"
 	"log"
 	"os"
 	"os/signal"
@@ -360,8 +361,19 @@ func (c *Collector) Init() (err error) {
 	// set file storage
 	encoder.FileStorage = c.config.FileStorage
 
-	// set quiet mode
-	resolvers.Quiet = c.config.Quiet
+	// init deep packet inspection
+	if c.config.DPI {
+		dpi.Init()
+	}
+
+	// initialize resolvers
+	resolvers.Init(c.config.ResolverConfig, c.config.Quiet)
+
+	if c.config.ResolverConfig.LocalDNS {
+		encoder.LocalDNS = true
+	}
+
+	// set quiet mode for other subpackages
 	encoder.Quiet = c.config.Quiet
 
 	// initialize encoders

@@ -42,6 +42,8 @@ func main() {
 			GetCookiesForHTTPHost()
 		case "GetDHCP":
 			GetDHCP()
+		case "OpenFolder":
+			OpenFolder()
 		case "GetDNSQuestions":
 			GetDNSQuestions()
 		case "GetDeviceContacts":
@@ -50,6 +52,8 @@ func main() {
 			GetDeviceIPs()
 		case "GetDeviceProfiles":
 			GetDeviceProfiles()
+		case "GetDeviceProfilesWithDPI":
+			GetDeviceProfilesWithDPI()
 		case "GetHTTPHostsFiltered":
 			GetHTTPHostsFiltered()
 		case "GetDevices":

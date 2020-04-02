@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-func GetDeviceProfiles() {
+func GetDeviceProfilesWithDPI() {
 
 	var (
 		lt = maltego.ParseLocalArguments(os.Args)
@@ -61,6 +61,7 @@ func GetDeviceProfiles() {
 			IncludeEncoders: "DeviceProfile,File,HTTP,DNS,POP3,SMTP,DHCPv4,Flow",
 			ExcludeEncoders: "",
 			Out:             outDir,
+			WriteChan:       false,
 			Source:          inputFile,
 			Version:         netcap.Version,
 			IncludePayloads: false,
@@ -76,7 +77,7 @@ func GetDeviceProfiles() {
 			ServiceDB:       true,
 			GeolocationDB:   true,
 		},
-		DPI: false,
+		DPI:             true,
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),
 		Quiet: false,

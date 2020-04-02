@@ -166,21 +166,7 @@ type idents struct {
 
 var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DeviceProfile", func(d *CustomEncoder) error {
 
-	dpi.Init()
-
-	// init resolvers
-	resolvers.InitMACResolver()
-	resolvers.InitJa3Resolver()
-	resolvers.InitServiceDB()
-
-	if localDNS {
-		resolvers.InitLocalDNS()
-	}
-
 	profileEncoderInstance = d
-
-	//resolvers.DisableReverseDNS = true
-	//profileFlushInterval = int64(*flagProfileFlushInterval)
 
 	return nil
 }, func(p gopacket.Packet) proto.Message {
