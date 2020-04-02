@@ -2,7 +2,6 @@
 
 # maltego
 
-- check if there is a local dns file at filepath.Join(dataBaseSource, "hosts"): if yes, enable passive DNS automatically
 - check TODOs in source
 - add setup and usage documentation 
 
@@ -17,8 +16,6 @@
 - HTTP: which URLs where accessed how often? count in GetHTTPURLs via map?
 - HTTP: show GET VS POST? count in GetHTTP* via map?
 - Cookies + Params: add counters to indicate flow volume
-
-- Add OpenFolder
 - Add GetExifData
 - add file extraction for POP3 emails and attachments
 - add netcap.File entity?
