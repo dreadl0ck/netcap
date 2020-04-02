@@ -5,6 +5,7 @@ import (
 	maltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
 	"os"
 	"time"
@@ -45,7 +46,7 @@ func addOutFlow(trx *maltego.MaltegoTransform, flow *types.Flow, min, max uint64
 	ent.SetType("netcap.Flow")
 	ent.SetValue(flow.UID + "\n" + name)
 
-	di := "<h3>Flow: " + flow.SrcIP +":"+flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + flow.TimestampFirst + "</p><p>TimestampLast: " + flow.TimestampLast + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
+	di := "<h3>Outgoing Flow: " + flow.SrcIP +":"+flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.TimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.TimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 
 	//escapedName := maltego.EscapeText()

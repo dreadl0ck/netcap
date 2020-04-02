@@ -2,53 +2,54 @@
 
 # maltego
 
+- OpenFile: linux support; use env var to make app configurable + defaults
+- OpenFile: prevent accidental execution of executables
+- Add OpenPacketsInWireshark
+- custom icon set for netcap entities
+- check TODOs in source
+
 - GetUsers from HTTP BasicAuth + GetPassword
 - HTTP parameters: mark if source was GET or POST
 - addGetHTTPHeaders
 - GetFilesForHTTPHost
-- HTTP: which URLs how often? count in GetHTTPURLs via map?
+- HTTP: which URLs where accessed how often? count in GetHTTPURLs via map?
 - HTTP: show GET VS POST? count in GetHTTP* via map?
 - Cookies + Params: add counters to indicate flow volume
 
-- OpenFile: prevent accidental execution of executables
-- OpenFile: linux support; use env var to make app configurable + defaults
 - Add OpenFolder
 - Add GetExifData
 - add file extraction for POP3 emails and attachments
-- add netcap.File entity
+- add netcap.File entity?
 - improve file type detection: detect script languages and executables, use the file extension for first guess 
-- File: ident src,dst wrong? check frog.jpg file screenshot
 - netcap.File -> GetMD5
 
 - implement raw streamReader for all other streams to catch reverse shells 
-- use TLS fingerprint: GetJa3?
+- TLS fingerprints: GetJa3? for IPAddr entities
 - GetLongRunningSessions
 
 - text file types: add GetLinks and GetEmails, GetPhonenumbers etc
 - enable DPI based on env var
 - enable DNS lookups based on env var
 
+- GetNotWWW (no www.local reverse DNS name?) 
+- GetUnknownFlows(Filtered) (no http, pop3 flows)
+- GetAllHostsForGeolocation
 - GetApplicationsForCategory is broken
 
+- Create a netcap.Query entity: Add Execute and run the custom query
 - link src to dst ports?
-- update DisplayInformation to allow tracking updates to an entity over time
-- define triggers to highlight links in red
+- improve DisplayInformation to allow tracking updates to an entity over time
+- define triggers to highlight suspicious links in red
 - MIME type: check if executables are properly detected
-
-- destination ips: queries for audit records must use DstIP == ipaddr !
-- reverse link order for deviceIPs and contactIPs?
 - test empty TCP conn over HTTP port (will this lock up the reassembly?)
 
-- custom icon set for netcap entities
-
 ## General
-
-- check TODOs
 
 Reassembly: 2 Options
 1) One assembler per worker + 1 shared connection pool (currently implemented)
 2) One global assembler per protocol with a dedicated stream pool for that protocol (reduces lock contention)
 
+- add tests for http audit records and compare results with output from urlsnarf
 - add constants in maltego pkg for netcap entity names
 - implement passive dns hosts mapping generation in netcap
 - check if order of values in maltego list matches the expectation
@@ -68,7 +69,7 @@ Reassembly: 2 Options
 
 - batch DPI calls per flow? 
 - use nDPI 3.2
-- add unit tests on the ultimate pcap file
+- add unit tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
 
 - flag.FlagSet instead of cobra for sub commands?
 - net.split: split pcap files by days, possibly also hours
