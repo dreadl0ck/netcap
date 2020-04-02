@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	maltego "github.com/dreadl0ck/netcap/maltego"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
@@ -31,8 +33,29 @@ func OpenFile() {
 		}
 	}
 
-	log.Println("command for opening files:", openCommandName)
 	log.Println("open path:", lt.Values["path"])
+	f, err := os.OpenFile(lt.Values["path"], os.O_RDONLY, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	var buf = make([]byte, 512)
+	_, err = io.ReadFull(f, buf)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		log.Fatal(err)
+	}
+
+	// check if file is executable
+	ctype := http.DetectContentType(buf)
+	log.Println("ctype:", ctype)
+	if ctype == "application/octet-stream" {
+		trx.AddUIMessage("completed!","Inform")
+		fmt.Println(trx.ReturnOutput())
+		return
+	}
+
+	log.Println("command for opening files:", openCommandName)
 	args = append(args, lt.Values["path"])
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()

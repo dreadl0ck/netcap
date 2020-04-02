@@ -2,7 +2,6 @@
 
 # maltego
 
-- OpenFile: prevent accidental execution of executables
 - Add OpenPacketsInWireshark
 - custom icon set for netcap entities
 - check TODOs in source
