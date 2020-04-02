@@ -68,7 +68,7 @@ func GetDeviceProfiles() {
 			MemBufferSize:   netcap.DefaultBufferSize,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
-		DecodeOptions: utils.GetDecodeOptions("lazy"),
+		DecodeOptions: utils.GetDecodeOptions("datagrams"),
 		Quiet: false,
 	})
 

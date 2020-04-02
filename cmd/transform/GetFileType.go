@@ -15,7 +15,7 @@ func GetFileType() {
 
 	log.Println("path:", lt.Values["path"])
 
-	out, err := exec.Command("file", "-b", "\"" + lt.Values["path"] + "\"").CombinedOutput()
+	out, err := exec.Command("file", "-b", lt.Values["path"]).CombinedOutput()
 	if err != nil {
 		log.Println(string(out))
 		log.Fatal(err)
