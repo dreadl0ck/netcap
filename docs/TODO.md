@@ -2,11 +2,11 @@
 
 # maltego
 
-- OpenFile: linux support; use env var to make app configurable + defaults
 - OpenFile: prevent accidental execution of executables
 - Add OpenPacketsInWireshark
 - custom icon set for netcap entities
 - check TODOs in source
+- add setup and usage documentation 
 
 - GetUsers from HTTP BasicAuth + GetPassword
 - HTTP parameters: mark if source was GET or POST
