@@ -38,7 +38,8 @@ func InitJa3Resolver() {
 
 	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "ja3fingerprint.json"))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	for _, line := range bytes.Split(data, []byte{'\n'}) {

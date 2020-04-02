@@ -4,6 +4,7 @@ package dpi
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/go-dpi/modules/classifiers"
 	"log"
 	"time"
 
@@ -13,19 +14,22 @@ import (
 	"github.com/dreadl0ck/gopacket"
 )
 
-var disableDPI = false
+var disableDPI = true
 
 func Init() {
+
+	disableDPI = false
+
 	var (
-		//nDPI  = wrappers.NewNDPIWrapper()
+		nDPI  = wrappers.NewNDPIWrapper()
 		lPI   = wrappers.NewLPIWrapper()
-		//goDPI = classifiers.NewClassifierModule()
+		goDPI = classifiers.NewClassifierModule()
 		wm    = wrappers.NewWrapperModule()
 	)
 
 	// init DPI
-	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{lPI}})
-	godpi.SetModules([]types.Module{wm})
+	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{lPI, nDPI}})
+	godpi.SetModules([]types.Module{wm, goDPI})
 	if err := godpi.Initialize(); err != nil {
 		log.Fatal("goDPI initialization returned error: ", err)
 	}

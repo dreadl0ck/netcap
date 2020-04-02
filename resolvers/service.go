@@ -40,7 +40,8 @@ func InitServiceDB() {
 		csvReader = csv.NewReader(f)
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 	defer f.Close()
 

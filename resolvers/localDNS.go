@@ -20,7 +20,8 @@ func InitLocalDNS() {
 
 	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "hosts"))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	for _, line := range bytes.Split(data, []byte{'\n'}) {

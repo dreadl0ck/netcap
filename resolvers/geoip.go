@@ -31,6 +31,16 @@ type GeoRecord struct {
 	}
 }
 
+func InitGeolocationDB() {
+	if err := initCityReader(); err != nil {
+		logger.WithError(err).Error("failed to open city GeoDB")
+	}
+
+	if err := initAsnReader(); err != nil {
+		logger.WithError(err).Error("failed to open ASN GeoDB")
+	}
+}
+
 func initCityReader() (err error) {
 	cityReader, err = maxminddb.Open(filepath.Join(dataBaseSource, "GeoLite2-City.mmdb"))
 
@@ -55,6 +65,10 @@ func (record GeoRecord) repr() (geoloc, asn string) {
 // LookupGeolocation returns all associated geolocations for a given address and db handle
 // results are being cached in an atomic map to avoid unnecessary lookups
 func LookupGeolocation(addr string) (string, string) {
+
+	if asnReader == nil || cityReader == nil {
+		return "", ""
+	}
 	if len(addr) == 0 {
 		return "", ""
 	}
@@ -67,18 +81,6 @@ func LookupGeolocation(addr string) (string, string) {
 
 	if result, ok := geolocations.Load(ip.String()); ok {
 		return result.(GeoRecord).repr()
-	}
-
-	if cityReader == nil {
-		if err := initCityReader(); err != nil {
-			logger.WithError(err).Error("failed to open city GeoDB")
-		}
-	}
-
-	if asnReader == nil {
-		if err := initAsnReader(); err != nil {
-			logger.WithError(err).Error("failed to open ASN GeoDB")
-		}
 	}
 
 	var record = GeoRecord{}

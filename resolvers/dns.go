@@ -3,21 +3,18 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"sync"
 	"net"
+	"sync"
 	"time"
 )
- 
+
 var (
-	timeout = 10 * time.Second
-	dnsNamesDB = make(map[string][]string)
-	dnsNamesMu sync.Mutex
+	timeout           = 10 * time.Second
+	dnsNamesDB        = make(map[string][]string)
+	dnsNamesMu        sync.Mutex
+	privateIPBlocks   []*net.IPNet
+	disableReverseDNS = true
 )
-
-// TODO: make configurable
-var DisableReverseDNS = true
-
-var privateIPBlocks []*net.IPNet
 
 // setup private address space
 // source: https://stackoverflow.com/questions/41240761/go-check-if-ip-address-is-in-private-network-space
@@ -57,7 +54,7 @@ func IsPrivateIP(ip net.IP) bool {
 // LookupDNSNames retrieves the DNS names associated with an IP addr
 func LookupDNSNames(ip string) []string {
 
-	if DisableReverseDNS {
+	if disableReverseDNS {
 		return []string{}
 	}
 

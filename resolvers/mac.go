@@ -41,7 +41,8 @@ func InitMACResolver() {
 
 	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "macaddress.io-db.json"))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	for _, line := range bytes.Split(data, []byte{'\n'}) {

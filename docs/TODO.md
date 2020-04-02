@@ -2,10 +2,13 @@
 
 # maltego
 
-- Add OpenPacketsInWireshark
-- custom icon set for netcap entities
+- check if there is a local dns file at filepath.Join(dataBaseSource, "hosts"): if yes, enable passive DNS automatically
 - check TODOs in source
 - add setup and usage documentation 
+
+- Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
+- netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others 
+- custom icon set for netcap entities
 
 - GetUsers from HTTP BasicAuth + GetPassword
 - HTTP parameters: mark if source was GET or POST
