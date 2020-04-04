@@ -81,7 +81,7 @@ var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, f
 					signatureAlgs   = make([]int32, len(hello.SignatureAlgs))
 					supportedGroups = make([]int32, len(hello.SupportedGroups))
 					supportedPoints = make([]int32, len(hello.SupportedPoints))
-					extensions      = make([]int32, len(hello.Extensions))
+					extensions      = make([]int32, len(hello.AllExtensions))
 				)
 				for i, v := range hello.CipherSuites {
 					cipherSuites[i] = int32(v)

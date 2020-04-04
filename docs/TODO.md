@@ -2,12 +2,27 @@
 
 # maltego
 
+- add resolver config to other tools that init a collector
+- allow env vars to overwrite flag defaults but not explicitely set ones 
 - check TODOs in source
 - make file and directory permissions configurable
 - add setup and usage documentation, document ENV vars
 - net.capture: NETCAP_DATABASE_SOURCE
 - net.transform: NETCAP_MALTEGO_OPEN_FILE_CMD
 - net.agent: USER
+- enable DPI based on env var
+- enable DNS lookups based on env var
+- pop3 should not depend on HTTP decoder: make stream decoding interface generic
+- disable debug timeouts in handlePacket, GetProtocols and AssembleWithContext
+- net.capture: log PID on startup
+- merge debug modes: -verbose, -debug, -output etc ...
+- fix hardcoded version number in dockerfiles
+- move Stream type into separate file, rename to Connection to unify wording
+- add flag to toggle DNS resolving
+- add quiet switch when opening netcap dump files via the Open() call, update transforms
+- net.split: split pcap files by days, possibly also hours
+- improve and document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
+- allow tests to execute concurrently 
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others 
@@ -31,12 +46,9 @@
 - GetLongRunningSessions
 
 - text file types: add GetLinks and GetEmails, GetPhonenumbers etc
-- enable DPI based on env var
-- enable DNS lookups based on env var
-
 - GetNotWWW (no www.local reverse DNS name?) 
 - GetUnknownFlows(Filtered) (no http, pop3 flows)
-- GetAllHostsForGeolocation
+- GetHostsForGeolocation
 - GetApplicationsForCategory is broken
 
 - Create a netcap.Query entity: Add Execute and run the custom query
@@ -58,24 +70,13 @@ Reassembly: 2 Options
 - check if order of values in maltego list matches the expectation
 - broadcast address: mark as part of the internal network?
 - Application: add timestamps when packets have been seen, currently the first seen timestamp for the asscociated ip profile is repeated
-- pop3 should not depend on HTTP decoder: make stream decoding interface generic
 - add tests for POP3
-- disable debug timeouts in handlePacket, GetProtocols and AssembleWithContext
-- net.capture: log PID on startup
-- merge debug modes: -verbose, -debug, -output etc ...
 - constconf: generate a configuration with constant values -> compiler can optimize better
-- fix hardcoded version number in dockerfiles
-
-- move Stream type into separate file, rename to Connection to unify wording
-- add flag to toggle DNS resolving
-- add quiet switch when opening netcap dump files via the Open() call, update transforms
 
 - batch DPI calls per flow? 
 - use nDPI 3.2
-- add unit tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
 
 - flag.FlagSet instead of cobra for sub commands?
-- net.split: split pcap files by days, possibly also hours
 - label tool: display a warning when nothing is there for mapping
 - use new 1.13 strings.ToValidUTF8()
 
