@@ -55,4 +55,12 @@ var (
 	flagQuiet          = flag.Bool("quiet", false, "don't print infos to stdout")
 
 	flagFileStorage     = flag.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
+
+	flagReverseDNS = flag.Bool("reverse-dns", false, "resolve ips to domains via the operating systems default dns resolver")
+	flagLocalDNS = flag.Bool("local-dns", false, "resolve DNS locally via hosts file in the database dir")
+	flagMACDB = flag.Bool("macDB", false, "use mac to vendor database for device profiling")
+	flagJa3DB = flag.Bool("ja3DB", false, "use ja3 database for device profiling")
+	flagServiceDB = flag.Bool("serviceDB", false, "use serviceDB for device profiling")
+	flagGeolocationDB = flag.Bool("geoDB", false, "use geolocation for device profiling")
+	flagDPI = flag.Bool("dpi", false, "use DPI for device profiling")
 )
