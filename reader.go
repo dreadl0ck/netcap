@@ -25,7 +25,7 @@ import (
 	proto "github.com/golang/protobuf/proto"
 )
 
-// Reader implements reading netcap files
+// Reader implements reading netcap audit record files
 type Reader struct {
 	file    *os.File
 	bReader *bufio.Reader
@@ -33,7 +33,7 @@ type Reader struct {
 	dReader *delimited.Reader
 }
 
-// Open a file
+// Open a netcap audit record file for reading
 func Open(file string, memBufSize int) (*Reader, error) {
 	r := &Reader{}
 

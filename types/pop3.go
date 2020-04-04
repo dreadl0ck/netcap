@@ -27,8 +27,6 @@ var fieldsPOP3 = []string{
 	"AuthToken", // string
 	"User",      // string
 	"Pass",      // string
-	"NumRequests",  // []*POP3Request
-	"NumResponses", // []*POP3Response
 	"NumMails",     // []*Mail
 }
 
@@ -39,13 +37,11 @@ func (a POP3) CSVHeader() []string {
 func (a POP3) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.Client,    // string
-		a.Server,    // string
+		a.ClientIP,    // string
+		a.ServerIP,    // string
 		a.AuthToken, // string
 		a.User,      // string
 		a.Pass,      // string
-		strconv.Itoa(len(a.Requests)),  // []*POP3Request
-		strconv.Itoa(len(a.Responses)), // []*POP3Response
 		strconv.Itoa(len(a.Mails)),     // []*Mail
 	})
 }
@@ -77,9 +73,9 @@ func (a POP3) Inc() {
 func (a *POP3) SetPacketContext(ctx *PacketContext) {}
 
 func (a POP3) Src() string {
-	return a.Client
+	return a.ClientIP
 }
 
 func (a POP3) Dst() string {
-	return a.Server
+	return a.ServerIP
 }

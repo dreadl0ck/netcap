@@ -9,7 +9,7 @@ func GetMailUserPassword() {
 	maltego.POP3Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, pop3  *types.POP3, min, max uint64, profilesFile string, ipaddr string) {
-			if pop3.Client == ipaddr {
+			if pop3.ClientIP == ipaddr {
 				user := lt.Value
 				if pop3.User == user && pop3.Pass != "" {
 					escapedName := maltego.EscapeText(pop3.Pass)
