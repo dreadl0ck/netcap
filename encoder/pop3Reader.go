@@ -112,13 +112,11 @@ func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 		mails, user, pass, token := h.parseMails()
 		pop3Msg := &types.POP3{
 			Timestamp: h.parent.firstPacket.String(),
-			Client:    h.parent.net.Src().String(),
-			Server:    h.parent.net.Dst().String(),
+			ClientIP:    h.parent.net.Src().String(),
+			ServerIP:    h.parent.net.Dst().String(),
 			AuthToken: token,
 			User:      user,
 			Pass:      pass,
-			//Requests:  h.parent.pop3Requests,
-			//Responses: h.parent.pop3Responses,
 			Mails: mails,
 		}
 
@@ -622,11 +620,12 @@ const partIdent = "------=_Part_"
 
 func parseParts(body string) []*types.MailPart {
 
-	var parts []*types.MailPart
-	var currentPart *types.MailPart
-	var parsePayload bool
-
-	tr := textproto.NewReader(bufio.NewReader(bytes.NewReader([]byte(body))))
+	var (
+		parts []*types.MailPart
+		currentPart *types.MailPart
+		parsePayload bool
+		tr = textproto.NewReader(bufio.NewReader(bytes.NewReader([]byte(body))))
+	)
 
 	for {
 		line, err := tr.ReadLine()
@@ -646,25 +645,13 @@ func parseParts(body string) []*types.MailPart {
 				// check if its an end marker for the current part
 				if strings.HasSuffix(line, currentPart.ID + "--") {
 					mailDebug(ansi.Cyan, "end", currentPart.ID, ansi.Reset)
-					// TODO: create a constructor for MailPart
-					parts = append(parts, &types.MailPart{
-						ID:       currentPart.ID,
-						Header:   currentPart.Header,
-						Content:  currentPart.Content,
-						Filename: currentPart.Filename,
-					})
+					parts = append(parts, copyMailPart(currentPart))
 					parsePayload = false
 					currentPart = nil
 
 				// check if its the start of another part, marker type 1
 				} else if strings.HasPrefix(line, partIdent) {
-					// TODO: create a constructor for MailPart
-					parts = append(parts, &types.MailPart{
-						ID:      currentPart.ID,
-						Header:  currentPart.Header,
-						Content: currentPart.Content,
-						Filename: currentPart.Filename,
-					})
+					parts = append(parts, copyMailPart(currentPart))
 					currentPart = &types.MailPart{
 						ID:     strings.TrimPrefix(line, partIdent),
 						Header: make(map[string]string),
@@ -674,13 +661,7 @@ func parseParts(body string) []*types.MailPart {
 
 				// second type of start marker
 				} else if strings.HasPrefix(line, "--") && len(line) > 31 && !strings.Contains(line, ">") {
-					// TODO: create a constructor for MailPart
-					parts = append(parts, &types.MailPart{
-						ID:       currentPart.ID,
-						Header:   currentPart.Header,
-						Content:  currentPart.Content,
-						Filename: currentPart.Filename,
-					})
+					parts = append(parts, copyMailPart(currentPart))
 					currentPart = &types.MailPart{
 						ID:      strings.TrimPrefix(line, "--"),
 						Header:  make(map[string]string),
@@ -730,6 +711,15 @@ func parseParts(body string) []*types.MailPart {
 	}
 
 	return parts
+}
+
+func copyMailPart(part *types.MailPart) *types.MailPart {
+	return &types.MailPart{
+		ID:       part.ID,
+		Header:   part.Header,
+		Content:  part.Content,
+		Filename: part.Filename,
+	}
 }
 
 // TODO: write unit test for this

@@ -1815,15 +1815,13 @@ message AVP {
 }
 
 message POP3 {
-    string   Timestamp              = 1;
-    string   Client                 = 2;
-    string   Server                 = 3;
-    string   AuthToken              = 4;
-    string   User                   = 5;
-    string   Pass                   = 6;
-    repeated POP3Request  Requests  = 7;
-    repeated POP3Response Responses = 8;
-    repeated Mail         Mails     = 9;
+    string           Timestamp              = 1;
+    string           ClientIP               = 2;
+    string           ServerIP               = 3;
+    string           AuthToken              = 4;
+    string           User                   = 5;
+    string           Pass                   = 6;
+    repeated Mail    Mails                  = 7;
 }
 
 message Mail {
