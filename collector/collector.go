@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
 	"log"
 	"os"
@@ -216,8 +217,8 @@ func (c *Collector) handlePacketTimeout(p *packet) {
 	// send the packetInfo to the encoder routine
 	case c.workers[c.next] <- p:
 	case <-time.After(3 * time.Second):
-		// TODO:
-		//fmt.Println("handle packet timeout", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
+		p := gopacket.NewPacket(p.data, c.config.BaseLayer, gopacket.Default)
+		fmt.Println("handle packet timeout", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
 	}
 
 	// increment or reset next

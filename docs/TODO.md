@@ -3,7 +3,11 @@
 # maltego
 
 - check TODOs in source
-- add setup and usage documentation 
+- make file and directory permissions configurable
+- add setup and usage documentation, document ENV vars
+- net.capture: NETCAP_DATABASE_SOURCE
+- net.transform: NETCAP_MALTEGO_OPEN_FILE_CMD
+- net.agent: USER
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others 

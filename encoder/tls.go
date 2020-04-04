@@ -76,31 +76,30 @@ var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, f
 			if hello, ok := ExtractTLSHandShake(tcp); ok {
 
 				var (
-					// TODO: use make() and prealloc arrays
-					cipherSuites    []int32
-					compressMethods []int32
-					signatureAlgs   []int32
-					supportedGroups []int32
-					supportedPoints []int32
-					extensions      []int32
+					cipherSuites    = make([]int32, len(hello.CipherSuites))
+					compressMethods = make([]int32, len(hello.CompressMethods))
+					signatureAlgs   = make([]int32, len(hello.SignatureAlgs))
+					supportedGroups = make([]int32, len(hello.SupportedGroups))
+					supportedPoints = make([]int32, len(hello.SupportedPoints))
+					extensions      = make([]int32, len(hello.Extensions))
 				)
-				for _, v := range hello.CipherSuites {
-					cipherSuites = append(cipherSuites, int32(v))
+				for i, v := range hello.CipherSuites {
+					cipherSuites[i] = int32(v)
 				}
-				for _, v := range hello.CompressMethods {
-					compressMethods = append(compressMethods, int32(v))
+				for i, v := range hello.CompressMethods {
+					compressMethods[i] = int32(v)
 				}
-				for _, v := range hello.SignatureAlgs {
-					signatureAlgs = append(signatureAlgs, int32(v))
+				for i, v := range hello.SignatureAlgs {
+					signatureAlgs[i] = int32(v)
 				}
-				for _, v := range hello.SupportedGroups {
-					supportedGroups = append(supportedGroups, int32(v))
+				for i, v := range hello.SupportedGroups {
+					supportedGroups[i] = int32(v)
 				}
-				for _, v := range hello.SupportedPoints {
-					supportedPoints = append(supportedPoints, int32(v))
+				for i, v := range hello.SupportedPoints {
+					supportedPoints[i] = int32(v)
 				}
-				for _, v := range hello.AllExtensions {
-					extensions = append(extensions, int32(v))
+				for i, v := range hello.AllExtensions {
+					extensions[i] = int32(v)
 				}
 
 				var (
