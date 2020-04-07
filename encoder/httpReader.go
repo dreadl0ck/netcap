@@ -100,7 +100,7 @@ func (h *httpReader) BytesChan() chan []byte {
 	return h.bytes
 }
 
-func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
+func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection) {
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -192,9 +192,9 @@ func (h *httpReader) Run(wg *sync.WaitGroup) {
 	// create streams
 	var (
 		// client to server
-		c2s = Stream{h.parent.net, h.parent.transport}
+		c2s = Connection{h.parent.net, h.parent.transport}
 		// server to client
-		s2c = Stream{h.parent.net.Reverse(), h.parent.transport.Reverse()}
+		s2c = Connection{h.parent.net.Reverse(), h.parent.transport.Reverse()}
 	)
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
@@ -224,7 +224,7 @@ func (h *httpReader) Run(wg *sync.WaitGroup) {
 
 // HTTP Response
 
-func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
+func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 
 	// try to read HTTP response from the buffered reader
 	res, err := http.ReadResponse(b, nil)
@@ -308,7 +308,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	return nil
 }
 
-func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
+func (h *httpReader) findRequest(res *http.Response, s2c Connection) string {
 
 	// try to find the matching HTTP request for the response
 	var (
@@ -620,7 +620,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 
 // HTTP Request
 
-func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
+func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	req, err := http.ReadRequest(b)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err

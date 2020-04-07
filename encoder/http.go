@@ -34,23 +34,6 @@ import (
 )
 
 var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *CustomEncoder) error {
-
-	// postinit:
-	// set debug level
-	// and ensure HTTP collection is enabled
-
-	if *debug {
-		outputLevel = 2
-	} else if *verbose {
-		outputLevel = 1
-	} else if *quiet {
-		outputLevel = -1
-	}
-
-	// TODO:
-	//assembler.AssemblerOptions.MaxBufferedPagesPerConnection = 12
-	//assembler.AssemblerOptions.MaxBufferedPagesTotal = 128
-
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
 	return nil

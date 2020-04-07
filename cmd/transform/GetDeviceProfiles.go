@@ -42,7 +42,6 @@ func GetDeviceProfiles() {
 	// the directory for this will be named like the input file with an added .net extension
 	outDir := inputFile + ".net"
 
-	// TODO: error ignored, files will be overwritten if there are any
 	os.MkdirAll(outDir, 0700)
 
 	// init collector

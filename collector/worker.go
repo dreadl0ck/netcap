@@ -141,7 +141,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 						}
 
 						// if its not a payload layer, write to unknown .pcap file
-						// TODO make this configurable?
 						if layer.LayerType() != gopacket.LayerTypePayload {
 							if err := c.writePacketToUnknownPcap(p); err != nil {
 								fmt.Println("failed to write packet to unknown.pcap file:", err)
