@@ -2,7 +2,6 @@
 
 # maltego
 
-- add resolver config to other tools that init a collector
 - allow env vars to overwrite flag defaults but not explicitely set ones 
 - check TODOs in source
 - make file and directory permissions configurable

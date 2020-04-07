@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"io/ioutil"
 	"os"
 
@@ -107,6 +108,15 @@ func main() {
 			AddContext:      *flagContext,
 			MemBufferSize:   *flagMemBufferSize,
 		},
+		ResolverConfig: resolvers.Config{
+			ReverseDNS:      *flagReverseDNS,
+			LocalDNS:        *flagLocalDNS,
+			MACDB:           *flagMACDB,
+			Ja3DB:           *flagJa3DB,
+			ServiceDB:       *flagServiceDB,
+			GeolocationDB:   *flagGeolocationDB,
+		},
+		DPI: *flagDPI,
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})
