@@ -84,7 +84,7 @@ func (h *pop3Reader) BytesChan() chan []byte {
 	return h.bytes
 }
 
-func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
+func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection) {
 
 	// fmt.Println("POP3 cleanup", h.ident)
 
@@ -146,9 +146,9 @@ func (h *pop3Reader) Run(wg *sync.WaitGroup) {
 	// create streams
 	var (
 		// client to server
-		c2s = Stream{h.parent.net, h.parent.transport}
+		c2s = Connection{h.parent.net, h.parent.transport}
 		// server to client
-		s2c = Stream{h.parent.net.Reverse(), h.parent.transport.Reverse()}
+		s2c = Connection{h.parent.net.Reverse(), h.parent.transport.Reverse()}
 	)
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
@@ -298,7 +298,7 @@ func mailDebug(args ...interface{}) {
 	}
 }
 
-func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
+func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Connection) error {
 
 	tp := textproto.NewReader(b)
 
@@ -329,7 +329,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
 	return nil
 }
 
-func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Stream) error {
+func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Connection) error {
 
 	tp := textproto.NewReader(b)
 

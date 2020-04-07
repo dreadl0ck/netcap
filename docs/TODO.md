@@ -1,14 +1,17 @@
 # TODOs
 
-# maltego
+## Documentation
 
+- add setup and usage documentation, document special ENV vars:
+    - net.capture: NETCAP_DATABASE_SOURCE
+    - net.transform: NETCAP_MALTEGO_OPEN_FILE_CMD
+    - net.agent: USER
 - document configuration via environment or file
+
+## Maltego Plugin
+
 - check TODOs in source
 - make file and directory permissions configurable
-- add setup and usage documentation, document ENV vars
-- net.capture: NETCAP_DATABASE_SOURCE
-- net.transform: NETCAP_MALTEGO_OPEN_FILE_CMD
-- net.agent: USER
 - enable DPI based on env var
 - enable DNS lookups based on env var
 - pop3 should not depend on HTTP decoder: make stream decoding interface generic
@@ -21,7 +24,7 @@
 - add quiet switch when opening netcap dump files via the Open() call, update transforms
 - net.split: split pcap files by days, possibly also hours
 - improve and document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
-- allow tests to execute concurrently 
+- allow tests to execute concurrently
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others 

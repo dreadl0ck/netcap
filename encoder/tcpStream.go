@@ -74,10 +74,8 @@ var (
 	ignorefsmerr     = flag.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
 	allowmissinginit = flag.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
 
-	verbose = flag.Bool("verbose", false, "be verbose")                       // TODO: unify
-	debug   = flag.Bool("debug", false, "display debug information")          // TODO: unify
-	quiet   = flag.Bool("tcpstream-quiet", true, "be quiet regarding errors") // TODO: unify
-	hexdump = flag.Bool("dump", false, "dump HTTP request/response as hex")   // TODO: unify
+	debug   = flag.Bool("debug", false, "display debug information")
+	hexdump = flag.Bool("hexdump-http", false, "dump HTTP request/response as hex")
 	nohttp  = flag.Bool("nohttp", false, "disable HTTP parsing")
 
 	writeincomplete = flag.Bool("writeincomplete", false, "write incomplete response")
@@ -124,34 +122,8 @@ var reassemblyStats struct {
 	overlapPackets      int
 }
 
-type StreamReader interface {
-	Read(p []byte) (int, error)
-	Run(wg *sync.WaitGroup)
-	BytesChan() chan []byte
-	Cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream)
-}
-
-// TODO: move into separate file, rename to Connection to unify wording
-// Stream contains both unidirectional flows for a connection
-type Stream struct {
-	a gopacket.Flow
-	b gopacket.Flow
-}
-
-// Reverse flips source and destination
-func (s Stream) Reverse() Stream {
-	return Stream{
-		s.a.Reverse(),
-		s.b.Reverse(),
-	}
-}
-
-func (s Stream) String() string {
-	return s.a.String() + " : " + s.b.String()
-}
-
 /*
- * The TCP factory: returns a new Stream
+ * The TCP factory: returns a new Connection
  */
 
 type tcpStreamFactory struct {
@@ -256,8 +228,8 @@ type tcpStream struct {
 	reversed bool
 	ident    string
 
-	client StreamReader
-	server StreamReader
+	client ConnectionReader
+	server ConnectionReader
 
 	firstPacket time.Time
 
