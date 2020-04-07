@@ -16,7 +16,7 @@ package collector
 
 import (
 	"bufio"
-	"flag"
+	"github.com/namsral/flag"
 	"fmt"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"

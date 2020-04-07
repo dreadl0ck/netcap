@@ -13,7 +13,7 @@
 
 package main
 
-import "flag"
+import "github.com/namsral/flag"
 
 var (
 	flagDebug     = flag.Bool("debug", false, "toggle debug mode")

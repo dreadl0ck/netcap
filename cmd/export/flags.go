@@ -13,7 +13,7 @@
 
 package main
 
-import "flag"
+import "github.com/namsral/flag"
 
 var (
 	flagMetricsAddress = flag.String("address", "127.0.0.1:7777", "set address for exposing metrics")

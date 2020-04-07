@@ -46,7 +46,7 @@ package encoder
 
 import (
 	"encoding/hex"
-	"flag"
+	"github.com/namsral/flag"
 	"fmt"
 	"github.com/dreadl0ck/gopacket/ip4defrag"
 	"log"

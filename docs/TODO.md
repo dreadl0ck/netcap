@@ -2,7 +2,7 @@
 
 # maltego
 
-- allow env vars to overwrite flag defaults but not explicitely set ones 
+- document configuration via environment or file
 - check TODOs in source
 - make file and directory permissions configurable
 - add setup and usage documentation, document ENV vars
