@@ -218,3 +218,8 @@ commands:
         exec: |
             git tag -d $tag
             git push --delete origin $tag
+
+    download-test-pcap:
+        description: fetches the ultimate pcap file for the unit tests via wget
+        help: unpack it to the tests directory
+        exec: wget https://weberblog.net/wp-content/uploads/2020/02/The-Ultimate-PCAP.7z
