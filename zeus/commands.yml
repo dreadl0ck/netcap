@@ -160,9 +160,14 @@ commands:
     # to ensure the correct version is also set for installation via go get
     # a version.go file is generated on each release with the corresponding version number
     gen-version:
-        description: generate the version.go file
+        description: set the correct project version
+        help: generates the version.go file
         exec: |
             echo -e "// Netcap is a framework for network packet processing at the protocol level. Learn more at https://netcap.io.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"\nvar Commit = \"$(git rev-parse HEAD | tr -d "\n")\"" > version.go
+            sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile-ubuntu > Dockerfile-ubuntu-cp
+            mv Dockerfile-ubuntu-cp Dockerfile-ubuntu
+            sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile-alpine > Dockerfile-alpine-cp
+            mv Dockerfile-alpine-cp Dockerfile-alpine
 
     # build and push the Alpine docker container
     build-all-linux:
