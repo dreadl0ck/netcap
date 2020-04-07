@@ -22,7 +22,7 @@ func TestCollectPCAP(t *testing.T) {
 		SnapLen:             1514,
 		BaseLayer:           utils.GetBaseLayer("ethernet"),
 		DecodeOptions:       utils.GetDecodeOptions("datagrams"),
-		FileStorage:         "files",
+		FileStorage:         "",
 		Quiet:               true,
 		EncoderConfig: encoder.Config{
 			Buffer:          true,

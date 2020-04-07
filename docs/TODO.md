@@ -10,18 +10,23 @@
 - document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
 - document *Timeout funcs for handlePacket, AssembleWithContext and GetProtocols in internals section for debugging
 
-## Maltego Plugin
+## Cleanup
 
 - make reassembleStreams configurable
 - fix hardcoded version number in dockerfiles
 - pop3 should not depend on HTTP decoder: make stream decoding interface generic
 - make file and directory permissions configurable
 - dont wait for last streams to finish or time-out
-
+- add regular logs to file netcap.log, make configurable via log flag
+- add flag to debug log into multiple files? reassembly.log, debug.log
 - check TODOs in source
 - improve tests & allow tests to execute concurrently
-- add flag to debug log into a file
-- net.split: split pcap files by days, possibly also hours
+- net.split: split pcap files by days or hours
+- broadcast address: mark as part of the internal network?
+- add tests for POP3 parsing
+- flag.FlagSet instead of cobra for sub commands?
+
+## Maltego Plugin
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others 
@@ -55,7 +60,7 @@
 - improve DisplayInformation to allow tracking updates to an entity over time
 - define triggers to highlight suspicious links in red
 - MIME type: check if executables are properly detected
-- test empty TCP conn over HTTP port (will this lock up the reassembly?)
+- check if order of values in maltego list matches the timestamps
 
 ## General
 
@@ -64,18 +69,15 @@ Reassembly: 2 Options
 2) One global assembler per protocol with a dedicated stream pool for that protocol (reduces lock contention)
 
 - add tests for http audit records and compare results with output from urlsnarf
-- add constants in maltego pkg for netcap entity names
 - implement passive dns hosts mapping generation in netcap
-- check if order of values in maltego list matches the expectation
-- broadcast address: mark as part of the internal network?
+- test empty TCP conn over HTTP port (will this lock up the reassembly?)
 - Application: add timestamps when packets have been seen, currently the first seen timestamp for the asscociated ip profile is repeated
-- add tests for POP3
+
 - constconf: generate a configuration with constant values -> compiler can optimize better
 
 - batch DPI calls per flow? 
 - use nDPI 3.2
 
-- flag.FlagSet instead of cobra for sub commands?
 - label tool: display a warning when nothing is there for mapping
 - use new 1.13 strings.ToValidUTF8()
 
@@ -83,8 +85,6 @@ Reassembly: 2 Options
 - net.collect -gen-keypair  -> net.util
 - replace AuditRecordHandle in net.collect with netcap.Writer
 - colorize tool output
-
-- check TODOs in source code
 - add YARA support for labels
 
 - add contributions welcome to README
