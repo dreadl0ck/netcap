@@ -387,6 +387,7 @@ func (t *tcpStream) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
 }
 
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
+
 	data := packet.Data()
 
 	// lock to sync with read on destroy
@@ -436,30 +437,11 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 				log.Fatalf("Failed to set network layer for checksum: %s\n", err)
 			}
 		}
-		c := Context{
-			CaptureInfo: packet.Metadata().CaptureInfo,
-		}
 		reassemblyStats.totalsz += len(tcp.Payload)
 
-		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
-
-		// TODO: add wrapper func for timeout debugging util
-		//fmt.Println("AssembleWithContext")
-
-		//done := make(chan bool, 1)
-		//go func() {
-		//	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
-		//	done <- true
-		//}()
-		//
-		//select {
-		//case <-done:
-		//case <-time.After(5 * time.Second):
-		//	fmt.Println("HTTP AssembleWithContext timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
-		//	fmt.Println(assembler.Dump())
-		//}
-
-		//fmt.Println("AssembleWithContext done")
+		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
+			CaptureInfo: packet.Metadata().CaptureInfo,
+		})
 	}
 
 	// flush connections in interval
@@ -469,6 +451,29 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		//fmt.Println("FlushWithOptions")
 		assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-timeout), TC: ref.Add(-closeTimeout)})
 		//fmt.Println("FlushWithOptions done")
+
+		// TODO: log into file when debugging is enabled
 		// fmt.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref, ref.Add(-timeout))
+	}
+}
+
+// AssembleWithContextTimeout is a function that times out with a log message after a specified interval
+// when the stream reassembly gets stuck
+// used for debugging
+func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
+
+	done := make(chan bool, 1)
+	go func() {
+		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
+			CaptureInfo: packet.Metadata().CaptureInfo,
+		})
+		done <- true
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		fmt.Println("HTTP AssembleWithContext timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
+		fmt.Println(assembler.Dump())
 	}
 }
