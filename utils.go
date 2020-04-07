@@ -59,7 +59,7 @@ func PrintBuildInfo() {
 
 	PrintLogo()
 
-	fmt.Println("\n> Date:", time.Now().UTC())
+	fmt.Println("\n> Date of execution:", time.Now().UTC())
 	fmt.Println("> NETCAP build commit:", Commit)
 	fmt.Println("> go runtime version:", runtime.Version())
 

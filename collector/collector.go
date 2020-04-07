@@ -430,6 +430,7 @@ func (c *Collector) PrintConfiguration() {
 
 	if !c.config.Quiet {
 		netcap.PrintBuildInfo()
+		fmt.Println("> PID:", os.Getpid())
 
 		// print configuration as table
 		tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{

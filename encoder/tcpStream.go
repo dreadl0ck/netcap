@@ -81,7 +81,6 @@ var (
 	writeincomplete = flag.Bool("writeincomplete", false, "write incomplete response")
 	memprofile      = flag.String("memprofile", "", "write memory profile")
 
-	outputLevel int
 	numErrors   uint
 	requests    = 0
 	responses   = 0

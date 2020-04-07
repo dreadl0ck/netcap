@@ -13,10 +13,10 @@
 ## Maltego Plugin
 
 - make reassembleStreams configurable
-- net.capture: log PID on startup
 - fix hardcoded version number in dockerfiles
 - pop3 should not depend on HTTP decoder: make stream decoding interface generic
 - make file and directory permissions configurable
+- dont wait for last streams to finish or time-out
 
 - check TODOs in source
 - improve tests & allow tests to execute concurrently
