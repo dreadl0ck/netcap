@@ -1,7 +1,7 @@
 package main
 
 import (
-	"flag"
+	"github.com/namsral/flag"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"log"

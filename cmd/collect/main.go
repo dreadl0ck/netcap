@@ -17,7 +17,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"flag"
+	"github.com/namsral/flag"
 	"fmt"
 	"io"
 	"io/ioutil"

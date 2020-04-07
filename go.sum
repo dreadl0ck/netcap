@@ -10,10 +10,6 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1 h1:hYYY4lT/JWxWwaG0hmVAM24u6ElfO1StNGnLgWW/HHk=
 github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
-github.com/dreadl0ck/go-dpi v0.0.0-20200321180149-d9aacace61f9 h1:ExhzeO2IXoGt6M4iEbs6bSi/+6biZgMhfc44vLLiENA=
-github.com/dreadl0ck/go-dpi v0.0.0-20200321180149-d9aacace61f9/go.mod h1:ygzpshKgBvy4NjrQA+2RTHObjQceTqSBlhrJ87emEq8=
-github.com/dreadl0ck/go-dpi v0.0.0-20200323103330-8fb39c85e35a h1:xlK09LOewoxdWC3iaiHEdam3k0R1VUq0yx+0nWJjlE4=
-github.com/dreadl0ck/go-dpi v0.0.0-20200323103330-8fb39c85e35a/go.mod h1:zQJ9zS65N0DpKHiGBOPqb/A2GYz9kSxrfGRcl8ZOyYY=
 github.com/dreadl0ck/go-dpi v0.0.0-20200323103802-cdd83391c430 h1:Z+8pqB7sy3H3y5ktAeOm99boOhAJNqzgFHD6U5U24Wo=
 github.com/dreadl0ck/go-dpi v0.0.0-20200323103802-cdd83391c430/go.mod h1:zQJ9zS65N0DpKHiGBOPqb/A2GYz9kSxrfGRcl8ZOyYY=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557 h1:m/rxJiRUgei39RuIVBMPipyRGokYe534vBfuARBcLnU=
@@ -83,6 +79,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJ
 github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
+github.com/namsral/flag v1.7.4-pre h1:b2ScHhoCUkbsq0d2C15Mv+VU8bl8hAXV8arnWiOHNZs=
+github.com/namsral/flag v1.7.4-pre/go.mod h1:OXldTctbM6SWH1K899kPZcf65KxJiD7MsceFUpB5yDo=
 github.com/oschwald/maxminddb-golang v1.6.0 h1:KAJSjdHQ8Kv45nFIbtoLGrGWqHFajOIm7skTyz/+Dls=
 github.com/oschwald/maxminddb-golang v1.6.0/go.mod h1:DUJFucBg2cvqx42YmDa/+xHvb0elJtOm3o4aFQ/nb/w=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=

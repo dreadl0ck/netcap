@@ -14,7 +14,7 @@
 package encoder
 
 import (
-	"flag"
+	"github.com/namsral/flag"
 	"log"
 	"strconv"
 	"sync/atomic"

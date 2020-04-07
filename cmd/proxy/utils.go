@@ -15,7 +15,7 @@ package main
 
 import (
 	"bytes"
-	"flag"
+	"github.com/namsral/flag"
 	"fmt"
 	gzip "github.com/klauspost/pgzip"
 	"io/ioutil"

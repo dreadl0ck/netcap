@@ -13,7 +13,7 @@
 
 package main
 
-import "flag"
+import "github.com/namsral/flag"
 
 var (
 	flagInterface = flag.String("iface", "en0", "interface")
