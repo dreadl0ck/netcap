@@ -12,7 +12,6 @@
 
 ## Cleanup
 
-- make reassembleStreams configurable
 - fix hardcoded version number in dockerfiles
 - pop3 should not depend on HTTP decoder: make stream decoding interface generic
 - make file and directory permissions configurable

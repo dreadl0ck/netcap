@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"github.com/namsral/flag"
 	"fmt"
 
 	"github.com/dreadl0ck/gopacket/reassembly"
@@ -23,8 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/encoder"
 )
 
-// TODO make this configurable
-const reassembleStreams = true
+var flagReassembleConnections = flag.Bool("reassemble-connections", true, "reassemble TCP connections")
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
@@ -43,7 +43,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				if packet == nil {
 
 					// cleanup reassembly
-					if reassembleStreams {
+					if *flagReassembleConnections {
 						assembler.FlushAll()
 						//closed := assembler.FlushAll()
 						//if !c.config.Quiet {
@@ -63,7 +63,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				p.Metadata().CaptureLength = packet.ci.CaptureLength
 
 				// pass packet to reassembly
-				if reassembleStreams {
+				if *flagReassembleConnections {
 					encoder.ReassemblePacket(p, assembler)
 				}
 
