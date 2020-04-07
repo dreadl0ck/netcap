@@ -7,24 +7,21 @@
     - net.transform: NETCAP_MALTEGO_OPEN_FILE_CMD
     - net.agent: USER
 - document configuration via environment or file
+- document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
+- document *Timeout funcs for handlePacket, AssembleWithContext and GetProtocols in internals section for debugging
 
 ## Maltego Plugin
 
-- check TODOs in source
-- make file and directory permissions configurable
-- enable DPI based on env var
-- enable DNS lookups based on env var
-- pop3 should not depend on HTTP decoder: make stream decoding interface generic
-- disable debug timeouts in handlePacket, GetProtocols and AssembleWithContext
+- make reassembleStreams configurable
 - net.capture: log PID on startup
-- merge debug modes: -verbose, -debug, -output etc ...
 - fix hardcoded version number in dockerfiles
-- move Stream type into separate file, rename to Connection to unify wording
-- add flag to toggle DNS resolving
-- add quiet switch when opening netcap dump files via the Open() call, update transforms
+- pop3 should not depend on HTTP decoder: make stream decoding interface generic
+- make file and directory permissions configurable
+
+- check TODOs in source
+- improve tests & allow tests to execute concurrently
+- add flag to debug log into a file
 - net.split: split pcap files by days, possibly also hours
-- improve and document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
-- allow tests to execute concurrently
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others 
