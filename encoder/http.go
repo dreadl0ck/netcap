@@ -34,6 +34,7 @@ import (
 )
 
 var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *CustomEncoder) error {
+	streamFactory.decodeHTTP = true
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
 	return nil
