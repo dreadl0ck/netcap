@@ -20,6 +20,7 @@ import (
 )
 
 var pop3Encoder = CreateCustomEncoder(types.Type_NC_POP3, "POP3", func(d *CustomEncoder) error {
+	streamFactory.decodePOP3 = true
 	return nil
 }, func(packet gopacket.Packet) proto.Message {
 	return nil

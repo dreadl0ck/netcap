@@ -76,7 +76,6 @@ var (
 
 	debug   = flag.Bool("debug", false, "display debug information")
 	hexdump = flag.Bool("hexdump-http", false, "dump HTTP request/response as hex")
-	nohttp  = flag.Bool("nohttp", false, "disable HTTP parsing")
 
 	writeincomplete = flag.Bool("writeincomplete", false, "write incomplete response")
 	memprofile      = flag.String("memprofile", "", "write memory profile")
@@ -90,7 +89,7 @@ var (
 	timeout      time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
 
 	defragger     = ip4defrag.NewIPv4Defragmenter()
-	streamFactory = &tcpStreamFactory{doHTTP: !*nohttp}
+	streamFactory = &tcpStreamFactory{}
 	StreamPool    = reassembly.NewStreamPool(streamFactory)
 
 	count     = 0
@@ -127,23 +126,23 @@ var reassemblyStats struct {
 
 type tcpStreamFactory struct {
 	wg     sync.WaitGroup
-	doHTTP bool
+	decodeHTTP bool
+	decodePOP3 bool
+}
+
+var fsmOptions = reassembly.TCPSimpleFSMOptions{
+	SupportMissingEstablishment: *allowmissinginit,
 }
 
 func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
 	logDebug("* NEW: %s %s\n", net, transport)
 
-	// TODO: alloc fsmOptions once
-	fsmOptions := reassembly.TCPSimpleFSMOptions{
-		SupportMissingEstablishment: *allowmissinginit,
-	}
-
 	stream := &tcpStream{
 		net:         net,
 		transport:   transport,
-		isHTTP:      (tcp.SrcPort == 80 || tcp.DstPort == 80) && factory.doHTTP,
-		isPOP3:      tcp.SrcPort == 110 || tcp.DstPort == 110,
+		isHTTP:      factory.decodeHTTP && (tcp.SrcPort == 80 || tcp.DstPort == 80),
+		isPOP3:      factory.decodePOP3 && (tcp.SrcPort == 110 || tcp.DstPort == 110),
 		reversed:    tcp.SrcPort == 80,
 		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
