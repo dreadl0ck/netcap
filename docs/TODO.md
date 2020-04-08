@@ -12,7 +12,6 @@
 
 ## Cleanup
 
-- make file and directory permissions configurable
 - dont wait for last streams to finish or time-out
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log

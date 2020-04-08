@@ -44,6 +44,7 @@ import (
 )
 
 var flagFreeOSMemory = flag.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
+var outDirPermissionDefault = 0755
 
 // Collector provides an interface to collect data from PCAP or a network interface.
 type Collector struct {
@@ -90,6 +91,11 @@ type Collector struct {
 
 // New returns a new Collector instance.
 func New(config Config) *Collector {
+
+	if config.OutDirPermission == 0 {
+		config.OutDirPermission = os.FileMode(outDirPermissionDefault)
+	}
+
 	return &Collector{
 		next:                1,
 		unknownProtosAtomic: encoder.NewAtomicCounterMap(),
@@ -353,7 +359,7 @@ func (c *Collector) Init() (err error) {
 
 	// create full output directory path if set
 	if c.config.EncoderConfig.Out != "" {
-		err = os.MkdirAll(c.config.EncoderConfig.Out, 0755)
+		err = os.MkdirAll(c.config.EncoderConfig.Out, c.config.OutDirPermission)
 		if err != nil {
 			return err
 		}
