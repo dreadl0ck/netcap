@@ -44,6 +44,7 @@ import (
  */
 
 const pop3Debug = false
+const directoryPermission = 0755
 
 type pop3Reader struct {
 	ident    string
@@ -212,7 +213,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	}
 
 	// make sure root path exists
-	os.MkdirAll(root, 0755)
+	os.MkdirAll(root, directoryPermission)
 	base = path.Join(root, base)
 	if len(base) > 250 {
 		base = base[:250] + "..."

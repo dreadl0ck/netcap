@@ -10,6 +10,7 @@ import (
 
 var (
 	flagVersion = flag.Bool("version", false, "print version and exit")
+	outDirPermission os.FileMode = 0755
 )
 
 func main() {

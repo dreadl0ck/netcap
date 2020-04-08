@@ -43,7 +43,7 @@ func GetDeviceProfilesWithDPI() {
 	outDir := inputFile + ".net"
 
 	// error explicitly ignored, files will be overwritten if there are any
-	os.MkdirAll(outDir, 0700)
+	os.MkdirAll(outDir, outDirPermission)
 
 	// init collector
 	c := collector.New(collector.Config{

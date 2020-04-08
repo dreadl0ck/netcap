@@ -34,7 +34,7 @@ func OpenFile() {
 	}
 
 	log.Println("open path:", lt.Values["path"])
-	f, err := os.OpenFile(lt.Values["path"], os.O_RDONLY, 0777)
+	f, err := os.OpenFile(lt.Values["path"], os.O_RDONLY, outDirPermission)
 	if err != nil {
 		log.Fatal(err)
 	}

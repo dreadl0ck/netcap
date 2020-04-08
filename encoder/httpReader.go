@@ -537,7 +537,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 	}
 
 	// make sure root path exists
-	os.MkdirAll(root, 0755)
+	os.MkdirAll(root, directoryPermission)
 	base = path.Join(root, base)
 	if len(base) > 250 {
 		base = base[:250] + "..."

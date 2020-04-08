@@ -17,6 +17,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"os"
 )
 
 // Config contains configuration parameters
@@ -35,4 +36,5 @@ type Config struct {
 	Quiet               bool
 	DPI                 bool
 	ResolverConfig      resolvers.Config
+	OutDirPermission    os.FileMode
 }
