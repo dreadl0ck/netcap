@@ -49,7 +49,6 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/gopacket/ip4defrag"
 	"github.com/evilsocket/islazy/tui"
-	"github.com/namsral/flag"
 	"log"
 	"net/http"
 	"os"
@@ -68,23 +67,6 @@ import (
 
 // flags
 var (
-	// TODO: add these to encoder config?
-	flushevery             *int
-	nodefrag               *bool
-	checksum               *bool
-	nooptcheck             *bool
-	ignorefsmerr           *bool
-	allowmissinginit       *bool
-	debug                  *bool
-	hexdump                *bool
-	flagWaitForConnections *bool
-	writeincomplete        *bool
-	memprofile             *string
-	flagConnFlushInterval  *int
-	flagConnTimeOut        *int
-	flagFlowFlushInterval  *int
-	flagFlowTimeOut        *int
-
 	closeTimeout   time.Duration = time.Hour * 24   // time.Duration(*flagCloseTimeOut) // Closing inactive
 	timeout        time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
 	defragger                    = ip4defrag.NewIPv4Defragmenter()
@@ -101,28 +83,6 @@ var (
 	errorsMapMutex sync.Mutex
 	FileStorage    string
 )
-
-func SetFlags(fs *flag.FlagSet) {
-	flushevery             = fs.Int("flushevery", 100, "flush assembler every N packets")
-	nodefrag               = fs.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
-	checksum               = fs.Bool("checksum", false, "check TCP checksum")
-	nooptcheck             = fs.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
-	ignorefsmerr           = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
-	allowmissinginit       = fs.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
-	debug                  = fs.Bool("debug", false, "display debug information")
-	hexdump                = fs.Bool("hexdump-http", false, "dump HTTP request/response as hex")
-	flagWaitForConnections = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
-	writeincomplete        = fs.Bool("writeincomplete", false, "write incomplete response")
-	memprofile             = fs.String("memprofile", "", "write memory profile")
-	flagConnFlushInterval = fs.Int("conn-flush-interval", 10000, "flush connections every X flows")
-	flagConnTimeOut       = fs.Int("conn-timeout", 10, "close connections older than X seconds")
-	flagFlowFlushInterval = fs.Int("flow-flush-interval", 2000, "flush flows every X flows")
-	flagFlowTimeOut       = fs.Int("flow-timeout", 10, "close flows older than X seconds")
-
-	fsmOptions = reassembly.TCPSimpleFSMOptions{
-		SupportMissingEstablishment: *allowmissinginit,
-	}
-}
 
 var reassemblyStats struct {
 	ipdefrag            int
@@ -177,14 +137,14 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 		stream.client = &httpReader{
 			bytes:    make(chan []byte),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
-			hexdump:  *hexdump,
+			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &httpReader{
 			bytes:   make(chan []byte),
 			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
-			hexdump: *hexdump,
+			hexdump: c.HexDump,
 			parent:  stream,
 		}
 
@@ -198,14 +158,14 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 		stream.client = &pop3Reader{
 			bytes:    make(chan []byte),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
-			hexdump:  *hexdump,
+			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &pop3Reader{
 			bytes:   make(chan []byte),
 			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
-			hexdump: *hexdump,
+			hexdump: c.HexDump,
 			parent:  stream,
 		}
 
@@ -291,7 +251,7 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 			t.fsmerr = true
 			reassemblyStats.rejectConnFsm++
 		}
-		if !*ignorefsmerr {
+		if !c.IgnoreFSMerr {
 			return false
 		}
 	}
@@ -300,13 +260,13 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 	if err != nil {
 		logError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
 		reassemblyStats.rejectOpt++
-		if !*nooptcheck {
+		if !c.NoOptCheck {
 			return false
 		}
 	}
 	// Checksum
 	accept := true
-	if *checksum {
+	if c.Checksum {
 		c, err := tcp.ComputeChecksum()
 		if err != nil {
 			logError("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, err)
@@ -361,7 +321,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 	}
 
 	logDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
-	if skip == -1 && *allowmissinginit {
+	if skip == -1 && c.AllowMissingInit {
 		// this is allowed
 	} else if skip != 0 {
 		// Missing bytes in stream: do not even try to parse it
@@ -372,7 +332,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 	data := sg.Fetch(length)
 	if t.isHTTP {
 		if length > 0 {
-			if *hexdump {
+			if c.HexDump {
 				logDebug("Feeding http with:\n%s", hex.Dump(data))
 			}
 			if dir == reassembly.TCPDirClientToServer && !t.reversed {
@@ -434,7 +394,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	errorsMapMutex.Unlock()
 
 	// defrag the IPv4 packet if required
-	if !*nodefrag {
+	if !c.NoDefrag {
 		ip4Layer := packet.Layer(layers.LayerTypeIPv4)
 		if ip4Layer == nil {
 			return
@@ -468,7 +428,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	tcp := packet.Layer(layers.LayerTypeTCP)
 	if tcp != nil {
 		tcp := tcp.(*layers.TCP)
-		if *checksum {
+		if c.Checksum {
 			err := tcp.SetNetworkLayerForChecksum(packet.NetworkLayer())
 			if err != nil {
 				log.Fatalf("Failed to set network layer for checksum: %s\n", err)
@@ -482,7 +442,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	}
 
 	// flush connections in interval
-	if count%*flushevery == 0 {
+	if count%c.FlushEvery == 0 {
 		ref := packet.Metadata().CaptureInfo.Timestamp
 		// flushed, closed :=
 		//fmt.Println("FlushWithOptions")
@@ -518,8 +478,8 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 func CleanupReassembly() {
 
 	// wait for stream reassembly to finish
-	if *flagWaitForConnections {
-		if *debug {
+	if c.WaitForConnections {
+		if c.Debug {
 			fmt.Println("StreamPool:")
 			StreamPool.Dump()
 		}
@@ -528,8 +488,8 @@ func CleanupReassembly() {
 	}
 
 	// create a memory snapshot for debugging
-	if *memprofile != "" {
-		f, err := os.Create(*memprofile)
+	if c.MemProfile != "" {
+		f, err := os.Create(c.MemProfile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -550,15 +510,15 @@ func CleanupReassembly() {
 		// print configuration
 		// print configuration as table
 		tui.Table(os.Stdout, []string{"TCP Reassembly Setting", "Value"}, [][]string{
-			{"FlushEvery", strconv.Itoa(*flushevery)},
+			{"FlushEvery", strconv.Itoa(c.FlushEvery)},
 			{"CloseTimeout", closeTimeout.String()},
 			{"Timeout", timeout.String()},
-			{"AllowMissingInit", strconv.FormatBool(*allowmissinginit)},
-			{"IgnoreFsmErr", strconv.FormatBool(*ignorefsmerr)},
-			{"NoOptCheck", strconv.FormatBool(*nooptcheck)},
-			{"Checksum", strconv.FormatBool(*checksum)},
-			{"NoDefrag", strconv.FormatBool(*nodefrag)},
-			{"WriteIncomplete", strconv.FormatBool(*writeincomplete)},
+			{"AllowMissingInit", strconv.FormatBool(c.AllowMissingInit)},
+			{"IgnoreFsmErr", strconv.FormatBool(c.IgnoreFSMerr)},
+			{"NoOptCheck", strconv.FormatBool(c.NoOptCheck)},
+			{"Checksum", strconv.FormatBool(c.Checksum)},
+			{"NoDefrag", strconv.FormatBool(c.NoDefrag)},
+			{"WriteIncomplete", strconv.FormatBool(c.WriteIncomplete)},
 		})
 
 		fmt.Println() // add a newline
@@ -566,7 +526,7 @@ func CleanupReassembly() {
 		fmt.Println("")
 
 		rows := [][]string{}
-		if !*nodefrag {
+		if !c.NoDefrag {
 			rows = append(rows, []string{"IPdefrag", strconv.Itoa(reassemblyStats.ipdefrag)})
 		}
 		rows = append(rows, []string{"missed bytes", strconv.Itoa(reassemblyStats.missedBytes)})

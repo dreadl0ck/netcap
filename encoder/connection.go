@@ -68,8 +68,8 @@ func (c ConnectionID) String() string {
 
 var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connection", func(d *CustomEncoder) error {
 	connEncoderInstance = d
-	connFlushInterval = int64(*flagConnFlushInterval)
-	connTimeOut = time.Second * time.Duration(*flagConnTimeOut)
+	connFlushInterval = int64(c.ConnFlushInterval)
+	connTimeOut = time.Second * time.Duration(c.ConnTimeOut)
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 

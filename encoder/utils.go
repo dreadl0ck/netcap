@@ -122,19 +122,19 @@ func logError(t string, s string, a ...interface{}) {
 	nb := errorsMap[t]
 	errorsMap[t] = nb + 1
 	errorsMapMutex.Unlock()
-	if *debug {
+	if c.Debug {
 		fmt.Printf(s, a...)
 	}
 }
 
 func logInfo(s string, a ...interface{}) {
-	if *debug {
+	if c.Debug {
 		fmt.Printf(s, a...)
 	}
 }
 
 func logDebug(s string, a ...interface{}) {
-	if *debug {
+	if c.Debug {
 		fmt.Printf(s, a...)
 	}
 }
