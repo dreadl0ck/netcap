@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"github.com/namsral/flag"
 	"fmt"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"io/ioutil"
@@ -37,8 +36,8 @@ import (
 func main() {
 
 	// parse commandline flags
-	flag.Usage = printUsage
-	flag.Parse()
+	fs.Usage = printUsage
+	fs.Parse(os.Args[1:])
 
 	// print version and exit
 	if *flagVersion {

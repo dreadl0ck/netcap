@@ -14,7 +14,6 @@
 package main
 
 import (
-	"github.com/namsral/flag"
 	"fmt"
 	"log"
 	"os"
@@ -26,8 +25,8 @@ import (
 func main() {
 
 	// parse commandline flags
-	flag.Usage = printUsage
-	flag.Parse()
+	fs.Usage = printUsage
+	fs.Parse(os.Args[1:])
 
 	// print version and exit
 	if *flagVersion {
