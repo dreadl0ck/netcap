@@ -14,8 +14,8 @@
 package main
 
 import (
-	"github.com/namsral/flag"
 	"fmt"
+	"github.com/namsral/flag"
 	"os"
 	"os/signal"
 	"syscall"

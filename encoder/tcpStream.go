@@ -46,12 +46,16 @@ package encoder
 
 import (
 	"encoding/hex"
-	"github.com/namsral/flag"
 	"fmt"
 	"github.com/dreadl0ck/gopacket/ip4defrag"
+	"github.com/evilsocket/islazy/tui"
+	"github.com/namsral/flag"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
+	"runtime/pprof"
+	"strconv"
 	"sync"
 	"time"
 
@@ -64,7 +68,7 @@ import (
 
 // flags
 var (
-	flushevery       = flag.Int("flushevery", 100, "flush assembler every N packets")
+	flushevery = flag.Int("flushevery", 100, "flush assembler every N packets")
 	//flagCloseTimeOut = flag.Int("tcp-close-timeout", 60, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
 	//flagTimeOut      = flag.Int("tcp-timeout", 60, "close streams waiting for packets older than X seconds")
 
@@ -74,18 +78,19 @@ var (
 	ignorefsmerr     = flag.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
 	allowmissinginit = flag.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
 
-	debug   = flag.Bool("debug", false, "display debug information")
-	hexdump = flag.Bool("hexdump-http", false, "dump HTTP request/response as hex")
+	debug                  = flag.Bool("debug", false, "display debug information")
+	hexdump                = flag.Bool("hexdump-http", false, "dump HTTP request/response as hex")
+	flagWaitForConnections = flag.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
 
 	writeincomplete = flag.Bool("writeincomplete", false, "write incomplete response")
 	memprofile      = flag.String("memprofile", "", "write memory profile")
 
-	numErrors   uint
-	requests    = 0
-	responses   = 0
-	mu          sync.Mutex
+	numErrors uint
+	requests  = 0
+	responses = 0
+	mu        sync.Mutex
 
-	closeTimeout time.Duration = time.Hour * 24 // time.Duration(*flagCloseTimeOut) // Closing inactive
+	closeTimeout time.Duration = time.Hour * 24   // time.Duration(*flagCloseTimeOut) // Closing inactive
 	timeout      time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
 
 	defragger     = ip4defrag.NewIPv4Defragmenter()
@@ -125,7 +130,7 @@ var reassemblyStats struct {
  */
 
 type tcpStreamFactory struct {
-	wg     sync.WaitGroup
+	wg         sync.WaitGroup
 	decodeHTTP bool
 	decodePOP3 bool
 }
@@ -473,5 +478,88 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 	case <-time.After(5 * time.Second):
 		fmt.Println("HTTP AssembleWithContext timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
 		fmt.Println(assembler.Dump())
+	}
+}
+
+func CleanupReassembly() {
+
+	// wait for stream reassembly to finish
+	if *flagWaitForConnections {
+		if *debug {
+			fmt.Println("StreamPool:")
+			StreamPool.Dump()
+		}
+		fmt.Println("waiting for last streams to finish or time-out, timeout:", timeout)
+		streamFactory.WaitGoRoutines()
+	}
+
+	// create a memory snapshot for debugging
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("failed to write heap profile:", err)
+		}
+		if err := f.Close(); err != nil {
+			log.Fatal("failed to close heap profile file:", err)
+		}
+	}
+
+	// print stats if not quiet
+	if !Quiet {
+		errorsMapMutex.Lock()
+		fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
+		errorsMapMutex.Unlock()
+
+		// print configuration
+		// print configuration as table
+		tui.Table(os.Stdout, []string{"TCP Reassembly Setting", "Value"}, [][]string{
+			{"FlushEvery", strconv.Itoa(*flushevery)},
+			{"CloseTimeout", closeTimeout.String()},
+			{"Timeout", timeout.String()},
+			{"AllowMissingInit", strconv.FormatBool(*allowmissinginit)},
+			{"IgnoreFsmErr", strconv.FormatBool(*ignorefsmerr)},
+			{"NoOptCheck", strconv.FormatBool(*nooptcheck)},
+			{"Checksum", strconv.FormatBool(*checksum)},
+			{"NoDefrag", strconv.FormatBool(*nodefrag)},
+			{"WriteIncomplete", strconv.FormatBool(*writeincomplete)},
+		})
+
+		fmt.Println() // add a newline
+		printProgress(1, 1)
+		fmt.Println("")
+
+		rows := [][]string{}
+		if !*nodefrag {
+			rows = append(rows, []string{"IPdefrag", strconv.Itoa(reassemblyStats.ipdefrag)})
+		}
+		rows = append(rows, []string{"missed bytes", strconv.Itoa(reassemblyStats.missedBytes)})
+		rows = append(rows, []string{"total packets", strconv.Itoa(reassemblyStats.pkt)})
+		rows = append(rows, []string{"rejected FSM", strconv.Itoa(reassemblyStats.rejectFsm)})
+		rows = append(rows, []string{"rejected Options", strconv.Itoa(reassemblyStats.rejectOpt)})
+		rows = append(rows, []string{"reassembled bytes", strconv.Itoa(reassemblyStats.sz)})
+		rows = append(rows, []string{"total TCP bytes", strconv.Itoa(reassemblyStats.totalsz)})
+		rows = append(rows, []string{"conn rejected FSM", strconv.Itoa(reassemblyStats.rejectConnFsm)})
+		rows = append(rows, []string{"reassembled chunks", strconv.Itoa(reassemblyStats.reassembled)})
+		rows = append(rows, []string{"out-of-order packets", strconv.Itoa(reassemblyStats.outOfOrderPackets)})
+		rows = append(rows, []string{"out-of-order bytes", strconv.Itoa(reassemblyStats.outOfOrderBytes)})
+		rows = append(rows, []string{"biggest-chunk packets", strconv.Itoa(reassemblyStats.biggestChunkPackets)})
+		rows = append(rows, []string{"biggest-chunk bytes", strconv.Itoa(reassemblyStats.biggestChunkBytes)})
+		rows = append(rows, []string{"overlap packets", strconv.Itoa(reassemblyStats.overlapPackets)})
+		rows = append(rows, []string{"overlap bytes", strconv.Itoa(reassemblyStats.overlapBytes)})
+
+		tui.Table(os.Stdout, []string{"TCP Stat", "Value"}, rows)
+
+		if numErrors != 0 {
+			rows = [][]string{}
+			for e := range errorsMap {
+				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
+			}
+			tui.Table(os.Stdout, []string{"Error Subject", "Count"}, rows)
+		}
+
+		fmt.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
 	}
 }
