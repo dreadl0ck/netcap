@@ -68,17 +68,22 @@ import (
 
 // flags
 var (
-	flushevery             = flag.Int("flushevery", 100, "flush assembler every N packets")
-	nodefrag               = flag.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
-	checksum               = flag.Bool("checksum", false, "check TCP checksum")
-	nooptcheck             = flag.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
-	ignorefsmerr           = flag.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
-	allowmissinginit       = flag.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
-	debug                  = flag.Bool("debug", false, "display debug information")
-	hexdump                = flag.Bool("hexdump-http", false, "dump HTTP request/response as hex")
-	flagWaitForConnections = flag.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
-	writeincomplete        = flag.Bool("writeincomplete", false, "write incomplete response")
-	memprofile             = flag.String("memprofile", "", "write memory profile")
+	// TODO: add these to encoder config?
+	flushevery             *int
+	nodefrag               *bool
+	checksum               *bool
+	nooptcheck             *bool
+	ignorefsmerr           *bool
+	allowmissinginit       *bool
+	debug                  *bool
+	hexdump                *bool
+	flagWaitForConnections *bool
+	writeincomplete        *bool
+	memprofile             *string
+	flagConnFlushInterval  *int
+	flagConnTimeOut        *int
+	flagFlowFlushInterval  *int
+	flagFlowTimeOut        *int
 
 	closeTimeout   time.Duration = time.Hour * 24   // time.Duration(*flagCloseTimeOut) // Closing inactive
 	timeout        time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
@@ -96,6 +101,28 @@ var (
 	errorsMapMutex sync.Mutex
 	FileStorage    string
 )
+
+func SetFlags(fs *flag.FlagSet) {
+	flushevery             = fs.Int("flushevery", 100, "flush assembler every N packets")
+	nodefrag               = fs.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
+	checksum               = fs.Bool("checksum", false, "check TCP checksum")
+	nooptcheck             = fs.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
+	ignorefsmerr           = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
+	allowmissinginit       = fs.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
+	debug                  = fs.Bool("debug", false, "display debug information")
+	hexdump                = fs.Bool("hexdump-http", false, "dump HTTP request/response as hex")
+	flagWaitForConnections = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
+	writeincomplete        = fs.Bool("writeincomplete", false, "write incomplete response")
+	memprofile             = fs.String("memprofile", "", "write memory profile")
+	flagConnFlushInterval = fs.Int("conn-flush-interval", 10000, "flush connections every X flows")
+	flagConnTimeOut       = fs.Int("conn-timeout", 10, "close connections older than X seconds")
+	flagFlowFlushInterval = fs.Int("flow-flush-interval", 2000, "flush flows every X flows")
+	flagFlowTimeOut       = fs.Int("flow-timeout", 10, "close flows older than X seconds")
+
+	fsmOptions = reassembly.TCPSimpleFSMOptions{
+		SupportMissingEstablishment: *allowmissinginit,
+	}
+}
 
 var reassemblyStats struct {
 	ipdefrag            int
@@ -126,7 +153,8 @@ type tcpStreamFactory struct {
 }
 
 var fsmOptions = reassembly.TCPSimpleFSMOptions{
-	SupportMissingEstablishment: *allowmissinginit,
+	// TODO:
+	//SupportMissingEstablishment: *allowmissinginit,
 }
 
 func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {

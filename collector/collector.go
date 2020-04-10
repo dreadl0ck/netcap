@@ -16,7 +16,6 @@ package collector
 
 import (
 	"bufio"
-	"github.com/namsral/flag"
 	"fmt"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
@@ -42,9 +41,6 @@ import (
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 )
-
-var flagFreeOSMemory = flag.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
-var outDirPermissionDefault = 0755
 
 // Collector provides an interface to collect data from PCAP or a network interface.
 type Collector struct {
@@ -120,7 +116,7 @@ func (c *Collector) stopWorkers() {
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup() {
 
-	if *flagReassembleConnections {
+	if c.config.ReassembleConnections {
 		// teardown the TCP stream reassembly and print stats
 		encoder.CleanupReassembly()
 	}
@@ -410,8 +406,8 @@ func (c *Collector) Init() (err error) {
 	// handle signal for a clean exit
 	c.handleSignals()
 
-	if *flagFreeOSMemory != 0 {
-		fmt.Println("will free the OS memory every", *flagFreeOSMemory, "minutes")
+	if c.config.FreeOSMem != 0 {
+		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
 		go c.FreeOSMemory()
 	}
 
@@ -430,7 +426,7 @@ func (c *Collector) GetNumPackets() int64 {
 func (c *Collector) FreeOSMemory() {
 	for {
 		select {
-		case <-time.After(time.Duration(*flagFreeOSMemory) * time.Minute):
+		case <-time.After(time.Duration(c.config.FreeOSMem) * time.Minute):
 			debug.FreeOSMemory()
 		}
 	}

@@ -20,21 +20,25 @@ import (
 	"os"
 )
 
+var outDirPermissionDefault = 0755
+
 // Config contains configuration parameters
 // for the Collector instance.
 type Config struct {
-	Live                bool
-	WriteUnknownPackets bool
-	Workers             int
-	PacketBufferSize    int
-	SnapLen             int
-	Promisc             bool
-	EncoderConfig       encoder.Config
-	BaseLayer           gopacket.LayerType
-	DecodeOptions       gopacket.DecodeOptions
-	FileStorage         string
-	Quiet               bool
-	DPI                 bool
-	ResolverConfig      resolvers.Config
-	OutDirPermission    os.FileMode
+	Live                  bool
+	WriteUnknownPackets   bool
+	Workers               int
+	PacketBufferSize      int
+	SnapLen               int
+	Promisc               bool
+	EncoderConfig         encoder.Config
+	BaseLayer             gopacket.LayerType
+	DecodeOptions         gopacket.DecodeOptions
+	FileStorage           string
+	Quiet                 bool
+	DPI                   bool
+	ResolverConfig        resolvers.Config
+	OutDirPermission      os.FileMode
+	FreeOSMem             int
+	ReassembleConnections bool
 }

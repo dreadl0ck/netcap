@@ -2,26 +2,17 @@ package transform
 
 import (
 	"github.com/namsral/flag"
-	"fmt"
-	"github.com/dreadl0ck/netcap"
 	"log"
 	"os"
 )
 
 var (
-	flagVersion = flag.Bool("version", false, "print version and exit")
 	outDirPermission os.FileMode = 0755
 )
 
 func Run() {
 
 	flag.Parse()
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
-	}
 
 	if len(os.Args) < 2 {
 		log.Fatal("expecting transform name")

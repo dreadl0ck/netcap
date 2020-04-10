@@ -14,7 +14,6 @@
 package export
 
 import (
-	"github.com/namsral/flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -43,7 +42,7 @@ func printHeader() {
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }
 
 func exportDir(path string) {

@@ -24,12 +24,6 @@ func GetDeviceProfilesWithDPI() {
 		inputFile = lt.Values["path"]
 	)
 
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
-	}
-
 	// redirect stdout filedescriptor to stderr
 	// since all stdout get interpreted as XML from maltego
 	stdout := os.Stdout

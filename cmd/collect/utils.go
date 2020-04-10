@@ -15,7 +15,6 @@ package collect
 
 import (
 	"fmt"
-	"github.com/namsral/flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -35,7 +34,7 @@ func printHeader() {
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }
 
 func cleanup() {

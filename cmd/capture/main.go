@@ -32,6 +32,8 @@ import (
 
 func Run() {
 
+	encoder.SetFlags(fs)
+
 	// parse commandline flags
 	fs.Usage = printUsage
 	fs.Parse(os.Args[2:])
@@ -114,16 +116,19 @@ func Run() {
 
 	// init collector
 	c := collector.New(collector.Config{
-		Live:                live,
-		Workers:             *flagWorkers,
-		PacketBufferSize:    *flagPacketBuffer,
-		WriteUnknownPackets: !*flagIgnoreUnknown,
-		Promisc:             *flagPromiscMode,
-		SnapLen:             *flagSnapLen,
-		BaseLayer:           utils.GetBaseLayer(*flagBaseLayer),
-		DecodeOptions:       utils.GetDecodeOptions(*flagDecodeOptions),
-		FileStorage:         *flagFileStorage,
-		Quiet:               *flagQuiet,
+		Live:                  live,
+		Workers:               *flagWorkers,
+		PacketBufferSize:      *flagPacketBuffer,
+		WriteUnknownPackets:   !*flagIgnoreUnknown,
+		Promisc:               *flagPromiscMode,
+		SnapLen:               *flagSnapLen,
+		BaseLayer:             utils.GetBaseLayer(*flagBaseLayer),
+		DecodeOptions:         utils.GetDecodeOptions(*flagDecodeOptions),
+		FileStorage:           *flagFileStorage,
+		Quiet:                 *flagQuiet,
+		DPI:                   *flagDPI,
+		ReassembleConnections: *flagReassembleConnections,
+		FreeOSMem:             *flagFreeOSMemory,
 		EncoderConfig: encoder.Config{
 			Buffer:          *flagBuffer,
 			Compression:     *flagCompress,
@@ -139,14 +144,13 @@ func Run() {
 			MemBufferSize:   *flagMemBufferSize,
 		},
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:      *flagReverseDNS,
-			LocalDNS:        *flagLocalDNS,
-			MACDB:           *flagMACDB,
-			Ja3DB:           *flagJa3DB,
-			ServiceDB:       *flagServiceDB,
-			GeolocationDB:   *flagGeolocationDB,
+			ReverseDNS:    *flagReverseDNS,
+			LocalDNS:      *flagLocalDNS,
+			MACDB:         *flagMACDB,
+			Ja3DB:         *flagJa3DB,
+			ServiceDB:     *flagServiceDB,
+			GeolocationDB: *flagGeolocationDB,
 		},
-		DPI: *flagDPI,
 	})
 
 	c.PrintConfiguration()

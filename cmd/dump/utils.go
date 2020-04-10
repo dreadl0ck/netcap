@@ -1,7 +1,6 @@
 package dump
 
 import (
-	"github.com/namsral/flag"
 	"fmt"
 
 	"github.com/dreadl0ck/netcap"
@@ -20,5 +19,5 @@ func printHeader() {
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }

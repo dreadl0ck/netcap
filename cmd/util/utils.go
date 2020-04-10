@@ -14,7 +14,6 @@
 package util
 
 import (
-	"github.com/namsral/flag"
 	"fmt"
 	"log"
 	"os/exec"
@@ -39,7 +38,7 @@ func printHeader() {
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }
 
 // CheckFields checks if the separator occurs inside fields of audit records
