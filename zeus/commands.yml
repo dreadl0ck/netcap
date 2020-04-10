@@ -21,66 +21,14 @@ commands:
     ## Install all
     ##
 
+    ## linker flags
+    #   -w	disable DWARF generation
+    #   -s	disable symbol table
     install:
         description: install netcap and netlabel to $PATH
         buildNumber: true
         help: Installs the applications to the default system location
-        dependencies:
-            - net.capture
-            - net.label
-            - net.collect
-            - net.agent
-            - net.proxy
-            - net.export
-            - net.dump
-            - net.util
-            - net.transform
-        exec: echo done
-
-    ## Compile Framework Components
-    ##
-
-    ## linker flags
-    #   -w	disable DWARF generation
-    #   -s	disable symbol table
-
-    net.capture:
-        description: compile net.capture binary to $GOPATH/bin
-        buildNumber: true
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.capture -i github.com/dreadl0ck/netcap/cmd/capture
-
-    net.label:
-        description: compile net.label binary to $GOPATH/bin
-        buildNumber: true
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.label -i github.com/dreadl0ck/netcap/cmd/label
-
-    net.agent:
-        description: compile net.agent binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.agent -i github.com/dreadl0ck/netcap/cmd/agent
-
-    net.collect:
-        description: compile net.collect binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.collect -i github.com/dreadl0ck/netcap/cmd/collect
-
-    net.proxy:
-        description: compile net.proxy binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
-    
-    net.export:
-        description: compile net.export binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.export -i github.com/dreadl0ck/netcap/cmd/export
-
-    net.dump:
-        description: compile net.dump binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.dump -i github.com/dreadl0ck/netcap/cmd/dump
-
-    net.util:
-        description: compile net.util binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.util -i github.com/dreadl0ck/netcap/cmd/util
-
-    net.transform:
-        description: compile net.transform binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o /usr/local/bin/net.transform -i github.com/dreadl0ck/netcap/cmd/transform
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net -i github.com/dreadl0ck/netcap/cmd
 
     ## Debug Builds
     ##

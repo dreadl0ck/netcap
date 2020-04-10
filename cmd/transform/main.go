@@ -1,4 +1,4 @@
-package main
+package transform
 
 import (
 	"github.com/namsral/flag"
@@ -13,7 +13,7 @@ var (
 	outDirPermission os.FileMode = 0755
 )
 
-func main() {
+func Run() {
 
 	flag.Parse()
 

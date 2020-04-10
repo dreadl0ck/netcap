@@ -18,7 +18,7 @@
 - improve tests & allow tests to execute concurrently
 - net.split: split pcap files by days or hours
 - add tests for POP3 parsing
-- multiple flag.FlagSets instead of cobra for sub commands?
+- capture unknown L7 protocol TCP streams and write to disk
 
 ## Maltego Plugin
 

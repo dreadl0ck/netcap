@@ -11,10 +11,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package dump
 
 import (
-	"github.com/namsral/flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,11 +27,11 @@ import (
 	"github.com/mgutz/ansi"
 )
 
-func main() {
+func Run() {
 
 	// parse commandline flags
-	flag.Usage = printUsage
-	flag.Parse()
+	fs.Usage = printUsage
+	fs.Parse(os.Args[2:])
 
 	// print version and exit
 	if *flagVersion {
