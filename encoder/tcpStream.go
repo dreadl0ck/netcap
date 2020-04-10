@@ -236,8 +236,8 @@ type tcpStream struct {
 
 	firstPacket time.Time
 
-	requests  []*http.Request
-	responses []*http.Response
+	requests  []*httpRequest
+	responses []*httpResponse
 
 	pop3Requests  []*types.POP3Request
 	pop3Responses []*types.POP3Response
@@ -246,6 +246,20 @@ type tcpStream struct {
 	last bool
 
 	sync.Mutex
+}
+
+type httpRequest struct {
+	request *http.Request
+	timestamp string
+	clientIP string
+	serverIP string
+}
+
+type httpResponse struct {
+	response *http.Response
+	timestamp string
+	clientIP string
+	serverIP string
 }
 
 func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
