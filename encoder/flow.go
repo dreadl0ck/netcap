@@ -14,7 +14,6 @@
 package encoder
 
 import (
-	"github.com/namsral/flag"
 	"fmt"
 	"log"
 	"sync"
@@ -45,9 +44,6 @@ var (
 	}
 	flowEncoderInstance *CustomEncoder
 	flows               int64
-
-	flagFlowFlushInterval = flag.Int("flow-flush-interval", 2000, "flush flows every X flows")
-	flagFlowTimeOut       = flag.Int("flow-timeout", 10, "close flows older than X seconds")
 
 	flowFlushInterval int64
 	flowTimeOut       time.Duration

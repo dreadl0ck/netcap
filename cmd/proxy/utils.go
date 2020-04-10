@@ -15,7 +15,6 @@ package proxy
 
 import (
 	"bytes"
-	"github.com/namsral/flag"
 	"fmt"
 	gzip "github.com/klauspost/pgzip"
 	"io/ioutil"
@@ -44,7 +43,7 @@ func printHeader() {
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }
 
 // cleanup when receiving OS signals
