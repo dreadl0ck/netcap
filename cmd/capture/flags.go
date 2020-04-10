@@ -15,52 +15,54 @@ package main
 
 import (
 	"github.com/namsral/flag"
+	"os"
 )
 
 var (
-	flagInput  = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
-	flagOutDir = flag.String("out", "", "specify output directory, will be created if it does not exist")
+	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagInput  = fs.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagOutDir = fs.String("out", "", "specify output directory, will be created if it does not exist")
 
-	flagBPF = flag.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
+	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 
-	flagInclude = flag.String("include", "", "include specific encoders")
-	flagExclude = flag.String("exclude", "LinkFlow,NetworkFlow,TransportFlow", "exclude specific encoders")
+	flagInclude = fs.String("include", "", "include specific encoders")
+	flagExclude = fs.String("exclude", "LinkFlow,NetworkFlow,TransportFlow", "exclude specific encoders")
 
-	flagEncoders              = flag.Bool("encoders", false, "show all available encoders")
-	flagPrintProtocolOverview = flag.Bool("overview", false, "print a list of all available encoders and fields")
+	flagEncoders              = fs.Bool("encoders", false, "show all available encoders")
+	flagPrintProtocolOverview = fs.Bool("overview", false, "print a list of all available encoders and fields")
 
-	flagInterface    = flag.String("iface", "", "attach to network interface and capture in live mode")
-	flagCompress     = flag.Bool("comp", true, "compress output with gzip")
-	flagBuffer       = flag.Bool("buf", true, "buffer data in memory before writing to disk")
-	flagWorkers      = flag.Int("workers", 12, "number of workers")
-	flagPacketBuffer = flag.Int("pbuf", 100, "set packet buffer size, for channels that feed data to workers")
+	flagInterface    = fs.String("iface", "", "attach to network interface and capture in live mode")
+	flagCompress     = fs.Bool("comp", true, "compress output with gzip")
+	flagBuffer       = fs.Bool("buf", true, "buffer data in memory before writing to disk")
+	flagWorkers      = fs.Int("workers", 12, "number of workers")
+	flagPacketBuffer = fs.Int("pbuf", 100, "set packet buffer size, for channels that feed data to workers")
 
-	flagCPUProfile    = flag.Bool("cpuprof", false, "create cpu profile")
-	flagMemProfile    = flag.Bool("memprof", false, "create memory profile")
-	flagIgnoreUnknown = flag.Bool("ignore-unknown", true, "disable writing unknown packets into a pcap file")
-	flagPromiscMode   = flag.Bool("promisc", true, "toggle promiscous mode for live capture")
-	flagSnapLen       = flag.Int("snaplen", 1514, "configure snaplen for live capture from interface")
+	flagCPUProfile    = fs.Bool("cpuprof", false, "create cpu profile")
+	flagMemProfile    = fs.Bool("memprof", false, "create memory profile")
+	flagIgnoreUnknown = fs.Bool("ignore-unknown", true, "disable writing unknown packets into a pcap file")
+	flagPromiscMode   = fs.Bool("promisc", true, "toggle promiscous mode for live capture")
+	flagSnapLen       = fs.Int("snaplen", 1514, "configure snaplen for live capture from interface")
 
-	flagVersion = flag.Bool("version", false, "print netcap package version and exit")
+	flagVersion = fs.Bool("version", false, "print netcap package version and exit")
 
-	flagBaseLayer     = flag.String("base", "ethernet", "select base layer")
-	flagDecodeOptions = flag.String("opts", "datagrams", "select decoding options")
-	flagPayload       = flag.Bool("payload", false, "capture payload for supported layers")
+	flagBaseLayer     = fs.String("base", "ethernet", "select base layer")
+	flagDecodeOptions = fs.String("opts", "datagrams", "select decoding options")
+	flagPayload       = fs.Bool("payload", false, "capture payload for supported layers")
 
-	flagCSV     = flag.Bool("csv", false, "output data as CSV instead of audit records")
-	flagContext = flag.Bool("context", true, "add packet flow context to selected audit records")
+	flagCSV     = fs.Bool("csv", false, "output data as CSV instead of audit records")
+	flagContext = fs.Bool("context", true, "add packet flow context to selected audit records")
 
-	flagMemBufferSize  = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
-	flagListInterfaces = flag.Bool("interfaces", false, "list all visible network interfaces")
-	flagQuiet          = flag.Bool("quiet", false, "don't print infos to stdout")
+	flagMemBufferSize  = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagListInterfaces = fs.Bool("interfaces", false, "list all visible network interfaces")
+	flagQuiet          = fs.Bool("quiet", false, "don't print infos to stdout")
 
-	flagFileStorage     = flag.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
+	flagFileStorage = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
 
-	flagReverseDNS = flag.Bool("reverse-dns", false, "resolve ips to domains via the operating systems default dns resolver")
-	flagLocalDNS = flag.Bool("local-dns", false, "resolve DNS locally via hosts file in the database dir")
-	flagMACDB = flag.Bool("macDB", false, "use mac to vendor database for device profiling")
-	flagJa3DB = flag.Bool("ja3DB", false, "use ja3 database for device profiling")
-	flagServiceDB = flag.Bool("serviceDB", false, "use serviceDB for device profiling")
-	flagGeolocationDB = flag.Bool("geoDB", false, "use geolocation for device profiling")
-	flagDPI = flag.Bool("dpi", false, "use DPI for device profiling")
+	flagReverseDNS    = fs.Bool("reverse-dns", false, "resolve ips to domains via the operating systems default dns resolver")
+	flagLocalDNS      = fs.Bool("local-dns", false, "resolve DNS locally via hosts file in the database dir")
+	flagMACDB         = fs.Bool("macDB", false, "use mac to vendor database for device profiling")
+	flagJa3DB         = fs.Bool("ja3DB", false, "use ja3 database for device profiling")
+	flagServiceDB     = fs.Bool("serviceDB", false, "use serviceDB for device profiling")
+	flagGeolocationDB = fs.Bool("geoDB", false, "use geolocation for device profiling")
+	flagDPI           = fs.Bool("dpi", false, "use DPI for device profiling")
 )

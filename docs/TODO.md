@@ -12,7 +12,7 @@
 
 ## Cleanup
 
-- flags add NC prefix
+- rename r flag to read?
 - cleanup manually replace commas
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log
