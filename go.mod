@@ -6,7 +6,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1
 	github.com/dreadl0ck/go-dpi v0.0.0-20200323103802-cdd83391c430
-	github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7
+	github.com/dreadl0ck/gopacket v1.1.16-0.20200410204328-bfc6a8c7d16d
 	github.com/dreadl0ck/ja3 v0.0.0-20200304224509-12b029112c9e
 	github.com/dreadl0ck/tlsx v0.0.0-20200319094332-919ca4aee420
 	github.com/dustin/go-humanize v1.0.0
