@@ -42,8 +42,7 @@ available subcommands:
   > help          display this help
 
 usage: ./net <subcommand> [flags]
-or: ./net <subcommand> [-h] to get help for the subcommand
-`)
+or: ./net <subcommand> [-h] to get help for the subcommand`)
 os.Exit(0)
 }
 
