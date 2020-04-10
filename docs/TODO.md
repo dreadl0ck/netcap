@@ -12,13 +12,13 @@
 
 ## Cleanup
 
-- dont wait for last streams to finish or time-out
+- flags add NC prefix
+- cleanup manually replace commas
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log
 - check TODOs in source
 - improve tests & allow tests to execute concurrently
 - net.split: split pcap files by days or hours
-- broadcast address: mark as part of the internal network?
 - add tests for POP3 parsing
 - flag.FlagSet instead of cobra for sub commands?
 

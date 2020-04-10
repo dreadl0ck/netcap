@@ -25,9 +25,5 @@ var pop3Encoder = CreateCustomEncoder(types.Type_NC_POP3, "POP3", func(d *Custom
 }, func(packet gopacket.Packet) proto.Message {
 	return nil
 }, func(e *CustomEncoder) error {
-
-	// de-init: finishes processing
-	// and prints statistics
-
 	return nil
 })

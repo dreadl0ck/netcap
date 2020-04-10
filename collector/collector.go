@@ -120,6 +120,11 @@ func (c *Collector) stopWorkers() {
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup() {
 
+	if *flagReassembleConnections {
+		// teardown the TCP stream reassembly and print stats
+		encoder.CleanupReassembly()
+	}
+
 	c.statMutex.Lock()
 	c.wg.Wait()
 	c.statMutex.Unlock()
