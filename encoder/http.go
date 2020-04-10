@@ -39,19 +39,19 @@ var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *Custom
  */
 
 // set HTTP request on types.HTTP
-func setRequest(h *types.HTTP, req *http.Request) {
+func setRequest(h *types.HTTP, req *httpRequest) {
 
 	// set basic info
-	h.Timestamp = req.Header.Get("netcap-ts")
-	h.Proto = req.Proto
-	h.Method = req.Method
-	h.Host = req.Host
-	h.ReqContentLength = int32(req.ContentLength)
-	h.ReqContentEncoding = req.Header.Get("Content-Encoding")
-	h.ContentType = req.Header.Get("Content-Type")
-	h.RequestHeader = readHeader(req.Header)
+	h.Timestamp = req.timestamp
+	h.Proto = req.request.Proto
+	h.Method = req.request.Method
+	h.Host = req.request.Host
+	h.ReqContentLength = int32(req.request.ContentLength)
+	h.ReqContentEncoding = req.request.Header.Get("Content-Encoding")
+	h.ContentType = req.request.Header.Get("Content-Type")
+	h.RequestHeader = readHeader(req.request.Header)
 
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := ioutil.ReadAll(req.request.Body)
 	if err == nil {
 		h.ContentTypeDetected = http.DetectContentType(body)
 
@@ -68,17 +68,21 @@ func setRequest(h *types.HTTP, req *http.Request) {
 	}
 
 	// manually replace commas, to avoid breaking them the CSV
-	// use the -check flag to validate the generated CSV output and find errors quickly
-	h.UserAgent = strings.Replace(req.UserAgent(), ",", "(comma)", -1)
-	h.Referer = strings.Replace(req.Referer(), ",", "(comma)", -1)
-	h.URL = strings.Replace(req.URL.String(), ",", "(comma)", -1)
+	// use the -check flag to validate the generated CSV output and find errors quickly if other fields slipped through
+	h.UserAgent = removeCommas(req.request.UserAgent())
+	h.Referer = removeCommas(req.request.Referer())
+	h.URL = removeCommas(req.request.URL.String())
 
 	// retrieve ip addresses set on the request while processing
-	h.SrcIP = req.Header.Get("netcap-clientip")
-	h.DstIP = req.Header.Get("netcap-serverip")
+	h.SrcIP = req.clientIP
+	h.DstIP = req.serverIP
 
-	h.ReqCookies = readCookies(req.Cookies())
-	h.Parameters = readParameters(req.Form)
+	h.ReqCookies = readCookies(req.request.Cookies())
+	h.Parameters = readParameters(req.request.Form)
+}
+
+func removeCommas(s string) string {
+	return strings.Replace(s, ",", "(comma)", -1)
 }
 
 func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {

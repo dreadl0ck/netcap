@@ -127,16 +127,21 @@ func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 		for _, res := range h.parent.responses {
 
 			// populate types.HTTP with all infos from response
-			ht := newHTTPFromResponse(res)
+			ht := newHTTPFromResponse(res.response)
 
-			_ = h.findRequest(res, s2c)
+			_ = h.findRequest(res.response, s2c)
 
 			atomic.AddInt64(&httpEncoder.numResponses, 1)
 
 			// now add request information
-			if res.Request != nil {
+			if res.response.Request != nil {
 				atomic.AddInt64(&httpEncoder.numRequests, 1)
-				setRequest(ht, res.Request)
+				setRequest(ht, &httpRequest{
+					request:res.response.Request,
+					timestamp: res.timestamp,
+					clientIP: res.clientIP,
+					serverIP: res.serverIP,
+				})
 			} else {
 				// response without matching request
 				// dont add to output for now
@@ -269,7 +274,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	mu.Unlock()
 
 	h.parent.Lock()
-	h.parent.responses = append(h.parent.responses, res)
+	h.parent.responses = append(h.parent.responses, &httpResponse{response:res})
 	h.parent.Unlock()
 
 	// write responses to disk if configured
@@ -294,10 +299,10 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 			req := h.parent.requests[numResponses-1]
 			h.parent.Unlock()
 			if req != nil {
-				name = path.Base(req.URL.Path)
-				source += " from " + req.URL.Path
-				host = req.Host
-				ctype = strings.Join(req.Header["Content-Type"], " ")
+				name = path.Base(req.request.URL.Path)
+				source += " from " + req.request.URL.Path
+				host = req.request.Host
+				ctype = strings.Join(req.request.Header["Content-Type"], " ")
 			}
 		}
 
@@ -319,7 +324,7 @@ func (h *httpReader) findRequest(res *http.Response, s2c Connection) string {
 	h.parent.Lock()
 	if len(h.parent.requests) != 0 {
 		// take the request from the parent stream and delete it from there
-		req, h.parent.requests = h.parent.requests[0], h.parent.requests[1:]
+		req, h.parent.requests = h.parent.requests[0].request, h.parent.requests[1:]
 		reqURL = req.URL.String()
 	}
 	h.parent.Unlock()
@@ -646,11 +651,12 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 
 	logInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
 
-	// TODO: create a wrapper struct that contains these fields and keeps a reference to the http.Request
-	// set some infos for netcap on the HTTP request header
-	req.Header.Set("netcap-ts", utils.TimeToString(h.parent.firstPacket))
-	req.Header.Set("netcap-clientip", h.parent.net.Src().String())
-	req.Header.Set("netcap-serverip", h.parent.net.Dst().String())
+	request := &httpRequest{
+		request:req,
+		timestamp: utils.TimeToString(h.parent.firstPacket),
+		clientIP: h.parent.net.Src().String(),
+		serverIP: h.parent.net.Dst().String(),
+	}
 
 	// parse form values
 	req.ParseForm()
@@ -661,7 +667,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	mu.Unlock()
 
 	h.parent.Lock()
-	h.parent.requests = append(h.parent.requests, req)
+	h.parent.requests = append(h.parent.requests, request)
 	h.parent.Unlock()
 
 	if req.Method == "POST" {

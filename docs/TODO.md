@@ -12,15 +12,13 @@
 
 ## Cleanup
 
-- rename r flag to read?
-- cleanup manually replace commas
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log
 - check TODOs in source
 - improve tests & allow tests to execute concurrently
 - net.split: split pcap files by days or hours
 - add tests for POP3 parsing
-- flag.FlagSet instead of cobra for sub commands?
+- multiple flag.FlagSets instead of cobra for sub commands?
 
 ## Maltego Plugin
 
@@ -59,6 +57,8 @@
 - check if order of values in maltego list matches the timestamps
 
 ## General
+
+- rename r flag to read?
 
 Reassembly: 2 Options
 1) One assembler per worker + 1 shared connection pool (currently implemented)
