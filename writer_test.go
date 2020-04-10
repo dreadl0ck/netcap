@@ -21,7 +21,7 @@ import (
 func TestWriter(t *testing.T) {
 
 	// create a new writer
-	w := NewWriter("TCP-writer-test", true, true, false, "", false, 1024*1024*10)
+	w := NewWriter("TCP-writer-test", true, true, false, "tests", false, 1024*1024*10)
 
 	var tcps = []*types.TCP{
 		{
