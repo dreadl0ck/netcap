@@ -21,123 +21,76 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/golang/protobuf/proto"
 )
 
-// ExtractTLSHandShake extracts a TLS HandShake from a TCP Packet
-func ExtractTLSHandShake(tcp *layers.TCP) (*tlsx.ClientHello, bool) {
-
-	if tcp.SYN {
-		// Connection setup
-	} else if tcp.FIN {
-		// Connection teardown
-	} else if tcp.ACK && len(tcp.LayerPayload()) == 0 {
-		// Acknowledgement packet
-	} else if tcp.RST {
-		// Unexpected packet
-	} else {
-
-		// invalid length, this is not handled by the tsx package
-		// bail out otherwise there will be a panic
-		if len(tcp.LayerPayload()) < 6 {
-			return nil, false
-		}
-
-		// data packet
-		var (
-			hello = tlsx.ClientHello{}
-			err   = hello.Unmarshal(tcp.LayerPayload())
-		)
-
-		switch err {
-		case nil:
-		case tlsx.ErrHandshakeWrongType:
-			return nil, false
-		default:
-			// Log.WithError(err).Error("failed to read Client Hello")
-			// Log.Debug("Raw Client Hello:", tcp.LayerPayload())
-			return nil, false
-		}
-
-		return &hello, true
-	}
-	return nil, false
-}
-
 var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, func(p gopacket.Packet) proto.Message {
 
-	if tl := p.TransportLayer(); tl != nil {
-		if tl.LayerType() == layers.LayerTypeTCP {
-			tcp := tl.(*layers.TCP)
+	hello := tlsx.GetClientHello(p)
+	if hello != nil {
 
-			// TLS ? extract clientHello
-			if hello, ok := ExtractTLSHandShake(tcp); ok {
+		var (
+			cipherSuites    = make([]int32, len(hello.CipherSuites))
+			compressMethods = make([]int32, len(hello.CompressMethods))
+			signatureAlgs   = make([]int32, len(hello.SignatureAlgs))
+			supportedGroups = make([]int32, len(hello.SupportedGroups))
+			supportedPoints = make([]int32, len(hello.SupportedPoints))
+			extensions      = make([]int32, len(hello.AllExtensions))
+		)
+		for i, v := range hello.CipherSuites {
+			cipherSuites[i] = int32(v)
+		}
+		for i, v := range hello.CompressMethods {
+			compressMethods[i] = int32(v)
+		}
+		for i, v := range hello.SignatureAlgs {
+			signatureAlgs[i] = int32(v)
+		}
+		for i, v := range hello.SupportedGroups {
+			supportedGroups[i] = int32(v)
+		}
+		for i, v := range hello.SupportedPoints {
+			supportedPoints[i] = int32(v)
+		}
+		for i, v := range hello.AllExtensions {
+			extensions[i] = int32(v)
+		}
 
-				var (
-					cipherSuites    = make([]int32, len(hello.CipherSuites))
-					compressMethods = make([]int32, len(hello.CompressMethods))
-					signatureAlgs   = make([]int32, len(hello.SignatureAlgs))
-					supportedGroups = make([]int32, len(hello.SupportedGroups))
-					supportedPoints = make([]int32, len(hello.SupportedPoints))
-					extensions      = make([]int32, len(hello.AllExtensions))
-				)
-				for i, v := range hello.CipherSuites {
-					cipherSuites[i] = int32(v)
-				}
-				for i, v := range hello.CompressMethods {
-					compressMethods[i] = int32(v)
-				}
-				for i, v := range hello.SignatureAlgs {
-					signatureAlgs[i] = int32(v)
-				}
-				for i, v := range hello.SupportedGroups {
-					supportedGroups[i] = int32(v)
-				}
-				for i, v := range hello.SupportedPoints {
-					supportedPoints[i] = int32(v)
-				}
-				for i, v := range hello.AllExtensions {
-					extensions[i] = int32(v)
-				}
+		var (
+			srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
+			dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
+		)
 
-				var (
-					srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
-					dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
-				)
-
-				return &types.TLSClientHello{
-					Timestamp:        utils.TimeToString(p.Metadata().Timestamp),
-					Type:             int32(hello.Type),
-					Version:          int32(hello.Version),
-					MessageLen:       int32(hello.MessageLen),
-					HandshakeType:    int32(hello.HandshakeType),
-					HandshakeLen:     uint32(hello.HandshakeLen),
-					HandshakeVersion: int32(hello.HandshakeVersion),
-					Random:           hello.Random,
-					SessionIDLen:     uint32(hello.SessionIDLen),
-					SessionID:        hello.SessionID,
-					CipherSuiteLen:   int32(hello.CipherSuiteLen),
-					ExtensionLen:     int32(hello.ExtensionLen),
-					SNI:              hello.SNI,
-					OSCP:             hello.OSCP,
-					CipherSuites:     cipherSuites,
-					CompressMethods:  compressMethods,
-					SignatureAlgs:    signatureAlgs,
-					SupportedGroups:  supportedGroups,
-					SupportedPoints:  supportedPoints,
-					ALPNs:            hello.ALPNs,
-					Ja3:              ja3.DigestHexPacket(p),
-					SrcIP:            p.NetworkLayer().NetworkFlow().Src().String(),
-					DstIP:            p.NetworkLayer().NetworkFlow().Dst().String(),
-					SrcMAC:           p.LinkLayer().LinkFlow().Src().String(),
-					DstMAC:           p.LinkLayer().LinkFlow().Dst().String(),
-					SrcPort:          int32(srcPort),
-					DstPort:          int32(dstPort),
-					Extensions:       extensions,
-				}
-			}
+		return &types.TLSClientHello{
+			Timestamp:        utils.TimeToString(p.Metadata().Timestamp),
+			Type:             int32(hello.Type),
+			Version:          int32(hello.Version),
+			MessageLen:       int32(hello.MessageLen),
+			HandshakeType:    int32(hello.HandshakeType),
+			HandshakeLen:     uint32(hello.HandshakeLen),
+			HandshakeVersion: int32(hello.HandshakeVersion),
+			Random:           hello.Random,
+			SessionIDLen:     uint32(hello.SessionIDLen),
+			SessionID:        hello.SessionID,
+			CipherSuiteLen:   int32(hello.CipherSuiteLen),
+			ExtensionLen:     int32(hello.ExtensionLen),
+			SNI:              hello.SNI,
+			OSCP:             hello.OSCP,
+			CipherSuites:     cipherSuites,
+			CompressMethods:  compressMethods,
+			SignatureAlgs:    signatureAlgs,
+			SupportedGroups:  supportedGroups,
+			SupportedPoints:  supportedPoints,
+			ALPNs:            hello.ALPNs,
+			Ja3:              ja3.DigestHex(&hello.ClientHelloBasic),
+			SrcIP:            p.NetworkLayer().NetworkFlow().Src().String(),
+			DstIP:            p.NetworkLayer().NetworkFlow().Dst().String(),
+			SrcMAC:           p.LinkLayer().LinkFlow().Src().String(),
+			DstMAC:           p.LinkLayer().LinkFlow().Dst().String(),
+			SrcPort:          int32(srcPort),
+			DstPort:          int32(dstPort),
+			Extensions:       extensions,
 		}
 	}
 	return nil

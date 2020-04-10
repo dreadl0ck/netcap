@@ -11,9 +11,11 @@
 - document *Timeout funcs for handlePacket, AssembleWithContext and GetProtocols in internals section for debugging
 - custom labeling
 - new protocols
+- JA3s
 
 ## Cleanup
 
+- add ja3s
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log
 - net.split: split pcap files by days or hours
