@@ -7,8 +7,8 @@ require (
 	github.com/dreadl0ck/cryptoutils v0.0.0-20181128171558-7a8d1abd4ff1
 	github.com/dreadl0ck/go-dpi v0.0.0-20200323103802-cdd83391c430
 	github.com/dreadl0ck/gopacket v1.1.16-0.20200410204328-bfc6a8c7d16d
-	github.com/dreadl0ck/ja3 v0.0.0-20200410212430-ca5991d30d58
-	github.com/dreadl0ck/tlsx v0.0.0-20200410212044-9b61cacc90db
+	github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b
+	github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evilsocket/islazy v1.10.4
 	github.com/fatih/color v1.7.0 // indirect

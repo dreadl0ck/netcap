@@ -20,8 +20,12 @@ github.com/dreadl0ck/gopacket v1.1.16-0.20200410204328-bfc6a8c7d16d h1:Ze2okjZsa
 github.com/dreadl0ck/gopacket v1.1.16-0.20200410204328-bfc6a8c7d16d/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
 github.com/dreadl0ck/ja3 v0.0.0-20200410212430-ca5991d30d58 h1:WkbclXp/0YZ5ZSWTFD/KMrFB1tgGCsHMJRcqlluOIbg=
 github.com/dreadl0ck/ja3 v0.0.0-20200410212430-ca5991d30d58/go.mod h1:+yOOM6tJavLqNDMSdfL7VItKhtL9GCbXM6WCR+Ex/wE=
+github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b h1:Ar1YyCBF4cYVhgFzEroRp/JZwEOPZxfBr3YapV9PYZs=
+github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b/go.mod h1:uPPZgPwk6eZmKsZwnZmrezIquSQbAv9d9ARnRKs4RNg=
 github.com/dreadl0ck/tlsx v0.0.0-20200410212044-9b61cacc90db h1:XTAwIjfsFDQGo4z3mQdplToSjWvZU9FHntthpR+g+sQ=
 github.com/dreadl0ck/tlsx v0.0.0-20200410212044-9b61cacc90db/go.mod h1:sBTlLV54BjDf/gqC3YuFIhs5DKslo/BW/M/mHkCkNM4=
+github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b h1:pe6QmegBSU8XHCMF9PI2P+hEhuQYCodbTQluExHmKW4=
+github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b/go.mod h1:sBTlLV54BjDf/gqC3YuFIhs5DKslo/BW/M/mHkCkNM4=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/evilsocket/islazy v1.10.4 h1:Z5373Kn5Gh2EWch1Tb/Qxb6vyQ7lw704bmKi7sY4Ecs=

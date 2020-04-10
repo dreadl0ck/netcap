@@ -95,7 +95,7 @@ func (u TLSClientHello) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
 }
 
-var tlsMetric = prometheus.NewCounterVec(
+var tlsClientMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_TLSClientHello.String()),
 		Help: Type_NC_TLSClientHello.String() + " audit records",
@@ -104,11 +104,11 @@ var tlsMetric = prometheus.NewCounterVec(
 )
 
 func init() {
-	prometheus.MustRegister(tlsMetric)
+	prometheus.MustRegister(tlsClientMetric)
 }
 
 func (a TLSClientHello) Inc() {
-	tlsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	tlsClientMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *TLSClientHello) SetPacketContext(ctx *PacketContext) {
