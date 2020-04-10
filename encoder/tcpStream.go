@@ -112,10 +112,7 @@ type tcpStreamFactory struct {
 	decodePOP3 bool
 }
 
-var fsmOptions = reassembly.TCPSimpleFSMOptions{
-	// TODO:
-	//SupportMissingEstablishment: *allowmissinginit,
-}
+var fsmOptions = reassembly.TCPSimpleFSMOptions{}
 
 func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
