@@ -22,9 +22,9 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.capture -r dump.pcap")
-	fmt.Println("	$ net.capture -iface eth0")
+	fmt.Println("capture tool usage examples:")
+	fmt.Println("	$ net capture -read dump.pcap")
+	fmt.Println("	$ net capture -iface eth0")
 	fmt.Println()
 }
 

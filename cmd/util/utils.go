@@ -28,10 +28,10 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.util -r TCP.ncap.gz -check")
-	fmt.Println("	$ net.util -r TCP.ncap.gz -check -sep '/'")
-	fmt.Println("	$ net.util -ts2utc 1505839354.197231")
+	fmt.Println("util tool usage examples:")
+	fmt.Println("	$ net util -read TCP.ncap.gz -check")
+	fmt.Println("	$ net util -read TCP.ncap.gz -check -sep '/'")
+	fmt.Println("	$ net util -ts2utc 1505839354.197231")
 	fmt.Println()
 }
 
