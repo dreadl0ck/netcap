@@ -14,7 +14,6 @@
 
 ## Cleanup
 
-- allow tests to execute concurrently
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log
 - net.split: split pcap files by days or hours
