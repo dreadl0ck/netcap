@@ -13,9 +13,11 @@
 - new protocols
 - JA3s
 - troubleshooting
+- update usage examples for new syntax
 
 ## Cleanup
 
+- test empty TCP conn over HTTP port (will this lock up the reassembly?)
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log
 - net.split: split pcap files by days or hours
@@ -69,7 +71,7 @@ Reassembly: 2 Options
 
 - add tests for http audit records and compare results with output from urlsnarf
 - implement passive dns hosts mapping generation in netcap
-- test empty TCP conn over HTTP port (will this lock up the reassembly?)
+
 - Application: add timestamps when packets have been seen, currently the first seen timestamp for the asscociated ip profile is repeated
 
 - constconf: generate a configuration with constant values -> compiler can optimize better
