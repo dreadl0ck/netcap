@@ -9,10 +9,11 @@
 - document configuration via environment or file
 - document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
 - document *Timeout funcs for handlePacket, AssembleWithContext and GetProtocols in internals section for debugging
+- custom labeling
+- new protocols
 
 ## Cleanup
 
-- ensure encoder is properly configured for all tools
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log
 - check TODOs in source

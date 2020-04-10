@@ -13,11 +13,16 @@
 
 package encoder
 
+import "github.com/dreadl0ck/gopacket/reassembly"
+
 var c Config
 
 // SetConfig can be used to set a configuration for the package
 func SetConfig(cfg Config) {
 	c = cfg
+	fsmOptions = reassembly.TCPSimpleFSMOptions{
+		SupportMissingEstablishment: c.AllowMissingInit,
+	}
 }
 
 // Config contains configuration parameters

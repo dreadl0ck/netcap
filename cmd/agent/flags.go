@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	fs            = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagInterface = fs.String("iface", "en0", "interface")
 	flagMaxSize   = fs.Int("max", 10*1024, "max size of packet") // max 65,507 bytes
 
@@ -50,4 +50,20 @@ var (
 	flagServiceDB      = fs.Bool("serviceDB", false, "use serviceDB for device profiling")
 	flagGeolocationDB  = fs.Bool("geoDB", false, "use geolocation for device profiling")
 	flagDPI            = fs.Bool("dpi", false, "use DPI for device profiling")
+
+	flagFlushevery         = fs.Int("flushevery", 100, "flush assembler every N packets")
+	flagNodefrag           = fs.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
+	flagChecksum           = fs.Bool("checksum", false, "check TCP checksum")
+	flagNooptcheck         = fs.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
+	flagIgnorefsmerr       = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
+	flagAllowmissinginit   = fs.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
+	flagDebug              = fs.Bool("debug", false, "display debug information")
+	flagHexdump            = fs.Bool("hexdump-http", false, "dump HTTP request/response as hex")
+	flagWaitForConnections = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
+	flagWriteincomplete    = fs.Bool("writeincomplete", false, "write incomplete response")
+	flagMemprofile         = fs.String("memprofile", "", "write memory profile")
+	flagConnFlushInterval  = fs.Int("conn-flush-interval", 10000, "flush connections every X flows")
+	flagConnTimeOut        = fs.Int("conn-timeout", 10, "close connections older than X seconds")
+	flagFlowFlushInterval  = fs.Int("flow-flush-interval", 2000, "flush flows every X flows")
+	flagFlowTimeOut        = fs.Int("flow-timeout", 10, "close flows older than X seconds")
 )
