@@ -32,7 +32,7 @@ var (
 	flagEnd             = fs.String("end", ")", "end character for a structure in CSV output")
 	flagStructSeparator = fs.String("struct-sep", "-", "separator character for a structure in CSV output")
 	flagUTC             = fs.Bool("utc", false, "print timestamps as UTC when using select csv")
-	flagInput           = fs.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagInput           = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagVersion         = fs.Bool("version", false, "print netcap package version and exit")
 	flagJSON            = fs.Bool("json", false, "print as JSON")
 	flagMemBufferSize   = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")

@@ -21,7 +21,7 @@ import (
 var (
 	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagDebug     = fs.Bool("debug", false, "toggle debug mode")
-	flagInput     = fs.String("r", "", "(required) read specified file, can either be a pcap or netcap audit record file")
+	flagInput     = fs.String("read", "", "(required) read specified file, can either be a pcap or netcap audit record file")
 	flagSeparator = fs.String("sep", ",", "set separator string for csv output")
 	flagOutDir    = fs.String("out", "", "specify output directory, will be created if it does not exist")
 

@@ -20,7 +20,7 @@ import (
 
 var (
 	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
-	flagInput  = fs.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagInput  = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagOutDir = fs.String("out", "", "specify output directory, will be created if it does not exist")
 
 	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")

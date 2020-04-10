@@ -24,7 +24,7 @@ var (
 	flagDumpJSON       = fs.Bool("dumpJson", false, "dump as JSON")
 	flagReplay         = fs.Bool("replay", false, "replay traffic (only works when exporting audit records directly!)")
 	flagDir            = fs.String("dir", "", "path to directory with netcap audit records")
-	flagInput          = fs.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagInput          = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagInterface      = fs.String("iface", "", "attach to network interface and capture in live mode")
 	flagWorkers        = fs.Int("workers", 1000, "number of workers")
 	flagPacketBuffer   = fs.Int("pbuf", 100, "set packet buffer size, for channels that feed data to workers")
