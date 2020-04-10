@@ -1,4 +1,4 @@
-package main
+package transform
 
 import (
 	maltego "github.com/dreadl0ck/netcap/maltego"

@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package agent
 
 import (
 	"bytes"
@@ -33,11 +33,11 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-func main() {
+func Run() {
 
 	// parse commandline flags
 	fs.Usage = printUsage
-	fs.Parse(os.Args[1:])
+	fs.Parse(os.Args[2:])
 
 	// print version and exit
 	if *flagVersion {

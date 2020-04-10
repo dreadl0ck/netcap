@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package proxy
 
 import (
 	"fmt"
@@ -29,11 +29,11 @@ import (
 // used to close all files handles on exit via OS signals
 var proxies []*ReverseProxy
 
-func main() {
+func Run() {
 
 	// parse commandline flags
 	fs.Usage = printUsage
-	fs.Parse(os.Args[1:])
+	fs.Parse(os.Args[2:])
 
 	// print version and exit
 	if *flagVersion {

@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package label
 
 import (
 	"fmt"
@@ -22,11 +22,11 @@ import (
 	"github.com/dreadl0ck/netcap/label"
 )
 
-func main() {
+func Run() {
 
 	// parse commandline flags
 	fs.Usage = printUsage
-	fs.Parse(os.Args[1:])
+	fs.Parse(os.Args[2:])
 
 	// print version and exit
 	if *flagVersion {

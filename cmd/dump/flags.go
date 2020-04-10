@@ -11,26 +11,29 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package dump
 
-import "github.com/namsral/flag"
+import (
+	"github.com/namsral/flag"
+	"os"
+)
 
 var (
-	// dump
-	flagSelect          = flag.String("select", "", "select specific fields of an audit records when generating csv or tables")
-	flagFields          = flag.Bool("fields", false, "print available fields for an audit record file and exit")
-	flagSeparator       = flag.String("sep", ",", "set separator string for csv output")
-	flagCSV             = flag.Bool("csv", false, "print output data as csv with header line")
-	flagPrintStructured = flag.Bool("struc", false, "print output as structured objects")
-	flagTSV             = flag.Bool("tsv", false, "print output as tab separated values")
-	flagHeader          = flag.Bool("header", false, "print audit record file header and exit")
-	flagTable           = flag.Bool("table", false, "print output as table view (thanks @evilsocket)")
-	flagBegin           = flag.String("begin", "(", "begin character for a structure in CSV output")
-	flagEnd             = flag.String("end", ")", "end character for a structure in CSV output")
-	flagStructSeparator = flag.String("struct-sep", "-", "separator character for a structure in CSV output")
-	flagUTC             = flag.Bool("utc", false, "print timestamps as UTC when using select csv")
-	flagInput           = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
-	flagVersion         = flag.Bool("version", false, "print netcap package version and exit")
-	flagJSON            = flag.Bool("json", false, "print as JSON")
-	flagMemBufferSize   = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	fs                = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagSelect          = fs.String("select", "", "select specific fields of an audit records when generating csv or tables")
+	flagFields          = fs.Bool("fields", false, "print available fields for an audit record file and exit")
+	flagSeparator       = fs.String("sep", ",", "set separator string for csv output")
+	flagCSV             = fs.Bool("csv", false, "print output data as csv with header line")
+	flagPrintStructured = fs.Bool("struc", false, "print output as structured objects")
+	flagTSV             = fs.Bool("tsv", false, "print output as tab separated values")
+	flagHeader          = fs.Bool("header", false, "print audit record file header and exit")
+	flagTable           = fs.Bool("table", false, "print output as table view (thanks @evilsocket)")
+	flagBegin           = fs.String("begin", "(", "begin character for a structure in CSV output")
+	flagEnd             = fs.String("end", ")", "end character for a structure in CSV output")
+	flagStructSeparator = fs.String("struct-sep", "-", "separator character for a structure in CSV output")
+	flagUTC             = fs.Bool("utc", false, "print timestamps as UTC when using select csv")
+	flagInput           = fs.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagVersion         = fs.Bool("version", false, "print netcap package version and exit")
+	flagJSON            = fs.Bool("json", false, "print as JSON")
+	flagMemBufferSize   = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
 )

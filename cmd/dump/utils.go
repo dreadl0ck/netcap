@@ -1,4 +1,4 @@
-package main
+package dump
 
 import (
 	"github.com/namsral/flag"

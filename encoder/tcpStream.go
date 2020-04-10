@@ -68,43 +68,33 @@ import (
 
 // flags
 var (
-	flushevery = flag.Int("flushevery", 100, "flush assembler every N packets")
-	//flagCloseTimeOut = flag.Int("tcp-close-timeout", 60, "close tcp streams if older than X seconds (set to 0 to keep long lived streams alive)")
-	//flagTimeOut      = flag.Int("tcp-timeout", 60, "close streams waiting for packets older than X seconds")
-
-	nodefrag         = flag.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
-	checksum         = flag.Bool("checksum", false, "check TCP checksum")
-	nooptcheck       = flag.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
-	ignorefsmerr     = flag.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
-	allowmissinginit = flag.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
-
+	flushevery             = flag.Int("flushevery", 100, "flush assembler every N packets")
+	nodefrag               = flag.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
+	checksum               = flag.Bool("checksum", false, "check TCP checksum")
+	nooptcheck             = flag.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
+	ignorefsmerr           = flag.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
+	allowmissinginit       = flag.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
 	debug                  = flag.Bool("debug", false, "display debug information")
 	hexdump                = flag.Bool("hexdump-http", false, "dump HTTP request/response as hex")
 	flagWaitForConnections = flag.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
+	writeincomplete        = flag.Bool("writeincomplete", false, "write incomplete response")
+	memprofile             = flag.String("memprofile", "", "write memory profile")
 
-	writeincomplete = flag.Bool("writeincomplete", false, "write incomplete response")
-	memprofile      = flag.String("memprofile", "", "write memory profile")
-
-	numErrors uint
-	requests  = 0
-	responses = 0
-	mu        sync.Mutex
-
-	closeTimeout time.Duration = time.Hour * 24   // time.Duration(*flagCloseTimeOut) // Closing inactive
-	timeout      time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
-
-	defragger     = ip4defrag.NewIPv4Defragmenter()
-	streamFactory = &tcpStreamFactory{}
-	StreamPool    = reassembly.NewStreamPool(streamFactory)
-
-	count     = 0
-	dataBytes = int64(0)
-	start     = time.Now()
-
+	closeTimeout   time.Duration = time.Hour * 24   // time.Duration(*flagCloseTimeOut) // Closing inactive
+	timeout        time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
+	defragger                    = ip4defrag.NewIPv4Defragmenter()
+	streamFactory                = &tcpStreamFactory{}
+	StreamPool                   = reassembly.NewStreamPool(streamFactory)
+	numErrors      uint
+	requests       = 0
+	responses      = 0
+	mu             sync.Mutex
+	count          = 0
+	dataBytes      = int64(0)
+	start          = time.Now()
 	errorsMap      = make(map[string]uint)
 	errorsMapMutex sync.Mutex
-
-	FileStorage string
+	FileStorage    string
 )
 
 var reassemblyStats struct {
@@ -197,6 +187,8 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 		go stream.server.Run(&factory.wg)
 	}
 
+	// TODO: capture unknown protocol stream and write to disk
+
 	return stream
 }
 
@@ -249,17 +241,17 @@ type tcpStream struct {
 }
 
 type httpRequest struct {
-	request *http.Request
+	request   *http.Request
 	timestamp string
-	clientIP string
-	serverIP string
+	clientIP  string
+	serverIP  string
 }
 
 type httpResponse struct {
-	response *http.Response
+	response  *http.Response
 	timestamp string
-	clientIP string
-	serverIP string
+	clientIP  string
+	serverIP  string
 }
 
 func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
