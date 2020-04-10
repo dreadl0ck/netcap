@@ -25,7 +25,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-var tlsEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLS", nil, func(p gopacket.Packet) proto.Message {
+var tlsClientHelloEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "TLSClientHello", nil, func(p gopacket.Packet) proto.Message {
 
 	hello := tlsx.GetClientHello(p)
 	if hello != nil {

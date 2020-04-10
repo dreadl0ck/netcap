@@ -139,6 +139,7 @@ enum Type {
     NC_SMTP                        = 91;
     NC_Diameter                    = 92;
     NC_POP3                        = 93;
+    NC_TLSServerHello              = 94;
 }
 
 /*
@@ -1038,6 +1039,40 @@ message TLSClientHello {
     int32 SrcPort                     = 26;
     int32 DstPort                     = 27;
     repeated int32 Extensions         = 28;
+}
+
+// TLS Server Hello
+
+message TLSServerHello {
+    string Timestamp                  = 1;
+    int32  Version                    = 2;
+    bytes  Random                     = 3;
+    bytes  SessionID                  = 4;
+    int32  CipherSuite                = 5;
+    int32  CompressionMethod          = 6;
+	bool NextProtoNeg                 = 7;
+	repeated string NextProtos        = 8;
+	bool OCSPStapling                 = 9;
+    bool TicketSupported               = 10;
+	bool SecureRenegotiationSupported  = 11;
+	bytes SecureRenegotiation          = 12;
+    string AlpnProtocol                = 13;
+	bool Ems                           = 14;
+	repeated bytes Scts                = 15;
+	int32 SupportedVersion             = 16;
+	// KeyShare ServerShare               = 17; // fields are unexported by the stdlib unfortunately...
+	bool SelectedIdentityPresent       = 18;
+	int32 SelectedIdentity             = 19;
+	bytes Cookie                       = 20;
+	int32 SelectedGroup                = 21;
+    repeated int32 Extensions         = 22;
+    string SrcIP                      = 23;
+    string DstIP                      = 24;
+    string SrcMAC                     = 25;
+    string DstMAC                     = 26;
+    int32 SrcPort                     = 27;
+    int32 DstPort                     = 28;
+    string Ja3s                       = 29;
 }
 
 message IPSecAH {

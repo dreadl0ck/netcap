@@ -29,7 +29,8 @@ var (
 	// CustomEncoders slice contains initialized encoders at runtime
 	// for usage from other packages
 	CustomEncoders, customEncoderSlice = []*CustomEncoder{}, []*CustomEncoder{
-		tlsEncoder,
+		tlsClientHelloEncoder,
+		tlsServerHelloEncoder,
 		linkFlowEncoder,
 		networkFlowEncoder,
 		transportFlowEncoder,
