@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	flagInput = flag.String("r", "", "input pcap file")
+	flagInput = flag.String("read", "", "input pcap file")
 )
 
 func main() {

@@ -14,12 +14,10 @@
 
 ## Cleanup
 
+- allow tests to execute concurrently
 - add regular logs to file netcap.log, make configurable via log flag
 - add flag to debug log into multiple files? reassembly.log, debug.log
-- check TODOs in source
-- improve tests & allow tests to execute concurrently
 - net.split: split pcap files by days or hours
-- add tests for POP3 parsing
 - capture unknown L7 protocol TCP streams and write to disk
 
 ## Maltego Plugin
@@ -60,7 +58,9 @@
 
 ## General
 
-- rename r flag to read?
+- check TODOs in source
+- improve tests 
+- add tests for POP3 parsing
 
 Reassembly: 2 Options
 1) One assembler per worker + 1 shared connection pool (currently implemented)
