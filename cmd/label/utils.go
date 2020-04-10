@@ -22,11 +22,11 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.label -r traffic.pcap")
-	fmt.Println("	$ net.label -r traffic.pcap -out output_dir")
-	fmt.Println("	$ net.label -r taffic.pcap -progress")
-	fmt.Println("	$ net.label -r taffic.pcap -collect")
+	fmt.Println("label tool usage examples:")
+	fmt.Println("	$ net label -read traffic.pcap")
+	fmt.Println("	$ net label -read traffic.pcap -out output_dir")
+	fmt.Println("	$ net label -read taffic.pcap -progress")
+	fmt.Println("	$ net label -read taffic.pcap -collect")
 	fmt.Println()
 }
 

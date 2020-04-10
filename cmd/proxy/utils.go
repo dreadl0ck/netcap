@@ -33,10 +33,10 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.proxy -local 127.0.0.1:4444 -remote https://github.com")
-	fmt.Println("	$ net.proxy -local 127.0.0.1:4444 -remote https://github.com -maxIdle 300")
-	fmt.Println("	$ net.proxy -local 127.0.0.1:4444 -remote https://github.com -dump")
+	fmt.Println("proxy tool usage examples:")
+	fmt.Println("	$ net proxy -local 127.0.0.1:4444 -remote https://github.com")
+	fmt.Println("	$ net proxy -local 127.0.0.1:4444 -remote https://github.com -maxIdle 300")
+	fmt.Println("	$ net proxy -local 127.0.0.1:4444 -remote https://github.com -dump")
 	fmt.Println()
 }
 
