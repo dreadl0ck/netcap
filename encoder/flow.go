@@ -51,8 +51,8 @@ var (
 
 var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *CustomEncoder) error {
 	flowEncoderInstance = d
-	flowFlushInterval = int64(*flagFlowFlushInterval)
-	flowTimeOut = time.Second * time.Duration(*flagFlowTimeOut)
+	flowFlushInterval = int64(c.FlowFlushInterval)
+	flowTimeOut = time.Second * time.Duration(c.FlowTimeOut)
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 

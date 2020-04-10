@@ -32,8 +32,6 @@ import (
 
 func Run() {
 
-	encoder.SetFlags(fs)
-
 	// parse commandline flags
 	fs.Usage = printUsage
 	fs.Parse(os.Args[2:])
@@ -130,18 +128,33 @@ func Run() {
 		ReassembleConnections: *flagReassembleConnections,
 		FreeOSMem:             *flagFreeOSMemory,
 		EncoderConfig: encoder.Config{
-			Buffer:          *flagBuffer,
-			Compression:     *flagCompress,
-			CSV:             *flagCSV,
-			IncludeEncoders: *flagInclude,
-			ExcludeEncoders: *flagExclude,
-			Out:             *flagOutDir,
-			Source:          source,
-			Version:         netcap.Version,
-			IncludePayloads: *flagPayload,
-			Export:          false,
-			AddContext:      *flagContext,
-			MemBufferSize:   *flagMemBufferSize,
+			Buffer:                 *flagBuffer,
+			Compression:            *flagCompress,
+			CSV:                    *flagCSV,
+			IncludeEncoders:        *flagInclude,
+			ExcludeEncoders:        *flagExclude,
+			Out:                    *flagOutDir,
+			Source:                 source,
+			Version:                netcap.Version,
+			IncludePayloads:        *flagPayload,
+			Export:                 false,
+			AddContext:             *flagContext,
+			MemBufferSize:          *flagMemBufferSize,
+			FlushEvery:             *flagFlushevery,
+			NoDefrag:               *flagNodefrag,
+			Checksum:               *flagChecksum,
+			NoOptCheck:             *flagNooptcheck,
+			IgnoreFSMerr:           *flagIgnorefsmerr,
+			AllowMissingInit:       *flagAllowmissinginit,
+			Debug:                  *flagDebug,
+			HexDump:                *flagHexdump,
+			WaitForConnections:     *flagWaitForConnections,
+			WriteIncomplete:        *flagWriteincomplete,
+			MemProfile:             *flagMemprofile,
+			ConnFlushInterval:      *flagConnFlushInterval,
+			ConnTimeOut:            *flagConnTimeOut,
+			FlowFlushInterval:      *flagFlowFlushInterval,
+			FlowTimeOut:            *flagFlowTimeOut,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    *flagReverseDNS,

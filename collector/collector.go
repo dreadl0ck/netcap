@@ -381,6 +381,8 @@ func (c *Collector) Init() (err error) {
 		encoder.LocalDNS = true
 	}
 
+	encoder.SetConfig(c.config.EncoderConfig)
+
 	// set quiet mode for other subpackages
 	encoder.Quiet = c.config.Quiet
 

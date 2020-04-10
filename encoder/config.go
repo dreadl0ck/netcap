@@ -13,20 +13,42 @@
 
 package encoder
 
+var c Config
+
+// SetConfig can be used to set a configuration for the package
+func SetConfig(cfg Config) {
+	c = cfg
+}
+
 // Config contains configuration parameters
 // for the encoders
 type Config struct {
-	Buffer          bool
-	Compression     bool
-	CSV             bool
-	IncludeEncoders string
-	ExcludeEncoders string
-	Out             string
-	WriteChan       bool
-	Source          string
-	Version         string
-	IncludePayloads bool
-	Export          bool
-	AddContext      bool
-	MemBufferSize   int
+	Buffer             bool
+	Compression        bool
+	CSV                bool
+	IncludeEncoders    string
+	ExcludeEncoders    string
+	Out                string
+	WriteChan          bool
+	Source             string
+	Version            string
+	IncludePayloads    bool
+	Export             bool
+	AddContext         bool
+	MemBufferSize      int
+	FlushEvery         int
+	NoDefrag           bool
+	Checksum           bool
+	NoOptCheck         bool
+	IgnoreFSMerr       bool
+	AllowMissingInit   bool
+	Debug              bool
+	HexDump            bool
+	WaitForConnections bool
+	WriteIncomplete    bool
+	MemProfile         string
+	ConnFlushInterval  int
+	ConnTimeOut        int
+	FlowFlushInterval  int
+	FlowTimeOut        int
 }

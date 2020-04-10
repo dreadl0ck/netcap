@@ -278,7 +278,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	h.parent.Unlock()
 
 	// write responses to disk if configured
-	if (err == nil || *writeincomplete) && FileStorage != "" {
+	if (err == nil || c.WriteIncomplete) && FileStorage != "" {
 
 		h.parent.Lock()
 		var (
@@ -672,7 +672,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 
 	if req.Method == "POST" {
 		// write request payload to disk if configured
-		if (err == nil || *writeincomplete) && FileStorage != "" {
+		if (err == nil || c.WriteIncomplete) && FileStorage != "" {
 			return h.saveFile(
 				req.Host,
 				"HTTP POST REQUEST to " + req.URL.Path,
