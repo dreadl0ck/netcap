@@ -64,6 +64,23 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					encoder.ReassemblePacket(p, assembler)
 				}
 
+				// create context for packet
+				var ctx = &types.PacketContext{}
+				if encoder.AddContext {
+					var (
+						netLayer       = p.NetworkLayer()
+						transportLayer = p.TransportLayer()
+					)
+					if netLayer != nil {
+						ctx.SrcIP = netLayer.NetworkFlow().Src().String()
+						ctx.DstIP = netLayer.NetworkFlow().Dst().String()
+					}
+					if transportLayer != nil {
+						ctx.SrcPort = transportLayer.TransportFlow().Src().String()
+						ctx.DstPort = transportLayer.TransportFlow().Dst().String()
+					}
+				}
+
 				// iterate over all layers
 				for _, layer := range p.Layers() {
 
@@ -99,24 +116,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					// pick encoders from the encoderMap by looking up the layer type
 					if encoders, ok := encoder.LayerEncoders[layer.LayerType()]; ok {
 
-						var ctx = &types.PacketContext{}
-
-						if encoder.AddContext {
-
-							var (
-								netLayer       = p.NetworkLayer()
-								transportLayer = p.TransportLayer()
-							)
-							if netLayer != nil {
-								ctx.SrcIP = netLayer.NetworkFlow().Src().String()
-								ctx.DstIP = netLayer.NetworkFlow().Dst().String()
-							}
-							if transportLayer != nil {
-								ctx.SrcPort = transportLayer.TransportFlow().Src().String()
-								ctx.DstPort = transportLayer.TransportFlow().Dst().String()
-							}
-						}
-
 						for _, e := range encoders {
 							err := e.Encode(ctx, p, layer)
 							if err != nil {
@@ -142,13 +141,12 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 							if err := c.writePacketToUnknownPcap(p); err != nil {
 								fmt.Println("failed to write packet to unknown.pcap file:", err)
 							}
-							goto done
 						}
 					}
 				} // END packet.Layers()
 
 			done:
-				// call customencoders
+				// call custom encoders
 				for _, e := range encoder.CustomEncoders {
 					err := e.Encode(p)
 					if err != nil {
