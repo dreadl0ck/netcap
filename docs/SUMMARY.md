@@ -24,8 +24,8 @@
 * [Maltego Integration](maltego-integration.md)
 * [Troubleshooting](troubleshooting.md)
 * [Configuration](configuration.md)
-* [License](license.md)
 * [Resolvers](resolvers.md)
 * [Tests](tests.md)
 * [Deep Packet Inspection](deep-packet-inspection.md)
+* [License](license.md)
 
