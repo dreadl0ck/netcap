@@ -506,12 +506,12 @@ func CleanupReassembly(wait bool) {
 	// print stats if not quiet
 	if !Quiet {
 		errorsMapMutex.Lock()
-		fmt.Fprintf(os.Stderr, "HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
+		reassemblyLog.Printf("HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
 		errorsMapMutex.Unlock()
 
 		// print configuration
 		// print configuration as table
-		tui.Table(os.Stdout, []string{"TCP logReassemblyInfo Setting", "Value"}, [][]string{
+		tui.Table(reassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
 			{"FlushEvery", strconv.Itoa(c.FlushEvery)},
 			{"CloseTimeout", closeTimeout.String()},
 			{"Timeout", timeout.String()},
@@ -546,16 +546,16 @@ func CleanupReassembly(wait bool) {
 		rows = append(rows, []string{"overlap packets", strconv.Itoa(reassemblyStats.overlapPackets)})
 		rows = append(rows, []string{"overlap bytes", strconv.Itoa(reassemblyStats.overlapBytes)})
 
-		tui.Table(os.Stdout, []string{"TCP Stat", "Value"}, rows)
+		tui.Table(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
 
 		if numErrors != 0 {
 			rows = [][]string{}
 			for e := range errorsMap {
 				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
 			}
-			tui.Table(os.Stdout, []string{"Error Subject", "Count"}, rows)
+			tui.Table(reassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
 		}
 
-		fmt.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
+		reassemblyLog.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
 	}
 }

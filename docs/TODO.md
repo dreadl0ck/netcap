@@ -65,6 +65,7 @@
 - add tests for POP3 parsing
 - add tests for http audit records and compare results with output from urlsnarf
 - implement passive dns hosts mapping generation in netcap
+- sort errors by the number of occurrences (COUNT) for print and log in errors.log
 
 Reassembly: 2 Options
 
