@@ -13,15 +13,51 @@
 
 package encoder
 
-import "github.com/dreadl0ck/gopacket/reassembly"
+import (
+	"log"
+	"os"
 
-var c Config
+	"github.com/dreadl0ck/gopacket/reassembly"
+)
+
+var (
+	c Config
+	
+	reassemblyLog = log.New(nil, "", log.LstdFlags)
+	reassemblyLogFileHandle *os.File
+
+	debugLog = log.New(nil, "", log.LstdFlags)
+	debugLogFileHandle *os.File
+)
+
+const (
+	directoryPermission = 0755
+	logFilePermission = 0755
+)
 
 // SetConfig can be used to set a configuration for the package
 func SetConfig(cfg Config) {
 	c = cfg
 	fsmOptions = reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: c.AllowMissingInit,
+	}
+	
+	// setup loggers
+	if c.Debug {
+		var err error
+		debugLogFileHandle, err = os.OpenFile("debug.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
+		if err != nil {
+			log.Fatal(err)
+		}
+		debugLog.SetOutput(debugLogFileHandle)
+
+		reassemblyLogFileHandle, err = os.OpenFile("reassembly.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
+		if err != nil {
+			log.Fatal(err)
+		}
+		reassemblyLog.SetOutput(reassemblyLogFileHandle)
+
+		pop3Debug = true
 	}
 }
 

@@ -47,8 +47,6 @@ package encoder
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/gopacket/ip4defrag"
-	"github.com/evilsocket/islazy/tui"
 	"log"
 	"net/http"
 	"os"
@@ -57,6 +55,9 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/gopacket/ip4defrag"
+	"github.com/evilsocket/islazy/tui"
 
 	"github.com/dreadl0ck/netcap/types"
 
@@ -70,7 +71,7 @@ var (
 	closeTimeout   time.Duration = time.Hour * 24   // time.Duration(*flagCloseTimeOut) // Closing inactive
 	timeout        time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
 	defragger                    = ip4defrag.NewIPv4Defragmenter()
-	streamFactory                = &tcpStreamFactory{}
+	streamFactory                = &tcpConnectionFactory{}
 	StreamPool                   = reassembly.NewStreamPool(streamFactory)
 	numErrors      uint
 	requests       = 0
@@ -106,7 +107,7 @@ var reassemblyStats struct {
  * The TCP factory: returns a new Connection
  */
 
-type tcpStreamFactory struct {
+type tcpConnectionFactory struct {
 	wg         sync.WaitGroup
 	decodeHTTP bool
 	decodePOP3 bool
@@ -114,11 +115,11 @@ type tcpStreamFactory struct {
 
 var fsmOptions = reassembly.TCPSimpleFSMOptions{}
 
-func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
+func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
-	logDebug("* NEW: %s %s\n", net, transport)
+	logReassemblyDebug("* NEW: %s %s\n", net, transport)
 
-	stream := &tcpStream{
+	stream := &tcpConnection{
 		net:         net,
 		transport:   transport,
 		isHTTP:      factory.decodeHTTP && (tcp.SrcPort == 80 || tcp.DstPort == 80),
@@ -177,7 +178,7 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 	return stream
 }
 
-func (factory *tcpStreamFactory) WaitGoRoutines() {
+func (factory *tcpConnectionFactory) WaitGoRoutines() {
 	factory.wg.Wait()
 }
 
@@ -192,11 +193,11 @@ func (c *Context) GetCaptureInfo() gopacket.CaptureInfo {
 }
 
 /*
- * TCP stream
+ * TCP Connection
  */
 
 /* It's a connection (bidirectional) */
-type tcpStream struct {
+type tcpConnection struct {
 	tcpstate   *reassembly.TCPSimpleFSM
 	optchecker reassembly.TCPOptionCheck
 
@@ -239,10 +240,10 @@ type httpResponse struct {
 	serverIP  string
 }
 
-func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
+func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
 	// FSM
 	if !t.tcpstate.CheckState(tcp, dir) {
-		logError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
+		logReassemblyError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
 		reassemblyStats.rejectFsm++
 		if !t.fsmerr {
 			t.fsmerr = true
@@ -255,7 +256,7 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 	// Options
 	err := t.optchecker.Accept(tcp, ci, dir, nextSeq, start)
 	if err != nil {
-		logError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
+		logReassemblyError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
 		reassemblyStats.rejectOpt++
 		if !c.NoOptCheck {
 			return false
@@ -266,10 +267,10 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 	if c.Checksum {
 		c, err := tcp.ComputeChecksum()
 		if err != nil {
-			logError("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, err)
+			logReassemblyError("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, err)
 			accept = false
 		} else if c != 0x0 {
-			logError("Checksum", "%s: Invalid checksum: 0x%x\n", t.ident, c)
+			logReassemblyError("Checksum", "%s: Invalid checksum: 0x%x\n", t.ident, c)
 			accept = false
 		}
 	}
@@ -279,7 +280,7 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 	return accept
 }
 
-func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
+func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
 
 	dir, start, end, skip := sg.Info()
 	length, saved := sg.Lengths()
@@ -317,7 +318,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 		ident = fmt.Sprintf("%v %v(%s): ", t.net.Reverse(), t.transport.Reverse(), dir)
 	}
 
-	logDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
+	logReassemblyDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
 	if skip == -1 && c.AllowMissingInit {
 		// this is allowed
 	} else if skip != 0 {
@@ -330,7 +331,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 	if t.isHTTP {
 		if length > 0 {
 			if c.HexDump {
-				logDebug("Feeding http with:\n%s", hex.Dump(data))
+				logReassemblyDebug("Feeding http with:\n%s", hex.Dump(data))
 			}
 			if dir == reassembly.TCPDirClientToServer && !t.reversed {
 				t.client.BytesChan() <- data
@@ -340,7 +341,9 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 		}
 	} else if t.isPOP3 {
 		if length > 0 {
-			//fmt.Printf("Feeding POP3 with:\n%s", hex.Dump(data))
+			if c.HexDump {
+				logReassemblyDebug("Feeding POP3 with:\n%s", hex.Dump(data))
+			}
 			if dir == reassembly.TCPDirClientToServer && !t.reversed {
 				t.client.BytesChan() <- data
 			} else {
@@ -350,8 +353,8 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 	}
 }
 
-func (t *tcpStream) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
-	logDebug("%s: Connection closed\n", t.ident)
+func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
+	logReassemblyDebug("%s: Connection closed\n", t.ident)
 	if t.isHTTP {
 		// closing here causes a panic sometimes because the channel is already closed
 		// as a temporary bugfix, closing the channels was omitted.
@@ -405,12 +408,12 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		if err != nil {
 			log.Fatalln("Error while de-fragmenting", err)
 		} else if newip4 == nil {
-			logDebug("Fragment...\n")
+			logReassemblyDebug("Fragment...\n")
 			return
 		}
 		if newip4.Length != l {
 			reassemblyStats.ipdefrag++
-			logDebug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
+			logReassemblyDebug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
 			pb, ok := packet.(gopacket.PacketBuilder)
 			if !ok {
 				panic("Not a PacketBuilder")
@@ -506,7 +509,7 @@ func CleanupReassembly() {
 
 		// print configuration
 		// print configuration as table
-		tui.Table(os.Stdout, []string{"TCP Reassembly Setting", "Value"}, [][]string{
+		tui.Table(os.Stdout, []string{"TCP logReassemblyInfo Setting", "Value"}, [][]string{
 			{"FlushEvery", strconv.Itoa(c.FlushEvery)},
 			{"CloseTimeout", closeTimeout.String()},
 			{"Timeout", timeout.String()},
