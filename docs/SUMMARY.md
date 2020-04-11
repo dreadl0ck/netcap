@@ -20,8 +20,6 @@
 * [FAQ](faq.md)
 * [Extension](extension.md)
 * [Contributing](contributing.md)
+* [Docker Containers](docker-containers.md)
 * [License](license.md)
-* [Logging](logging.md)
-* [Configuration](configuration.md)
-* [Troubleshooting](troubleshooting.md)
 

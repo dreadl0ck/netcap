@@ -21,7 +21,7 @@ Spin up a single proxy instance from the commandline:
 Specifiy a custom config file for proxying multiple services:
 
 ```text
-$ net.proxy -config example_config.yml
+$ net proxy -config example_config.yml
 ```
 
 The default config path is **net.proxy-config.yml**, so if this file exists in the folder where you execute the proxy, you do not need to specify it on the commandline.
@@ -59,7 +59,7 @@ logdir: "logs"
 ## Help
 
 ```text
-Usage of net.proxy:
+Usage of net proxy:
   -version bool
         print netcap package version and exit
   -config string

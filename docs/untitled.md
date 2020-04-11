@@ -67,13 +67,13 @@ layer:
 Include specific encoders \(only those named will be used\):
 
 ```text
-$ netcap -r traffic.pcap -include Ethernet,Dot1Q,IPv4,IPv6,TCP,UDP,DNS
+$ net capture -read traffic.pcap -include Ethernet,Dot1Q,IPv4,IPv6,TCP,UDP,DNS
 ```
 
 Exclude encoders \(this will prevent decoding of layers encapsulated by the excluded ones\):
 
 ```text
-$ netcap -r traffic.pcap -exclude TCP,UDP
+$ net capture -read traffic.pcap -exclude TCP,UDP
 ```
 
 ## Applying Berkeley Packet Filters
@@ -83,12 +83,12 @@ _Netcap_ will decode all traffic it is exposed to, therefore it might be desired
 When capturing live from an interface:
 
 ```text
-$ netcap -iface en0 -bpf "host 192.168.1.1"
+$ net capture -iface en0 -bpf "host 192.168.1.1"
 ```
 
 When reading offline dump files:
 
 ```text
-$ netcap -r traffic.pcap -bpf "host 192.168.1.1"
+$ net capture -read traffic.pcap -bpf "host 192.168.1.1"
 ```
 
