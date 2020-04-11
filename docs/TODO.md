@@ -14,12 +14,11 @@
 - JA3s
 - troubleshooting
 - update usage examples for new syntax
+- godoc cleanup
 
 ## Cleanup
 
 - test empty TCP conn over HTTP port (will this lock up the reassembly?)
-- add regular logs to file netcap.log if quiet mode is active or if log flag is set to true
-- use a logger without reflection for performance: zap?
 - net.split: split pcap files by days or hours
 - capture unknown L7 protocol TCP streams and write to disk
 
@@ -66,6 +65,8 @@
 - add tests for http audit records and compare results with output from urlsnarf
 - implement passive dns hosts mapping generation in netcap
 - sort errors by the number of occurrences (COUNT) for print and log in errors.log
+- add log flag to enable writing output to file netcap.log and stdout simultaneously
+- use a logger without reflection for performance: zap?
 
 Reassembly: 2 Options
 

@@ -17,6 +17,7 @@ package collector
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -172,6 +173,13 @@ func (c *Collector) cleanup(force bool) {
 	if c.config.EncoderConfig.Debug {
 		c.printErrors()
 	}
+
+	if logFileHandle != nil {
+		err := logFileHandle.Close()
+		if err != nil {
+			c.printStdOut("failed to close logfile:", err)
+		}
+	}
 }
 
 // handleSignals catches signals and runs the cleanup
@@ -284,36 +292,41 @@ func (c *Collector) closeErrorLogFile() {
 // Stats prints collector statistics.
 func (c *Collector) Stats() {
 
-	if !c.config.Quiet {
-		rows := [][]string{}
-
-		for k, v := range c.allProtosAtomic.Items {
-			if _, ok := c.unknownProtosAtomic.Items[k]; ok {
-				rows = append(rows, []string{ansi.Yellow + k, fmt.Sprint(v), share(v, c.numPackets) + ansi.Reset})
-			} else {
-				rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
-			}
-		}
-		tui.Table(os.Stdout, []string{"Layer", "NumRecords", "Share"}, rows)
-
-		if len(encoder.CustomEncoders) > 0 {
-			rows = [][]string{}
-			for _, e := range encoder.CustomEncoders {
-				rows = append(rows, []string{e.Name, strconv.FormatInt(e.NumRecords(), 10), share(e.NumRecords(), c.numPackets)})
-			}
-			tui.Table(os.Stdout, []string{"CustomEncoder", "NumRecords", "Share"}, rows)
-		}
-
-		res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
-		if c.unkownPcapWriterAtomic.count > 0 {
-			res += "-> " + share(c.unkownPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.unkownPcapWriterAtomic.count, 10) + ") written to unknown.pcap\n"
-		}
-
-		if c.errorsPcapWriterAtomic.count > 0 {
-			res += "-> " + share(c.errorsPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.errorsPcapWriterAtomic.count, 10) + ") written to errors.pcap\n"
-		}
-		fmt.Println(res)
+	var target io.Writer
+	if c.config.Quiet {
+		target = logFileHandle
+	} else {
+		target = os.Stderr
 	}
+
+	rows := [][]string{}
+	for k, v := range c.allProtosAtomic.Items {
+		if _, ok := c.unknownProtosAtomic.Items[k]; ok {
+			rows = append(rows, []string{ansi.Yellow + k, fmt.Sprint(v), share(v, c.numPackets) + ansi.Reset})
+		} else {
+			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
+		}
+	}
+	tui.Table(target, []string{"Layer", "NumRecords", "Share"}, rows)
+
+	if len(encoder.CustomEncoders) > 0 {
+		rows = [][]string{}
+		for _, e := range encoder.CustomEncoders {
+			rows = append(rows, []string{e.Name, strconv.FormatInt(e.NumRecords(), 10), share(e.NumRecords(), c.numPackets)})
+		}
+		tui.Table(target, []string{"CustomEncoder", "NumRecords", "Share"}, rows)
+	}
+
+	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
+	if c.unkownPcapWriterAtomic.count > 0 {
+		res += "-> " + share(c.unkownPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.unkownPcapWriterAtomic.count, 10) + ") written to unknown.pcap\n"
+	}
+
+	if c.errorsPcapWriterAtomic.count > 0 {
+		res += "-> " + share(c.errorsPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.errorsPcapWriterAtomic.count, 10) + ") written to errors.pcap\n"
+	}
+
+	fmt.Fprintln(target, res)
 }
 
 // updates the progress indicator and writes to stdout.
@@ -390,6 +403,13 @@ func (c *Collector) Init() (err error) {
 	// set quiet mode for other subpackages
 	encoder.Quiet = c.config.Quiet
 
+	if logFileHandle == nil && c.config.Quiet {
+		err = c.InitLogging()
+		if err != nil {
+			return err
+		}
+	}
+
 	// initialize encoders
 	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)
 	encoder.InitCustomEncoders(c.config.EncoderConfig, c.config.Quiet)
@@ -441,21 +461,50 @@ func (c *Collector) FreeOSMemory() {
 // PrintConfiguration dumps the current collector config to stdout
 func (c *Collector) PrintConfiguration() {
 
-	if !c.config.Quiet {
-		netcap.PrintBuildInfo()
-		fmt.Println("> PID:", os.Getpid())
-
-		// print configuration as table
-		tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
-			{"Workers", strconv.Itoa(c.config.Workers)},
-			{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
-			{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
-			{"Compression", strconv.FormatBool(c.config.EncoderConfig.Compression)},
-			{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
-			{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
-			{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
-			{"FileStorage", c.config.FileStorage},
-		})
-		fmt.Println() // add a newline
+	// ensure the logfile handle gets openend
+	err := c.InitLogging()
+	if err != nil {
+		log.Fatal("failed to open logfile:", err)
 	}
+
+	var target io.Writer
+	if c.config.Quiet {
+		target = logFileHandle
+	} else {
+		target = os.Stdout
+	}
+
+	netcap.FPrintBuildInfo(target)
+	fmt.Fprintln(target, "> PID:", os.Getpid())
+
+	// print configuration as table
+	tui.Table(target, []string{"Setting", "Value"}, [][]string{
+		{"Workers", strconv.Itoa(c.config.Workers)},
+		{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
+		{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
+		{"Compression", strconv.FormatBool(c.config.EncoderConfig.Compression)},
+		{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
+		{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
+		{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
+		{"FileStorage", c.config.FileStorage},
+	})
+	fmt.Fprintln(target) // add a newline
+}
+
+// InitLogging can be used to open the logfile before calling Init()
+// this is used to be able to dump the collector configuration into the netcap.log in quiet mode
+// following calls to Init() will not open the filehandle again
+func (c *Collector) InitLogging() error {
+
+	// prevent reopen
+	if logFileHandle != nil {
+		return nil
+	}
+
+	var err error
+	logFileHandle, err = os.OpenFile("netcap.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, c.config.OutDirPermission)
+	if err != nil {
+		return err
+	}
+	return nil
 }

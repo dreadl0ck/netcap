@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -25,6 +26,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/bpf"
 )
+
+var logFileHandle *os.File
 
 type packet struct {
 	data []byte
@@ -57,7 +60,7 @@ func (c *Collector) printProgressLive() {
 	}
 }
 
-// DumpProto prints a protobuff Message.
+// DumpProto prints a protobuf Message.
 func DumpProto(pb proto.Message) {
 	println(proto.MarshalTextString(pb))
 }
@@ -85,13 +88,17 @@ func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 }
 
 func (c *Collector) printlnStdOut(args ...interface{}) {
-	if !c.config.Quiet {
-		fmt.Println(args...)
+	if c.config.Quiet {
+		fmt.Fprintln(logFileHandle, args...)
+	} else {
+		fmt.Fprintln(os.Stdout, args...)
 	}
 }
 
 func (c *Collector) printStdOut(args ...interface{}) {
-	if !c.config.Quiet {
-		fmt.Print(args...)
+	if c.config.Quiet {
+		fmt.Fprint(logFileHandle, args...)
+	} else {
+		fmt.Fprint(os.Stdout, args...)
 	}
 }
