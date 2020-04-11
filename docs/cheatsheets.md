@@ -12,7 +12,7 @@ description: A collection of cheatsheets and useful resources
 
 ### Thesis Presentation
 
-{% file src=".gitbook/assets/mied18\_os.pdf" %}
+{% file src=".gitbook/assets/mied18\_os \(1\).pdf" %}
 
 ### SecurIT Cup 2018 Presentation
 
@@ -22,9 +22,7 @@ description: A collection of cheatsheets and useful resources
 
 ### List of all supported protocols and fields
 
-{% file src=".gitbook/assets/overview \(1\).pdf" caption="Netcap - Overview Supported Protocols" %}
-
 ### Command Cheatsheet
 
-{% file src=".gitbook/assets/netcap-cheatsheet.pdf" caption="Netcap General Cheatsheet" %}
+{% file src=".gitbook/assets/netcap-cheatsheet \(1\).pdf" caption="Netcap General Cheatsheet" %}
 

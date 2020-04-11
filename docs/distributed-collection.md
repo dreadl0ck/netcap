@@ -8,7 +8,7 @@ description: Sensors and Collection Server
 
 Using Netcap as a data collection mechanism, sensor agents can be deployed to export the traffic they see to a central collection server. This is especially interesting for internet of things \(IoT\) applications, since these devices are placed inside isolated networks and thus the operator does not have any information about the traffic the device sees. Although Go was not specifically designed for this application, it is an interesting language for embedded systems. Each binary contains the complete runtime, which increases the binary size but requires no installation of dependencies on the device itself. Data exporting currently takes place in batches over UDP sockets. Transferred data is compressed in transit and encrypted with the public key of the collection server. Asymmetric encryption was chosen, to avoid empowering an attacker who compromised a sensor, to decrypt traffic of all sensors communicating with the collection server. To increase the performance, in the future this could be replaced with using a symmetric cipher, together with a solid concept for key rotation and distribution. Sensor agents do not write any data to disk and instead keep it in memory before exporting it.
 
-![](.gitbook/assets/netcap-iot%20%281%29.svg)
+![](https://github.com/dreadl0ck/netcap/tree/767852a00d76fcf7c921a4f3830ae6cec0162481/docs/.gitbook/assets/netcap-iot%20%281%29.svg)
 
 As described in the concept chapter, sensors and the collection server use UDP datagrams for communication. Network communication was implemented using the go standard library. This section will focus on the procedure of encrypting the communication between sensor and collector. For encryption and decryption, cryptographic primitives from the [golang.org/x/crypto/nacl/box](https://godoc.org/golang.org/x/crypto/nacl/box) package are used. The NaCl \(pronounced 'Salt'\) toolkit was developed by the reowned cryptographer Daniel J. Bernstein. The box package uses _Curve25519_, _XSalsa20_ and _Poly1305_ to encrypt and authenticate messages.
 
@@ -24,7 +24,7 @@ The collection server generates a keypair, consisting of two 32 byte \(256bit\) 
 
 When receiving an encrypted batch from a sensor, the server needs to trim off the first 32 bytes, to get the public key of the sensor. Now the message can be decrypted, and decompressed. The resulting bytes are serialized data for a batch protocol buffer. After unmarshalling them into the batch structure, the server can append the serialized audit records carried by the batch, into the corresponding audit record file for the provided client identifier.
 
-![NETCAP batch decryption](.gitbook/assets/netcap-batch%20%281%29.svg)
+![NETCAP batch decryption](https://github.com/dreadl0ck/netcap/tree/767852a00d76fcf7c921a4f3830ae6cec0162481/docs/.gitbook/assets/netcap-batch%20%281%29.svg)
 
 ## Usage
 

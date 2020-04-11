@@ -8,7 +8,7 @@ description: Read Netcap Audit records from Python
 
 The Python library for interacting with netcap audit records has been published here:
 
-{% embed url="https://github.com/dreadl0ck/pynetcap" %}
+{% embed url="https://github.com/dreadl0ck/pynetcap" caption="" %}
 
 ## Usage
 

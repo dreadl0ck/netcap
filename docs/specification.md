@@ -10,7 +10,7 @@ _Netcap_ files have the file extension **.ncap** or **.ncap.gz** if compressed w
 
 The data format on disk consists of gzipped length-delimited byte records. Each delimited Protocol Buffer record is preceded by a variable-length encoded integer \(varint\) that specifies the length of the serialized protocol buffer record in bytes. A stream consists of a sequence of such records packed consecutively without additional padding. There are no checksums or compression involved in this processing step.
 
-![Delimited protocol buffers](.gitbook/assets/netcap-delimited%20%281%29.svg)
+![Delimited protocol buffers](https://github.com/dreadl0ck/netcap/tree/767852a00d76fcf7c921a4f3830ae6cec0162481/docs/.gitbook/assets/netcap-delimited%20%281%29.svg)
 
 ## Data Compression
 
