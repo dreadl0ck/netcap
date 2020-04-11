@@ -114,6 +114,6 @@ func (c *Collector) CollectPcapNG(path string) error {
 
 		c.handleRawPacketData(data, ci)
 	}
-	c.cleanup()
+	c.cleanup(false)
 	return nil
 }
