@@ -22,4 +22,7 @@
 * [Contributing](contributing.md)
 * [Docker Containers](docker-containers.md)
 * [License](license.md)
+* [Maltego Integration](maltego-integration.md)
+* [Troubleshooting](troubleshooting.md)
+* [Configuration](configuration.md)
 
