@@ -20,9 +20,11 @@ import (
 func GetDeviceProfiles() {
 
 	var (
-		lt = maltego.ParseLocalArguments(os.Args)
+		lt = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]
 	)
+
+	log.Println("inputFile:", inputFile)
 
 	// redirect stdout filedescriptor to stderr
 	// since all stdout get interpreted as XML from maltego

@@ -68,7 +68,7 @@ type IPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profi
 
 func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
-	lt := ParseLocalArguments(os.Args)
+	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]
 	ipaddr := lt.Values["ipaddr"]
@@ -169,7 +169,7 @@ type DeviceProfileTransformationFunc = func(lt LocalTransform, trx *MaltegoTrans
 
 func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformationFunc) {
 
-	lt := ParseLocalArguments(os.Args)
+	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]
 
@@ -268,7 +268,7 @@ type HTTPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, htt
 
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 
-	lt := ParseLocalArguments(os.Args)
+	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	ipaddr := lt.Values["ipaddr"]
 
@@ -369,7 +369,7 @@ type FilesTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, fi
 
 func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 
-	lt := ParseLocalArguments(os.Args)
+	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	ipaddr := lt.Values["ipaddr"]
 
@@ -470,7 +470,7 @@ type POP3TransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, pop
 
 func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 
-	lt := ParseLocalArguments(os.Args)
+	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	ipaddr := lt.Values["ipaddr"]
 
@@ -571,7 +571,7 @@ type DHCPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, dhc
 
 func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 
-	lt := ParseLocalArguments(os.Args)
+	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	ipaddr := lt.Values["ipaddr"]
 
@@ -784,7 +784,7 @@ type FlowTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, flo
 
 func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 
-	lt := ParseLocalArguments(os.Args)
+	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]
 	ipaddr := lt.Values["ipaddr"]
