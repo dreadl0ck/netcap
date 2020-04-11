@@ -13,9 +13,7 @@
 
 package encoder
 
-import (
-	"sync"
-)
+import "sync"
 
 ////////////////////////
 // Atomic Counter Map //

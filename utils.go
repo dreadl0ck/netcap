@@ -54,23 +54,31 @@ func PrintLogo() {
 	fmt.Println(logo)
 }
 
-// PrintBuildInfo displays build information related to netcap
+// PrintLogo prints the netcap logo
+func FPrintLogo(w io.Writer) {
+	fmt.Fprintln(w, logo)
+}
+
+// PrintBuildInfo displays build information related to netcap to stdout
 func PrintBuildInfo() {
+	FPrintBuildInfo(os.Stdout)
+}
 
-	PrintLogo()
+// PrintBuildInfo displays build information related to netcap to the specified io Writer
+func FPrintBuildInfo(w io.Writer) {
 
-	fmt.Println("\n> Date:", time.Now().UTC())
-	fmt.Println("> NETCAP build commit:", Commit)
-	fmt.Println("> go runtime version:", runtime.Version())
+	FPrintLogo(w)
 
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	fmt.Println("> running with:", runtime.NumCPU(), "cores")
+	fmt.Fprintln(w,"\n> Date of execution:", time.Now().UTC())
+	fmt.Fprintln(w,"> NETCAP build commit:", Commit)
+	fmt.Fprintln(w,"> go runtime version:", runtime.Version())
+	fmt.Fprintln(w,"> running with:", runtime.NumCPU(), "cores")
 
 	b, ok := debug.ReadBuildInfo()
 	if ok {
 		for _, d := range b.Deps {
 			if path.Base(d.Path) == "gopacket" {
-				fmt.Println("> gopacket:", d.Path, "version:", d.Version)
+				fmt.Fprintln(w,"> gopacket:", d.Path, "version:", d.Version)
 			}
 		}
 	}
@@ -117,7 +125,7 @@ func Dump(c DumpConfig) {
 	types.Select(record, c.Selection)
 	types.UTC = c.UTC
 
-	if !c.Structured && !c.Table {
+	if !c.Structured && !c.Table && !c.JSON {
 
 		if p, ok := record.(types.AuditRecord); ok {
 			fmt.Println(strings.Join(p.CSVHeader(), c.Separator))

@@ -11,11 +11,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package export
 
 import (
-	"flag"
 	"fmt"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,11 +32,11 @@ import (
 	"github.com/dreadl0ck/netcap"
 )
 
-func main() {
+func Run() {
 
 	// parse commandline flags
-	flag.Usage = printUsage
-	flag.Parse()
+	fs.Usage = printUsage
+	fs.Parse(os.Args[2:])
 
 	// print version and exit
 	if *flagVersion {
@@ -110,6 +110,15 @@ func main() {
 				AddContext:      *flagContext,
 				MemBufferSize:   *flagMemBufferSize,
 			},
+			ResolverConfig: resolvers.Config{
+				ReverseDNS:      *flagReverseDNS,
+				LocalDNS:        *flagLocalDNS,
+				MACDB:           *flagMACDB,
+				Ja3DB:           *flagJa3DB,
+				ServiceDB:       *flagServiceDB,
+				GeolocationDB:   *flagGeolocationDB,
+			},
+			DPI: *flagDPI,
 			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 		})

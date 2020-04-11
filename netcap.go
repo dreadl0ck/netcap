@@ -26,6 +26,10 @@ import (
 func InitRecord(typ types.Type) (record proto.Message) {
 
 	switch typ {
+	case types.Type_NC_Ethernet:
+		record = new(types.Ethernet)
+	case types.Type_NC_ARP:
+		record = new(types.ARP)
 	case types.Type_NC_IPv4:
 		record = new(types.IPv4)
 	case types.Type_NC_IPv6:
@@ -48,10 +52,6 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.ICMPv6)
 	case types.Type_NC_ICMPv6Echo:
 		record = new(types.ICMPv6Echo)
-	case types.Type_NC_ARP:
-		record = new(types.ARP)
-	case types.Type_NC_Ethernet:
-		record = new(types.Ethernet)
 	case types.Type_NC_SIP:
 		record = new(types.SIP)
 	case types.Type_NC_LLC:
@@ -146,6 +146,18 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.CIP)
 	case types.Type_NC_ENIP:
 		record = new(types.ENIP)
+	case types.Type_NC_DeviceProfile:
+		record = new(types.DeviceProfile)
+	case types.Type_NC_File:
+		record = new(types.File)
+	case types.Type_NC_SMTP:
+		record = new(types.SMTP)
+	case types.Type_NC_Diameter:
+		record = new(types.Diameter)
+	case types.Type_NC_POP3:
+		record = new(types.POP3)
+	case types.Type_NC_TLSServerHello:
+		record = new(types.TLSServerHello)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

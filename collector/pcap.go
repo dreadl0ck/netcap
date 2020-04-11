@@ -14,19 +14,20 @@
 package collector
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"github.com/dreadl0ck/gopacket/layers"
 
 	"github.com/dreadl0ck/gopacket/pcapgo"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 )
 
-// openPcap opens pcap files.
-func openPcap(file string) (*pcapgo.Reader, *os.File, error) {
+// OpenPCAP opens a Packet Capture file
+func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	// get file handle
 	f, err := os.Open(file)
 	if err != nil {
@@ -64,7 +65,7 @@ func IsPcap(file string) (bool, error) {
 // countPackets returns the number of packets in a PCAP file
 func countPackets(path string) (count int64, err error) {
 	// get reader and file handle
-	r, f, err := openPcap(path)
+	r, f, err := OpenPCAP(path)
 	if err != nil {
 		return
 	}
@@ -97,33 +98,52 @@ func (c *Collector) CollectPcap(path string) error {
 
 	// file exists.
 	clearLine()
-	println("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
+	c.printlnStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
 
 	// set input filesize on collector
 	c.inputSize = stat.Size()
 
 	// display total packet count
-	print("counting packets...")
 	start := time.Now()
+	c.printStdOut("counting packets...")
 	c.numPackets, err = countPackets(path)
 	if err != nil {
 		return err
 	}
-	clearLine()
-	fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
-	r, f, err := openPcap(path)
+	if !c.config.Quiet {
+		clearLine()
+	}
+	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
+
+	r, f, err := OpenPCAP(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+
+	c.printlnStdOut("detected link type:", r.LinkType())
+
+	switch r.LinkType() {
+	case layers.LinkTypeEthernet:
+		c.config.BaseLayer = layers.LayerTypeEthernet
+	case layers.LinkTypeRaw:
+		c.config.BaseLayer = layers.LayerTypeIPv4
+	case layers.LinkTypeIPv4:
+		c.config.BaseLayer = layers.LayerTypeIPv4
+	case layers.LinkTypeIPv6:
+		c.config.BaseLayer = layers.LayerTypeIPv6
+	case layers.LinkTypeNull:
+		c.config.BaseLayer = layers.LayerTypeLoopback
+	default:
+		log.Fatal("unhandled link type: ", r.LinkType())
+	}
 
 	// initialize collector
 	if err := c.Init(); err != nil {
 		return err
 	}
 
-	print("decoding packets... ")
 	for {
 
 		// fetch the next packetdata and packetheader
@@ -138,6 +158,6 @@ func (c *Collector) CollectPcap(path string) error {
 
 		c.handleRawPacketData(data, ci)
 	}
-	c.cleanup()
+	c.cleanup(false)
 	return nil
 }

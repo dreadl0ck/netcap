@@ -13,20 +13,84 @@
 
 package encoder
 
+import (
+	"io/ioutil"
+	"log"
+	"os"
+
+	"github.com/dreadl0ck/gopacket/reassembly"
+)
+
+var (
+	c Config
+	
+	reassemblyLog = log.New(ioutil.Discard, "", log.LstdFlags)
+	reassemblyLogFileHandle *os.File
+
+	debugLog = log.New(ioutil.Discard, "", log.LstdFlags)
+	debugLogFileHandle *os.File
+)
+
+const (
+	directoryPermission = 0755
+	logFilePermission = 0755
+)
+
+// SetConfig can be used to set a configuration for the package
+func SetConfig(cfg Config) {
+	c = cfg
+	fsmOptions = reassembly.TCPSimpleFSMOptions{
+		SupportMissingEstablishment: c.AllowMissingInit,
+	}
+	
+	// setup loggers
+	if c.Debug {
+		var err error
+		debugLogFileHandle, err = os.OpenFile("debug.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
+		if err != nil {
+			log.Fatal(err)
+		}
+		debugLog.SetOutput(debugLogFileHandle)
+
+		reassemblyLogFileHandle, err = os.OpenFile("reassembly.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
+		if err != nil {
+			log.Fatal(err)
+		}
+		reassemblyLog.SetOutput(reassemblyLogFileHandle)
+
+		pop3Debug = true
+	}
+}
+
 // Config contains configuration parameters
 // for the encoders
 type Config struct {
-	Buffer          bool
-	Compression     bool
-	CSV             bool
-	IncludeEncoders string
-	ExcludeEncoders string
-	Out             string
-	WriteChan       bool
-	Source          string
-	Version         string
-	IncludePayloads bool
-	Export          bool
-	AddContext      bool
-	MemBufferSize   int
+	Buffer             bool
+	Compression        bool
+	CSV                bool
+	IncludeEncoders    string
+	ExcludeEncoders    string
+	Out                string
+	WriteChan          bool
+	Source             string
+	Version            string
+	IncludePayloads    bool
+	Export             bool
+	AddContext         bool
+	MemBufferSize      int
+	FlushEvery         int
+	NoDefrag           bool
+	Checksum           bool
+	NoOptCheck         bool
+	IgnoreFSMerr       bool
+	AllowMissingInit   bool
+	Debug              bool
+	HexDump            bool
+	WaitForConnections bool
+	WriteIncomplete    bool
+	MemProfile         string
+	ConnFlushInterval  int
+	ConnTimeOut        int
+	FlowFlushInterval  int
+	FlowTimeOut        int
 }

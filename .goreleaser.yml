@@ -1,10 +1,16 @@
 builds:
-- 
-  main: ./cmd/capture
-  id: capture
-  binary: net.capture
+-
+  main: ./cmd
+  id: net
+  binary: net
   env:
     - CGO_ENABLED=1
+    # experiments to compile godpi with nDPI module
+#    - CC=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-gcc
+#    - CXX=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-g++
+#    - LDFLAGS="-L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib"
+#    - CPPFLAGS="-I/usr/local/opt/libpcap/include -I/usr/local/Cellar/liblinear/2.30/include"
+#    - PKG_CONFIG_PATH="/usr/local/opt/libpcap/lib/pkgconfig"
 
   # For more info refer to: https://golang.org/doc/install/source#environment
   goos:
@@ -44,174 +50,6 @@ builds:
     # this hook is used to compile the linux versions in a docker container
     post: zeus build-all-linux
     #pre: rice embed-go
--
-  main: ./cmd/util
-  id: util
-  binary: net.util
-  env:
-    - CGO_ENABLED=1
-
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  goos:
-    - darwin
-    - windows
-
-  # Custom ldflags templates.
-  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
-  ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w
-
-  # GOARCH to build for.
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  # Defaults are 386 and amd64.
-  goarch:
-    - amd64
-    - arm
-    - arm64
-- 
-  main: ./cmd/label
-  id: label
-  binary: net.label
-  env:
-    - CGO_ENABLED=1
-
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  goos:
-    - darwin
-    - windows
-
-  # Custom ldflags templates.
-  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
-  ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w
-
-  # GOARCH to build for.
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  # Defaults are 386 and amd64.
-  goarch:
-    - amd64
-    - arm
-    - arm64
-- 
-  main: ./cmd/collect
-  id: collect
-  binary: net.collect
-  env:
-    - CGO_ENABLED=1
-
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  goos:
-    - darwin
-    - windows
-
-  # Custom ldflags templates.
-  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
-  ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w
-
-  # GOARCH to build for.
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  # Defaults are 386 and amd64.
-  goarch:
-    - amd64
-    - arm
-    - arm64
-- 
-  main: ./cmd/agent
-  id: agent
-  binary: net.agent
-  env:
-    - CGO_ENABLED=1
-
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  goos:
-    - darwin
-    - windows
-
-  # Custom ldflags templates.
-  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
-  ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w
-
-  # GOARCH to build for.
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  # Defaults are 386 and amd64.
-  goarch:
-    - amd64
-    - arm
-    - arm64
-- 
-  main: ./cmd/proxy
-  id: proxy
-  binary: net.proxy
-  env:
-    - CGO_ENABLED=1
-
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  goos:
-    - darwin
-    - windows
-
-  # Custom ldflags templates.
-  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
-  ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w
-
-  # GOARCH to build for.
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  # Defaults are 386 and amd64.
-  goarch:
-    - amd64
-    - arm
-    - arm64
-- 
-  main: ./cmd/export
-  id: export
-  binary: net.export
-  env:
-    - CGO_ENABLED=1
-
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  goos:
-    - darwin
-    - windows
-
-  # Custom ldflags templates.
-  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
-  ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w
-
-  # GOARCH to build for.
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  # Defaults are 386 and amd64.
-  goarch:
-    - amd64
-    - arm
-    - arm64
-- 
-  main: ./cmd/dump
-  id: dump
-  binary: net.dump
-  env:
-    - CGO_ENABLED=1
-
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  goos:
-    - darwin
-    - windows
-
-  # Custom ldflags templates.
-  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
-  ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w
-
-  # GOARCH to build for.
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  # Defaults are 386 and amd64.
-  goarch:
-    - amd64
-    - arm
-    - arm64
 
 brew:
   github:

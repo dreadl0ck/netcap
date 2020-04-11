@@ -15,39 +15,35 @@ package collector
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"sync/atomic"
 	"time"
 
-	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/bpf"
 )
+
+var logFileHandle *os.File
+
+type packet struct {
+	data []byte
+	ci gopacket.CaptureInfo
+}
 
 func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
 
 	// show progress
 	c.printProgress()
 
-	// create a new gopacket with lazy decoding
-	// base layer is by default Ethernet
-	p := gopacket.NewPacket(data, c.config.BaseLayer, c.config.DecodeOptions)
-	p.Metadata().Timestamp = ci.Timestamp
-	p.Metadata().CaptureInfo = ci
-
-	// if HTTP capture is desired, tcp stream reassembly needs to be performed.
-	// the gopacket/reassembly implementation does not allow packets to arrive out of order
-	// therefore the http decoding must not happen in a worker thread
-	// and instead be performed here to guarantee packets are being processed sequentially
-	if encoder.HTTPActive {
-		encoder.DecodeHTTP(p)
-	}
-
 	// pass packet to a worker routine
-	c.handlePacket(p)
+	c.handlePacket(&packet{
+		data: data,
+		ci: ci,
+	})
 }
 
 // printProgressLive prints live statistics.
@@ -64,7 +60,7 @@ func (c *Collector) printProgressLive() {
 	}
 }
 
-// DumpProto prints a protobuff Message.
+// DumpProto prints a protobuf Message.
 func DumpProto(pb proto.Message) {
 	println(proto.MarshalTextString(pb))
 }
@@ -89,4 +85,20 @@ func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 		raw[i] = bpf.RawInstruction{Op: ri.Code, Jt: ri.Jt, Jf: ri.Jf, K: ri.K}
 	}
 	return raw, nil
+}
+
+func (c *Collector) printlnStdOut(args ...interface{}) {
+	if c.config.Quiet {
+		fmt.Fprintln(logFileHandle, args...)
+	} else {
+		fmt.Fprintln(os.Stdout, args...)
+	}
+}
+
+func (c *Collector) printStdOut(args ...interface{}) {
+	if c.config.Quiet {
+		fmt.Fprint(logFileHandle, args...)
+	} else {
+		fmt.Fprint(os.Stdout, args...)
+	}
 }

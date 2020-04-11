@@ -64,18 +64,14 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 
 	// read packets in background routine
 	go func() {
-		print("decoding packets... ")
-		for pack := range ps.Packets() {
+		for p := range ps.Packets() {
 			c.printProgressLive()
 
-			// if HTTP capture is desired, tcp stream reassembly needs to be performed.
-			// the gopacket/reassembly implementation does not allow packets to arrive out of order
-			// therefore the http decoding must not happen in a worker thread
-			// and instead be performed here to guarantee packets are being processed sequentially
-			if encoder.HTTPActive {
-				encoder.DecodeHTTP(pack)
-			}
-			c.handlePacket(pack)
+			// TODO: avoid duplicate alloc
+			c.handlePacket(&packet{
+				data: p.Data(),
+				ci:   p.Metadata().CaptureInfo,
+			})
 		}
 	}()
 

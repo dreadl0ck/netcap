@@ -34,6 +34,8 @@ import (
 // eg: 04/15/2014-11:53:20.462091
 const suricataTS = "01/02/2006-15:04:05.000000"
 
+const directoryPermission = 0755
+
 // regular expressions to match data from suricata fast.log
 var (
 	protoc         = regexp.MustCompile(`\{[A-Z]*\}`)
@@ -82,7 +84,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 		// does not exist
 		// make sure suricata log dir exists
 		if os.IsNotExist(err) {
-			if err := os.Mkdir(logDir, 0755); err != nil {
+			if err := os.Mkdir(logDir, directoryPermission); err != nil {
 				return err
 			}
 		} else {

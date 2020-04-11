@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package proxy
 
 import (
 	"bytes"
@@ -175,7 +175,7 @@ makeHTTPRequest:
 		Timestamp: utils.TimeToString(startTime),
 
 		// Request information
-		ReqCookies:         reqCookies,
+		//ReqCookies:         reqCookies,
 		Proto:              req.Proto,
 		Method:             string(req.Method),
 		Host:               string(req.URL.Host),
@@ -191,7 +191,7 @@ makeHTTPRequest:
 		StatusCode:         int32(resp.StatusCode),
 		ResContentEncoding: resp.Header.Get("Content-Encoding"),
 		ServerName:         resp.Header.Get("Server"),
-		ResCookies:         resCookies,
+		//ResCookies:         resCookies,
 		ResContentType:     string(resp.Header.Get("Content-Type")),
 		DoneAfter:          delta.Nanoseconds(),
 

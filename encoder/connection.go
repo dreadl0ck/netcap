@@ -14,17 +14,17 @@
 package encoder
 
 import (
-	"flag"
 	"log"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"time"
 
+	"sync"
+
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
-	"github.com/dreadl0ck/gopacket"
 )
 
 // AtomicConnMap contains all connections and provides synchronized access
@@ -49,10 +49,6 @@ var (
 	connEncoderInstance *CustomEncoder
 	conns               int64
 
-	// flags for flushing intervals
-	flagConnFlushInterval = flag.Int("conn-flush-interval", 10000, "flush connections every X flows")
-	flagConnTimeOut       = flag.Int("conn-timeout", 60, "close connections older than X seconds")
-
 	connFlushInterval int64
 	connTimeOut       time.Duration
 )
@@ -72,8 +68,8 @@ func (c ConnectionID) String() string {
 
 var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connection", func(d *CustomEncoder) error {
 	connEncoderInstance = d
-	connFlushInterval = int64(*flagConnFlushInterval)
-	connTimeOut = time.Second * time.Duration(*flagConnTimeOut)
+	connFlushInterval = int64(c.ConnFlushInterval)
+	connTimeOut = time.Second * time.Duration(c.ConnTimeOut)
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 

@@ -11,16 +11,20 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package util
 
-import "flag"
+import (
+	"github.com/namsral/flag"
+	"os"
+)
 
 var (
 	// util
-	flagCheckFields   = flag.Bool("check", false, "check number of occurences of the separator, in fields of an audit record file")
-	flagToUTC         = flag.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
-	flagInput         = flag.String("r", "", "read specified file, can either be a pcap or netcap audit record file")
-	flagSeparator     = flag.String("sep", ",", "set separator string for csv output")
-	flagVersion       = flag.Bool("version", false, "print netcap package version and exit")
-	flagMemBufferSize = flag.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	fs                = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagCheckFields   = fs.Bool("check", false, "check number of occurences of the separator, in fields of an audit record file")
+	flagToUTC         = fs.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
+	flagInput         = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagSeparator     = fs.String("sep", ",", "set separator string for csv output")
+	flagVersion       = fs.Bool("version", false, "print netcap package version and exit")
+	flagMemBufferSize = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
 )

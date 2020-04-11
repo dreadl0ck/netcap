@@ -16,8 +16,8 @@ package collector
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -25,26 +25,30 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/dpi"
+
+	"sync"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
+
+	"github.com/dreadl0ck/netcap/encoder"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 )
 
-var flagFreeOSMemory = flag.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
-
 // Collector provides an interface to collect data from PCAP or a network interface.
 type Collector struct {
 
 	// input channels for the worker pool
-	workers []chan gopacket.Packet
+	workers []chan *packet
 
 	// synchronization
 	statMutex sync.Mutex
@@ -85,6 +89,11 @@ type Collector struct {
 
 // New returns a new Collector instance.
 func New(config Config) *Collector {
+
+	if config.OutDirPermission == 0 {
+		config.OutDirPermission = os.FileMode(outDirPermissionDefault)
+	}
+
 	return &Collector{
 		next:                1,
 		unknownProtosAtomic: encoder.NewAtomicCounterMap(),
@@ -107,7 +116,13 @@ func (c *Collector) stopWorkers() {
 }
 
 // cleanup before leaving. closes all buffers and displays stats.
-func (c *Collector) cleanup() {
+func (c *Collector) cleanup(force bool) {
+
+	if c.config.ReassembleConnections {
+		// teardown the TCP stream reassembly and print stats
+		encoder.CleanupReassembly(!force)
+	}
+	encoder.Cleanup()
 
 	c.statMutex.Lock()
 	c.wg.Wait()
@@ -120,7 +135,7 @@ func (c *Collector) cleanup() {
 	}
 
 	clearLine()
-	println("done.\n")
+	c.printlnStdOut("done.\n")
 	c.stopWorkers()
 
 	// sync pcap file
@@ -155,7 +170,16 @@ func (c *Collector) cleanup() {
 	// encoder.DumpTop5NetworkFlows()
 	// encoder.DumpTop5TransportFlows()
 
-	c.printErrors()
+	if c.config.EncoderConfig.Debug {
+		c.printErrors()
+	}
+
+	if logFileHandle != nil {
+		err := logFileHandle.Close()
+		if err != nil {
+			c.printStdOut("failed to close logfile:", err)
+		}
+	}
 }
 
 // handleSignals catches signals and runs the cleanup
@@ -168,26 +192,53 @@ func (c *Collector) handleSignals() {
 	go func() {
 		sig := <-sigs
 
-		fmt.Println("reiceived signal:", sig)
+		fmt.Println("received signal:", sig)
 		fmt.Println("exiting")
 
-		c.cleanup()
+		go func() {
+			sig := <-sigs
+			fmt.Println("force quitting, signal:", sig)
+			os.Exit(0)
+		}()
+
+		c.cleanup(true)
 		os.Exit(0)
 	}()
 }
 
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines in round robin style.
-func (c *Collector) handlePacket(p gopacket.Packet) {
+func (c *Collector) handlePacket(p *packet) {
 
-	// make it work for 1 worker only
-	// if len(c.workers) == 1 {
-	// 	c.workers[0] <- p
-	// 	return
-	// }
+	// make it work for 1 worker only, can be used for debugging
+	//if len(c.workers) == 1 {
+	//	c.workers[0] <- p
+	//	return
+	//}
 
 	// send the packetInfo to the encoder routine
 	c.workers[c.next] <- p
+
+	// increment or reset next
+	if c.config.Workers >= c.next+1 {
+		// reset
+		c.next = 1
+	} else {
+		c.next++
+	}
+}
+
+// to decode incoming packets in parallel
+// they are passed to several worker goroutines in round robin style.
+func (c *Collector) handlePacketTimeout(p *packet) {
+
+	select {
+	// send the packetInfo to the encoder routine
+	case c.workers[c.next] <- p:
+	case <-time.After(3 * time.Second):
+		p := gopacket.NewPacket(p.data, c.config.BaseLayer, gopacket.Default)
+		fmt.Println("handle packet timeout", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
+	}
 
 	// increment or reset next
 	if c.config.Workers >= c.next+1 {
@@ -241,8 +292,14 @@ func (c *Collector) closeErrorLogFile() {
 // Stats prints collector statistics.
 func (c *Collector) Stats() {
 
-	rows := [][]string{}
+	var target io.Writer
+	if c.config.Quiet {
+		target = logFileHandle
+	} else {
+		target = os.Stderr
+	}
 
+	rows := [][]string{}
 	for k, v := range c.allProtosAtomic.Items {
 		if _, ok := c.unknownProtosAtomic.Items[k]; ok {
 			rows = append(rows, []string{ansi.Yellow + k, fmt.Sprint(v), share(v, c.numPackets) + ansi.Reset})
@@ -250,14 +307,14 @@ func (c *Collector) Stats() {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
 		}
 	}
-	tui.Table(os.Stdout, []string{"Layer", "NumRecords", "Share"}, rows)
+	tui.Table(target, []string{"Layer", "NumRecords", "Share"}, rows)
 
 	if len(encoder.CustomEncoders) > 0 {
 		rows = [][]string{}
 		for _, e := range encoder.CustomEncoders {
 			rows = append(rows, []string{e.Name, strconv.FormatInt(e.NumRecords(), 10), share(e.NumRecords(), c.numPackets)})
 		}
-		tui.Table(os.Stdout, []string{"CustomEncoder", "NumRecords", "Share"}, rows)
+		tui.Table(target, []string{"CustomEncoder", "NumRecords", "Share"}, rows)
 	}
 
 	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
@@ -268,7 +325,8 @@ func (c *Collector) Stats() {
 	if c.errorsPcapWriterAtomic.count > 0 {
 		res += "-> " + share(c.errorsPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.errorsPcapWriterAtomic.count, 10) + ") written to errors.pcap\n"
 	}
-	fmt.Println(res)
+
+	fmt.Fprintln(target, res)
 }
 
 // updates the progress indicator and writes to stdout.
@@ -283,23 +341,29 @@ func (c *Collector) printProgress() {
 
 	// increment atomic packet counter
 	atomic.AddInt64(&c.current, 1)
-	if c.current%10000 == 0 {
+	if c.current%100 == 0 {
+		if !c.config.Quiet {
+			// using a strings.Builder for assembling string for performance
+			// TODO: could be refactored to use a byte slice with a fixed length instead
+			// TODO: add Builder to collector and flush it every cycle to reduce allocations
+			// also only print flows and collections when the corresponding encoders are active
+			var b strings.Builder
+			b.Grow(65)
+			b.WriteString("decoding packets... (")
+			b.WriteString(utils.Progress(c.current, c.numPackets))
+			b.WriteString(") flows: ")
+			b.WriteString(strconv.Itoa(encoder.Flows.Size()))
+			b.WriteString(" connections: ")
+			b.WriteString(strconv.Itoa(encoder.Connections.Size()))
+			b.WriteString(" profiles: ")
+			b.WriteString(strconv.Itoa(encoder.Profiles.Size()))
+			b.WriteString(" packets: ")
+			b.WriteString(strconv.Itoa(int(c.current)))
 
-		// using a strings.Builder for assembling string for performance
-		// TODO: could be refactored to use a byte slice with a fixed length instead
-		// also only print flows and collections when the corresponding encoders are active
-		var b strings.Builder
-		b.Grow(65)
-		b.WriteString("decoding packets... (")
-		b.WriteString(utils.Progress(c.current, c.numPackets))
-		b.WriteString(") flows: ")
-		b.WriteString(strconv.Itoa(encoder.Flows.Size()))
-		b.WriteString(" connections: ")
-		b.WriteString(strconv.Itoa(encoder.Connections.Size()))
-
-		// print
-		clearLine()
-		os.Stdout.WriteString(b.String())
+			// print
+			clearLine()
+			os.Stdout.WriteString(b.String())
+		}
 	}
 }
 
@@ -309,19 +373,46 @@ func (c *Collector) Init() (err error) {
 
 	// start workers
 	c.workers = c.initWorkers()
-	fmt.Println("spawned", c.config.Workers, "workers")
+	c.printlnStdOut("spawned", c.config.Workers, "workers")
 
 	// create full output directory path if set
 	if c.config.EncoderConfig.Out != "" {
-		err = os.MkdirAll(c.config.EncoderConfig.Out, 0755)
+		err = os.MkdirAll(c.config.EncoderConfig.Out, c.config.OutDirPermission)
+		if err != nil {
+			return err
+		}
+	}
+
+	// set file storage
+	encoder.FileStorage = c.config.FileStorage
+
+	// init deep packet inspection
+	if c.config.DPI {
+		dpi.Init()
+	}
+
+	// initialize resolvers
+	resolvers.Init(c.config.ResolverConfig, c.config.Quiet)
+
+	if c.config.ResolverConfig.LocalDNS {
+		encoder.LocalDNS = true
+	}
+
+	encoder.SetConfig(c.config.EncoderConfig)
+
+	// set quiet mode for other subpackages
+	encoder.Quiet = c.config.Quiet
+
+	if logFileHandle == nil && c.config.Quiet {
+		err = c.InitLogging()
 		if err != nil {
 			return err
 		}
 	}
 
 	// initialize encoders
-	encoder.InitLayerEncoders(c.config.EncoderConfig)
-	encoder.InitCustomEncoders(c.config.EncoderConfig)
+	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)
+	encoder.InitCustomEncoders(c.config.EncoderConfig, c.config.Quiet)
 
 	// set payload capture
 	encoder.CapturePayload = c.config.EncoderConfig.IncludePayloads
@@ -341,8 +432,8 @@ func (c *Collector) Init() (err error) {
 	// handle signal for a clean exit
 	c.handleSignals()
 
-	if *flagFreeOSMemory != 0 {
-		fmt.Println("will free the OS memory every", *flagFreeOSMemory, "minutes")
+	if c.config.FreeOSMem != 0 {
+		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
 		go c.FreeOSMemory()
 	}
 
@@ -361,7 +452,7 @@ func (c *Collector) GetNumPackets() int64 {
 func (c *Collector) FreeOSMemory() {
 	for {
 		select {
-		case <-time.After(time.Duration(*flagFreeOSMemory) * time.Minute):
+		case <-time.After(time.Duration(c.config.FreeOSMem) * time.Minute):
 			debug.FreeOSMemory()
 		}
 	}
@@ -370,8 +461,24 @@ func (c *Collector) FreeOSMemory() {
 // PrintConfiguration dumps the current collector config to stdout
 func (c *Collector) PrintConfiguration() {
 
+	// ensure the logfile handle gets openend
+	err := c.InitLogging()
+	if err != nil {
+		log.Fatal("failed to open logfile:", err)
+	}
+
+	var target io.Writer
+	if c.config.Quiet {
+		target = logFileHandle
+	} else {
+		target = os.Stdout
+	}
+
+	netcap.FPrintBuildInfo(target)
+	fmt.Fprintln(target, "> PID:", os.Getpid())
+
 	// print configuration as table
-	tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
+	tui.Table(target, []string{"Setting", "Value"}, [][]string{
 		{"Workers", strconv.Itoa(c.config.Workers)},
 		{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
 		{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
@@ -379,6 +486,25 @@ func (c *Collector) PrintConfiguration() {
 		{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
 		{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
 		{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
+		{"FileStorage", c.config.FileStorage},
 	})
-	fmt.Println() // add a newline
+	fmt.Fprintln(target) // add a newline
+}
+
+// InitLogging can be used to open the logfile before calling Init()
+// this is used to be able to dump the collector configuration into the netcap.log in quiet mode
+// following calls to Init() will not open the filehandle again
+func (c *Collector) InitLogging() error {
+
+	// prevent reopen
+	if logFileHandle != nil {
+		return nil
+	}
+
+	var err error
+	logFileHandle, err = os.OpenFile("netcap.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, c.config.OutDirPermission)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -11,10 +11,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package util
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os/exec"
@@ -29,17 +28,17 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.util -r TCP.ncap.gz -check")
-	fmt.Println("	$ net.util -r TCP.ncap.gz -check -sep '/'")
-	fmt.Println("	$ net.util -ts2utc 1505839354.197231")
+	fmt.Println("util tool usage examples:")
+	fmt.Println("	$ net util -read TCP.ncap.gz -check")
+	fmt.Println("	$ net util -read TCP.ncap.gz -check -sep '/'")
+	fmt.Println("	$ net util -ts2utc 1505839354.197231")
 	fmt.Println()
 }
 
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }
 
 // CheckFields checks if the separator occurs inside fields of audit records

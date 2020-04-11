@@ -1,7 +1,19 @@
-package main
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+package label
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/dreadl0ck/netcap"
@@ -10,16 +22,16 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.label -r traffic.pcap")
-	fmt.Println("	$ net.label -r traffic.pcap -out output_dir")
-	fmt.Println("	$ net.label -r taffic.pcap -progress")
-	fmt.Println("	$ net.label -r taffic.pcap -collect")
+	fmt.Println("label tool usage examples:")
+	fmt.Println("	$ net label -read traffic.pcap")
+	fmt.Println("	$ net label -read traffic.pcap -out output_dir")
+	fmt.Println("	$ net label -read taffic.pcap -progress")
+	fmt.Println("	$ net label -read taffic.pcap -collect")
 	fmt.Println()
 }
 
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }

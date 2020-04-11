@@ -11,14 +11,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package agent
 
 import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"flag"
 	"fmt"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"io/ioutil"
 	"os"
 
@@ -33,11 +33,11 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-func main() {
+func Run() {
 
 	// parse commandline flags
-	flag.Usage = printUsage
-	flag.Parse()
+	fs.Usage = printUsage
+	fs.Parse(os.Args[2:])
 
 	// print version and exit
 	if *flagVersion {
@@ -106,7 +106,31 @@ func main() {
 			IncludePayloads: *flagPayload,
 			AddContext:      *flagContext,
 			MemBufferSize:   *flagMemBufferSize,
+			FlushEvery:             *flagFlushevery,
+			NoDefrag:               *flagNodefrag,
+			Checksum:               *flagChecksum,
+			NoOptCheck:             *flagNooptcheck,
+			IgnoreFSMerr:           *flagIgnorefsmerr,
+			AllowMissingInit:       *flagAllowmissinginit,
+			Debug:                  *flagDebug,
+			HexDump:                *flagHexdump,
+			WaitForConnections:     *flagWaitForConnections,
+			WriteIncomplete:        *flagWriteincomplete,
+			MemProfile:             *flagMemprofile,
+			ConnFlushInterval:      *flagConnFlushInterval,
+			ConnTimeOut:            *flagConnTimeOut,
+			FlowFlushInterval:      *flagFlowFlushInterval,
+			FlowTimeOut:            *flagFlowTimeOut,
 		},
+		ResolverConfig: resolvers.Config{
+			ReverseDNS:      *flagReverseDNS,
+			LocalDNS:        *flagLocalDNS,
+			MACDB:           *flagMACDB,
+			Ja3DB:           *flagJa3DB,
+			ServiceDB:       *flagServiceDB,
+			GeolocationDB:   *flagGeolocationDB,
+		},
+		DPI: *flagDPI,
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})

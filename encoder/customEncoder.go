@@ -28,18 +28,19 @@ import (
 var (
 	// CustomEncoders slice contains initialized encoders at runtime
 	// for usage from other packages
-	CustomEncoders = []*CustomEncoder{}
-
-	// contains all available custom encoders
-	customEncoderSlice = []*CustomEncoder{
-		tlsEncoder,
+	CustomEncoders, customEncoderSlice = []*CustomEncoder{}, []*CustomEncoder{
+		tlsClientHelloEncoder,
+		tlsServerHelloEncoder,
 		linkFlowEncoder,
 		networkFlowEncoder,
 		transportFlowEncoder,
 		httpEncoder,
 		flowEncoder,
 		connectionEncoder,
-	}
+		profileEncoder,
+		fileEncoder,
+		pop3Encoder,
+	} // contains all available custom encoders
 )
 
 type (
@@ -88,7 +89,7 @@ func init() {
 }
 
 // InitCustomEncoders initializes all custom encoders
-func InitCustomEncoders(c Config) {
+func InitCustomEncoders(c Config, quiet bool) {
 
 	var (
 		// values from command-line flags
@@ -176,7 +177,10 @@ func InitCustomEncoders(c Config) {
 		// append to custom encoders slice
 		CustomEncoders = append(CustomEncoders, e)
 	}
-	fmt.Println("initialized", len(CustomEncoders), "custom encoders")
+
+	if !quiet {
+		fmt.Println("initialized", len(CustomEncoders), "custom encoders")
+	}
 }
 
 // CreateCustomEncoder returns a new CustomEncoder instance

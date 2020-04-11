@@ -11,10 +11,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package export
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -32,18 +31,18 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.export -r dump.pcap")
-	fmt.Println("	$ net.export -iface eth0 -promisc=false")
-	fmt.Println("	$ net.export -r TCP.ncap.gz")
-	fmt.Println("	$ net.export .")
+	fmt.Println("export tool usage examples:")
+	fmt.Println("	$ net export -read dump.pcap")
+	fmt.Println("	$ net export -iface eth0 -promisc=false")
+	fmt.Println("	$ net export -read TCP.ncap.gz")
+	fmt.Println("	$ net export .")
 	fmt.Println()
 }
 
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }
 
 func exportDir(path string) {

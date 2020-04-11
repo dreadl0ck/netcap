@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package collect
 
 import (
 	"bufio"
@@ -26,6 +26,8 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+const directoryPermission = 0755
+
 // AuditRecordHandle wraps a file handle of a netcap audit record file
 // contains the original file handle and writers to compress and buffer the data
 type AuditRecordHandle struct {
@@ -37,7 +39,7 @@ type AuditRecordHandle struct {
 // NewAuditRecordHandle creates a new netcap audit record file
 func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 
-	err := os.MkdirAll(b.ClientID, 0755)
+	err := os.MkdirAll(b.ClientID, directoryPermission)
 	if err != nil {
 		panic(err)
 	}
