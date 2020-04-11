@@ -27,16 +27,19 @@ _Netcap_ uses Google's Protocol Buffers to encode its output, which allows acces
 
 ## Framework Components
 
-Currently there are 8 applications:
+The framework consists of 9 logically separate tools compiled into a single binary:
 
-* net.capture \(capture audit records live or from dumpfiles\)
-* net.dump \(dump with audit records in various formats\)
-* net.label \(tool for creating labeled CSV datasets from netcap data\)
-* net.collect \(collection server for distributed collection\)
-* net.agent \(sensor agent for distributed collection\)
-* net.proxy \(http reverse proxy for capturing traffic from web services\)
-* net.util \(utility tool for validating audit records and converting timestamps\)
-* net.export \(exporter for prometheus metrics\)
+* capture \(capture audit records live or from dumpfiles\)
+* dump \(dump with audit records in various formats\)
+* label \(tool for creating labeled CSV datasets from netcap data\)
+* collect \(collection server for distributed collection\)
+* agent \(sensor agent for distributed collection\)
+* proxy \(http reverse proxy for capturing traffic from web services\)
+* util \(utility tool for validating audit records and converting timestamps\)
+* export \(exporter for prometheus metrics\)
+* transform \(maltego transformation plugin\)
+
+## 
 
 ## Use Cases
 
