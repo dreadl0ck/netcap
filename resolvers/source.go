@@ -21,7 +21,7 @@ type Config struct {
 
 func Init(c Config, quiet bool) {
 
-	dataBaseSource = os.Getenv("NETCAP_DATABASE_SOURCE")
+	dataBaseSource = os.Getenv("NC_DATABASE_SOURCE")
 	if dataBaseSource == "" {
 		dataBaseSource = "/usr/local/etc/netcap/dbs"
 	}
