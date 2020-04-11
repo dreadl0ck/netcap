@@ -31,7 +31,7 @@ When receiving an encrypted batch from a sensor, the server needs to trim off th
 Both sensor and client can be configured by using the _-addr_ flag to specify an IP address and port. To generate a keypair for the server, the _-gen-keypair_ flag must be used:
 
 ```text
-$ netcap-server -gen-keypair 
+$ net collect -gen-keypair 
 wrote keys
 $ ls
 priv.key pub.key
@@ -40,13 +40,13 @@ priv.key pub.key
 Now, the server can be started, the location of the file containing the private key must be supplied:
 
 ```text
-$ netcap-server -privkey priv.key -addr 127.0.0.1:4200
+$ net collect -privkey priv.key -addr 127.0.0.1:4200
 ```
 
 The server will now be listening for incoming messages. Next, the sensor must be configured. The keypair for the sensor will be generated on startup, but the public key of the server must be provided:
 
 ```text
-$ netcap-sensor -pubkey pub.key -addr 127.0.0.1:4200
+$ net agent -pubkey pub.key -addr 127.0.0.1:4200
 got 126 bytes of type NC_ICMPv6RouterAdvertisement expected [126] got size [73] for type NC_Ethernet
 got 73 bytes of type NC_Ethernet expected [73]
 got size [27] for type NC_ICMPv6
@@ -59,7 +59,7 @@ got 27 bytes of type NC_ICMPv6 expected [27]
 The client will now collect the traffic live from the specified interface, and send it to the configured server, once a batch for an audit record type is complete. The server will log all received messages:
 
 ```text
-$ netcap-server -privkey priv.key -addr 127.0.0.1:4200 
+$ net collect -privkey priv.key -addr 127.0.0.1:4200 
 packet-received: bytes=2412 from=127.0.0.1:57368 decoded batch NC_Ethernet from client xyz
 new file xyz/Ethernet.ncap
 packet-received: bytes=2701 from=127.0.0.1:65050 decoded batch NC_IPv4 from client xyz
@@ -68,4 +68,6 @@ new file xyz/IPv4.ncap
 ```
 
 When stopping the server with a _SIGINT_ \(Ctrl-C\), all audit record file handles will be flushed and closed properly.
+
+The agent uses the USER environment variable to identify the workstation where the audit records are created. This will be replaced with a unique identifier in a future release.
 
