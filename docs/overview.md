@@ -1,5 +1,5 @@
-# NETCAP Overview v0.4.3
-> Documentation: docs.netcap.io
+# NETCAP Overview v0.5
+> Documentation: [docs.netcap.io](https://docs.netcap.io)
 ## LayerEncoders
 |Name|NumFields|Fields|
 |----|---------|------|
@@ -56,13 +56,19 @@
 |NortelDiscovery               | 7 |Timestamp, IPAddress, SegmentID, Chassis, Backplane, State, NumLinks|
 |CIP                           | 12 |Timestamp, Response, ServiceID, ClassID, InstanceID, Status, AdditionalStatus, Data, SrcIP, DstIP, SrcPort, DstPort|
 |Ethernet/IP                   | 12 |Timestamp, Command, Length, SessionHandle, Status, SenderContext, Options, CommandSpecific, SrcIP, DstIP, SrcPort, DstPort|
+|SMTP                          | 9 |Timestamp, IsEncrypted, IsResponse, ResponseLines, Command, SrcIP, DstIP, SrcPort, DstPort|
+|Diameter                      | 13 |Timestamp, Version, Flags, MessageLen, CommandCode, ApplicationID, HopByHopID, EndToEndID, AVPs, SrcIP, DstIP, SrcPort, DstPort|
 ## CustomEncoders
 |Name|NumFields|Fields|
 |----|---------|------|
-|TLS                           | 27 |Timestamp, Type, Version, MessageLen, HandshakeType, HandshakeLen, HandshakeVersion, Random, SessionIDLen, SessionID, CipherSuiteLen, ExtensionLen, SNI, OSCP, CipherSuites, CompressMethods, SignatureAlgs, SupportedGroups, SupportedPoints, ALPNs, Ja3, SrcIP, DstIP, SrcMAC, DstMAC, SrcPort, DstPort|
+|TLSClientHello                | 27 |Timestamp, Type, Version, MessageLen, HandshakeType, HandshakeLen, HandshakeVersion, Random, SessionIDLen, SessionID, CipherSuiteLen, ExtensionLen, SNI, OSCP, CipherSuites, CompressMethods, SignatureAlgs, SupportedGroups, SupportedPoints, ALPNs, Ja3, SrcIP, DstIP, SrcMAC, DstMAC, SrcPort, DstPort|
+|TLSServerHello                | 27 |Timestamp, Version, Random, SessionID, CipherSuite, CompressionMethod, NextProtoNeg, NextProtos, OCSPStapling, TicketSupported, SecureRenegotiationSupported, SecureRenegotiation, AlpnProtocol, Ems, SupportedVersion, SelectedIdentityPresent, SelectedIdentity, Cookie, SelectedGroup, Extensions, SrcIP, DstIP, SrcMAC, DstMAC, SrcPort, DstPort, Ja3S|
 |LinkFlow                      | 9 |TimestampFirst, TimestampLast, Proto, SourceMAC, DstMAC, TotalSize, NumPackets, UID, Duration|
 |NetworkFlow                   | 9 |TimestampFirst, TimestampLast, Proto, SrcIP, DstIP, TotalSize, NumPackets, UID, Duration|
 |TransportFlow                 | 9 |TimestampFirst, TimestampLast, Proto, SrcPort, DstPort, TotalSize, NumPackets, UID, Duration|
-|HTTP                          | 17 |Timestamp, Proto, Method, Host, UserAgent, Referer, ReqCookies, ReqContentLength, URL, ResContentLength, ContentType, StatusCode, SrcIP, DstIP, ReqContentEncoding, ResContentEncoding, ServerName|
+|HTTP                          | 18 |Timestamp, Proto, Method, Host, UserAgent, Referer, ReqCookies, ResCookies, ReqContentLength, URL, ResContentLength, ContentType, StatusCode, SrcIP, DstIP, ReqContentEncoding, ResContentEncoding, ServerName|
 |Flow                          | 17 |TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast|
 |Connection                    | 17 |TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast|
+|DeviceProfile                 | 7 |Timestamp, MacAddr, DeviceManufacturer, NumDeviceIPs, NumContacts, NumPackets, Bytes|
+|File                          | 10 |Timestamp, AddrType, Protocol, HwAddressSize, ProtAddressSize, Operation, SrcHwAddress, SrcProtAddress, DstHwAddress, DstProtAddress|
+|POP3                          | 7 |Timestamp, Client, Server, AuthToken, User, Pass, NumMails|

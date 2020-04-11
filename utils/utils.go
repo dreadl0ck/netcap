@@ -47,6 +47,10 @@ func GetBaseLayer(value string) (t gopacket.LayerType) {
 	switch value {
 	case "ethernet":
 		t = layers.LayerTypeEthernet
+	case "ipv4":
+		t = layers.LayerTypeIPv4
+	case "ipv6":
+		t = layers.LayerTypeIPv6
 	case "usb":
 		t = layers.LayerTypeUSB
 	default:
@@ -92,7 +96,7 @@ func ClearLine() {
 	print("\033[2K\r")
 }
 
-// Progress display
+// Progress returns the value in percent as a string suffixed with a %
 func Progress(current, total int64) string {
 	if total == 0 {
 		return strconv.FormatInt(current, 10)
@@ -100,6 +104,16 @@ func Progress(current, total int64) string {
 	var b []byte
 	b = strconv.AppendInt(b, int64((float64(current)/float64(total))*100), 10)
 	b = append(b, byte(37)) // dec 37 == PERCENT_SIGN (%)
+	return string(b)
+}
+
+// GetPercentage returns the value in percent as a string
+func GetPercentage(current int64, total int64) string {
+	if total == 0 {
+		return strconv.FormatInt(current, 10)
+	}
+	var b []byte
+	b = strconv.AppendInt(b, int64((float64(current)/float64(total))*100), 10)
 	return string(b)
 }
 

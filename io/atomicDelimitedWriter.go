@@ -15,10 +15,9 @@
 package io
 
 import (
-	"sync"
-
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/golang/protobuf/proto"
+	"sync"
 )
 
 /////////////////////////////

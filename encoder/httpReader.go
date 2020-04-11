@@ -48,16 +48,18 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 
+	"github.com/dreadl0ck/cryptoutils"
 	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -74,13 +76,17 @@ type httpReader struct {
 	bytes    chan []byte
 	data     []byte
 	hexdump  bool
-	parent   *tcpStream
+	parent   *tcpConnection
 }
 
 func (h *httpReader) Read(p []byte) (int, error) {
 	ok := true
 	for ok && len(h.data) == 0 {
-		h.data, ok = <-h.bytes
+		select {
+			case h.data, ok = <-h.bytes:
+			//case <-time.After(timeout):
+			//	return 0, io.EOF
+		}
 	}
 	if !ok || len(h.data) == 0 {
 		return 0, io.EOF
@@ -91,7 +97,11 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	return l, nil
 }
 
-func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
+func (h *httpReader) BytesChan() chan []byte {
+	return h.bytes
+}
+
+func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection) {
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -100,7 +110,7 @@ func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 		// signal wait group
 		wg.Done()
 
-		// indicate close on the parent tcpStream
+		// indicate close on the parent tcpConnection
 		h.parent.last = true
 
 		// free lock
@@ -118,16 +128,21 @@ func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 		for _, res := range h.parent.responses {
 
 			// populate types.HTTP with all infos from response
-			ht := newHTTPFromResponse(res)
+			ht := newHTTPFromResponse(res.response)
 
-			_ = h.findRequest(res, s2c)
+			_ = h.findRequest(res.response, s2c)
 
 			atomic.AddInt64(&httpEncoder.numResponses, 1)
 
 			// now add request information
-			if res.Request != nil {
+			if res.response.Request != nil {
 				atomic.AddInt64(&httpEncoder.numRequests, 1)
-				setRequest(ht, res.Request)
+				setRequest(ht, &httpRequest{
+					request:res.response.Request,
+					timestamp: res.timestamp,
+					clientIP: res.clientIP,
+					serverIP: res.serverIP,
+				})
 			} else {
 				// response without matching request
 				// dont add to output for now
@@ -178,18 +193,18 @@ func (h *httpReader) cleanup(wg *sync.WaitGroup, s2c Stream, c2s Stream) {
 }
 
 // run starts decoding HTTP traffic in a single direction
-func (h *httpReader) run(wg *sync.WaitGroup) {
+func (h *httpReader) Run(wg *sync.WaitGroup) {
 
 	// create streams
 	var (
 		// client to server
-		c2s = Stream{h.parent.net, h.parent.transport}
+		c2s = Connection{h.parent.net, h.parent.transport}
 		// server to client
-		s2c = Stream{h.parent.net.Reverse(), h.parent.transport.Reverse()}
+		s2c = Connection{h.parent.net.Reverse(), h.parent.transport.Reverse()}
 	)
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.cleanup(wg, s2c, c2s)
+	defer h.Cleanup(wg, s2c, c2s)
 
 	var (
 		err error
@@ -215,41 +230,44 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 
 // HTTP Response
 
-func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
+func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 
 	// try to read HTTP response from the buffered reader
 	res, err := http.ReadResponse(b, nil)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	s := len(body)
 	if err != nil {
-		logError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
-		// continue execution
+		logReassemblyError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
+	} else {
+		res.Body.Close()
+
+		// Restore body so it can be read again
+		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
 	if h.hexdump {
-		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+		logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	}
-	res.Body.Close()
 
 	sym := ","
 	if res.ContentLength > 0 && res.ContentLength != int64(s) {
 		sym = "!="
 	}
 
-	// determine content type
+	// determine content type for debug log
 	contentType, ok := res.Header["Content-Type"]
 	if !ok {
 		contentType = []string{http.DetectContentType(body)}
 	}
 
 	encoding := res.Header["Content-Encoding"]
-	logInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
+	logReassemblyInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 
 	// increment counter
 	mu.Lock()
@@ -257,18 +275,46 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	mu.Unlock()
 
 	h.parent.Lock()
-	h.parent.responses = append(h.parent.responses, res)
+	h.parent.responses = append(h.parent.responses, &httpResponse{response:res})
 	h.parent.Unlock()
 
 	// write responses to disk if configured
-	if (err == nil || *writeincomplete) && *output != "" {
-		return h.saveResponse(err, body, encoding, h.ident)
+	if (err == nil || c.WriteIncomplete) && FileStorage != "" {
+
+		h.parent.Lock()
+		var (
+			name = "unknown"
+			host string
+			source = "HTTP RESPONSE"
+			ctype string
+			numResponses = len(h.parent.responses)
+			numRequests = len(h.parent.requests)
+		)
+		h.parent.Unlock()
+
+		// check if there is a matching request for the current stream
+		if numRequests >= numResponses {
+
+			// fetch it
+			h.parent.Lock()
+			req := h.parent.requests[numResponses-1]
+			h.parent.Unlock()
+			if req != nil {
+				name = path.Base(req.request.URL.Path)
+				source += " from " + req.request.URL.Path
+				host = req.request.Host
+				ctype = strings.Join(req.request.Header["Content-Type"], " ")
+			}
+		}
+
+		// save file to disk
+		return h.saveFile(host, source, name, err, body, encoding, ctype)
 	}
 
 	return nil
 }
 
-func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
+func (h *httpReader) findRequest(res *http.Response, s2c Connection) string {
 
 	// try to find the matching HTTP request for the response
 	var (
@@ -279,7 +325,7 @@ func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 	h.parent.Lock()
 	if len(h.parent.requests) != 0 {
 		// take the request from the parent stream and delete it from there
-		req, h.parent.requests = h.parent.requests[0], h.parent.requests[1:]
+		req, h.parent.requests = h.parent.requests[0].request, h.parent.requests[1:]
 		reqURL = req.URL.String()
 	}
 	h.parent.Unlock()
@@ -293,41 +339,242 @@ func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 	return reqURL
 }
 
-func (h *httpReader) saveResponse(err error, body []byte, encoding []string, reqURL string) error {
+func fileExtensionForContentType(typ string) string {
+
+	parts := strings.Split(typ, ";")
+	if len(typ) > 1 {
+		typ = parts[0]
+	}
+
+	// types from: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+	switch typ {
+	case "application/x-gzip":
+		return ".gz"
+	case "image/jpg":
+		return ".jpg"
+	case "text/plain":
+		return ".txt"
+	case "text/html":
+		return ".html"
+	case "image/x-icon":
+		return ".ico"
+	case "audio/aac":
+		return ".aac"
+	case "application/x-abiword":
+		return ".abw"
+	case "application/x-freearc":
+		return ".arc"
+	case "video/x-msvideo":
+		return ".avi"
+	case "application/vnd.amazon.ebook":
+		return ".azw"
+	case "application/octet-stream":
+		return ".bin"
+	case "image/bmp":
+		return ".bmp"
+	case "application/x-bzip":
+		return ".bz"
+	case "application/x-bzip2":
+		return ".bz2"
+	case "application/x-csh":
+		return ".csh"
+	case "text/css":
+		return ".css"
+	case "text/csv":
+		return ".csv"
+	case "application/msword":
+		return ".doc"
+	case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+		return ".docx"
+	case "application/vnd.ms-fontobject":
+		return ".eot"
+	case "application/epub+zip":
+		return ".epub"
+	case "application/gzip":
+		return ".gz"
+	case "image/gif":
+		return ".gif"
+	case "image/vnd.microsoft.icon":
+		return ".ico"
+	case "text/calendar":
+		return ".ics"
+	case "application/java-archive":
+		return ".jar"
+	case "image/jpeg":
+		return ".jpg"
+	case "text/javascript":
+		return ".js"
+	case "application/json":
+		return ".json"
+	case "application/ld+json":
+		return ".jsonld"
+	case "audio/midi audio/x-midi":
+		return ".midi"
+	case "audio/mpeg":
+		return ".mp3"
+	case "video/mpeg":
+		return ".mpeg"
+	case "text/xml":
+		return ".xml"
+	case "application/vnd.apple.installer+xml":
+		return ".mpkg"
+	case "application/vnd.oasis.opendocument.presentation":
+		return ".odp"
+	case "application/vnd.oasis.opendocument.spreadsheet":
+		return ".ods"
+	case "application/vnd.oasis.opendocument.text":
+		return ".odt"
+	case "audio/ogg":
+		return ".oga"
+	case "video/ogg":
+		return ".ogv"
+	case "application/ogg":
+		return ".ogx"
+	case "audio/opus":
+		return ".opus"
+	case "font/otf":
+		return ".otf"
+	case "image/png":
+		return ".png"
+	case "application/pdf":
+		return ".pdf"
+	case "application/php":
+		return ".php"
+	case "application/vnd.ms-powerpoint":
+		return ".ppt"
+	case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+		return ".pptx"
+	case "application/vnd.rar":
+		return ".rar"
+	case "application/rtf":
+		return ".rtf"
+	case "application/x-sh":
+		return ".sh"
+	case "image/svg+xml":
+		return ".svg"
+	case "application/x-shockwave-flash":
+		return ".swf"
+	case "application/x-tar":
+		return ".tar"
+	case "image/tiff":
+		return ".tiff"
+	case "video/mp2t":
+		return ".ts"
+	case "font/ttf":
+		return ".ttf"
+	case "application/vnd.visio":
+		return ".vsd"
+	case "audio/wav":
+		return ".wav"
+	case "audio/webm":
+		return ".weba"
+	case "video/webm":
+		return ".webm"
+	case "image/webp":
+		return ".webp"
+	case "font/woff":
+		return ".woff"
+	case "font/woff2":
+		return ".woff2"
+	case "application/xhtml+xml":
+		return ".xhtml"
+	case "application/vnd.ms-excel":
+		return ".xls"
+	case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+		return ".xlsx"
+	case "application/xml":
+		return ".xml"
+	case "application/vnd.mozilla.xul+xml":
+		return ".xul"
+	case "application/zip":
+		return ".zip"
+	case "video/3gpp":
+		return ".3gp"
+	case "video/3gpp2":
+		return ".3g2"
+	case "application/x-7z-compressed":
+		return ".7z"
+	}
+
+	return ""
+}
+
+func trimEncoding(ctype string) string {
+	parts := strings.Split(ctype, ";")
+	if len(parts) > 1 {
+		return parts[0]
+	}
+	return ctype
+}
+
+func (h *httpReader) saveFile(host, source, name string, err error, body []byte, encoding []string, contentType string) error {
+
+	// prevent saving zero bytes
+	if len(body) == 0 {
+		return nil
+	}
+
+	if name == "" || name == "/" {
+		name = "unknown"
+	}
+
 	var (
-		ctype = http.DetectContentType(body)
-		root  = path.Join(*output, ctype)
-		base  = url.QueryEscape(path.Base(reqURL))
+		fileName string
+
+		// detected content type
+		ctype = trimEncoding(http.DetectContentType(body))
+
+		// root path
+		root  = path.Join(FileStorage, ctype)
+
+		// file extension
+		ext = fileExtensionForContentType(ctype)
+
+		// file basename
+		base  = filepath.Clean(name + "-" + path.Base(h.ident)) + ext
 	)
 	if err != nil {
 		base = "incomplete-" + base
 	}
+	if filepath.Ext(name) == "" {
+		fileName = name + ext
+	} else {
+		fileName = name
+	}
 
 	// make sure root path exists
-	os.MkdirAll(root, 0755)
+	os.MkdirAll(root, directoryPermission)
 	base = path.Join(root, base)
 	if len(base) > 250 {
 		base = base[:250] + "..."
 	}
-	if base == *output {
-		base = path.Join(*output, "noname")
+	if base == FileStorage {
+		base = path.Join(FileStorage, "noname")
 	}
 	var (
 		target = base
 		n      = 0
 	)
 	for {
-		_, err := os.Stat(target)
-		if err != nil {
+		_, errStat := os.Stat(target)
+		if errStat != nil {
 			break
 		}
-		target = fmt.Sprintf("%s-%d", base, n)
+
+		if err != nil {
+			target = path.Join(root, filepath.Clean("incomplete-" + name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+		} else {
+			target = path.Join(root, filepath.Clean(name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+		}
+
 		n++
 	}
 
+	debugLog.Println("saving file:", target)
+
 	f, err := os.Create(target)
 	if err != nil {
-		logError("HTTP-create", "Cannot create %s: %s\n", target, err)
+		logReassemblyError("HTTP-create", "Cannot create %s: %s\n", target, err)
 		return err
 	}
 
@@ -339,7 +586,7 @@ func (h *httpReader) saveResponse(err error, body []byte, encoding []string, req
 	if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
 		r, err = gzip.NewReader(r)
 		if err != nil {
-			logError("HTTP-gunzip", "Failed to gzip decode: %s", err)
+			logReassemblyError("HTTP-gunzip", "Failed to gzip decode: %s", err)
 		}
 	}
 	if err == nil {
@@ -349,42 +596,71 @@ func (h *httpReader) saveResponse(err error, body []byte, encoding []string, req
 		}
 		f.Close()
 		if err != nil {
-			logError("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
+			logReassemblyError("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
 		} else {
-			logInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
+			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
 		}
 	}
+
+	// write file to disk
+	writeFile(&types.File{
+		Timestamp: h.parent.firstPacket.String(),
+		Name:      fileName,
+		Length:    int64(len(body)),
+		Hash:      hex.EncodeToString(cryptoutils.MD5Data(body)),
+		Location:  target,
+		Ident:     h.ident,
+		Source:    source,
+		ContentTypeDetected: ctype,
+		ContentType: contentType,
+		Context:  &types.PacketContext{
+			SrcIP:   h.parent.net.Src().String(),
+			DstIP:   h.parent.net.Dst().String(),
+			SrcPort: h.parent.transport.Src().String(),
+			DstPort: h.parent.transport.Dst().String(),
+		},
+	})
 
 	return nil
 }
 
 // HTTP Request
 
-func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
+func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	req, err := http.ReadRequest(b)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
 	}
 
 	body, err := ioutil.ReadAll(req.Body)
 	s := len(body)
 	if err != nil {
-		logError("HTTP-request-body", "Got body err: %s\n", err)
+		logReassemblyError("HTTP-request-body", "Got body err: %s\n", err)
 		// continue execution
-	} else if h.hexdump {
-		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+	} else {
+		req.Body.Close()
+
+		// Restore body so it can be read again
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
-	req.Body.Close()
+	if h.hexdump {
+		logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+	}
 
-	logInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
+	logReassemblyInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
 
-	// set some infos for netcap on the HTTP request header
-	req.Header.Set("netcap-ts", utils.TimeToString(h.parent.firstPacket))
-	req.Header.Set("netcap-clientip", h.parent.net.Src().String())
-	req.Header.Set("netcap-serverip", h.parent.net.Dst().String())
+	request := &httpRequest{
+		request:req,
+		timestamp: utils.TimeToString(h.parent.firstPacket),
+		clientIP: h.parent.net.Src().String(),
+		serverIP: h.parent.net.Dst().String(),
+	}
+
+	// parse form values
+	req.ParseForm()
 
 	// increase counter
 	mu.Lock()
@@ -392,8 +668,23 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	mu.Unlock()
 
 	h.parent.Lock()
-	h.parent.requests = append(h.parent.requests, req)
+	h.parent.requests = append(h.parent.requests, request)
 	h.parent.Unlock()
+
+	if req.Method == "POST" {
+		// write request payload to disk if configured
+		if (err == nil || c.WriteIncomplete) && FileStorage != "" {
+			return h.saveFile(
+				req.Host,
+				"HTTP POST REQUEST to " + req.URL.Path,
+				path.Base(req.URL.Path),
+				err,
+				body,
+				req.Header["Content-Encoding"],
+				strings.Join(req.Header["Content-Type"], " "),
+			)
+		}
+	}
 
 	return nil
 }

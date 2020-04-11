@@ -14,17 +14,16 @@
 package encoder
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
-	"github.com/dreadl0ck/gopacket"
 )
 
 type AtomicFlowMap struct {
@@ -46,17 +45,14 @@ var (
 	flowEncoderInstance *CustomEncoder
 	flows               int64
 
-	flagFlowFlushInterval = flag.Int("flow-flush-interval", 2000, "flush flows every X flows")
-	flagFlowTimeOut       = flag.Int("flow-timeout", 30, "close flows older than X seconds")
-
 	flowFlushInterval int64
 	flowTimeOut       time.Duration
 )
 
 var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *CustomEncoder) error {
 	flowEncoderInstance = d
-	flowFlushInterval = int64(*flagFlowFlushInterval)
-	flowTimeOut = time.Second * time.Duration(*flagFlowTimeOut)
+	flowFlushInterval = int64(c.FlowFlushInterval)
+	flowTimeOut = time.Second * time.Duration(c.FlowTimeOut)
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 

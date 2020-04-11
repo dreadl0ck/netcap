@@ -1,19 +1,87 @@
 # TODOs
 
+## v0.5 Documentation
+
+- document configuration via environment or file
+- document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
+- document \*Timeout funcs for handlePacket, AssembleWithContext and GetProtocols in internals section for debugging
+- custom labeling
+- new protocols
+- JA3s
+- troubleshooting
+- update usage examples for new syntax
+- godoc cleanup
+- regenerate cheatsheets
+
+## Maltego Plugin
+
+- Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
+- netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others
+- custom icon set for netcap entities
+
+- GetUsers from HTTP BasicAuth + GetPassword
+- HTTP parameters: mark if source was GET or POST
+- addGetHTTPHeaders
+- GetFilesForHTTPHost
+- HTTP: which URLs where accessed how often? count in GetHTTPURLs via map?
+- HTTP: show GET VS POST? count in GetHTTP\* via map?
+- Cookies + Params: add counters to indicate flow volume
+- Add GetExifData
+- add file extraction for POP3 emails and attachments
+- add netcap.File entity?
+- improve file type detection: detect script languages and executables, use the file extension for first guess
+- netcap.File -> GetMD5
+- TLS fingerprints: GetJa3? for IPAddr entities
+- GetLongRunningSessions
+
+- text file types: add GetLinks and GetEmails, GetPhonenumbers etc
+- GetNotWWW (no www.local reverse DNS name?)
+- GetUnknownFlows(Filtered) (no http, pop3 flows)
+- GetHostsForGeolocation
+- GetApplicationsForCategory is broken
+
+- Create a netcap.Query entity: Add Execute and run the custom query
+- link src to dst ports?
+- improve DisplayInformation to allow tracking updates to an entity over time
+- define triggers to highlight suspicious links in red
+- MIME type: check if executables are properly detected
+- check if order of values in maltego list matches the timestamps
+- Application: add timestamps when packets have been seen, currently the first seen timestamp for the asscociated ip profile is repeated
+
+## General
+
+- capture unknown L7 protocol TCP streams and write to disk
+- net.split: split pcap or audit record files by days or hours
+- check TODOs in source
+- improve tests
+- add tests for POP3 parsing
+- add tests for http audit records and compare results with output from urlsnarf
+- implement passive dns hosts mapping generation in netcap
+- sort errors by the number of occurrences (COUNT) for print and log in errors.log
+- add log flag to enable writing output to file netcap.log and stdout simultaneously
+- use a logger without reflection for performance: zap?
+
+Reassembly: 2 Options
+
+1. One assembler per worker + 1 shared connection pool (currently implemented)
+2. One global assembler per protocol with a dedicated stream pool for that protocol (reduces lock contention)
+
+- constconf: generate a configuration with constant values -> compiler can optimize better
+
+- batch DPI calls per flow?
+- use nDPI 3.2
+
 - label tool: display a warning when nothing is there for mapping
 - use new 1.13 strings.ToValidUTF8()
 
 - remove length field from UDP and IPv6
-- net.collect -gen-keypair  -> net.util
+- net.collect -gen-keypair -> net.util
 - replace AuditRecordHandle in net.collect with netcap.Writer
 - colorize tool output
-
-- include pre generated protocol buffer definitions in release
-- check TODOs
 - add YARA support for labels
 
 - add contributions welcome to README
-- shortly describe main framework components in README (cmd/*)
+- shortly describe main framework components in README (cmd/\*)
 
 - add ROADMAP
 - BLOG: Setup Guide
@@ -43,7 +111,7 @@
 ## Sensor
 
 - client reuse conn?
-- implement data export to elastic stack / influx 
+- implement data export to elastic stack / influx
 
 ## New Protocols
 

@@ -11,13 +11,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package collect
 
 import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -42,11 +41,11 @@ const (
 	maxBufferSize = 10 * 1024
 )
 
-func main() {
+func Run() {
 
 	// parse commandline flags
-	flag.Usage = printUsage
-	flag.Parse()
+	fs.Usage = printUsage
+	fs.Parse(os.Args[2:])
 
 	// print version and exit
 	if *flagVersion {

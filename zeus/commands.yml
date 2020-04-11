@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.4.7
+    VERSION:  0.5
 
 # command data
 commands:
@@ -21,61 +21,14 @@ commands:
     ## Install all
     ##
 
+    ## linker flags
+    #   -w	disable DWARF generation
+    #   -s	disable symbol table
     install:
         description: install netcap and netlabel to $PATH
         buildNumber: true
         help: Installs the applications to the default system location
-        dependencies:
-            - net.capture
-            - net.label
-            - net.collect
-            - net.agent
-            - net.proxy
-            - net.export
-            - net.dump
-            - net.util
-        exec: echo done
-
-    ## Compile Framework Components
-    ##
-
-    ## linker flags
-    #   -w	disable DWARF generation
-    #   -s	disable symbol table
-
-    net.capture:
-        description: compile net.capture binary to $GOPATH/bin
-        buildNumber: true
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.capture -i github.com/dreadl0ck/netcap/cmd/capture
-
-    net.label:
-        description: compile net.label binary to $GOPATH/bin
-        buildNumber: true
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.label -i github.com/dreadl0ck/netcap/cmd/label
-
-    net.agent:
-        description: compile net.agent binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.agent -i github.com/dreadl0ck/netcap/cmd/agent
-
-    net.collect:
-        description: compile net.collect binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.collect -i github.com/dreadl0ck/netcap/cmd/collect
-
-    net.proxy:
-        description: compile net.proxy binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.proxy -i github.com/dreadl0ck/netcap/cmd/proxy
-    
-    net.export:
-        description: compile net.export binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.export -i github.com/dreadl0ck/netcap/cmd/export
-
-    net.dump:
-        description: compile net.dump binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.dump -i github.com/dreadl0ck/netcap/cmd/dump
-
-    net.util:
-        description: compile net.util binary to $GOPATH/bin
-        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net.util -i github.com/dreadl0ck/netcap/cmd/util
+        exec: go build -ldflags "-s -w" -o $(go env GOPATH)/bin/net -i github.com/dreadl0ck/netcap/cmd
 
     ## Debug Builds
     ##
@@ -89,13 +42,13 @@ commands:
     ## Containers
     ##
 
-    build-all-alpine-docker:
+    build-alpine-docker:
         description: build all framework binaries for linux inside an apline docker container
         help: used to compile for linux on macOS because cross compilation is a pain with CGO
         dependencies:
             - clean
     
-    build-all-ubuntu-docker:
+    build-ubuntu-docker:
         description: build all framework binaries for linux inside an ubuntu docker container
         help: used to compile for linux on macOS because cross compilation is a pain with CGO
         dependencies:
@@ -119,9 +72,9 @@ commands:
         description: test run to release a new version
         dependencies:
             - gen-version
-            #- check-version
+            - version-bump-test
             - gen-proto-release
-        exec: goreleaser release --rm-dist --skip-publish --skip-validate #--debug
+        exec: goreleaser release --rm-dist --skip-publish --skip-validate; zeus version-bump-test-undo
 
     ## Utils
     ##
@@ -135,7 +88,7 @@ commands:
     # count lines of code
     cloc:
         description: count lines of code for the project
-        exec: cloc --exclude-ext pb.go,py,rb,js,cpp,cc,rs,java,swift,c,cs,h cmd metrics label types utils io collector encoder netcap.go reader.go utils.go writer.go
+        exec: cloc --exclude-ext pb.go,py,rb,js,cpp,cc,rs,java,swift,c,cs,h cmd metrics label types utils io collector encoder netcap.go reader.go utils.go writer.go maltego resolvers dpi
 
     # generate protocol buffers for development
     gen-proto-dev:
@@ -155,12 +108,17 @@ commands:
     # to ensure the correct version is also set for installation via go get
     # a version.go file is generated on each release with the corresponding version number
     gen-version:
-        description: generate the version.go file
+        description: set the correct project version
+        help: generates the version.go file
         exec: |
             echo -e "// Netcap is a framework for network packet processing at the protocol level. Learn more at https://netcap.io.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"\nvar Commit = \"$(git rev-parse HEAD | tr -d "\n")\"" > version.go
+            sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile-ubuntu > Dockerfile-ubuntu-cp
+            mv Dockerfile-ubuntu-cp Dockerfile-ubuntu
+            sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile-alpine > Dockerfile-alpine-cp
+            mv Dockerfile-alpine-cp Dockerfile-alpine
 
     # build and push the Alpine docker container
-    build-all-linux:
+    build-linux:
         description: builds the alpine and ubuntu docker containers
     
     # check git version
@@ -187,6 +145,20 @@ commands:
             git push origin v${VERSION}
 
             echo "[INFO] version bumped to v${VERSION}"
+
+    # bump the git version tag
+    version-bump-test:
+        description: bump framework version and add git version tag
+        exec: |
+            git tag -a v${VERSION} -m "v${VERSION} release test"
+            echo "[INFO] added test tag v${VERSION}"
+
+    # bump the git version tag
+    version-bump-test-undo:
+        description: bump framework version and add git version tag
+        exec: |
+            git tag -d v${VERSION}
+            echo "[INFO] removed test tag v${VERSION}"
     
     static-analyze:
         description: run the golangci-lint static source code analyzer
@@ -199,3 +171,9 @@ commands:
         exec: |
             git tag -d $tag
             git push --delete origin $tag
+
+    download-test-pcap:
+        description: fetches the ultimate pcap file for the unit tests via wget
+        help: unpack it to the tests directory
+        exec: |
+            wget https://weberblog.net/wp-content/uploads/2020/02/The-Ultimate-PCAP.7z

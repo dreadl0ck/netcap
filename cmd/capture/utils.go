@@ -11,10 +11,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package capture
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/dreadl0ck/netcap"
@@ -23,14 +22,14 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.capture -r dump.pcap")
-	fmt.Println("	$ net.capture -iface eth0")
+	fmt.Println("capture tool usage examples:")
+	fmt.Println("	$ net capture -read dump.pcap")
+	fmt.Println("	$ net capture -iface eth0")
 	fmt.Println()
 }
 
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }

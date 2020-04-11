@@ -15,28 +15,70 @@ package collector
 
 import (
 	"fmt"
+
+	"github.com/dreadl0ck/gopacket/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 
-	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/encoder"
 )
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
-func (c *Collector) worker() chan gopacket.Packet {
+func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 	// init channel to receive input packets
-	chanInput := make(chan gopacket.Packet, c.config.PacketBufferSize)
+	chanInput := make(chan *packet, c.config.PacketBufferSize)
 
 	// start worker
 	go func() {
 		for {
 			select {
-			case p := <-chanInput:
+			case packet := <-chanInput:
 
 				// nil packet is used to exit goroutine
-				if p == nil {
+				if packet == nil {
+
+					// cleanup reassembly
+					if c.config.ReassembleConnections {
+						assembler.FlushAll()
+						//closed := assembler.FlushAll()
+						//if !c.config.Quiet {
+						//	fmt.Printf("assembler final flush: %d closed\n", closed)
+						//}
+					}
+
 					return
+				}
+
+				// create a new gopacket
+				// base layer is by default Ethernet
+				p := gopacket.NewPacket(packet.data, c.config.BaseLayer, c.config.DecodeOptions)
+				p.Metadata().Timestamp = packet.ci.Timestamp
+				p.Metadata().CaptureInfo = packet.ci
+				p.Metadata().Length = packet.ci.Length
+				p.Metadata().CaptureLength = packet.ci.CaptureLength
+
+				// pass packet to reassembly
+				if c.config.ReassembleConnections {
+					encoder.ReassemblePacket(p, assembler)
+				}
+
+				// create context for packet
+				var ctx = &types.PacketContext{}
+				if encoder.AddContext {
+					var (
+						netLayer       = p.NetworkLayer()
+						transportLayer = p.TransportLayer()
+					)
+					if netLayer != nil {
+						ctx.SrcIP = netLayer.NetworkFlow().Src().String()
+						ctx.DstIP = netLayer.NetworkFlow().Dst().String()
+					}
+					if transportLayer != nil {
+						ctx.SrcPort = transportLayer.TransportFlow().Src().String()
+						ctx.DstPort = transportLayer.TransportFlow().Dst().String()
+					}
 				}
 
 				// iterate over all layers
@@ -74,24 +116,6 @@ func (c *Collector) worker() chan gopacket.Packet {
 					// pick encoders from the encoderMap by looking up the layer type
 					if encoders, ok := encoder.LayerEncoders[layer.LayerType()]; ok {
 
-						var ctx = &types.PacketContext{}
-
-						if encoder.AddContext {
-
-							var (
-								netLayer       = p.NetworkLayer()
-								transportLayer = p.TransportLayer()
-							)
-							if netLayer != nil {
-								ctx.SrcIP = netLayer.NetworkFlow().Src().String()
-								ctx.DstIP = netLayer.NetworkFlow().Dst().String()
-							}
-							if transportLayer != nil {
-								ctx.SrcPort = transportLayer.TransportFlow().Src().String()
-								ctx.DstPort = transportLayer.TransportFlow().Dst().String()
-							}
-						}
-
 						for _, e := range encoders {
 							err := e.Encode(ctx, p, layer)
 							if err != nil {
@@ -113,18 +137,16 @@ func (c *Collector) worker() chan gopacket.Packet {
 						}
 
 						// if its not a payload layer, write to unknown .pcap file
-						// TODO make this configurable?
 						if layer.LayerType() != gopacket.LayerTypePayload {
 							if err := c.writePacketToUnknownPcap(p); err != nil {
 								fmt.Println("failed to write packet to unknown.pcap file:", err)
 							}
-							goto done
 						}
 					}
 				} // END packet.Layers()
 
 			done:
-				// call customencoders
+				// call custom encoders
 				for _, e := range encoder.CustomEncoders {
 					err := e.Encode(p)
 					if err != nil {
@@ -162,10 +184,10 @@ func (c *Collector) worker() chan gopacket.Packet {
 }
 
 // spawn the configured number of workers
-func (c *Collector) initWorkers() []chan gopacket.Packet {
-	workers := make([]chan gopacket.Packet, c.config.Workers)
+func (c *Collector) initWorkers() []chan *packet {
+	workers := make([]chan *packet, c.config.Workers)
 	for i := range workers {
-		workers[i] = c.worker()
+		workers[i] = c.worker(reassembly.NewAssembler(encoder.StreamPool))
 	}
 	return workers
 }

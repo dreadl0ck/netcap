@@ -29,7 +29,7 @@ import (
 // MarkdownOverview dumps a Markdown summary of all available encoders and their fields
 func MarkdownOverview() {
 	fmt.Println("# NETCAP Overview " + netcap.Version)
-	fmt.Println("> Documentation: docs.netcap.io")
+	fmt.Println("> Documentation: [docs.netcap.io](https://docs.netcap.io)")
 	fmt.Println("## LayerEncoders")
 
 	fmt.Println("|Name|NumFields|Fields|")
@@ -114,4 +114,38 @@ func Entropy(data []byte) (entropy float64) {
 // pad the input up to the given number of space characters
 func pad(in interface{}, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
+}
+
+func logReassemblyError(t string, s string, a ...interface{}) {
+	errorsMapMutex.Lock()
+	numErrors++
+	nb := errorsMap[t]
+	errorsMap[t] = nb + 1
+	errorsMapMutex.Unlock()
+
+	if c.Debug {
+		reassemblyLog.Printf("ERROR: " + s, a...)
+	}
+}
+
+func logReassemblyInfo(s string, a ...interface{}) {
+	if c.Debug {
+		reassemblyLog.Printf("INFO: " + s, a...)
+	}
+}
+
+func logReassemblyDebug(s string, a ...interface{}) {
+	if c.Debug {
+		reassemblyLog.Printf("DEBUG: " + s, a...)
+	}
+}
+
+// Cleanup closes the logfile handles
+func Cleanup() {
+	if reassemblyLogFileHandle != nil {
+		reassemblyLogFileHandle.Close()
+	}
+	if debugLogFileHandle != nil {
+		debugLogFileHandle.Close()
+	}
 }

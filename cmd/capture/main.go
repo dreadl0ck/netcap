@@ -11,11 +11,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package capture
 
 import (
-	"flag"
 	"fmt"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -30,11 +30,11 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func main() {
+func Run() {
 
 	// parse commandline flags
-	flag.Usage = printUsage
-	flag.Parse()
+	fs.Usage = printUsage
+	fs.Parse(os.Args[2:])
 
 	// print version and exit
 	if *flagVersion {
@@ -114,31 +114,58 @@ func main() {
 
 	// init collector
 	c := collector.New(collector.Config{
-		Live:                live,
-		Workers:             *flagWorkers,
-		PacketBufferSize:    *flagPacketBuffer,
-		WriteUnknownPackets: !*flagIngoreUnknown,
-		Promisc:             *flagPromiscMode,
-		SnapLen:             *flagSnapLen,
+		Live:                  live,
+		Workers:               *flagWorkers,
+		PacketBufferSize:      *flagPacketBuffer,
+		WriteUnknownPackets:   !*flagIgnoreUnknown,
+		Promisc:               *flagPromiscMode,
+		SnapLen:               *flagSnapLen,
+		BaseLayer:             utils.GetBaseLayer(*flagBaseLayer),
+		DecodeOptions:         utils.GetDecodeOptions(*flagDecodeOptions),
+		FileStorage:           *flagFileStorage,
+		Quiet:                 *flagQuiet,
+		DPI:                   *flagDPI,
+		ReassembleConnections: *flagReassembleConnections,
+		FreeOSMem:             *flagFreeOSMemory,
 		EncoderConfig: encoder.Config{
-			Buffer:          *flagBuffer,
-			Compression:     *flagCompress,
-			CSV:             *flagCSV,
-			IncludeEncoders: *flagInclude,
-			ExcludeEncoders: *flagExclude,
-			Out:             *flagOutDir,
-			Source:          source,
-			Version:         netcap.Version,
-			IncludePayloads: *flagPayload,
-			Export:          false,
-			AddContext:      *flagContext,
-			MemBufferSize:   *flagMemBufferSize,
+			Buffer:                 *flagBuffer,
+			Compression:            *flagCompress,
+			CSV:                    *flagCSV,
+			IncludeEncoders:        *flagInclude,
+			ExcludeEncoders:        *flagExclude,
+			Out:                    *flagOutDir,
+			Source:                 source,
+			Version:                netcap.Version,
+			IncludePayloads:        *flagPayload,
+			Export:                 false,
+			AddContext:             *flagContext,
+			MemBufferSize:          *flagMemBufferSize,
+			FlushEvery:             *flagFlushevery,
+			NoDefrag:               *flagNodefrag,
+			Checksum:               *flagChecksum,
+			NoOptCheck:             *flagNooptcheck,
+			IgnoreFSMerr:           *flagIgnorefsmerr,
+			AllowMissingInit:       *flagAllowmissinginit,
+			Debug:                  *flagDebug,
+			HexDump:                *flagHexdump,
+			WaitForConnections:     *flagWaitForConnections,
+			WriteIncomplete:        *flagWriteincomplete,
+			MemProfile:             *flagMemprofile,
+			ConnFlushInterval:      *flagConnFlushInterval,
+			ConnTimeOut:            *flagConnTimeOut,
+			FlowFlushInterval:      *flagFlowFlushInterval,
+			FlowTimeOut:            *flagFlowTimeOut,
 		},
-		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
-		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
+		ResolverConfig: resolvers.Config{
+			ReverseDNS:    *flagReverseDNS,
+			LocalDNS:      *flagLocalDNS,
+			MACDB:         *flagMACDB,
+			Ja3DB:         *flagJa3DB,
+			ServiceDB:     *flagServiceDB,
+			GeolocationDB: *flagGeolocationDB,
+		},
 	})
 
-	netcap.PrintBuildInfo()
 	c.PrintConfiguration()
 
 	// collect traffic live from named interface
@@ -182,7 +209,9 @@ func main() {
 		}
 	}
 
-	fmt.Println("done in", time.Since(start))
+	if !*flagQuiet {
+		fmt.Println("done in", time.Since(start))
+	}
 
 	// memory profiling
 	if *flagMemProfile {

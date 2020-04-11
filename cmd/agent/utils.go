@@ -11,10 +11,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package agent
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/dreadl0ck/netcap"
@@ -23,13 +22,13 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.agent -pubkey pub.key -addr 127.0.0.1:4200")
+	fmt.Println("agent tool usage examples:")
+	fmt.Println("	$ net agent -pubkey pub.key -addr 127.0.0.1:4200")
 	fmt.Println()
 }
 
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }

@@ -11,10 +11,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package main
+package collect
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -26,16 +25,16 @@ import (
 func printHeader() {
 	netcap.PrintLogo()
 	fmt.Println()
-	fmt.Println("usage examples:")
-	fmt.Println("	$ net.collect -privkey priv.key -addr 127.0.0.1:4200")
-	fmt.Println("	$ net.collect -gen-keypair")
+	fmt.Println("collect tool usage examples:")
+	fmt.Println("	$ net collect -privkey priv.key -addr 127.0.0.1:4200")
+	fmt.Println("	$ net collect -gen-keypair")
 	fmt.Println()
 }
 
 // usage prints the use
 func printUsage() {
 	printHeader()
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }
 
 func cleanup() {
