@@ -48,8 +48,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	"github.com/dreadl0ck/cryptoutils"
-	gzip "github.com/klauspost/pgzip"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -60,6 +58,9 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/dreadl0ck/cryptoutils"
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -75,7 +76,7 @@ type httpReader struct {
 	bytes    chan []byte
 	data     []byte
 	hexdump  bool
-	parent   *tcpStream
+	parent   *tcpConnection
 }
 
 func (h *httpReader) Read(p []byte) (int, error) {
@@ -109,7 +110,7 @@ func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 		// signal wait group
 		wg.Done()
 
-		// indicate close on the parent tcpStream
+		// indicate close on the parent tcpConnection
 		h.parent.last = true
 
 		// free lock
@@ -236,14 +237,14 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	s := len(body)
 	if err != nil {
-		logError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
+		logReassemblyError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
 	} else {
 		res.Body.Close()
 
@@ -251,7 +252,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
 	if h.hexdump {
-		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+		logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	}
 
 	sym := ","
@@ -266,7 +267,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	}
 
 	encoding := res.Header["Content-Encoding"]
-	logInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
+	logReassemblyInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 
 	// increment counter
 	mu.Lock()
@@ -569,11 +570,11 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		n++
 	}
 
-	//fmt.Println("saving file:", target)
+	debugLog.Println("saving file:", target)
 
 	f, err := os.Create(target)
 	if err != nil {
-		logError("HTTP-create", "Cannot create %s: %s\n", target, err)
+		logReassemblyError("HTTP-create", "Cannot create %s: %s\n", target, err)
 		return err
 	}
 
@@ -585,7 +586,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 	if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
 		r, err = gzip.NewReader(r)
 		if err != nil {
-			logError("HTTP-gunzip", "Failed to gzip decode: %s", err)
+			logReassemblyError("HTTP-gunzip", "Failed to gzip decode: %s", err)
 		}
 	}
 	if err == nil {
@@ -595,9 +596,9 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		}
 		f.Close()
 		if err != nil {
-			logError("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
+			logReassemblyError("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
 		} else {
-			logInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
+			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
 		}
 	}
 
@@ -630,14 +631,14 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
 	}
 
 	body, err := ioutil.ReadAll(req.Body)
 	s := len(body)
 	if err != nil {
-		logError("HTTP-request-body", "Got body err: %s\n", err)
+		logReassemblyError("HTTP-request-body", "Got body err: %s\n", err)
 		// continue execution
 	} else {
 		req.Body.Close()
@@ -646,10 +647,10 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
 	if h.hexdump {
-		logInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+		logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	}
 
-	logInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
+	logReassemblyInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
 
 	request := &httpRequest{
 		request:req,

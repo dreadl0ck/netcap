@@ -17,7 +17,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"net/http"
 	"net/textproto"
@@ -43,8 +42,7 @@ import (
  * POP3 part
  */
 
-const pop3Debug = false
-const directoryPermission = 0755
+var pop3Debug = false
 
 type pop3Reader struct {
 	ident    string
@@ -52,7 +50,7 @@ type pop3Reader struct {
 	bytes    chan []byte
 	data     []byte
 	hexdump  bool
-	parent   *tcpStream
+	parent   *tcpConnection
 
 	reqIndex int
 	resIndex int
@@ -96,7 +94,7 @@ func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 		// signal wait group
 		wg.Done()
 
-		// indicate close on the parent tcpStream
+		// indicate close on the parent tcpConnection
 		h.parent.last = true
 
 		// free lock
@@ -244,7 +242,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 	f, err := os.Create(target)
 	if err != nil {
-		logError("POP3-create", "Cannot create %s: %s\n", target, err)
+		logReassemblyError("POP3-create", "Cannot create %s: %s\n", target, err)
 		return err
 	}
 
@@ -256,7 +254,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
 		r, err = gzip.NewReader(r)
 		if err != nil {
-			logError("POP3-gunzip", "Failed to gzip decode: %s", err)
+			logReassemblyError("POP3-gunzip", "Failed to gzip decode: %s", err)
 		}
 	}
 	if err == nil {
@@ -266,9 +264,9 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		}
 		f.Close()
 		if err != nil {
-			logError("POP3-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
+			logReassemblyError("POP3-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
 		} else {
-			logInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
+			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
 		}
 	}
 
@@ -295,7 +293,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 func mailDebug(args ...interface{}) {
 	if pop3Debug {
-		fmt.Println(args...)
+		debugLog.Println(args...)
 	}
 }
 
@@ -308,7 +306,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Connection) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		fmt.Println("POP3-request", "POP3/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
+		debugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
 	}
 
@@ -339,7 +337,7 @@ func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Connection) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		fmt.Println("POP3-response", "POP3/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("POP3-response", "POP3/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
 	}
 
@@ -634,7 +632,7 @@ func parseParts(body string) []*types.MailPart {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				break
 			} else {
-				fmt.Println(err)
+				mailDebug("failed to read line: ", err)
 				return parts
 			}
 		}

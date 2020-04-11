@@ -116,25 +116,36 @@ func pad(in interface{}, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
 }
 
-func logError(t string, s string, a ...interface{}) {
+func logReassemblyError(t string, s string, a ...interface{}) {
 	errorsMapMutex.Lock()
 	numErrors++
 	nb := errorsMap[t]
 	errorsMap[t] = nb + 1
 	errorsMapMutex.Unlock()
+
 	if c.Debug {
-		fmt.Printf(s, a...)
+		reassemblyLog.Printf("ERROR: " + s, a...)
 	}
 }
 
-func logInfo(s string, a ...interface{}) {
+func logReassemblyInfo(s string, a ...interface{}) {
 	if c.Debug {
-		fmt.Printf(s, a...)
+		reassemblyLog.Printf("INFO: " + s, a...)
 	}
 }
 
-func logDebug(s string, a ...interface{}) {
+func logReassemblyDebug(s string, a ...interface{}) {
 	if c.Debug {
-		fmt.Printf(s, a...)
+		reassemblyLog.Printf("DEBUG: " + s, a...)
+	}
+}
+
+// Cleanup closes the logfile handles
+func Cleanup() {
+	if reassemblyLogFileHandle != nil {
+		reassemblyLogFileHandle.Close()
+	}
+	if debugLogFileHandle != nil {
+		debugLogFileHandle.Close()
 	}
 }

@@ -17,8 +17,6 @@ package collector
 import (
 	"bufio"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/dpi"
 	"log"
 	"os"
 	"os/signal"
@@ -29,6 +27,9 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/dpi"
 
 	"sync"
 
@@ -120,6 +121,7 @@ func (c *Collector) cleanup() {
 		// teardown the TCP stream reassembly and print stats
 		encoder.CleanupReassembly()
 	}
+	encoder.Cleanup()
 
 	c.statMutex.Lock()
 	c.wg.Wait()
