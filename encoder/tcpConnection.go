@@ -484,8 +484,10 @@ func CleanupReassembly(wait bool) {
 
 	// wait for stream reassembly to finish
 	if c.WaitForConnections || wait {
-		fmt.Println("\nwaiting for last streams to finish processing or time-out, timeout:", timeout)
-		fmt.Println("hit ctrl-C to force quit")
+		if !Quiet {
+			fmt.Println("\nwaiting for last streams to finish processing or time-out, timeout:", timeout)
+			fmt.Println("hit ctrl-C to force quit")
+		}
 		streamFactory.WaitGoRoutines()
 	}
 

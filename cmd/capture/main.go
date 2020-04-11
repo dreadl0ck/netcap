@@ -209,7 +209,9 @@ func Run() {
 		}
 	}
 
-	fmt.Println("done in", time.Since(start))
+	if !*flagQuiet {
+		fmt.Println("done in", time.Since(start))
+	}
 
 	// memory profiling
 	if *flagMemProfile {
