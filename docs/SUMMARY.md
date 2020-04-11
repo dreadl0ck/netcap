@@ -21,4 +21,7 @@
 * [Extension](extension.md)
 * [Contributing](contributing.md)
 * [License](license.md)
+* [Logging](logging.md)
+* [Configuration](configuration.md)
+* [Troubleshooting](troubleshooting.md)
 
