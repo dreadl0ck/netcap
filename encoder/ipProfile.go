@@ -137,10 +137,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 				prot.Packets++
 			} else {
 				// add new
-				p.ip.Protocols[proto] = &types.Protocol{
-					Packets:  1,
-					Category: string(res.Class),
-				}
+				p.ip.Protocols[proto] = dpi.NewProto(&res)
 			}
 		}
 
@@ -206,10 +203,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 	// Application Layer: DPI
 	uniqueResults := dpi.GetProtocols(i.p)
 	for proto, res := range uniqueResults {
-		protos[proto] = &types.Protocol{
-			Packets:  1,
-			Category: string(res.Class),
-		}
+		protos[proto] = dpi.NewProto(&res)
 	}
 
 	var names []string

@@ -42,13 +42,13 @@ commands:
     ## Containers
     ##
 
-    build-all-alpine-docker:
+    build-alpine-docker:
         description: build all framework binaries for linux inside an apline docker container
         help: used to compile for linux on macOS because cross compilation is a pain with CGO
         dependencies:
             - clean
     
-    build-all-ubuntu-docker:
+    build-ubuntu-docker:
         description: build all framework binaries for linux inside an ubuntu docker container
         help: used to compile for linux on macOS because cross compilation is a pain with CGO
         dependencies:
@@ -88,7 +88,7 @@ commands:
     # count lines of code
     cloc:
         description: count lines of code for the project
-        exec: cloc --exclude-ext pb.go,py,rb,js,cpp,cc,rs,java,swift,c,cs,h cmd metrics label types utils io collector encoder netcap.go reader.go utils.go writer.go
+        exec: cloc --exclude-ext pb.go,py,rb,js,cpp,cc,rs,java,swift,c,cs,h cmd metrics label types utils io collector encoder netcap.go reader.go utils.go writer.go maltego resolvers dpi
 
     # generate protocol buffers for development
     gen-proto-dev:
@@ -118,7 +118,7 @@ commands:
             mv Dockerfile-alpine-cp Dockerfile-alpine
 
     # build and push the Alpine docker container
-    build-all-linux:
+    build-linux:
         description: builds the alpine and ubuntu docker containers
     
     # check git version

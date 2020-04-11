@@ -68,6 +68,6 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 	}
 
 	// run cleanup on channel exit
-	c.cleanup()
+	c.cleanup(false)
 	return nil
 }
