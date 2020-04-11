@@ -17,14 +17,14 @@ Netcap offers a simple command-line interface to select fields of interest from 
 Show available header fields:
 
 ```text
-$ netcap -r UDP.ncap.gz -fields
+$ net capture -read UDP.ncap.gz -fields
 Timestamp,SrcPort,DstPort,Length,Checksum,PayloadEntropy,PayloadSize
 ```
 
 Print all fields for the supplied audit record:
 
 ```text
-$ netcap -r UDP.ncap.gz
+$ net capture -read UDP.ncap.gz
 1331904607.100000,53,42665,120,41265,4.863994469989251,112 
 1331904607.100000,42665,53,53,1764,4.0625550894074385,45 
 1331904607.290000,51190,53,39,22601,3.1861758166070766,31 
@@ -49,7 +49,7 @@ Length,SrcPort,DstPort,Timestamp
 Print selection in the supplied order and convert timestamps to UTC time:
 
 ```text
-$ netcap -r UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc
+$ net capture -read UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc
 2012-03-16 13:30:07.1 +0000 UTC,53,42665,120
 2012-03-16 13:30:07.1 +0000 UTC,42665,53,53
 2012-03-16 13:30:07.29 +0000 UTC,51190,53,39
@@ -61,6 +61,6 @@ $ netcap -r UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc
 To save the output into a new file, simply redirect the standard output:
 
 ```text
-$ netcap -r UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc > UDP.csv
+$ net capture -read UDP.ncap.gz -select Timestamp,SrcPort,DstPort,Length -utc > UDP.csv
 ```
 
