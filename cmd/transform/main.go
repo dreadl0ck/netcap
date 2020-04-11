@@ -1,7 +1,6 @@
 package transform
 
 import (
-	"github.com/namsral/flag"
 	"log"
 	"os"
 )
@@ -12,14 +11,12 @@ var (
 
 func Run() {
 
-	flag.Parse()
-
 	if len(os.Args) < 2 {
 		log.Fatal("expecting transform name")
 	}
 
-	log.Println(os.Args)
-	switch os.Args[1] {
+	log.Println("os.Args:", os.Args)
+	switch os.Args[2] {
 		case "GetApplicationCategories":
 			GetApplicationCategories()
 		case "GetApplications":
