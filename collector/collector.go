@@ -169,7 +169,9 @@ func (c *Collector) cleanup(force bool) {
 	// encoder.DumpTop5NetworkFlows()
 	// encoder.DumpTop5TransportFlows()
 
-	c.printErrors()
+	if c.config.EncoderConfig.Debug {
+		c.printErrors()
+	}
 }
 
 // handleSignals catches signals and runs the cleanup

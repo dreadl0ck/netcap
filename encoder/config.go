@@ -14,6 +14,7 @@
 package encoder
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -23,10 +24,10 @@ import (
 var (
 	c Config
 	
-	reassemblyLog = log.New(nil, "", log.LstdFlags)
+	reassemblyLog = log.New(ioutil.Discard, "", log.LstdFlags)
 	reassemblyLogFileHandle *os.File
 
-	debugLog = log.New(nil, "", log.LstdFlags)
+	debugLog = log.New(ioutil.Discard, "", log.LstdFlags)
 	debugLogFileHandle *os.File
 )
 
