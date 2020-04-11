@@ -37,15 +37,7 @@ rm -rf dist/linux_amd64_libc
 mkdir -p dist/linux_amd64_libc
 
 # copy binaries from container
-docker cp $CONTAINER_ID:/netcap/net.capture dist/linux_amd64_libc/net.capture
-docker cp $CONTAINER_ID:/netcap/net.label dist/linux_amd64_libc/net.label
-docker cp $CONTAINER_ID:/netcap/net.collect dist/linux_amd64_libc/net.collect
-docker cp $CONTAINER_ID:/netcap/net.agent dist/linux_amd64_libc/net.agent
-docker cp $CONTAINER_ID:/netcap/net.proxy dist/linux_amd64_libc/net.proxy
-docker cp $CONTAINER_ID:/netcap/net.export dist/linux_amd64_libc/net.export
-docker cp $CONTAINER_ID:/netcap/net.dump dist/linux_amd64_libc/net.dump
-docker cp $CONTAINER_ID:/netcap/net.util dist/linux_amd64_libc/net.util
-docker cp $CONTAINER_ID:/netcap/net.transform dist/linux_amd64_libc/net.transform
+docker cp $CONTAINER_ID:/netcap/net dist/linux_amd64_libc/net
 
 # remove container
 docker rm $CONTAINER_ID

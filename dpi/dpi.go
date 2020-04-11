@@ -5,12 +5,13 @@ package dpi
 import (
 	"fmt"
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
+	. "github.com/dreadl0ck/go-dpi/types"
+	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"time"
 
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/go-dpi/modules/wrappers"
-	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/dreadl0ck/gopacket"
 )
 
@@ -29,7 +30,7 @@ func Init() {
 
 	// init DPI
 	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{lPI, nDPI}})
-	godpi.SetModules([]types.Module{wm, goDPI})
+	godpi.SetModules([]Module{wm, goDPI})
 	if err := godpi.Initialize(); err != nil {
 		log.Fatal("goDPI initialization returned error: ", err)
 	}
@@ -47,9 +48,9 @@ func Destroy() {
 
 // GetProtocols returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
-func GetProtocols(packet gopacket.Packet) map[string]types.ClassificationResult {
+func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 
-	protocols := make(map[string]types.ClassificationResult)
+	protocols := make(map[string]ClassificationResult)
 
 	if disableDPI {
 		return protocols
@@ -72,19 +73,26 @@ func GetProtocols(packet gopacket.Packet) map[string]types.ClassificationResult 
 	return protocols
 }
 
+func NewProto(res *ClassificationResult) *types.Protocol {
+	return &types.Protocol{
+		Packets:  1,
+		Category: string(res.Class),
+	}
+}
+
 // GetProtocolsTimeout returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
 // this function spawn a goroutine to allow setting a timeout for each packet
-func GetProtocolsTimeout(packet gopacket.Packet) map[string]types.ClassificationResult {
+func GetProtocolsTimeout(packet gopacket.Packet) map[string]ClassificationResult {
 
-	protocols := make(map[string]types.ClassificationResult)
+	protocols := make(map[string]ClassificationResult)
 
 	if disableDPI {
 		return protocols
 	}
 
 	var (
-		results = make(chan []types.ClassificationResult, 1)
+		results = make(chan []ClassificationResult, 1)
 	)
 	go func() {
 		flow, _ := godpi.GetPacketFlow(packet)

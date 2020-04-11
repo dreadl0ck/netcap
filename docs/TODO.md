@@ -1,11 +1,16 @@
 # TODOs
 
-## Documentation
+## v0.5 Documentation
+
+### Configuration
+### Troubleshooting
+### Logging
 
 - add setup and usage documentation, document special ENV vars:
   - net.capture: NETCAP_DATABASE_SOURCE
   - net.transform: NETCAP_MALTEGO_OPEN_FILE_CMD
   - net.agent: USER
+
 - document configuration via environment or file
 - document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
 - document \*Timeout funcs for handlePacket, AssembleWithContext and GetProtocols in internals section for debugging
@@ -15,12 +20,7 @@
 - troubleshooting
 - update usage examples for new syntax
 - godoc cleanup
-
-## Cleanup
-
-- test empty TCP conn over HTTP port (will this lock up the reassembly?)
-- net.split: split pcap files by days or hours
-- capture unknown L7 protocol TCP streams and write to disk
+- regenerate cheatsheets
 
 ## Maltego Plugin
 
@@ -59,6 +59,8 @@
 
 ## General
 
+- capture unknown L7 protocol TCP streams and write to disk
+- net.split: split pcap or audit record files by days or hours
 - check TODOs in source
 - improve tests
 - add tests for POP3 parsing
