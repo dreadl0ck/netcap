@@ -21,8 +21,11 @@
 * [Extension](extension.md)
 * [Contributing](contributing.md)
 * [Docker Containers](docker-containers.md)
-* [License](license.md)
 * [Maltego Integration](maltego-integration.md)
 * [Troubleshooting](troubleshooting.md)
 * [Configuration](configuration.md)
+* [License](license.md)
+* [Resolvers](resolvers.md)
+* [Tests](tests.md)
+* [Deep Packet Inspection](deep-packet-inspection.md)
 
