@@ -2,15 +2,6 @@
 
 ## v0.5 Documentation
 
-### Configuration
-### Troubleshooting
-### Logging
-
-- add setup and usage documentation, document special ENV vars:
-  - net.capture: NETCAP_DATABASE_SOURCE
-  - net.transform: NETCAP_MALTEGO_OPEN_FILE_CMD
-  - net.agent: USER
-
 - document configuration via environment or file
 - document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
 - document \*Timeout funcs for handlePacket, AssembleWithContext and GetProtocols in internals section for debugging
