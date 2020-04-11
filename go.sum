@@ -18,6 +18,8 @@ github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7 h1:yBEizTC9S
 github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200410204328-bfc6a8c7d16d h1:Ze2okjZsayxtwe4XOWhzfcXHmXBlSHKQ+Ma6tbnOxPk=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200410204328-bfc6a8c7d16d/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200411102841-20993e313a54 h1:igAnsy7tWkj26En9dBpevmTTzbJzDps0izenOlM4LAo=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200411102841-20993e313a54/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
 github.com/dreadl0ck/ja3 v0.0.0-20200410212430-ca5991d30d58 h1:WkbclXp/0YZ5ZSWTFD/KMrFB1tgGCsHMJRcqlluOIbg=
 github.com/dreadl0ck/ja3 v0.0.0-20200410212430-ca5991d30d58/go.mod h1:+yOOM6tJavLqNDMSdfL7VItKhtL9GCbXM6WCR+Ex/wE=
 github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b h1:Ar1YyCBF4cYVhgFzEroRp/JZwEOPZxfBr3YapV9PYZs=

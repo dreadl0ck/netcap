@@ -14,11 +14,12 @@
 package collector
 
 import (
-	"github.com/dreadl0ck/gopacket/layers"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"github.com/dreadl0ck/gopacket/layers"
 
 	"github.com/dreadl0ck/gopacket/pcapgo"
 	humanize "github.com/dustin/go-humanize"
@@ -157,6 +158,6 @@ func (c *Collector) CollectPcap(path string) error {
 
 		c.handleRawPacketData(data, ci)
 	}
-	c.cleanup()
+	c.cleanup(false)
 	return nil
 }

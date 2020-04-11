@@ -115,11 +115,11 @@ func (c *Collector) stopWorkers() {
 }
 
 // cleanup before leaving. closes all buffers and displays stats.
-func (c *Collector) cleanup() {
+func (c *Collector) cleanup(force bool) {
 
 	if c.config.ReassembleConnections {
 		// teardown the TCP stream reassembly and print stats
-		encoder.CleanupReassembly()
+		encoder.CleanupReassembly(!force)
 	}
 	encoder.Cleanup()
 
@@ -191,7 +191,7 @@ func (c *Collector) handleSignals() {
 			os.Exit(0)
 		}()
 
-		c.cleanup()
+		c.cleanup(true)
 		os.Exit(0)
 	}()
 }

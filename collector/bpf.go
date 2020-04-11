@@ -14,9 +14,10 @@
 package collector
 
 import (
+	"io"
+
 	"github.com/dreadl0ck/gopacket/pcap"
 	"github.com/pkg/errors"
-	"io"
 )
 
 // CollectBPF open the named PCAP file and sets the specified BPF filter.
@@ -55,6 +56,6 @@ func (c *Collector) CollectBPF(path string, bpf string) error {
 			ci:   ci,
 		})
 	}
-	c.cleanup()
+	c.cleanup(false)
 	return nil
 }

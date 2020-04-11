@@ -475,15 +475,17 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 	}
 }
 
-func CleanupReassembly() {
+func CleanupReassembly(wait bool) {
+
+	if c.Debug {
+		reassemblyLog.Println("StreamPool:")
+		reassemblyLog.Println(StreamPool.DumpString())
+	}
 
 	// wait for stream reassembly to finish
-	if c.WaitForConnections {
-		if c.Debug {
-			fmt.Println("StreamPool:")
-			StreamPool.Dump()
-		}
-		fmt.Println("waiting for last streams to finish or time-out, timeout:", timeout)
+	if c.WaitForConnections || wait {
+		fmt.Println("\nwaiting for last streams to finish processing or time-out, timeout:", timeout)
+		fmt.Println("hit ctrl-C to force quit")
 		streamFactory.WaitGoRoutines()
 	}
 
