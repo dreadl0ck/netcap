@@ -56,11 +56,5 @@ To install the _Netcap_ and _Netlabel_ command-line tool and the library with ze
 $ zeus install
 ```
 
-## Tests
 
-To execute the unit tests, run the following from the project root:
-
-```text
-$ go test -v -bench=. ./...
-```
 
