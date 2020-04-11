@@ -22,9 +22,11 @@ description: A collection of cheatsheets and useful resources
 
 ### List of all supported protocols and fields
 
-{% file src=".gitbook/assets/overview \(1\).pdf" caption="Netcap - Overview Supported Protocols" %}
+{% file src=".gitbook/assets/overview \(2\).pdf" caption="Netcap - Supported Protocols and Fields" %}
 
 ### Command Cheatsheet
 
-{% file src=".gitbook/assets/netcap-cheatsheet \(1\).pdf" caption="Netcap General Cheatsheet" %}
+{% file src=".gitbook/assets/netcap-cheatsheet.pdf" caption="Netcap Cheatsheet" %}
+
+
 
