@@ -29,7 +29,7 @@ import (
 // MarkdownOverview dumps a Markdown summary of all available encoders and their fields
 func MarkdownOverview() {
 	fmt.Println("# NETCAP Overview " + netcap.Version)
-	fmt.Println("> Documentation: docs.netcap.io")
+	fmt.Println("> Documentation: [docs.netcap.io](https://docs.netcap.io)")
 	fmt.Println("## LayerEncoders")
 
 	fmt.Println("|Name|NumFields|Fields|")

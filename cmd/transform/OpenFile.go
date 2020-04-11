@@ -16,7 +16,7 @@ func OpenFile() {
 	var (
 		lt = maltego.ParseLocalArguments(os.Args)
 		trx = &maltego.MaltegoTransform{}
-		openCommandName = os.Getenv("NETCAP_MALTEGO_OPEN_FILE_CMD")
+		openCommandName = os.Getenv("NC_MALTEGO_OPEN_FILE_CMD")
 		args []string
 	)
 
