@@ -4,6 +4,12 @@ description: A collection of cheatsheets and useful resources
 
 # Downloads
 
+## Releases
+
+You can find the latest release on the releases page on GitHub:
+
+{% embed url="https://github.com/dreadl0ck/netcap/releases" %}
+
 ## Publications
 
 ### Thesis
