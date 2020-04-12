@@ -127,6 +127,9 @@ func printCompletions(previous string) {
 			saveSubCmd("collect")
 			printFlags(collect.Flags())
 		case "help":
+			saveSubCmd("")
+		case "transform":
+			saveSubCmd("")
 			return
 	}
 
