@@ -29,16 +29,16 @@ IgnoreFSMerr       bool
 // TCP state machine allow missing init in three way handshake
 AllowMissingInit   bool
 
-// Toogle Debug Mode
+// Toggle debug mode
 Debug              bool
 
-// Dump packets as hex for debugging
+// Dump packets contents as hex for debugging
 HexDump            bool
 
 // Wait until all connections finished processing when receiving shutdown signal
 WaitForConnections bool
 
-// Save incomplete http reponses and requests 
+// Write incomplete HTTP responses to disk when extracting files
 WriteIncomplete    bool
 ```
 
