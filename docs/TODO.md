@@ -13,6 +13,8 @@
 - godoc cleanup
 - regenerate cheatsheets
 
+- add completions for subcommand flags
+
 ## Maltego Plugin
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow

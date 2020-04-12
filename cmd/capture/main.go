@@ -91,7 +91,7 @@ func Run() {
 	// abort if there is no input or no live capture
 	if *flagInput == "" && !live {
 		printHeader()
-		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-r) or live mode and an interface (-iface)" + ansi.Reset)
+		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-read) or live mode and an interface (-iface)" + ansi.Reset)
 		os.Exit(1)
 	}
 
