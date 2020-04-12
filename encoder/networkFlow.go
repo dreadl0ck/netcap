@@ -104,12 +104,12 @@ var networkFlowEncoder = CreateCustomEncoder(types.Type_NC_NetworkFlow, "Network
 
 			// continuously flush flows
 			netFlows++
-			if netFlows%flowFlushInterval == 0 {
+			if netFlows%int64(c.FlowFlushInterval) == 0 {
 
 				var selectFlows []*types.NetworkFlow
 				for id, f := range NetworkFlows.Items {
 					// flush entries whose last timestamp is flowTimeOut older than current packet
-					if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > flowTimeOut {
+					if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > c.FlowTimeOut {
 						selectFlows = append(selectFlows, f)
 						// cleanup
 						delete(NetworkFlows.Items, id)

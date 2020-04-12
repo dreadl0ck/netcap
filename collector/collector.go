@@ -85,6 +85,8 @@ type Collector struct {
 
 	// configuration
 	config *Config
+
+	isLive bool
 }
 
 // New returns a new Collector instance.
@@ -128,7 +130,7 @@ func (c *Collector) cleanup(force bool) {
 	c.wg.Wait()
 	c.statMutex.Unlock()
 
-	if c.config.Live {
+	if c.isLive {
 		c.statMutex.Lock()
 		c.numPackets = c.current
 		c.statMutex.Unlock()

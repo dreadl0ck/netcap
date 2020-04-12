@@ -197,7 +197,7 @@ func InitLayerEncoders(c Config, quiet bool) {
 		}
 		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
 
-		err := e.writer.WriteHeader(e.Type, c.Source, c.Version, c.IncludePayloads)
+		err := e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
 		if err != nil {
 			log.Fatal("failed to write header for audit record: ", e.Type.String())
 		}

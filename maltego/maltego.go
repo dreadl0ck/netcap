@@ -40,7 +40,7 @@ func GetThicknessInterval(val, min, max uint64) int {
 		min = 0
 	}
 
-	interval := (max-min)/5
+	interval := (max - min) / 5
 
 	switch {
 	case val <= interval:
@@ -77,7 +77,7 @@ func GetThickness(val, min, max uint64) int {
 		min = 0
 	}
 
-	delta := max-min
+	delta := max - min
 
 	//log.Println("delta=", delta, "float64(delta)*0.01 = ", float64(delta)*0.01)
 	//log.Println("delta=", delta, "float64(delta)*0.1 = ", float64(delta)*0.1)

@@ -84,6 +84,6 @@ func GetDNSQuestions() {
 		}
 	}
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }

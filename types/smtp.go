@@ -47,10 +47,10 @@ func (a SMTP) CSVRecord() []string {
 	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		strconv.FormatBool(a.IsEncrypted),   // bool
-		strconv.FormatBool(a.IsResponse),    // bool
-		join(responses...), // []*SMTPResponse
-		a.Command.GetString(),       // *SMTPCommand
+		strconv.FormatBool(a.IsEncrypted), // bool
+		strconv.FormatBool(a.IsResponse),  // bool
+		join(responses...),                // []*SMTPResponse
+		a.Command.GetString(),             // *SMTPCommand
 		a.Context.SrcIP,
 		a.Context.DstIP,
 		a.Context.SrcPort,

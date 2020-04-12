@@ -30,9 +30,9 @@ var smtpEncoder = CreateLayerEncoder(types.Type_NC_SMTP, layers.LayerTypeSMTP, f
 			})
 		}
 		return &types.SMTP{
-			Timestamp:       timestamp,
-			IsEncrypted: smtp.IsEncrypted,
-			IsResponse: smtp.IsResponse,
+			Timestamp:     timestamp,
+			IsEncrypted:   smtp.IsEncrypted,
+			IsResponse:    smtp.IsResponse,
 			ResponseLines: responses,
 			Command: &types.SMTPCommand{
 				Command:   int32(smtp.Command.Command),

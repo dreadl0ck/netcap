@@ -66,13 +66,10 @@ import (
 	"github.com/dreadl0ck/gopacket/reassembly"
 )
 
-// flags
 var (
-	closeTimeout   time.Duration = time.Hour * 24   // time.Duration(*flagCloseTimeOut) // Closing inactive
-	timeout        time.Duration = time.Second * 30 // * time.Duration(*flagTimeOut)      // Pending bytes
-	defragger                    = ip4defrag.NewIPv4Defragmenter()
-	streamFactory                = &tcpConnectionFactory{}
-	StreamPool                   = reassembly.NewStreamPool(streamFactory)
+	defragger      = ip4defrag.NewIPv4Defragmenter()
+	streamFactory  = &tcpConnectionFactory{}
+	StreamPool     = reassembly.NewStreamPool(streamFactory)
 	numErrors      uint
 	requests       = 0
 	responses      = 0
@@ -446,7 +443,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		ref := packet.Metadata().CaptureInfo.Timestamp
 		// flushed, closed :=
 		//fmt.Println("FlushWithOptions")
-		assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-timeout), TC: ref.Add(-closeTimeout)})
+		assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-c.ClosePendingTimeOut), TC: ref.Add(-c.CloseInactiveTimeOut)})
 		//fmt.Println("FlushWithOptions done")
 
 		// TODO: log into file when debugging is enabled
@@ -485,7 +482,7 @@ func CleanupReassembly(wait bool) {
 	// wait for stream reassembly to finish
 	if c.WaitForConnections || wait {
 		if !Quiet {
-			fmt.Println("\nwaiting for last streams to finish processing or time-out, timeout:", timeout)
+			fmt.Println("\nwaiting for last streams to finish processing or time-out, timeout:", c.ClosePendingTimeOut)
 			fmt.Println("hit ctrl-C to force quit")
 		}
 		streamFactory.WaitGoRoutines()
@@ -515,8 +512,8 @@ func CleanupReassembly(wait bool) {
 		// print configuration as table
 		tui.Table(reassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
 			{"FlushEvery", strconv.Itoa(c.FlushEvery)},
-			{"CloseTimeout", closeTimeout.String()},
-			{"Timeout", timeout.String()},
+			{"CloseInactiveTimeout", c.CloseInactiveTimeOut.String()},
+			{"ClosePendingTimeout", c.ClosePendingTimeOut.String()},
 			{"AllowMissingInit", strconv.FormatBool(c.AllowMissingInit)},
 			{"IgnoreFsmErr", strconv.FormatBool(c.IgnoreFSMerr)},
 			{"NoOptCheck", strconv.FormatBool(c.NoOptCheck)},

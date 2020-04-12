@@ -21,7 +21,7 @@ func GetOutgoingFlowsFiltered() {
 
 	maltego.FlowTransform(
 		maltego.CountOutgoingFlowBytesFiltered,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, flow  *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
 			if flow.SrcIP == ipaddr {
 				name := resolvers.LookupDNSNameLocal(flow.DstIP)
 				if name != "" {
@@ -46,7 +46,7 @@ func addOutFlow(trx *maltego.MaltegoTransform, flow *types.Flow, min, max uint64
 	ent.SetType("netcap.Flow")
 	ent.SetValue(flow.UID + "\n" + name)
 
-	di := "<h3>Outgoing Flow: " + flow.SrcIP +":"+flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.TimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.TimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
+	di := "<h3>Outgoing Flow: " + flow.SrcIP + ":" + flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.TimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.TimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 
 	//escapedName := maltego.EscapeText()

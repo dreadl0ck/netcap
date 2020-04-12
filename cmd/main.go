@@ -52,7 +52,7 @@ available subcommands:
 
 usage: ./net <subcommand> [flags]
 or: ./net <subcommand> [-h] to get help for the subcommand`)
-os.Exit(0)
+	os.Exit(0)
 }
 
 func main() {
@@ -124,23 +124,23 @@ func printCompletions(previous, current, full string) {
 
 	// show flags for subcommands
 	switch previous {
-		case "capture":
-			printFlags(capture.Flags())
-		case "util":
-			printFlags(util.Flags())
-		case "proxy":
-			printFlags(proxy.Flags())
-		case "label":
-			printFlags(label.Flags())
-		case "export":
-			printFlags(export.Flags())
-		case "dump":
-			printFlags(dump.Flags())
-		case "collect":
-			printFlags(collect.Flags())
-		case "help":
-		case "transform":
-			return
+	case "capture":
+		printFlags(capture.Flags())
+	case "util":
+		printFlags(util.Flags())
+	case "proxy":
+		printFlags(proxy.Flags())
+	case "label":
+		printFlags(label.Flags())
+	case "export":
+		printFlags(export.Flags())
+	case "dump":
+		printFlags(dump.Flags())
+	case "collect":
+		printFlags(collect.Flags())
+	case "help":
+	case "transform":
+		return
 	}
 
 	// the user could be in the middle of typing a command.
@@ -148,7 +148,7 @@ func printCompletions(previous, current, full string) {
 	// and show all flags except for the last one
 	if previous != "net" {
 		subCmd := getSubCmd(full)
-		debug( "subcommand:", subCmd)
+		debug("subcommand:", subCmd)
 		switch subCmd {
 		case "capture":
 			if previous == "-read" {

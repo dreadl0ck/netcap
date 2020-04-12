@@ -30,13 +30,13 @@ var (
 
 type port struct {
 	service string
-	num int
+	num     int
 }
 
 func InitServiceDB() {
 
 	var (
-		f, err = os.Open(filepath.Join(dataBaseSource, "service-names-port-numbers.csv"))
+		f, err    = os.Open(filepath.Join(dataBaseSource, "service-names-port-numbers.csv"))
 		csvReader = csv.NewReader(f)
 	)
 	if err != nil {
@@ -69,7 +69,7 @@ func InitServiceDB() {
 				fmt.Println("invalid parts length", parts)
 				continue
 			}
-			start, err :=  strconv.Atoi(parts[0])
+			start, err := strconv.Atoi(parts[0])
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -86,7 +86,7 @@ func InitServiceDB() {
 			for i := start; i <= end; i++ {
 				p := port{
 					service: r[3],
-					num: i,
+					num:     i,
 				}
 				if r[2] == "tcp" {
 					tcpPortMap[i] = p
@@ -105,7 +105,7 @@ func InitServiceDB() {
 			}
 			p := port{
 				service: r[3],
-				num: num,
+				num:     num,
 			}
 			if r[2] == "tcp" {
 				tcpPortMap[num] = p

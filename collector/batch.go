@@ -16,10 +16,10 @@ package collector
 import (
 	"time"
 
-	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // BatchInfo contains information about a Batch source.

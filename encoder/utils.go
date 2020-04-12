@@ -124,19 +124,19 @@ func logReassemblyError(t string, s string, a ...interface{}) {
 	errorsMapMutex.Unlock()
 
 	if c.Debug {
-		reassemblyLog.Printf("ERROR: " + s, a...)
+		reassemblyLog.Printf("ERROR: "+s, a...)
 	}
 }
 
 func logReassemblyInfo(s string, a ...interface{}) {
 	if c.Debug {
-		reassemblyLog.Printf("INFO: " + s, a...)
+		reassemblyLog.Printf("INFO: "+s, a...)
 	}
 }
 
 func logReassemblyDebug(s string, a ...interface{}) {
 	if c.Debug {
-		reassemblyLog.Printf("DEBUG: " + s, a...)
+		reassemblyLog.Printf("DEBUG: "+s, a...)
 	}
 }
 

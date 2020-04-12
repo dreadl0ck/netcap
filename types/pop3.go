@@ -27,7 +27,7 @@ var fieldsPOP3 = []string{
 	"AuthToken", // string
 	"User",      // string
 	"Pass",      // string
-	"NumMails",     // []*Mail
+	"NumMails",  // []*Mail
 }
 
 func (a POP3) CSVHeader() []string {
@@ -37,12 +37,12 @@ func (a POP3) CSVHeader() []string {
 func (a POP3) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.ClientIP,    // string
-		a.ServerIP,    // string
-		a.AuthToken, // string
-		a.User,      // string
-		a.Pass,      // string
-		strconv.Itoa(len(a.Mails)),     // []*Mail
+		a.ClientIP,                 // string
+		a.ServerIP,                 // string
+		a.AuthToken,                // string
+		a.User,                     // string
+		a.Pass,                     // string
+		strconv.Itoa(len(a.Mails)), // []*Mail
 	})
 }
 

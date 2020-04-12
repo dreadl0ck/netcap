@@ -169,7 +169,7 @@ func InitCustomEncoders(c Config, quiet bool) {
 		e.export = c.Export
 
 		// write header
-		err := e.writer.WriteHeader(e.Type, c.Source, c.Version, c.IncludePayloads)
+		err := e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
 		if err != nil {
 			log.Fatal("failed to write header for audit record: ", e.Name)
 		}

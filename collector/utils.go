@@ -31,7 +31,7 @@ var logFileHandle *os.File
 
 type packet struct {
 	data []byte
-	ci gopacket.CaptureInfo
+	ci   gopacket.CaptureInfo
 }
 
 func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
@@ -42,7 +42,7 @@ func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
 	// pass packet to a worker routine
 	c.handlePacket(&packet{
 		data: data,
-		ci: ci,
+		ci:   ci,
 	})
 }
 

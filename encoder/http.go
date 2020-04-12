@@ -109,7 +109,7 @@ func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
 func newHTTPFromResponse(res *http.Response) *types.HTTP {
 
 	var (
-		detected string
+		detected      string
 		contentLength = int32(res.ContentLength)
 	)
 

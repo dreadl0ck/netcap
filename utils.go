@@ -69,16 +69,16 @@ func FPrintBuildInfo(w io.Writer) {
 
 	FPrintLogo(w)
 
-	fmt.Fprintln(w,"\n> Date of execution:", time.Now().UTC())
-	fmt.Fprintln(w,"> NETCAP build commit:", Commit)
-	fmt.Fprintln(w,"> go runtime version:", runtime.Version())
-	fmt.Fprintln(w,"> running with:", runtime.NumCPU(), "cores")
+	fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
+	fmt.Fprintln(w, "> NETCAP build commit:", Commit)
+	fmt.Fprintln(w, "> go runtime version:", runtime.Version())
+	fmt.Fprintln(w, "> running with:", runtime.NumCPU(), "cores")
 
 	b, ok := debug.ReadBuildInfo()
 	if ok {
 		for _, d := range b.Deps {
 			if path.Base(d.Path) == "gopacket" {
-				fmt.Fprintln(w,"> gopacket:", d.Path, "version:", d.Version)
+				fmt.Fprintln(w, "> gopacket:", d.Path, "version:", d.Version)
 			}
 		}
 	}

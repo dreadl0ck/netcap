@@ -13,14 +13,14 @@ import (
 func GetMails() {
 	maltego.POP3Transform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, pop3  *types.POP3, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, pop3 *types.POP3, min, max uint64, profilesFile string, ipaddr string) {
 			if pop3.ClientIP == ipaddr {
 				for _, m := range pop3.Mails {
 
 					log.Println(m.Subject)
 
 					var buf bytes.Buffer
-					err := xml.EscapeText(&buf, []byte(m.Subject + "\n" + m.From))
+					err := xml.EscapeText(&buf, []byte(m.Subject+"\n"+m.From))
 					if err != nil {
 						fmt.Println(err)
 					}

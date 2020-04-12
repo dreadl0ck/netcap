@@ -17,9 +17,9 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
-	"sync"
 	"io"
 	"strings"
+	"sync"
 )
 
 type CSVWriter struct {

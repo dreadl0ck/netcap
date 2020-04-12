@@ -17,7 +17,6 @@ import (
 	"log"
 	"strconv"
 	"sync/atomic"
-	"time"
 
 	"sync"
 
@@ -48,9 +47,6 @@ var (
 	}
 	connEncoderInstance *CustomEncoder
 	conns               int64
-
-	connFlushInterval int64
-	connTimeOut       time.Duration
 )
 
 // ConnectionID is a bidirectional connection
@@ -68,28 +64,26 @@ func (c ConnectionID) String() string {
 
 var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connection", func(d *CustomEncoder) error {
 	connEncoderInstance = d
-	connFlushInterval = int64(c.ConnFlushInterval)
-	connTimeOut = time.Second * time.Duration(c.ConnTimeOut)
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
 	// assemble connectionID
-	c := ConnectionID{}
+	connID := ConnectionID{}
 	if ll := p.LinkLayer(); ll != nil {
-		c.LinkFlowID = ll.LinkFlow().FastHash()
+		connID.LinkFlowID = ll.LinkFlow().FastHash()
 	}
 	if nl := p.NetworkLayer(); nl != nil {
-		c.NetworkFlowID = nl.NetworkFlow().FastHash()
+		connID.NetworkFlowID = nl.NetworkFlow().FastHash()
 	}
 	if tl := p.TransportLayer(); tl != nil {
-		c.TransportFlowID = tl.TransportFlow().FastHash()
+		connID.TransportFlowID = tl.TransportFlow().FastHash()
 	}
 
 	// lookup flow
 	Connections.Lock()
-	if conn, ok := Connections.Items[c.String()]; ok {
+	if conn, ok := Connections.Items[connID.String()]; ok {
 
-		// conn exists. update fields
+		// connID exists. update fields
 		calcDuration := false
 
 		// check if received packet from the same flow
@@ -135,7 +129,7 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 	} else {
 		// create a new Connection
 		conn := &types.Connection{}
-		conn.UID = calcMd5(c.String())
+		conn.UID = calcMd5(conn.String())
 		conn.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
 
 		if ll := p.LinkLayer(); ll != nil {
@@ -157,18 +151,18 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 			conn.ApplicationProto = al.LayerType().String()
 			conn.AppPayloadSize = int32(len(al.Payload()))
 		}
-		Connections.Items[c.String()] = conn
+		Connections.Items[conn.String()] = conn
 
 		conns++
 
 		// flush
-		if conns%connFlushInterval == 0 {
+		if conns%int64(c.ConnFlushInterval) == 0 {
 
 			var selectConns []*types.Connection
-			for id, c := range Connections.Items {
+			for id, entry := range Connections.Items {
 				// flush entries whose last timestamp is connTimeOut older than current packet
-				if p.Metadata().Timestamp.Sub(utils.StringToTime(c.TimestampLast)) > connTimeOut {
-					selectConns = append(selectConns, c)
+				if p.Metadata().Timestamp.Sub(utils.StringToTime(entry.TimestampLast)) > c.ConnTimeOut {
+					selectConns = append(selectConns, entry)
 					// cleanup
 					delete(Connections.Items, id)
 				}

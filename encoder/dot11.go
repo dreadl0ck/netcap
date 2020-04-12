@@ -14,10 +14,10 @@
 package encoder
 
 import (
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/golang/protobuf/proto"
 )
 
 var dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11, func(layer gopacket.Layer, timestamp string) proto.Message {

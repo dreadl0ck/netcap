@@ -16,6 +16,7 @@ package capture
 import (
 	"github.com/namsral/flag"
 	"os"
+	"time"
 )
 
 func Flags() (flags []string) {
@@ -73,22 +74,24 @@ var (
 	flagGeolocationDB = fs.Bool("geoDB", false, "use geolocation for device profiling")
 	flagDPI           = fs.Bool("dpi", false, "use DPI for device profiling")
 
-	flagFreeOSMemory = fs.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
+	flagFreeOSMemory          = fs.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
 	flagReassembleConnections = fs.Bool("reassemble-connections", true, "reassemble TCP connections")
 
-	flagFlushevery             = fs.Int("flushevery", 100, "flush assembler every N packets")
-	flagNodefrag               = fs.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
-	flagChecksum               = fs.Bool("checksum", false, "check TCP checksum")
-	flagNooptcheck             = fs.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
-	flagIgnorefsmerr           = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
-	flagAllowmissinginit       = fs.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
-	flagDebug                  = fs.Bool("debug", false, "display debug information")
-	flagHexdump                = fs.Bool("hexdump-http", false, "dump HTTP request/response as hex")
-	flagWaitForConnections = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
-	flagWriteincomplete        = fs.Bool("writeincomplete", false, "write incomplete response")
-	flagMemprofile             = fs.String("memprofile", "", "write memory profile")
-	flagConnFlushInterval = fs.Int("conn-flush-interval", 10000, "flush connections every X flows")
-	flagConnTimeOut       = fs.Int("conn-timeout", 10, "close connections older than X seconds")
-	flagFlowFlushInterval = fs.Int("flow-flush-interval", 2000, "flush flows every X flows")
-	flagFlowTimeOut       = fs.Int("flow-timeout", 10, "close flows older than X seconds")
+	flagFlushevery           = fs.Int("flushevery", 100, "flush assembler every N packets")
+	flagNodefrag             = fs.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
+	flagChecksum             = fs.Bool("checksum", false, "check TCP checksum")
+	flagNooptcheck           = fs.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
+	flagIgnorefsmerr         = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
+	flagAllowmissinginit     = fs.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
+	flagDebug                = fs.Bool("debug", false, "display debug information")
+	flagHexdump              = fs.Bool("hexdump-http", false, "dump HTTP request/response as hex")
+	flagWaitForConnections   = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
+	flagWriteincomplete      = fs.Bool("writeincomplete", false, "write incomplete response")
+	flagMemprofile           = fs.String("memprofile", "", "write memory profile")
+	flagConnFlushInterval    = fs.Int("conn-flush-interval", 10000, "flush connections every X flows")
+	flagConnTimeOut          = fs.Duration("conn-timeout", 10*time.Second, "close connections older than X seconds")
+	flagFlowFlushInterval    = fs.Int("flow-flush-interval", 2000, "flushes flows every X flows")
+	flagFlowTimeOut          = fs.Duration("flow-timeout", 10*time.Second, "closes flows older than flowTimeout")
+	flagClosePendingTimeout  = fs.Duration("close-pending-timeout", 30*time.Second, "reassembly: close connections that have pending bytes after X")
+	flagCloseInactiveTimeout = fs.Duration("close-inactive-timeout", 24*time.Hour, "reassembly: close connections that are inactive after X")
 )

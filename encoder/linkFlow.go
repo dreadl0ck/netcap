@@ -103,12 +103,12 @@ var linkFlowEncoder = CreateCustomEncoder(types.Type_NC_LinkFlow, "LinkFlow", fu
 
 			// continuously flush flows
 			linkFlows++
-			if linkFlows%flowFlushInterval == 0 {
+			if linkFlows%int64(c.FlowFlushInterval) == 0 {
 
 				var selectFlows []*types.LinkFlow
 				for id, f := range LinkFlows.Items {
 					// flush entries whose last timestamp is flowTimeOut older than current packet
-					if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > flowTimeOut {
+					if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > c.FlowTimeOut {
 						selectFlows = append(selectFlows, f)
 						// cleanup
 						delete(LinkFlows.Items, id)

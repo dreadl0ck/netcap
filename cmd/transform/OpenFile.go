@@ -14,10 +14,10 @@ import (
 func OpenFile() {
 
 	var (
-		lt = maltego.ParseLocalArguments(os.Args)
-		trx = &maltego.MaltegoTransform{}
+		lt              = maltego.ParseLocalArguments(os.Args)
+		trx             = &maltego.MaltegoTransform{}
 		openCommandName = os.Getenv("NC_MALTEGO_OPEN_FILE_CMD")
-		args []string
+		args            []string
 	)
 
 	// if no command has been supplied via environment variable
@@ -50,7 +50,7 @@ func OpenFile() {
 	ctype := http.DetectContentType(buf)
 	log.Println("ctype:", ctype)
 	if ctype == "application/octet-stream" {
-		trx.AddUIMessage("completed!","Inform")
+		trx.AddUIMessage("completed!", "Inform")
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
@@ -65,6 +65,6 @@ func OpenFile() {
 	}
 	log.Println(string(out))
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }

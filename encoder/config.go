@@ -14,26 +14,28 @@
 package encoder
 
 import (
+	"github.com/dreadl0ck/netcap"
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	"github.com/dreadl0ck/gopacket/reassembly"
 )
 
 var (
 	c Config
-	
-	reassemblyLog = log.New(ioutil.Discard, "", log.LstdFlags)
+
+	reassemblyLog           = log.New(ioutil.Discard, "", log.LstdFlags)
 	reassemblyLogFileHandle *os.File
 
-	debugLog = log.New(ioutil.Discard, "", log.LstdFlags)
+	debugLog           = log.New(ioutil.Discard, "", log.LstdFlags)
 	debugLogFileHandle *os.File
 )
 
 const (
 	directoryPermission = 0755
-	logFilePermission = 0755
+	logFilePermission   = 0755
 )
 
 // SetConfig can be used to set a configuration for the package
@@ -42,7 +44,7 @@ func SetConfig(cfg Config) {
 	fsmOptions = reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: c.AllowMissingInit,
 	}
-	
+
 	// setup loggers
 	if c.Debug {
 		var err error
@@ -62,35 +64,124 @@ func SetConfig(cfg Config) {
 	}
 }
 
+// DefaultConfig is a sane example configuration for the encoder package
+var DefaultConfig = Config{
+	Buffer:               true,
+	Compression:          true,
+	CSV:                  false,
+	IncludeEncoders:      "",
+	ExcludeEncoders:      "",
+	IncludePayloads:      false,
+	Export:               false,
+	AddContext:           true,
+	MemBufferSize:        netcap.DefaultBufferSize,
+	FlushEvery:           100,
+	NoDefrag:             false,
+	Checksum:             false,
+	NoOptCheck:           false,
+	IgnoreFSMerr:         false,
+	AllowMissingInit:     false,
+	Debug:                false,
+	HexDump:              false,
+	WaitForConnections:   true,
+	WriteIncomplete:      false,
+	MemProfile:           "",
+	ConnFlushInterval:    10000,
+	ConnTimeOut:          10,
+	FlowFlushInterval:    2000,
+	FlowTimeOut:          10 * time.Second,
+	CloseInactiveTimeOut: 24 * time.Hour,
+	ClosePendingTimeOut:  30 * time.Second,
+}
+
 // Config contains configuration parameters
 // for the encoders
 type Config struct {
-	Buffer             bool
-	Compression        bool
-	CSV                bool
-	IncludeEncoders    string
-	ExcludeEncoders    string
-	Out                string
-	WriteChan          bool
-	Source             string
-	Version            string
-	IncludePayloads    bool
-	Export             bool
-	AddContext         bool
-	MemBufferSize      int
-	FlushEvery         int
-	NoDefrag           bool
-	Checksum           bool
-	NoOptCheck         bool
-	IgnoreFSMerr       bool
-	AllowMissingInit   bool
-	Debug              bool
-	HexDump            bool
+
+	// Buffer data before writing it to disk
+	Buffer bool
+
+	// Size of buffer used for writing audit records to disk
+	MemBufferSize int
+
+	// Compress data before writing it to disk with gzip
+	Compression bool
+
+	// Generate CSV instead of audit records
+	CSV bool
+
+	// Comma separated list of encoders to include
+	IncludeEncoders string
+
+	// Comma separated list of encoders to exclude
+	ExcludeEncoders string
+
+	// Output path
+	Out string
+
+	// Write into channel (used for distributed collection)
+	WriteChan bool
+
+	// Source of the audit records (pcap, live etc)
+	Source string
+
+	// Add payload data to supported audit records
+	IncludePayloads bool
+
+	// Export metrics
+	Export bool
+
+	// Add context to supported audit records
+	AddContext bool
+
+	// Interval to apply connection flushes
+	FlushEvery int
+
+	// Do not use IPv4 defragger
+	NoDefrag bool
+
+	// Dont verify the packet checksums
+	Checksum bool
+
+	// Dont check TCP options
+	NoOptCheck bool
+
+	// Ignore TCP state machine errors
+	IgnoreFSMerr bool
+
+	// TCP state machine allow missing init in three way handshake
+	AllowMissingInit bool
+
+	// Toggle debug mode
+	Debug bool
+
+	// Dump packets contents as hex for debugging
+	HexDump bool
+
+	// Wait until all connections finished processing when receiving shutdown signal
 	WaitForConnections bool
-	WriteIncomplete    bool
-	MemProfile         string
-	ConnFlushInterval  int
-	ConnTimeOut        int
-	FlowFlushInterval  int
-	FlowTimeOut        int
+
+	// Write incomplete HTTP responses to disk when extracting files
+	WriteIncomplete bool
+
+	// Will create a memory dump at the specified path for debugging and profiling
+	MemProfile string
+
+	// Number of packets to arrive until the connections are checked for timeouts
+	ConnFlushInterval int
+
+	// Used to flush connections to disk whose last timestamp is connTimeOut older than current packet
+	ConnTimeOut time.Duration
+
+	// Number of packets to arrive until the flows are checked for timeouts
+	FlowFlushInterval int
+
+	// Used to flush flows to disk whose last timestamp is flowTimeOut older than current packet
+	FlowTimeOut time.Duration
+
+	// Close inactive connections after
+	CloseInactiveTimeOut time.Duration
+
+	// Close connections with pending bytes after
+	ClosePendingTimeOut time.Duration
 }

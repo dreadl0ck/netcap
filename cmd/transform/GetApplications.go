@@ -9,7 +9,7 @@ import (
 func GetApplications() {
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 
 				for _, ip := range profile.Contacts {
