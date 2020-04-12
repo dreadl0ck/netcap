@@ -28,7 +28,7 @@ func Flags() (flags []string) {
 var (
 	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagDebug     = fs.Bool("debug", false, "toggle debug mode")
-	flagInput     = fs.String("read", "", "(required) read specified file, can either be a pcap or netcap audit record file")
+	flagInput     = fs.String("read", "", "use specified pcap file to scan with suricata")
 	flagSeparator = fs.String("sep", ",", "set separator string for csv output")
 	flagOutDir    = fs.String("out", "", "specify output directory, will be created if it does not exist")
 

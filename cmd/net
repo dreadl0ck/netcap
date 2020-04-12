@@ -9,7 +9,7 @@ _net()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-	opts=$(net -completions=${prev})
+	opts=$(net -previous=${prev} -current=${cur} -full="\"${COMP_WORDS[*]}\"")
 
 	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
 	return 0
