@@ -28,4 +28,5 @@
 * [FAQ](faq.md)
 * [Contributing](contributing.md)
 * [License](license.md)
+* [Reassembly](reassembly.md)
 
