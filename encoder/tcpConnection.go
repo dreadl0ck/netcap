@@ -71,9 +71,12 @@ var (
 	streamFactory  = &tcpConnectionFactory{}
 	StreamPool     = reassembly.NewStreamPool(streamFactory)
 	numErrors      uint
-	requests       = 0
-	responses      = 0
-	mu             sync.Mutex
+
+	requests   = 0
+	responses  = 0
+	// synchronizes access to stats
+	statsMutex sync.Mutex
+
 	count          = 0
 	dataBytes      = int64(0)
 	start          = time.Now()
@@ -284,6 +287,8 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 
 	// update stats
 	sgStats := sg.Stats()
+
+	statsMutex.Lock()
 	if skip > 0 {
 		reassemblyStats.missedBytes += skip
 	}
@@ -307,6 +312,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	}
 	reassemblyStats.overlapBytes += sgStats.OverlapBytes
 	reassemblyStats.overlapPackets += sgStats.OverlapPackets
+	statsMutex.Unlock()
 
 	var ident string
 	if dir == reassembly.TCPDirClientToServer {
@@ -431,7 +437,9 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 				log.Fatalf("Failed to set network layer for checksum: %s\n", err)
 			}
 		}
+		statsMutex.Lock()
 		reassemblyStats.totalsz += len(tcp.Payload)
+		statsMutex.Unlock()
 
 		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
 			CaptureInfo: packet.Metadata().CaptureInfo,
@@ -526,6 +534,7 @@ func CleanupReassembly(wait bool) {
 		printProgress(1, 1)
 		fmt.Println("")
 
+		statsMutex.Lock()
 		rows := [][]string{}
 		if !c.NoDefrag {
 			rows = append(rows, []string{"IPdefrag", strconv.Itoa(reassemblyStats.ipdefrag)})
@@ -544,6 +553,7 @@ func CleanupReassembly(wait bool) {
 		rows = append(rows, []string{"biggest-chunk bytes", strconv.Itoa(reassemblyStats.biggestChunkBytes)})
 		rows = append(rows, []string{"overlap packets", strconv.Itoa(reassemblyStats.overlapPackets)})
 		rows = append(rows, []string{"overlap bytes", strconv.Itoa(reassemblyStats.overlapBytes)})
+		statsMutex.Unlock()
 
 		tui.Table(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
 

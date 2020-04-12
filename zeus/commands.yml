@@ -37,7 +37,7 @@ commands:
         description: install a netcap build with race detection enabled
         buildNumber: true
         help: Install the race build to the default system location
-        exec: GO111MODULE=on go build -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o $(go env GOPATH)/bin/net.capture -i github.com/dreadl0ck/netcap/cmd/capture
+        exec: GO111MODULE=on go build -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
 
     ## Containers
     ##
