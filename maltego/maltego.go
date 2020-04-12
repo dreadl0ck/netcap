@@ -2,6 +2,7 @@ package maltego
 
 import (
 	"encoding/xml"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -364,6 +365,9 @@ type LocalTransform struct {
 }
 
 func ParseLocalArguments(args []string) LocalTransform {
+	if len(args) < 3 {
+		log.Fatal("need at least 3 arguments, got ", len(args), ": ", args)
+	}
 	Value := args[2]
 	Vals := make(map[string]string)
 	if len(args) > 3 {
