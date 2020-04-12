@@ -137,7 +137,7 @@ func (c *Collector) cleanup(force bool) {
 	}
 
 	clearLine()
-	c.printlnStdOut("done.\n")
+	c.printlnStdOut("done.")
 	c.stopWorkers()
 
 	// sync pcap file
