@@ -39,7 +39,7 @@ $ net dump -read TCP.ncap.gz -select Timestamp,SrcPort,DstPort
 Save CSV output to file:
 
 ```text
-$ net.dump -r TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv
+$ net dump -read TCP.ncap.gz -select Timestamp,SrcPort,DstPort > tcp.csv
 ```
 
 Print output separated with tabs:
