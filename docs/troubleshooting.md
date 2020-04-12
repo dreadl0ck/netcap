@@ -28,3 +28,15 @@ List of \*Timeout primitives:
 
 Simply replace the calls to the original versions with the \*Timeout primitives, and if one of those will block for longer than the configured thresholds, the call will be interrupted and an error logged.
 
+## Race Detection Builds
+
+To debug synchronization problems and data races you can compile a version with the **-race** flag set for the go compiler and see if the program crashes due to a race condition.
+
+There is a command implemented for that in the build scripts:
+
+```text
+$ zeus install-race
+```
+
+
+
