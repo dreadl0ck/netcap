@@ -28,10 +28,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-var flagCompletions = flag.String("completions", "", "get available command completions")
+var flagPrevious = flag.String("previous", "", "get available command completions")
+var flagCurrent = flag.String("current", "", "")
+var flagFull = flag.String("full", "", "")
 
 func help() {
 	netcap.PrintLogo()
@@ -57,8 +60,8 @@ func main() {
 	flag.Usage = help
 	flag.Parse()
 
-	if *flagCompletions != "" {
-		printCompletions(*flagCompletions)
+	if *flagPrevious != "" {
+		printCompletions(*flagPrevious, *flagCurrent, *flagFull)
 		return
 	}
 
@@ -87,49 +90,47 @@ func main() {
 	}
 }
 
-// print available completions for the bash-completion package
-func printCompletions(previous string) {
+// print builtins
+var completions = []string{
+	"capture",
+	"util",
+	"proxy",
+	"label",
+	"export",
+	"dump",
+	"collect",
+	"transform",
+	"help",
+}
 
-	// print builtins
-	var completions = []string{
-		"capture",
-		"util",
-		"proxy",
-		"label",
-		"export",
-		"dump",
-		"collect",
-		"transform",
-		"help",
-	}
+// print available completions for the bash-completion package
+func printCompletions(previous, current, full string) {
+
+	//debugHandle, err := os.OpenFile("completion-debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0744)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//fmt.Fprintln(debugHandle, "previous:", previous, "current:", current, "full:", full)
 
 	// show flags for subcommands
 	switch previous {
 		case "capture":
-			saveSubCmd("capture")
 			printFlags(capture.Flags())
 		case "util":
-			saveSubCmd("util")
 			printFlags(util.Flags())
 		case "proxy":
-			saveSubCmd("proxy")
 			printFlags(proxy.Flags())
 		case "label":
-			saveSubCmd("label")
 			printFlags(label.Flags())
 		case "export":
-			saveSubCmd("export")
 			printFlags(export.Flags())
 		case "dump":
-			saveSubCmd("dump")
 			printFlags(dump.Flags())
 		case "collect":
-			saveSubCmd("collect")
 			printFlags(collect.Flags())
 		case "help":
-			saveSubCmd("")
 		case "transform":
-			saveSubCmd("")
 			return
 	}
 
@@ -137,18 +138,38 @@ func printCompletions(previous string) {
 	// load the current command from the cache
 	// and show all flags except for the last one
 	if previous != "net" {
-		switch loadSubCmd() {
+		subCmd := getSubCmd(full)
+		//fmt.Fprintln(debugHandle, "subcommand:", subCmd)
+		switch subCmd {
 		case "capture":
+			if previous == "-read" {
+				printFileForExt(".pcap", ".pcapng")
+			}
 			printFlagsFiltered(capture.Flags(), previous)
 		case "util":
+			if previous == "-read" {
+				printFileForExt(".ncap", ".gz")
+			}
 			printFlagsFiltered(util.Flags(), previous)
 		case "proxy":
 			printFlagsFiltered(proxy.Flags(), previous)
 		case "label":
+			if previous == "-read" {
+				printFileForExt(".pcap", ".pcapng")
+			}
+			if previous == "-custom" {
+				printFileForExt(".csv")
+			}
 			printFlagsFiltered(label.Flags(), previous)
 		case "export":
+			if previous == "-read" {
+				printFileForExt(".ncap", ".gz", ".pcap", ".pcapng")
+			}
 			printFlagsFiltered(export.Flags(), previous)
 		case "dump":
+			if previous == "-read" {
+				printFileForExt(".ncap", ".gz")
+			}
 			printFlagsFiltered(dump.Flags(), previous)
 		case "collect":
 			printFlagsFiltered(collect.Flags(), previous)
@@ -160,6 +181,25 @@ func printCompletions(previous string) {
 		fmt.Print(name + " ")
 	}
 	fmt.Println()
+}
+
+func printFileForExt(exts ...string) {
+
+	files, err := ioutil.ReadDir(".")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		for _, e := range exts {
+			if filepath.Ext(f.Name()) == e {
+				fmt.Print(f.Name() + " ")
+				break
+			}
+		}
+	}
+	fmt.Println()
+	os.Exit(0)
 }
 
 func printFlags(arr []string) {
@@ -181,22 +221,11 @@ func printFlagsFiltered(arr []string, hide string) {
 	os.Exit(0)
 }
 
-func saveSubCmd(cmd string) {
-	f, err := os.Create("/usr/local/etc/netcap/.completion-cache")
-	if err != nil {
-		log.Fatal("failed to create bash completion cache file: ", err)
+func getSubCmd(full string) string {
+	fields := strings.Fields(full)
+	if len(fields) < 2 {
+		return ""
 	}
-	f.WriteString(cmd)
-	err = f.Close()
-	if err != nil {
-		log.Fatal("failed to close bash completion cache file: ", err)
-	}
-}
 
-func loadSubCmd() string {
-	c, err := ioutil.ReadFile("/usr/local/etc/netcap/.completion-cache")
-	if err != nil {
-		log.Fatal("failed to load bash completion cache file: ", err)
-	}
-	return string(c)
+	return fields[1]
 }
