@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/namsral/flag"
 	"fmt"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dustin/go-humanize"
+	"github.com/namsral/flag"
 	"io"
 	"log"
 	"os"

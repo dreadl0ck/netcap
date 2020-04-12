@@ -35,7 +35,7 @@ func TestReader(t *testing.T) {
 	}
 
 	var (
-		tcp = InitRecord(header.Type)
+		tcp   = InitRecord(header.Type)
 		count int
 	)
 

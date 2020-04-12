@@ -27,7 +27,7 @@ func Flags() (flags []string) {
 
 // flags
 var (
-	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	fs                      = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagDialTimeout         = fs.Int("dialTimeout", 30, "seconds until dialing to the backend times out")
 	flagIdleConnTimeout     = fs.Int("idleConnTimeout", 90, "seconds until a connection times out")
 	flagTLSHandshakeTimeout = fs.Int("tlsTimeout", 15, "seconds until a TLS handshake times out")

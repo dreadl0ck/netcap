@@ -50,14 +50,14 @@ func (a Diameter) CSVRecord() []string {
 	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		formatUint32(a.Version), //       uint32
-		formatUint32(a.Flags), //         uint32
-		formatUint32(a.MessageLen), //    uint32
-		formatUint32(a.CommandCode), //   uint32
+		formatUint32(a.Version),       //       uint32
+		formatUint32(a.Flags),         //         uint32
+		formatUint32(a.MessageLen),    //    uint32
+		formatUint32(a.CommandCode),   //   uint32
 		formatUint32(a.ApplicationID), // uint32
-		formatUint32(a.HopByHopID), //    uint32
-		formatUint32(a.EndToEndID), //    uint32
-		join(avps...), //     []*AVP
+		formatUint32(a.HopByHopID),    //    uint32
+		formatUint32(a.EndToEndID),    //    uint32
+		join(avps...),                 //     []*AVP
 		a.Context.SrcIP,
 		a.Context.DstIP,
 		a.Context.SrcPort,

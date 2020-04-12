@@ -83,7 +83,7 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	ok := true
 	for ok && len(h.data) == 0 {
 		select {
-			case h.data, ok = <-h.bytes:
+		case h.data, ok = <-h.bytes:
 			//case <-time.After(timeout):
 			//	return 0, io.EOF
 		}
@@ -138,10 +138,10 @@ func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 			if res.response.Request != nil {
 				atomic.AddInt64(&httpEncoder.numRequests, 1)
 				setRequest(ht, &httpRequest{
-					request:res.response.Request,
+					request:   res.response.Request,
 					timestamp: res.timestamp,
-					clientIP: res.clientIP,
-					serverIP: res.serverIP,
+					clientIP:  res.clientIP,
+					serverIP:  res.serverIP,
 				})
 			} else {
 				// response without matching request
@@ -275,7 +275,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	mu.Unlock()
 
 	h.parent.Lock()
-	h.parent.responses = append(h.parent.responses, &httpResponse{response:res})
+	h.parent.responses = append(h.parent.responses, &httpResponse{response: res})
 	h.parent.Unlock()
 
 	// write responses to disk if configured
@@ -283,12 +283,12 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 
 		h.parent.Lock()
 		var (
-			name = "unknown"
-			host string
-			source = "HTTP RESPONSE"
-			ctype string
+			name         = "unknown"
+			host         string
+			source       = "HTTP RESPONSE"
+			ctype        string
 			numResponses = len(h.parent.responses)
-			numRequests = len(h.parent.requests)
+			numRequests  = len(h.parent.requests)
 		)
 		h.parent.Unlock()
 
@@ -525,13 +525,13 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		ctype = trimEncoding(http.DetectContentType(body))
 
 		// root path
-		root  = path.Join(FileStorage, ctype)
+		root = path.Join(FileStorage, ctype)
 
 		// file extension
 		ext = fileExtensionForContentType(ctype)
 
 		// file basename
-		base  = filepath.Clean(name + "-" + path.Base(h.ident)) + ext
+		base = filepath.Clean(name+"-"+path.Base(h.ident)) + ext
 	)
 	if err != nil {
 		base = "incomplete-" + base
@@ -562,9 +562,9 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		}
 
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-" + name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+h.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		} else {
-			target = path.Join(root, filepath.Clean(name + "-" + h.ident) + "-" + strconv.Itoa(n) + fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean(name+"-"+h.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		}
 
 		n++
@@ -604,16 +604,16 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 
 	// write file to disk
 	writeFile(&types.File{
-		Timestamp: h.parent.firstPacket.String(),
-		Name:      fileName,
-		Length:    int64(len(body)),
-		Hash:      hex.EncodeToString(cryptoutils.MD5Data(body)),
-		Location:  target,
-		Ident:     h.ident,
-		Source:    source,
+		Timestamp:           h.parent.firstPacket.String(),
+		Name:                fileName,
+		Length:              int64(len(body)),
+		Hash:                hex.EncodeToString(cryptoutils.MD5Data(body)),
+		Location:            target,
+		Ident:               h.ident,
+		Source:              source,
 		ContentTypeDetected: ctype,
-		ContentType: contentType,
-		Context:  &types.PacketContext{
+		ContentType:         contentType,
+		Context: &types.PacketContext{
 			SrcIP:   h.parent.net.Src().String(),
 			DstIP:   h.parent.net.Dst().String(),
 			SrcPort: h.parent.transport.Src().String(),
@@ -653,10 +653,10 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	logReassemblyInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
 
 	request := &httpRequest{
-		request:req,
+		request:   req,
 		timestamp: utils.TimeToString(h.parent.firstPacket),
-		clientIP: h.parent.net.Src().String(),
-		serverIP: h.parent.net.Dst().String(),
+		clientIP:  h.parent.net.Src().String(),
+		serverIP:  h.parent.net.Dst().String(),
 	}
 
 	// parse form values
@@ -676,7 +676,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 		if (err == nil || c.WriteIncomplete) && FileStorage != "" {
 			return h.saveFile(
 				req.Host,
-				"HTTP POST REQUEST to " + req.URL.Path,
+				"HTTP POST REQUEST to "+req.URL.Path,
 				path.Base(req.URL.Path),
 				err,
 				body,

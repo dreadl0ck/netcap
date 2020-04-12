@@ -13,10 +13,10 @@ import (
 func OpenFolder() {
 
 	var (
-		lt = maltego.ParseLocalArguments(os.Args)
-		trx = &maltego.MaltegoTransform{}
+		lt              = maltego.ParseLocalArguments(os.Args)
+		trx             = &maltego.MaltegoTransform{}
 		openCommandName = os.Getenv("NETCAP_MALTEGO_OPEN_FILE_CMD")
-		args []string
+		args            []string
 	)
 
 	// if no command has been supplied via environment variable
@@ -45,6 +45,6 @@ func OpenFolder() {
 	}
 	log.Println(string(out))
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }

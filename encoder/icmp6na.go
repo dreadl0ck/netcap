@@ -14,10 +14,10 @@
 package encoder
 
 import (
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/golang/protobuf/proto"
 )
 
 var icmpv6NeighborAdvertisementEncoder = CreateLayerEncoder(types.Type_NC_ICMPv6NeighborAdvertisement, layers.LayerTypeICMPv6NeighborAdvertisement, func(layer gopacket.Layer, timestamp string) proto.Message {

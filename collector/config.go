@@ -17,28 +17,88 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 	"os"
 )
 
 var outDirPermissionDefault = 0755
 
+var DefaultConfig = Config{
+	Workers:             1000,
+	PacketBufferSize:    100,
+	WriteUnknownPackets: false,
+	Promisc:             false,
+	SnapLen:             1514,
+	FileStorage:         "files",
+	DPI:                 false,
+	BaseLayer:           utils.GetBaseLayer("ethernet"),
+	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
+	Quiet:               false,
+	EncoderConfig:       encoder.DefaultConfig,
+	ResolverConfig:      resolvers.DefaultConfig,
+}
+
+var DefaultConfigDPI = Config{
+	Workers:             1000,
+	PacketBufferSize:    100,
+	WriteUnknownPackets: false,
+	Promisc:             false,
+	SnapLen:             1514,
+	FileStorage:         "files",
+	DPI:                 true,
+	BaseLayer:           utils.GetBaseLayer("ethernet"),
+	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
+	Quiet:               false,
+	EncoderConfig:       encoder.DefaultConfig,
+	ResolverConfig:      resolvers.DefaultConfig,
+}
+
 // Config contains configuration parameters
 // for the Collector instance.
 type Config struct {
-	Live                  bool
-	WriteUnknownPackets   bool
-	Workers               int
-	PacketBufferSize      int
-	SnapLen               int
-	Promisc               bool
-	EncoderConfig         encoder.Config
-	BaseLayer             gopacket.LayerType
-	DecodeOptions         gopacket.DecodeOptions
-	FileStorage           string
-	Quiet                 bool
-	DPI                   bool
-	ResolverConfig        resolvers.Config
-	OutDirPermission      os.FileMode
-	FreeOSMem             int
+
+	// Controls whether packets that had an unknown layer will get written into a separate file
+	WriteUnknownPackets bool
+
+	// Number of workers to use
+	Workers int
+
+	// Size of the input buffer channels for the workers
+	PacketBufferSize int
+
+	// Ethernet frame snaplength for live capture
+	SnapLen int
+
+	// Attach in promiscous mode for live capture
+	Promisc bool
+
+	// Encoder configuration
+	EncoderConfig encoder.Config
+
+	// Baselayer to start decoding from
+	BaseLayer gopacket.LayerType
+
+	// Decoding options for gopacket
+	DecodeOptions gopacket.DecodeOptions
+
+	// If a path is set files will be extracted and written to the specified path
+	FileStorage string
+
+	// Dont print any output to the console
+	Quiet bool
+
+	// Enable deep packet inspection
+	DPI bool
+
+	// Resolver configuration
+	ResolverConfig resolvers.Config
+
+	// Permissions for output directory
+	OutDirPermission os.FileMode
+
+	// Can be used to periodically free OS memory
+	FreeOSMem int
+
+	// Use TCP reassembly
 	ReassembleConnections bool
 }

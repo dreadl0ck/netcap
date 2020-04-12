@@ -18,7 +18,7 @@ func GetDstPorts() {
 
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile  *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
@@ -59,7 +59,7 @@ func addDestinationPort(trx *maltego.MaltegoTransform, portStr string, port *typ
 	serviceName := resolvers.LookupServiceByPort(np, typ)
 	ent.SetValue(portStr)
 
-	di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName +"</p>"
+	di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 
 	escapedName := maltego.EscapeText(portStr + "\n" + serviceName)

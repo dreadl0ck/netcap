@@ -111,12 +111,12 @@ var transportFlowEncoder = CreateCustomEncoder(types.Type_NC_TransportFlow, "Tra
 
 			// continuously flush flows
 			transportFlows++
-			if netFlows%flowFlushInterval == 0 {
+			if netFlows%int64(c.FlowFlushInterval) == 0 {
 
 				var selectFlows []*types.TransportFlow
 				for id, f := range TransportFlows.Items {
 					// flush entries whose last timestamp is flowTimeOut older than current packet
-					if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > flowTimeOut {
+					if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > c.FlowTimeOut {
 						selectFlows = append(selectFlows, f)
 						// cleanup
 						delete(TransportFlows.Items, id)

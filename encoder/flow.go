@@ -15,15 +15,13 @@ package encoder
 
 import (
 	"fmt"
-	"log"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/golang/protobuf/proto"
+	"log"
+	"sync"
+	"sync/atomic"
 )
 
 type AtomicFlowMap struct {
@@ -44,15 +42,10 @@ var (
 	}
 	flowEncoderInstance *CustomEncoder
 	flows               int64
-
-	flowFlushInterval int64
-	flowTimeOut       time.Duration
 )
 
 var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *CustomEncoder) error {
 	flowEncoderInstance = d
-	flowFlushInterval = int64(c.FlowFlushInterval)
-	flowTimeOut = time.Second * time.Duration(c.FlowTimeOut)
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
@@ -153,12 +146,12 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 
 		// continuously flush flows
 		flows++
-		if flows%flowFlushInterval == 0 {
+		if flows%int64(c.FlowFlushInterval) == 0 {
 
 			var selectFlows []*types.Flow
 			for id, f := range Flows.Items {
 				// flush entries whose last timestamp is flowTimeOut older than current packet
-				if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > flowTimeOut {
+				if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > c.FlowTimeOut {
 					selectFlows = append(selectFlows, f)
 					// cleanup
 					delete(Flows.Items, id)

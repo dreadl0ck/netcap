@@ -14,10 +14,10 @@
 package encoder
 
 import (
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/golang/protobuf/proto"
 )
 
 var geneveEncoder = CreateLayerEncoder(types.Type_NC_Geneve, layers.LayerTypeGeneve, func(layer gopacket.Layer, timestamp string) proto.Message {

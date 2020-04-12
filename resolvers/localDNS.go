@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 )
- 
+
 var (
 	localDNSNamesDB = make(map[string]string)
 )

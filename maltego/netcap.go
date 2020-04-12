@@ -102,9 +102,9 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 	var (
 		profile = new(types.DeviceProfile)
-		pm  proto.Message
-		ok  bool
-		trx = MaltegoTransform{}
+		pm      proto.Message
+		ok      bool
+		trx     = MaltegoTransform{}
 	)
 	pm = profile
 
@@ -136,7 +136,6 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 		}
 	}
 
-
 	r, err = netcap.Open(profilesFile, netcap.DefaultBufferSize)
 	if err != nil {
 		panic(err)
@@ -161,7 +160,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }
 
@@ -202,9 +201,9 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 
 	var (
 		profile = new(types.DeviceProfile)
-		pm  proto.Message
-		ok  bool
-		trx = MaltegoTransform{}
+		pm      proto.Message
+		ok      bool
+		trx     = MaltegoTransform{}
 	)
 	pm = profile
 
@@ -260,7 +259,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }
 
@@ -301,9 +300,9 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 
 	var (
 		http = new(types.HTTP)
-		pm  proto.Message
-		ok  bool
-		trx = MaltegoTransform{}
+		pm   proto.Message
+		ok   bool
+		trx  = MaltegoTransform{}
 	)
 	pm = http
 
@@ -335,7 +334,6 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 		}
 	}
 
-
 	r, err = netcap.Open(httpAuditRecords, netcap.DefaultBufferSize)
 	if err != nil {
 		panic(err)
@@ -360,7 +358,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }
 
@@ -402,9 +400,9 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 
 	var (
 		file = new(types.File)
-		pm  proto.Message
-		ok  bool
-		trx = MaltegoTransform{}
+		pm   proto.Message
+		ok   bool
+		trx  = MaltegoTransform{}
 	)
 	pm = file
 
@@ -436,7 +434,6 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 		}
 	}
 
-
 	r, err = netcap.Open(httpAuditRecords, netcap.DefaultBufferSize)
 	if err != nil {
 		panic(err)
@@ -461,7 +458,7 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }
 
@@ -503,9 +500,9 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 
 	var (
 		pop3 = new(types.POP3)
-		pm  proto.Message
-		ok  bool
-		trx = MaltegoTransform{}
+		pm   proto.Message
+		ok   bool
+		trx  = MaltegoTransform{}
 	)
 	pm = pop3
 
@@ -537,7 +534,6 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		}
 	}
 
-
 	r, err = netcap.Open(httpAuditRecords, netcap.DefaultBufferSize)
 	if err != nil {
 		panic(err)
@@ -562,7 +558,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }
 
@@ -603,9 +599,9 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 
 	var (
 		dhcp = new(types.DHCPv4)
-		pm  proto.Message
-		ok  bool
-		trx = MaltegoTransform{}
+		pm   proto.Message
+		ok   bool
+		trx  = MaltegoTransform{}
 	)
 	pm = dhcp
 
@@ -637,7 +633,6 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 		}
 	}
 
-
 	r, err = netcap.Open(httpAuditRecords, netcap.DefaultBufferSize)
 	if err != nil {
 		panic(err)
@@ -662,7 +657,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }
 
@@ -821,9 +816,9 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 
 	var (
 		flow = new(types.Flow)
-		pm  proto.Message
-		ok  bool
-		trx = MaltegoTransform{}
+		pm   proto.Message
+		ok   bool
+		trx  = MaltegoTransform{}
 	)
 	pm = flow
 
@@ -832,8 +827,8 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 	}
 
 	var (
-		min uint64 = 10000000
-		max uint64 = 0
+		min   uint64 = 10000000
+		max   uint64 = 0
 		sizes []int
 	)
 
@@ -885,6 +880,6 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }

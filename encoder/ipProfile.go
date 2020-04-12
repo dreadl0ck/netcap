@@ -147,12 +147,12 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 	}
 
 	var (
-		protos = make(map[string]*types.Protocol)
-		ja3Map = make(map[string]string)
-		dataLen = uint64(len(i.p.Data()))
+		protos   = make(map[string]*types.Protocol)
+		ja3Map   = make(map[string]string)
+		dataLen  = uint64(len(i.p.Data()))
 		srcPorts = make(map[string]*types.Port)
 		dstPorts = make(map[string]*types.Port)
-		sniMap = make(map[string]int64)
+		sniMap   = make(map[string]int64)
 	)
 
 	// Network Layer: IP Geolocation
@@ -218,17 +218,17 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 	// create new profile
 	p := &profile{
 		ip: &types.IPProfile{
-			Addr:        ipAddr,
-			NumPackets:  1,
-			Geolocation: loc,
-			DNSNames:    names,
+			Addr:           ipAddr,
+			NumPackets:     1,
+			Geolocation:    loc,
+			DNSNames:       names,
 			TimestampFirst: i.timestamp,
-			Ja3:       ja3Map,
-			Protocols: protos,
-			Bytes: dataLen,
-			SrcPorts : srcPorts,
-			DstPorts: dstPorts,
-			SNIs: sniMap,
+			Ja3:            ja3Map,
+			Protocols:      protos,
+			Bytes:          dataLen,
+			SrcPorts:       srcPorts,
+			DstPorts:       dstPorts,
+			SNIs:           sniMap,
 		},
 	}
 

@@ -45,9 +45,9 @@ func GetDHCP() {
 							typ = "Domain Name"
 						}
 
-						ent := trx.AddEntity("maltego.Device", typ + ": "+ buf.String())
+						ent := trx.AddEntity("maltego.Device", typ+": "+buf.String())
 						ent.SetType("netcap.Device")
-						ent.SetValue(typ + ": "+ buf.String())
+						ent.SetValue(typ + ": " + buf.String())
 
 						// di := "<h3>DHCP Option</h3><p>Timestamp First: " + dhcp.Timestamp + "</p>"
 						// ent.AddDisplayInformation(di, "Netcap Info")

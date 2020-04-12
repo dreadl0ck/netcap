@@ -20,7 +20,7 @@ import (
 func GetDeviceProfiles() {
 
 	var (
-		lt = maltego.ParseLocalArguments(os.Args[1:])
+		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]
 	)
 
@@ -42,54 +42,54 @@ func GetDeviceProfiles() {
 
 	// init collector
 	c := collector.New(collector.Config{
-		Live:                false,
 		Workers:             1000,
 		PacketBufferSize:    100,
 		WriteUnknownPackets: false,
 		Promisc:             false,
 		SnapLen:             1514,
-		FileStorage: 		 filepath.Join(outDir, "files"),
+		FileStorage:         filepath.Join(outDir, "files"),
+		DPI:                 false,
+		BaseLayer:           utils.GetBaseLayer("ethernet"),
+		DecodeOptions:       utils.GetDecodeOptions("datagrams"),
+		Quiet:               false,
 		EncoderConfig: encoder.Config{
-			Buffer:          true,
-			Compression:     true,
-			CSV:             false,
-			IncludeEncoders: "DeviceProfile,File,HTTP,DNS,POP3,SMTP,DHCPv4,Flow",
-			ExcludeEncoders: "",
-			Out:             outDir,
-			Source:          inputFile,
-			Version:         netcap.Version,
-			IncludePayloads: false,
-			Export:          false,
-			AddContext:      true,
-			MemBufferSize:   netcap.DefaultBufferSize,
-			FlushEvery:             100,
-			NoDefrag:               false,
-			Checksum:               false,
-			NoOptCheck:             false,
-			IgnoreFSMerr:           false,
-			AllowMissingInit:       false,
-			Debug:                  false,
-			HexDump:                false,
-			WaitForConnections:     true,
-			WriteIncomplete:        false,
-			MemProfile:             "",
-			ConnFlushInterval:      10000,
-			ConnTimeOut:            10,
-			FlowFlushInterval:      2000,
-			FlowTimeOut:            10,
+			Buffer:               true,
+			Compression:          true,
+			CSV:                  false,
+			IncludeEncoders:      "DeviceProfile,File,HTTP,DNS,POP3,SMTP,DHCPv4,Flow",
+			ExcludeEncoders:      "",
+			Out:                  outDir,
+			Source:               inputFile,
+			IncludePayloads:      false,
+			Export:               false,
+			AddContext:           true,
+			MemBufferSize:        netcap.DefaultBufferSize,
+			FlushEvery:           100,
+			NoDefrag:             false,
+			Checksum:             false,
+			NoOptCheck:           false,
+			IgnoreFSMerr:         false,
+			AllowMissingInit:     false,
+			Debug:                false,
+			HexDump:              false,
+			WaitForConnections:   true,
+			WriteIncomplete:      false,
+			MemProfile:           "",
+			ConnFlushInterval:    10000,
+			ConnTimeOut:          10 * time.Second,
+			FlowFlushInterval:    2000,
+			FlowTimeOut:          10 * time.Second,
+			CloseInactiveTimeOut: 24 * time.Hour,
+			ClosePendingTimeOut:  30 * time.Second,
 		},
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:      false,
-			LocalDNS:        true,
-			MACDB:           true,
-			Ja3DB:           true,
-			ServiceDB:       true,
-			GeolocationDB:   true,
+			ReverseDNS:    false,
+			LocalDNS:      true,
+			MACDB:         true,
+			Ja3DB:         true,
+			ServiceDB:     true,
+			GeolocationDB: true,
 		},
-		DPI: false,
-		BaseLayer:     utils.GetBaseLayer("ethernet"),
-		DecodeOptions: utils.GetDecodeOptions("datagrams"),
-		Quiet: false,
 	})
 
 	// if not, use native pcapgo version
@@ -144,8 +144,8 @@ func GetDeviceProfiles() {
 
 	ent.SetLinkLabel("DeviceProfiles")
 	ent.SetLinkColor("#000000")
-	ent.SetNote("Storage Path: " + outDir + "\nFile Size: " +  humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
+	ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
 
-	trx.AddUIMessage("completed!","Inform")
+	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }

@@ -52,6 +52,7 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 	}
 
 	encoder.LiveMode = true
+	c.isLive = true
 
 	// read packets from channel
 	for {

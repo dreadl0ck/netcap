@@ -98,11 +98,11 @@ func NewDeviceProfile(i *idents) *types.DeviceProfile {
 	return &types.DeviceProfile{
 		MacAddr:            i.srcMAC,
 		DeviceManufacturer: resolvers.LookupManufacturer(i.srcMAC),
-		DeviceIPs: devices,
-		Contacts: contacts,
-		Timestamp:  i.timestamp,
-		NumPackets: 1,
-		Bytes:      uint64(len(i.p.Data())),
+		DeviceIPs:          devices,
+		Contacts:           contacts,
+		Timestamp:          i.timestamp,
+		NumPackets:         1,
+		Bytes:              uint64(len(i.p.Data())),
 	}
 }
 

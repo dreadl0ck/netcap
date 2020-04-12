@@ -18,8 +18,8 @@ package collector
 import (
 	"io"
 
-	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/gopacket/pcapgo"
+	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/pkg/errors"
 )
 

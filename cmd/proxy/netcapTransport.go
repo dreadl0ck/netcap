@@ -192,8 +192,8 @@ makeHTTPRequest:
 		ResContentEncoding: resp.Header.Get("Content-Encoding"),
 		ServerName:         resp.Header.Get("Server"),
 		//ResCookies:         resCookies,
-		ResContentType:     string(resp.Header.Get("Content-Type")),
-		DoneAfter:          delta.Nanoseconds(),
+		ResContentType: string(resp.Header.Get("Content-Type")),
+		DoneAfter:      delta.Nanoseconds(),
 
 		// Address information
 		SrcIP: sourceIP,

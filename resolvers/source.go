@@ -6,18 +6,9 @@ import (
 )
 
 var (
-	Quiet bool
+	Quiet          bool
 	dataBaseSource string
 )
-
-type Config struct {
-	ReverseDNS      bool
-	LocalDNS        bool
-	MACDB           bool
-	Ja3DB           bool
-	ServiceDB       bool
-	GeolocationDB   bool
-}
 
 func Init(c Config, quiet bool) {
 

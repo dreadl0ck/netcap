@@ -49,12 +49,10 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 	}
 	fmt.Println("new audit record handle", path)
 
-	conf := encoder.Config{
-		Source:          b.ClientID,
-		Version:         netcap.Version,
-		IncludePayloads: b.ContainsPayloads,
-		MemBufferSize:   *flagMemBufferSize,
-	}
+	conf := encoder.DefaultConfig
+	conf.Source = b.ClientID
+	conf.IncludePayloads = b.ContainsPayloads
+	conf.MemBufferSize = *flagMemBufferSize
 
 	var (
 		// create buffered writer that writes into the file handle
@@ -64,7 +62,7 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 	)
 
 	// add file header
-	err = delimited.NewWriter(gWriter).PutProto(netcap.NewHeader(b.MessageType, conf.Source, conf.Version, conf.IncludePayloads))
+	err = delimited.NewWriter(gWriter).PutProto(netcap.NewHeader(b.MessageType, conf.Source, netcap.Version, conf.IncludePayloads))
 	if err != nil {
 		fmt.Println("failed to write header")
 		panic(err)
