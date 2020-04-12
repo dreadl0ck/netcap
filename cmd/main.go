@@ -103,15 +103,24 @@ var completions = []string{
 	"help",
 }
 
+var debugHandle = ioutil.Discard
+
+func debug(args ...interface{}) {
+	fmt.Fprintln(debugHandle, args...)
+}
+
 // print available completions for the bash-completion package
 func printCompletions(previous, current, full string) {
 
-	//debugHandle, err := os.OpenFile("completion-debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0744)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//fmt.Fprintln(debugHandle, "previous:", previous, "current:", current, "full:", full)
+	if os.Getenv("NC_COMPLETION_DEBUG") == "1" {
+		var err error
+		debugHandle, err = os.OpenFile("completion-debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0744)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	debug("previous:", previous, "current:", current, "full:", full)
 
 	// show flags for subcommands
 	switch previous {
@@ -139,20 +148,20 @@ func printCompletions(previous, current, full string) {
 	// and show all flags except for the last one
 	if previous != "net" {
 		subCmd := getSubCmd(full)
-		//fmt.Fprintln(debugHandle, "subcommand:", subCmd)
+		debug( "subcommand:", subCmd)
 		switch subCmd {
 		case "capture":
 			if previous == "-read" {
 				printFileForExt(".pcap", ".pcapng")
 			}
-			printFlagsFiltered(capture.Flags(), previous)
+			printFlagsFiltered(capture.Flags())
 		case "util":
 			if previous == "-read" {
 				printFileForExt(".ncap", ".gz")
 			}
-			printFlagsFiltered(util.Flags(), previous)
+			printFlagsFiltered(util.Flags())
 		case "proxy":
-			printFlagsFiltered(proxy.Flags(), previous)
+			printFlagsFiltered(proxy.Flags())
 		case "label":
 			if previous == "-read" {
 				printFileForExt(".pcap", ".pcapng")
@@ -160,19 +169,19 @@ func printCompletions(previous, current, full string) {
 			if previous == "-custom" {
 				printFileForExt(".csv")
 			}
-			printFlagsFiltered(label.Flags(), previous)
+			printFlagsFiltered(label.Flags())
 		case "export":
 			if previous == "-read" {
 				printFileForExt(".ncap", ".gz", ".pcap", ".pcapng")
 			}
-			printFlagsFiltered(export.Flags(), previous)
+			printFlagsFiltered(export.Flags())
 		case "dump":
 			if previous == "-read" {
 				printFileForExt(".ncap", ".gz")
 			}
-			printFlagsFiltered(dump.Flags(), previous)
+			printFlagsFiltered(dump.Flags())
 		case "collect":
-			printFlagsFiltered(collect.Flags(), previous)
+			printFlagsFiltered(collect.Flags())
 		}
 	}
 
@@ -185,15 +194,33 @@ func printCompletions(previous, current, full string) {
 
 func printFileForExt(exts ...string) {
 
-	files, err := ioutil.ReadDir(".")
+	var path = "."
+	var currBase string
+	if *flagCurrent != "" {
+		currBase = filepath.Dir(*flagCurrent)
+		if s, err := os.Stat(currBase); err == nil {
+			if s.IsDir() {
+				debug("setting path to", currBase)
+				path = currBase
+			}
+		}
+	}
+	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//debug("got", len(files), "results")
+
 	for _, f := range files {
 		for _, e := range exts {
-			if filepath.Ext(f.Name()) == e {
-				fmt.Print(f.Name() + " ")
+			if f.IsDir() || filepath.Ext(f.Name()) == e {
+				path := filepath.Join(currBase, f.Name())
+				if f.IsDir() {
+					path += "/"
+				}
+				fmt.Print(path + " ")
+				//debug("output", path)
 				break
 			}
 		}
@@ -210,13 +237,21 @@ func printFlags(arr []string) {
 	os.Exit(0)
 }
 
-func printFlagsFiltered(arr []string, hide string) {
-	hide = strings.TrimPrefix(hide, "-")
+func printFlagsFiltered(arr []string) {
+
+	var hide = make(map[string]struct{})
+	for _, f := range strings.Fields(*flagFull) {
+		if strings.HasPrefix(f, "-") {
+			hide[strings.TrimPrefix(f, "-")] = struct{}{}
+		}
+	}
+
 	for _, f := range arr {
-		if f != hide {
+		if _, shouldHide := hide[f]; !shouldHide {
 			fmt.Print("-" + f + " ")
 		}
 	}
+
 	fmt.Println()
 	os.Exit(0)
 }
