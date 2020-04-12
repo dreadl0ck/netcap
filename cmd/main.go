@@ -25,7 +25,10 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/transform"
 	"github.com/dreadl0ck/netcap/cmd/util"
 	"github.com/namsral/flag"
+	"io/ioutil"
+	"log"
 	"os"
+	"strings"
 )
 
 var flagCompletions = flag.String("completions", "", "get available command completions")
@@ -51,6 +54,7 @@ os.Exit(0)
 
 func main() {
 
+	flag.Usage = help
 	flag.Parse()
 
 	if *flagCompletions != "" {
@@ -99,15 +103,97 @@ func printCompletions(previous string) {
 		"help",
 	}
 
-	for _, name := range completions {
-		if previous == name {
+	// show flags for subcommands
+	switch previous {
+		case "capture":
+			saveSubCmd("capture")
+			printFlags(capture.Flags())
+		case "util":
+			saveSubCmd("util")
+			printFlags(util.Flags())
+		case "proxy":
+			saveSubCmd("proxy")
+			printFlags(proxy.Flags())
+		case "label":
+			saveSubCmd("label")
+			printFlags(label.Flags())
+		case "export":
+			saveSubCmd("export")
+			printFlags(export.Flags())
+		case "dump":
+			saveSubCmd("dump")
+			printFlags(dump.Flags())
+		case "collect":
+			saveSubCmd("collect")
+			printFlags(collect.Flags())
+		case "help":
 			return
+	}
+
+	// the user could be in the middle of typing a command.
+	// load the current command from the cache
+	// and show all flags except for the last one
+	if previous != "net" {
+		switch loadSubCmd() {
+		case "capture":
+			printFlagsFiltered(capture.Flags(), previous)
+		case "util":
+			printFlagsFiltered(util.Flags(), previous)
+		case "proxy":
+			printFlagsFiltered(proxy.Flags(), previous)
+		case "label":
+			printFlagsFiltered(label.Flags(), previous)
+		case "export":
+			printFlagsFiltered(export.Flags(), previous)
+		case "dump":
+			printFlagsFiltered(dump.Flags(), previous)
+		case "collect":
+			printFlagsFiltered(collect.Flags(), previous)
 		}
 	}
 
-	// print result
+	// print subcommands
 	for _, name := range completions {
 		fmt.Print(name + " ")
 	}
 	fmt.Println()
+}
+
+func printFlags(arr []string) {
+	for _, f := range arr {
+		fmt.Print("-" + f + " ")
+	}
+	fmt.Println()
+	os.Exit(0)
+}
+
+func printFlagsFiltered(arr []string, hide string) {
+	hide = strings.TrimPrefix(hide, "-")
+	for _, f := range arr {
+		if f != hide {
+			fmt.Print("-" + f + " ")
+		}
+	}
+	fmt.Println()
+	os.Exit(0)
+}
+
+func saveSubCmd(cmd string) {
+	f, err := os.Create("/usr/local/etc/netcap/.completion-cache")
+	if err != nil {
+		log.Fatal("failed to create bash completion cache file: ", err)
+	}
+	f.WriteString(cmd)
+	err = f.Close()
+	if err != nil {
+		log.Fatal("failed to close bash completion cache file: ", err)
+	}
+}
+
+func loadSubCmd() string {
+	c, err := ioutil.ReadFile("/usr/local/etc/netcap/.completion-cache")
+	if err != nil {
+		log.Fatal("failed to load bash completion cache file: ", err)
+	}
+	return string(c)
 }

@@ -18,6 +18,13 @@ import (
 	"os"
 )
 
+func Flags() (flags []string) {
+	fs.VisitAll(func(f *flag.Flag) {
+		flags = append(flags, f.Name)
+	})
+	return
+}
+
 var (
 	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagMetricsAddress = fs.String("address", "127.0.0.1:7777", "set address for exposing metrics")

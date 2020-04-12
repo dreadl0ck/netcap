@@ -18,6 +18,13 @@ import (
 	"os"
 )
 
+func Flags() (flags []string) {
+	fs.VisitAll(func(f *flag.Flag) {
+		flags = append(flags, f.Name)
+	})
+	return
+}
+
 var (
 	fs                = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagSelect          = fs.String("select", "", "select specific fields of an audit records when generating csv or tables")

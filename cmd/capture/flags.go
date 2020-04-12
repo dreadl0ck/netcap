@@ -18,6 +18,13 @@ import (
 	"os"
 )
 
+func Flags() (flags []string) {
+	fs.VisitAll(func(f *flag.Flag) {
+		flags = append(flags, f.Name)
+	})
+	return
+}
+
 var (
 	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagInput  = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
