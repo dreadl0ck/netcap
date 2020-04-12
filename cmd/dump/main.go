@@ -42,7 +42,7 @@ func Run() {
 	// abort if there is no input or no live capture
 	if *flagInput == "" {
 		printHeader()
-		fmt.Println(ansi.Red + "> nothing to do. need a NETCAP audit record file (.ncap.gz or .ncap) with the read flag (-r)" + ansi.Reset)
+		fmt.Println(ansi.Red + "> nothing to do. need a NETCAP audit record file (.ncap.gz or .ncap) with the read flag (-read)" + ansi.Reset)
 		os.Exit(1)
 	}
 

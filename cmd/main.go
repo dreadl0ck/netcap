@@ -24,8 +24,11 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/proxy"
 	"github.com/dreadl0ck/netcap/cmd/transform"
 	"github.com/dreadl0ck/netcap/cmd/util"
+	"github.com/namsral/flag"
 	"os"
 )
+
+var flagCompletions = flag.String("completions", "", "get available command completions")
 
 func help() {
 	netcap.PrintLogo()
@@ -47,6 +50,14 @@ os.Exit(0)
 }
 
 func main() {
+
+	flag.Parse()
+
+	if *flagCompletions != "" {
+		printCompletions(*flagCompletions)
+		return
+	}
+
 	if len(os.Args) < 2 {
 		help()
 	}
@@ -70,4 +81,33 @@ func main() {
 	case "help", "-h", "--help":
 		help()
 	}
+}
+
+// print available completions for the bash-completion package
+func printCompletions(previous string) {
+
+	// print builtins
+	var completions = []string{
+		"capture",
+		"util",
+		"proxy",
+		"label",
+		"export",
+		"dump",
+		"collect",
+		"transform",
+		"help",
+	}
+
+	for _, name := range completions {
+		if previous == name {
+			return
+		}
+	}
+
+	// print result
+	for _, name := range completions {
+		fmt.Print(name + " ")
+	}
+	fmt.Println()
 }
