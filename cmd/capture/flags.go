@@ -27,10 +27,11 @@ func Flags() (flags []string) {
 }
 
 var (
-	fs         = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
-	flagConfig = fs.String("config", "", "read configuration from file at path")
-	flagInput  = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
-	flagOutDir = fs.String("out", "", "specify output directory, will be created if it does not exist")
+	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
+	flagConfig         = fs.String("config", "", "read configuration from file at path")
+	flagInput          = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagOutDir         = fs.String("out", "", "specify output directory, will be created if it does not exist")
 
 	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 

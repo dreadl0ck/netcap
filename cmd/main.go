@@ -16,6 +16,7 @@ package main
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/cmd/agent"
 	"github.com/dreadl0ck/netcap/cmd/capture"
 	"github.com/dreadl0ck/netcap/cmd/collect"
 	"github.com/dreadl0ck/netcap/cmd/dump"
@@ -93,6 +94,8 @@ func main() {
 		collect.Run()
 	case "transform":
 		transform.Run()
+	case "agent":
+		agent.Run()
 	case "version":
 		fmt.Println(netcap.Version)
 	case "help", "-h", "--help":
@@ -148,6 +151,8 @@ func printCompletions(previous, current, full string) {
 		printFlags(dump.Flags())
 	case "collect":
 		printFlags(collect.Flags())
+	case "agent":
+		printFlags(agent.Flags())
 	case "help":
 	case "transform":
 		return
@@ -198,6 +203,9 @@ func printCompletions(previous, current, full string) {
 		case "collect":
 			handleConfigFlag()
 			printFlagsFiltered(collect.Flags())
+		case "agent":
+			handleConfigFlag()
+			printFlagsFiltered(agent.Flags())
 		}
 	}
 

@@ -28,6 +28,7 @@ func Flags() (flags []string) {
 // flags
 var (
 	fs                      = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagGenerateConfig      = fs.Bool("gen-config", false, "generate config")
 	flagConfig              = fs.String("config", "", "read configuration from file at path")
 	flagDialTimeout         = fs.Int("dialTimeout", 30, "seconds until dialing to the backend times out")
 	flagIdleConnTimeout     = fs.Int("idleConnTimeout", 90, "seconds until a connection times out")
