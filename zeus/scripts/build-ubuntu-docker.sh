@@ -37,7 +37,7 @@ rm -rf dist/linux_amd64_libc
 mkdir -p dist/linux_amd64_libc
 
 # copy binaries from container
-docker cp $CONTAINER_ID:/netcap/net dist/linux_amd64_libc/net
+docker cp $CONTAINER_ID:/usr/bin/net dist/linux_amd64_libc/net
 
 # remove container
 docker rm $CONTAINER_ID
