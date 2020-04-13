@@ -302,14 +302,27 @@ func (c *Collector) Stats() {
 	}
 
 	rows := [][]string{}
+	c.unknownProtosAtomic.Lock()
 	for k, v := range c.allProtosAtomic.Items {
+		if k == "Payload" {
+			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
+			continue
+		}
 		if _, ok := c.unknownProtosAtomic.Items[k]; ok {
-			rows = append(rows, []string{ansi.Yellow + k, fmt.Sprint(v), share(v, c.numPackets) + ansi.Reset})
+			rows = append(rows, []string{"*" + k, fmt.Sprint(v), share(v, c.numPackets)})
 		} else {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
 		}
 	}
+	numUnknown := len(c.allProtosAtomic.Items)
+	c.unknownProtosAtomic.Unlock()
 	tui.Table(target, []string{"Layer", "NumRecords", "Share"}, rows)
+
+	// print legend if there are unknown protos
+	// -1 for "Payload" layer
+	if numUnknown - 1 > 0 {
+		fmt.Println("* protocol supported by gopacket, but not implemented in netcap")
+	}
 
 	if len(encoder.CustomEncoders) > 0 {
 		rows = [][]string{}
