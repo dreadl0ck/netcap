@@ -16,6 +16,7 @@ package agent
 import (
 	"github.com/namsral/flag"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -38,7 +39,7 @@ var (
 	flagExclude  = fs.String("exclude", "", "exclude specific encoders")
 	flagEncoders = fs.Bool("encoders", false, "show all available encoders")
 
-	flagWorkers      = fs.Int("workers", 100, "number of encoder routines")
+	flagWorkers      = fs.Int("workers", runtime.NumCPU(), "number of workers")
 	flagPacketBuffer = fs.Int("pbuf", 0, "set packet buffer size")
 	flagPromiscMode  = fs.Bool("promisc", true, "capture live in promisc mode")
 	flagSnapLen      = fs.Int("snaplen", 1514, "configure snaplen for live capture")

@@ -16,6 +16,7 @@ package export
 import (
 	"github.com/namsral/flag"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -36,7 +37,7 @@ var (
 	flagDir                  = fs.String("dir", "", "path to directory with netcap audit records")
 	flagInput                = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagInterface            = fs.String("iface", "", "attach to network interface and capture in live mode")
-	flagWorkers              = fs.Int("workers", 1000, "number of workers")
+	flagWorkers              = fs.Int("workers", runtime.NumCPU(), "number of workers")
 	flagPacketBuffer         = fs.Int("pbuf", 100, "set packet buffer size, for channels that feed data to workers")
 	flagIngoreUnknown        = fs.Bool("ignore-unknown", false, "disable writing unknown packets into a pcap file")
 	flagPromiscMode          = fs.Bool("promisc", true, "toggle promiscous mode for live capture")
