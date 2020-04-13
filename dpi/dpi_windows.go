@@ -1,3 +1,5 @@
+// +build windows
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -10,8 +12,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
-// +build windows
 
 package dpi
 

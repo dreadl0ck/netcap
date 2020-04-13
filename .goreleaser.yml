@@ -48,7 +48,7 @@ builds:
   # and push the containers to the docker registry
   hooks:
     # this hook is used to compile the linux versions in a docker container
-    post: zeus build-all-linux
+    post: zeus build-linux
     #pre: rice embed-go
 
 brew:
