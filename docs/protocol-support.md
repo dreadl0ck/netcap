@@ -4,9 +4,15 @@ description: An overview of supported protocols and available fields
 
 # Protocol Support
 
+The following markdown overview was generated using:
+
+```text
+$ net capture -overview
+```
+
 ## NETCAP Overview v0.5
 
-> Documentation: docs.netcap.io
+> Documentation: [docs.netcap.io](https://docs.netcap.io)
 >
 > ### LayerEncoders
 >
@@ -81,6 +87,6 @@ description: An overview of supported protocols and available fields
 > | Flow | 17 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 > | Connection | 17 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 > | DeviceProfile | 7 | Timestamp, MacAddr, DeviceManufacturer, NumDeviceIPs, NumContacts, NumPackets, Bytes |
-> | File | 10 | Timestamp, AddrType, Protocol, HwAddressSize, ProtAddressSize, Operation, SrcHwAddress, SrcProtAddress, DstHwAddress, DstProtAddress |
+> | File | 12 | Timestamp, Name, Length, Hash, Location, Ident, Source, ContentType, SrcIP, DstIP, SrcPort, DstPort |
 > | POP3 | 7 | Timestamp, Client, Server, AuthToken, User, Pass, NumMails |
 
