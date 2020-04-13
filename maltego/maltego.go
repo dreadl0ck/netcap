@@ -6,6 +6,7 @@
  *
  */
 
+// Implements primitives for maltego transformations over netcap audit records
 package maltego
 
 import (
