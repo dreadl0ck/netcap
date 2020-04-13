@@ -50,7 +50,7 @@ func init() {
 	}
 }
 
-// isPrivateIP can be used whether an address belongs to private address space
+// IsPrivateIP can be used whether an address belongs to private address space
 func IsPrivateIP(ip net.IP) bool {
 	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 		return true
@@ -64,7 +64,7 @@ func IsPrivateIP(ip net.IP) bool {
 	return false
 }
 
-// LookupDNSNames retrieves the DNS names associated with an IP addr
+// LookupDNSNames retrieves the DNS names associated with an IP address
 func LookupDNSNames(ip string) []string {
 
 	if disableReverseDNS {

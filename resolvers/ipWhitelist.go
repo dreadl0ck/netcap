@@ -26,6 +26,7 @@ var (
 	ipWhitelist = make(map[string]struct{})
 )
 
+// InitIPWhitelist initializes the ip address whitelist
 func InitIPWhitelist() {
 
 	var hosts int
@@ -59,6 +60,7 @@ func InitIPWhitelist() {
 	}
 }
 
+// IsWhitelistedIP checks whether a given ip address is whitelisted
 func IsWhitelistedIP(ip string) bool {
 	if _, ok := ipWhitelist[ip]; ok {
 		//log.Println(domain, "is whitelisted")

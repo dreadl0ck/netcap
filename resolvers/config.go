@@ -14,15 +14,29 @@
 // Implements primitives to resolve various identifiers against external data
 package resolvers
 
+// Config contains settings for the resolvers package
 type Config struct {
+
+	// Controls whether ip addresses are resolved through the default OS resolver
 	ReverseDNS    bool
+
+	// Controls if ip addresses are resolved locally through a provided hosts mapping
 	LocalDNS      bool
+
+	// Enables MAC address vendor lookups
 	MACDB         bool
+
+	// Enables looking up Ja3 profiles
 	Ja3DB         bool
+
+	// Enables resolving port numbers to service names
 	ServiceDB     bool
+
+	// Enables ip to geolocation lookups via MaxMind GeoLite
 	GeolocationDB bool
 }
 
+// DefaultConfig is an example configuration
 var DefaultConfig = Config{
 	ReverseDNS:    false,
 	LocalDNS:      false,
