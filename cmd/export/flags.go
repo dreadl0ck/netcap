@@ -28,6 +28,7 @@ func Flags() (flags []string) {
 
 var (
 	fs                       = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagGenerateConfig       = fs.Bool("gen-config", false, "generate config")
 	flagConfig               = fs.String("config", "", "read configuration from file at path")
 	flagMetricsAddress       = fs.String("address", "127.0.0.1:7777", "set address for exposing metrics")
 	flagDumpJSON             = fs.Bool("dumpJson", false, "dump as JSON")

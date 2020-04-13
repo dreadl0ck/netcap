@@ -30,6 +30,11 @@ func Run() {
 	fs.Usage = printUsage
 	fs.Parse(os.Args[2:])
 
+	if *flagGenerateConfig {
+		netcap.GenerateConfig(fs, "util")
+		return
+	}
+
 	// print version and exit
 	if *flagVersion {
 		fmt.Println(netcap.Version)

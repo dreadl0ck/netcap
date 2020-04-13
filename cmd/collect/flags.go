@@ -26,14 +26,15 @@ func Flags() (flags []string) {
 }
 
 var (
-	fs                = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
-	flagConfig        = fs.String("config", "", "read configuration from file at path")
-	flagGenKeypair    = fs.Bool("gen-keypair", false, "generate keypair")
-	flagPrivKey       = fs.String("privkey", "", "path to the hex encoded server private key")
-	flagAddr          = fs.String("addr", "127.0.0.1:1335", "specify an adress and port to listen for incoming traffic")
-	flagVersion       = fs.Bool("version", false, "print netcap package version and exit")
-	files             = make(map[string]*AuditRecordHandle)
-	flagMemBufferSize = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
+	flagConfig         = fs.String("config", "", "read configuration from file at path")
+	flagGenKeypair     = fs.Bool("gen-keypair", false, "generate keypair")
+	flagPrivKey        = fs.String("privkey", "", "path to the hex encoded server private key")
+	flagAddr           = fs.String("addr", "127.0.0.1:1335", "specify an adress and port to listen for incoming traffic")
+	flagVersion        = fs.Bool("version", false, "print netcap package version and exit")
+	files              = make(map[string]*AuditRecordHandle)
+	flagMemBufferSize  = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
 
 	// not configurable at the moment
 	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")

@@ -26,12 +26,13 @@ func Flags() (flags []string) {
 }
 
 var (
-	fs            = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
-	flagConfig    = fs.String("config", "", "read configuration from file at path")
-	flagDebug     = fs.Bool("debug", false, "toggle debug mode")
-	flagInput     = fs.String("read", "", "use specified pcap file to scan with suricata")
-	flagSeparator = fs.String("sep", ",", "set separator string for csv output")
-	flagOutDir    = fs.String("out", "", "specify output directory, will be created if it does not exist")
+	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
+	flagConfig         = fs.String("config", "", "read configuration from file at path")
+	flagDebug          = fs.Bool("debug", false, "toggle debug mode")
+	flagInput          = fs.String("read", "", "use specified pcap file to scan with suricata")
+	flagSeparator      = fs.String("sep", ",", "set separator string for csv output")
+	flagOutDir         = fs.String("out", "", "specify output directory, will be created if it does not exist")
 
 	flagDescription           = fs.Bool("description", false, "use attack description instead of classification for labels")
 	flagProgressBars          = fs.Bool("progress", false, "use progress bars")
