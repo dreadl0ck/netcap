@@ -29,4 +29,6 @@
 * [Contributing](contributing.md)
 * [License](license.md)
 * [Reassembly](reassembly.md)
+* [Live Collection](live-collection.md)
+* [Changelog](changelog.md)
 
