@@ -1,3 +1,17 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+// Implements primitives for maltego transformations over netcap audit records
 package maltego
 
 import (
@@ -16,6 +30,7 @@ import (
 	"strings"
 )
 
+// EscapeText ensures that the input text is safe to embed within XML
 func EscapeText(text string) string {
 	var buf bytes.Buffer
 	err := xml.EscapeText(&buf, []byte(text))
@@ -66,6 +81,7 @@ var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min,
 
 type IPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ip string)
 
+// IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile
 func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 	lt := ParseLocalArguments(os.Args[1:])
@@ -166,6 +182,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 type DeviceProfileTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
 
+// DeviceProfileTransform applies a maltego transformation DeviceProfile audit records
 func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformationFunc) {
 
 	lt := ParseLocalArguments(os.Args[1:])
@@ -265,6 +282,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 
 type HTTPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
 
+// HTTPTransform applies a maltego transformation over HTTP audit records
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 
 	lt := ParseLocalArguments(os.Args[1:])
@@ -365,6 +383,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 type FilesCountFunc func()
 type FilesTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ip string)
 
+// FilesTransform applies a maltego transformation over File audit records
 func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 
 	lt := ParseLocalArguments(os.Args[1:])
@@ -465,6 +484,7 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 type POP3CountFunc func()
 type POP3TransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, pop3 *types.POP3, min, max uint64, profilesFile string, ip string)
 
+// POP3Transform applies a maltego transformation over POP3 audit records
 func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 
 	lt := ParseLocalArguments(os.Args[1:])
@@ -565,6 +585,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 type DHCPCountFunc func()
 type DHCPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ip string)
 
+// DHCPTransform applies a maltego transformation over DHCP audit records
 func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 
 	lt := ParseLocalArguments(os.Args[1:])
@@ -777,6 +798,7 @@ var CountOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *u
 
 type FlowTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ip string, sizes *[]int)
 
+// FlowTransform applies a maltego transformation over Flow audit records
 func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 
 	lt := ParseLocalArguments(os.Args[1:])
