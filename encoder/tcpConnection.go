@@ -67,13 +67,13 @@ import (
 )
 
 var (
-	defragger      = ip4defrag.NewIPv4Defragmenter()
-	streamFactory  = &tcpConnectionFactory{}
-	StreamPool     = reassembly.NewStreamPool(streamFactory)
-	numErrors      uint
+	defragger     = ip4defrag.NewIPv4Defragmenter()
+	streamFactory = &tcpConnectionFactory{}
+	StreamPool    = reassembly.NewStreamPool(streamFactory)
+	numErrors     uint
 
-	requests   = 0
-	responses  = 0
+	requests  = 0
+	responses = 0
 	// synchronizes access to stats
 	statsMutex sync.Mutex
 
