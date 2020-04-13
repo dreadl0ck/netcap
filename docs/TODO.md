@@ -13,6 +13,10 @@
 - godoc cleanup
 - regenerate cheatsheets
 
+- resolvers: add ip whitelist feature
+- resolvers: rename top-1m.csv to domain-whitelist.txt
+- record new asciicasts
+
 ## Maltego Plugin
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
@@ -60,6 +64,7 @@
 - sort errors by the number of occurrences (COUNT) for print and log in errors.log
 - add log flag to enable writing output to file netcap.log and stdout simultaneously
 - use a logger without reflection for performance: zap?
+- add a -cheatsheet commandline option to each tool, to print command examples into the terminal
 
 Reassembly: 2 Options
 

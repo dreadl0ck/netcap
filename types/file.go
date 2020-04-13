@@ -35,7 +35,7 @@ var fieldsFile = []string{
 }
 
 func (a File) CSVHeader() []string {
-	return filter(fieldsARP)
+	return filter(fieldsFile)
 }
 
 func (a File) CSVRecord() []string {
