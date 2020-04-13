@@ -28,6 +28,7 @@
 * [Docker Containers](docker-containers.md)
 * [Configuration](configuration.md)
 * [Contributing](contributing.md)
+* [Changelog](changelog.md)
 * [Troubleshooting](troubleshooting.md)
 * [FAQ](faq.md)
 * [License](license.md)
