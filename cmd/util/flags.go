@@ -28,6 +28,7 @@ func Flags() (flags []string) {
 var (
 	// util
 	fs                = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagConfig        = fs.String("config", "", "read configuration from file at path")
 	flagCheckFields   = fs.Bool("check", false, "check number of occurences of the separator, in fields of an audit record file")
 	flagToUTC         = fs.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
 	flagInput         = fs.String("read", "", "read specified audit record file")

@@ -27,6 +27,7 @@ func Flags() (flags []string) {
 
 var (
 	fs                = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagConfig        = fs.String("config", "", "read configuration from file at path")
 	flagGenKeypair    = fs.Bool("gen-keypair", false, "generate keypair")
 	flagPrivKey       = fs.String("privkey", "", "path to the hex encoded server private key")
 	flagAddr          = fs.String("addr", "127.0.0.1:1335", "specify an adress and port to listen for incoming traffic")

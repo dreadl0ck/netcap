@@ -27,6 +27,7 @@ func Flags() (flags []string) {
 
 var (
 	fs                  = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagConfig          = fs.String("config", "", "read configuration from file at path")
 	flagSelect          = fs.String("select", "", "select specific fields of an audit records when generating csv or tables")
 	flagFields          = fs.Bool("fields", false, "print available fields for an audit record file and exit")
 	flagSeparator       = fs.String("sep", ",", "set separator string for csv output")

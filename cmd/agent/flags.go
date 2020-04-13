@@ -28,6 +28,7 @@ func Flags() (flags []string) {
 
 var (
 	fs            = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagConfig    = fs.String("config", "", "read configuration from file at path")
 	flagInterface = fs.String("iface", "en0", "interface")
 	flagMaxSize   = fs.Int("max", 10*1024, "max size of packet") // max 65,507 bytes
 

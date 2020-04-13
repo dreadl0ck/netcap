@@ -16,6 +16,11 @@
 - resolvers: add ip whitelist feature
 - resolvers: rename top-1m.csv to domain-whitelist.txt
 - record new asciicasts
+- document config file feature
+- mark unknown protos with * and add it as legend below output
+- set num workers to num cores by default
+- add util to generate default config as file
+- update proxy docs: -proxy flag changed to -proxy-config
 
 ## Maltego Plugin
 

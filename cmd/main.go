@@ -154,8 +154,7 @@ func printCompletions(previous, current, full string) {
 	}
 
 	// the user could be in the middle of typing a command.
-	// load the current command from the cache
-	// and show all flags except for the last one
+	// determine the current command and show all flags except for the last one
 	if previous != "net" {
 		subCmd := getSubCmd(full)
 		debug("subcommand:", subCmd)
@@ -164,13 +163,16 @@ func printCompletions(previous, current, full string) {
 			if previous == "-read" {
 				printFileForExt(".pcap", ".pcapng")
 			}
+			handleConfigFlag()
 			printFlagsFiltered(capture.Flags())
 		case "util":
 			if previous == "-read" {
 				printFileForExt(".ncap", ".gz")
 			}
+			handleConfigFlag()
 			printFlagsFiltered(util.Flags())
 		case "proxy":
+			handleConfigFlag()
 			printFlagsFiltered(proxy.Flags())
 		case "label":
 			if previous == "-read" {
@@ -179,18 +181,22 @@ func printCompletions(previous, current, full string) {
 			if previous == "-custom" {
 				printFileForExt(".csv")
 			}
+			handleConfigFlag()
 			printFlagsFiltered(label.Flags())
 		case "export":
 			if previous == "-read" {
 				printFileForExt(".ncap", ".gz", ".pcap", ".pcapng")
 			}
+			handleConfigFlag()
 			printFlagsFiltered(export.Flags())
 		case "dump":
 			if previous == "-read" {
 				printFileForExt(".ncap", ".gz")
 			}
+			handleConfigFlag()
 			printFlagsFiltered(dump.Flags())
 		case "collect":
+			handleConfigFlag()
 			printFlagsFiltered(collect.Flags())
 		}
 	}
@@ -200,6 +206,12 @@ func printCompletions(previous, current, full string) {
 		fmt.Print(name + " ")
 	}
 	fmt.Println()
+}
+
+func handleConfigFlag() {
+	if *flagPrevious == "-config" {
+		printFileForExt(".conf")
+	}
 }
 
 func printFileForExt(exts ...string) {

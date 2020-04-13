@@ -28,13 +28,14 @@ func Flags() (flags []string) {
 // flags
 var (
 	fs                      = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagConfig              = fs.String("config", "", "read configuration from file at path")
 	flagDialTimeout         = fs.Int("dialTimeout", 30, "seconds until dialing to the backend times out")
 	flagIdleConnTimeout     = fs.Int("idleConnTimeout", 90, "seconds until a connection times out")
 	flagTLSHandshakeTimeout = fs.Int("tlsTimeout", 15, "seconds until a TLS handshake times out")
 	flagSkipTLSVerify       = fs.Bool("skipTlsVerify", false, "skip TLS verification")
 	flagMaxIdleConns        = fs.Int("maxIdle", 120, "maximum number of idle connections")
 	flagLocal               = fs.String("local", "", "set local endpoint")
-	flagConfig              = fs.String("config", "net.proxy-config.yml", "set config file path")
+	flagProxyConfig         = fs.String("proxy-config", "net.proxy-config.yml", "set config file path")
 	flagRemote              = fs.String("remote", "", "set remote endpoint")
 	flagDebug               = fs.Bool("debug", false, "set debug mode")
 	flagTrace               = fs.Bool("trace", true, "trace HTTP requests to retrieve additional information")
