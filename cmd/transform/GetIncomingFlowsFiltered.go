@@ -25,7 +25,7 @@ func GetIncomingFlowsFiltered() {
 			if flow.DstIP == ipaddr {
 				name := resolvers.LookupDNSNameLocal(flow.SrcIP)
 				if name != "" {
-					if !resolvers.IsWhitelisted(name) {
+					if !resolvers.IsWhitelistedDomain(name) {
 						if isInTop12(flow.TotalSize, top12) {
 							addInFlow(trx, flow, min, max, name)
 						}

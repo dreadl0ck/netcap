@@ -19,7 +19,7 @@ func GetHTTPHostsFiltered() {
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
 				if http.Host != "" {
-					if !resolvers.IsWhitelisted(http.Host) {
+					if !resolvers.IsWhitelistedDomain(http.Host) {
 						ent := trx.AddEntity("maltego.Website", http.Host)
 						ent.SetType("maltego.Website")
 						ent.SetValue(http.Host)

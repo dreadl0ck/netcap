@@ -4,22 +4,20 @@
 
 - document configuration via environment or file
 - document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
-- document \*Timeout funcs for handlePacket, AssembleWithContext and GetProtocols in internals section for debugging
 - custom labeling
 - new protocols
 - JA3s
-- troubleshooting
 - update usage examples for new syntax
 - godoc cleanup
 - regenerate cheatsheets
-
-- resolvers: add ip whitelist feature
-- resolvers: rename top-1m.csv to domain-whitelist.txt
-- record new asciicasts
-- document config file feature + gen-config
+- set num workers to num cores by default
 - mark unknown protos with * and add it as legend below output
 - update proxy docs: -proxy flag changed to -proxy-config
-- check TLS gopacket
+- document config file feature + gen-config
+
+## TODOs
+
+- record new asciicasts
 
 ## Maltego Plugin
 
@@ -69,6 +67,8 @@
 - add log flag to enable writing output to file netcap.log and stdout simultaneously
 - use a logger without reflection for performance: zap?
 - add a -cheatsheet commandline option to each tool, to print command examples into the terminal
+- integrate new TLS layer from gopacket
+- use ip whitelist for DeviceProfiles
 
 Reassembly: 2 Options
 

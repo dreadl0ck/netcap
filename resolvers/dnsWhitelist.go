@@ -17,7 +17,7 @@ func InitDNSWhitelist() {
 
 	var hosts int
 
-	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "top-1m.csv"))
+	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "domain-whitelist.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func getHost(domain string) string {
 	return parts[len(parts)-2] + "." + parts[len(parts)-1]
 }
 
-func IsWhitelisted(domain string) bool {
+func IsWhitelistedDomain(domain string) bool {
 	if _, ok := dnsWhitelist[getHost(domain)]; ok {
 		//log.Println(domain, "is whitelisted")
 		return true

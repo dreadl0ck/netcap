@@ -681,7 +681,7 @@ var CountIncomingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, 
 	if flow.DstIP == ipaddr {
 		name := resolvers.LookupDNSNameLocal(flow.SrcIP)
 		if name != "" {
-			if !resolvers.IsWhitelisted(name) {
+			if !resolvers.IsWhitelistedDomain(name) {
 				*sizes = append(*sizes, int(flow.TotalSize))
 
 				if uint64(flow.TotalSize) < *min {
@@ -737,7 +737,7 @@ var CountOutgoingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, 
 	if flow.SrcIP == ipaddr {
 		name := resolvers.LookupDNSNameLocal(flow.DstIP)
 		if name != "" {
-			if !resolvers.IsWhitelisted(name) {
+			if !resolvers.IsWhitelistedDomain(name) {
 				*sizes = append(*sizes, int(flow.TotalSize))
 
 				if uint64(flow.TotalSize) < *min {
