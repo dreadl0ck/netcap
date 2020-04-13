@@ -86,11 +86,11 @@ func calcMd5(s string) string {
 }
 
 func ShowEncoders() {
-	fmt.Println("custom:")
+	fmt.Println("custom:", len(customEncoderSlice))
 	for _, e := range customEncoderSlice {
 		fmt.Println("+", e.Name)
 	}
-	fmt.Println("layer:")
+	fmt.Println("layer:", len(layerEncoderSlice))
 	for _, e := range layerEncoderSlice {
 		fmt.Println("+", e.Layer.String())
 	}
