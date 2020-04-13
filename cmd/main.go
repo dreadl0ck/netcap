@@ -34,9 +34,9 @@ import (
 
 var (
 	flagPrevious = flag.String("previous", "", "internal for bash-completion")
-	flagCurrent = flag.String("current", "", "internal for bash-completion")
-	flagFull = flag.String("full", "", "internal for bash-completion")
-	flagVersion = flag.Bool("version", false, "print version")
+	flagCurrent  = flag.String("current", "", "internal for bash-completion")
+	flagFull     = flag.String("full", "", "internal for bash-completion")
+	flagVersion  = flag.Bool("version", false, "print version")
 )
 
 func help() {

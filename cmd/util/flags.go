@@ -34,4 +34,6 @@ var (
 	flagSeparator     = fs.String("sep", ",", "set separator string for csv output")
 	flagVersion       = fs.Bool("version", false, "print netcap package version and exit")
 	flagMemBufferSize = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagEnv           = fs.Bool("env", false, "print netcap environment variables and exit")
+	flagInterfaces    = fs.Bool("interfaces", false, "print netcap environment variables and exit")
 )
