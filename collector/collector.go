@@ -320,7 +320,7 @@ func (c *Collector) Stats() {
 
 	// print legend if there are unknown protos
 	// -1 for "Payload" layer
-	if numUnknown - 1 > 0 {
+	if numUnknown-1 > 0 {
 		fmt.Println("* protocol supported by gopacket, but not implemented in netcap")
 	}
 
