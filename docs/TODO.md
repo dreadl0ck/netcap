@@ -14,10 +14,8 @@
 - mark unknown protos with * and add it as legend below output
 - update proxy docs: -proxy flag changed to -proxy-config
 - document config file feature + gen-config
-
-## TODOs
-
 - record new asciicasts
+- mention using flag=value syntax for booleans!
 
 ## Maltego Plugin
 
@@ -69,6 +67,7 @@
 - add a -cheatsheet commandline option to each tool, to print command examples into the terminal
 - integrate new TLS layer from gopacket
 - use ip whitelist for DeviceProfiles
+- implement a JSON output writer?
 
 Reassembly: 2 Options
 
