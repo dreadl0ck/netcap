@@ -47,7 +47,7 @@ func Run() {
 	if *flagLocal == "" || *flagRemote == "" {
 		// parse config file
 		var errParseConfig error
-		c, errParseConfig = ParseConfiguration(*flagConfig)
+		c, errParseConfig = ParseConfiguration(*flagProxyConfig)
 		if errParseConfig != nil {
 			log.Fatal("failed to parse config: ", errParseConfig)
 		}
@@ -78,7 +78,7 @@ func Run() {
 
 	Log.Info("setup complete",
 		zap.String("logfile", LogFileName),
-		zap.String("config", *flagConfig),
+		zap.String("config", *flagProxyConfig),
 	)
 
 	// iterate over proxies from config
