@@ -1,3 +1,11 @@
+/* Maltego library for Go
+ * glenn@sensepost.com // @glennzw
+ *
+ * Implemented almost verbatim from the Maltego.py library
+ * Adjusted by Philipp Mieden for the NETCAP project.
+ *
+ */
+
 package maltego
 
 import (
@@ -6,13 +14,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-/* Maltego library for Go
- * glenn@sensepost.com // @glennzw
- *
- * Implemented almost verbatim from the Maltego.py library
- *
- */
 
 //Set constants
 const (
