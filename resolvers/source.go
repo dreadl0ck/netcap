@@ -23,6 +23,7 @@ var (
 	dataBaseSource string
 )
 
+// Init can be used to initialize the resolvers package according to the provided configuration
 func Init(c Config, quiet bool) {
 
 	dataBaseSource = os.Getenv("NC_DATABASE_SOURCE")

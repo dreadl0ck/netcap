@@ -27,6 +27,7 @@ var (
 	localDNSNamesDB = make(map[string]string)
 )
 
+// InitLocalDNS initializes reverse dns resolution via local hosts mapping
 func InitLocalDNS() {
 
 	var hosts int

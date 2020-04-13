@@ -26,6 +26,7 @@ var (
 	dnsWhitelist = make(map[string]struct{})
 )
 
+// InitDNSWhitelist initializes the domain whitelist
 func InitDNSWhitelist() {
 
 	var hosts int
@@ -67,6 +68,8 @@ func getHost(domain string) string {
 	return parts[len(parts)-2] + "." + parts[len(parts)-1]
 }
 
+// IsWhitelistedDomain checks whether a given domain is whitelisted
+// must be called after calling InitDNSWhitelist()
 func IsWhitelistedDomain(domain string) bool {
 	if _, ok := dnsWhitelist[getHost(domain)]; ok {
 		//log.Println(domain, "is whitelisted")

@@ -44,6 +44,7 @@ type GeoRecord struct {
 	}
 }
 
+// InitGeolocationDB opens handles to the geolocation databases
 func InitGeolocationDB() {
 	if err := initCityReader(); err != nil {
 		logger.WithError(err).Error("failed to open city GeoDB")

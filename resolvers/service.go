@@ -46,6 +46,7 @@ type port struct {
 	num     int
 }
 
+// InitServiceDB initializes the ports to service names mapping
 func InitServiceDB() {
 
 	var (
@@ -136,6 +137,7 @@ func InitServiceDB() {
 	}
 }
 
+// LookupServiceByPort looks up the service name associated with a given port
 func LookupServiceByPort(port int, typ string) string {
 	if typ == "TCP" {
 		if res, ok := tcpPortMap[port]; ok {
