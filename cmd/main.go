@@ -32,9 +32,12 @@ import (
 	"strings"
 )
 
-var flagPrevious = flag.String("previous", "", "get available command completions")
-var flagCurrent = flag.String("current", "", "")
-var flagFull = flag.String("full", "", "")
+var (
+	flagPrevious = flag.String("previous", "", "internal for bash-completion")
+	flagCurrent = flag.String("current", "", "internal for bash-completion")
+	flagFull = flag.String("full", "", "internal for bash-completion")
+	flagVersion = flag.Bool("version", false, "print version")
+)
 
 func help() {
 	netcap.PrintLogo()
@@ -59,6 +62,11 @@ func main() {
 
 	flag.Usage = help
 	flag.Parse()
+
+	if *flagVersion {
+		fmt.Println(netcap.Version)
+		os.Exit(0)
+	}
 
 	if *flagPrevious != "" {
 		printCompletions(*flagPrevious, *flagCurrent, *flagFull)
@@ -85,6 +93,8 @@ func main() {
 		collect.Run()
 	case "transform":
 		transform.Run()
+	case "version":
+		fmt.Println(netcap.Version)
 	case "help", "-h", "--help":
 		help()
 	}
