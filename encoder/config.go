@@ -155,7 +155,7 @@ type Config struct {
 	// Toggle debug mode
 	Debug bool
 
-	// Dump packets contents as hex for debugging
+	// Dump packet contents as hex for debugging
 	HexDump bool
 
 	// Wait until all connections finished processing when receiving shutdown signal
