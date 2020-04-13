@@ -20,5 +20,11 @@
 * [FAQ](faq.md)
 * [Extension](extension.md)
 * [Contributing](contributing.md)
+* [Troubleshooting](troubleshooting.md)
+* [Resolvers](resolvers.md)
+* [Unit test](tests.md)
+* [Reassembly](reassembly.md)
+* [Deep Packet Inspection](deep-packet-inspection.md)
+* [Live Collection](live-collection.md)
 * [License](license.md)
 
