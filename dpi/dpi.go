@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -10,8 +12,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
-// +build !windows
 
 // Implements an interface for application layer classification via bindings to nDPI and libprotoident
 package dpi
@@ -31,6 +31,7 @@ import (
 
 var disableDPI = true
 
+// Init initializes the deep packet inspection engines
 func Init() {
 
 	disableDPI = false
