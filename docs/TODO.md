@@ -3,13 +3,9 @@
 ## v0.5 Documentation
 
 - resolvers page needs some love
-- explain custom labeling
-- update proxy docs: -proxy flag changed to -proxy-config
 
 - mention new protocols: Diameter, POP3 etc
 - mention JA3s
-- mention: set num workers to num cores by default
-- mention using flag=value syntax for booleans!
 - domain whitelisting example
 
 - record new asciicasts
