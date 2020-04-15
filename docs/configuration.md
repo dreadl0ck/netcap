@@ -74,5 +74,19 @@ If you use zeus, simply execute the following in the project root to install the
 $ zeus install-completions
 ```
 
+or move and source the file manually from the project root:
+
+```text
+$ cp cmd/net /usr/local/etc/bash_completion.d/net && . /usr/local/etc/bash_completion.d/net
+```
+
 Afterwards you should receive predictions when hitting tab in the shell, for subcommands and flags. For flags that expect a path on the filesystem, path completion is available and will only display files with the expected datatype \(based on the file extension\).
+
+To use completion with **zsh** run the following:
+
+```text
+autoload -U +X compinit && compinit
+autoload -U +X bashcompinit && bashcompinit
+cp cmd/net /usr/local/etc/bash_completion.d/net && . /usr/local/etc/bash_completion.d/net
+```
 
