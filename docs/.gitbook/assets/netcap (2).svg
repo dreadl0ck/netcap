@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="314 -156 2426 1212" width="2426" height="1212">
+  <defs>
+    <clipPath id="outer_stroke_clip_path">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 704 252 L 704 1051 L 2323.636 1051 L 2323.636 252 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_2">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1114.1185 344.9413 L 1114.1185 435.90214 L 1268.2228 435.90214 L 1268.2228 344.9413 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="25" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <clipPath id="outer_stroke_clip_path_3">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1114.1185 479.46085 L 1114.1185 570.4217 L 1268.2228 570.4217 L 1268.2228 479.46085 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_4">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1114.1185 613.9804 L 1114.1185 704.9413 L 1268.2228 704.9413 L 1268.2228 613.9804 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="99" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Futura" font-size="73" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <clipPath id="outer_stroke_clip_path_5">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 319 584.7274 L 319 734.1943 L 610.7645 734.1943 L 610.7645 584.7274 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="35" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -3 5 6" markerWidth="5" markerHeight="6" color="black">
+      <g>
+        <path d="M 2.88 0 L 0 -1.08 L 0 1.08 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <clipPath id="outer_stroke_clip_path_6">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 319 765.76045 L 319 915.2274 L 610.7645 915.2274 L 610.7645 765.76045 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_7">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1114.4833 743 L 1114.4833 833.9609 L 1268.5875 833.9609 L 1268.5875 743 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_8">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 768 571.0623 L 768 747.8594 L 950.4512 747.8594 L 950.4512 571.0623 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_9">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1399.8764 344.9413 L 1399.8764 435.90214 L 1626.193 435.90214 L 1626.193 344.9413 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_10">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1399.8764 479.46085 L 1399.8764 570.4217 L 1626.193 570.4217 L 1626.193 479.46085 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_11">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1399.8764 613.9804 L 1399.8764 704.9413 L 1626.193 704.9413 L 1626.193 613.9804 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_12">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1400.2411 743 L 1400.2411 833.9609 L 1626.5578 833.9609 L 1626.5578 743 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_13">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1114.4833 883.4175 L 1114.4833 974.3783 L 1268.5875 974.3783 L 1268.5875 883.4175 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_14">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1400.2411 883.4175 L 1400.2411 974.3783 L 1626.5578 974.3783 L 1626.5578 883.4175 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_15">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1776.5828 883.4175 L 1776.5828 974.3783 L 1930.687 974.3783 L 1930.687 883.4175 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_16">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 319 403.6943 L 319 553.16126 L 610.7645 553.16126 L 610.7645 403.6943 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_17">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1772.5768 345.2863 L 1772.5768 436.24714 L 1926.681 436.24714 L 1926.681 345.2863 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_18">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1772.5768 479.46085 L 1772.5768 570.4217 L 1926.681 570.4217 L 1926.681 479.46085 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_19">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1774.1673 614.3519 L 1774.1673 705.3127 L 1928.2716 705.3127 L 1928.2716 614.3519 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_20">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 1776.3194 740.3127 L 1776.3194 831.2736 L 1930.4236 831.2736 L 1930.4236 740.3127 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_21">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2115.4987 883.5325 L 2115.4987 974.4933 L 2269.603 974.4933 L 2269.603 883.5325 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_22">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2115.3365 345.2863 L 2115.3365 436.24714 L 2269.4407 436.24714 L 2269.4407 345.2863 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_23">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2115.3365 479.80585 L 2115.3365 570.7667 L 2269.4407 570.7667 L 2269.4407 479.80585 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_24">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2115.3365 614.3254 L 2115.3365 705.2863 L 2269.4407 705.2863 L 2269.4407 614.3254 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_25">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2115.7012 743.345 L 2115.7012 834.3059 L 2269.8054 834.3059 L 2269.8054 743.345 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_26">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2456.5057 883.5589 L 2456.5057 974.5198 L 2734 974.5198 L 2734 883.5589 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_27">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2456.3435 345.31273 L 2456.3435 436.2736 L 2734 436.2736 L 2734 345.31273 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_28">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2456.5057 479.8323 L 2456.5057 570.79316 L 2734 570.79316 L 2734 479.8323 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_29">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2456.5057 614.3519 L 2456.5057 705.3127 L 2734 705.3127 L 2734 614.3519 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_30">
+      <path d="M 314 -156 L 2740 -156 L 2740 1056 L 314 1056 Z M 2456.8704 743.37145 L 2456.8704 834.3323 L 2734.3647 834.3323 L 2734.3647 743.37145 Z"/>
+    </clipPath>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-18 19:12:55 +0000</dc:date>
+  </metadata>
+  <g id="Netcap" fill-opacity="1" stroke-dasharray="none" fill="none" stroke-opacity="1" stroke="none">
+    <title>Netcap</title>
+    <g id="Netcap: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_15">
+        <rect x="704" y="252" width="1619.6359" height="799" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path)"/>
+      </g>
+      <g id="Graphic_14">
+        <rect x="1114.1185" y="344.9413" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_2)"/>
+        <text transform="translate(1119.1185 374.0494)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="6.079213" y="26">WORKER 1</tspan>
+        </text>
+      </g>
+      <g id="Graphic_13">
+        <rect x="1114.1185" y="479.46085" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_3)"/>
+        <text transform="translate(1119.1185 508.56897)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="6.079213" y="26">WORKER 2</tspan>
+        </text>
+      </g>
+      <g id="Graphic_12">
+        <rect x="1114.1185" y="613.9804" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_4)"/>
+        <text transform="translate(1119.1185 643.08854)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="6.079213" y="26">WORKER 3</tspan>
+        </text>
+      </g>
+      <g id="Graphic_11">
+        <text transform="translate(951 -150.98494)" fill="black">
+          <tspan font-family="Futura" font-size="99" font-weight="700" fill="black" x=".009087891" y="103">NETCAP </tspan>
+          <tspan font-family="Futura" font-size="73" font-weight="500" fill="black" y="103">in a nutshell</tspan>
+        </text>
+      </g>
+      <g id="Graphic_10">
+        <rect x="319" y="584.7274" width="291.7645" height="149.46694" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_5)"/>
+        <text transform="translate(324 636.4359)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="91.12976" y="36">PCAP</tspan>
+        </text>
+      </g>
+      <g id="Line_8">
+        <line x1="1273.2228" y1="390.4217" x2="1372.9764" y2="390.4217" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_3">
+        <line x1="1273.2228" y1="524.9413" x2="1372.9764" y2="524.9413" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_2">
+        <line x1="1273.5875" y1="788.4804" x2="1373.3411" y2="788.4804" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_16">
+        <rect x="319" y="765.76045" width="291.7645" height="149.46694" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_6)"/>
+        <text transform="translate(324 794.444)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="39.539758" y="36">LIVE FROM </tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="42.75976" y="82.04996">INTERFACE</tspan>
+        </text>
+      </g>
+      <g id="Graphic_18">
+        <rect x="1114.4833" y="743" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_7)"/>
+        <text transform="translate(1119.4833 772.1081)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="6.079213" y="26">WORKER 4</tspan>
+        </text>
+      </g>
+      <g id="Line_20">
+        <line x1="1273.2228" y1="659.46085" x2="1372.9764" y2="659.46085" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_4">
+        <rect x="768" y="571.0623" width="182.45116" height="176.79715" fill="white"/>
+        <rect x="768" y="571.0623" width="182.45116" height="176.79715" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_8)"/>
+        <text transform="translate(773 643.08854)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="15.021966" y="26">COLLECTOR</tspan>
+        </text>
+      </g>
+      <g id="Graphic_24">
+        <rect x="1399.8764" y="344.9413" width="226.31668" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_9)"/>
+        <text transform="translate(1404.8764 374.0494)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="2.378311" y="26">ETHERNET.PROTO</tspan>
+        </text>
+      </g>
+      <g id="Graphic_23">
+        <rect x="1399.8764" y="479.46085" width="226.31668" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_10)"/>
+        <text transform="translate(1404.8764 508.56897)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="53.129044" y="26">IP.PROTO</tspan>
+        </text>
+      </g>
+      <g id="Graphic_22">
+        <rect x="1399.8764" y="613.9804" width="226.31668" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_11)"/>
+        <text transform="translate(1404.8764 643.08854)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="38.50502" y="26">UDP.PROTO</tspan>
+        </text>
+      </g>
+      <g id="Graphic_21">
+        <rect x="1400.2411" y="743" width="226.31668" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_12)"/>
+        <text transform="translate(1405.2411 772.1081)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="42.36244" y="26">TCP.PROTO</tspan>
+        </text>
+      </g>
+      <g id="Line_50">
+        <line x1="1273.5875" y1="928.8979" x2="1373.3411" y2="928.8979" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_49">
+        <rect x="1114.4833" y="883.4175" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_13)"/>
+        <text transform="translate(1119.4833 912.5256)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="60.247914" y="26">…</tspan>
+        </text>
+      </g>
+      <g id="Graphic_47">
+        <rect x="1400.2411" y="883.4175" width="226.31668" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_14)"/>
+        <text transform="translate(1405.2411 912.5256)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="96.35414" y="26">…</tspan>
+        </text>
+      </g>
+      <g id="Line_46">
+        <line x1="1631.5578" y1="928.8979" x2="1749.6828" y2="928.8979" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_45">
+        <rect x="1776.5828" y="883.4175" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_15)"/>
+        <text transform="translate(1781.5828 912.5256)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="60.247914" y="26">…</tspan>
+        </text>
+      </g>
+      <g id="Graphic_51">
+        <text transform="translate(745.2256 101.45004)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x=".4775" y="36">Packet Data</tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="23.525" y="82.04996">Collection</tspan>
+        </text>
+      </g>
+      <g id="Graphic_52">
+        <text transform="translate(1053.9081 78.42506)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="5.432242" y="36">Asynchronous</tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="60.13724" y="82.04996">Protocol </tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="50.30224" y="128.09991">Decoding</tspan>
+        </text>
+      </g>
+      <g id="Graphic_53">
+        <text transform="translate(1338.0347 101.45004)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="57.3825" y="36">Serialization </tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x=".07" y="82.04996">to Protocol Buffers</tspan>
+        </text>
+      </g>
+      <g id="Graphic_54">
+        <text transform="translate(1729.1942 101.45004)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="79.44828" y="36">Data</tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="3.9707825" y="82.04996">Compression</tspan>
+        </text>
+      </g>
+      <g id="Graphic_55">
+        <text transform="translate(2076.1676 101.45004)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="71.2285" y="36">Data</tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="29.316" y="82.04996">Buffering</tspan>
+        </text>
+      </g>
+      <g id="Graphic_56">
+        <text transform="translate(2458.36 101.45004)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="5.95" y="36">Writing Data </tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="58.8875" y="82.04996">To Disk</tspan>
+        </text>
+      </g>
+      <g id="Graphic_57">
+        <text transform="translate(392.38226 95.45004)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="9.92" y="36">Packet </tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x=".19" y="82.04996">Sources</tspan>
+        </text>
+      </g>
+      <g id="Graphic_58">
+        <rect x="319" y="403.6943" width="291.7645" height="149.46694" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_16)"/>
+        <text transform="translate(324 455.4028)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="54.16976" y="36">PCAP-NG</tspan>
+        </text>
+      </g>
+      <g id="Line_67">
+        <line x1="1631.193" y1="390.5428" x2="1745.6768" y2="390.66016" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_66">
+        <line x1="1631.193" y1="524.9413" x2="1745.6768" y2="524.9413" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_65">
+        <line x1="1631.5578" y1="787.5465" x2="1749.42" y2="786.6148" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_64">
+        <line x1="1631.193" y1="659.5906" x2="1747.2673" y2="659.7181" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_63">
+        <rect x="1772.5768" y="345.2863" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_17)"/>
+        <text transform="translate(1777.5768 374.3944)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="43.274037" y="26">GZIP</tspan>
+        </text>
+      </g>
+      <g id="Graphic_62">
+        <rect x="1772.5768" y="479.46085" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_18)"/>
+        <text transform="translate(1777.5768 508.56897)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="43.274037" y="26">GZIP</tspan>
+        </text>
+      </g>
+      <g id="Graphic_61">
+        <rect x="1774.1673" y="614.3519" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_19)"/>
+        <text transform="translate(1779.1673 643.46)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="43.274037" y="26">GZIP</tspan>
+        </text>
+      </g>
+      <g id="Graphic_60">
+        <rect x="1776.3194" y="740.3127" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_20)"/>
+        <text transform="translate(1781.3194 769.4208)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="43.274037" y="26">GZIP</tspan>
+        </text>
+      </g>
+      <g id="Line_85">
+        <line x1="1935.687" y1="928.9257" x2="2088.5987" y2="928.9776" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_84">
+        <rect x="2115.4987" y="883.5325" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_21)"/>
+        <text transform="translate(2120.4987 912.6406)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="60.247914" y="26">…</tspan>
+        </text>
+      </g>
+      <g id="Line_83">
+        <line x1="1931.681" y1="390.7667" x2="2088.4365" y2="390.7667" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_82">
+        <line x1="1931.681" y1="525.0239" x2="2088.4365" y2="525.18165" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_81">
+        <line x1="1935.4236" y1="786.5263" x2="2088.802" y2="787.8967" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_80">
+        <line x1="1933.2716" y1="659.82594" x2="2088.4365" y2="659.8139" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_79">
+        <rect x="2115.3365" y="345.2863" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_22)"/>
+        <text transform="translate(2120.3365 374.3944)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="7.75768" y="26">4096 bytes</tspan>
+        </text>
+      </g>
+      <g id="Graphic_78">
+        <rect x="2115.3365" y="479.80585" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_23)"/>
+        <text transform="translate(2120.3365 508.91397)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="7.75768" y="26">4096 bytes</tspan>
+        </text>
+      </g>
+      <g id="Graphic_77">
+        <rect x="2115.3365" y="614.3254" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_24)"/>
+        <text transform="translate(2120.3365 643.43354)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="7.75768" y="26">4096 bytes</tspan>
+        </text>
+      </g>
+      <g id="Graphic_76">
+        <rect x="2115.7012" y="743.345" width="154.10423" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_25)"/>
+        <text transform="translate(2120.7012 772.4531)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="7.75768" y="26">4096 bytes</tspan>
+        </text>
+      </g>
+      <g id="Line_95">
+        <line x1="2274.603" y1="929.0183" x2="2429.6057" y2="929.0285" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_94">
+        <rect x="2456.5057" y="883.5589" width="277.49433" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_26)"/>
+        <text transform="translate(2461.5057 912.667)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="121.94297" y="26">…</tspan>
+        </text>
+      </g>
+      <g id="Line_93">
+        <line x1="2274.4407" y1="390.7721" x2="2429.4435" y2="390.78228" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_92">
+        <line x1="2274.4407" y1="525.29167" x2="2429.6057" y2="525.30186" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_91">
+        <line x1="2274.8054" y1="788.8308" x2="2429.9704" y2="788.841" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_90">
+        <line x1="2274.4407" y1="659.81124" x2="2429.6057" y2="659.8214" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_89">
+        <rect x="2456.3435" y="345.31273" width="277.6565" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_27)"/>
+        <text transform="translate(2461.3435 374.42084)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="37.368292" y="26">Ethernet.ncap.gz</tspan>
+        </text>
+      </g>
+      <g id="Graphic_88">
+        <rect x="2456.5057" y="479.8323" width="277.49433" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_28)"/>
+        <text transform="translate(2461.5057 508.9404)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="57.34946" y="26">IPV4.ncap.gz</tspan>
+        </text>
+      </g>
+      <g id="Graphic_87">
+        <rect x="2456.5057" y="614.3519" width="277.49433" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_29)"/>
+        <text transform="translate(2461.5057 643.46)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="59.95566" y="26">UDP.ncap.gz</tspan>
+        </text>
+      </g>
+      <g id="Graphic_86">
+        <rect x="2456.8704" y="743.37145" width="277.49433" height="90.96085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_30)"/>
+        <text transform="translate(2461.8704 772.4796)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="63.813085" y="26">TCP.ncap.gz</tspan>
+        </text>
+      </g>
+      <g id="Line_97">
+        <path d="M 615 660.53915 L 615 659.46085 L 741.1 659.46085" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_98">
+        <path d="M 615.7645 478.4278 L 663.1483 478.4278 L 663.1483 542.44966 L 663.35065 645.46085 L 663.35065 659.46085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_99">
+        <path d="M 615.2987 849.7599 L 615.2987 848.0909 L 663.0909 848.0909 L 663.0716 673.46085 L 663.0716 659.46085" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_100">
+        <path d="M 952.494 659.67984 L 1013.0196 659.67984 L 1013.0196 929.2941 L 1083.5833 928.8979 L 1087.5833 928.8979" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_101">
+        <path d="M 1013.0196 661.9204 L 1013.0196 390.54697 L 1061.3121 390.54697 L 1083.2185 390.4217 L 1087.2185 390.4217" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_102">
+        <path d="M 1013.0196 540.5389 L 1013.0196 531.16974 L 1013.0305 531.16974 L 1013.0305 524.9413 L 1087.2185 524.9413" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_103">
+        <path d="M 1013.0196 683.0061 L 1013.0196 669.0061 L 1013.1497 662.7075 L 1013.1497 659.46085 L 1087.2185 659.46085" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Line_104">
+        <path d="M 1013.0196 802.23615 L 1013.0196 789.12195 L 1014.2195 789.12195 L 1014.2195 788.4804 L 1087.5833 788.4804" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+    </g>
+  </g>
+</svg>

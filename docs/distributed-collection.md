@@ -24,7 +24,7 @@ The collection server generates a keypair, consisting of two 32 byte \(256bit\) 
 
 When receiving an encrypted batch from a sensor, the server needs to trim off the first 32 bytes, to get the public key of the sensor. Now the message can be decrypted, and decompressed. The resulting bytes are serialized data for a batch protocol buffer. After unmarshalling them into the batch structure, the server can append the serialized audit records carried by the batch, into the corresponding audit record file for the provided client identifier.
 
-![NETCAP batch decryption](.gitbook/assets/netcap-batch%20%281%29.svg)
+![NETCAP batch decryption](.gitbook/assets/netcap-batch%20%282%29.svg)
 
 ## Usage
 
