@@ -23,6 +23,8 @@ description: Detailed Version History Information
 
 * **Maltego** integration
 * **File** audit records
+* **Diameter** protocol audit records
+* **SMTP** audit records
 * **POP3** support for extracting Mails
 * **JA3S** support and separate audit record for **TLSServerHello**
 * New configuration options: via **environment** or **configuration** file
