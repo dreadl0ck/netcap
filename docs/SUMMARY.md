@@ -33,4 +33,5 @@
 * [Troubleshooting](troubleshooting.md)
 * [FAQ](faq.md)
 * [License](license.md)
+* [Bash Completion](bash-completion.md)
 
