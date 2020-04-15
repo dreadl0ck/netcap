@@ -2,9 +2,12 @@
 
 ## v0.5 Documentation
 
-- resolvers page needs some love
-- domain whitelisting example
 - record new asciicasts
+- update website
+- update ICS page
+- update DeviceProfiles page
+- update File extraction page
+- add Email extraction page
 
 ## Maltego Plugin
 
