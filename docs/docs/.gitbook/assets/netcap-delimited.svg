@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="410 918 1839 279" width="1839" height="279">
+  <defs>
+    <clipPath id="outer_stroke_clip_path">
+      <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 415 1094 L 415 1148 L 526.52517 1148 L 526.52517 1094 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="19" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <clipPath id="outer_stroke_clip_path_2">
+      <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 529.0166 1094 L 529.0166 1148 L 968.0293 1148 L 968.0293 1094 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="25" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <clipPath id="outer_stroke_clip_path_3">
+      <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 970.5207 1094 L 970.5207 1148 L 1082.0459 1148 L 1082.0459 1094 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_4">
+      <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 1084.5374 1094 L 1084.5374 1148 L 1310.0293 1148 L 1310.0293 1094 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_5">
+      <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 1312.5207 1094 L 1312.5207 1148 L 1446.7287 1148 L 1446.7287 1094 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_6">
+      <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 1449.7269 1094 L 1449.7269 1148 L 1909.0293 1148 L 1909.0293 1094 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="20" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <clipPath id="outer_stroke_clip_path_7">
+      <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 1912.4253 1094 L 1912.4253 1148 L 2046.6333 1148 L 2046.6333 1094 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_8">
+      <path d="M 410 918 L 2249 918 L 2249 1197 L 410 1197 Z M 2050.0293 1094 L 2050.0293 1148 L 2241.287 1148 L 2241.287 1094 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="21" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-18 19:12:55 +0000</dc:date>
+  </metadata>
+  <g id="Netcap-Delimited" fill-opacity="1" stroke-dasharray="none" fill="none" stroke-opacity="1" stroke="none">
+    <title>Netcap-Delimited</title>
+    <g id="Netcap-Delimited: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_2">
+        <rect x="415" y="1094" width="111.52517" height="54" fill="white"/>
+        <rect x="415" y="1094" width="111.52517" height="54" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path)"/>
+        <text transform="translate(420 1108.217)" fill="black">
+          <tspan font-family="Futura" font-size="19" font-weight="500" fill="black" x="13.551157" y="20">LENGTH</tspan>
+        </text>
+      </g>
+      <g id="Graphic_3">
+        <rect x="529.0166" y="1094" width="439.0127" height="54" fill="white"/>
+        <rect x="529.0166" y="1094" width="439.0127" height="54" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_2)"/>
+        <text transform="translate(534.0166 1108.217)" fill="black">
+          <tspan font-family="Futura" font-size="19" font-weight="500" fill="black" x="171.80737" y="20">PAYLOAD</tspan>
+        </text>
+      </g>
+      <g id="Line_4">
+        <path d="M 415 986.1493 L 415 970 L 2246.479 970 L 2246.479 1016.2924" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+      </g>
+      <g id="Graphic_5">
+        <text transform="translate(1276.7396 923.125)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="700" fill="black" x=".2375" y="26">STREAM</tspan>
+        </text>
+      </g>
+      <g id="Graphic_8">
+        <rect x="970.5207" y="1094" width="111.52517" height="54" fill="white"/>
+        <rect x="970.5207" y="1094" width="111.52517" height="54" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_3)"/>
+        <text transform="translate(975.5207 1108.217)" fill="black">
+          <tspan font-family="Futura" font-size="19" font-weight="500" fill="black" x="13.551157" y="20">LENGTH</tspan>
+        </text>
+      </g>
+      <g id="Graphic_7">
+        <rect x="1084.5374" y="1094" width="225.49194" height="54" fill="white"/>
+        <rect x="1084.5374" y="1094" width="225.49194" height="54" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_4)"/>
+        <text transform="translate(1089.5374 1108.217)" fill="black">
+          <tspan font-family="Futura" font-size="19" font-weight="500" fill="black" x="65.046996" y="20">PAYLOAD</tspan>
+        </text>
+      </g>
+      <g id="Graphic_10">
+        <rect x="1312.5207" y="1094" width="134.208" height="54" fill="white"/>
+        <rect x="1312.5207" y="1094" width="134.208" height="54" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_5)"/>
+        <text transform="translate(1317.5207 1108.217)" fill="black">
+          <tspan font-family="Futura" font-size="19" font-weight="500" fill="black" x="24.89257" y="20">LENGTH</tspan>
+        </text>
+      </g>
+      <g id="Graphic_9">
+        <rect x="1449.7269" y="1094" width="459.3024" height="54" fill="white"/>
+        <rect x="1449.7269" y="1094" width="459.3024" height="54" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_6)"/>
+        <text transform="translate(1454.7269 1107.7021)" fill="black">
+          <tspan font-family="Futura" font-size="20" font-weight="500" fill="black" x="179.7049" y="21">PAYLOAD</tspan>
+        </text>
+      </g>
+      <g id="Graphic_12">
+        <rect x="1912.4253" y="1094" width="134.208" height="54" fill="white"/>
+        <rect x="1912.4253" y="1094" width="134.208" height="54" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_7)"/>
+        <text transform="translate(1917.4253 1108.217)" fill="black">
+          <tspan font-family="Futura" font-size="19" font-weight="500" fill="black" x="24.89257" y="20">LENGTH</tspan>
+        </text>
+      </g>
+      <g id="Graphic_11">
+        <rect x="2050.0293" y="1094" width="191.25781" height="54" fill="white"/>
+        <rect x="2050.0293" y="1094" width="191.25781" height="54" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_8)"/>
+        <text transform="translate(2055.0293 1108.217)" fill="black">
+          <tspan font-family="Futura" font-size="19" font-weight="500" fill="black" x="47.92993" y="20">PAYLOAD</tspan>
+        </text>
+      </g>
+      <g id="Line_13">
+        <path d="M 415 1053.811 L 415 1036.0561 L 968.0293 1036.0561 L 968.0293 1057.2935" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+      </g>
+      <g id="Graphic_14">
+        <text transform="translate(636.51465 989.125)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="700" fill="black" x=".2875" y="26">RECORD</tspan>
+        </text>
+      </g>
+      <g id="Graphic_15">
+        <text transform="translate(443.7626 1164.1873)" fill="black">
+          <tspan font-family="Futura" font-size="21" font-weight="500" fill="black" x=".2783203" y="22">varint</tspan>
+        </text>
+      </g>
+      <g id="Graphic_16">
+        <text transform="translate(723.52295 1164.1873)" fill="black">
+          <tspan font-family="Futura" font-size="21" font-weight="500" fill="black" x=".15478516" y="22">bytes</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>

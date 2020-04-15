@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="1246 1226 1531 697" width="1531" height="697">
+  <defs>
+    <clipPath id="outer_stroke_clip_path">
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1331.9063 1530 L 1331.9063 1884 L 1539.0937 1884 L 1539.0937 1530 Z"/>
+    </clipPath>
+    <font-face font-family="Futura" font-size="25" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Futura" font-size="99" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Futura" font-size="73" panose-1="2 11 6 2 2 2 4 2 3 3" units-per-em="1000" underline-position="-97.65625" underline-thickness="78.125" slope="0" x-height="482.4219" cap-height="761.2305" ascent="1038.5742" descent="-259.76562" font-weight="500">
+      <font-face-src>
+        <font-face-name name="Futura-Medium"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Futura" font-size="35" panose-1="2 11 8 2 2 2 4 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="513" cap-height="754" ascent="1039.0015" descent="-259.9945" font-weight="700">
+      <font-face-src>
+        <font-face-name name="Futura-Bold"/>
+      </font-face-src>
+    </font-face>
+    <clipPath id="outer_stroke_clip_path_2">
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1615 L 1805 1677 L 2143 1677 L 2143 1615 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_3">
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1888.6875 1684 L 1888.6875 1746 L 2142.6875 1746 L 2142.6875 1684 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_4">
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1889 1753 L 1889 1815 L 2143 1815 L 2143 1753 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_5">
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1888.8438 1822 L 1888.8438 1884 L 2143.1562 1884 L 2143.1562 1822 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_6">
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1684 L 1805 1746 L 1887.36 1746 L 1887.36 1684 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_7">
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1753 L 1805 1815 L 1887.36 1815 L 1887.36 1753 Z"/>
+    </clipPath>
+    <clipPath id="outer_stroke_clip_path_8">
+      <path d="M 1246 1226 L 2777 1226 L 2777 1923 L 1246 1923 Z M 1805 1822 L 1805 1884 L 1887.36 1884 L 1887.36 1822 Z"/>
+    </clipPath>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.9.4 
+    <dc:date>2019-01-18 19:12:55 +0000</dc:date>
+  </metadata>
+  <g id="Netcap-Audit-Record" fill-opacity="1" stroke-dasharray="none" fill="none" stroke-opacity="1" stroke="none">
+    <title>Netcap-Audit-Record</title>
+    <g id="Netcap-Audit-Record: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_48">
+        <rect x="1331.9063" y="1530" width="207.18733" height="354" fill="white"/>
+        <rect x="1331.9063" y="1530" width="207.18733" height="354" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path)"/>
+        <text transform="translate(1336.9063 1543.2769)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="45.7067" y="26">Timstamp</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="71.5795" y="58.74463">Field</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="71.5795" y="91.48926">Field</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="71.5795" y="124.23389">Field</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="71.5795" y="156.97852">Field</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="71.5795" y="189.72314">Field</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="71.5795" y="222.46777">Field</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="71.5795" y="255.2124">Field</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="71.5795" y="287.95703">Field</tspan>
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="86.78946" y="320.70166">…</tspan>
+        </text>
+      </g>
+      <g id="Graphic_11">
+        <text transform="translate(1528.5 1231.015)" fill="black">
+          <tspan font-family="Futura" font-size="99" font-weight="700" fill="black" x=".08477148" y="103">NETCAP </tspan>
+          <tspan font-family="Futura" font-size="73" font-weight="500" fill="black" y="103">audit records</tspan>
+        </text>
+      </g>
+      <g id="Graphic_46">
+        <path d="M 1755 1880 L 1755 1560 C 1755 1537.92 1850.872 1520 1969 1520 C 2087.128 1520 2183 1537.92 2183 1560 L 2183 1880 C 2183 1902.08 2087.128 1920 1969 1920 C 1850.872 1920 1755 1902.08 1755 1880 M 1755 1560 C 1755 1582.08 1850.872 1600 1969 1600 C 2087.128 1600 2183 1582.08 2183 1560" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+      </g>
+      <g id="Graphic_45">
+        <text transform="translate(1805.4043 1429.475)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x=".23" y="36">Audit Record File</tspan>
+        </text>
+      </g>
+      <g id="Graphic_49">
+        <text transform="translate(1251 1429.475)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x=".3825" y="36">Single Audit Record</tspan>
+        </text>
+      </g>
+      <g id="Graphic_50">
+        <text transform="translate(2288 1612.425)" fill="black">
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="206.58" y="36">e.g: </tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x=".1325" y="82.04996">TCP.ncap.gz (compressed)</tspan>
+          <tspan font-family="Futura" font-size="35" font-weight="700" fill="black" x="5.26" y="128.09991">TCP.ncap (uncompressed)</tspan>
+        </text>
+      </g>
+      <g id="Graphic_52">
+        <rect x="1805" y="1615" width="338" height="62" fill="white"/>
+        <rect x="1805" y="1615" width="338" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_2)"/>
+        <text transform="translate(1810 1629.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="52.0188" y="26">Netcap File Header</tspan>
+        </text>
+      </g>
+      <g id="Graphic_53">
+        <rect x="1888.6875" y="1684" width="254" height="62" fill="white"/>
+        <rect x="1888.6875" y="1684" width="254" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_3)"/>
+        <text transform="translate(1893.6875 1698.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="48.26343" y="26">Audit Record</tspan>
+        </text>
+      </g>
+      <g id="Graphic_54">
+        <rect x="1889" y="1753" width="254" height="62" fill="white"/>
+        <rect x="1889" y="1753" width="254" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_4)"/>
+        <text transform="translate(1894 1767.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="48.26343" y="26">Audit Record</tspan>
+        </text>
+      </g>
+      <g id="Graphic_55">
+        <rect x="1888.8438" y="1822" width="254.3125" height="62" fill="white"/>
+        <rect x="1888.8438" y="1822" width="254.3125" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_5)"/>
+        <text transform="translate(1893.8438 1836.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="110.35205" y="26">…</tspan>
+        </text>
+      </g>
+      <g id="Graphic_56">
+        <rect x="1805" y="1684" width="82.36" height="62" fill="white"/>
+        <rect x="1805" y="1684" width="82.36" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_6)"/>
+        <text transform="translate(1810 1698.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="1.2923047" y="26">length</tspan>
+        </text>
+      </g>
+      <g id="Graphic_57">
+        <rect x="1805" y="1753" width="82.36" height="62" fill="white"/>
+        <rect x="1805" y="1753" width="82.36" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_7)"/>
+        <text transform="translate(1810 1767.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="1.2923047" y="26">length</tspan>
+        </text>
+      </g>
+      <g id="Graphic_58">
+        <rect x="1805" y="1822" width="82.36" height="62" fill="white"/>
+        <rect x="1805" y="1822" width="82.36" height="62" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" clip-path="url(#outer_stroke_clip_path_8)"/>
+        <text transform="translate(1810 1836.6277)" fill="black">
+          <tspan font-family="Futura" font-size="25" font-weight="500" fill="black" x="1.2923047" y="26">length</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>
