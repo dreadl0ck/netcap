@@ -2,7 +2,7 @@
 description: Netcap has tests for its core functionality
 ---
 
-# Unit Tests
+# Unit tests
 
 ## Prerequisites
 
@@ -32,11 +32,17 @@ $ go test -v ./...
 
 ## Benchmarks
 
+Run the benchmarks using:
+
 ```text
 $ go test -v -bench=. ./...
 ```
 
 ## Race Detection Tests
 
-TODO
+Run the tests with race detection enabled:
+
+```text
+$ go test -race -v ./...
+```
 
