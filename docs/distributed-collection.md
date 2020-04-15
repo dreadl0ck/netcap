@@ -69,5 +69,5 @@ new file xyz/IPv4.ncap
 
 When stopping the server with a _SIGINT_ \(Ctrl-C\), all audit record file handles will be flushed and closed properly.
 
-The agent uses the USER environment variable to identify the workstation where the audit records are created. This will be replaced with a unique identifier in a future release.
+The agent uses the **$USER** environment variable to identify the workstation where the audit records are created. This will be replaced with a unique identifier in a future release.
 

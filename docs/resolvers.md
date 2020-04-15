@@ -8,9 +8,9 @@ description: Lookup everything!
 
 Lots of information is not available on first sight, and we need to combine our data with knowledge from other data sources to make it easier to understand for humans.
 
-Think of resolving ip addresses to geolocations, hardware addreses to manufacturers, domains to ip addresses and vice versa, or simply identifying the service name associated with a given port number. Or think of filtering ip addresses or domain names against a whitelist, to eliminate known legitimate traffic.
+Think of resolving ip addresses to geolocations, hardware addreses to manufacturers, domains to ip addresses and vice versa, or simply identifying the service name associated with a given port number. Or consider filtering ip addresses or domain names against a whitelist, to eliminate known legitimate traffic.
 
-The resolvers package provides primitives for such tasks, and if possible, caches results in memory for best performance.
+The resolvers package provides primitives for such tasks, and if possible, caches results in memory for better performance.
 
 ## Design
 
