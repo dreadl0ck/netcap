@@ -3,11 +3,7 @@
 ## v0.5 Documentation
 
 - resolvers page needs some love
-
-- mention new protocols: Diameter, POP3 etc
-- mention JA3s
 - domain whitelisting example
-
 - record new asciicasts
 
 ## Maltego Plugin
