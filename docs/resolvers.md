@@ -18,7 +18,7 @@ External data sources are stored in a central directory on the system, which def
 
 Database files:
 
-* domainwhitelist.csv
+* domain-whitelist.csv
 * GeoLite2-City.mmdb
 * GeoLite2-ASN.mmdb
 * ja3fingerprint.json
@@ -51,17 +51,23 @@ TODO: example and configuration
 
 To determine the geolocation for a given host, the MaxMind GeoLite database is used. The lite database is freely available, but you have to register on their website to download it.
 
+{% embed url="https://dev.maxmind.com/geoip/geoip2/geolite2/" caption="GeoLite2 MaxMind" %}
+
 Geolocation lookups can provide the Country, City and ASN where an ip adress is registered.
 
 ## Vendor Identification
 
 To identify the vendor for a given MAC address, the **macaddress.io** JSON database is used.
 
+At the time of this writing it contains 39,041 tracked address blocks and 28,961 unique vendors.
+
+{% embed url="https://macaddress.io/database-download" caption="MacAddress.io database" %}
+
 ## Service Identification
 
-Resolving port numbers to service names is done according to
+Resolving port numbers to service names is done according to the CSV mapping from IANA, which contains 6104 records for TCP and UDP services at the time of this writing:
 
-{% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" caption="" %}
+{% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" caption="IANA service names and ports" %}
 
 ## TLS Fingerprints
 

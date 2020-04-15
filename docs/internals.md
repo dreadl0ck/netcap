@@ -8,11 +8,11 @@ description: Framework inner workings and Implementation details
 
 ### cmd
 
-The cmd package contains the command-line application. It receives configuration param- eters from command-line flags, creates and configures a collector instance, and then starts collecting data from the desired source.
+The cmd package contains the command-line application. It receives configuration parameters from command-line flags, creates and configures a collector instance, and then starts collecting data from the desired source.
 
 #### label
 
-The label package contains the code for creating labeled datasets. For now, the suricata IDS / IPS engine is used to scan the input PCAP and generate alerts. In the future, support could also be added for using YARA. Alerts are then parsed with regular expressions and trans- formed into the label.SuricataAlert type. This could also be replaced by parsing suricatas eve.json event logs in upcoming versions. A suricata alert contains the following information:
+The label package contains the code for creating labeled datasets. For now, the suricata IDS / IPS engine is used to scan the input PCAP and generate alerts. In the future, support could also be added for using YARA. Alerts are then parsed with regular expressions and transformed into the **label.SuricataAlert** type. This could also be replaced by parsing suricatas eve.json event logs in upcoming versions. A suricata alert contains the following information:
 
 ```go
 // SuricataAlert is a summary structure of an alerts contents
@@ -28,7 +28,7 @@ type SuricataAlert struct {
 }
 ```
 
-In the next iteration, the gathered alerts are mapped onto the collected data. For layer types which are not handled separately, this is currently by using solely the timestamp of the packet, since this is the only field required by Netcap, however multiple alerts might exist for the same timestamp. To detect this and throw an error, the -strict flag can be used. The default is to ignore duplicate alerts for the same timestamp, use the first encountered label and ignore the rest. Another option is to collect all labels that match the timestamp, and append them to the final label with the -collect flag. To allow filtering out classifications that shall be excluded, the -excluded flag can be used. Alerts matching the excluded classi- fication will then be ignored when collecting the generated alerts. Flow, Connection, HTTP and TLS records mapping logic also takes source and destination information into consider- ation. The created output files follow the naming convention: NetcapType labeled.csv. The label package includes a standalone command-line application in label/cmd.
+In the next iteration, the gathered alerts are mapped onto the collected data. For layer types which are not handled separately, this is currently by using solely the timestamp of the packet, since this is the only field required by Netcap, however multiple alerts might exist for the same timestamp. To detect this and throw an error, the **-strict** flag can be used. The default is to ignore duplicate alerts for the same timestamp, use the first encountered label and ignore the rest. Another option is to collect all labels that match the timestamp, and append them to the final label with the -collect flag. To allow filtering out classifications that shall be excluded, the **-excluded** flag can be used. Alerts matching the excluded classi- fication will then be ignored when collecting the generated alerts. Flow, Connection, HTTP and TLS records mapping logic also takes source and destination information into consider- ation. The created output files follow the naming convention: **&lt;NetcapType&gt;\_labeled.csv**.
 
 ### types
 
@@ -45,6 +45,18 @@ A LayerEncoder operates on a gopacket.Layer and has to provide the gopacket.Laye
 #### Custom Encoder
 
 A CustomEncoder operates on a gopacket.Packet and is used to decode traffic into abstrac- tions such as Flows or Connections. To create it a name has to be supplied among three different handler functions to control initialization, decoding and deinitialization. Its handler function receives a gopacket.Packet interface type and returns a proto.Message. The postinit function is called after the initial initialization has taken place, the deinit function is used to teardown any additionally created structures for a clean exit. Both functions are optional and can be omitted by supplying nil as value.
+
+### resolvers
+
+Resolvers for lookup of various external information, such as geolocation, domain names, hardware addresses, port numbers etc
+
+### dpi
+
+Deep Packet Inspection integration
+
+### delimited
+
+Primitives for reading and writing length delimited binary data
 
 ### utils
 
@@ -64,7 +76,13 @@ Protocol buffers have a few caveats that developers and researchers should be aw
 
 ## Data Race Detection Builds
 
-In concurrent programming, shared resources need to be synchronized, in order to guarantee their state when modifying or reading them. If access is not synchronized, race conditions occur, which will lead to faulty program behavior. To avoid this and detect race conditions early in the development cycle, the go toolchain offers compiling the program with the race detector enabled. This will let the application crash with stack traces to assist the developer in debugging, if a data race occurs. Programs with active race detection are slower by the factor of 10 to 100. To compile a Go program with the race detection enabled the -race flag must be added to the compilation command.
+In concurrent programming, shared resources need to be synchronized, in order to guarantee their state when modifying or reading them. If access is not synchronized, race conditions occur, which will lead to faulty program behavior. To avoid this and detect race conditions early in the development cycle, the go toolchain offers compiling the program with the race detector enabled. This will let the application crash with stack traces to assist the developer in debugging, if a data race occurs. Programs with active race detection are slower by the factor of 10 to 100. To compile a Go program with the race detection enabled the **-race** flag must be added to the compilation command.
+
+To compile a netcap binary with the race detection enabled use:
+
+```text
+$ zeus install-race
+```
 
 ## Unit Tests
 
