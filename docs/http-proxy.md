@@ -6,7 +6,7 @@ description: Inspect traffic to web applications with a HTTP reverse proxy
 
 ## Motivation
 
-The **net.proxy** tool allows to quickly spin up monitoring of web applications and retrieving netcap audit records.
+The **proxy** tool allows to quickly spin up monitoring of web applications and retrieving netcap audit records.
 
 Since currently, TCP stream reassembly is only supported for IPv4, netcap misses HTTP traffic over IPv6 when decoding traffic from raw packets.
 

@@ -6,7 +6,7 @@ description: Prometheus Metrics
 
 ## Introduction
 
-Netcap now support exporting prometheus metrics about its go runtime, the collection process and the audit records itself. This feature can be used with the **net.export** tool.
+Netcap now support exporting prometheus metrics about its go runtime, the collection process and the audit records itself. This feature can be used with the **export** tool.
 
 ## Configuration
 
@@ -35,25 +35,25 @@ scrape_configs:
 Export a PCAP dumpfile and serve metrics .
 
 ```text
-$ net.export -r 2017-09-19-traffic-analysis-exercise.pcap
+$ net export -read 2017-09-19-traffic-analysis-exercise.pcap
 ```
 
 Capture and export traffic live from the named interface:
 
 ```text
-$ net.export -iface en0
+$ net export -iface en0
 ```
 
 Export a specific audit record file:
 
 ```text
-$ net.export -r HTTP.ncap.gz
+$ net export -read HTTP.ncap.gz
 ```
 
 Export all audit record files in the current directory:
 
 ```text
-$ net.export .
+$ net export .
 ```
 
 ## Overview Dashboard Preview

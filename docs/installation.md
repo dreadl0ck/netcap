@@ -56,5 +56,3 @@ To install the _Netcap_ and _Netlabel_ command-line tool and the library with ze
 $ zeus install
 ```
 
-
-
