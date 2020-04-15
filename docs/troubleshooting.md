@@ -10,6 +10,10 @@ description: Look behind the curtain
 * does the current user have sufficient rights to access them?
 * does the current user have sufficient rights to access the current working directory?
 
+## Pitfalls
+
+* the go flag package implementation only allows to set boolean value using the **-name=value** syntax \(e.g: **-debug=true**\), but strings can be set also using a space instead with the **-name value** syntax \(e.g: **-read traffic.pcap**\)
+
 ## Debug Mode
 
 Use the **-debug** flag to generate debug logs. The files will be created in the directory from which the netcap process has been started. The reassembly engine logs data into **reassembly.log** and all other debug messages go into **debug.log.**
