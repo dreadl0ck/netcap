@@ -2,20 +2,17 @@
 
 ## v0.5 Documentation
 
-- document configuration via environment or file
-- document tests on the ultimate pcap file: https://weberblog.net/the-ultimate-pcap/
-- custom labeling
-- new protocols
-- JA3s
-- update usage examples for new syntax
-- godoc cleanup
-- regenerate cheatsheets
-- set num workers to num cores by default
-- mark unknown protos with * and add it as legend below output
+- resolvers page needs some love
+- explain custom labeling
 - update proxy docs: -proxy flag changed to -proxy-config
-- document config file feature + gen-config
-- record new asciicasts
+
+- mention new protocols: Diameter, POP3 etc
+- mention JA3s
+- mention: set num workers to num cores by default
 - mention using flag=value syntax for booleans!
+- domain whitelisting example
+
+- record new asciicasts
 
 ## Maltego Plugin
 
@@ -68,6 +65,8 @@
 - integrate new TLS layer from gopacket
 - use ip whitelist for DeviceProfiles
 - implement a JSON output writer?
+- integrate: https://ja3er.com/downloads.html
+- future: add Ja3 / ja3s whitelisting
 
 Reassembly: 2 Options
 

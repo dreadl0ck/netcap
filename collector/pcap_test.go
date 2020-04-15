@@ -1,14 +1,15 @@
 package collector
 
 import (
+	"io"
 	"os"
 	"testing"
 
 	"github.com/dreadl0ck/gopacket/pcapgo"
 )
 
-var ngFile = "pcaps/Monday-WorkingHours.pcapng"
-var pcapFile = "pcaps/maccdc2012_00000.pcap"
+var ngFile = "../pcaps/Monday-WorkingHours.pcapng"
+var pcapFile = "../pcaps/maccdc2012_00000.pcap"
 
 func BenchmarkReadPcapNG(b *testing.B) {
 	r, f, err := openPcapNG(ngFile)
@@ -71,7 +72,7 @@ func BenchmarkReadPcap(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		_, _, err := r.ReadPacketData()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			b.Fatal(err)
 		}
 	}
