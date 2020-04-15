@@ -25,6 +25,18 @@ Database files:
 * macaddress.io-db.json
 * service-names-port-numbers.csv
 
+## Configuration
+
+By default, all resolvers are disabled. You need to use the **-reverse-dns**, **-local-dns**, **-macDB**, **-ja3DB**, **-serviceDB** and **-geoDB** to enable what you want to use, or configure it via environment variables or config file, as described in:
+
+{% page-ref page="configuration.md" %}
+
+## Quickstart
+
+You can download a bundled version of all databases except for the MaxMind GeoLite, here:
+
+{% file src=".gitbook/assets/resolver-dbs \(1\).zip" %}
+
 ## DNS
 
 Reverse DNS lookups can be used to identify the domains associated with an address. By default the standard system resolver will be contacted for this.
@@ -45,7 +57,17 @@ And provide it to netcaps resolver via a **hosts** file in the database director
 
 To filter known legitimate domains away, the alexa top 1 million can be used for example.
 
-TODO: example and configuration
+{% embed url="https://aws.amazon.com/alexa-top-sites/" %}
+
+You can download the CSV file here:
+
+{% embed url="http://s3.amazonaws.com/alexa-static/top-1m.csv.zip" %}
+
+Rename it to **domain-whitelist.csv** and move it into the database path:
+
+```text
+$ mv top-1m.csv /usr/local/etc/netcap/db/domain-whitelist.csv
+```
 
 ## Geolocation
 
@@ -54,6 +76,8 @@ To determine the geolocation for a given host, the MaxMind GeoLite database is u
 {% embed url="https://dev.maxmind.com/geoip/geoip2/geolite2/" caption="GeoLite2 MaxMind" %}
 
 Geolocation lookups can provide the Country, City and ASN where an ip adress is registered.
+
+Download the databases and move them into the database path.
 
 ## Vendor Identification
 
