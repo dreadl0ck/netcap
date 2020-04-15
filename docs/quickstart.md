@@ -167,7 +167,7 @@ Timestamp;SrcPort;DstPort;Length;Checksum;PayloadEntropy;PayloadSize
 ...
 ```
 
-## Validate generated Output
+## Validate generated CSV output
 
 To ensure values in the generated CSV would not contain the separator string, the _-check_ flag can be used.
 
