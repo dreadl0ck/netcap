@@ -34,6 +34,44 @@ To retrieve a sane default configuration for the subcommand you want to execute,
 $ net capture -gen-config > capture.conf
 ```
 
+The config file will look something like this, using the **name value** syntax to set values:
+
+```text
+...
+# toggle promiscous mode for live capture
+promisc true
+
+# don't print infos to stdout
+quiet false
+
+# reassemble TCP connections
+reassemble-connections true
+
+# resolve ips to domains via the operating systems default dns resolver
+reverse-dns false
+
+# use serviceDB for device profiling
+serviceDB false
+
+# configure snaplen for live capture from interface
+snaplen 1514
+
+# print netcap package version and exit
+version false
+
+# wait for all connections to finish processing before cleanup
+wait-conns true
+
+# number of workers
+workers 12
+
+# write incomplete response
+writeincomplete false
+...
+```
+
+> Lines starting with \# are treated as comments, blank lines are being ignored.
+
 Adjust the parameters of interest and pass the config file:
 
 ```text
