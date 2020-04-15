@@ -87,7 +87,7 @@
     </font-face>
   </defs>
   <metadata> Produced by OmniGraffle 7.15 
-    <dc:date>2020-04-15 21:08:08 +0000</dc:date>
+    <dc:date>2020-04-15 19:34:36 +0000</dc:date>
   </metadata>
   <g id="Netcap-Export" stroke="none" stroke-dasharray="none" fill-opacity="1" stroke-opacity="1" fill="none">
     <title>Netcap-Export</title>
@@ -256,8 +256,8 @@
         </text>
       </g>
       <g id="Graphic_74">
-        <text transform="translate(823.2622 1275.1329)" fill="#00fa00">
-          <tspan font-family="Futura" font-size="35" font-weight="500" fill="#00fa00" x="5.4003906" y="36">$ net dump -read TCP.ncap.gz    -select Timestamp,SrcPort,DstPort,SeqNum,Window,ACK,SYN,RST   &gt; TCP.csv </tspan>
+        <text transform="translate(807.9326 1275.1329)" fill="#00fa00">
+          <tspan font-family="Futura" font-size="35" font-weight="500" fill="#00fa00" x="5.4003906" y="36">$ net capture -read TCP.ncap.gz    -select Timestamp,SrcPort,DstPort,SeqNum,Window,ACK,SYN,RST   &gt; TCP.csv </tspan>
         </text>
       </g>
       <g id="Graphic_76">
