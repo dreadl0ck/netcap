@@ -42,3 +42,9 @@ $ net capture -interfaces
 └───────┴─────────┴───────────────────────────┴───────────────────┴───────┘
 ```
 
+Netcap uses promiscous mode by default. You can toggle this behavior with the **-promisc** flag:
+
+```text
+$ net capture -iface en0 -promisc=false
+```
+

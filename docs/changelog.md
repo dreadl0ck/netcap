@@ -31,5 +31,3 @@ description: Detailed Version History Information
 * **DeviceProfile** Audit records, to capture the behavior of a single device within a traffic dump
 * Added an integration for **bash-completion** support
 
-
-

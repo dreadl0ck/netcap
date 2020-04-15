@@ -19,7 +19,7 @@
 * [Python Integration](python-integration.md)
 * [Extension](extension.md)
 * [Resolvers](resolvers.md)
-* [Unit test](tests.md)
+* [Unit tests](tests.md)
 * [Reassembly](reassembly.md)
 * [Deep Packet Inspection](deep-packet-inspection.md)
 * [Live Collection](live-collection.md)
