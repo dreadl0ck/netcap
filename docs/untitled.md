@@ -6,7 +6,7 @@ description: This section focuses on gathering network packet information with n
 
 Packets are fetched from an input source \(offline dump file or live from an interface\) and distributed via round-robin to a pool of workers. Each worker dissects all layers of a packet and writes the generated _protobuf_ audit records to the corresponding file. By default, the data is compressed with _gzip_ to save storage space and buffered to avoid an overhead due to excessive _syscalls_ for writing data to disk.
 
-![Packet collection process](https://github.com/dreadl0ck/netcap/tree/a78b65a36174ba28f5437d86e43f93bb7c3c8d97/docs/.gitbook/assets/netcap%20%281%29.svg)
+![Packet collection process](.gitbook/assets/netcap%20%282%29.svg)
 
 ## Encoders
 
@@ -42,16 +42,20 @@ The _-encoders_ flag can be used to list all available encoders. In case not all
 List all encoders:
 
 ```text
-$ netcap -encoders
-custom:
-+ TLS
+$ net capture -encoders
+custom: 11
++ TLSClientHello
++ TLSServerHello
 + LinkFlow
 + NetworkFlow
 + TransportFlow
 + HTTP
 + Flow
 + Connection
-layer:
++ DeviceProfile
++ File
++ POP3
+layer: 55
 + TCP
 + UDP
 + IPv4
@@ -61,6 +65,52 @@ layer:
 + ICMPv4
 + ICMPv6
 + ICMPv6Echo
++ ICMPv6NeighborSolicitation
++ ICMPv6RouterSolicitation
++ DNS
++ ARP
++ Ethernet
++ Dot1Q
++ Dot11
++ NTP
++ SIP
++ IGMP
++ LLC
++ IPv6HopByHop
++ SCTP
++ SNAP
++ LinkLayerDiscovery
++ ICMPv6NeighborAdvertisement
++ ICMPv6RouterAdvertisement
++ EthernetCTP
++ EthernetCTPReply
++ LinkLayerDiscoveryInfo
++ IPSecAH
++ IPSecESP
++ Geneve
++ IPv6Fragment
++ VXLAN
++ USB
++ LCM
++ MPLS
++ Modbus
++ OSPF
++ OSPF
++ BFD
++ GRE
++ FDDI
++ EAP
++ VRRP
++ EAPOL
++ EAPOLKey
++ CiscoDiscovery
++ CiscoDiscoveryInfo
++ USBRequestBlockSetup
++ NortelDiscovery
++ CIP
++ Ethernet/IP
++ SMTP
++ Diameter
 ...
 ```
 
