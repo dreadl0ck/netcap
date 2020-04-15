@@ -1,12 +1,12 @@
 # Docker Containers
 
-### Docker Hub
+## Docker Hub
 
-There are ubuntu and alpine linux docker containers available with netcap an dependencies preinstalled.
+There are ubuntu and alpine linux docker containers available with netcap and dependencies \(e.g: libprotoident, nDPI\) preinstalled.
 
 {% embed url="https://hub.docker.com/r/dreadl0ck/netcap/tags" caption="NETCAP on docker hub" %}
 
-### Pull Containers
+## Pull Containers
 
 To get the v0.5 ubuntu container:
 
@@ -20,7 +20,7 @@ To get the v0.5 alpine container:
 $ docker pull dreadl0ck/netcap:alpine-v0.5
 ```
 
-### Run Containers
+## Run Containers
 
 To run the v0.5 ubuntu container:
 

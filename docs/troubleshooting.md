@@ -6,7 +6,7 @@ description: Look behind the curtain
 
 ## First Aid
 
-* are all my files in place?
+* are all files in place?
 * does the current user have sufficient rights to access them?
 * does the current user have sufficient rights to access the current working directory?
 
@@ -37,6 +37,4 @@ There is a command implemented for that in the build scripts:
 ```text
 $ zeus install-race
 ```
-
-
 

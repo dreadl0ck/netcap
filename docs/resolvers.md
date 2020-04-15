@@ -25,11 +25,11 @@ Database files:
 * macaddress.io-db.json
 * service-names-port-numbers.csv
 
-### DNS
+## DNS
 
-Reverse DNS lookups can be used to identify the domains associated with an address. By default the standard system resolver will be contacted for this. 
+Reverse DNS lookups can be used to identify the domains associated with an address. By default the standard system resolver will be contacted for this.
 
-#### Passive / Local DNS
+### Passive / Local DNS
 
 Passive DNS will read the hosts mapping from a file and load it into memory, instead of looking up encountered adresses by contacting a resolver. This can be used to provide names for known hosts in your network for example.
 
@@ -41,31 +41,31 @@ $ tshark -r traffic.pcap -q -z hosts
 
 And provide it to netcaps resolver via a **hosts** file in the database directory.
 
-#### Domain Whitelisting
+## Domain Whitelisting
 
 To filter known legitimate domains away, the alexa top 1 million can be used for example.
 
-### Geolocation
+TODO: example and configuration
+
+## Geolocation
 
 To determine the geolocation for a given host, the MaxMind GeoLite database is used. The lite database is freely available, but you have to register on their website to download it.
 
 Geolocation lookups can provide the Country, City and ASN where an ip adress is registered.
 
-### Vendor Identification
+## Vendor Identification
 
 To identify the vendor for a given MAC address, the **macaddress.io** JSON database is used.
 
-### Service Identification
+## Service Identification
 
 Resolving port numbers to service names is done according to
 
-{% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" %}
+{% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" caption="" %}
 
-### TLS Fingerprints
+## TLS Fingerprints
 
 To identfiy hosts that use TLS connections, the Ja3 fingerprint database from Trisul is used:
 
-{% embed url="https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend\_scripts/reassembly/ja3/prints/ja3fingerprint.json" %}
-
-
+{% embed url="https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend\_scripts/reassembly/ja3/prints/ja3fingerprint.json" caption="" %}
 
