@@ -56,7 +56,7 @@ var (
 	SuricataConfigPath string
 )
 
-// SuricataAlert is a summary structure of an alerts contents
+// SuricataAlert is a summary structure for an alert
 type SuricataAlert struct {
 	Timestamp      string
 	Proto          string

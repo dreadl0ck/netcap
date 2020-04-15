@@ -35,29 +35,15 @@ import (
 	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
-//type Custom struct {
-//	AttackNumber   int
-//	StartTime      int64
-//	EndTime        int64
-//	AttackDuration time.Duration
-//	AttackPoints   []string
-//	Adresses       []string
-//	AttackName     string
-//	AttackType     string
-//	Intent         string
-//	ActualChange   string
-//	Notes          string
-//}
-
 type AttackInfo struct {
-	Num      int
-	Name     string
-	Start    time.Time
-	End      time.Time
-	IPs      []string
-	Proto    string
-	Notes    string
-	Category string
+	Num      int       `csv:"num"`
+	Name     string    `csv:"name"`
+	Start    time.Time `csv:"start"`
+	End      time.Time `csv:"end"`
+	IPs      []string  `csv:"ips"`
+	Proto    string    `csv:"proto"`
+	Notes    string    `csv:"notes"`
+	Category string    `csv:"category"`
 }
 
 func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*AttackInfo) {

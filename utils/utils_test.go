@@ -22,7 +22,7 @@ func isDot(r rune) bool {
 
 // TimeToStringOld is the old implementation for timeToString
 func TimeToStringOld(t time.Time) string {
-	micro := fmt.Sprintf("%06d", t.Nanosecond()/1000)
+	micro := fmt.Sprintf("%05d", t.Nanosecond()/1000)
 	return strconv.FormatInt(t.Unix(), 10) + "." + micro
 }
 
@@ -49,7 +49,7 @@ func StringToTimeFieldsFunc(val string) time.Time {
 
 func TestTimeToString(t *testing.T) {
 	if TimeToString(ti) != TimeToStringOld(ti) {
-		t.Fatal("not the same")
+		t.Fatal("not the same: TimeToString(ti) != TimeToStringOld(ti)", TimeToString(ti), " != ", TimeToStringOld(ti))
 	}
 }
 
