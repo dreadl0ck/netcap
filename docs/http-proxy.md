@@ -16,12 +16,12 @@ By using a simple reverse proxy for HTTP traffic, the operating system handles t
 
 Spin up a single proxy instance from the commandline:
 
-`$ net.proxy -local 127.0.0.1:4000 -remote http://google.com`
+`$ net proxy -local 127.0.0.1:4000 -remote http://google.com`
 
-Specifiy a custom config file for proxying multiple services:
+Specifiy a custom config file for proxying multiple services with the **-proxy-config** flag:
 
 ```text
-$ net proxy -config example_config.yml
+$ net proxy -proxy-config example_config.yml
 ```
 
 The default config path is **net.proxy-config.yml**, so if this file exists in the folder where you execute the proxy, you do not need to specify it on the commandline.
