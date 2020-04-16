@@ -35,15 +35,15 @@ message Modbus {
 
 ```text
 message CIP {
-    string        Timestamp        = 1;
-    bool          Response         = 2; // false if request, true if response
-    int32         ServiceID        = 3; // The service specified for the request
-    uint32        ClassID          = 4; // request only
-    uint32        InstanceID       = 5; // request only
-    int32         Status           = 6; // Response only
+    string          Timestamp        = 1;
+    bool            Response         = 2; // false if request, true if response
+    int32           ServiceID        = 3; // The service specified for the request
+    uint32          ClassID          = 4; // request only
+    uint32          InstanceID       = 5; // request only
+    int32           Status           = 6; // Response only
     repeated uint32 AdditionalStatus = 7; // Response only
-    bytes         Data             = 8; // Command data for request, reply data for response
-    PacketContext Context          = 9;
+    bytes           Data             = 8; // Command data for request, reply data for response
+    PacketContext   Context          = 9;
 }
 ```
 
@@ -53,12 +53,12 @@ message CIP {
 message ENIP {
     string                  Timestamp        = 1;
     uint32                  Command          = 2; 
-   uint32                  Length           = 3;
-   uint32                  SessionHandle    = 4;
-   uint32                  Status           = 5;
-   bytes                   SenderContext    = 6;
-   uint32                  Options          = 7;
-   ENIPCommandSpecificData CommandSpecific  = 8;
+    uint32                  Length           = 3;
+    uint32                  SessionHandle    = 4;
+    uint32                  Status           = 5;
+    bytes                   SenderContext    = 6;
+    uint32                  Options          = 7;
+    ENIPCommandSpecificData CommandSpecific  = 8;
     PacketContext           Context          = 9;
 }
 ```
