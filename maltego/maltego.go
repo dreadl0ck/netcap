@@ -373,13 +373,19 @@ func ParseLocalArguments(args []string) LocalTransform {
 	Value := args[2]
 	Vals := make(map[string]string)
 	if len(args) > 3 {
-		vars := strings.Split(args[3], "#")
-		for _, x := range vars {
-			kv := strings.Split(x, "=")
-			if len(kv) == 2 {
-				Vals[kv[0]] = kv[1]
-			} else {
-				Vals[kv[0]] = ""
+
+		// search the remaining arguments for variables
+		for _, arg := range args[3:] {
+			if len(arg) > 0 {
+				vars := strings.Split(arg, "#")
+				for _, x := range vars {
+					kv := strings.Split(x, "=")
+					if len(kv) == 2 {
+						Vals[kv[0]] = kv[1]
+					} else {
+						Vals[kv[0]] = ""
+					}
+				}
 			}
 		}
 	}
