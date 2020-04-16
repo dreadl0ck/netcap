@@ -27,6 +27,7 @@ var (
 )
 
 // InitIPWhitelist initializes the ip address whitelist
+// TODO: integrate into DeviceProfiles audit record
 func InitIPWhitelist() {
 
 	var hosts int

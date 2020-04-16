@@ -42,16 +42,11 @@ func GetDeviceProfilesWithDPI() {
 
 	// init collector
 	c := collector.New(collector.Config{
+		WriteUnknownPackets: false,
 		Workers:             1000,
 		PacketBufferSize:    100,
-		WriteUnknownPackets: false,
+		SnapLen:             1514, // TODO: make configurable
 		Promisc:             false,
-		SnapLen:             1514,
-		FileStorage:         filepath.Join(outDir, "files"),
-		DPI:                 true,
-		BaseLayer:           utils.GetBaseLayer("ethernet"),
-		DecodeOptions:       utils.GetDecodeOptions("datagrams"),
-		Quiet:               false,
 		EncoderConfig: encoder.Config{
 			Buffer:               true,
 			Compression:          true,
@@ -83,6 +78,11 @@ func GetDeviceProfilesWithDPI() {
 			CloseInactiveTimeOut: 24 * time.Hour,
 			ClosePendingTimeOut:  30 * time.Second,
 		},
+		BaseLayer:     utils.GetBaseLayer("ethernet"),
+		DecodeOptions: utils.GetDecodeOptions("datagrams"),
+		FileStorage:   filepath.Join(outDir, "files"),
+		Quiet:         false,
+		DPI:           true,
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    false,
 			LocalDNS:      true,
@@ -91,6 +91,9 @@ func GetDeviceProfilesWithDPI() {
 			ServiceDB:     true,
 			GeolocationDB: true,
 		},
+		OutDirPermission:      0700,
+		FreeOSMem:             0,
+		ReassembleConnections: true,
 	})
 
 	// if not, use native pcapgo version
@@ -145,7 +148,7 @@ func GetDeviceProfilesWithDPI() {
 
 	ent.SetLinkLabel("DeviceProfiles")
 	ent.SetLinkColor("#000000")
-	ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
+	ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nDPI: enabled\nParsing Time: " + time.Since(start).String())
 
 	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())

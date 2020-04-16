@@ -42,16 +42,11 @@ func GetDeviceProfiles() {
 
 	// init collector
 	c := collector.New(collector.Config{
+		WriteUnknownPackets: false,
 		Workers:             1000,
 		PacketBufferSize:    100,
-		WriteUnknownPackets: false,
-		Promisc:             false,
 		SnapLen:             1514,
-		FileStorage:         filepath.Join(outDir, "files"),
-		DPI:                 false,
-		BaseLayer:           utils.GetBaseLayer("ethernet"),
-		DecodeOptions:       utils.GetDecodeOptions("datagrams"),
-		Quiet:               false,
+		Promisc:             false,
 		EncoderConfig: encoder.Config{
 			Buffer:               true,
 			Compression:          true,
@@ -82,6 +77,11 @@ func GetDeviceProfiles() {
 			CloseInactiveTimeOut: 24 * time.Hour,
 			ClosePendingTimeOut:  30 * time.Second,
 		},
+		BaseLayer:     utils.GetBaseLayer("ethernet"),
+		DecodeOptions: utils.GetDecodeOptions("datagrams"),
+		FileStorage:   filepath.Join(outDir, "files"),
+		Quiet:         false,
+		DPI:           false,
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    false,
 			LocalDNS:      true,
@@ -90,6 +90,9 @@ func GetDeviceProfiles() {
 			ServiceDB:     true,
 			GeolocationDB: true,
 		},
+		OutDirPermission:      0700,
+		FreeOSMem:             0,
+		ReassembleConnections: true,
 	})
 
 	// if not, use native pcapgo version

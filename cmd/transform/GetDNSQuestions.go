@@ -20,6 +20,8 @@ func GetDNSQuestions() {
 	profilesFile := lt.Values["path"]
 	ipaddr := lt.Values["ipaddr"]
 
+	log.Println("profilesFile", profilesFile)
+
 	dir := filepath.Dir(profilesFile)
 	dnsAuditRecords := filepath.Join(dir, "DNS.ncap.gz")
 	f, err := os.Open(dnsAuditRecords)
