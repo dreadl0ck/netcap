@@ -12,7 +12,7 @@ It was developed for a series of experiments in my bachelor thesis: _Implementat
 
 The project won the 2nd Place at Kaspersky Labs SecurIT Cup 2018 in Budapest.
 
-_Netcap_ uses Google's Protocol Buffers to encode its output, which allows accessing it across a wide range of programming languages. Alternatively, output can be emitted as comma separated values, which is a common input format for data analysis tools and systems. The tool is extensible and provides multiple ways of adding support for new protocols, while implementing the parsing logic in a memory safe way. It provides high dimensional data about observed traffic and allows the researcher to focus on experimenting with novel approaches for detecting malicious behavior in network environments, instead of fiddling with data collection mechanisms and post processing steps. It has a concurrent design that makes use of multi-core architectures. The name _Netcap_ was chosen to be simple and descriptive. The command-line tool was designed with usability and readability in mind, and displays progress when processing packets. The latest version offers 66 audit record types of which 55 are protocol specific and 11 are custom abstractions, such as flows or transfered files.
+_Netcap_ uses Google's Protocol Buffers to encode its output, which allows accessing it across a wide range of programming languages. Alternatively, output can be emitted as comma separated values, which is a common input format for data analysis tools and systems. The tool is extensible and provides multiple ways of adding support for new protocols, while implementing the parsing logic in a memory safe way. It provides high dimensional data about observed traffic and allows the researcher to focus on experimenting with novel approaches for detecting malicious behavior in network environments, instead of fiddling with data collection mechanisms and post processing steps. It has a concurrent design that makes use of multi-core architectures. The name _Netcap_ was chosen to be simple and descriptive. The command-line tool was designed with usability and readability in mind, and displays progress when processing packets. The latest version offers 66 audit record types of which 55 are protocol specific and 11 are custom abstractions, such as flows or transferred files.
 
 ## Design Goals
 
@@ -66,23 +66,24 @@ Netcap is licensed under the GNU General Public License v3, which is a very perm
 
 ## Source Code Stats
 
-Stats for netcap v0.4, generated with cloc version 1.80
+Stats for netcap v0.5, generated with cloc version 1.80
 
 > $ zeus cloc
 
 ```text
-     332 text files.
-     332 unique files.
-     128 files ignored.
+451 text files.
+     451 unique files.
+     158 files ignored.
 
-github.com/AlDanial/cloc v 1.80  T=0.17 s (1167.8 files/s, 117408.0 lines/s)
+github.com/AlDanial/cloc v 1.84  T=0.35 s (835.7 files/s, 89296.9 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                             196           2692           3655          13540
-Markdown                         8            106              0            517
+Go                             283           4309           4967          21369
+Markdown                         9            107              0            534
+YAML                             1              5              4             14
 -------------------------------------------------------------------------------
-SUM:                           204           2798           3655          14057
+SUM:                           293           4421           4971          21917
 -------------------------------------------------------------------------------
 ```
 
