@@ -87,7 +87,7 @@ var DefaultConfig = Config{
 	WriteIncomplete:      false,
 	MemProfile:           "",
 	ConnFlushInterval:    10000,
-	ConnTimeOut:          10,
+	ConnTimeOut:          10 * time.Second,
 	FlowFlushInterval:    2000,
 	FlowTimeOut:          10 * time.Second,
 	CloseInactiveTimeOut: 24 * time.Hour,

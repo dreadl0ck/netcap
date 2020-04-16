@@ -2,19 +2,16 @@
 
 ## v0.5 Documentation
 
-- record new asciicasts
+- record new asciicasts + maltego video
 - update website
-- update ICS page
-- update DeviceProfiles page
-- update File extraction page
-- add Email extraction page
 
 ## Maltego Plugin
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others
 - custom icon set for netcap entities
-
+- make snaplen configurable for GetDeviceProfiles
+- add live capture with maltego?
 - GetUsers from HTTP BasicAuth + GetPassword
 - HTTP parameters: mark if source was GET or POST
 - addGetHTTPHeaders
@@ -46,6 +43,7 @@
 
 ## General
 
+- transform: add a text based commandline interface for the transformations
 - capture unknown L7 protocol TCP streams and write to disk
 - net.split: split pcap or audit record files by days or hours
 - check TODOs in source

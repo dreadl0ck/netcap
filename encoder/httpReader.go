@@ -58,6 +58,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/dreadl0ck/cryptoutils"
 	gzip "github.com/klauspost/pgzip"
@@ -84,8 +85,9 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 		case h.data, ok = <-h.bytes:
-			//case <-time.After(timeout):
-			//	return 0, io.EOF
+		// time out streams that never send any data
+		case <-time.After(c.ClosePendingTimeOut):
+				return 0, io.EOF
 		}
 	}
 	if !ok || len(h.data) == 0 {
