@@ -4,7 +4,7 @@ description: For those who can't wait to get their hands dirty.
 
 # Quickstart
 
-## Basic Commands
+## Capture traffic to create audit records
 
 Read traffic live from interface, stop with _Ctrl-C_ \(_SIGINT_\):
 
@@ -17,6 +17,8 @@ Read traffic from a dump file \(supports PCAP or PCAPNG\):
 ```text
 $ net capture -read traffic.pcap
 ```
+
+## Read audit records
 
 Read a netcap dumpfile and print to stdout as CSV:
 
