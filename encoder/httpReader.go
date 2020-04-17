@@ -277,7 +277,12 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	statsMutex.Unlock()
 
 	h.parent.Lock()
-	h.parent.responses = append(h.parent.responses, &httpResponse{response: res})
+	h.parent.responses = append(h.parent.responses, &httpResponse{
+		response:  res,
+		timestamp: h.parent.firstPacket.String(),
+		clientIP:  h.parent.net.Src().String(),
+		serverIP:  h.parent.net.Dst().String(),
+	})
 	h.parent.Unlock()
 
 	// write responses to disk if configured
