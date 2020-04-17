@@ -465,7 +465,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				var n int
 				for _, reply := range h.parent.pop3Responses[h.resIndex:] {
 					if reply.Command == "." {
-						mails = append(mails, parseMail([]byte(mailBuf)))
+						mails = append(mails, h.parseMail([]byte(mailBuf)))
 						mailBuf = ""
 						numMails++
 						h.resIndex++
@@ -585,7 +585,7 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 	}
 }
 
-func parseMail(buf []byte) *types.Mail {
+func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 	header, body := splitMailHeaderAndBody(buf)
 	mail := &types.Mail{
 		ReturnPath:      header["Return-Path"],
@@ -602,7 +602,7 @@ func parseMail(buf []byte) *types.Mail {
 		XOriginatingIP:  header["x-originating-ip"],
 		ContentType:     header["Content-Type"],
 		EnvelopeTo:      header["Envelope-To"],
-		Body:            parseParts(body),
+		Body:            h.parseParts(body),
 	}
 	for _, p := range mail.Body {
 		if strings.Contains(p.Header["Content-Disposition"], "attachment") {
@@ -615,7 +615,7 @@ func parseMail(buf []byte) *types.Mail {
 
 const partIdent = "------=_Part_"
 
-func parseParts(body string) []*types.MailPart {
+func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 
 	var (
 		parts        []*types.MailPart
@@ -623,6 +623,8 @@ func parseParts(body string) []*types.MailPart {
 		parsePayload bool
 		tr           = textproto.NewReader(bufio.NewReader(bytes.NewReader([]byte(body))))
 	)
+
+	mailDebug(ansi.White, h.ident, body)
 
 	for {
 		line, err := tr.ReadLine()
@@ -635,7 +637,7 @@ func parseParts(body string) []*types.MailPart {
 			}
 		}
 
-		mailDebug("readLine", line)
+		mailDebug(ansi.Green, h.ident, "readLine", line)
 
 		if currentPart != nil {
 			if parsePayload {
@@ -657,7 +659,7 @@ func parseParts(body string) []*types.MailPart {
 					mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
 
 					// second type of start marker
-				} else if strings.HasPrefix(line, "--") && len(line) > 31 && !strings.Contains(line, ">") {
+				} else if strings.HasPrefix(line, "--") && len(line) > 25 && !strings.Contains(line, ">") {
 					parts = append(parts, copyMailPart(currentPart))
 					currentPart = &types.MailPart{
 						ID:     strings.TrimPrefix(line, "--"),
@@ -688,6 +690,7 @@ func parseParts(body string) []*types.MailPart {
 				parsePayload = true
 				mailDebug(ansi.Green, "start parsing payload", ansi.Reset)
 			}
+			continue
 		}
 		// start marker type 1
 		if strings.HasPrefix(line, partIdent) {
@@ -696,6 +699,7 @@ func parseParts(body string) []*types.MailPart {
 				Header: make(map[string]string),
 			}
 			mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+			continue
 		}
 		// start marker type 2
 		if strings.HasPrefix(line, "--") && len(line) > 31 && !strings.Contains(line, ">") {
@@ -704,6 +708,29 @@ func parseParts(body string) []*types.MailPart {
 				Header: make(map[string]string),
 			}
 			mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+			continue
+		}
+
+		// single parts have no markers
+		mailDebug(ansi.Red, "no marker found", line)
+		currentPart = &types.MailPart{
+			ID:     "none",
+			Header: make(map[string]string),
+		}
+		pts := strings.Split(line, ": ")
+		if len(pts) == 2 {
+			currentPart.Header[pts[0]] = pts[1]
+			mailDebug(ansi.Yellow, "parsed header field", pts[0], ansi.Reset)
+		} else {
+			pts = strings.Split(line, "filename=")
+			if len(pts) == 2 {
+				currentPart.Filename = strings.Trim(pts[1], "\"")
+				mailDebug(ansi.Yellow, "parsed filename field", currentPart.Filename, ansi.Reset)
+			}
+		}
+		if line == "\n" || line == "" {
+			parsePayload = true
+			mailDebug(ansi.Green, "start parsing payload", ansi.Reset)
 		}
 	}
 
