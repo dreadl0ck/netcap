@@ -43,7 +43,8 @@ func GetMails() {
 
 					var body string
 					for _, p := range m.Body {
-						if strings.HasPrefix(p.Header["Content-Type"], "text/plain") {
+						cType := p.Header["Content-Type"]
+						if strings.Contains(cType, "text/plain") || cType == "" {
 							body += p.Content + "\n"
 						}
 					}
