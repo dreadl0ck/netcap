@@ -1,6 +1,6 @@
 # NET.AGENT
 
-*net.agent* is a commandline client for exporting batched audit records via UDP to a *net.collect* collection server.
+*net agent* is a commandline client for exporting batched audit records via UDP to a *net collect* collection server.
 
 ## Description
 
@@ -12,14 +12,14 @@ Read more about this tool in the documentation: https://docs.netcap.io
 
 Both collector and agent can be configured by using the -addr flag to specify an IP address and port. To generate a keypair for the server, the -gen-keypair flag must be used:
 
-    $ net.collect -gen-keypair 
+    $ net collect -gen-keypair 
     wrote keys
     $ ls
     priv.key pub.key
 
 Start the agent:
 
-    $ net.agent -pubkey pub.key -addr 127.0.0.1:4200
+    $ net agent -pubkey pub.key -addr 127.0.0.1:4200
     got 126 bytes of type NC_ICMPv6RouterAdvertisement expected [126] got size [73] for type NC_Ethernet
     got 73 bytes of type NC_Ethernet expected [73]
     got size [27] for type NC_ICMPv6
@@ -30,78 +30,65 @@ Start the agent:
 
 ## Help
 
-    $ net.agent -h
-        -addr string
-                specify the address and port of the collection server (default "127.0.0.1:1335")
-        -allowmissinginit
-                support streams without SYN/SYN+ACK/ACK sequence
-        -assembly_debug_log
-                If true, the github.com/google/gopacket/reassembly library will log verbose debugging information (at least one line per packet)
-        -assembly_memuse_log
-                If true, the github.com/google/gopacket/reassembly library will log information regarding its memory use every once in a while.
-        -base string
-                select base layer (default "ethernet")
-        -bpf string
-                supply a BPF filter to use for netcap collection
-        -checksum
-                check TCP checksum
-        -conn-flush-interval int
-                flush connections every X flows (default 10000)
-        -conn-timeout int
-                close connections older than X seconds (default 60)
-        -debug
-                display debug information
-        -dump
-                dump HTTP request/response as hex
-        -encoders
-                show all available encoders
-        -exclude string
-                exclude specific encoders
-        -files string
-                path to create file for HTTP 200 OK responses
-        -flow-flush-interval int
-                flush flows every X flows (default 2000)
-        -flow-timeout int
-                close flows older than X seconds (default 30)
-        -flushevery int
-                flush assembler every N packets (default 10000)
-        -iface string
-                interface (default "en0")
-        -ignorefsmerr
-                ignore TCP FSM errors
-        -include string
-                include specific encoders
-        -max int
-                max size of packet (default 10240)
-        -memprofile string
-                write memory profile
-        -nodefrag
-                if true, do not do IPv4 defrag
-        -nohttp
-                disable HTTP parsing
-        -nooptcheck
-                do not check TCP options (useful to ignore MSS on captures with TSO)
-        -opts string
-                select decoding options (default "lazy")
-        -payload
-                capture payload for supported layers
-        -pbuf int
-                set packet buffer size
-        -promisc
-                capture live in promisc mode (default true)
-        -pubkey string
-                path to the hex encoded server public key on disk
-        -quiet
-                be quiet regarding errors (default true)
-        -snaplen int
-                configure snaplen for live capture (default 1024)
-        -tcp-close-timeout int
-                close tcp streams if older than X seconds (set to 0 to keep long lived streams alive) (default 180)
-        -tcp-timeout int
-                close streams waiting for packets older than X seconds (default 120)
-        -verbose
-                be verbose
-        -workers int
-                number of encoder routines (default 100)
-        -writeincomplete
-                write incomplete response
+    $ net agent -h
+                           / |
+     _______    ______   _10 |_     _______   ______    ______
+    /     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
+    0010100 /|/011010 /|101010/   /0101010/  001010  |/100110  |
+    01 |  00 |00    00 |  10 | __ 00 |       /    10 |00 |  01 |
+    10 |  01 |01001010/   00 |/  |01 \_____ /0101000 |00 |__10/|
+    10 |  00 |00/    / |  10  00/ 00/    / |00    00 |00/   00/
+    00/   10/  0101000/    0010/   0010010/  0010100/ 1010100/
+                                                      00 |
+    Network Protocol Analysis Framework               00 |
+    created by Philipp Mieden, 2018                   00/
+    v0.5
+    
+    agent tool usage examples:
+            $ net agent -pubkey pub.key -addr 127.0.0.1:4200
+    
+      -addr="127.0.0.1:1335": specify the address and port of the collection server
+      -allowmissinginit=false: support streams without SYN/SYN+ACK/ACK sequence
+      -base="ethernet": select base layer
+      -bpf="": supply a BPF filter to use for netcap collection
+      -checksum=false: check TCP checksum
+      -close-inactive-timeout=24h0m0s: reassembly: close connections that are inactive after X
+      -close-pending-timeout=30s: reassembly: close connections that have pending bytes after X
+      -config="": read configuration from file at path
+      -conn-flush-interval=10000: flush connections every X flows
+      -conn-timeout=10s: close connections older than X seconds
+      -context=true: add packet flow context to selected audit records
+      -debug=false: display debug information
+      -dpi=false: use DPI for device profiling
+      -encoders=false: show all available encoders
+      -exclude="": exclude specific encoders
+      -flow-flush-interval=2000: flushes flows every X flows
+      -flow-timeout=10s: closes flows older than flowTimeout
+      -flushevery=100: flush assembler every N packets
+      -gen-config=false: generate config
+      -geoDB=false: use geolocation for device profiling
+      -hexdump-http=false: dump HTTP request/response as hex
+      -iface="en0": interface
+      -ignorefsmerr=false: ignore TCP FSM errors
+      -include="": include specific encoders
+      -interfaces=false: list all visible network interfaces
+      -ja3DB=false: use ja3 database for device profiling
+      -local-dns=false: resolve DNS locally via hosts file in the database dir
+      -macDB=false: use mac to vendor database for device profiling
+      -max=10240: max size of packet
+      -membuf-size=10485760: set size for membuf
+      -memprofile="": write memory profile
+      -nodefrag=false: if true, do not do IPv4 defrag
+      -nooptcheck=false: do not check TCP options (useful to ignore MSS on captures with TSO)
+      -opts="lazy": select decoding options
+      -payload=false: capture payload for supported layers
+      -pbuf=0: set packet buffer size
+      -promisc=true: capture live in promisc mode
+      -pubkey="": path to the hex encoded server public key on disk
+      -reverse-dns=false: resolve ips to domains via the operating systems default dns resolver
+      -serviceDB=false: use serviceDB for device profiling
+      -snaplen=1514: configure snaplen for live capture
+      -version=false: print netcap package version and exit
+      -wait-conns=true: wait for all connections to finish processing before cleanup
+      -workers=12: number of workers
+      -writeincomplete=false: write incomplete response
