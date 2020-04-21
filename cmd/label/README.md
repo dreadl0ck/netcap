@@ -1,6 +1,6 @@
 # NET.LABEL
 
-*net.label* is a commandline tool to apply classification labels to netcap audit records.
+*net label* is a commandline tool to apply classification labels to netcap audit records.
 
 ## Description
 
@@ -14,46 +14,58 @@ Read more about this tool in the documentation: https://docs.netcap.io
 
 Scan input pcap and create labeled csv files by mapping audit records in the current directory:
 
-    $ net.label -r traffic.pcap
+    $ net label -read traffic.pcap
 
 Scan input pcap and create output files by mapping audit records from the output directory:
 
-    $ net.label -r traffic.pcap -out output_dir
+    $ net label -read traffic.pcap -out output_dir
 
 Abort if there is more than one alert for the same timestamp:
 
-    $ net.label -r taffic.pcap -strict
+    $ net label -read taffic.pcap -strict
 
 Display progress bar while processing input (experimental):
 
-    $ net.label -r taffic.pcap -progress
+    $ net.label -read taffic.pcap -progress
 
 Append classifications for duplicate labels:
 
-    $ net.label -r taffic.pcap -collect
+    $ net.label -read taffic.pcap -collect
 
 ## Help
 
-    $ net.label -h
-        -collect
-                append classifications from alert with duplicate timestamps to the generated label
-        -debug
-                toggle debug mode
-        -description
-                use attack description instead of classification for labels
-        -disable-layers
-                do not map layer types by timestamp
-        -exclude string
-                specify a comma separated list of suricata classifications that shall be excluded from the generated labeled csv
-        -out string
-                specify output directory, will be created if it does not exist
-        -progress
-                use progress bars
-        -r string
-                (required) read specified file, can either be a pcap or netcap audit record file
-        -sep string
-                set separator string for csv output (default ",")
-        -strict
-                fail when there is more than one alert for the same timestamp
-        -suricata-config string
-                set the path to the suricata config file (default "/usr/local/etc/suricata/suricata.yaml")
+    $ net label -h
+                           / |
+     _______    ______   _10 |_     _______   ______    ______
+    /     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
+    0010100 /|/011010 /|101010/   /0101010/  001010  |/100110  |
+    01 |  00 |00    00 |  10 | __ 00 |       /    10 |00 |  01 |
+    10 |  01 |01001010/   00 |/  |01 \_____ /0101000 |00 |__10/|
+    10 |  00 |00/    / |  10  00/ 00/    / |00    00 |00/   00/
+    00/   10/  0101000/    0010/   0010010/  0010100/ 1010100/
+                                                      00 |
+    Network Protocol Analysis Framework               00 |
+    created by Philipp Mieden, 2018                   00/
+    v0.5
+    
+    label tool usage examples:
+            $ net label -read traffic.pcap
+            $ net label -read traffic.pcap -out output_dir
+            $ net label -read taffic.pcap -progress
+            $ net label -read taffic.pcap -collect
+    
+      -collect=false: append classifications from alert with duplicate timestamps to the generated label
+      -config="": read configuration from file at path
+      -custom="": use custom mappings at path
+      -debug=false: toggle debug mode
+      -description=false: use attack description instead of classification for labels
+      -disable-layers=false: do not map layer types by timestamp
+      -exclude="": specify a comma separated list of suricata classifications that shall be excluded from the generated labeled csv
+      -gen-config=false: generate config
+      -out="": specify output directory, will be created if it does not exist
+      -progress=false: use progress bars
+      -read="": use specified pcap file to scan with suricata
+      -sep=",": set separator string for csv output
+      -strict=false: fail when there is more than one alert for the same timestamp
+      -suricata-config="/usr/local/etc/suricata/suricata.yaml": set the path to the suricata config file
+      -version=false: print netcap package version and exit
