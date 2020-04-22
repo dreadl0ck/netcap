@@ -60,11 +60,37 @@ Now, change the entities type to **netcap.PCAP**, and double click it to open th
 
 Right click an entity and start typing **Get** into the search bar to see all available transformations for the selected type. Alternatively you can also use the **Run View** in the **Windows** tab to see and launch available transformations with a single click.
 
-![](.gitbook/assets/screenshot-2020-04-15-at-23.36.04.png)
+Transformations are usually bound to specific entities. For example, the **netcap.DeviceProfiles** entity, which represents the device profiles that have been derived from an input PCAP file, currently only offers the following two transformations:
+
+![](.gitbook/assets/screenshot-2020-04-22-at-11.50.20.png)
+
+**GetDeviceProfilesWithDPI** enables deep packet inspection, which requires to install dependencies and can slow down the processing drastically. When not using DPI the transformations making use of this data will simply return no results.
+
+To add the actual devices to the graph, use the **GetDevices** transformation.
+
+![](.gitbook/assets/screenshot-2020-04-22-at-11.50.26.png)
+
+This bring the first usable entities to the graph, of type **netcap.Device**. A device has contacts and addresses it has been using to access network services by itself. When selecting a device entity, you will see the following transformations:
+
+![](.gitbook/assets/screenshot-2020-04-22-at-11.50.07.png)
+
+The generated entities will be of type **netcap.IPAddr** and contain information about the host, as well as a set of transforms to further drill down and investigate.
+
+When selecting an entity of type **netcap.IPAddr**, the following transformations are offered:
+
+![netcap.IPAddr transformations](.gitbook/assets/screenshot-2020-04-22-at-11.49.53.png)
 
 ## Configuration
 
 Netcap offers an **OpenFile** maltego transform, which will pass filetypes except for executables to the default system application for the corresponding file format. On macOS the open utility will be used for this and on the linux the default is gio open. You can override the application used for this by setting **NC\_MALTEGO\_OPEN\_FILE**.
+
+## Examples
+
+![](.gitbook/assets/dhcp.mov.gif)
+
+![](.gitbook/assets/snis.mov.gif)
+
+![](.gitbook/assets/dpicategories2.mov.gif)
 
 ## Gallery
 
@@ -76,7 +102,21 @@ Netcap offers an **OpenFile** maltego transform, which will pass filetypes excep
 
 ![Dataset investigation](.gitbook/assets/screenshot-2020-03-25-at-00.20.06.png)
 
+![Dataset investigation](.gitbook/assets/screenshot-2020-03-24-at-23.52.23.png)
+
 ![Flow Graph](.gitbook/assets/screenshot-2020-03-25-at-20.19.15.png)
 
-![Dataset investigation](.gitbook/assets/screenshot-2020-03-24-at-23.52.23.png)
+## Detail Views
+
+![](.gitbook/assets/screenshot-2020-04-22-at-11.54.48.png)
+
+![](.gitbook/assets/screenshot-2020-04-22-at-12.01.05.png)
+
+![](.gitbook/assets/screenshot-2020-04-22-at-12.04.55.png)
+
+![](.gitbook/assets/screenshot-2020-04-22-at-12.02.08.png)
+
+![](.gitbook/assets/screenshot-2020-04-22-at-12.02.03.png)
+
+![](.gitbook/assets/screenshot-2020-04-22-at-12.03.33.png)
 
