@@ -14,7 +14,7 @@ It allows to transform data using external knowledge and visualize the results i
 
 Transforms are small pieces of code that automatically fetch data from different sources and return the results as visual entities in the desktop client. Transforms are the central elements of Maltego which enable its users to unleash the full potential of the software whilst using a point-and-click logic to run analyses.
 
-Netcap provides a set of entities and transformations to work with packet capture dump files in maltego.
+Netcap provides a set of entities and transformations to analyze packet capture dump files in Maltego!
 
 The current implementation focuses on behavorial analysis of entities within the traffic dump.
 
@@ -86,19 +86,37 @@ Netcap offers an **OpenFile** maltego transform, which will pass filetypes excep
 
 ## Examples
 
+Search for DHCP information from the selected hosts:
+
 ![](.gitbook/assets/dhcp.mov.gif)
+
+Add Server Names provided as SNI on the TLS handshake:
 
 ![](.gitbook/assets/snis.mov.gif)
 
+Use Deep Packet Inspection to list all identified application categories:
+
 ![](.gitbook/assets/dpicategories2.mov.gif)
+
+Extraction of a POP3 authentication token:
+
+![](.gitbook/assets/mailtoken.mov.gif)
 
 ## Gallery
 
+When working with larger amount of nodes, the organic topology can be useful: 
+
 ![Graph during an investigation \(organic topology\)](.gitbook/assets/screenshot-2020-03-25-at-01.22.54.png)
+
+Example of interaction with a PHP webshell:
 
 ![PHP webshell interaction](.gitbook/assets/screenshot-2020-03-25-at-15.00.45-1.png)
 
+Example of an exploit abusing a HTTP parameter command injection vulnerability:
+
 ![HTTP parameter command injection](.gitbook/assets/screenshot-2020-03-25-at-15.00.55.png)
+
+Graph during an investigation where the attacker has been identified and further information is gathered:
 
 ![Dataset investigation](.gitbook/assets/screenshot-2020-03-25-at-00.20.06.png)
 
