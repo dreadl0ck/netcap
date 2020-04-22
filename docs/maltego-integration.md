@@ -42,7 +42,7 @@ Next, download install the maltego transformations and enities for netcap:
 
 Currently there are **20 entities** and **42 transformations** implemented. You can download them here:
 
-{% file src=".gitbook/assets/netcap-maltego-config-v0.5.mtz \(1\).zip" caption="NETCAP Maltego Transformations and Entities" %}
+{% file src=".gitbook/assets/netcap-maltego-config-v0.5.mtz \(1\).zip" %}
 
 Import them into Maltego in the "**Import / Export Config**" tab under "**Import Config**".
 
