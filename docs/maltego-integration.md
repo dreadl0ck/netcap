@@ -14,7 +14,7 @@ It allows to transform data using external knowledge and visualize the results i
 
 Transforms are small pieces of code that automatically fetch data from different sources and return the results as visual entities in the desktop client. Transforms are the central elements of Maltego which enable its users to unleash the full potential of the software whilst using a point-and-click logic to run analyses.
 
-Netcap provides a set of entities and tranformations to work with packet capture dump files in maltego.
+Netcap provides a set of entities and transformations to work with packet capture dump files in maltego.
 
 The current implementation focuses on behavorial analysis of entities within the traffic dump.
 
