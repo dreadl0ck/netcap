@@ -24,6 +24,7 @@
 * [Live Collection](live-collection.md)
 * [Maltego Integration](maltego-integration.md)
 * [Logging](logging.md)
+* [Packet Contexts](packet-contexts.md)
 * [Industrial Control Systems](industrial-control-systems.md)
 * [File extraction](file-extraction.md)
 * [Mail extraction](mail-extraction.md)
