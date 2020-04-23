@@ -24,7 +24,9 @@ Now unpack the file and move it to the tests folder in the project root.
 
 ## Unit Tests
 
-To execute the unit tests, run the following from the project root:
+Unit tests have been implemented for parts of the core functionality. Currently there are basic tests for reading pcap data from files and traffic live from an interface, as well as tests and benchmarks for common utility functions, such progress displaying and time conversions. 
+
+The tests and benchmarks can be executed from the repository root by executing the following from the project root:
 
 ```text
 $ go test -v ./...
@@ -47,8 +49,7 @@ ok  	github.com/dreadl0ck/netcap	0.862s
 ?   	github.com/dreadl0ck/netcap/cmd/split	[no test files]
 ?   	github.com/dreadl0ck/netcap/cmd/transform	[no test files]
 ?   	github.com/dreadl0ck/netcap/cmd/util	[no test files]
-=== RUN   TestCollectPCAP
-* protocol supported by gopacket, but not implemented in netcap
+=== RUN   TestCollectPCA
 done in 2.595847118s
 --- PASS: TestCollectPCAP (2.60s)
 PASS

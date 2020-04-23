@@ -15,6 +15,7 @@
 * [Distributed Collection](distributed-collection.md)
 * [Workers](workers.md)
 * [Filtering and Export](filtering-and-export.md)
+* [Data Compression](data-compression.md)
 * [Internals](internals.md)
 * [Metrics](metrics.md)
 * [Resolvers](resolvers.md)
