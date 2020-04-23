@@ -133,8 +133,8 @@ func Run() {
 			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 			//FileStorage:   "files", // TODO:
-			Quiet:         false,
-			DPI:           *flagDPI,
+			Quiet: false,
+			DPI:   *flagDPI,
 			ResolverConfig: resolvers.Config{
 				ReverseDNS:    *flagReverseDNS,
 				LocalDNS:      *flagLocalDNS,
