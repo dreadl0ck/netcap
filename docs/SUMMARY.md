@@ -1,7 +1,7 @@
 # Table of contents
 
 * [Overview](README.md)
-* [Protocol Support](protocol-support.md)
+* [Audit Records](protocol-support.md)
 * [Specification](specification.md)
 * [Installation](installation.md)
 * [Quickstart](quickstart.md)
