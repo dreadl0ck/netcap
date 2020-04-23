@@ -2,7 +2,7 @@
 description: Identify client and server that are using encrypted connections
 ---
 
-# TLS fingerprinting
+# TLS Fingerprinting
 
 ## JA3
 

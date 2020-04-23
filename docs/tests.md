@@ -2,7 +2,7 @@
 description: Netcap has tests for its core functionality
 ---
 
-# Unit tests
+# Unit Tests
 
 ## Prerequisites
 
