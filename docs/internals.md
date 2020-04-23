@@ -28,7 +28,7 @@ type SuricataAlert struct {
 }
 ```
 
-In the next iteration, the gathered alerts are mapped onto the collected data. For layer types which are not handled separately, this is currently by using solely the timestamp of the packet, since this is the only field required by Netcap, however multiple alerts might exist for the same timestamp. To detect this and throw an error, the **-strict** flag can be used. The default is to ignore duplicate alerts for the same timestamp, use the first encountered label and ignore the rest. Another option is to collect all labels that match the timestamp, and append them to the final label with the -collect flag. To allow filtering out classifications that shall be excluded, the **-excluded** flag can be used. Alerts matching the excluded classi- fication will then be ignored when collecting the generated alerts. Flow, Connection, HTTP and TLS records mapping logic also takes source and destination information into consider- ation. The created output files follow the naming convention: **&lt;NetcapType&gt;\_labeled.csv**.
+In the next iteration, the gathered alerts are mapped onto the collected data. For layer types which are not handled separately, this is currently by using solely the timestamp of the packet, since this is the only field required by Netcap, however multiple alerts might exist for the same timestamp. To detect this and throw an error, the **-strict** flag can be used. The default is to ignore duplicate alerts for the same timestamp, use the first encountered label and ignore the rest. Another option is to collect all labels that match the timestamp, and append them to the final label with the **-collect** flag. To allow filtering out classifications that shall be excluded, the **-excluded** flag can be used. Alerts matching the excluded classi- fication will then be ignored when collecting the generated alerts. Flow, Connection, HTTP and TLS records mapping logic also takes source and destination information into consider- ation. The created output files follow the naming convention: **&lt;NetcapType&gt;\_labeled.csv**.
 
 ### types
 
@@ -66,6 +66,10 @@ The utils package contains shared utility functions used by several other packag
 
 The collector package provides an interface for fetching packets from a data source, this can either be a PCAP / PCAPNG file or directly from a named network interface. It is used to implement the command-line interface for Netcap.
 
+{% hint style="info" %}
+Warning: Do not use multiple instances of a collector in parallel! This is not supported yet. Once it is possible, this warning will be removed.
+{% endhint %}
+
 ### io
 
 Primitives for atomic maps and write operations
@@ -82,13 +86,5 @@ To compile a netcap binary with the race detection enabled use:
 
 ```text
 $ zeus install-race
-```
-
-## Unit Tests
-
-Unit tests have been implemented for parts of the core functionality. Currently there are benchmarks for reading pcap and pcapng data, as well as tests and benchmarks for common utility functions, such progress displaying and time conversions. The tests and benchmarks can be executed from the repository root by running:
-
-```text
-$ go test -v -bench=. ./...
 ```
 
