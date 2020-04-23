@@ -91,7 +91,7 @@ var DefaultConfig = Config{
 	FlowFlushInterval:    2000,
 	FlowTimeOut:          10 * time.Second,
 	CloseInactiveTimeOut: 24 * time.Hour,
-	ClosePendingTimeOut:  30 * time.Second,
+	ClosePendingTimeOut:  5 * time.Second,
 }
 
 // Config contains configuration parameters
