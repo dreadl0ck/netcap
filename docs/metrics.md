@@ -66,7 +66,7 @@ $ brew install grafana
 Tip: On macOS, Grafanas default config is at **/usr/local/etc/grafana/grafana.ini** and installed plugins are stored at **/usr/local/opt/grafana/share/grafana/data/plugins**.
 {% endhint %}
 
-Start the prometheus server:
+Start the prometheus server and pass the previously created config:
 
 ```text
 $ prometheus --config.file prometheus/prometheus.yml
