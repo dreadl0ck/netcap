@@ -14,6 +14,7 @@
 package types
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -45,6 +46,14 @@ func (h HTTP) CSVHeader() []string {
 }
 
 func (h HTTP) CSVRecord() []string {
+	var reqCookies []string
+	for _, c := range h.ReqCookies {
+		reqCookies = append(reqCookies, c.ToString())
+	}
+	var resCookies []string
+	for _, c := range h.ResCookies {
+		resCookies = append(resCookies, c.ToString())
+	}
 	return filter([]string{
 		formatTimestamp(h.Timestamp),
 		h.Proto,
@@ -52,8 +61,8 @@ func (h HTTP) CSVRecord() []string {
 		h.Host,
 		h.UserAgent,
 		h.Referer,
-		//join(h.ReqCookies...),
-		//join(h.ResCookies...),
+		join(reqCookies...),
+		join(resCookies...),
 		formatInt32(h.ReqContentLength),
 		h.URL,
 		formatInt32(h.ResContentLength),
@@ -65,6 +74,32 @@ func (h HTTP) CSVRecord() []string {
 		h.ResContentEncoding,
 		h.ServerName,
 	})
+}
+
+func (c *HTTPCookie) ToString() string {
+	var b strings.Builder
+
+	b.WriteString(Begin)
+	b.WriteString(c.Name)
+	b.WriteString(Separator)
+	b.WriteString(c.Domain)
+	b.WriteString(Separator)
+	b.WriteString(c.Path)
+	b.WriteString(Separator)
+	b.WriteString(c.Value)
+	b.WriteString(Separator)
+	b.WriteString(formatUint64(c.Expires))
+	b.WriteString(Separator)
+	b.WriteString(strconv.FormatBool(c.HttpOnly))
+	b.WriteString(Separator)
+	b.WriteString(formatInt32(c.MaxAge))
+	b.WriteString(Separator)
+	b.WriteString(formatInt32(c.SameSite))
+	b.WriteString(Separator)
+	b.WriteString(strconv.FormatBool(c.Secure))
+	b.WriteString(End)
+
+	return b.String()
 }
 
 func (f HTTP) Time() string {
