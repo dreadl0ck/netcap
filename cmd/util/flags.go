@@ -14,6 +14,7 @@
 package util
 
 import (
+	"github.com/dreadl0ck/netcap"
 	"github.com/namsral/flag"
 	"os"
 )
@@ -35,7 +36,7 @@ var (
 	flagInput          = fs.String("read", "", "read specified audit record file")
 	flagSeparator      = fs.String("sep", ",", "set separator string for csv output")
 	flagVersion        = fs.Bool("version", false, "print netcap package version and exit")
-	flagMemBufferSize  = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagMemBufferSize  = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")
 	flagEnv            = fs.Bool("env", false, "print netcap environment variables and exit")
 	flagInterfaces     = fs.Bool("interfaces", false, "print netcap environment variables and exit")
 )

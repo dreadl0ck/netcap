@@ -14,10 +14,10 @@
 package export
 
 import (
+	"github.com/dreadl0ck/netcap"
 	"github.com/namsral/flag"
 	"os"
 	"runtime"
-	"time"
 )
 
 func Flags() (flags []string) {
@@ -38,10 +38,10 @@ var (
 	flagInput                = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagInterface            = fs.String("iface", "", "attach to network interface and capture in live mode")
 	flagWorkers              = fs.Int("workers", runtime.NumCPU(), "number of workers")
-	flagPacketBuffer         = fs.Int("pbuf", 100, "set packet buffer size, for channels that feed data to workers")
+	flagPacketBuffer         = fs.Int("pbuf", netcap.DefaultPacketBuffer, "set packet buffer size, for channels that feed data to workers")
 	flagIngoreUnknown        = fs.Bool("ignore-unknown", false, "disable writing unknown packets into a pcap file")
 	flagPromiscMode          = fs.Bool("promisc", true, "toggle promiscous mode for live capture")
-	flagSnapLen              = fs.Int("snaplen", 1514, "configure snaplen for live capture from interface")
+	flagSnapLen              = fs.Int("snaplen", netcap.DefaultSnapLen, "configure snaplen for live capture from interface")
 	flagVersion              = fs.Bool("version", false, "print netcap package version and exit")
 	flagBaseLayer            = fs.String("base", "ethernet", "select base layer")
 	flagDecodeOptions        = fs.String("opts", "lazy", "select decoding options")
@@ -55,7 +55,7 @@ var (
 	flagMemProfile           = fs.Bool("memprof", false, "create memory profile")
 	flagCSV                  = fs.Bool("csv", false, "print output data as csv with header line")
 	flagContext              = fs.Bool("context", true, "add packet flow context to selected audit records")
-	flagMemBufferSize        = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagMemBufferSize        = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")
 	flagListInterfaces       = fs.Bool("interfaces", false, "list all visible network interfaces")
 	flagReverseDNS           = fs.Bool("reverse-dns", false, "resolve ips to domains via the operating systems default dns resolver")
 	flagLocalDNS             = fs.Bool("local-dns", false, "resolve DNS locally via hosts file in the database dir")
@@ -64,7 +64,7 @@ var (
 	flagServiceDB            = fs.Bool("serviceDB", false, "use serviceDB for device profiling")
 	flagGeolocationDB        = fs.Bool("geoDB", false, "use geolocation for device profiling")
 	flagDPI                  = fs.Bool("dpi", false, "use DPI for device profiling")
-	flagFlushevery           = fs.Int("flushevery", 100, "flush assembler every N packets")
+	flagFlushevery           = fs.Int("flushevery", netcap.DefaultFlushEvery, "flush assembler every N packets")
 	flagNodefrag             = fs.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
 	flagChecksum             = fs.Bool("checksum", false, "check TCP checksum")
 	flagNooptcheck           = fs.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
@@ -75,10 +75,10 @@ var (
 	flagWaitForConnections   = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
 	flagWriteincomplete      = fs.Bool("writeincomplete", false, "write incomplete response")
 	flagMemprofile           = fs.String("memprofile", "", "write memory profile")
-	flagConnFlushInterval    = fs.Int("conn-flush-interval", 10000, "flush connections every X flows")
-	flagConnTimeOut          = fs.Duration("conn-timeout", 10*time.Second, "close connections older than X seconds")
-	flagFlowFlushInterval    = fs.Int("flow-flush-interval", 2000, "flushes flows every X flows")
-	flagFlowTimeOut          = fs.Duration("flow-timeout", 10*time.Second, "closes flows older than flowTimeout")
-	flagClosePendingTimeout  = fs.Duration("close-pending-timeout", 5*time.Second, "reassembly: close connections that have pending bytes after X")
-	flagCloseInactiveTimeout = fs.Duration("close-inactive-timeout", 24*time.Hour, "reassembly: close connections that are inactive after X")
+	flagConnFlushInterval    = fs.Int("conn-flush-interval", netcap.DefaultConnFlushInterval, "flush connections every X flows")
+	flagConnTimeOut          = fs.Duration("conn-timeout", netcap.DefaultConnTimeOut, "close connections older than X seconds")
+	flagFlowFlushInterval    = fs.Int("flow-flush-interval", netcap.DefaultFlowFlushInterval, "flushes flows every X flows")
+	flagFlowTimeOut          = fs.Duration("flow-timeout", netcap.DefaultFlowTimeOut, "closes flows older than flowTimeout")
+	flagClosePendingTimeout  = fs.Duration("close-pending-timeout", netcap.DefaultClosePendingTimeout, "reassembly: close connections that have pending bytes after X")
+	flagCloseInactiveTimeout = fs.Duration("close-inactive-timeout", netcap.DefaultCloseInactiveTimeout, "reassembly: close connections that are inactive after X")
 )

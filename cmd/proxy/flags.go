@@ -14,6 +14,7 @@
 package proxy
 
 import (
+	"github.com/dreadl0ck/netcap"
 	"github.com/namsral/flag"
 	"os"
 )
@@ -43,5 +44,5 @@ var (
 	flagDump                = fs.Bool("dump", false, "dumps audit record as JSON to stdout")
 	flagDumpFormatted       = fs.Bool("format", true, "format when dumping JSON")
 	flagVersion             = fs.Bool("version", false, "print netcap package version and exit")
-	flagMemBufferSize       = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagMemBufferSize       = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")
 )

@@ -15,10 +15,9 @@ package netcap
 
 import (
 	"bufio"
+	gzip "github.com/klauspost/pgzip"
 	"os"
 	"path/filepath"
-
-	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/types"

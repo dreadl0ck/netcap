@@ -33,7 +33,7 @@ import (
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/mgutz/ansi"
 
-	gzip "github.com/klauspost/pgzip"
+	"compress/gzip"
 
 	"github.com/dreadl0ck/netcap/types"
 )
