@@ -18,19 +18,19 @@ package resolvers
 type Config struct {
 
 	// Controls whether ip addresses are resolved through the default OS resolver
-	ReverseDNS    bool
+	ReverseDNS bool
 
 	// Controls if ip addresses are resolved locally through a provided hosts mapping
-	LocalDNS      bool
+	LocalDNS bool
 
 	// Enables MAC address vendor lookups
-	MACDB         bool
+	MACDB bool
 
 	// Enables looking up Ja3 profiles
-	Ja3DB         bool
+	Ja3DB bool
 
 	// Enables resolving port numbers to service names
-	ServiceDB     bool
+	ServiceDB bool
 
 	// Enables ip to geolocation lookups via MaxMind GeoLite
 	GeolocationDB bool

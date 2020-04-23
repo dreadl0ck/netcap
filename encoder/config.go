@@ -26,10 +26,10 @@ import (
 var (
 	c Config
 
-	reassemblyLog           = log.New(ioutil.Discard, "", log.LstdFlags | log.Lmicroseconds)
+	reassemblyLog           = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
 	reassemblyLogFileHandle *os.File
 
-	debugLog           = log.New(ioutil.Discard, "", log.LstdFlags | log.Lmicroseconds)
+	debugLog           = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
 	debugLogFileHandle *os.File
 )
 

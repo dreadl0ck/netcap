@@ -87,7 +87,7 @@ func (h *httpReader) Read(p []byte) (int, error) {
 		case h.data, ok = <-h.bytes:
 		// time out streams that never send any data
 		case <-time.After(c.ClosePendingTimeOut):
-				return 0, io.EOF
+			return 0, io.EOF
 		}
 	}
 	if !ok || len(h.data) == 0 {
