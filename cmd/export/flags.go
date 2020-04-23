@@ -79,6 +79,6 @@ var (
 	flagConnTimeOut          = fs.Duration("conn-timeout", 10*time.Second, "close connections older than X seconds")
 	flagFlowFlushInterval    = fs.Int("flow-flush-interval", 2000, "flushes flows every X flows")
 	flagFlowTimeOut          = fs.Duration("flow-timeout", 10*time.Second, "closes flows older than flowTimeout")
-	flagClosePendingTimeout  = fs.Duration("close-pending-timeout", 30*time.Second, "reassembly: close connections that have pending bytes after X")
+	flagClosePendingTimeout  = fs.Duration("close-pending-timeout", 5*time.Second, "reassembly: close connections that have pending bytes after X")
 	flagCloseInactiveTimeout = fs.Duration("close-inactive-timeout", 24*time.Hour, "reassembly: close connections that are inactive after X")
 )

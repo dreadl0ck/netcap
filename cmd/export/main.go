@@ -95,14 +95,11 @@ func Run() {
 		// parse PCAP file or live from interface
 		// init collector
 		c := collector.New(collector.Config{
+			WriteUnknownPackets: !*flagIngoreUnknown,
 			Workers:             *flagWorkers,
 			PacketBufferSize:    *flagPacketBuffer,
-			WriteUnknownPackets: !*flagIngoreUnknown,
-			Promisc:             *flagPromiscMode,
 			SnapLen:             *flagSnapLen,
-			DPI:                 *flagDPI,
-			BaseLayer:           utils.GetBaseLayer(*flagBaseLayer),
-			DecodeOptions:       utils.GetDecodeOptions(*flagDecodeOptions),
+			Promisc:             *flagPromiscMode,
 			EncoderConfig: encoder.Config{
 				Buffer:               *flagBuffer,
 				Compression:          *flagCompress,
@@ -133,6 +130,11 @@ func Run() {
 				CloseInactiveTimeOut: *flagCloseInactiveTimeout,
 				ClosePendingTimeOut:  *flagClosePendingTimeout,
 			},
+			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
+			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
+			//FileStorage:   "files", // TODO:
+			Quiet:         false,
+			DPI:           *flagDPI,
 			ResolverConfig: resolvers.Config{
 				ReverseDNS:    *flagReverseDNS,
 				LocalDNS:      *flagLocalDNS,
@@ -141,6 +143,9 @@ func Run() {
 				ServiceDB:     *flagServiceDB,
 				GeolocationDB: *flagGeolocationDB,
 			},
+			OutDirPermission:      0700,
+			FreeOSMem:             0,
+			ReassembleConnections: true,
 		})
 
 		metrics.ServeMetricsAt(*flagMetricsAddress, c)
