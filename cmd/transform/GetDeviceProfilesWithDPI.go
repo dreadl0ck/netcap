@@ -76,7 +76,7 @@ func GetDeviceProfilesWithDPI() {
 			FlowFlushInterval:    2000,
 			FlowTimeOut:          10,
 			CloseInactiveTimeOut: 24 * time.Hour,
-			ClosePendingTimeOut:  30 * time.Second,
+			ClosePendingTimeOut:  5 * time.Second,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),
