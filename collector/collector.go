@@ -21,7 +21,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -30,12 +29,9 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/dpi"
-
 	"sync"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/dreadl0ck/netcap/encoder"
@@ -115,77 +111,6 @@ func (c *Collector) stopWorkers() {
 		// TODO closing here produces a data race
 		// close(w)
 	}
-}
-
-// cleanup before leaving. closes all buffers and displays stats.
-func (c *Collector) cleanup(force bool) {
-
-	// stop all workers.
-	// this will block until all workers are stopped
-	// all packets left in the packet queues will be processed
-	c.stopWorkers()
-
-	if c.config.ReassembleConnections {
-		// teardown the TCP stream reassembly and print stats
-		encoder.CleanupReassembly(!force)
-	}
-	encoder.Cleanup()
-
-	c.statMutex.Lock()
-	c.wg.Wait()
-	c.statMutex.Unlock()
-
-	// flush all layer encoders
-	for _, encoders := range encoder.LayerEncoders {
-		for _, e := range encoders {
-			name, size := e.Destroy()
-			if size != 0 {
-				c.totalBytesWritten += size
-				c.files[name] = humanize.Bytes(uint64(size))
-			}
-		}
-	}
-
-	// flush all custom encoders
-	for _, e := range encoder.CustomEncoders {
-		name, size := e.Destroy()
-		if size != 0 {
-			c.totalBytesWritten += size
-			c.files[name] = humanize.Bytes(uint64(size))
-		}
-	}
-
-	if c.isLive {
-		c.statMutex.Lock()
-		c.numPackets = c.current
-		c.statMutex.Unlock()
-	}
-
-	// sync pcap file
-	if err := c.closePcapFiles(); err != nil {
-		log.Fatal("failed to close pcap files: ", err)
-	}
-
-	c.closeErrorLogFile()
-	c.Stats()
-
-	// encoder.DumpTop5LinkFlows()
-	// encoder.DumpTop5NetworkFlows()
-	// encoder.DumpTop5TransportFlows()
-
-	if c.config.EncoderConfig.Debug {
-		c.printErrors()
-	}
-
-	if logFileHandle != nil {
-		err := logFileHandle.Close()
-		if err != nil {
-			c.printStdOut("failed to close logfile:", err)
-		}
-	}
-
-	clearLine()
-	c.printlnStdOut("done.")
 }
 
 // handleSignals catches signals and runs the cleanup
@@ -386,82 +311,6 @@ func (c *Collector) printProgress() {
 			os.Stdout.WriteString(b.String())
 		}
 	}
-}
-
-// Init sets up the collector and starts the configured number of workers
-// must be called prior to usage of the collector instance.
-func (c *Collector) Init() (err error) {
-
-	// start workers
-	c.workers = c.initWorkers()
-	c.printlnStdOut("spawned", c.config.Workers, "workers")
-
-	// create full output directory path if set
-	if c.config.EncoderConfig.Out != "" {
-		err = os.MkdirAll(c.config.EncoderConfig.Out, c.config.OutDirPermission)
-		if err != nil {
-			return err
-		}
-	}
-
-	// set file storage
-	encoder.FileStorage = c.config.FileStorage
-
-	// init deep packet inspection
-	if c.config.DPI {
-		dpi.Init()
-	}
-
-	// initialize resolvers
-	resolvers.Init(c.config.ResolverConfig, c.config.Quiet)
-
-	if c.config.ResolverConfig.LocalDNS {
-		encoder.LocalDNS = true
-	}
-
-	encoder.SetConfig(c.config.EncoderConfig)
-
-	// set quiet mode for other subpackages
-	encoder.Quiet = c.config.Quiet
-
-	if logFileHandle == nil && c.config.Quiet {
-		err = c.InitLogging()
-		if err != nil {
-			return err
-		}
-	}
-
-	// initialize encoders
-	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)
-	encoder.InitCustomEncoders(c.config.EncoderConfig, c.config.Quiet)
-
-	// set payload capture
-	encoder.CapturePayload = c.config.EncoderConfig.IncludePayloads
-
-	// set pointer of collectors atomic counter map in encoder pkg
-	encoder.SetErrorMap(c.errorMap)
-
-	// create pcap files for packets
-	// with unknown protocols or errors while decoding
-	if err := c.createUnknownPcap(); err != nil {
-		log.Fatal("failed to create pcap file for unkown packets: ", err)
-	}
-	if err := c.createErrorsPcap(); err != nil {
-		log.Fatal("failed to create pcap decoding errors file: ", err)
-	}
-
-	// handle signal for a clean exit
-	c.handleSignals()
-
-	if c.config.FreeOSMem != 0 {
-		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
-		go c.FreeOSMemory()
-	}
-
-	// create log file
-	c.errorLogFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.log"))
-
-	return
 }
 
 // GetNumPackets returns the current number of processed packets
