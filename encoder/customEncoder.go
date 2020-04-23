@@ -91,6 +91,9 @@ func init() {
 // InitCustomEncoders initializes all custom encoders
 func InitCustomEncoders(c Config, quiet bool) {
 
+	// Flush custom encoders in case they have been initialized before
+	CustomEncoders = []*CustomEncoder{}
+
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeEncoders, ",")

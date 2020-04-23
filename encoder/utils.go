@@ -143,9 +143,13 @@ func logReassemblyDebug(s string, a ...interface{}) {
 // Cleanup closes the logfile handles
 func Cleanup() {
 	if reassemblyLogFileHandle != nil {
-		reassemblyLogFileHandle.Close()
+		if err := reassemblyLogFileHandle.Close(); err != nil {
+			fmt.Println("failed to close reassembly log file handle:", err)
+		}
 	}
 	if debugLogFileHandle != nil {
-		debugLogFileHandle.Close()
+		if err := debugLogFileHandle.Close(); err != nil {
+			fmt.Println("failed to close debug log file handle:", err)
+		}
 	}
 }

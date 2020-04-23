@@ -118,6 +118,9 @@ type (
 // InitLayerEncoders initializes all layer encoders
 func InitLayerEncoders(c Config, quiet bool) {
 
+	// Flush layer encoders in case they have been initialized before
+	LayerEncoders = map[gopacket.LayerType][]*LayerEncoder{}
+
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeEncoders, ",")
