@@ -15,8 +15,8 @@ package proxy
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
-	gzip "github.com/klauspost/pgzip"
 	"io/ioutil"
 	"log"
 	"net"

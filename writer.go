@@ -15,8 +15,10 @@ package netcap
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	gzip "github.com/klauspost/pgzip"
 
@@ -25,8 +27,6 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
 )
-
-const DefaultBufferSize = 1024 * 1024 * 10 // 10MB
 
 /*
  *	Type Definition
@@ -102,6 +102,15 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 			}
 		}
 
+		if w.gWriter != nil {
+			// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
+			// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
+			// your would like to utilize, but about twice the number of blocks would be the best.
+			if err := w.gWriter.SetConcurrency(DefaultCompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
+				log.Fatal("failed to configure compression package: ", err)
+			}
+		}
+
 		return w
 	}
 
@@ -144,6 +153,15 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 		}
 	}
 	w.aWriter = io.NewAtomicDelimitedWriter(w.dWriter)
+
+	if w.gWriter != nil {
+		// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
+		// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
+		// your would like to utilize, but about twice the number of blocks would be the best.
+		if err := w.gWriter.SetConcurrency(DefaultCompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
+			log.Fatal("failed to configure compression package: ", err)
+		}
+	}
 
 	return w
 }

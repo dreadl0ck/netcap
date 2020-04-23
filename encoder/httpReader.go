@@ -60,9 +60,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"compress/gzip"
 	"github.com/dreadl0ck/cryptoutils"
-	gzip "github.com/klauspost/pgzip"
-
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )

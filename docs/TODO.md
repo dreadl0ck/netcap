@@ -2,8 +2,10 @@
 
 ## v0.5 Documentation
 
-- record new asciicasts + maltego video
-- update website
+- record new asciicasts + maltego videos
+
+- Blog: Threat hunting with Netcap and Maltego
+- Blog: Metrics with Prometheus and Grafana
 
 ## Maltego Plugin
 
@@ -43,6 +45,7 @@
 
 ## General
 
+- remove global state in encoder and collector pkgs?
 - transform: add a text based commandline interface for the transformations
 - capture unknown L7 protocol TCP streams and write to disk
 - net.split: split pcap or audit record files by days or hours

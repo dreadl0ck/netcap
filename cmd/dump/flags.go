@@ -14,6 +14,7 @@
 package dump
 
 import (
+	"github.com/dreadl0ck/netcap"
 	"github.com/namsral/flag"
 	"os"
 )
@@ -44,5 +45,5 @@ var (
 	flagInput           = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagVersion         = fs.Bool("version", false, "print netcap package version and exit")
 	flagJSON            = fs.Bool("json", false, "print as JSON")
-	flagMemBufferSize   = fs.Int("membuf-size", 1024*1024*10, "set size for membuf")
+	flagMemBufferSize   = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")
 )
