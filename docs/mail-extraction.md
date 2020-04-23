@@ -2,7 +2,7 @@
 description: Extract transferred emails
 ---
 
-# EMail Extraction
+# Email Extraction
 
 ## Motivation
 
