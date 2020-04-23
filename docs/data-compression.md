@@ -10,7 +10,7 @@ For this purpose Netcap currently uses the following gzip implementation:
 
 {% embed url="https://github.com/klauspost/pgzip" %}
 
-This implementation will split the data into blocks that are compressed in parallel. This can be useful for compressing big amounts of data. The output is a standard gzip file.
+This implementation will split the data into blocks that are compressed in parallel, which can be useful for compressing big amounts of data. The output is a standard gzip file.
 
 The gzip decompression is modified so it decompresses ahead of the current reader. This means that reads will be non-blocking and CRC calculation also takes place in a separate goroutine.
 
