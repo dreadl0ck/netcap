@@ -27,7 +27,7 @@
 * [Packet Contexts](packet-contexts.md)
 * [Industrial Control Systems](industrial-control-systems.md)
 * [File Extraction](file-extraction.md)
-* [EMail Extraction](mail-extraction.md)
+* [Email Extraction](mail-extraction.md)
 * [Device Profiles](device-profiles.md)
 * [Python Integration](python-integration.md)
 * [Changelog](changelog.md)
