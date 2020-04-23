@@ -84,11 +84,3 @@ To compile a netcap binary with the race detection enabled use:
 $ zeus install-race
 ```
 
-## Unit Tests
-
-Unit tests have been implemented for parts of the core functionality. Currently there are benchmarks for reading pcap and pcapng data, as well as tests and benchmarks for common utility functions, such progress displaying and time conversions. The tests and benchmarks can be executed from the repository root by running:
-
-```text
-$ go test -v -bench=. ./...
-```
-
