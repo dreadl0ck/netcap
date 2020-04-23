@@ -203,7 +203,7 @@ func CloseFile(outDir string, file *os.File, typ string) (name string, size int6
 
 	i, err := file.Stat()
 	if err != nil {
-		fmt.Println("[ERROR] closing file:", err, "type", typ)
+		fmt.Println("[ERROR] failed to stat file:", err, "type", typ)
 		return "", 0
 	}
 
