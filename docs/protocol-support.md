@@ -80,7 +80,7 @@ description: An overview of supported protocols and available fields
 > | Flow | 17 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 > | Connection | 17 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 
-{% file src=".gitbook/assets/overview \(3\).pdf" %}
+{% file src=".gitbook/assets/overview \(4\).pdf" %}
 
 
 
