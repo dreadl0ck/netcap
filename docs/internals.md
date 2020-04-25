@@ -66,7 +66,11 @@ Resolvers for lookup of various external information, such as geolocation, domai
 
 [https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/d](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)pi
 
-Deep Packet Inspection integration, using a fork of **mushorg/godpi** that was extended to identify the full range of protocols offered by **nDPI** and **libprotoident**.
+Deep Packet Inspection integration, using a fork of **mushorg/go-dpi** that was extended to identify the full range of protocols offered by **nDPI** and **libprotoident**. Both libraries are loaded dynamically at runtime and is invoked via C bindings.
+
+The fork can be found here:
+
+{% embed url="https://github.com/dreadl0ck/go-dpi" caption="Deep Packet Inspection Package" %}
 
 ### delimited
 
