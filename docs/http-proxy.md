@@ -58,7 +58,7 @@ logdir: "logs"
 
 ## Help
 
-```text
+```erlang
 Usage of net proxy:
   -version bool
         print netcap package version and exit
