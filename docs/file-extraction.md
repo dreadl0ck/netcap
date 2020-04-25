@@ -20,7 +20,7 @@ It uses the **File** audit record type to model the extracted information.
 
 The audit record definition for a file look like this:
 
-```text
+```erlang
 message File {
     string        Timestamp   = 1;
     string        Name        = 2;
