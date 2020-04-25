@@ -20,7 +20,7 @@ The installation guide can be found here:
 
 The suricata config file is expected by default at **/usr/local/etc/suricata/suricata.yaml**, but you can overwrite this path with the **-suricata-config** flag.
 
-```text
+```go
 // SuricataAlert is a summary structure for an alert
 type SuricataAlert struct {
    Timestamp      string
@@ -46,7 +46,7 @@ When running the tool, labeled CSV files will be created for the alerts produced
 
 Custom attack information can be loaded as a CSV file. The data is expected to have the following fields:
 
-```text
+```go
 type AttackInfo struct {
 	Num      int       `csv:"num"`
 	Name     string    `csv:"name"`
@@ -77,30 +77,30 @@ This specification resulted from a specific dataset from a research project and 
 Scan input pcap and create labeled csv files by mapping audit records in the current directory:
 
 ```text
-$ net.label -r traffic.pcap
+$ net label -read traffic.pcap
 ```
 
 Scan input pcap and create output files by mapping audit records from the output directory:
 
 ```text
-$ net.label -r traffic.pcap -out output_dir
+$ net label -read traffic.pcap -out output_dir
 ```
 
 Abort if there is more than one alert for the same timestamp:
 
 ```text
-$ net.label -r taffic.pcap -strict
+$ net label -read taffic.pcap -strict
 ```
 
 Display progress bar while processing input \(experimental\):
 
 ```text
-$ net.label -r taffic.pcap -progress
+$ net label -read taffic.pcap -progress
 ```
 
 Append classifications for duplicate labels:
 
 ```text
-$ net.label -r taffic.pcap -collect
+$ net label -read taffic.pcap -collect
 ```
 
