@@ -28,6 +28,12 @@ In this paper, we explore Graph based analysis using Maltego to visualise data f
 
 {% file src=".gitbook/assets/securitcup\_slides\_philipp\_mieden \(1\).pdf" %}
 
+## External Publications
+
+The authors used the framework to process their recorded PCAP dumps:
+
+{% embed url="https://easychair.org/publications/preprint/36pZ" %}
+
 ## Cheatsheets
 
 ### List of all supported protocols and fields
