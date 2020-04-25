@@ -18,11 +18,13 @@ Analyzing DeviceProfiles can be done using Maltego, for example:
 
 {% page-ref page="maltego-integration.md" %}
 
+![DeviceProfiles and their used IP addresses from an industrial automation system](.gitbook/assets/screenshot-2020-04-22-at-16.20.57.png)
+
 ## DeviceProfile Audit Records
 
 Lets look at the protocol buffer definition for a device profile:
 
-```text
+```erlang
 // Device Profiling
 message DeviceProfile {
     string             MacAddr            = 1;
@@ -39,7 +41,7 @@ As you can see, a DeviceProfile is a summary structure built around the hardware
 
 Lets take a closer look at an IPProfile:
 
-```text
+```erlang
 message IPProfile {
     string                 Addr            = 1;
     int64                  NumPackets      = 2;
