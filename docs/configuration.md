@@ -36,7 +36,7 @@ $ net capture -gen-config > capture.conf
 
 The config file will look something like this, using the **name value** syntax to set values:
 
-```text
+```bash
 ...
 # toggle promiscous mode for live capture
 promisc true
