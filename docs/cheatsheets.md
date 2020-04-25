@@ -24,5 +24,5 @@ description: A collection of cheatsheets and useful resources
 
 ### Command Cheatsheet
 
-{% file src=".gitbook/assets/netcap-cheatsheet \(1\).pdf" caption="Netcap General Cheatsheet" %}
+{% file src=".gitbook/assets/netcap-cheatsheet \(2\).pdf" caption="Netcap General Cheatsheet" %}
 
