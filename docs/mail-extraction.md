@@ -14,7 +14,7 @@ Netcap currently extracts Email fetched over POP3 and support IMAP is in the mak
 
 A POP3 audit record contains information about the addresses involved, as well as authentication information. The fetched mails are provided as an array of **Mail** instances.
 
-```text
+```erlang
 message POP3 {
     string           Timestamp              = 1;
     string           ClientIP               = 2;
@@ -28,7 +28,7 @@ message POP3 {
 
 A Mail instance has the following fields:
 
-```text
+```erlang
 message Mail {
     string            ReturnPath            = 1;
     string            DeliveryDate          = 2;
@@ -49,11 +49,19 @@ message Mail {
 }
 ```
 
+For exploring captured emails, the Maltego Integration can be used:
+
+{% page-ref page="maltego-integration.md" %}
+
+![](.gitbook/assets/mails1.png)
+
+![](.gitbook/assets/mails2.png)
+
 ## SMTP
 
 For SMTP an audit record is also available, though mail extraction has not been implemented yet:
 
-```text
+```erlang
 message SMTP {
     string                 Timestamp     = 1;
     bool                   IsEncrypted   = 2;

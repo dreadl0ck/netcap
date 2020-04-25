@@ -79,3 +79,31 @@ By default, only complete requests and responses are captured, if you also want 
 $ net capture -read traffic.pcap -fileStorage files -writeincomplete
 ```
 
+Dumping a File on the commandline looks like this:
+
+```text
+$ net dump -read File.ncap.gz -struc
+NC_File
+Timestamp: "2015-03-08 14:05:29.664213 +0000 UTC"
+Name: "ads.bmp"
+Length: 126
+Hash: "2d5a035011854b04a456b244b15a583b"
+Location: "files/image/bmp/ads.bmp-80.239.178.178->192.168.0.51-80->41214.bmp"
+Ident: "80.239.178.178->192.168.0.51-80->41214"
+Source: "HTTP RESPONSE from /ads.bmp"
+Context: <
+  SrcIP: "192.168.0.51"
+  DstIP: "80.239.178.178"
+  SrcPort: "41214"
+  DstPort: "80"
+>
+ContentTypeDetected: "image/bmp"
+...
+```
+
+For properly exploring files for each host I recommend using the Maltego Integration:
+
+{% page-ref page="maltego-integration.md" %}
+
+![](.gitbook/assets/files.png)
+

@@ -39,7 +39,7 @@ priv.key pub.key
 
 Now, the server can be started, the location of the file containing the private key must be supplied:
 
-```text
+```bash
 $ net collect -privkey priv.key -addr 127.0.0.1:4200
 ```
 
