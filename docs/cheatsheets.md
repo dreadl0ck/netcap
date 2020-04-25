@@ -8,7 +8,7 @@ description: A collection of cheatsheets and useful resources
 
 You can find the latest release on the releases page on GitHub:
 
-{% embed url="https://github.com/dreadl0ck/netcap/releases" caption="" %}
+{% embed url="https://github.com/dreadl0ck/netcap/releases" caption="NETCAP GitHub Releases Page" %}
 
 ## Publications
 
