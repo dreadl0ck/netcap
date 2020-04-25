@@ -8,9 +8,9 @@ description: Frequently Asked Questions
 
 This is a framework for capturing and analysing network packets.
 
-For common protocols, chances are high that NETCAP already supports parsing them. If not its simple to add support for them.
+For common protocols, chances are high that NETCAP already supports parsing them. If not, it's simple to implement.
 
-NETCAP uses its own data storage format, that focuses on efficiency and applies compression by default. The data format allows accessing the extracted information across all major programming languages as type safe structured data, which makes it easy to implement quality software on top of NETCAP.
+NETCAP uses its own data storage format, that focuses on efficiency and applies compression by default. The data format allows accessing the extracted information across all major programming languages as type safe structured data, which makes it easy to implement quality software on top the NETCAP core engine.
 
 ## How can I contribute to the project?
 
