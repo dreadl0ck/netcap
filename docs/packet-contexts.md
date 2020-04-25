@@ -10,7 +10,7 @@ This need originates from a core concept of Netcap: separating the results based
 
 A packet context looks as follows:
 
-```text
+```erlang
 message PacketContext {
     string SrcIP    = 1;
     string DstIP    = 2;
