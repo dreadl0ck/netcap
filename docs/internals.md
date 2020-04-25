@@ -6,11 +6,17 @@ description: Framework inner workings and Implementation details
 
 ## Packages
 
+You can browse the source and sub packages on GoDev:
+
+[https://pkg.go.dev/github.com/dreadl0ck/netcap?tab=subdirectories](https://pkg.go.dev/github.com/dreadl0ck/netcap?tab=subdirectories)
+
 ### cmd
 
 The cmd package contains the command-line application. It receives configuration parameters from command-line flags, creates and configures a collector instance, and then starts collecting data from the desired source.
 
 #### label
+
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/l](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)abel
 
 The label package contains the code for creating labeled datasets. For now, the suricata IDS / IPS engine is used to scan the input PCAP and generate alerts. In the future, support could also be added for using YARA. Alerts are then parsed with regular expressions and transformed into the **label.SuricataAlert** type. This could also be replaced by parsing suricatas eve.json event logs in upcoming versions. A suricata alert contains the following information:
 
@@ -32,9 +38,13 @@ In the next iteration, the gathered alerts are mapped onto the collected data. F
 
 ### types
 
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/t](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)ypes
+
 The types package contains types.AuditRecord interface implementations for each supported protocol, to enable converting data to the CSV format. For this purpose, each protocol must provide a CSVRecord\(\) \[\]string and a CSVHeader\(\) \[\]string function. Additionally, a NetcapTimestamp\(\) string function that returns the Netcap timestamp must be implemented.
 
 ### encoder
+
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/e](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)ncoder
 
 The encoder package implements conversion of decoded network protocols to protocol buffers. This has to be defined for each supported protocol. Two types of encoders exist: The LayerEncoder and the CustomEncoder.
 
@@ -48,21 +58,31 @@ A CustomEncoder operates on a gopacket.Packet and is used to decode traffic into
 
 ### resolvers
 
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/r](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)esolvers
+
 Resolvers for lookup of various external information, such as geolocation, domain names, hardware addresses, port numbers etc
 
 ### dpi
 
-Deep Packet Inspection integration
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/d](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)pi
+
+Deep Packet Inspection integration, using a fork of **mushorg/godpi** that was extended to identify the full range of protocols offered by **nDPI** and **libprotoident**.
 
 ### delimited
+
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/d](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)elimited
 
 Primitives for reading and writing length delimited binary data
 
 ### utils
 
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/u](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)tils
+
 The utils package contains shared utility functions used by several other packages.
 
 ### collector
+
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/collector](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)
 
 The collector package provides an interface for fetching packets from a data source, this can either be a PCAP / PCAPNG file or directly from a named network interface. It is used to implement the command-line interface for Netcap.
 
@@ -71,6 +91,8 @@ Warning: Do not use multiple instances of a collector in parallel! This is not s
 {% endhint %}
 
 ### io
+
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/io](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)
 
 Primitives for atomic maps and write operations
 
