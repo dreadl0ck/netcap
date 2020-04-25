@@ -18,6 +18,12 @@ Installation via go get:
 $ go get -u github.com/dreadl0ck/netcap/...
 ```
 
+## Manual Build
+
+```text
+$ go build -ldflags "-s -w" -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
+```
+
 ## Reproducible Builds via Go Modules
 
 In order to provide stable and reproducible builds, Go modules are used to pin the versions of source code dependencies to specific versions.
@@ -61,11 +67,7 @@ _Netcap_ uses the [zeus](https://github.com/dreadl0ck/zeus) build system, it can
 
 {% embed url="https://github.com/dreadl0ck/zeus" caption="ZEUS Build System GitHub" %}
 
-However, the project can easily be installed without zeus. All shell scripts needed for installation can be found in the _zeus/generated_ directory as standalone versions:
 
-```text
-zeus/generated/install.sh
-```
 
 To install the _Netcap_ and _Netlabel_ command-line tool and the library with zeus, run:
 
