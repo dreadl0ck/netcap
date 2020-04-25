@@ -16,7 +16,7 @@ The encoders are enabled by default.
 
 ## Modbus
 
-```text
+```erlang
 message Modbus {
     string Timestamp     = 1;
     int32  TransactionID = 2; // Identification of a MODBUS Request/Response transaction
@@ -33,7 +33,7 @@ message Modbus {
 
 ## CIP
 
-```text
+```erlang
 message CIP {
     string          Timestamp        = 1;
     bool            Response         = 2; // false if request, true if response
@@ -49,7 +49,7 @@ message CIP {
 
 ## ENIP
 
-```text
+```erlang
 message ENIP {
     string                  Timestamp        = 1;
     uint32                  Command          = 2; 
