@@ -12,7 +12,13 @@ You can find the latest release on the releases page on GitHub:
 
 ## Publications
 
+In this paper, we explore Graph based analysis using Maltego to visualise data from NETCAP during a forensic investigation:
+
+{% file src=".gitbook/assets/ccf\_behavorial\_profiling\_from\_network\_packet\_captures.pdf" caption="Behavorial Profiling From Network Packet Captures" %}
+
 ### Thesis
+
+{% file src=".gitbook/assets/mied18 \(1\).pdf" caption="Implementation and Evaluation of secure and scalable anomaly-based Network Intrusion Detection" %}
 
 ### Thesis Presentation
 
@@ -20,13 +26,15 @@ You can find the latest release on the releases page on GitHub:
 
 ### SecurIT Cup 2018 Presentation
 
+{% file src=".gitbook/assets/securitcup\_slides\_philipp\_mieden \(1\).pdf" %}
+
 ## Cheatsheets
 
 ### List of all supported protocols and fields
 
-{% file src=".gitbook/assets/overview-2.pdf" caption="Netcap - Supported Protocols and Fields" %}
+{% file src=".gitbook/assets/overview \(2\).pdf" %}
 
 ### Command Cheatsheet
 
-{% file src=".gitbook/assets/netcap-cheatsheet \(1\).pdf" caption="Netcap Cheatsheet" %}
+{% file src=".gitbook/assets/netcap-cheatsheet.pdf" %}
 
