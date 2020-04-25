@@ -8,7 +8,7 @@ description: A collection of cheatsheets and useful resources
 
 ### Thesis
 
-{% file src=".gitbook/assets/mied18 \(1\).pdf" %}
+{% file src=".gitbook/assets/mied18 \(2\).pdf" %}
 
 ### Thesis Presentation
 
@@ -16,7 +16,7 @@ description: A collection of cheatsheets and useful resources
 
 ### SecurIT Cup 2018 Presentation
 
-{% file src=".gitbook/assets/securitcup\_slides\_philipp\_mieden \(1\).pdf" %}
+{% file src=".gitbook/assets/securitcup\_slides\_philipp\_mieden \(2\).pdf" %}
 
 ## Cheatsheets
 
@@ -26,5 +26,5 @@ description: A collection of cheatsheets and useful resources
 
 ### Command Cheatsheet
 
-{% file src=".gitbook/assets/netcap-cheatsheet \(2\).pdf" caption="Netcap General Cheatsheet" %}
+{% file src=".gitbook/assets/netcap-cheatsheet \(3\).pdf" caption="Netcap General Cheatsheet" %}
 
