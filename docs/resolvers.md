@@ -18,12 +18,12 @@ External data sources are stored in a central directory on the system, which def
 
 Database files:
 
-* domain-whitelist.csv
-* GeoLite2-City.mmdb
-* GeoLite2-ASN.mmdb
-* ja3fingerprint.json
-* macaddress.io-db.json
-* service-names-port-numbers.csv
+* _domain-whitelist.csv_
+* _GeoLite2-City.mmdb_
+* _GeoLite2-ASN.mmdb_
+* _ja3fingerprint.json_
+* _macaddress.io-db.json_
+* _service-names-port-numbers.csv_
 
 ## Configuration
 
