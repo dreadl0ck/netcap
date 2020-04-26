@@ -20,6 +20,7 @@ func (c *Collector) cleanup(force bool) {
 	}
 	encoder.Cleanup()
 
+	c.printlnStdOut("waiting for main collector wait group")
 	c.statMutex.Lock()
 	c.wg.Wait()
 	c.statMutex.Unlock()
@@ -72,7 +73,4 @@ func (c *Collector) cleanup(force bool) {
 			c.printStdOut("failed to close logfile:", err)
 		}
 	}
-
-	clearLine()
-	c.printlnStdOut("done.")
 }

@@ -493,7 +493,11 @@ func CleanupReassembly(wait bool) {
 			fmt.Println("\nwaiting for last streams to finish processing or time-out, timeout:", c.ClosePendingTimeOut)
 			fmt.Println("hit ctrl-C to force quit")
 		}
-		streamFactory.WaitGoRoutines()
+		select {
+		case <- waitForConns():
+		case <- time.After(c.ClosePendingTimeOut):
+			fmt.Println("timed out after", c.ClosePendingTimeOut)
+		}
 	}
 
 	// create a memory snapshot for debugging
@@ -530,9 +534,7 @@ func CleanupReassembly(wait bool) {
 			{"WriteIncomplete", strconv.FormatBool(c.WriteIncomplete)},
 		})
 
-		fmt.Println() // add a newline
 		printProgress(1, 1)
-		fmt.Println("")
 
 		statsMutex.Lock()
 		rows := [][]string{}
@@ -567,4 +569,10 @@ func CleanupReassembly(wait bool) {
 
 		reassemblyLog.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
 	}
+}
+
+func waitForConns() chan struct{} {
+	out := make(chan struct{})
+	streamFactory.WaitGoRoutines()
+	return out
 }
