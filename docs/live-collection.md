@@ -48,3 +48,31 @@ Netcap uses promiscous mode by default. You can toggle this behavior with the **
 $ net capture -iface en0 -promisc=false
 ```
 
+## Windows
+
+For windows, things work a little bit different.
+
+First, download & install the latest version of **WinPcap**:
+
+{% embed url="https://www.winpcap.org/install/" %}
+
+Next, open a CMD prompt and run:
+
+```aspnet
+C:\>getmac /fo csv /v
+"Connection Name","Network Adapter","Physical Address","Transport Name"
+"Ethernet0","Intel(R) PRO/1000 MT Network Connection","00-0C-29-BB-EC-9B","\Device\Tcpip_{B1B1E59F-FA8F-4A7B-B28C-7A26F6E00F5A}"
+```
+
+Note down the Identifier for your adapter of interest \(here: **Ethernet0**\), in this example the identifier is:
+
+```aspnet
+\Device\Tcpip_{B1B1E59F-FA8F-4A7B-B28C-7A26F6E00F5A}
+```
+
+To capture traffic on the interface, you must prefix the **ID \({B1B1E59F-FA8F-4A7B-B28C-7A26F6E00F5A}\)** with **\Device\NPF\_**
+
+```aspnet
+net.exe capture -iface \Device\NPF_{B1B1E59F-FA8F-4A7B-B28C-7A26F6E00F5A}
+```
+
