@@ -111,6 +111,7 @@ type tcpConnectionFactory struct {
 	wg         sync.WaitGroup
 	decodeHTTP bool
 	decodePOP3 bool
+	sync.Mutex
 }
 
 var fsmOptions = reassembly.TCPSimpleFSMOptions{}
@@ -147,7 +148,9 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		}
 
 		// kickoff decoders for client and server
+		factory.Lock()
 		factory.wg.Add(2)
+		factory.Unlock()
 		go stream.client.Run(&factory.wg)
 		go stream.server.Run(&factory.wg)
 	}
@@ -179,7 +182,9 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 }
 
 func (factory *tcpConnectionFactory) WaitGoRoutines() {
+	factory.Lock()
 	factory.wg.Wait()
+	factory.Unlock()
 }
 
 // Context is the assembler context
@@ -244,11 +249,13 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 	// FSM
 	if !t.tcpstate.CheckState(tcp, dir) {
 		logReassemblyError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
+		statsMutex.Lock()
 		reassemblyStats.rejectFsm++
 		if !t.fsmerr {
 			t.fsmerr = true
 			reassemblyStats.rejectConnFsm++
 		}
+		statsMutex.Unlock()
 		if !c.IgnoreFSMerr {
 			return false
 		}
@@ -257,7 +264,9 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 	err := t.optchecker.Accept(tcp, ci, dir, nextSeq, start)
 	if err != nil {
 		logReassemblyError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
+		statsMutex.Lock()
 		reassemblyStats.rejectOpt++
+		statsMutex.Unlock()
 		if !c.NoOptCheck {
 			return false
 		}
@@ -275,7 +284,9 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 		}
 	}
 	if !accept {
+		statsMutex.Lock()
 		reassemblyStats.rejectOpt++
+		statsMutex.Unlock()
 	}
 	return accept
 }
@@ -490,13 +501,17 @@ func CleanupReassembly(wait bool) {
 	// wait for stream reassembly to finish
 	if c.WaitForConnections || wait {
 		if !Quiet {
-			fmt.Println("\nwaiting for last streams to finish processing or time-out, timeout:", c.ClosePendingTimeOut)
-			fmt.Println("hit ctrl-C to force quit")
+			fmt.Print("waiting for last streams to finish processing...")
 		}
 		select {
 		case <- waitForConns():
+			if !Quiet {
+				fmt.Println(" done!")
+			}
 		case <- time.After(c.ClosePendingTimeOut):
-			fmt.Println("timed out after", c.ClosePendingTimeOut)
+			if !Quiet {
+				fmt.Println(" timeout after", c.ClosePendingTimeOut)
+			}
 		}
 	}
 
@@ -559,6 +574,8 @@ func CleanupReassembly(wait bool) {
 
 		tui.Table(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
 
+		errorsMapMutex.Lock()
+		statsMutex.Lock()
 		if numErrors != 0 {
 			rows = [][]string{}
 			for e := range errorsMap {
@@ -566,13 +583,19 @@ func CleanupReassembly(wait bool) {
 			}
 			tui.Table(reassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
 		}
-
 		reassemblyLog.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
+		statsMutex.Unlock()
+		errorsMapMutex.Unlock()
 	}
 }
 
 func waitForConns() chan struct{} {
 	out := make(chan struct{})
-	streamFactory.WaitGoRoutines()
+
+	go func() {
+		streamFactory.WaitGoRoutines()
+		out <- struct{}{}
+	}()
+
 	return out
 }

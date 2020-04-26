@@ -62,7 +62,7 @@ func handleSignals() {
 	go func() {
 		sig := <-sigs
 
-		fmt.Println("received signal:", sig)
+		fmt.Println("\nreceived signal:", sig)
 
 		fmt.Println("exiting")
 
