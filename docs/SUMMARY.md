@@ -22,7 +22,7 @@
 * [TLS Fingerprinting](tls-fingerprinting.md)
 * [Reassembly](reassembly.md)
 * [Deep Packet Inspection](deep-packet-inspection.md)
-* [Live Collection](live-collection.md)
+* [Live Capture](live-collection.md)
 * [Maltego Integration](maltego-integration.md)
 * [Logging](logging.md)
 * [Packet Contexts](packet-contexts.md)
