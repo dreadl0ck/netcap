@@ -2,11 +2,10 @@
 
 ## v0.5 Documentation
 
-- test windows binaries
-- update README.md
-
+- check TODOs in source
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana
+- Blog: Setup Guide
 
 ## Maltego Plugin
 
@@ -42,7 +41,7 @@
 - define triggers to highlight suspicious links in red
 - MIME type: check if executables are properly detected
 - check if order of values in maltego list matches the timestamps
-- Application: add timestamps when packets have been seen, currently the first seen timestamp for the asscociated ip profile is repeated
+- Application: add timestamps when packets have been seen, currently the first seen timestamp for the associated ip profile is repeated
 
 ## General
 
@@ -50,11 +49,7 @@
 - remove global state in encoder and collector pkgs?
 - transform: add a text based commandline interface for the transformations
 - capture unknown L7 protocol TCP streams and write to disk
-- net.split: split pcap or audit record files by days or hours
-- check TODOs in source
-- improve tests
-- add tests for POP3 parsing
-- add tests for http audit records and compare results with output from urlsnarf
+- new tool: net split, to split pcap or audit record files by days or hours
 - implement passive dns hosts mapping generation in netcap
 - sort errors by the number of occurrences (COUNT) for print and log in errors.log
 - add log flag to enable writing output to file netcap.log and stdout simultaneously
@@ -64,38 +59,44 @@
 - use ip whitelist for DeviceProfiles
 - implement a JSON output writer?
 - integrate: https://ja3er.com/downloads.html
-- future: add Ja3 / ja3s whitelisting
+- add Ja3 / ja3s whitelisting
+- use new 1.13 strings.ToValidUTF8()
+- remove length field from UDP and IPv6
+- constconf: generate a configuration with constant values -> compiler can optimize better
 
-Reassembly: 2 Options
+## tests
+
+- add tests for POP3 parsing
+- add tests for http audit records and compare results with output from urlsnarf
+
+## Reassembly
+ 
+2 Options:
 
 1. One assembler per worker + 1 shared connection pool (currently implemented)
 2. One global assembler per protocol with a dedicated stream pool for that protocol (reduces lock contention)
 
-- constconf: generate a configuration with constant values -> compiler can optimize better
+## DPI
 
 - batch DPI calls per flow?
-- use nDPI 3.2
+- add support for nDPI 3.2
 
-- label tool: display a warning when nothing is there for mapping
-- use new 1.13 strings.ToValidUTF8()
+## net collect
 
-- remove length field from UDP and IPv6
 - net.collect -gen-keypair -> net.util
 - replace AuditRecordHandle in net.collect with netcap.Writer
-- colorize tool output
+
+## net label
+
+- label tool: display a warning when nothing is there for mapping
 - add YARA support for labels
+- docs: describe custom labeling 
 
-- add contributions welcome to README
-- shortly describe main framework components in README (cmd/\*)
-
-- add ROADMAP
-- BLOG: Setup Guide
 - Visualize CIC datasets
-
 - implement reading NC files in rust
-- Full Proxy?
+- proxy: add support for link layer? 
 
-- capture payloads for HTTP
+- capture payloads for HTTP?
 - add payload data for Flows and Connection if desired
 - add flags to enable payload capture for link layer protocols. Currently payload capture only supports some Transport layer protos
 
@@ -112,6 +113,9 @@ Reassembly: 2 Options
 
 - writing through channels vs mutex
 - concatenating Strings Builder vs byte slices etc
+- robustness testing / stress test / evasion
+- performance assessment + optimizations
+- pprof & memprof tests
 
 ## Sensor
 
@@ -125,34 +129,19 @@ Reassembly: 2 Options
 
 ## Future Development
 
+- colorize tool output for better readability
 - helper func for ToString() on array?
-- add github wiki
-- godoc API cleanup
-- handle panic(err) gracefully
+- check for panic(err) instances and handle more gracefully
 - performance: allocate fixed size arrays when encoding
-- add flag to map field values to constant names
-- add test files for different protocols
-- JSON output
 - events package to define events based on characteristics or IOCs
 - scale to multi instance architecture
-- data exporters + visualization dashboards / VR etc
-- robustness testing / pentest
-- performance assessment + optimizations
 
-- labeling: how many unmatched alerts?
-- labeling: switch to intelligence from eve.json
-
-- display custom encoder stats in final view: add stats func to custom encoder and call them on destroy
-- TCP stream reassembly: make App Layer decoding configurable, to allow extension for other layer 7 protos (SMTP, FTP etc)
+- labeling: log number of unmatched alerts
+- suricata labeling: switch to intelligence from eve.json
+- TCP stream reassembly: ease adding support for other stream based protocols
 - flag sort output by timestamp (func in utils)
 - flag to limit maximum disk space used in live mode / create a file per day?
-- add go commandline completion lib
-- port the dataframe encoding logic to Go
-- make labeling work on bare CSV based on timestamp + plus source pcap
-- also dump http uploads via POST
-- pprof & memprof tests
+
 - use unique maps for each worker and merge to prevent synced maps?
-- integrate HASSH
-- netcap plugins?
-- integrate labeling function for YARA
-- go-dpi classifiers?
+- integrate HASSH SSH fingerprinting
+- netcap go plugins?
