@@ -6792,15 +6792,14 @@ type TLSClientHello struct {
 	SupportedGroups  []int32  `protobuf:"varint,18,rep,packed,name=SupportedGroups,proto3" json:"SupportedGroups,omitempty"`
 	SupportedPoints  []int32  `protobuf:"varint,19,rep,packed,name=SupportedPoints,proto3" json:"SupportedPoints,omitempty"`
 	ALPNs            []string `protobuf:"bytes,20,rep,name=ALPNs,proto3" json:"ALPNs,omitempty"`
-	//map[Extension]uint16 // [Type]Length Extensions
-	Ja3        string  `protobuf:"bytes,21,opt,name=Ja3,proto3" json:"Ja3,omitempty"`
-	SrcIP      string  `protobuf:"bytes,22,opt,name=SrcIP,proto3" json:"SrcIP,omitempty"`
-	DstIP      string  `protobuf:"bytes,23,opt,name=DstIP,proto3" json:"DstIP,omitempty"`
-	SrcMAC     string  `protobuf:"bytes,24,opt,name=SrcMAC,proto3" json:"SrcMAC,omitempty"`
-	DstMAC     string  `protobuf:"bytes,25,opt,name=DstMAC,proto3" json:"DstMAC,omitempty"`
-	SrcPort    int32   `protobuf:"varint,26,opt,name=SrcPort,proto3" json:"SrcPort,omitempty"`
-	DstPort    int32   `protobuf:"varint,27,opt,name=DstPort,proto3" json:"DstPort,omitempty"`
-	Extensions []int32 `protobuf:"varint,28,rep,packed,name=Extensions,proto3" json:"Extensions,omitempty"`
+	Ja3              string   `protobuf:"bytes,21,opt,name=Ja3,proto3" json:"Ja3,omitempty"`
+	SrcIP            string   `protobuf:"bytes,22,opt,name=SrcIP,proto3" json:"SrcIP,omitempty"`
+	DstIP            string   `protobuf:"bytes,23,opt,name=DstIP,proto3" json:"DstIP,omitempty"`
+	SrcMAC           string   `protobuf:"bytes,24,opt,name=SrcMAC,proto3" json:"SrcMAC,omitempty"`
+	DstMAC           string   `protobuf:"bytes,25,opt,name=DstMAC,proto3" json:"DstMAC,omitempty"`
+	SrcPort          int32    `protobuf:"varint,26,opt,name=SrcPort,proto3" json:"SrcPort,omitempty"`
+	DstPort          int32    `protobuf:"varint,27,opt,name=DstPort,proto3" json:"DstPort,omitempty"`
+	Extensions       []int32  `protobuf:"varint,28,rep,packed,name=Extensions,proto3" json:"Extensions,omitempty"`
 }
 
 func (m *TLSClientHello) Reset()         { *m = TLSClientHello{} }
@@ -7049,7 +7048,7 @@ type TLSServerHello struct {
 	Ems                          bool     `protobuf:"varint,14,opt,name=Ems,proto3" json:"Ems,omitempty"`
 	Scts                         [][]byte `protobuf:"bytes,15,rep,name=Scts,proto3" json:"Scts,omitempty"`
 	SupportedVersion             int32    `protobuf:"varint,16,opt,name=SupportedVersion,proto3" json:"SupportedVersion,omitempty"`
-	// KeyShare ServerShare               = 17; // fields are unexported by the stdlib unfortunately...
+	// KeyShare ServerShare            = 17; // fields are unexported by the stdlib unfortunately...
 	SelectedIdentityPresent bool    `protobuf:"varint,18,opt,name=SelectedIdentityPresent,proto3" json:"SelectedIdentityPresent,omitempty"`
 	SelectedIdentity        int32   `protobuf:"varint,19,opt,name=SelectedIdentity,proto3" json:"SelectedIdentity,omitempty"`
 	Cookie                  []byte  `protobuf:"bytes,20,opt,name=Cookie,proto3" json:"Cookie,omitempty"`
