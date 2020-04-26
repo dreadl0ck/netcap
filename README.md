@@ -68,6 +68,20 @@ And live operation decoding traffic from my wireless network interface, while I 
 - research on anomaly-based detection mechanisms
 - forensic data analysis
 
+## Framework Components
+
+The framework consists of 9 logically separate tools compiled into a single binary:
+
+- capture (capture audit records live or from dumpfiles)
+- dump (dump with audit records in various formats)
+- label (tool for creating labeled CSV datasets from netcap data)
+- collect (collection server for distributed collection)
+- agent (sensor agent for distributed collection)
+- proxy (http reverse proxy for capturing traffic from web services)
+- util (utility tool for validating audit records and converting timestamps)
+- export (exporter for prometheus metrics)
+- transform (maltego transformation plugin)
+
 ## Integrations
 
 ### Prometheus Metrics
@@ -101,3 +115,9 @@ You can read more about the Maltego integration in the [docs](https://app.gitboo
 ## License
 
 Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
+
+## Contributing
+
+Contributions welcome, there's plenty of stuff to do, from simple additions to low level framework engineering!
+
+Please see the [Contributing Page](https://docs.netcap.io/v/v0.5/contributing) for more information.
