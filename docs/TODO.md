@@ -2,7 +2,8 @@
 
 ## v0.5 Documentation
 
-- record new asciicasts + maltego videos
+- test windows binaries
+- update README.md
 
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana
@@ -45,6 +46,7 @@
 
 ## General
 
+- implement alerting / rule mechanism with separate tool
 - remove global state in encoder and collector pkgs?
 - transform: add a text based commandline interface for the transformations
 - capture unknown L7 protocol TCP streams and write to disk

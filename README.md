@@ -8,7 +8,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/netcap)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/docs/LICENSE)
-[![Golang](https://img.shields.io/badge/Go-1.11-blue.svg)](https://golang.org)
+[![Golang](https://img.shields.io/badge/Go-1.14-blue.svg)](https://golang.org)
 ![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
 ![macOS](https://img.shields.io/badge/Supports-macOS-green.svg)
 ![windows](https://img.shields.io/badge/Supports-windows-green.svg)
@@ -44,11 +44,11 @@ For more details please refer to the [Documentation](https://docs.netcap.io), vi
 A simple demonstration of generating audit records from a PCAP dump file,
 querying and displaying the collected information in various ways:
 
-[![asciicast](https://asciinema.org/a/217939.svg)](https://asciinema.org/a/217939)
+[![asciicast](https://asciinema.org/a/Mw2PldBOcPZeTOeN8XTKxFA5h.svg)](https://asciinema.org/a/Mw2PldBOcPZeTOeN8XTKxFA5h)
 
 And live operation decoding traffic from my wireless network interface, while I am surfing the web:
 
-[![asciicast](https://asciinema.org/a/217941.svg)](https://asciinema.org/a/217941)
+[![asciicast](https://asciinema.org/a/hOkjEZlTR4C9FRZ9ky7RTt2nA.svg)](https://asciinema.org/a/hOkjEZlTR4C9FRZ9ky7RTt2nA)
 
 ## Design Goals
 
@@ -57,7 +57,7 @@ And live operation decoding traffic from my wireless network interface, while I 
 - output format interoperable with many different programming languages
 - concurrent design
 - output with small storage footprint on disk
-- maximum data availability
+- gather everything, separate what can be understood from what can't
 - allow implementation of custom abstractions
 - rich platform and architecture support
 
@@ -66,7 +66,37 @@ And live operation decoding traffic from my wireless network interface, while I 
 - monitoring honeypots
 - monitoring medical / industrial devices
 - research on anomaly-based detection mechanisms
-- Forensic data analysis
+- forensic data analysis
+
+## Integrations
+
+### Prometheus Metrics
+
+Overview Dashboard example:
+
+![](docs/.gitbook/assets/screenshot-2019-05-04-at-23.39.19.png)
+
+HTTP Dashboard example:
+
+![](docs/.gitbook/assets/screenshot-2019-05-04-at-23.40.05.png)
+
+You can read more about the Prometheus integration in the [docs](https://app.gitbook.com/@netcap/s/netcap/v/v0.5/maltego-integration).
+
+### Maltego
+
+Extract DHCP information from local network devices of a PCAP dump file:
+
+![](docs/.gitbook/assets/dhcp.mov.gif)
+
+HTTP File extraction:
+
+![](docs/.gitbook/assets/screenshot-2020-03-24-at-23.52.23.png)
+
+HTTP parameter command injection analysis: 
+
+![](docs/.gitbook/assets/screenshot-2020-03-25-at-15.00.55.png)
+
+You can read more about the Maltego integration in the [docs](https://app.gitbook.com/@netcap/s/netcap/v/v0.5/maltego-integration).
 
 ## License
 
