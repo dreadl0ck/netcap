@@ -18,7 +18,7 @@ It uses the **File** audit record type to model the extracted information.
 
 ## File Audit Records
 
-The audit record definition for a file look like this:
+The audit record definition for a file looks like this:
 
 ```erlang
 message File {
