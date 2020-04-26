@@ -83,6 +83,7 @@ type Collector struct {
 	config *Config
 
 	isLive bool
+	shutdown bool
 }
 
 // New returns a new Collector instance.
@@ -112,9 +113,6 @@ func (c *Collector) stopWorkers() {
 			case <- time.After(5 * time.Second):
 				fmt.Println("worker", i, "seems stuck, skipping...")
 		}
-
-		// TODO closing here produces a data race
-		// close(w)
 	}
 }
 
@@ -128,7 +126,7 @@ func (c *Collector) handleSignals() {
 	go func() {
 		sig := <-sigs
 
-		fmt.Println("received signal:", sig)
+		fmt.Println("\nreceived signal:", sig)
 		fmt.Println("exiting")
 
 		go func() {
@@ -283,15 +281,23 @@ func (c *Collector) Stats() {
 // updates the progress indicator and writes to stdout.
 func (c *Collector) printProgress() {
 
+	// increment atomic packet counter
+	atomic.AddInt64(&c.current, 1)
+
 	// must be locked, otherwise a race occurs when sending a SIGINT
 	//  and triggering wg.Wait() in another goroutine...
 	c.statMutex.Lock()
+
 	// increment wait group for packet processing
 	c.wg.Add(1)
+
+	// dont print message when collector is about to shutdown
+	if c.shutdown {
+		c.statMutex.Unlock()
+		return
+	}
 	c.statMutex.Unlock()
 
-	// increment atomic packet counter
-	atomic.AddInt64(&c.current, 1)
 	if c.current%100 == 0 {
 		if !c.config.Quiet {
 			// using a strings.Builder for assembling string for performance

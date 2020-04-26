@@ -15,7 +15,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.2
 	github.com/klauspost/compress v1.10.0 // indirect
-	github.com/klauspost/pgzip v1.2.1
+	github.com/klauspost/pgzip v1.2.3
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect

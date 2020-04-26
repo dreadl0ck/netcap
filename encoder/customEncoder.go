@@ -255,5 +255,5 @@ func (e *CustomEncoder) GetChan() <-chan []byte {
 
 // NumRecords returns the number of written records
 func (e *CustomEncoder) NumRecords() int64 {
-	return e.numRecords
+	return atomic.LoadInt64(&e.numRecords)
 }

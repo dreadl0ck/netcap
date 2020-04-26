@@ -4,10 +4,15 @@ import (
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dustin/go-humanize"
 	"log"
+	"time"
 )
 
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup(force bool) {
+
+	c.statMutex.Lock()
+	c.shutdown = true
+	c.statMutex.Unlock()
 
 	// stop all workers.
 	// this will block until all workers are stopped
@@ -20,10 +25,27 @@ func (c *Collector) cleanup(force bool) {
 	}
 	encoder.Cleanup()
 
-	c.printlnStdOut("waiting for main collector wait group")
-	c.statMutex.Lock()
-	c.wg.Wait()
-	c.statMutex.Unlock()
+	waitForCollector := func() chan struct{} {
+		ch := make(chan struct{})
+
+		go func() {
+			c.statMutex.Lock()
+			c.wg.Wait()
+			c.statMutex.Unlock()
+
+			ch <- struct{}{}
+		}()
+
+		return ch
+	}
+
+	c.printStdOut("waiting for main collector wait group...")
+	select {
+	case <- waitForCollector():
+		c.printlnStdOut(" done!")
+	case <- time.After(c.config.EncoderConfig.ClosePendingTimeOut):
+		c.printStdOut(" timeout after ", c.config.EncoderConfig.ClosePendingTimeOut)
+	}
 
 	// flush all layer encoders
 	for _, encoders := range encoder.LayerEncoders {

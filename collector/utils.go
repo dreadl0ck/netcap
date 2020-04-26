@@ -48,12 +48,21 @@ func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
 
 // printProgressLive prints live statistics.
 func (c *Collector) printProgressLive() {
-	// must be locked, otherwise a race occurs when sending a SIGINT and triggering wg.Wait() in another goroutine...
-	c.statMutex.Lock()
-	c.wg.Add(1)
-	c.statMutex.Unlock()
 
 	atomic.AddInt64(&c.current, 1)
+
+	// must be locked, otherwise a race occurs when sending a SIGINT and triggering wg.Wait() in another goroutine...
+	c.statMutex.Lock()
+
+	c.wg.Add(1)
+
+	// dont print message when collector is about to shutdown
+	if c.shutdown {
+		c.statMutex.Unlock()
+		return
+	}
+	c.statMutex.Unlock()
+
 	if c.current%1000 == 0 {
 		clearLine()
 		fmt.Print("running since ", time.Since(c.start), ", captured ", c.current, " packets...")
