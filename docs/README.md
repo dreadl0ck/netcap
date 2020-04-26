@@ -50,15 +50,21 @@ The framework consists of 9 logically separate tools compiled into a single bina
 
 A simple demonstration of generating audit records from a PCAP dump file, querying and displaying the collected information in various ways
 
-{% embed url="https://asciinema.org/a/Mw2PldBOcPZeTOeN8XTKxFA5h" %}
+{% embed url="https://asciinema.org/a/Mw2PldBOcPZeTOeN8XTKxFA5h" caption="Working with PCAPs" %}
 
 And live operation decoding traffic from my wireless network interface, while I am surfing the web
 
-{% embed url="https://asciinema.org/a/hOkjEZlTR4C9FRZ9ky7RTt2nA" %}
+{% embed url="https://asciinema.org/a/hOkjEZlTR4C9FRZ9ky7RTt2nA" caption="Live Capture" %}
+
+Exploring HTTP audit records
+
+{% embed url="https://asciinema.org/a/P5hwb7YzMer4CHrF6Q6NP1WjF" caption="HTTP Audit Records" %}
+
+### Deep Learning
 
 Watch a quick demo of the deep neural network for classification of malicious behavior, on a small PCAP dump file with traffic from the LOKI Bot. First, the PCAP file is parsed with [netcap](https://github.com/dreadl0ck/netcap-tf-dnn/blob/master/github.com/dreadl0ck/netcap), in order to get audit records that will be labeled afterwards with the [netlabel](https://github.com/dreadl0ck/netcap#netlabel-command-line-tool) tool. The labeled CSV data for the TCP audit record type is then used for training \(75%\) and evaluation \(25%\) of the classification accuracy provided by the deep neural network.
 
-{% embed url="https://asciinema.org/a/217944" caption="" %}
+{% embed url="https://asciinema.org/a/WnnLCsPUcBWatb2ddf0xK1pmJ" caption="Deep Learning with Tensorflow" %}
 
 ## License
 

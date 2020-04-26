@@ -4,6 +4,12 @@ description: Identify client and server that are using encrypted connections
 
 # TLS Fingerprinting
 
+## TLS Audit Records
+
+Watch a quick demo of creating and exploring the **TLSClientHello** audit records on the command-line
+
+{% embed url="https://asciinema.org/a/KfhJRM3P4b0GsMtVCtelzWMbK" %}
+
 ## JA3
 
 JA3 is a technique developed by Salesforce, to fingerprint the TLS client and server hellos.
