@@ -106,8 +106,13 @@ func New(config Config) *Collector {
 // stopWorkers halts all workers.
 func (c *Collector) stopWorkers() {
 	// wait until all packets have been decoded
-	for _, w := range c.workers {
-		w <- nil
+	for i, w := range c.workers {
+		select {
+			case w <- nil:
+			case <- time.After(5 * time.Second):
+				fmt.Println("worker", i, "seems stuck, skipping...")
+		}
+
 		// TODO closing here produces a data race
 		// close(w)
 	}

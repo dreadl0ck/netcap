@@ -47,7 +47,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 						//	fmt.Printf("assembler final flush: %d closed\n", closed)
 						//}
 					}
-
 					return
 				}
 
