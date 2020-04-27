@@ -10,27 +10,34 @@ require (
 	github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b
 	github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b
 	github.com/dustin/go-humanize v1.0.0
-	github.com/evilsocket/islazy v1.10.4
-	github.com/fatih/color v1.7.0 // indirect
+	github.com/evilsocket/islazy v1.10.6
+	github.com/fatih/color v1.9.0 // indirect
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.3.2
-	github.com/klauspost/compress v1.10.0 // indirect
+	github.com/golang/protobuf v1.4.0
+	github.com/klauspost/compress v1.10.5 // indirect
 	github.com/klauspost/pgzip v1.2.3
-	github.com/kr/pretty v0.1.0 // indirect
-	github.com/mattn/go-colorable v0.1.2 // indirect
-	github.com/mattn/go-runewidth v0.0.4 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/kr/pretty v0.2.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
+	github.com/mattn/go-colorable v0.1.6 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/namsral/flag v1.7.4-pre
+	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/oschwald/maxminddb-golang v1.6.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.1.0
-	github.com/sirupsen/logrus v1.2.0
-	go.uber.org/atomic v1.4.0 // indirect
-	go.uber.org/multierr v1.1.0 // indirect
-	go.uber.org/zap v1.10.0
-	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
-	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	github.com/prometheus/client_golang v1.5.1
+	github.com/prometheus/procfs v0.0.11 // indirect
+	github.com/sirupsen/logrus v1.5.0
+	github.com/stretchr/testify v1.5.1 // indirect
+	go.uber.org/zap v1.15.0
+	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5 // indirect
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
+	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
+	golang.org/x/tools v0.0.0-20200426102838-f3a5411a4c3b // indirect
+	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.2.8
+	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
 )
