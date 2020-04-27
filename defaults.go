@@ -11,7 +11,8 @@ const (
 	DefaultConnTimeOut          = 10 * time.Second
 	DefaultFlowFlushInterval    = 2000
 	DefaultFlowTimeOut          = 10 * time.Second
-	DefaultClosePendingTimeout  = 5 * time.Second
-	DefaultCloseInactiveTimeout = 24 * time.Hour
+	DefaultClosePendingTimeout  = 2 * time.Second
+	DefaultCloseInactiveTimeout = 10 * time.Minute
 	DefaultCompressionBlockSize = 1024 * 1024 // 1MB
+	DefaultAllowMissingInit     = true
 )
