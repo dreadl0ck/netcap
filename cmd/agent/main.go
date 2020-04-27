@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	gzip "github.com/klauspost/pgzip"
+	"compress/gzip"
 
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/dreadl0ck/netcap"

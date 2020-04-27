@@ -81,7 +81,9 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// create log file
+	c.mu.Lock()
 	c.errorLogFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.log"))
+	c.mu.Unlock()
 
 	return
 }

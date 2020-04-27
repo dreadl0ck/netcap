@@ -15,7 +15,7 @@ package netcap
 
 import (
 	"bufio"
-	gzip "github.com/klauspost/pgzip"
+	"compress/gzip"
 	"os"
 	"path/filepath"
 

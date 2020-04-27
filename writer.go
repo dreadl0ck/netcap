@@ -15,12 +15,12 @@ package netcap
 
 import (
 	"bufio"
+	gzip "github.com/klauspost/pgzip"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
-
-	gzip "github.com/klauspost/pgzip"
+	"sync"
 
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"
@@ -53,6 +53,8 @@ type Writer struct {
 	csv          bool
 	out          string
 	IsChanWriter bool
+
+	mu sync.Mutex
 }
 
 /*
@@ -172,6 +174,8 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 
 // WriteProto writes a protobuf message
 func (w *Writer) WriteProto(msg proto.Message) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	return w.aWriter.PutProto(msg)
 }
 
@@ -181,11 +185,15 @@ func (w *Writer) WriteProto(msg proto.Message) error {
 
 // WriteCSV writes a csv record
 func (w *Writer) WriteCSV(msg proto.Message) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	return w.csvWriter.WriteRecord(msg)
 }
 
 // WriteCSVHeader writes a CSV record
 func (w *Writer) WriteCSVHeader(msg proto.Message) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	return w.csvWriter.WriteHeader(msg)
 }
 
@@ -255,7 +263,9 @@ func CloseGzipWriters(writers ...*gzip.Writer) {
 
 func (w *Writer) Close() (name string, size int64) {
 	if w.compress {
+		w.mu.Lock()
 		CloseGzipWriters(w.gWriter)
+		w.mu.Unlock()
 	}
 	if w.buffer {
 		FlushWriters(w.bWriter)

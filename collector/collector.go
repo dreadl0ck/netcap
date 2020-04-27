@@ -84,6 +84,7 @@ type Collector struct {
 
 	isLive bool
 	shutdown bool
+	mu sync.Mutex
 }
 
 // New returns a new Collector instance.
@@ -107,6 +108,7 @@ func New(config Config) *Collector {
 // stopWorkers halts all workers.
 func (c *Collector) stopWorkers() {
 	// wait until all packets have been decoded
+	c.mu.Lock()
 	for i, w := range c.workers {
 		select {
 			case w <- nil:
@@ -114,6 +116,7 @@ func (c *Collector) stopWorkers() {
 				fmt.Println("worker", i, "seems stuck, skipping...")
 		}
 	}
+	c.mu.Unlock()
 }
 
 // handleSignals catches signals and runs the cleanup
@@ -171,7 +174,17 @@ func (c *Collector) handlePacketTimeout(p *packet) {
 	case c.workers[c.next] <- p:
 	case <-time.After(3 * time.Second):
 		p := gopacket.NewPacket(p.data, c.config.BaseLayer, gopacket.Default)
-		fmt.Println("handle packet timeout", p.NetworkLayer().NetworkFlow(), p.TransportLayer().TransportFlow())
+		var (
+			nf gopacket.Flow
+			tf gopacket.Flow
+		)
+		if nl := p.NetworkLayer(); nl != nil {
+			nf = nl.NetworkFlow()
+		}
+		if tl := p.TransportLayer(); tl != nil {
+			tf = tl.TransportFlow()
+		}
+		fmt.Println("handle packet timeout", nf, tf)
 	}
 
 	// increment or reset next
@@ -199,11 +212,17 @@ func (c *Collector) printErrors() {
 // closes the logfile for errors.
 func (c *Collector) closeErrorLogFile() {
 
+	c.errorMap.Lock()
+
 	// append  stats
 	var stats string
 	for msg, count := range c.errorMap.Items {
 		stats += fmt.Sprintln("[ERROR]", msg, "COUNT:", count)
 	}
+
+	c.errorMap.Unlock()
+
+	c.mu.Lock()
 
 	_, err := c.errorLogFile.WriteString(stats)
 	if err != nil {
@@ -221,6 +240,8 @@ func (c *Collector) closeErrorLogFile() {
 	if err != nil {
 		panic(err)
 	}
+
+	c.mu.Unlock()
 }
 
 // Stats prints collector statistics.

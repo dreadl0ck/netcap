@@ -26,10 +26,15 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+type DeviceProfile struct {
+	*types.DeviceProfile
+	sync.Mutex
+}
+
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicDeviceProfileMap struct {
 	// SrcMAC to Profiles
-	Items map[string]*types.DeviceProfile
+	Items map[string]*DeviceProfile
 	sync.Mutex
 }
 
@@ -43,7 +48,7 @@ func (a *AtomicDeviceProfileMap) Size() int {
 var (
 	// Profiles hold all connections
 	Profiles = &AtomicDeviceProfileMap{
-		Items: make(map[string]*types.DeviceProfile),
+		Items: make(map[string]*DeviceProfile),
 	}
 	profileEncoderInstance *CustomEncoder
 	profiles               int64
@@ -56,7 +61,7 @@ var (
 )
 
 // GetDeviceProfile fetches a known profile and updates it or returns a new one
-func getDeviceProfile(macAddr string, i *idents) *types.DeviceProfile {
+func getDeviceProfile(macAddr string, i *idents) *DeviceProfile {
 
 	if p, ok := Profiles.Items[macAddr]; ok {
 		applyDeviceProfileUpdate(p, i)
@@ -85,28 +90,32 @@ func UpdateDeviceProfile(i *idents) {
 }
 
 // NewDeviceProfile creates a new device specifc profile
-func NewDeviceProfile(i *idents) *types.DeviceProfile {
+func NewDeviceProfile(i *idents) *DeviceProfile {
 	var contacts []*types.IPProfile
 	if ip := getIPProfile(i.dstIP, i); ip != nil {
-		contacts = append(contacts, ip)
+		contacts = append(contacts, ip.IPProfile)
 	}
 	var devices []*types.IPProfile
 	if ip := getIPProfile(i.srcIP, i); ip != nil {
-		devices = append(devices, ip)
+		devices = append(devices, ip.IPProfile)
 	}
 
-	return &types.DeviceProfile{
-		MacAddr:            i.srcMAC,
-		DeviceManufacturer: resolvers.LookupManufacturer(i.srcMAC),
-		DeviceIPs:          devices,
-		Contacts:           contacts,
-		Timestamp:          i.timestamp,
-		NumPackets:         1,
-		Bytes:              uint64(len(i.p.Data())),
+	return &DeviceProfile{
+		DeviceProfile: &types.DeviceProfile{
+			MacAddr:            i.srcMAC,
+			DeviceManufacturer: resolvers.LookupManufacturer(i.srcMAC),
+			DeviceIPs:          devices,
+			Contacts:           contacts,
+			Timestamp:          i.timestamp,
+			NumPackets:         1,
+			Bytes:              uint64(len(i.p.Data())),
+		},
 	}
 }
 
-func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
+func applyDeviceProfileUpdate(p *DeviceProfile, i *idents) {
+
+	p.Lock()
 
 	// deviceIPs
 	var found bool
@@ -114,7 +123,7 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 		if pr != nil {
 			if pr.Addr == i.srcIP {
 				// update existing ip profile
-				pr = getIPProfile(i.srcIP, i)
+				pr = getIPProfile(i.srcIP, i).IPProfile
 				found = true
 			}
 		}
@@ -125,7 +134,7 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 		// if the packet has no network layer we wont get an IP here
 		// prevent adding a nil pointer to the array
 		if ip != nil {
-			p.DeviceIPs = append(p.DeviceIPs, ip)
+			p.DeviceIPs = append(p.DeviceIPs, ip.IPProfile)
 		}
 	}
 
@@ -135,7 +144,7 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 		if pr != nil {
 			if pr.Addr == i.dstIP {
 				// update existing ip profile
-				pr = getIPProfile(i.dstIP, i)
+				pr = getIPProfile(i.dstIP, i).IPProfile
 				found = true
 			}
 		}
@@ -147,12 +156,13 @@ func applyDeviceProfileUpdate(p *types.DeviceProfile, i *idents) {
 		// if the packet has no network layer we wont get an IP here
 		// prevent adding a nil pointer to the array
 		if ip != nil {
-			p.Contacts = append(p.Contacts, ip)
+			p.Contacts = append(p.Contacts, ip.IPProfile)
 		}
 	}
 
 	p.Bytes += uint64(len(i.p.Data()))
 	p.NumPackets++
+	p.Unlock()
 }
 
 type idents struct {
@@ -196,7 +206,9 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	// flush writer
 	if !e.writer.IsChanWriter {
 		for _, c := range Profiles.Items {
-			writeProfile(c)
+			c.Lock()
+			writeProfile(c.DeviceProfile)
+			c.Unlock()
 		}
 	}
 	return nil

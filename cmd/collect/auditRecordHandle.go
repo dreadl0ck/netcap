@@ -19,7 +19,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-
 	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap"

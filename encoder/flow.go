@@ -24,8 +24,13 @@ import (
 	"sync/atomic"
 )
 
+type Flow struct {
+	*types.Flow
+	sync.Mutex
+}
+
 type AtomicFlowMap struct {
-	Items map[string]*types.Flow
+	Items map[string]*Flow
 	sync.Mutex
 }
 
@@ -38,7 +43,7 @@ func (a *AtomicFlowMap) Size() int {
 
 var (
 	Flows = &AtomicFlowMap{
-		Items: make(map[string]*types.Flow),
+		Items: make(map[string]*Flow),
 	}
 	flowEncoderInstance *CustomEncoder
 	flows               int64
@@ -68,6 +73,8 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 
 		// flow exists. update fields
 		calcDuration := false
+
+		flow.Lock()
 
 		// check if received packet from the same flow
 		// was captured BEFORE the flows first seen timestamp
@@ -117,6 +124,8 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 		if calcDuration {
 			flow.Duration = utils.StringToTime(flow.TimestampLast).Sub(utils.StringToTime(flow.TimestampFirst)).Nanoseconds()
 		}
+
+		flow.Unlock()
 	} else {
 		// create a new flow
 		f := &types.Flow{}
@@ -142,7 +151,9 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 			f.ApplicationProto = al.LayerType().String()
 			f.AppPayloadSize = int32(len(al.Payload()))
 		}
-		Flows.Items[flowID] = f
+		Flows.Items[flowID] = &Flow{
+			Flow: f,
+		}
 
 		// continuously flush flows
 		flows++
@@ -152,7 +163,7 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 			for id, f := range Flows.Items {
 				// flush entries whose last timestamp is flowTimeOut older than current packet
 				if p.Metadata().Timestamp.Sub(utils.StringToTime(f.TimestampLast)) > c.FlowTimeOut {
-					selectFlows = append(selectFlows, f)
+					selectFlows = append(selectFlows, f.Flow)
 					// cleanup
 					delete(Flows.Items, id)
 				}
@@ -170,9 +181,13 @@ var flowEncoder = CreateCustomEncoder(types.Type_NC_Flow, "Flow", func(d *Custom
 	return nil
 }, func(e *CustomEncoder) error {
 	if !e.writer.IsChanWriter {
+		Flows.Lock()
 		for _, f := range Flows.Items {
-			writeFlow(f)
+			f.Lock()
+			writeFlow(f.Flow)
+			f.Unlock()
 		}
+		Flows.Unlock()
 	}
 	return nil
 })
