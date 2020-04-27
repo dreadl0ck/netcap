@@ -135,6 +135,12 @@ func (c *Collector) CollectPcap(path string) error {
 		c.config.BaseLayer = layers.LayerTypeIPv6
 	case layers.LinkTypeNull:
 		c.config.BaseLayer = layers.LayerTypeLoopback
+	case layers.LinkTypeFDDI:
+		c.config.BaseLayer = layers.LayerTypeFDDI
+	case layers.LinkTypeIEEE802_11:
+		c.config.BaseLayer = layers.LayerTypeDot11
+	case layers.LinkTypeIEEE80211Radio:
+		c.config.BaseLayer = layers.LayerTypeRadioTap
 	default:
 		log.Fatal("unhandled link type: ", r.LinkType())
 	}
