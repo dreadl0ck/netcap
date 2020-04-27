@@ -47,7 +47,11 @@ package encoder
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"encoding/hex"
+	"github.com/dreadl0ck/cryptoutils"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -59,11 +63,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"compress/gzip"
-	"github.com/dreadl0ck/cryptoutils"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*
@@ -221,14 +220,15 @@ func (h *httpReader) Run(wg *sync.WaitGroup) {
 		}
 		if err != nil {
 
-			// log errors that are not an EOF
-			if err != io.EOF && err != io.ErrUnexpectedEOF {
-				reassemblyLog.Println("stopping to process HTTP stream", c2s, err)
+			// exit on EOF
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				return
 			}
 
-			// stop processing the stream
-			// TODO: make configurable?
-			return
+			reassemblyLog.Println("HTTP stream encountered an error", c2s, err)
+
+			// continue processing the stream
+			continue
 		}
 	}
 }

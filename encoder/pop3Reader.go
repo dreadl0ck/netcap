@@ -165,14 +165,15 @@ func (h *pop3Reader) Run(wg *sync.WaitGroup) {
 		}
 		if err != nil {
 
-			// log errors that are not an EOF
-			if err != io.EOF && err != io.ErrUnexpectedEOF {
-				reassemblyLog.Println("stopping to process POP3 stream", c2s, err)
+			// exit on EOF
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				return
 			}
 
-			// stop processing the stream
-			// TODO: make configurable?
-			return
+			reassemblyLog.Println("POP3 stream encountered an error", c2s, err)
+
+			// continue processing the stream
+			continue
 		}
 	}
 }

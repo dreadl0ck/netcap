@@ -38,9 +38,25 @@ var tlsServerHelloEncoder = CreateCustomEncoder(types.Type_NC_TLSServerHello, "T
 		}
 
 		var (
-			srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
-			dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
+			srcPort, dstPort int
+			srcMac, dstMac string
+			srcIP, dstIP string
 		)
+
+		if ll := p.LinkLayer(); ll != nil {
+			srcMac = ll.LinkFlow().Src().String()
+			dstMac = ll.LinkFlow().Dst().String()
+		}
+
+		if nl := p.NetworkLayer(); nl != nil {
+			srcIP = p.NetworkLayer().NetworkFlow().Src().String()
+			dstIP = p.NetworkLayer().NetworkFlow().Dst().String()
+		}
+
+		if tl := p.TransportLayer(); tl != nil {
+			srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
+			dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Dst().String())
+		}
 
 		return &types.TLSServerHello{
 			Timestamp:                    utils.TimeToString(p.Metadata().Timestamp),
@@ -64,10 +80,10 @@ var tlsServerHelloEncoder = CreateCustomEncoder(types.Type_NC_TLSServerHello, "T
 			Cookie:                       hello.Cookie,
 			SelectedGroup:                int32(hello.SelectedGroup),
 			Ja3S:                         ja3.DigestHexJa3s(&hello.ServerHelloBasic),
-			SrcIP:                        p.NetworkLayer().NetworkFlow().Src().String(),
-			DstIP:                        p.NetworkLayer().NetworkFlow().Dst().String(),
-			SrcMAC:                       p.LinkLayer().LinkFlow().Src().String(),
-			DstMAC:                       p.LinkLayer().LinkFlow().Dst().String(),
+			SrcIP:                        srcIP,
+			DstIP:                        dstIP,
+			SrcMAC:                       srcMac,
+			DstMAC:                       dstMac,
 			SrcPort:                      int32(srcPort),
 			DstPort:                      int32(dstPort),
 			Extensions:                   extensions,

@@ -33,24 +33,53 @@ var dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11
 			}
 		}
 		if dot11.HTControl != nil {
+			var cmsi, msi, mfsi, gid, coding int32
+			if dot11.HTControl.VHT != nil {
+				if dot11.HTControl.VHT.MSI != nil {
+					msi = int32(*dot11.HTControl.VHT.MSI)
+				}
+				if dot11.HTControl.VHT.MFSI != nil {
+					mfsi = int32(*dot11.HTControl.VHT.MFSI)
+				}
+				if dot11.HTControl.VHT.GID != nil {
+					gid = int32(*dot11.HTControl.VHT.GID)
+				}
+				if dot11.HTControl.VHT.CodingType != nil {
+					coding = int32(*dot11.HTControl.VHT.CodingType)
+				}
+				if dot11.HTControl.VHT.CompressedMSI != nil {
+					cmsi = int32(*dot11.HTControl.VHT.CompressedMSI)
+				}
+			}
+
+			var mfb int32
+			if dot11.HTControl.HT != nil {
+				if dot11.HTControl.HT.LinkAdapationControl != nil {
+					if dot11.HTControl.HT.LinkAdapationControl.MFB != nil {
+						mfb = int32(*dot11.HTControl.HT.LinkAdapationControl.MFB)
+					}
+				}
+			}
+
+
 			htcontrol = &types.Dot11HTControl{
 				ACConstraint: dot11.HTControl.ACConstraint,
 				RDGMorePPDU:  dot11.HTControl.RDGMorePPDU,
 				VHT: &types.Dot11HTControlVHT{
 					MRQ:            dot11.HTControl.VHT.MRQ,
 					UnsolicitedMFB: dot11.HTControl.VHT.UnsolicitedMFB,
-					MSI:            int32(*dot11.HTControl.VHT.MSI),
+					MSI:            msi,
 					MFB: &types.Dot11HTControlMFB{
 						NumSTS: int32(dot11.HTControl.VHT.MFB.NumSTS),
 						VHTMCS: int32(dot11.HTControl.VHT.MFB.VHTMCS),
 						BW:     int32(dot11.HTControl.VHT.MFB.BW),
 						SNR:    int32(dot11.HTControl.VHT.MFB.SNR),
 					},
-					CompressedMSI:  int32(*dot11.HTControl.VHT.CompressedMSI),
+					CompressedMSI:  cmsi,
 					STBCIndication: dot11.HTControl.VHT.STBCIndication,
-					MFSI:           int32(*dot11.HTControl.VHT.MFSI),
-					GID:            int32(*dot11.HTControl.VHT.GID),
-					CodingType:     int32(*dot11.HTControl.VHT.CodingType),
+					MFSI:           mfsi,
+					GID:            gid,
+					CodingType:     coding,
 					FbTXBeamformed: dot11.HTControl.VHT.FbTXBeamformed,
 				},
 				HT: &types.Dot11HTControlHT{
@@ -63,7 +92,7 @@ var dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11
 							Command: int32(dot11.HTControl.HT.LinkAdapationControl.ASEL.Command),
 							Data:    int32(dot11.HTControl.HT.LinkAdapationControl.ASEL.Data),
 						},
-						MFB: int32(*dot11.HTControl.HT.LinkAdapationControl.MFB),
+						MFB: mfb,
 					},
 					CalibrationPosition: int32(dot11.HTControl.HT.CalibrationPosition),
 					CalibrationSequence: int32(dot11.HTControl.HT.CalibrationSequence),
