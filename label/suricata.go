@@ -204,15 +204,9 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 				pbs = append(pbs, Flows(&wg, filename, labels, outputPath, separator, selection))
 			case "HTTP":
 				pbs = append(pbs, HTTP(&wg, filename, labels, outputPath, separator, selection))
+			// TODO: make compatible with new TLS* audit records in v0.5
 			case "TLS":
 				pbs = append(pbs, TLS(&wg, filename, labels, outputPath, separator, selection))
-			// LinkFlows can currently not be labeled with suricata because the alerts dont have L2 information
-			// case "LinkFlow":
-			// 	pbs = append(pbs, LinkFlow(&wg, filename, labels, outputPath, separator, selection))
-			case "NetworkFlow":
-				pbs = append(pbs, NetworkFlow(&wg, filename, labels, outputPath, separator, selection))
-			case "TransportFlow":
-				pbs = append(pbs, TransportFlow(&wg, filename, labels, outputPath, separator, selection))
 			default:
 				if !DisableLayerMapping {
 					// apply labels to all records by timestamp only

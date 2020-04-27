@@ -37,7 +37,7 @@ var (
 	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 
 	flagInclude = fs.String("include", "", "include specific encoders")
-	flagExclude = fs.String("exclude", "LinkFlow,NetworkFlow,TransportFlow", "exclude specific encoders")
+	flagExclude = fs.String("exclude", "", "exclude specific encoders")
 
 	flagEncoders              = fs.Bool("encoders", false, "show all available encoders")
 	flagPrintProtocolOverview = fs.Bool("overview", false, "print a list of all available encoders and fields")
