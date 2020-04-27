@@ -67,8 +67,6 @@ _Netcap_ uses the [zeus](https://github.com/dreadl0ck/zeus) build system, it can
 
 {% embed url="https://github.com/dreadl0ck/zeus" caption="ZEUS Build System GitHub" %}
 
-
-
 To install the _Netcap_ and _Netlabel_ command-line tool and the library with zeus, run:
 
 ```text
