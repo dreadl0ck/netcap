@@ -51,7 +51,7 @@ var (
 	flagOutDir               = fs.String("out", "", "specify output directory, will be created if it does not exist")
 	flagBPF                  = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 	flagInclude              = fs.String("include", "", "include specific encoders")
-	flagExclude              = fs.String("exclude", "LinkFlow,TransportFlow,NetworkFlow", "exclude specific encoders")
+	flagExclude              = fs.String("exclude", "", "exclude specific encoders")
 	flagMemProfile           = fs.Bool("memprof", false, "create memory profile")
 	flagCSV                  = fs.Bool("csv", false, "print output data as csv with header line")
 	flagContext              = fs.Bool("context", true, "add packet flow context to selected audit records")

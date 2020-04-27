@@ -49,9 +49,6 @@ enum Type {
     NC_Batch                       = 1;
     NC_Flow                        = 2;
     NC_Connection                  = 3;
-    NC_LinkFlow                    = 4;
-    NC_NetworkFlow                 = 5;
-    NC_TransportFlow               = 6;
     NC_Ethernet                    = 7;
     NC_ARP                         = 8;
     NC_Dot1Q                       = 9;
@@ -234,45 +231,6 @@ message Connection {
     string UID                = 15;
     string TimestampLast      = 16;
     int64  Duration           = 17;
-}
-
-// Flow information for the Link Layer only
-message LinkFlow {
-    string TimestampFirst = 1;
-    string TimestampLast  = 2;
-    string Proto          = 3;
-    string SrcMAC         = 4;
-    string DstMAC         = 5;
-    int64  TotalSize      = 6;
-    int64  NumPackets     = 7;
-    uint64 UID            = 8;
-    int64  Duration       = 9;
-}
-
-// Flow information for the Network Layer only
-message NetworkFlow {
-    string TimestampFirst = 1;
-    string TimestampLast  = 2;
-    string Proto          = 3;
-    string SrcIP          = 4;
-    string DstIP          = 5;
-    int64  TotalSize      = 6;
-    int64  NumPackets     = 7;
-    uint64 UID            = 8;
-    int64  Duration       = 9;
-}
-
-// Flow information for the Transport Layer only
-message TransportFlow {
-    string TimestampFirst  = 1;
-    string TimestampLast   = 2;
-    string Proto           = 3;
-    int32  SrcPort         = 4;
-    int32  DstPort         = 5;
-    int64  TotalSize       = 6;
-    int64  NumPackets      = 7;
-    uint64 UID             = 8;
-    int64  Duration        = 9;
 }
 
 /*

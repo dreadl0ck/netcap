@@ -94,12 +94,6 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Connection)
 	case types.Type_NC_Flow:
 		record = new(types.Flow)
-	case types.Type_NC_LinkFlow:
-		record = new(types.LinkFlow)
-	case types.Type_NC_NetworkFlow:
-		record = new(types.NetworkFlow)
-	case types.Type_NC_TransportFlow:
-		record = new(types.TransportFlow)
 	case types.Type_NC_IPSecAH:
 		record = new(types.IPSecAH)
 	case types.Type_NC_IPSecESP:

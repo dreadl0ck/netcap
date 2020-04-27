@@ -31,9 +31,6 @@ var (
 	CustomEncoders, customEncoderSlice = []*CustomEncoder{}, []*CustomEncoder{
 		tlsClientHelloEncoder,
 		tlsServerHelloEncoder,
-		linkFlowEncoder,
-		networkFlowEncoder,
-		transportFlowEncoder,
 		httpEncoder,
 		flowEncoder,
 		connectionEncoder,

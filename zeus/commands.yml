@@ -94,7 +94,7 @@ commands:
     gen-proto-dev:
         description: generate protocol buffers
         help: proto compiler must be installed with gogofaster plugin
-        exec: protoc --gogofaster_out=types/. --python_out=pynetcap netcap.proto
+        exec: protoc --gogofaster_out=types/. netcap.proto
 
     # generate protocol buffers for release
     gen-proto-release:

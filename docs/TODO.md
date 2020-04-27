@@ -2,8 +2,10 @@
 
 ## v0.5 Documentation
 
-- remove layer flows 
-- check TODOs in source
+- docs: gen-proto
+- docs: layer flows
+- docs: update cloc
+
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana
 - Blog: Setup Guide
@@ -46,6 +48,8 @@
 
 ## General
 
+- check TODOs in source
+- add support for RMCP protocol
 - implement alerting / rule mechanism with separate tool
 - remove global state in encoder and collector pkgs?
 - transform: add a text based commandline interface for the transformations
