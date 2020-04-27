@@ -85,7 +85,7 @@ var (
 	flagChecksum             = fs.Bool("checksum", false, "check TCP checksum")
 	flagNooptcheck           = fs.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
 	flagIgnorefsmerr         = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
-	flagAllowmissinginit     = fs.Bool("allowmissinginit", false, "support streams without SYN/SYN+ACK/ACK sequence")
+	flagAllowmissinginit     = fs.Bool("allowmissinginit", netcap.DefaultAllowMissingInit, "support streams without SYN/SYN+ACK/ACK sequence")
 	flagDebug                = fs.Bool("debug", false, "display debug information")
 	flagHexdump              = fs.Bool("hexdump-http", false, "dump HTTP request/response as hex")
 	flagWaitForConnections   = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
