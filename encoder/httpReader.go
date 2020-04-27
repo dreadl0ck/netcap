@@ -219,12 +219,16 @@ func (h *httpReader) Run(wg *sync.WaitGroup) {
 			// handle parsing HTTP responses
 			err = h.readResponse(b, s2c)
 		}
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			// stop in case of EOF
-			break
-		} else {
-			// continue on all other errors
-			continue
+		if err != nil {
+
+			// log errors that are not an EOF
+			if err != io.EOF && err != io.ErrUnexpectedEOF {
+				reassemblyLog.Println("stopping to process HTTP stream", c2s, err)
+			}
+
+			// stop processing the stream
+			// TODO: make configurable?
+			return
 		}
 	}
 }

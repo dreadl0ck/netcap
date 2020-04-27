@@ -21,6 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/tlsx"
 	"sync"
+	"sync/atomic"
 )
 
 var LocalDNS = true
@@ -28,7 +29,7 @@ var LocalDNS = true
 // AtomicIPProfileMap contains all connections and provides synchronized access
 type AtomicIPProfileMap struct {
 	// SrcIP to Profiles
-	Items map[string]*profile
+	Items map[string]*IPProfile
 	sync.Mutex
 }
 
@@ -40,16 +41,16 @@ func (a *AtomicIPProfileMap) Size() int {
 }
 
 var ipProfiles = &AtomicIPProfileMap{
-	Items: make(map[string]*profile),
+	Items: make(map[string]*IPProfile),
 }
 
-type profile struct {
-	ip *types.IPProfile
+type IPProfile struct {
+	*types.IPProfile
 	sync.Mutex
 }
 
 // GetIPProfile fetches a known profile and updates it or returns a new one
-func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
+func getIPProfile(ipAddr string, i *idents) *IPProfile {
 
 	if len(ipAddr) == 0 {
 		return nil
@@ -59,23 +60,23 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 
 		p.Lock()
 
-		p.ip.NumPackets++
-		p.ip.TimestampLast = i.timestamp
+		p.NumPackets++
+		p.TimestampLast = i.timestamp
 
 		dataLen := uint64(len(i.p.Data()))
-		p.ip.Bytes += dataLen
+		p.Bytes += dataLen
 
 		// Transport Layer
 		if tl := i.p.TransportLayer(); tl != nil {
 
 			//log.Println(i.p.NetworkLayer().NetworkFlow().String() + " " + tl.TransportFlow().String())
 
-			if port, ok := p.ip.SrcPorts[tl.TransportFlow().Src().String()]; ok {
-				port.NumTotal += dataLen
+			if port, ok := p.SrcPorts[tl.TransportFlow().Src().String()]; ok {
+				atomic.AddUint64(&port.NumTotal, dataLen)
 				if tl.LayerType() == layers.LayerTypeTCP {
-					port.NumTCP++
+					atomic.AddUint64(&port.NumTCP, 1)
 				} else if tl.LayerType() == layers.LayerTypeUDP {
-					port.NumUDP++
+					atomic.AddUint64(&port.NumUDP, 1)
 				}
 			} else {
 				port := &types.Port{
@@ -86,10 +87,10 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 				} else if tl.LayerType() == layers.LayerTypeUDP {
 					port.NumUDP++
 				}
-				p.ip.SrcPorts[tl.TransportFlow().Src().String()] = port
+				p.SrcPorts[tl.TransportFlow().Src().String()] = port
 			}
 
-			if port, ok := p.ip.DstPorts[tl.TransportFlow().Dst().String()]; ok {
+			if port, ok := p.DstPorts[tl.TransportFlow().Dst().String()]; ok {
 				port.NumTotal += dataLen
 				if tl.LayerType() == layers.LayerTypeTCP {
 					port.NumTCP++
@@ -105,7 +106,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 				} else if tl.LayerType() == layers.LayerTypeUDP {
 					port.NumUDP++
 				}
-				p.ip.DstPorts[tl.TransportFlow().Dst().String()] = port
+				p.DstPorts[tl.TransportFlow().Dst().String()] = port
 			}
 		}
 
@@ -113,7 +114,7 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 		ch := tlsx.GetClientHelloBasic(i.p)
 		if ch != nil {
 			if ch.SNI != "" {
-				p.ip.SNIs[ch.SNI]++
+				p.SNIs[ch.SNI]++
 			}
 		}
 
@@ -124,8 +125,8 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 
 		if ja3Hash != "" {
 			// add hash to profile if not already present
-			if _, ok := p.ip.Ja3[ja3Hash]; !ok {
-				p.ip.Ja3[ja3Hash] = resolvers.LookupJa3(ja3Hash)
+			if _, ok := p.Ja3[ja3Hash]; !ok {
+				p.Ja3[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 			}
 		}
 
@@ -133,17 +134,17 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 		uniqueResults := dpi.GetProtocols(i.p)
 		for proto, res := range uniqueResults {
 			// check if proto exists already
-			if prot, ok := p.ip.Protocols[proto]; ok {
+			if prot, ok := p.Protocols[proto]; ok {
 				prot.Packets++
 			} else {
 				// add new
-				p.ip.Protocols[proto] = dpi.NewProto(&res)
+				p.Protocols[proto] = dpi.NewProto(&res)
 			}
 		}
 
 		p.Unlock()
 
-		return p.ip
+		return p
 	}
 
 	var (
@@ -216,8 +217,8 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 	}
 
 	// create new profile
-	p := &profile{
-		ip: &types.IPProfile{
+	p := &IPProfile{
+		IPProfile: &types.IPProfile{
 			Addr:           ipAddr,
 			NumPackets:     1,
 			Geolocation:    loc,
@@ -234,5 +235,5 @@ func getIPProfile(ipAddr string, i *idents) *types.IPProfile {
 
 	ipProfiles.Items[ipAddr] = p
 
-	return p.ip
+	return p
 }

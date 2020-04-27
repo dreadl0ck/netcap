@@ -26,9 +26,14 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+type Conn struct {
+	*types.Connection
+	sync.Mutex
+}
+
 // AtomicConnMap contains all connections and provides synchronized access
 type AtomicConnMap struct {
-	Items map[string]*types.Connection
+	Items map[string]*Conn
 	sync.Mutex
 }
 
@@ -43,7 +48,7 @@ func (a *AtomicConnMap) Size() int {
 var (
 	// Connections hold all connections
 	Connections = &AtomicConnMap{
-		Items: make(map[string]*types.Connection),
+		Items: make(map[string]*Conn),
 	}
 	connEncoderInstance *CustomEncoder
 	conns               int64
@@ -86,6 +91,8 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 		// connID exists. update fields
 		calcDuration := false
 
+		conn.Lock()
+
 		// check if received packet from the same flow
 		// was captured BEFORE the flows first seen timestamp
 		if !utils.StringToTime(conn.TimestampFirst).Before(p.Metadata().Timestamp) {
@@ -126,6 +133,8 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 		if calcDuration {
 			conn.Duration = utils.StringToTime(conn.TimestampLast).Sub(utils.StringToTime(conn.TimestampFirst)).Nanoseconds()
 		}
+
+		conn.Unlock()
 	} else {
 		// create a new Connection
 		conn := &types.Connection{}
@@ -151,7 +160,9 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 			conn.ApplicationProto = al.LayerType().String()
 			conn.AppPayloadSize = int32(len(al.Payload()))
 		}
-		Connections.Items[conn.String()] = conn
+		Connections.Items[conn.String()] = &Conn{
+			Connection: conn,
+		}
 
 		conns++
 
@@ -162,7 +173,7 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 			for id, entry := range Connections.Items {
 				// flush entries whose last timestamp is connTimeOut older than current packet
 				if p.Metadata().Timestamp.Sub(utils.StringToTime(entry.TimestampLast)) > c.ConnTimeOut {
-					selectConns = append(selectConns, entry)
+					selectConns = append(selectConns, entry.Connection)
 					// cleanup
 					delete(Connections.Items, id)
 				}
@@ -180,9 +191,13 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 	return nil
 }, func(e *CustomEncoder) error {
 	if !e.writer.IsChanWriter {
+		Connections.Lock()
 		for _, c := range Connections.Items {
-			writeConn(c)
+			c.Lock()
+			writeConn(c.Connection)
+			c.Unlock()
 		}
+		Connections.Unlock()
 	}
 	return nil
 })

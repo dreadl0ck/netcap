@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	gzip "github.com/klauspost/pgzip"
+	"compress/gzip"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"

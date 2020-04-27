@@ -209,6 +209,7 @@ func (e *CustomEncoder) Encode(p gopacket.Packet) error {
 		// increase counter
 		atomic.AddInt64(&e.numRecords, 1)
 
+
 		if e.writer.IsCSV() {
 			_, err := e.writer.WriteCSV(record)
 			if err != nil {

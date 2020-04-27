@@ -52,7 +52,10 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 	}
 
 	encoder.LiveMode = true
+
+	c.mu.Lock()
 	c.isLive = true
+	c.mu.Unlock()
 
 	// read packets from channel
 	for {

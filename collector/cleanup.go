@@ -67,11 +67,13 @@ func (c *Collector) cleanup(force bool) {
 		}
 	}
 
+	c.mu.Lock()
 	if c.isLive {
 		c.statMutex.Lock()
 		c.numPackets = c.current
 		c.statMutex.Unlock()
 	}
+	c.mu.Unlock()
 
 	// sync pcap file
 	if err := c.closePcapFiles(); err != nil {

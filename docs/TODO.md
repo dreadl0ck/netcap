@@ -2,9 +2,7 @@
 
 ## v0.5 Documentation
 
-- try to update all godeps?
-- github.com/klauspost/pgzip causes data races ... debug
-
+- remove layer flows 
 - check TODOs in source
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana

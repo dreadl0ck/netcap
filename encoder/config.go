@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/dreadl0ck/gopacket/reassembly"
@@ -25,6 +26,7 @@ import (
 
 var (
 	c Config
+	cMu sync.Mutex
 
 	reassemblyLog           = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
 	reassemblyLogFileHandle *os.File
@@ -40,7 +42,11 @@ const (
 
 // SetConfig can be used to set a configuration for the package
 func SetConfig(cfg Config) {
+
+	cMu.Lock()
 	c = cfg
+	cMu.Unlock()
+
 	fsmOptions = reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: c.AllowMissingInit,
 	}

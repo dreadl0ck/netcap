@@ -47,6 +47,7 @@ package encoder
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"log"
 	"net/http"
 	"os"
@@ -452,6 +453,9 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		reassemblyStats.totalsz += len(tcp.Payload)
 		statsMutex.Unlock()
 
+		// for debugging:
+		//AssembleWithContextTimeout(packet, assembler, tcp)
+
 		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
 			CaptureInfo: packet.Metadata().CaptureInfo,
 		})
@@ -486,6 +490,7 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 	select {
 	case <-done:
 	case <-time.After(5 * time.Second):
+		spew.Dump(packet.Metadata().CaptureInfo)
 		fmt.Println("HTTP AssembleWithContext timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
 		fmt.Println(assembler.Dump())
 	}
@@ -493,15 +498,17 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 
 func CleanupReassembly(wait bool) {
 
+	cMu.Lock()
 	if c.Debug {
 		reassemblyLog.Println("StreamPool:")
 		reassemblyLog.Println(StreamPool.DumpString())
 	}
+	cMu.Unlock()
 
 	// wait for stream reassembly to finish
 	if c.WaitForConnections || wait {
 		if !Quiet {
-			fmt.Print("waiting for last streams to finish processing...")
+			fmt.Print("\nwaiting for last streams to finish processing...")
 		}
 		select {
 		case <- waitForConns():
