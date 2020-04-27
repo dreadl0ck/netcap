@@ -3,8 +3,9 @@
 ## v0.5 Documentation
 
 - docs: gen-proto
-- docs: layer flows
+- docs: remove layer flows, update overview etc
 - docs: update cloc
+- docs: update num protos
 
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana
@@ -48,6 +49,8 @@
 
 ## General
 
+- ICS pcaps: failed to collect audit records from pcapng file: Unknown magic 73726576
+- add net grep tool, similar to ngrep
 - check TODOs in source
 - add support for RMCP protocol
 - implement alerting / rule mechanism with separate tool
