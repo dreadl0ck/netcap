@@ -173,11 +173,30 @@ commands:
             # dont delete remote by default
             #git push --delete origin $tag
 
-    download-test-pcap:
-        description: fetches the ultimate pcap file for the unit tests via wget
-        help: after downloading, unpack it to the tests directory
+    download-test-pcaps:
+        description: fetches the pcap files for the unit tests
         exec: |
+            cd tests
             wget https://weberblog.net/wp-content/uploads/2020/02/The-Ultimate-PCAP.7z
+            7za x The-Ultimate-PCAP.7z
+            git clone https://github.com/wireshark/wireshark
+            gunzip wireshark/test/captures/*.gz
+            git clone https://github.com/kbandla/pcaps
+            git clone https://github.com/automayt/ICS-pcap
+            mv tests/ICS-pcap/FINS\ \(OMRON\) tests/ICS-pcap/FINS-OMRON
+            mv tests/ICS-pcap/ETHERNET_IP/digitalbond\ pcaps tests/ICS-pcap/ETHERNET_IP/digitalbond-pcaps
+            mv tests/ICS-pcap/MODBUS/digitalbond\ pcaps tests/ICS-pcap/MODBUS/digitalbond-pcaps
+            mv tests/ICS-pcap/DNP3/digitalbond\ pcaps tests/ICS-pcap/DNP3/digitalbond-pcaps
+            git clone https://github.com/tatsui-geek/malware-traffic-analysis.net
+
+    test-pcaps:
+        exec: |
+            redcolor()(set -o pipefail;"$@" 2>&1>&3|sed $'s,.*,\e[31m&\e[m,'>&2)3>&1
+            for f in $(find tests -type f -name "*.pcap" -o -name "*.pcapng"); do
+                echo "$f"
+                redcolor net capture -read "$f" -out "$f.net" -quiet | :
+                rm -rf "$f.net"
+            done
 
     pack-dbs:
         description: pack all dbs that can be shared as a zip archive
