@@ -14,6 +14,10 @@ Identifying devices within a network is a good starting point for any investigat
 
 > Note: DeviceProfile currently get written when processing all traffic is done - that means when using live capture, the profiles will be available when processing stopped. Future versions will implement a flushing mechanism similar  to the one for Flows / Connections.
 
+DeviceProfiles rely heavily on local resolvers to be set up and configured. You can use the **DeviceProfile** audit records without resolvers, but you will get less information. Read more about the resolvers here:
+
+{% page-ref page="resolvers.md" %}
+
 Analyzing DeviceProfiles can be done using Maltego, for example:
 
 {% page-ref page="maltego-integration.md" %}
@@ -25,7 +29,6 @@ Analyzing DeviceProfiles can be done using Maltego, for example:
 Lets look at the protocol buffer definition for a device profile:
 
 ```erlang
-// Device Profiling
 message DeviceProfile {
     string             MacAddr            = 1;
     string             DeviceManufacturer = 2;
