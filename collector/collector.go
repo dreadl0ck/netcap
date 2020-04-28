@@ -82,9 +82,9 @@ type Collector struct {
 	// configuration
 	config *Config
 
-	isLive bool
+	isLive   bool
 	shutdown bool
-	mu sync.Mutex
+	mu       sync.Mutex
 }
 
 // New returns a new Collector instance.
@@ -111,9 +111,9 @@ func (c *Collector) stopWorkers() {
 	c.mu.Lock()
 	for i, w := range c.workers {
 		select {
-			case w <- nil:
-			case <- time.After(5 * time.Second):
-				fmt.Println("worker", i, "seems stuck, skipping...")
+		case w <- nil:
+		case <-time.After(5 * time.Second):
+			fmt.Println("worker", i, "seems stuck, skipping...")
 		}
 	}
 	c.mu.Unlock()

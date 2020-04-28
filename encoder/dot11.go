@@ -61,7 +61,6 @@ var dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11
 				}
 			}
 
-
 			htcontrol = &types.Dot11HTControl{
 				ACConstraint: dot11.HTControl.ACConstraint,
 				RDGMorePPDU:  dot11.HTControl.RDGMorePPDU,
