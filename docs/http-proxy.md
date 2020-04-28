@@ -8,9 +8,9 @@ description: Inspect traffic to web applications with a HTTP reverse proxy
 
 The **proxy** tool allows to quickly spin up monitoring of web applications and retrieving netcap audit records.
 
-Since currently, TCP stream reassembly is only supported for IPv4, netcap misses HTTP traffic over IPv6 when decoding traffic from raw packets.
+Since currently, TCP stream reassembly is only supported for IPv4, netcap misses HTTP traffic over IPv6 when decoding traffic from raw packets. Also there is currently no support implemented for decoding HTTP2 over TCP or QUIC.
 
-By using a simple reverse proxy for HTTP traffic, the operating system handles the stream reassembly and we can make sure no IPv6 traffic is missed.
+By using a simple reverse proxy for HTTP traffic, the operating system handles the stream reassembly and we can make sure no IPv6 and / or HTTP2 traffic is missed.
 
 ## Usage
 
