@@ -20,19 +20,30 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
 	ja3DB = make(map[string]*Ja3Summary)
 )
 
+// Ja3Summary models the Trisul ja3DB json structure
+// https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json
+// the format is also compatible with ja3er.com, but comes as an array of records
+// whereas trisul uses newline delimited summary structures
 type Ja3Summary struct {
 	Desc string `json:"desc"`
 	Hash string `json:"ja3_hash"`
 }
 
-// https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json
+// Ja3UserAgent DB from ja3er.com
+// entry example: {"User-Agent": "-", "Count": 1, "md5": "e05744a5eb9f795f148ed77cb471f725", "Last_seen": "2019-11-19 21:10:04"},
+type Ja3UserAgent struct {
+	UserAgent string `json:"User-Agent"`
+	Hash      string `json:"md5"`
+}
 
 // LookupJa3 tries to locate the JA3(S) hash in the ja3 database and return a description
 // access to the underlying map is not locked
@@ -47,13 +58,128 @@ func LookupJa3(hash string) string {
 // InitJa3Resolver loads the JSON mac DB into a map in memory
 func InitJa3Resolver() {
 
-	var sums int
-
-	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "ja3fingerprint.json"))
+	// read database dir
+	files, err := ioutil.ReadDir(dataBaseSource)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
+	// iterate over results
+	for _, f := range files {
+
+		// only process files that start with ja3 and have the JSON file extension
+		if !strings.HasPrefix(f.Name(), "ja3") || !strings.HasSuffix(f.Name(), ".json") {
+			continue
+		}
+
+		// read file contents into memory
+		data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, f.Name()))
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		// decide which parser to use
+		switch f.Name() {
+		case "ja3UserAgents.json":
+			parseUserAgents(data, f)
+		case "ja3erDB.json":
+			parseSummariesArray(data, f)
+		default:
+			parseSummaries(data, f)
+		}
+	}
+
+	if !Quiet {
+		fmt.Println("loaded a total of", len(ja3DB), "JA3 summaries")
+	}
+}
+
+/*
+ * Utils
+ */
+
+func addToJa3DB(sum Ja3Summary, updated *int, sums *int) {
+	if e, ok := ja3DB[sum.Hash]; ok {
+		if !strings.Contains(e.Desc, sum.Desc) {
+			e.Desc += "; " + sum.Desc
+			*updated++
+		}
+	} else {
+		ja3DB[sum.Hash] = &Ja3Summary{
+			Desc: sum.Desc,
+			Hash: sum.Hash,
+		}
+		*sums++
+	}
+}
+
+func parseUserAgents(data []byte, f os.FileInfo) {
+
+	var (
+		sums       = 0
+		updated    = 0
+		userAgents []Ja3UserAgent
+	)
+
+	if err := json.Unmarshal(data, &userAgents); err != nil {
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			return
+		}
+		log.Fatal("failed to unmarshal record:", err)
+	}
+
+	for _, sum := range userAgents {
+		if e, ok := ja3DB[sum.Hash]; ok {
+			if !strings.Contains(e.Desc, sum.UserAgent) {
+				e.Desc += "; " + sum.UserAgent
+				updated++
+			}
+		} else {
+			ja3DB[sum.Hash] = &Ja3Summary{
+				Desc: sum.UserAgent,
+				Hash: sum.Hash,
+			}
+			sums++
+		}
+	}
+
+	if !Quiet {
+		fmt.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+	}
+}
+
+func parseSummariesArray(data []byte, f os.FileInfo) {
+
+	var (
+		sums      = 0
+		updated   = 0
+		summaries []Ja3Summary
+	)
+
+	if err := json.Unmarshal(data, &summaries); err != nil {
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			return
+		}
+		log.Fatal("failed to unmarshal record:", err)
+	}
+
+	for _, sum := range summaries {
+		addToJa3DB(sum, &updated, &sums)
+	}
+
+	if !Quiet {
+		fmt.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+	}
+}
+
+func parseSummaries(data []byte, f os.FileInfo) {
+
+	var (
+		sums    = 0
+		updated = 0
+	)
 
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
 
@@ -74,11 +200,9 @@ func InitJa3Resolver() {
 			log.Fatal("failed to unmarshal record:", err)
 		}
 
-		ja3DB[sum.Hash] = &sum
-		sums++
+		addToJa3DB(sum, &updated, &sums)
 	}
-
 	if !Quiet {
-		fmt.Println("loaded", sums, "JA3 summaries")
+		fmt.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }
