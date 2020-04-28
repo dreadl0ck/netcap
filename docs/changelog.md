@@ -18,6 +18,7 @@ description: Detailed Version History Information
 * Documentation updates
 * Updated Docker containers for **Ubuntu** and **Alpine**
 * Compiled with **Go 1.14.2**
+* removed custom audit records Link-, Network- and TransportFlow
 
 ### New Features
 

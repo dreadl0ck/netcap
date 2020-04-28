@@ -80,9 +80,6 @@ $ net capture -overview
 > | :--- | :--- | :--- |
 > | TLSClientHello | 27 | Timestamp, Type, Version, MessageLen, HandshakeType, HandshakeLen, HandshakeVersion, Random, SessionIDLen, SessionID, CipherSuiteLen, ExtensionLen, SNI, OSCP, CipherSuites, CompressMethods, SignatureAlgs, SupportedGroups, SupportedPoints, ALPNs, Ja3, SrcIP, DstIP, SrcMAC, DstMAC, SrcPort, DstPort |
 > | TLSServerHello | 27 | Timestamp, Version, Random, SessionID, CipherSuite, CompressionMethod, NextProtoNeg, NextProtos, OCSPStapling, TicketSupported, SecureRenegotiationSupported, SecureRenegotiation, AlpnProtocol, Ems, SupportedVersion, SelectedIdentityPresent, SelectedIdentity, Cookie, SelectedGroup, Extensions, SrcIP, DstIP, SrcMAC, DstMAC, SrcPort, DstPort, Ja3S |
-> | LinkFlow | 9 | TimestampFirst, TimestampLast, Proto, SourceMAC, DstMAC, TotalSize, NumPackets, UID, Duration |
-> | NetworkFlow | 9 | TimestampFirst, TimestampLast, Proto, SrcIP, DstIP, TotalSize, NumPackets, UID, Duration |
-> | TransportFlow | 9 | TimestampFirst, TimestampLast, Proto, SrcPort, DstPort, TotalSize, NumPackets, UID, Duration |
 > | HTTP | 18 | Timestamp, Proto, Method, Host, UserAgent, Referer, ReqCookies, ResCookies, ReqContentLength, URL, ResContentLength, ContentType, StatusCode, SrcIP, DstIP, ReqContentEncoding, ResContentEncoding, ServerName |
 > | Flow | 17 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
 > | Connection | 17 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
