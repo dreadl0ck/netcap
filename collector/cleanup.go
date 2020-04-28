@@ -41,9 +41,9 @@ func (c *Collector) cleanup(force bool) {
 
 	c.printStdOut("waiting for main collector wait group...")
 	select {
-	case <- waitForCollector():
+	case <-waitForCollector():
 		c.printlnStdOut(" done!")
-	case <- time.After(c.config.EncoderConfig.ClosePendingTimeOut):
+	case <-time.After(c.config.EncoderConfig.ClosePendingTimeOut):
 		c.printStdOut(" timeout after ", c.config.EncoderConfig.ClosePendingTimeOut)
 	}
 

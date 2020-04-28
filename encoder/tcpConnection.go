@@ -511,11 +511,11 @@ func CleanupReassembly(wait bool) {
 			fmt.Print("\nwaiting for last streams to finish processing...")
 		}
 		select {
-		case <- waitForConns():
+		case <-waitForConns():
 			if !Quiet {
 				fmt.Println(" done!")
 			}
-		case <- time.After(c.ClosePendingTimeOut):
+		case <-time.After(c.ClosePendingTimeOut):
 			if !Quiet {
 				fmt.Println(" timeout after", c.ClosePendingTimeOut)
 			}

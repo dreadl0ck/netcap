@@ -59,8 +59,8 @@ var tlsClientHelloEncoder = CreateCustomEncoder(types.Type_NC_TLSClientHello, "T
 
 		var (
 			srcPort, dstPort int
-			srcMac, dstMac string
-			srcIP, dstIP string
+			srcMac, dstMac   string
+			srcIP, dstIP     string
 		)
 
 		if ll := p.LinkLayer(); ll != nil {

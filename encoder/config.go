@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	c Config
+	c   Config
 	cMu sync.Mutex
 
 	reassemblyLog           = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
