@@ -6,6 +6,11 @@
 - docs: remove layer flows, update overview etc
 - docs: update cloc
 - docs: update num protos
+- clarify that HTTP 2 is not supported
+- ref from device profile to resolvers
+
+$ net capture -read traffic.pcap
+$ net dump -read DeviceProfile.ncap.gz -json > profiles.json
 
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana
