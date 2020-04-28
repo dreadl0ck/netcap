@@ -38,7 +38,7 @@ The authors used the framework to process their recorded PCAP dumps:
 
 ### List of all supported protocols and fields
 
-{% file src=".gitbook/assets/overview \(2\).pdf" %}
+{% file src=".gitbook/assets/overview.pdf" %}
 
 ### Command Cheatsheet
 
