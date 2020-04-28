@@ -24,6 +24,8 @@ Database files:
 * _ja3fingerprint.json_
 * _macaddress.io-db.json_
 * _service-names-port-numbers.csv_
+* _ja3UserAgents.json_
+* _ja3erDB.json_
 
 ## Configuration
 
@@ -95,7 +97,11 @@ Resolving port numbers to service names is done according to the CSV mapping fro
 
 ## TLS Fingerprints
 
-To identfiy hosts that use TLS connections, the Ja3 fingerprint database from Trisul is used:
+To identify hosts that use TLS connections, the Ja3 fingerprint database from **Trisul** is used:
 
 {% embed url="https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend\_scripts/reassembly/ja3/prints/ja3fingerprint.json" caption="" %}
+
+For more fingerprints, you can load other databases additionally. For example from **ja3erDB**:
+
+{% embed url="https://ja3er.com/downloads.html" caption="Ja3er JSON database downloads" %}
 
