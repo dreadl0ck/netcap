@@ -19,6 +19,8 @@ github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4 h1:CQVDSWmSo
 github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
 github.com/dreadl0ck/go-dpi v0.0.0-20200411152832-97fb129e158d h1:74TvynOXIXtqduf0XnR82Zr7dQRBWtQWjDO9WQu2HXY=
 github.com/dreadl0ck/go-dpi v0.0.0-20200411152832-97fb129e158d/go.mod h1:ShxssMM64chljQ3QxF9QQY8FSUoQMvMVA5NSmB1Xx10=
+github.com/dreadl0ck/go-dpi v0.0.0-20200429152202-653b4f217bbf h1:LVWiiETxTRfEQwK6fMKVOVzBXcO3ZXg1dXwywPDPDUk=
+github.com/dreadl0ck/go-dpi v0.0.0-20200429152202-653b4f217bbf/go.mod h1:ShxssMM64chljQ3QxF9QQY8FSUoQMvMVA5NSmB1Xx10=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557 h1:m/rxJiRUgei39RuIVBMPipyRGokYe534vBfuARBcLnU=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7 h1:yBEizTC9Sj3v7e5q1zqc/L5P0h+wRfsx9eZqtWcBN2g=
@@ -155,6 +157,8 @@ github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJy
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
+github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe h1:aj/vX5epIlQQBEocKoM9nSAiNpakdQzElc8SaRFPu+I=
+github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe/go.mod h1:OBcG9bn7sHtXgarhUEb3OfCnNsgtGnkVf41ilSZ3K3E=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.uber.org/atomic v1.6.0 h1:Ezj3JGmsOnG1MoRWQkPBsKLe9DwWD9QeXzTRzzldNVk=
 go.uber.org/atomic v1.6.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=

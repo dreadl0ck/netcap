@@ -37,6 +37,7 @@ var (
 		profileEncoder,
 		fileEncoder,
 		pop3Encoder,
+		softwareEncoder,
 	} // contains all available custom encoders
 )
 

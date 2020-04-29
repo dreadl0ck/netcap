@@ -194,7 +194,9 @@ func Dump(c DumpConfig) {
 		}
 	}
 
-	fmt.Println(count, "records.")
+	if !c.JSON {
+		fmt.Println(count, "records.")
+	}
 }
 
 // CloseFile closes the netcap file handle

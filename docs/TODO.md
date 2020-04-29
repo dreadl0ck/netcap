@@ -1,5 +1,8 @@
 # TODOs
 
+- extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
+- implement banner grabbing (e.g. first 512k bytes, or first 5 seconds) and save the grabber banners in a global banner store  
+
 ## v0.5 Documentation
 
 - Blog: Threat hunting with Netcap and Maltego

@@ -152,6 +152,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.POP3)
 	case types.Type_NC_TLSServerHello:
 		record = new(types.TLSServerHello)
+	case types.Type_NC_SOFTWARE:
+		record = new(types.Software)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
