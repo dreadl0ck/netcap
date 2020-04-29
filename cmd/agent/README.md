@@ -67,7 +67,7 @@ Start the agent:
       -flushevery=100: flush assembler every N packets
       -gen-config=false: generate config
       -geoDB=false: use geolocation for device profiling
-      -hexdump-http=false: dump HTTP request/response as hex
+      -hexdump=false: dump packets used in stream reassembly as hex to the reassembly.log file
       -iface="en0": interface
       -ignorefsmerr=false: ignore TCP FSM errors
       -include="": include specific encoders

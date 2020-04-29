@@ -178,6 +178,7 @@ func (h *pop3Reader) Run(wg *sync.WaitGroup) {
 	}
 }
 
+// TODO: use saveFile to extract attachments
 func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encoding []string) error {
 
 	// prevent saving zero bytes

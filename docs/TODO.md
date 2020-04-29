@@ -1,7 +1,19 @@
 # TODOs
 
 - extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
-- implement banner grabbing (e.g. first 512k bytes, or first 5 seconds) and save the grabber banners in a global banner store  
+- resolvers: log info on number of loaded resolvers into debug.log
+- software: log UserAgents and ServerNames into debug.log
+- remove encoder FileStorage, it can be read from the global configuration instead
+
+- print stats about TCP connections when exiting
+- implement banner grabbing (e.g. first 512k bytes, or first 5 seconds) and save the grabber banners in a global banner store 
+- add Service audit record types? to store which service has been seen for which ip
+- Banner audit record:
+
+Timestamp
+IP
+Port
+Banner  
 
 ## v0.5 Documentation
 
