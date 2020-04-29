@@ -126,6 +126,7 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		transport:   transport,
 		isHTTP:      factory.decodeHTTP && (tcp.SrcPort == 80 || tcp.DstPort == 80),
 		isPOP3:      factory.decodePOP3 && (tcp.SrcPort == 110 || tcp.DstPort == 110),
+		isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
 		reversed:    tcp.SrcPort == 80,
 		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
@@ -133,7 +134,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		firstPacket: ac.GetCaptureInfo().Timestamp,
 	}
 
-	if stream.isHTTP {
+	switch {
+	case stream.isHTTP:
 		stream.client = &httpReader{
 			bytes:    make(chan []byte),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
@@ -154,9 +156,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		factory.Unlock()
 		go stream.client.Run(&factory.wg)
 		go stream.server.Run(&factory.wg)
-	}
 
-	if stream.isPOP3 {
+	case stream.isPOP3:
 		stream.client = &pop3Reader{
 			bytes:    make(chan []byte),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
@@ -172,12 +173,42 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		}
 
 		// kickoff decoders for client and server
+		factory.Lock()
 		factory.wg.Add(2)
+		factory.Unlock()
+		go stream.client.Run(&factory.wg)
+		go stream.server.Run(&factory.wg)
+	default:
+
+		if stream.isHTTPS {
+			// don't capture encrypted HTTPS traffic
+			return stream
+		}
+
+		// TODO: make configurable
+		// if config.GrabBanners { ...
+
+		stream.client = &tcpReader{
+			bytes:    make(chan []byte),
+			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
+			hexdump:  c.HexDump,
+			parent:   stream,
+			isClient: true,
+		}
+		stream.server = &tcpReader{
+			bytes:   make(chan []byte),
+			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
+			hexdump: c.HexDump,
+			parent:  stream,
+		}
+
+		// kickoff readers for client and server
+		factory.Lock()
+		factory.wg.Add(2)
+		factory.Unlock()
 		go stream.client.Run(&factory.wg)
 		go stream.server.Run(&factory.wg)
 	}
-
-	// TODO: capture unknown protocol stream and write to disk
 
 	return stream
 }
@@ -212,6 +243,7 @@ type tcpConnection struct {
 	fsmerr   bool
 	isHTTP   bool
 	isPOP3   bool
+	isHTTPS  bool
 	reversed bool
 	ident    string
 
@@ -320,6 +352,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	}
 	if sgStats.OverlapBytes != 0 && sgStats.OverlapPackets == 0 {
 		fmt.Printf("bytes:%d, pkts:%d\n", sgStats.OverlapBytes, sgStats.OverlapPackets)
+		// TODO: this could be handled slightly more graceful
 		panic("Invalid overlap")
 	}
 	reassemblyStats.overlapBytes += sgStats.OverlapBytes
@@ -341,9 +374,10 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		return
 	}
 
-	// TODO add types and call handler to allow decoding several app layer protocols
 	data := sg.Fetch(length)
-	if t.isHTTP {
+
+	switch {
+	case t.isHTTP:
 		if length > 0 {
 			if c.HexDump {
 				logReassemblyDebug("Feeding http with:\n%s", hex.Dump(data))
@@ -354,10 +388,27 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 				t.server.BytesChan() <- data
 			}
 		}
-	} else if t.isPOP3 {
+	case t.isPOP3:
 		if length > 0 {
 			if c.HexDump {
 				logReassemblyDebug("Feeding POP3 with:\n%s", hex.Dump(data))
+			}
+			if dir == reassembly.TCPDirClientToServer && !t.reversed {
+				t.client.BytesChan() <- data
+			} else {
+				t.server.BytesChan() <- data
+			}
+		}
+	default:
+
+		if t.isHTTPS {
+			return
+		}
+
+		//// TODO: if banner grabbing is active
+		if length > 0 {
+			if c.HexDump {
+				logReassemblyDebug("Feeding TCP banner grabber with:\n%s", hex.Dump(data))
 			}
 			if dir == reassembly.TCPDirClientToServer && !t.reversed {
 				t.client.BytesChan() <- data

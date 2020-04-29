@@ -75,7 +75,7 @@ Read and export *Netcap* dump files in the current directory:
       -flushevery=100: flush assembler every N packets
       -gen-config=false: generate config
       -geoDB=false: use geolocation for device profiling
-      -hexdump-http=false: dump HTTP request/response as hex
+      -hexdump=false: dump packets used in stream reassembly as hex to the reassembly.log file
       -iface="": attach to network interface and capture in live mode
       -ignore-unknown=false: disable writing unknown packets into a pcap file
       -ignorefsmerr=false: ignore TCP FSM errors

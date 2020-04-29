@@ -63,7 +63,7 @@ Capture from interface:
       -free-os-mem=0: free OS memory every X minutes, disabled if set to 0
       -gen-config=false: generate config
       -geoDB=false: use geolocation for device profiling
-      -hexdump-http=false: dump HTTP request/response as hex
+      -hexdump=false: dump packets used in stream reassembly as hex to the reassembly.log file
       -iface="": attach to network interface and capture in live mode
       -ignore-unknown=true: disable writing unknown packets into a pcap file
       -ignorefsmerr=false: ignore TCP FSM errors

@@ -71,7 +71,7 @@ var (
 	flagIgnorefsmerr         = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
 	flagAllowmissinginit     = fs.Bool("allowmissinginit", netcap.DefaultAllowMissingInit, "support streams without SYN/SYN+ACK/ACK sequence")
 	flagDebug                = fs.Bool("debug", false, "display debug information")
-	flagHexdump              = fs.Bool("hexdump-http", false, "dump HTTP request/response as hex")
+	flagHexdump              = fs.Bool("hexdump", false, "dump packets used in stream reassembly as hex to the reassembly.log file")
 	flagWaitForConnections   = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
 	flagWriteincomplete      = fs.Bool("writeincomplete", false, "write incomplete response")
 	flagMemprofile           = fs.String("memprofile", "", "write memory profile")
