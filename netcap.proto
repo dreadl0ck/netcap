@@ -137,6 +137,7 @@ enum Type {
     NC_Diameter                    = 92;
     NC_POP3                        = 93;
     NC_TLSServerHello              = 94;
+    NC_SOFTWARE                    = 95;
 }
 
 /*
@@ -1850,4 +1851,16 @@ message POP3Request {
 message POP3Response {
     string Command   = 1;
     string Message   = 2;
+}
+
+message Software {
+    string   Timestamp                    = 1;
+    string   Product                      = 2;
+    string   Vendor                       = 3;
+    string   Version                      = 4;
+    repeated string        DeviceProfiles = 5;
+    string   Source                       = 6;
+    repeated string DPIResults            = 7;
+    string   Service                      = 8;
+    string   Flow                         = 9;
 }

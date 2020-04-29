@@ -148,8 +148,5 @@ func LookupServiceByPort(port int, typ string) string {
 			return res.service
 		}
 	}
-	if !Quiet {
-		log.Println("no result for", port, typ)
-	}
 	return ""
 }

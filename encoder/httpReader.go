@@ -65,6 +65,23 @@ import (
 	"time"
 )
 
+// HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts
+type HTTPMetaStore struct {
+
+	// mapped ip address to server names
+	ServerNames map[string]string
+
+	// mapped ip address to user agents
+	UserAgents  map[string]string
+
+	sync.Mutex
+}
+
+var httpStore = &HTTPMetaStore{
+	ServerNames: make(map[string]string),
+	UserAgents:  make(map[string]string),
+}
+
 /*
  * HTTP part
  */
@@ -150,17 +167,7 @@ func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 				continue
 			}
 
-			// export metrics if configured
-			if httpEncoder.export {
-				ht.Inc()
-			}
-
-			// write record to disk
-			atomic.AddInt64(&httpEncoder.numRecords, 1)
-			err := httpEncoder.writer.Write(ht)
-			if err != nil {
-				errorMap.Inc(err.Error())
-			}
+			writeHTTP(ht)
 		}
 
 		for _, req := range h.parent.requests {
@@ -171,17 +178,7 @@ func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 				atomic.AddInt64(&httpEncoder.numRequests, 1)
 				atomic.AddInt64(&httpEncoder.numUnansweredRequests, 1)
 
-				// export metrics if configured
-				if httpEncoder.export {
-					h.Inc()
-				}
-
-				// write record to disk
-				atomic.AddInt64(&httpEncoder.numRecords, 1)
-				err := httpEncoder.writer.Write(h)
-				if err != nil {
-					errorMap.Inc(err.Error())
-				}
+				writeHTTP(h)
 			} else {
 				atomic.AddInt64(&httpEncoder.numNilRequests, 1)
 			}
@@ -190,6 +187,45 @@ func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 
 	// signal wait group
 	wg.Done()
+}
+
+func writeHTTP(h *types.HTTP) {
+
+	httpStore.Lock()
+
+	if h.UserAgent != "" {
+		if ua, ok := httpStore.UserAgents[h.SrcIP]; ok {
+			if !strings.Contains(ua, h.UserAgent) {
+				httpStore.UserAgents[h.SrcIP] = ua + "| " + h.UserAgent
+			}
+		} else {
+			httpStore.UserAgents[h.SrcIP] = h.UserAgent
+		}
+	}
+
+	if h.ServerName != "" {
+		if sn, ok := httpStore.ServerNames[h.DstIP]; ok {
+			if !strings.Contains(sn, h.ServerName) {
+				httpStore.ServerNames[h.DstIP] = sn + "| " + h.ServerName
+			}
+		} else {
+			httpStore.ServerNames[h.DstIP] = h.ServerName
+		}
+	}
+
+	httpStore.Unlock()
+
+	// export metrics if configured
+	if httpEncoder.export {
+		h.Inc()
+	}
+
+	// write record to disk
+	atomic.AddInt64(&httpEncoder.numRecords, 1)
+	err := httpEncoder.writer.Write(h)
+	if err != nil {
+		errorMap.Inc(err.Error())
+	}
 }
 
 // run starts decoding HTTP traffic in a single direction

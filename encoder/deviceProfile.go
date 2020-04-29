@@ -61,7 +61,7 @@ var (
 )
 
 // GetDeviceProfile fetches a known profile and updates it or returns a new one
-func getDeviceProfile(macAddr string, i *idents) *DeviceProfile {
+func getDeviceProfile(macAddr string, i *packetInfo) *DeviceProfile {
 
 	if p, ok := Profiles.Items[macAddr]; ok {
 		applyDeviceProfileUpdate(p, i)
@@ -76,7 +76,7 @@ func getDeviceProfile(macAddr string, i *idents) *DeviceProfile {
 }
 
 // UpdateDeviceProfile can be used to update the profile for the passed identifiers
-func UpdateDeviceProfile(i *idents) {
+func UpdateDeviceProfile(i *packetInfo) {
 
 	// lookup profile
 	Profiles.Lock()
@@ -90,7 +90,7 @@ func UpdateDeviceProfile(i *idents) {
 }
 
 // NewDeviceProfile creates a new device specifc profile
-func NewDeviceProfile(i *idents) *DeviceProfile {
+func NewDeviceProfile(i *packetInfo) *DeviceProfile {
 	var contacts []*types.IPProfile
 	if ip := getIPProfile(i.dstIP, i); ip != nil {
 		contacts = append(contacts, ip.IPProfile)
@@ -113,7 +113,7 @@ func NewDeviceProfile(i *idents) *DeviceProfile {
 	}
 }
 
-func applyDeviceProfileUpdate(p *DeviceProfile, i *idents) {
+func applyDeviceProfileUpdate(p *DeviceProfile, i *packetInfo) {
 
 	p.Lock()
 
@@ -165,15 +165,6 @@ func applyDeviceProfileUpdate(p *DeviceProfile, i *idents) {
 	p.Unlock()
 }
 
-type idents struct {
-	p         gopacket.Packet
-	timestamp string
-	srcMAC    string
-	dstMAC    string
-	srcIP     string
-	dstIP     string
-}
-
 var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DeviceProfile", func(d *CustomEncoder) error {
 
 	profileEncoderInstance = d
@@ -181,21 +172,8 @@ var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DevicePro
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
-	// determine base info
-	var i = new(idents)
-	i.timestamp = p.Metadata().Timestamp.UTC().String()
-	i.p = p
-	if ll := p.LinkLayer(); ll != nil {
-		i.srcMAC = ll.LinkFlow().Src().String()
-		i.dstMAC = ll.LinkFlow().Dst().String()
-	}
-	if nl := p.NetworkLayer(); nl != nil {
-		i.srcIP = nl.NetworkFlow().Src().String()
-		i.dstIP = nl.NetworkFlow().Dst().String()
-	}
-
 	// handle packet
-	UpdateDeviceProfile(i)
+	UpdateDeviceProfile(newPacketInfo(p))
 
 	return nil
 }, func(e *CustomEncoder) error {

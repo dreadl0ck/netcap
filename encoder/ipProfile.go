@@ -50,7 +50,7 @@ type IPProfile struct {
 }
 
 // GetIPProfile fetches a known profile and updates it or returns a new one
-func getIPProfile(ipAddr string, i *idents) *IPProfile {
+func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 
 	if len(ipAddr) == 0 {
 		return nil
