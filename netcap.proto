@@ -1864,3 +1864,17 @@ message Software {
     string   Service                      = 8;
     string   Flow                         = 9;
 }
+
+message Banner {
+    string   Timestamp                    = 1;
+    string   IP                           = 2;
+    string   Port                         = 3;
+    bytes    Banner                       = 4;
+}
+
+message Service {
+    string   Timestamp                    = 1;
+    string   IP                           = 2;
+    string   Port                         = 3;
+    string   Name                         = 4;
+}
