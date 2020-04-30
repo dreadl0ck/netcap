@@ -10,8 +10,8 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"sync"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/dreadl0ck/gopacket/layers"

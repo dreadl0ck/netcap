@@ -104,7 +104,7 @@ var (
 	}
 
 	// TODO: create a central stats source for this and other metrics: encoderStats
-	numSoftware             int64
+	numSoftware int64
 
 	//parser, errInitUAParser = uaparser.New("./regexes.yaml")
 	//pMu sync.Mutex
@@ -130,8 +130,8 @@ func findVersion(in string, product string) string {
 					strings.Fields(
 						strings.TrimPrefix(parts[1], "/"),
 					)[0],
-		";"),
-	"|")
+					";"),
+				"|")
 		}
 		if strings.HasPrefix(parts[1], " ") {
 			return strings.TrimSuffix(
@@ -139,8 +139,8 @@ func findVersion(in string, product string) string {
 					strings.Fields(
 						strings.TrimPrefix(parts[1], " "),
 					)[0],
-		";"),
-	"|")
+					";"),
+				"|")
 		}
 	}
 	return ""
@@ -189,7 +189,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 					Source:         "userAgents: " + userAgents,
 					Service:        service,
 					DPIResults:     protos,
-					Flow: f,
+					Flow:           f,
 				},
 			})
 		}
@@ -204,7 +204,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 					DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
 					Service:        service,
 					DPIResults:     protos,
-					Flow: f,
+					Flow:           f,
 				},
 			})
 		}
@@ -394,5 +394,3 @@ func (e *CustomEncoder) write(c types.AuditRecord) {
 		log.Fatal("failed to write proto: ", err)
 	}
 }
-
-

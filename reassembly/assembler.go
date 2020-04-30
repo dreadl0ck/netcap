@@ -628,8 +628,7 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 // sendToConnection sends the current values in a.ret to the connection, closing
 // the connection if the last thing sent had End set.
 func (a *Assembler) sendToConnection(conn *connection, half *halfconnection, ac AssemblerContext) Sequence {
-	if
-	*debugLog {
+	if *debugLog {
 		fmt.Printf("sendToConnection\n")
 	}
 	end, nextSeq := a.buildSG(half)

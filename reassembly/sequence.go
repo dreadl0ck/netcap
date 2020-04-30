@@ -2,7 +2,7 @@ package reassembly
 
 const (
 	invalidSequence = -1
-	uint32Max = 0xFFFFFFFF
+	uint32Max       = 0xFFFFFFFF
 )
 
 // Sequence is a TCP sequence number.  It provides a few convenience functions
