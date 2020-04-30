@@ -71,7 +71,7 @@ type HTTPMetaStore struct {
 	ServerNames map[string]string
 
 	// mapped ip address to user agents
-	UserAgents  map[string]string
+	UserAgents map[string]string
 
 	sync.Mutex
 }

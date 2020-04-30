@@ -94,24 +94,24 @@ var dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11
 						MSI:  int32(dot11.HTControl.HT.LinkAdapationControl.MSI),
 						MFSI: int32(dot11.HTControl.HT.LinkAdapationControl.MFSI),
 						ASEL: asel,
-						MFB: mfb,
+						MFB:  mfb,
 					}
 				}
 				ht = &types.Dot11HTControlHT{
 					LinkAdapationControl: lac,
-					CalibrationPosition: int32(dot11.HTControl.HT.CalibrationPosition),
-					CalibrationSequence: int32(dot11.HTControl.HT.CalibrationSequence),
-					CSISteering:         int32(dot11.HTControl.HT.CSISteering),
-					NDPAnnouncement:     dot11.HTControl.HT.NDPAnnouncement,
-					DEI:                 dot11.HTControl.HT.DEI,
+					CalibrationPosition:  int32(dot11.HTControl.HT.CalibrationPosition),
+					CalibrationSequence:  int32(dot11.HTControl.HT.CalibrationSequence),
+					CSISteering:          int32(dot11.HTControl.HT.CSISteering),
+					NDPAnnouncement:      dot11.HTControl.HT.NDPAnnouncement,
+					DEI:                  dot11.HTControl.HT.DEI,
 				}
 			}
 
 			htcontrol = &types.Dot11HTControl{
 				ACConstraint: dot11.HTControl.ACConstraint,
 				RDGMorePPDU:  dot11.HTControl.RDGMorePPDU,
-				VHT: vht,
-				HT: ht,
+				VHT:          vht,
+				HT:           ht,
 			}
 		}
 		return &types.Dot11{

@@ -114,7 +114,7 @@ type tcpConnectionFactory struct {
 	wg         sync.WaitGroup
 	decodeHTTP bool
 	decodePOP3 bool
-	numActive int64
+	numActive  int64
 	sync.Mutex
 }
 

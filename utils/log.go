@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	logFilePermission   = 0755
+	logFilePermission = 0755
 )
 
 var (
