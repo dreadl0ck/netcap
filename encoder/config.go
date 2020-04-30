@@ -15,29 +15,20 @@ package encoder
 
 import (
 	"github.com/dreadl0ck/netcap"
-	"io/ioutil"
-	"log"
-	"os"
+	"github.com/dreadl0ck/netcap/utils"
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/gopacket/reassembly"
+	"github.com/dreadl0ck/netcap/reassembly"
 )
 
 var (
 	c   Config
 	cMu sync.Mutex
-
-	reassemblyLog           = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
-	reassemblyLogFileHandle *os.File
-
-	debugLog           = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
-	debugLogFileHandle *os.File
 )
 
 const (
 	directoryPermission = 0755
-	logFilePermission   = 0755
 )
 
 // SetConfig can be used to set a configuration for the package
@@ -53,19 +44,7 @@ func SetConfig(cfg Config) {
 
 	// setup loggers
 	if c.Debug {
-		var err error
-		debugLogFileHandle, err = os.OpenFile("debug.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
-		if err != nil {
-			log.Fatal(err)
-		}
-		debugLog.SetOutput(debugLogFileHandle)
-
-		reassemblyLogFileHandle, err = os.OpenFile("reassembly.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
-		if err != nil {
-			log.Fatal(err)
-		}
-		reassemblyLog.SetOutput(reassemblyLogFileHandle)
-
+		utils.InitLoggers()
 		pop3Debug = true
 	}
 }

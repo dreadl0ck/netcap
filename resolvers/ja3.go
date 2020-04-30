@@ -16,7 +16,7 @@ package resolvers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"log"
@@ -91,9 +91,7 @@ func InitJa3Resolver() {
 		}
 	}
 
-	if !Quiet {
-		fmt.Println("loaded a total of", len(ja3DB), "JA3 summaries")
-	}
+	utils.DebugLog.Println("loaded a total of", len(ja3DB), "JA3 summaries")
 }
 
 /*
@@ -146,7 +144,7 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 	}
 
 	if !Quiet {
-		fmt.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }
 
@@ -170,7 +168,7 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 	}
 
 	if !Quiet {
-		fmt.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }
 
@@ -203,6 +201,6 @@ func parseSummaries(data []byte, f os.FileInfo) {
 		addToJa3DB(sum, &updated, &sums)
 	}
 	if !Quiet {
-		fmt.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }

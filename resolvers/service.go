@@ -16,6 +16,7 @@ package resolvers
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -132,8 +133,8 @@ func InitServiceDB() {
 	}
 
 	if !Quiet {
-		fmt.Println("loaded", len(tcpPortMap), "TCP service records")
-		fmt.Println("loaded", len(udpPortMap), "UDP service records")
+		utils.DebugLog.Println("loaded", len(tcpPortMap), "TCP service records")
+		utils.DebugLog.Println("loaded", len(udpPortMap), "UDP service records")
 	}
 }
 

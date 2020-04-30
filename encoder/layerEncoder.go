@@ -212,9 +212,7 @@ func InitLayerEncoders(c Config, quiet bool) {
 		LayerEncoders[e.Layer] = append(LayerEncoders[e.Layer], e)
 	}
 
-	if !quiet {
-		fmt.Println("initialized", len(LayerEncoders), "layer encoders")
-	}
+	utils.DebugLog.Println("initialized", len(LayerEncoders), "layer encoders")
 }
 
 // CreateLayerEncoder returns a new LayerEncoder instance

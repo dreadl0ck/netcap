@@ -2,6 +2,7 @@ package collector
 
 import (
 	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
 	"log"
 	"time"
@@ -18,13 +19,6 @@ func (c *Collector) cleanup(force bool) {
 	// this will block until all workers are stopped
 	// all packets left in the packet queues will be processed
 	c.stopWorkers()
-
-	if c.config.ReassembleConnections {
-		// teardown the TCP stream reassembly and print stats
-		encoder.CleanupReassembly(!force)
-	}
-	encoder.Cleanup()
-
 	waitForCollector := func() chan struct{} {
 		ch := make(chan struct{})
 
@@ -39,12 +33,17 @@ func (c *Collector) cleanup(force bool) {
 		return ch
 	}
 
-	c.printStdOut("waiting for main collector wait group...")
+	c.printStdOut("\nwaiting for main collector wait group...")
 	select {
 	case <-waitForCollector():
 		c.printlnStdOut(" done!")
 	case <-time.After(c.config.EncoderConfig.ClosePendingTimeOut):
 		c.printStdOut(" timeout after ", c.config.EncoderConfig.ClosePendingTimeOut)
+	}
+
+	if c.config.ReassembleConnections {
+		// teardown the TCP stream reassembly and print stats
+		encoder.CleanupReassembly(!force)
 	}
 
 	// flush all layer encoders
@@ -67,6 +66,9 @@ func (c *Collector) cleanup(force bool) {
 		}
 	}
 
+	// close the encoder logs
+	utils.CloseLogFiles()
+
 	c.mu.Lock()
 	if c.isLive {
 		c.statMutex.Lock()
@@ -82,6 +84,8 @@ func (c *Collector) cleanup(force bool) {
 
 	c.closeErrorLogFile()
 	c.Stats()
+
+	encoder.NumSavedStreams()
 
 	// encoder.DumpTop5LinkFlows()
 	// encoder.DumpTop5NetworkFlows()

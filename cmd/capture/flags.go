@@ -75,7 +75,7 @@ var (
 	flagJa3DB         = fs.Bool("ja3DB", true, "use ja3 database for device profiling")
 	flagServiceDB     = fs.Bool("serviceDB", true, "use serviceDB for device profiling")
 	flagGeolocationDB = fs.Bool("geoDB", false, "use geolocation for device profiling")
-	flagDPI           = fs.Bool("dpi", true, "use DPI for device profiling")
+	flagDPI           = fs.Bool("dpi", false, "use DPI for device profiling")
 
 	flagFreeOSMemory          = fs.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
 	flagReassembleConnections = fs.Bool("reassemble-connections", true, "reassemble TCP connections")

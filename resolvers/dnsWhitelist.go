@@ -15,7 +15,7 @@ package resolvers
 
 import (
 	"bytes"
-	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -56,7 +56,7 @@ func InitDNSWhitelist() {
 	}
 
 	if !Quiet {
-		fmt.Println("loaded", hosts, "whitelisted DNS hosts")
+		utils.DebugLog.Println("loaded", hosts, "whitelisted DNS hosts")
 	}
 }
 

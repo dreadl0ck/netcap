@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"strings"
 	"sync/atomic"
@@ -179,9 +180,7 @@ func InitCustomEncoders(c Config, quiet bool) {
 		CustomEncoders = append(CustomEncoders, e)
 	}
 
-	if !quiet {
-		fmt.Println("initialized", len(CustomEncoders), "custom encoders")
-	}
+	utils.DebugLog.Println("initialized", len(CustomEncoders), "custom encoders")
 }
 
 // CreateCustomEncoder returns a new CustomEncoder instance

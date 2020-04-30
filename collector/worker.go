@@ -15,8 +15,9 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 
-	"github.com/dreadl0ck/gopacket/reassembly"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dreadl0ck/gopacket"
@@ -41,11 +42,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 					// cleanup reassembly
 					if c.config.ReassembleConnections {
-						assembler.FlushAll()
-						//closed := assembler.FlushAll()
-						//if !c.config.Quiet {
-						//	fmt.Printf("assembler final flush: %d closed\n", closed)
-						//}
+						utils.ReassemblyLog.Printf("assembler flush: %d closed\n", assembler.FlushAll())
 					}
 					return
 				}

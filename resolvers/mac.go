@@ -16,7 +16,7 @@ package resolvers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"log"
@@ -76,7 +76,7 @@ func InitMACResolver() {
 		sums++
 	}
 	if !Quiet {
-		fmt.Println("loaded", sums, "OUI summaries")
+		utils.DebugLog.Println("loaded", sums, "OUI summaries")
 	}
 }
 
