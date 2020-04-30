@@ -269,6 +269,9 @@ func tcpDebug(args ...interface{}) {
 
 func (h *tcpReader) readStream(b *bufio.Reader) error {
 
+	//var data = make([]byte, 512)
+	//n, err := io.ReadFull(b, data)
+	//n, err := b.Read(data)
 	data, err := ioutil.ReadAll(b)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
