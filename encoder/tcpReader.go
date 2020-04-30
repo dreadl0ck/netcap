@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"bytes"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"os"
@@ -24,7 +25,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -37,6 +37,8 @@ import (
 
 // TODO: make configurable
 var logTCPDebug = true
+
+var savedStreams int
 
 type tcpReader struct {
 	ident    string
@@ -52,7 +54,6 @@ func (h *tcpReader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 		case h.data, ok = <-h.bytes:
-		// time out streams that never send any data
 		case <-time.After(c.ClosePendingTimeOut):
 			return 0, io.EOF
 		}
@@ -70,16 +71,19 @@ func (h *tcpReader) BytesChan() chan []byte {
 	return h.bytes
 }
 
-func (h *tcpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection) {
+func (h *tcpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
 
-	// fmt.Println("POP3 cleanup", h.ident)
+	// fmt.Println("TCP cleanup", h.ident)
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
 	if !h.parent.last {
 
 		// signal wait group
-		wg.Done()
+		f.wg.Done()
+		f.Lock()
+		f.numActive--
+		f.Unlock()
 
 		// indicate close on the parent tcpConnection
 		h.parent.last = true
@@ -99,11 +103,14 @@ func (h *tcpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection) 
 	}
 
 	// signal wait group
-	wg.Done()
+	f.wg.Done()
+	f.Lock()
+	f.numActive--
+	f.Unlock()
 }
 
 // run starts decoding POP3 traffic in a single direction
-func (h *tcpReader) Run(wg *sync.WaitGroup) {
+func (h *tcpReader) Run(f *tcpConnectionFactory) {
 
 	// create streams
 	var (
@@ -114,7 +121,7 @@ func (h *tcpReader) Run(wg *sync.WaitGroup) {
 	)
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.Cleanup(wg, s2c, c2s)
+	defer h.Cleanup(f, s2c, c2s)
 
 	var (
 		err error
@@ -122,11 +129,11 @@ func (h *tcpReader) Run(wg *sync.WaitGroup) {
 	)
 	for {
 		if h.isClient {
-			// client request
-			err = h.readBanner(b, c2s)
+			// read client request until EOF
+			err = h.readStream(b)
 		} else {
-			// server response
-			err = h.readBanner(b, s2c)
+			// read server response until EOF
+			err = h.readStream(b)
 		}
 		if err != nil {
 
@@ -135,10 +142,10 @@ func (h *tcpReader) Run(wg *sync.WaitGroup) {
 				return
 			}
 
-			reassemblyLog.Println("TCP stream encountered an error", c2s, err)
+			utils.ReassemblyLog.Println("TCP stream encountered an error", c2s, err)
 
-			// continue processing the stream
-			continue
+			// stop processing the stream and trigger cleanup
+			return
 		}
 	}
 }
@@ -163,7 +170,7 @@ func (h *tcpReader) getServiceName(data []byte) string {
 	return "unknown"
 }
 
-func (h *tcpReader) saveBanner(data []byte) error {
+func (h *tcpReader) saveStream(data []byte) error {
 
 	// prevent saving zero bytes
 	if len(data) == 0 {
@@ -183,12 +190,17 @@ func (h *tcpReader) saveBanner(data []byte) error {
 	// make sure root path exists
 	os.MkdirAll(root, directoryPermission)
 	base = path.Join(root, base)
+
+	utils.ReassemblyLog.Println("saveStream", base)
+
+	statsMutex.Lock()
+	savedStreams++
+	statsMutex.Unlock()
+
 	if len(base) > 250 {
 		base = base[:250] + "..."
 	}
-	if base == FileStorage {
-		base = path.Join(FileStorage, "noname")
-	}
+
 	var (
 		target = base
 		n      = 0
@@ -245,18 +257,18 @@ func (h *tcpReader) saveBanner(data []byte) error {
 	//	},
 	//})
 
-	return nil
+	// we read the data until EOF, so there is nothing more left
+	return io.EOF
 }
 
 func tcpDebug(args ...interface{}) {
 	if logTCPDebug {
-		debugLog.Println(args...)
+		utils.DebugLog.Println(args...)
 	}
 }
 
-func (h *tcpReader) readBanner(b *bufio.Reader, s2c Connection) error {
+func (h *tcpReader) readStream(b *bufio.Reader) error {
 
-	// Parse the first line of the response.
 	data, err := ioutil.ReadAll(b)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
@@ -267,5 +279,5 @@ func (h *tcpReader) readBanner(b *bufio.Reader, s2c Connection) error {
 
 	tcpDebug(ansi.Blue, h.ident, "readBanner: read", len(data), "bytes", ansi.Reset)
 
-	return h.saveBanner(data)
+	return h.saveStream(data)
 }

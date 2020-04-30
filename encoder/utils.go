@@ -18,6 +18,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"math"
 	"strconv"
 	"strings"
@@ -124,32 +125,18 @@ func logReassemblyError(t string, s string, a ...interface{}) {
 	errorsMapMutex.Unlock()
 
 	if c.Debug {
-		reassemblyLog.Printf("ERROR: "+s, a...)
+		utils.ReassemblyLog.Printf("ERROR: "+s, a...)
 	}
 }
 
 func logReassemblyInfo(s string, a ...interface{}) {
 	if c.Debug {
-		reassemblyLog.Printf("INFO: "+s, a...)
+		utils.ReassemblyLog.Printf("INFO: "+s, a...)
 	}
 }
 
 func logReassemblyDebug(s string, a ...interface{}) {
 	if c.Debug {
-		reassemblyLog.Printf("DEBUG: "+s, a...)
-	}
-}
-
-// Cleanup closes the logfile handles
-func Cleanup() {
-	if reassemblyLogFileHandle != nil {
-		if err := reassemblyLogFileHandle.Close(); err != nil {
-			fmt.Println("failed to close reassembly log file handle:", err)
-		}
-	}
-	if debugLogFileHandle != nil {
-		if err := debugLogFileHandle.Close(); err != nil {
-			fmt.Println("failed to close debug log file handle:", err)
-		}
+		utils.ReassemblyLog.Printf("DEBUG: "+s, a...)
 	}
 }

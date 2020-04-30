@@ -14,10 +14,11 @@
 package encoder
 
 import (
-	"fmt"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/evilsocket/islazy/tui"
 	"log"
 	"strconv"
 	"strings"
@@ -101,7 +102,8 @@ var (
 	SoftwareStore = &AtomicSoftwareMap{
 		Items: make(map[string]*Software),
 	}
-	softwareEncoderInstance *CustomEncoder
+
+	// TODO: create a central stats source for this and other metrics: encoderStats
 	numSoftware             int64
 
 	//parser, errInitUAParser = uaparser.New("./regexes.yaml")
@@ -341,9 +343,6 @@ func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
 }
 
 var softwareEncoder = CreateCustomEncoder(types.Type_NC_SOFTWARE, "Software", func(d *CustomEncoder) error {
-
-	softwareEncoderInstance = d
-
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
@@ -354,14 +353,16 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_SOFTWARE, "Software", fu
 }, func(e *CustomEncoder) error {
 
 	httpStore.Lock()
-	fmt.Println("UserAgents:", len(httpStore.UserAgents))
+	var rows [][]string
 	for ip, ua := range httpStore.UserAgents {
-		fmt.Println(ip, "\t", ua)
+		rows = append(rows, []string{ip, ua})
 	}
-	fmt.Println("SeverNames:", len(httpStore.ServerNames))
+	tui.Table(utils.DebugLogFileHandle, []string{"IP", "UserAgents"}, rows)
+	rows = [][]string{}
 	for ip, sn := range httpStore.ServerNames {
-		fmt.Println(ip, "\t", sn)
+		rows = append(rows, []string{ip, sn})
 	}
+	tui.Table(utils.DebugLogFileHandle, []string{"IP", "ServerNames"}, rows)
 	httpStore.Unlock()
 
 	// teardown DPI C libs
@@ -371,23 +372,27 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_SOFTWARE, "Software", fu
 	if !e.writer.IsChanWriter {
 		for _, c := range SoftwareStore.Items {
 			c.Lock()
-			writeSoftware(c.Software)
+			e.write(c.Software)
 			c.Unlock()
 		}
 	}
 	return nil
 })
 
+// TODO: move into CustomEncoder and use in other places
+// remove unnecessary global state
 // writeProfile writes the profile
-func writeSoftware(c *types.Software) {
+func (e *CustomEncoder) write(c types.AuditRecord) {
 
-	if softwareEncoderInstance.export {
+	if e.export {
 		c.Inc()
 	}
 
-	atomic.AddInt64(&softwareEncoderInstance.numRecords, 1)
-	err := softwareEncoderInstance.writer.Write(c)
+	atomic.AddInt64(&e.numRecords, 1)
+	err := e.writer.Write(c.(proto.Message))
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}
 }
+
+

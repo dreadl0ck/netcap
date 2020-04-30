@@ -2,15 +2,14 @@ package encoder
 
 import (
 	"github.com/dreadl0ck/gopacket"
-	"sync"
 )
 
 // ConnectionReader is an interface for processing a bidirectional stream of network data
 type ConnectionReader interface {
 	Read(p []byte) (int, error)
-	Run(wg *sync.WaitGroup)
+	Run(f *tcpConnectionFactory)
 	BytesChan() chan []byte
-	Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
+	Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection)
 }
 
 // Connection contains both unidirectional flows for a connection

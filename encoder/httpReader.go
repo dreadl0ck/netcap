@@ -62,7 +62,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts
@@ -100,9 +99,6 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 		case h.data, ok = <-h.bytes:
-		// time out streams that never send any data
-		case <-time.After(c.ClosePendingTimeOut):
-			return 0, io.EOF
 		}
 	}
 	if !ok || len(h.data) == 0 {
@@ -118,14 +114,17 @@ func (h *httpReader) BytesChan() chan []byte {
 	return h.bytes
 }
 
-func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection) {
+func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
 	if !h.parent.last {
 
 		// signal wait group
-		wg.Done()
+		f.wg.Done()
+		f.Lock()
+		f.numActive--
+		f.Unlock()
 
 		// indicate close on the parent tcpConnection
 		h.parent.last = true
@@ -186,7 +185,10 @@ func (h *httpReader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 	}
 
 	// signal wait group
-	wg.Done()
+	f.wg.Done()
+	f.Lock()
+	f.numActive--
+	f.Unlock()
 }
 
 func writeHTTP(h *types.HTTP) {
@@ -229,7 +231,7 @@ func writeHTTP(h *types.HTTP) {
 }
 
 // run starts decoding HTTP traffic in a single direction
-func (h *httpReader) Run(wg *sync.WaitGroup) {
+func (h *httpReader) Run(f *tcpConnectionFactory) {
 
 	// create streams
 	var (
@@ -240,7 +242,7 @@ func (h *httpReader) Run(wg *sync.WaitGroup) {
 	)
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.Cleanup(wg, s2c, c2s)
+	defer h.Cleanup(f, s2c, c2s)
 
 	var (
 		err error
@@ -261,7 +263,7 @@ func (h *httpReader) Run(wg *sync.WaitGroup) {
 				return
 			}
 
-			reassemblyLog.Println("HTTP stream encountered an error", c2s, err)
+			utils.ReassemblyLog.Println("HTTP stream encountered an error", c2s, err)
 
 			// continue processing the stream
 			continue
@@ -616,7 +618,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		n++
 	}
 
-	debugLog.Println("saving file:", target)
+	utils.DebugLog.Println("saving file:", target)
 
 	f, err := os.Create(target)
 	if err != nil {

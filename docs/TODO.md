@@ -1,5 +1,6 @@
 # TODOs
 
+- test-pcaps: repeat with new stream capture, log the time for each file
 - extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
 - resolvers: log info on number of loaded resolvers into debug.log
 - software: log UserAgents and ServerNames into debug.log
@@ -59,6 +60,7 @@ Banner
 
 ## General
 
+- net split tool: add support to split pcaps into connections, like: $ mkdir all_split && dreadbook:test alien$ PcapSplitter -o all_split -f all.pcap -m connection
 - ICS pcaps: failed to collect audit records from pcapng file: Unknown magic 73726576
 - add net grep tool, similar to ngrep
 - check TODOs in source

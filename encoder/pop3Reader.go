@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"net/http"
 	"net/textproto"
@@ -25,7 +26,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 	"unicode"
@@ -63,7 +63,6 @@ func (h *pop3Reader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 		case h.data, ok = <-h.bytes:
-		// time out streams that never send any data
 		case <-time.After(c.ClosePendingTimeOut):
 			return 0, io.EOF
 		}
@@ -81,7 +80,7 @@ func (h *pop3Reader) BytesChan() chan []byte {
 	return h.bytes
 }
 
-func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection) {
+func (h *pop3Reader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
 
 	// fmt.Println("POP3 cleanup", h.ident)
 
@@ -90,7 +89,10 @@ func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 	if !h.parent.last {
 
 		// signal wait group
-		wg.Done()
+		f.wg.Done()
+		f.Lock()
+		f.numActive--
+		f.Unlock()
 
 		// indicate close on the parent tcpConnection
 		h.parent.last = true
@@ -134,11 +136,14 @@ func (h *pop3Reader) Cleanup(wg *sync.WaitGroup, s2c Connection, c2s Connection)
 	}
 
 	// signal wait group
-	wg.Done()
+	f.wg.Done()
+	f.Lock()
+	f.numActive--
+	f.Unlock()
 }
 
 // run starts decoding POP3 traffic in a single direction
-func (h *pop3Reader) Run(wg *sync.WaitGroup) {
+func (h *pop3Reader) Run(f *tcpConnectionFactory) {
 
 	// create streams
 	var (
@@ -149,7 +154,7 @@ func (h *pop3Reader) Run(wg *sync.WaitGroup) {
 	)
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.Cleanup(wg, s2c, c2s)
+	defer h.Cleanup(f, s2c, c2s)
 
 	var (
 		err error
@@ -170,7 +175,7 @@ func (h *pop3Reader) Run(wg *sync.WaitGroup) {
 				return
 			}
 
-			reassemblyLog.Println("POP3 stream encountered an error", c2s, err)
+			utils.ReassemblyLog.Println("POP3 stream encountered an error", c2s, err)
 
 			// continue processing the stream
 			continue
@@ -297,7 +302,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 func mailDebug(args ...interface{}) {
 	if pop3Debug {
-		debugLog.Println(args...)
+		utils.DebugLog.Println(args...)
 	}
 }
 
@@ -310,7 +315,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Connection) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		debugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
+		utils.DebugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
 		return err
 	}
 

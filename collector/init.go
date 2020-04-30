@@ -5,6 +5,7 @@ import (
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,9 +15,11 @@ import (
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
 
+	encoder.SetConfig(c.config.EncoderConfig)
+
 	// start workers
 	c.workers = c.initWorkers()
-	c.printlnStdOut("spawned", c.config.Workers, "workers")
+	utils.DebugLog.Println("spawned", c.config.Workers, "workers")
 
 	// create full output directory path if set
 	if c.config.EncoderConfig.Out != "" {
@@ -40,8 +43,6 @@ func (c *Collector) Init() (err error) {
 	if c.config.ResolverConfig.LocalDNS {
 		encoder.LocalDNS = true
 	}
-
-	encoder.SetConfig(c.config.EncoderConfig)
 
 	// set quiet mode for other subpackages
 	encoder.Quiet = c.config.Quiet

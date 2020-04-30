@@ -48,6 +48,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"net/http"
 	"os"
@@ -64,7 +66,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/dreadl0ck/gopacket/reassembly"
+	"github.com/dreadl0ck/netcap/reassembly"
 )
 
 var (
@@ -112,6 +114,7 @@ type tcpConnectionFactory struct {
 	wg         sync.WaitGroup
 	decodeHTTP bool
 	decodePOP3 bool
+	numActive int64
 	sync.Mutex
 }
 
@@ -151,11 +154,12 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		}
 
 		// kickoff decoders for client and server
-		factory.Lock()
 		factory.wg.Add(2)
+		factory.Lock()
+		factory.numActive += 2
 		factory.Unlock()
-		go stream.client.Run(&factory.wg)
-		go stream.server.Run(&factory.wg)
+		go stream.client.Run(factory)
+		go stream.server.Run(factory)
 
 	case stream.isPOP3:
 		stream.client = &pop3Reader{
@@ -173,11 +177,12 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		}
 
 		// kickoff decoders for client and server
-		factory.Lock()
 		factory.wg.Add(2)
+		factory.Lock()
+		factory.numActive += 2
 		factory.Unlock()
-		go stream.client.Run(&factory.wg)
-		go stream.server.Run(&factory.wg)
+		go stream.client.Run(factory)
+		go stream.server.Run(factory)
 	default:
 
 		if stream.isHTTPS {
@@ -203,20 +208,24 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		}
 
 		// kickoff readers for client and server
-		factory.Lock()
 		factory.wg.Add(2)
+		factory.Lock()
+		factory.numActive += 2
 		factory.Unlock()
-		go stream.client.Run(&factory.wg)
-		go stream.server.Run(&factory.wg)
+		go stream.client.Run(factory)
+		go stream.server.Run(factory)
 	}
 
 	return stream
 }
 
 func (factory *tcpConnectionFactory) WaitGoRoutines() {
+
 	factory.Lock()
-	factory.wg.Wait()
+	fmt.Println("\nwaiting for", factory.numActive, "flows")
 	factory.Unlock()
+
+	factory.wg.Wait()
 }
 
 // Context is the assembler context
@@ -375,7 +384,6 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	}
 
 	data := sg.Fetch(length)
-
 	switch {
 	case t.isHTTP:
 		if length > 0 {
@@ -408,7 +416,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		//// TODO: if banner grabbing is active
 		if length > 0 {
 			if c.HexDump {
-				logReassemblyDebug("Feeding TCP banner grabber with:\n%s", hex.Dump(data))
+				logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
 			}
 			if dir == reassembly.TCPDirClientToServer && !t.reversed {
 				t.client.BytesChan() <- data
@@ -451,6 +459,12 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext) bool 
 
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 
+	// prevent passing any non TCP packets in here
+	tcpLayer := packet.Layer(layers.LayerTypeTCP)
+	if tcpLayer == nil {
+		return
+	}
+
 	data := packet.Data()
 
 	// lock to sync with read on destroy
@@ -491,37 +505,30 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		}
 	}
 
-	tcp := packet.Layer(layers.LayerTypeTCP)
-	if tcp != nil {
-		tcp := tcp.(*layers.TCP)
-		if c.Checksum {
-			err := tcp.SetNetworkLayerForChecksum(packet.NetworkLayer())
-			if err != nil {
-				log.Fatalf("Failed to set network layer for checksum: %s\n", err)
-			}
+	tcp := tcpLayer.(*layers.TCP)
+	if c.Checksum {
+		err := tcp.SetNetworkLayerForChecksum(packet.NetworkLayer())
+		if err != nil {
+			log.Fatalf("Failed to set network layer for checksum: %s\n", err)
 		}
-		statsMutex.Lock()
-		reassemblyStats.totalsz += len(tcp.Payload)
-		statsMutex.Unlock()
-
-		// for debugging:
-		//AssembleWithContextTimeout(packet, assembler, tcp)
-
-		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
-			CaptureInfo: packet.Metadata().CaptureInfo,
-		})
 	}
+	statsMutex.Lock()
+	reassemblyStats.totalsz += len(tcp.Payload)
+	statsMutex.Unlock()
+
+	// for debugging:
+	//AssembleWithContextTimeout(packet, assembler, tcp)
+
+	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
+		CaptureInfo: packet.Metadata().CaptureInfo,
+	})
 
 	// flush connections in interval
 	if count%c.FlushEvery == 0 {
 		ref := packet.Metadata().CaptureInfo.Timestamp
-		// flushed, closed :=
-		//fmt.Println("FlushWithOptions")
-		assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-c.ClosePendingTimeOut), TC: ref.Add(-c.CloseInactiveTimeOut)})
-		//fmt.Println("FlushWithOptions done")
+		flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-c.ClosePendingTimeOut), TC: ref.Add(-c.CloseInactiveTimeOut)})
 
-		// TODO: log into file when debugging is enabled
-		// fmt.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref, ref.Add(-timeout))
+		utils.DebugLog.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref)
 	}
 }
 
@@ -551,24 +558,24 @@ func CleanupReassembly(wait bool) {
 
 	cMu.Lock()
 	if c.Debug {
-		reassemblyLog.Println("StreamPool:")
-		reassemblyLog.Println(StreamPool.DumpString())
+		utils.ReassemblyLog.Println("StreamPool:")
+		utils.ReassemblyLog.Println(StreamPool.DumpString())
 	}
 	cMu.Unlock()
 
 	// wait for stream reassembly to finish
 	if c.WaitForConnections || wait {
 		if !Quiet {
-			fmt.Print("\nwaiting for last streams to finish processing...")
+			fmt.Print("waiting for last streams to finish processing...")
 		}
 		select {
 		case <-waitForConns():
 			if !Quiet {
 				fmt.Println(" done!")
 			}
-		case <-time.After(c.ClosePendingTimeOut):
+		case <-time.After(netcap.DefaultReassemblyTimeout):
 			if !Quiet {
-				fmt.Println(" timeout after", c.ClosePendingTimeOut)
+				fmt.Println(" timeout after", netcap.DefaultReassemblyTimeout)
 			}
 		}
 	}
@@ -590,12 +597,12 @@ func CleanupReassembly(wait bool) {
 	// print stats if not quiet
 	if !Quiet {
 		errorsMapMutex.Lock()
-		reassemblyLog.Printf("HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
+		utils.ReassemblyLog.Printf("HTTPEncoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
 		errorsMapMutex.Unlock()
 
 		// print configuration
 		// print configuration as table
-		tui.Table(reassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
+		tui.Table(utils.ReassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
 			{"FlushEvery", strconv.Itoa(c.FlushEvery)},
 			{"CloseInactiveTimeout", c.CloseInactiveTimeOut.String()},
 			{"ClosePendingTimeout", c.ClosePendingTimeOut.String()},
@@ -630,7 +637,7 @@ func CleanupReassembly(wait bool) {
 		rows = append(rows, []string{"overlap bytes", strconv.Itoa(reassemblyStats.overlapBytes)})
 		statsMutex.Unlock()
 
-		tui.Table(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
+		tui.Table(utils.ReassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
 
 		errorsMapMutex.Lock()
 		statsMutex.Lock()
@@ -639,12 +646,18 @@ func CleanupReassembly(wait bool) {
 			for e := range errorsMap {
 				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
 			}
-			tui.Table(reassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
+			tui.Table(utils.ReassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
 		}
-		reassemblyLog.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
+		utils.ReassemblyLog.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
 		statsMutex.Unlock()
 		errorsMapMutex.Unlock()
 	}
+}
+
+func NumSavedStreams() {
+	statsMutex.Lock()
+	fmt.Println("savedStreams:", savedStreams)
+	statsMutex.Unlock()
 }
 
 func waitForConns() chan struct{} {

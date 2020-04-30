@@ -15,7 +15,7 @@ package resolvers
 
 import (
 	"bytes"
-	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"net"
@@ -58,7 +58,7 @@ func InitLocalDNS() {
 	}
 
 	if !Quiet {
-		fmt.Println("loaded", hosts, "local DNS hosts")
+		utils.DebugLog.Println("loaded", hosts, "local DNS hosts")
 	}
 }
 
