@@ -52,19 +52,9 @@ var dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11
 				}
 			}
 
-			var mfb int32
-			if dot11.HTControl.HT != nil {
-				if dot11.HTControl.HT.LinkAdapationControl != nil {
-					if dot11.HTControl.HT.LinkAdapationControl.MFB != nil {
-						mfb = int32(*dot11.HTControl.HT.LinkAdapationControl.MFB)
-					}
-				}
-			}
-
-			htcontrol = &types.Dot11HTControl{
-				ACConstraint: dot11.HTControl.ACConstraint,
-				RDGMorePPDU:  dot11.HTControl.RDGMorePPDU,
-				VHT: &types.Dot11HTControlVHT{
+			var vht *types.Dot11HTControlVHT
+			if dot11.HTControl.VHT != nil {
+				vht = &types.Dot11HTControlVHT{
 					MRQ:            dot11.HTControl.VHT.MRQ,
 					UnsolicitedMFB: dot11.HTControl.VHT.UnsolicitedMFB,
 					MSI:            msi,
@@ -80,25 +70,48 @@ var dot11Encoder = CreateLayerEncoder(types.Type_NC_Dot11, layers.LayerTypeDot11
 					GID:            gid,
 					CodingType:     coding,
 					FbTXBeamformed: dot11.HTControl.VHT.FbTXBeamformed,
-				},
-				HT: &types.Dot11HTControlHT{
-					LinkAdapationControl: &types.Dot11LinkAdapationControl{
+				}
+			}
+
+			var ht *types.Dot11HTControlHT
+			if dot11.HTControl.HT != nil {
+				var mfb int32
+				var lac *types.Dot11LinkAdapationControl
+				if dot11.HTControl.HT.LinkAdapationControl != nil {
+					if dot11.HTControl.HT.LinkAdapationControl.MFB != nil {
+						mfb = int32(*dot11.HTControl.HT.LinkAdapationControl.MFB)
+					}
+					var asel *types.Dot11ASEL
+					if dot11.HTControl.HT.LinkAdapationControl.ASEL != nil {
+						asel = &types.Dot11ASEL{
+							Command: int32(dot11.HTControl.HT.LinkAdapationControl.ASEL.Command),
+							Data:    int32(dot11.HTControl.HT.LinkAdapationControl.ASEL.Data),
+						}
+					}
+					lac = &types.Dot11LinkAdapationControl{
 						TRQ:  dot11.HTControl.HT.LinkAdapationControl.TRQ,
 						MRQ:  dot11.HTControl.HT.LinkAdapationControl.MRQ,
 						MSI:  int32(dot11.HTControl.HT.LinkAdapationControl.MSI),
 						MFSI: int32(dot11.HTControl.HT.LinkAdapationControl.MFSI),
-						ASEL: &types.Dot11ASEL{
-							Command: int32(dot11.HTControl.HT.LinkAdapationControl.ASEL.Command),
-							Data:    int32(dot11.HTControl.HT.LinkAdapationControl.ASEL.Data),
-						},
+						ASEL: asel,
 						MFB: mfb,
-					},
+					}
+				}
+				ht = &types.Dot11HTControlHT{
+					LinkAdapationControl: lac,
 					CalibrationPosition: int32(dot11.HTControl.HT.CalibrationPosition),
 					CalibrationSequence: int32(dot11.HTControl.HT.CalibrationSequence),
 					CSISteering:         int32(dot11.HTControl.HT.CSISteering),
 					NDPAnnouncement:     dot11.HTControl.HT.NDPAnnouncement,
 					DEI:                 dot11.HTControl.HT.DEI,
-				},
+				}
+			}
+
+			htcontrol = &types.Dot11HTControl{
+				ACConstraint: dot11.HTControl.ACConstraint,
+				RDGMorePPDU:  dot11.HTControl.RDGMorePPDU,
+				VHT: vht,
+				HT: ht,
 			}
 		}
 		return &types.Dot11{
