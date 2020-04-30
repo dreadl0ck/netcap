@@ -194,8 +194,8 @@ commands:
             trap 'exit 0' INT
             redcolor()(set -o pipefail;"$@" 2>&1>&3|sed $'s,.*,\e[31m&\e[m,'>&2)3>&1
             for f in $(find tests -type f -name "*.pcap" -o -name "*.pcapng"); do
-                echo "$f"
-                redcolor net capture -read "$f" -out "$f.net" -quiet | :
+                echo "net capture -read "$f" -out "$f.net" -quiet -time -ignore-unknown"
+                redcolor net capture -read "$f" -out "$f.net" -quiet -time -ignore-unknown || :
                 rm -rf "$f.net"
             done
 
