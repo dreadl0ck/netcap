@@ -1878,3 +1878,12 @@ message Service {
     string   Port                         = 3;
     string   Name                         = 4;
 }
+
+// TODO: or combine?
+message TCPService {
+    string   Timestamp                    = 1;
+    string   IP                           = 2;
+    string   Port                         = 3;
+    string   Name                         = 4;
+    bytes    Banner                       = 5;
+}

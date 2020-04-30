@@ -221,9 +221,11 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 
 func (factory *tcpConnectionFactory) WaitGoRoutines() {
 
-	factory.Lock()
-	fmt.Println("\nwaiting for", factory.numActive, "flows")
-	factory.Unlock()
+	if !Quiet {
+		factory.Lock()
+		fmt.Println("\nwaiting for", factory.numActive, "flows")
+		factory.Unlock()
+	}
 
 	factory.wg.Wait()
 }

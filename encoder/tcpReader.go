@@ -19,7 +19,6 @@ import (
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -153,13 +152,13 @@ func (h *tcpReader) Run(f *tcpConnectionFactory) {
 func (h *tcpReader) getServiceName(data []byte) string {
 
 	dstPort, _ := strconv.Atoi(h.parent.transport.Dst().String())
-	srcPort, _ := strconv.Atoi(h.parent.transport.Src().String())
+	//srcPort, _ := strconv.Atoi(h.parent.transport.Src().String())
 
-	s := resolvers.LookupServiceByPort(srcPort, "tcp")
-	if s != "" && s != "Reserved" {
-		return filepath.Clean(strings.ReplaceAll(s, " ", "-"))
-	}
-	s = resolvers.LookupServiceByPort(dstPort, "tcp")
+	//s := resolvers.LookupServiceByPort(srcPort, "tcp")
+	//if s != "" && s != "Reserved" {
+	//	return filepath.Clean(strings.ReplaceAll(s, " ", "-"))
+	//}
+	s := resolvers.LookupServiceByPort(dstPort, "tcp")
 	if s != "" && s != "Reserved" {
 		return filepath.Clean(strings.ReplaceAll(s, " ", "-"))
 	}
@@ -197,30 +196,10 @@ func (h *tcpReader) saveStream(data []byte) error {
 	savedStreams++
 	statsMutex.Unlock()
 
-	if len(base) > 250 {
-		base = base[:250] + "..."
-	}
-
-	var (
-		target = base
-		n      = 0
-	)
-	for {
-		// prevent overwriting files - duplicates will be enumerated
-		_, errStat := os.Stat(target)
-		if errStat != nil {
-			break
-		}
-
-		target = path.Join(root, filepath.Clean(h.ident)+"-"+strconv.Itoa(n))
-		n++
-	}
-
-	//fmt.Println("saving file:", target)
-
-	f, err := os.Create(target)
+	// append to files
+	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, 0700)
 	if err != nil {
-		logReassemblyError("TCP Banner create", "Cannot create %s: %s\n", target, err)
+		logReassemblyError("TCP Banner create", "Cannot create %s: %s\n", base, err)
 		return err
 	}
 
@@ -228,14 +207,14 @@ func (h *tcpReader) saveStream(data []byte) error {
 	r := bytes.NewBuffer(data)
 	w, err := io.Copy(f, r)
 	if err != nil {
-		logReassemblyError("TCP Banner", "%s: failed to save TCP banner %s (l:%d): %s\n", h.ident, target, w, err)
+		logReassemblyError("TCP Banner", "%s: failed to save TCP banner %s (l:%d): %s\n", h.ident, base, w, err)
 	} else {
-		logReassemblyInfo("%s: Saved TCP Banner %s (l:%d)\n", h.ident, target, w)
+		logReassemblyInfo("%s: Saved TCP Banner %s (l:%d)\n", h.ident, base, w)
 	}
 
 	err = f.Close()
 	if err != nil {
-		logReassemblyError("TCP Banner", "%s: failed to close TCP banner file %s (l:%d): %s\n", h.ident, target, w, err)
+		logReassemblyError("TCP Banner", "%s: failed to close TCP banner file %s (l:%d): %s\n", h.ident, base, w, err)
 	}
 
 	// TODO: write Banner audit record to disk
@@ -269,18 +248,21 @@ func tcpDebug(args ...interface{}) {
 
 func (h *tcpReader) readStream(b *bufio.Reader) error {
 
-	//var data = make([]byte, 512)
+	var data = make([]byte, 512)
+
 	//n, err := io.ReadFull(b, data)
-	//n, err := b.Read(data)
-	data, err := ioutil.ReadAll(b)
+	// Careful: using ioutil.ReadAll here causes a data race!
+	n, err := b.Read(data)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logReassemblyError("readBanner", "TCP/%s failed to read banner: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("readBanner", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
 		return err
 	}
 
-	tcpDebug(ansi.Blue, h.ident, "readBanner: read", len(data), "bytes", ansi.Reset)
+	tcpDebug(ansi.Blue, h.ident, "readBanner: read", n, "bytes", ansi.Reset)
 
-	return h.saveStream(data)
+	h.saveStream(data[:n])
+
+	return nil
 }

@@ -36,6 +36,7 @@ var DefaultConfig = Config{
 	Quiet:               false,
 	EncoderConfig:       encoder.DefaultConfig,
 	ResolverConfig:      resolvers.DefaultConfig,
+	LogErrors:           false,
 }
 
 var DefaultConfigDPI = Config{
@@ -51,6 +52,7 @@ var DefaultConfigDPI = Config{
 	Quiet:               false,
 	EncoderConfig:       encoder.DefaultConfig,
 	ResolverConfig:      resolvers.DefaultConfig,
+	LogErrors:           false,
 }
 
 // Config contains configuration parameters
@@ -101,4 +103,6 @@ type Config struct {
 
 	// Use TCP reassembly
 	ReassembleConnections bool
+
+	LogErrors bool
 }

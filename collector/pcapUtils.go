@@ -144,6 +144,10 @@ func (c *Collector) logPacketError(p gopacket.Packet, err string) error {
 	// increment errorMap stats
 	c.errorMap.Inc(err)
 
+	if !c.config.LogErrors {
+		return nil
+	}
+
 	// write entry to errors.log
 	c.errorLogFile.WriteString(p.Metadata().Timestamp.String() + "\nError: " + err + "\nPacket:\n" + p.Dump() + "\n")
 

@@ -54,6 +54,7 @@ var (
 	flagPromiscMode   = fs.Bool("promisc", true, "toggle promiscous mode for live capture")
 	flagSnapLen       = fs.Int("snaplen", netcap.DefaultSnapLen, "configure snaplen for live capture from interface")
 
+	flagTime = fs.Bool("time", false, "print processing time even in quiet mode")
 	flagVersion = fs.Bool("version", false, "print netcap package version and exit")
 
 	flagBaseLayer     = fs.String("base", "ethernet", "select base layer")
@@ -80,6 +81,7 @@ var (
 	flagFreeOSMemory          = fs.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
 	flagReassembleConnections = fs.Bool("reassemble-connections", true, "reassemble TCP connections")
 
+	flagLogErrors            = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
 	flagFlushevery           = fs.Int("flushevery", netcap.DefaultFlushEvery, "flush assembler every N packets")
 	flagNodefrag             = fs.Bool("nodefrag", false, "if true, do not do IPv4 defrag")
 	flagChecksum             = fs.Bool("checksum", false, "check TCP checksum")

@@ -16,6 +16,7 @@ package capture
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dustin/go-humanize"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -131,6 +132,7 @@ func Run() {
 		DPI:                   *flagDPI,
 		ReassembleConnections: *flagReassembleConnections,
 		FreeOSMem:             *flagFreeOSMemory,
+		LogErrors:             *flagLogErrors,
 		EncoderConfig: encoder.Config{
 			Buffer:               *flagBuffer,
 			Compression:          *flagCompress,
@@ -216,6 +218,12 @@ func Run() {
 
 	if !*flagQuiet {
 		fmt.Println("done in", time.Since(start))
+	} else {
+		if *flagTime {
+			// stat input file
+			stat, _ := os.Stat(*flagInput)
+			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start))
+		}
 	}
 
 	// memory profiling
