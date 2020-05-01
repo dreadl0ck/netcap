@@ -26,8 +26,12 @@ var tcpEncoder = CreateLayerEncoder(types.Type_NC_TCP, layers.LayerTypeTCP, func
 			opts    []*types.TCPOption
 			payload []byte
 		)
-		if CapturePayload {
+		if c.IncludePayloads {
 			payload = layer.LayerPayload()
+		}
+		var e float64
+		if c.CalculateEntropy {
+			e = Entropy(tcp.Payload)
 		}
 		for _, o := range tcp.Options {
 			opts = append(opts, &types.TCPOption{
@@ -57,7 +61,7 @@ var tcpEncoder = CreateLayerEncoder(types.Type_NC_TCP, layers.LayerTypeTCP, func
 			Urgent:         int32(tcp.Urgent),
 			Padding:        tcp.Padding,
 			Options:        opts,
-			PayloadEntropy: Entropy(tcp.Payload),
+			PayloadEntropy: e,
 			PayloadSize:    int32(len(tcp.Payload)),
 			Payload:        payload,
 		}

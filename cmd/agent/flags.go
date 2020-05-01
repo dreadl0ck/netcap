@@ -33,11 +33,13 @@ var (
 	flagConfig         = fs.String("config", "", "read configuration from file at path")
 	flagInterface      = fs.String("iface", "en0", "interface")
 	flagMaxSize        = fs.Int("max", 10*1024, "max size of packet") // max 65,507 bytes
-
-	flagBPF      = fs.String("bpf", "", "supply a BPF filter to use for netcap collection")
-	flagInclude  = fs.String("include", "", "include specific encoders")
-	flagExclude  = fs.String("exclude", "", "exclude specific encoders")
-	flagEncoders = fs.Bool("encoders", false, "show all available encoders")
+	flagLogErrors      = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
+	flagCalcEntropy    = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
+	flagFileStorage    = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
+	flagBPF            = fs.String("bpf", "", "supply a BPF filter to use for netcap collection")
+	flagInclude        = fs.String("include", "", "include specific encoders")
+	flagExclude        = fs.String("exclude", "", "exclude specific encoders")
+	flagEncoders       = fs.Bool("encoders", false, "show all available encoders")
 
 	flagWorkers      = fs.Int("workers", runtime.NumCPU(), "number of workers")
 	flagPacketBuffer = fs.Int("pbuf", 0, "set packet buffer size")

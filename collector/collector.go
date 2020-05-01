@@ -16,6 +16,7 @@ package collector
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -373,8 +374,15 @@ func (c *Collector) PrintConfiguration() {
 	if c.config.Quiet {
 		target = logFileHandle
 	} else {
-		target = os.Stdout
+		target = io.MultiWriter(os.Stdout, logFileHandle)
 	}
+
+	cdata, err := json.MarshalIndent(c.config, " ", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// always write the entire configuration into the logfile
+	logFileHandle.Write(cdata)
 
 	netcap.FPrintBuildInfo(target)
 	fmt.Fprintln(target, "> PID:", os.Getpid())
@@ -388,7 +396,7 @@ func (c *Collector) PrintConfiguration() {
 		{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
 		{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
 		{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
-		{"FileStorage", c.config.FileStorage},
+		{"FileStorage", c.config.EncoderConfig.FileStorage},
 	})
 	fmt.Fprintln(target) // add a newline
 }

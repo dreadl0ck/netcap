@@ -85,7 +85,6 @@ var (
 	start          = time.Now()
 	errorsMap      = make(map[string]uint)
 	errorsMapMutex sync.Mutex
-	FileStorage    string
 )
 
 var reassemblyStats struct {

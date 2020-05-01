@@ -23,7 +23,7 @@ import (
 var cipEncoder = CreateLayerEncoder(types.Type_NC_CIP, layers.LayerTypeCIP, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if cip, ok := layer.(*layers.CIP); ok {
 		var payload []byte
-		if CapturePayload {
+		if c.IncludePayloads {
 			payload = cip.Data
 		}
 		var additional []uint32

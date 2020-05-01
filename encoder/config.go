@@ -77,6 +77,8 @@ var DefaultConfig = Config{
 	FlowTimeOut:          10 * time.Second,
 	CloseInactiveTimeOut: 24 * time.Hour,
 	ClosePendingTimeOut:  5 * time.Second,
+	FileStorage:          "files",
+	CalculateEntropy:     false,
 }
 
 // Config contains configuration parameters
@@ -169,4 +171,10 @@ type Config struct {
 
 	// Close connections with pending bytes after
 	ClosePendingTimeOut time.Duration
+
+	// If a path is set files will be extracted and written to the specified path
+	FileStorage string
+
+	// Calculate entropy for payloads in Ethernet and IP audit records
+	CalculateEntropy bool
 }

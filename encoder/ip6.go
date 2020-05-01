@@ -25,6 +25,10 @@ var ipv6Encoder = CreateLayerEncoder(
 	layers.LayerTypeIPv6,
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if ip6, ok := layer.(*layers.IPv6); ok {
+			var e float64
+			if c.CalculateEntropy {
+				e = Entropy(ip6.Payload)
+			}
 			return &types.IPv6{
 				Timestamp:      timestamp,
 				Version:        int32(ip6.Version),
@@ -36,8 +40,9 @@ var ipv6Encoder = CreateLayerEncoder(
 				SrcIP:          ip6.SrcIP.String(),
 				DstIP:          ip6.DstIP.String(),
 				PayloadSize:    int32(len(ip6.Payload)),
-				PayloadEntropy: Entropy(ip6.Payload),
+				PayloadEntropy: e,
 			}
 		}
 		return nil
-	})
+	},
+)

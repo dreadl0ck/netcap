@@ -94,6 +94,7 @@ func Run() {
 		WriteUnknownPackets: false,
 		Promisc:             *flagPromiscMode,
 		SnapLen:             *flagSnapLen,
+		LogErrors:           *flagLogErrors,
 		EncoderConfig: encoder.Config{
 			// needs to be disabled for batch mode
 			Buffer:          false,
@@ -126,6 +127,8 @@ func Run() {
 			FlowTimeOut:          *flagFlowTimeOut,
 			CloseInactiveTimeOut: *flagCloseInactiveTimeout,
 			ClosePendingTimeOut:  *flagClosePendingTimeout,
+			FileStorage:          *flagFileStorage,
+			CalculateEntropy:     *flagCalcEntropy,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    *flagReverseDNS,

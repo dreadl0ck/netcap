@@ -25,7 +25,10 @@ var ipv4Encoder = CreateLayerEncoder(
 	layers.LayerTypeIPv4,
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if ip4, ok := layer.(*layers.IPv4); ok {
-
+			var e float64
+			if c.CalculateEntropy {
+				e = Entropy(ip4.Payload)
+			}
 			var opts []*types.IPv4Option
 			for _, o := range ip4.Options {
 				opts = append(opts, &types.IPv4Option{
@@ -50,9 +53,10 @@ var ipv4Encoder = CreateLayerEncoder(
 				DstIP:          ip4.DstIP.String(),
 				Padding:        ip4.Padding,
 				Options:        opts,
-				PayloadEntropy: Entropy(ip4.Payload),
+				PayloadEntropy: e,
 				PayloadSize:    int32(len(ip4.Payload)),
 			}
 		}
 		return nil
-	})
+	},
+)

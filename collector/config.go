@@ -29,7 +29,6 @@ var DefaultConfig = Config{
 	WriteUnknownPackets: false,
 	Promisc:             false,
 	SnapLen:             1514,
-	FileStorage:         "files",
 	DPI:                 false,
 	BaseLayer:           utils.GetBaseLayer("ethernet"),
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
@@ -45,7 +44,6 @@ var DefaultConfigDPI = Config{
 	WriteUnknownPackets: false,
 	Promisc:             false,
 	SnapLen:             1514,
-	FileStorage:         "files",
 	DPI:                 true,
 	BaseLayer:           utils.GetBaseLayer("ethernet"),
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
@@ -82,9 +80,6 @@ type Config struct {
 
 	// Decoding options for gopacket
 	DecodeOptions gopacket.DecodeOptions
-
-	// If a path is set files will be extracted and written to the specified path
-	FileStorage string
 
 	// Dont print any output to the console
 	Quiet bool

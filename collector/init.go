@@ -29,9 +29,6 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
-	// set file storage
-	encoder.FileStorage = c.config.FileStorage
-
 	// init deep packet inspection
 	if c.config.DPI {
 		dpi.Init()
@@ -57,9 +54,6 @@ func (c *Collector) Init() (err error) {
 	// initialize encoders
 	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)
 	encoder.InitCustomEncoders(c.config.EncoderConfig, c.config.Quiet)
-
-	// set payload capture
-	encoder.CapturePayload = c.config.EncoderConfig.IncludePayloads
 
 	// set pointer of collectors atomic counter map in encoder pkg
 	encoder.SetErrorMap(c.errorMap)
