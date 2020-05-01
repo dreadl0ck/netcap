@@ -85,24 +85,26 @@ var (
 	start          = time.Now()
 	errorsMap      = make(map[string]uint)
 	errorsMapMutex sync.Mutex
+	fsmOptions     = reassembly.TCPSimpleFSMOptions{}
 )
 
 var reassemblyStats struct {
-	ipdefrag            int
-	missedBytes         int
-	pkt                 int
-	sz                  int
-	totalsz             int
-	rejectFsm           int
-	rejectOpt           int
-	rejectConnFsm       int
-	reassembled         int
-	outOfOrderBytes     int
-	outOfOrderPackets   int
-	biggestChunkBytes   int
-	biggestChunkPackets int
-	overlapBytes        int
-	overlapPackets      int
+	ipdefrag            int64
+	missedBytes         int64
+	pkt                 int64
+	sz                  int64
+	totalsz             int64
+	rejectFsm           int64
+	rejectOpt           int64
+	rejectConnFsm       int64
+	reassembled         int64
+	outOfOrderBytes     int64
+	outOfOrderPackets   int64
+	biggestChunkBytes   int64
+	biggestChunkPackets int64
+	overlapBytes        int64
+	overlapPackets      int64
+	savedStreams        int64
 }
 
 /*
@@ -117,8 +119,7 @@ type tcpConnectionFactory struct {
 	sync.Mutex
 }
 
-var fsmOptions = reassembly.TCPSimpleFSMOptions{}
-
+// New handles a new stream received from the assembler
 func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
@@ -184,35 +185,36 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		go stream.server.Run(factory)
 	default:
 
+		// do not write encrypted HTTP streams to disk for now
 		if stream.isHTTPS {
 			// don't capture encrypted HTTPS traffic
 			return stream
 		}
 
-		// TODO: make configurable
-		// if config.GrabBanners { ...
+		if c.SaveStreams {
 
-		stream.client = &tcpReader{
-			bytes:    make(chan []byte),
-			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
-			hexdump:  c.HexDump,
-			parent:   stream,
-			isClient: true,
-		}
-		stream.server = &tcpReader{
-			bytes:   make(chan []byte),
-			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
-			hexdump: c.HexDump,
-			parent:  stream,
-		}
+			stream.client = &tcpReader{
+				bytes:    make(chan []byte),
+				ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
+				hexdump:  c.HexDump,
+				parent:   stream,
+				isClient: true,
+			}
+			stream.server = &tcpReader{
+				bytes:   make(chan []byte),
+				ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
+				hexdump: c.HexDump,
+				parent:  stream,
+			}
 
-		// kickoff readers for client and server
-		factory.wg.Add(2)
-		factory.Lock()
-		factory.numActive += 2
-		factory.Unlock()
-		go stream.client.Run(factory)
-		go stream.server.Run(factory)
+			// kickoff readers for client and server
+			factory.wg.Add(2)
+			factory.Lock()
+			factory.numActive += 2
+			factory.Unlock()
+			go stream.client.Run(factory)
+			go stream.server.Run(factory)
+		}
 	}
 
 	return stream
@@ -334,39 +336,33 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 	return accept
 }
 
-func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
+func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, length int, saved int, start bool, end bool, dir reassembly.TCPFlowDirection) {
 
-	dir, start, end, skip := sg.Info()
-	length, saved := sg.Lengths()
-
-	// update stats
 	sgStats := sg.Stats()
 
 	statsMutex.Lock()
 	if skip > 0 {
-		reassemblyStats.missedBytes += skip
+		reassemblyStats.missedBytes += int64(skip)
 	}
 
-	reassemblyStats.sz += length - saved
-	reassemblyStats.pkt += sgStats.Packets
+	reassemblyStats.sz += int64(length - saved)
+	reassemblyStats.pkt += int64(sgStats.Packets)
 	if sgStats.Chunks > 1 {
 		reassemblyStats.reassembled++
 	}
-	reassemblyStats.outOfOrderPackets += sgStats.QueuedPackets
-	reassemblyStats.outOfOrderBytes += sgStats.QueuedBytes
-	if length > reassemblyStats.biggestChunkBytes {
-		reassemblyStats.biggestChunkBytes = length
+	reassemblyStats.outOfOrderPackets += int64(sgStats.QueuedPackets)
+	reassemblyStats.outOfOrderBytes += int64(sgStats.QueuedBytes)
+	if int64(length) > reassemblyStats.biggestChunkBytes {
+		reassemblyStats.biggestChunkBytes = int64(length)
 	}
-	if sgStats.Packets > reassemblyStats.biggestChunkPackets {
-		reassemblyStats.biggestChunkPackets = sgStats.Packets
+	if int64(sgStats.Packets) > reassemblyStats.biggestChunkPackets {
+		reassemblyStats.biggestChunkPackets = int64(sgStats.Packets)
 	}
 	if sgStats.OverlapBytes != 0 && sgStats.OverlapPackets == 0 {
-		fmt.Printf("bytes:%d, pkts:%d\n", sgStats.OverlapBytes, sgStats.OverlapPackets)
-		// TODO: this could be handled slightly more graceful
-		panic("Invalid overlap")
+		utils.ReassemblyLog.Println("ReassembledSG: invalid overlap, bytes:", sgStats.OverlapBytes, "packets:", sgStats.OverlapPackets)
 	}
-	reassemblyStats.overlapBytes += sgStats.OverlapBytes
-	reassemblyStats.overlapPackets += sgStats.OverlapPackets
+	reassemblyStats.overlapBytes += int64(sgStats.OverlapBytes)
+	reassemblyStats.overlapPackets += int64(sgStats.OverlapPackets)
 	statsMutex.Unlock()
 
 	var ident string
@@ -377,6 +373,16 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	}
 
 	logReassemblyDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
+}
+
+func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
+
+	length, saved := sg.Lengths()
+	dir, start, end, skip := sg.Info()
+
+	// update stats
+	t.updateStats(sg, skip, length, saved, start, end, dir)
+
 	if skip == -1 && c.AllowMissingInit {
 		// this is allowed
 	} else if skip != 0 {
@@ -410,19 +416,21 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		}
 	default:
 
+		// do not process encrypted HTTP streams for now
 		if t.isHTTPS {
 			return
 		}
 
-		//// TODO: if banner grabbing is active
-		if length > 0 {
-			if c.HexDump {
-				logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
-			}
-			if dir == reassembly.TCPDirClientToServer && !t.reversed {
-				t.client.BytesChan() <- data
-			} else {
-				t.server.BytesChan() <- data
+		if c.SaveStreams {
+			if length > 0 {
+				if c.HexDump {
+					logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
+				}
+				if dir == reassembly.TCPDirClientToServer && !t.reversed {
+					t.client.BytesChan() <- data
+				} else {
+					t.server.BytesChan() <- data
+				}
 			}
 		}
 	}
@@ -514,7 +522,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		}
 	}
 	statsMutex.Lock()
-	reassemblyStats.totalsz += len(tcp.Payload)
+	reassemblyStats.totalsz += int64(len(tcp.Payload))
 	statsMutex.Unlock()
 
 	// for debugging:
@@ -620,22 +628,23 @@ func CleanupReassembly(wait bool) {
 		statsMutex.Lock()
 		rows := [][]string{}
 		if !c.NoDefrag {
-			rows = append(rows, []string{"IPdefrag", strconv.Itoa(reassemblyStats.ipdefrag)})
+			rows = append(rows, []string{"IPdefrag", strconv.FormatInt(reassemblyStats.ipdefrag, 10)})
 		}
-		rows = append(rows, []string{"missed bytes", strconv.Itoa(reassemblyStats.missedBytes)})
-		rows = append(rows, []string{"total packets", strconv.Itoa(reassemblyStats.pkt)})
-		rows = append(rows, []string{"rejected FSM", strconv.Itoa(reassemblyStats.rejectFsm)})
-		rows = append(rows, []string{"rejected Options", strconv.Itoa(reassemblyStats.rejectOpt)})
-		rows = append(rows, []string{"reassembled bytes", strconv.Itoa(reassemblyStats.sz)})
-		rows = append(rows, []string{"total TCP bytes", strconv.Itoa(reassemblyStats.totalsz)})
-		rows = append(rows, []string{"conn rejected FSM", strconv.Itoa(reassemblyStats.rejectConnFsm)})
-		rows = append(rows, []string{"reassembled chunks", strconv.Itoa(reassemblyStats.reassembled)})
-		rows = append(rows, []string{"out-of-order packets", strconv.Itoa(reassemblyStats.outOfOrderPackets)})
-		rows = append(rows, []string{"out-of-order bytes", strconv.Itoa(reassemblyStats.outOfOrderBytes)})
-		rows = append(rows, []string{"biggest-chunk packets", strconv.Itoa(reassemblyStats.biggestChunkPackets)})
-		rows = append(rows, []string{"biggest-chunk bytes", strconv.Itoa(reassemblyStats.biggestChunkBytes)})
-		rows = append(rows, []string{"overlap packets", strconv.Itoa(reassemblyStats.overlapPackets)})
-		rows = append(rows, []string{"overlap bytes", strconv.Itoa(reassemblyStats.overlapBytes)})
+		rows = append(rows, []string{"missed bytes", strconv.FormatInt(reassemblyStats.missedBytes, 10)})
+		rows = append(rows, []string{"total packets", strconv.FormatInt(reassemblyStats.pkt, 10)})
+		rows = append(rows, []string{"rejected FSM", strconv.FormatInt(reassemblyStats.rejectFsm, 10)})
+		rows = append(rows, []string{"rejected Options", strconv.FormatInt(reassemblyStats.rejectOpt, 10)})
+		rows = append(rows, []string{"reassembled bytes", strconv.FormatInt(reassemblyStats.sz, 10)})
+		rows = append(rows, []string{"total TCP bytes", strconv.FormatInt(reassemblyStats.totalsz, 10)})
+		rows = append(rows, []string{"conn rejected FSM", strconv.FormatInt(reassemblyStats.rejectConnFsm, 10)})
+		rows = append(rows, []string{"reassembled chunks", strconv.FormatInt(reassemblyStats.reassembled, 10)})
+		rows = append(rows, []string{"out-of-order packets", strconv.FormatInt(reassemblyStats.outOfOrderPackets, 10)})
+		rows = append(rows, []string{"out-of-order bytes", strconv.FormatInt(reassemblyStats.outOfOrderBytes, 10)})
+		rows = append(rows, []string{"biggest-chunk packets", strconv.FormatInt(reassemblyStats.biggestChunkPackets, 10)})
+		rows = append(rows, []string{"biggest-chunk bytes", strconv.FormatInt(reassemblyStats.biggestChunkBytes, 10)})
+		rows = append(rows, []string{"overlap packets", strconv.FormatInt(reassemblyStats.overlapPackets, 10)})
+		rows = append(rows, []string{"overlap bytes", strconv.FormatInt(reassemblyStats.overlapBytes, 10)})
+		rows = append(rows, []string{"saved streams", strconv.FormatInt(reassemblyStats.savedStreams, 10)})
 		statsMutex.Unlock()
 
 		tui.Table(utils.ReassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
@@ -653,12 +662,6 @@ func CleanupReassembly(wait bool) {
 		statsMutex.Unlock()
 		errorsMapMutex.Unlock()
 	}
-}
-
-func NumSavedStreams() {
-	statsMutex.Lock()
-	fmt.Println("savedStreams:", savedStreams)
-	statsMutex.Unlock()
 }
 
 func waitForConns() chan struct{} {

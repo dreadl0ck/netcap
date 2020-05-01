@@ -33,11 +33,6 @@ import (
  * TCP
  */
 
-// TODO: make configurable
-var logTCPDebug = true
-
-var savedStreams int
-
 type tcpReader struct {
 	ident    string
 	isClient bool
@@ -152,7 +147,7 @@ func (h *tcpReader) getServiceName(data []byte) string {
 
 	var (
 		dstPort, _ = strconv.Atoi(h.parent.transport.Dst().String())
-		s = resolvers.LookupServiceByPort(dstPort, "tcp")
+		s          = resolvers.LookupServiceByPort(dstPort, "tcp")
 	)
 	if s != "" {
 		return s
@@ -188,7 +183,7 @@ func (h *tcpReader) saveStream(data []byte) error {
 	utils.ReassemblyLog.Println("saveStream", base)
 
 	statsMutex.Lock()
-	savedStreams++
+	reassemblyStats.savedStreams++
 	statsMutex.Unlock()
 
 	// append to files
@@ -236,7 +231,7 @@ func (h *tcpReader) saveStream(data []byte) error {
 }
 
 func tcpDebug(args ...interface{}) {
-	if logTCPDebug {
+	if c.TCPDebug {
 		utils.DebugLog.Println(args...)
 	}
 }

@@ -320,7 +320,7 @@ func (c *Collector) printProgress() {
 	}
 	c.statMutex.Unlock()
 
-	if c.current%100 == 0 {
+	if c.current%1000 == 0 {
 		if !c.config.Quiet {
 			// using a strings.Builder for assembling string for performance
 			// TODO: could be refactored to use a byte slice with a fixed length instead

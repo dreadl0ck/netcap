@@ -1,9 +1,10 @@
 # TODOs
 
-- extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
-
+- add Service audit record for TCP and UDP banners
 - grab UDP banners as well
 - implement banner grabbing (e.g. first 512k bytes, or first 5 seconds) and save the banners in a global banner store
+
+- extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
 
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
