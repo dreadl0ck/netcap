@@ -21,12 +21,6 @@ import (
 )
 
 var (
-	// LiveMode switch for all encoders
-	LiveMode bool
-
-	// CapturePayload for encoders that support it
-	CapturePayload = false
-
 	allEncoderNames = make(map[string]struct{})
 	errorMap        *AtomicCounterMap
 )

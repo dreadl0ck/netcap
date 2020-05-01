@@ -127,7 +127,6 @@ func Run() {
 		SnapLen:               *flagSnapLen,
 		BaseLayer:             utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions:         utils.GetDecodeOptions(*flagDecodeOptions),
-		FileStorage:           *flagFileStorage,
 		Quiet:                 *flagQuiet,
 		DPI:                   *flagDPI,
 		ReassembleConnections: *flagReassembleConnections,
@@ -162,6 +161,8 @@ func Run() {
 			FlowTimeOut:          *flagFlowTimeOut,
 			CloseInactiveTimeOut: *flagCloseInactiveTimeout,
 			ClosePendingTimeOut:  *flagClosePendingTimeout,
+			FileStorage:          *flagFileStorage,
+			CalculateEntropy:     *flagCalcEntropy,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    *flagReverseDNS,

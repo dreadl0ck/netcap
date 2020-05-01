@@ -1,13 +1,10 @@
 # TODOs
 
 - extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
-- remove encoder FileStorage, it can be read from the global configuration instead
-- add LogErrors flag to all tools
 
 - grab UDP banners as well
 - implement banner grabbing (e.g. first 512k bytes, or first 5 seconds) and save the banners in a global banner store
 
-- dump full config in debug.log on start
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
     -> collect decoding errors from all test pcaps and deduplicate!

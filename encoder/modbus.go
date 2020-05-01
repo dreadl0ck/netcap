@@ -23,7 +23,7 @@ import (
 var modbusEncoder = CreateLayerEncoder(types.Type_NC_Modbus, layers.LayerTypeModbus, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if m, ok := layer.(*layers.Modbus); ok {
 		var payload []byte
-		if CapturePayload {
+		if c.IncludePayloads {
 			payload = m.ReqResp
 		}
 		return &types.Modbus{

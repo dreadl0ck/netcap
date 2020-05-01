@@ -19,7 +19,6 @@ import (
 	"io"
 
 	"github.com/dreadl0ck/gopacket/pcapgo"
-	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/pkg/errors"
 )
 
@@ -49,8 +48,6 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 	if err := c.Init(); err != nil {
 		return err
 	}
-
-	encoder.LiveMode = true
 
 	// read packets from channel
 	for {

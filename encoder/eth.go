@@ -22,12 +22,16 @@ import (
 
 var ethernetEncoder = CreateLayerEncoder(types.Type_NC_Ethernet, layers.LayerTypeEthernet, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if eth, ok := layer.(*layers.Ethernet); ok {
+		var e float64
+		if c.CalculateEntropy {
+			e = Entropy(eth.Payload)
+		}
 		return &types.Ethernet{
 			Timestamp:      timestamp,
 			SrcMAC:         eth.SrcMAC.String(),
 			DstMAC:         eth.DstMAC.String(),
 			EthernetType:   int32(eth.EthernetType),
-			PayloadEntropy: Entropy(eth.Payload),
+			PayloadEntropy: e,
 			PayloadSize:    int32(len(eth.Payload)),
 		}
 	}

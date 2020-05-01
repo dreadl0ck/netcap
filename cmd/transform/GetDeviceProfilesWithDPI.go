@@ -77,10 +77,10 @@ func GetDeviceProfilesWithDPI() {
 			FlowTimeOut:          10,
 			CloseInactiveTimeOut: 24 * time.Hour,
 			ClosePendingTimeOut:  5 * time.Second,
+			FileStorage:          filepath.Join(outDir, "files"),
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),
-		FileStorage:   filepath.Join(outDir, "files"),
 		Quiet:         false,
 		DPI:           true,
 		ResolverConfig: resolvers.Config{

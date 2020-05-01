@@ -50,10 +50,10 @@ func TestCaptureLive(t *testing.T) {
 			FlowTimeOut:          10,
 			CloseInactiveTimeOut: 24 * time.Hour,
 			ClosePendingTimeOut:  5 * time.Second,
+			FileStorage:          "",
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),
-		FileStorage:   "",
 		Quiet:         false,
 		DPI:           false,
 		ResolverConfig: resolvers.Config{
@@ -125,10 +125,10 @@ func TestCapturePCAP(t *testing.T) {
 			FlowTimeOut:          10,
 			CloseInactiveTimeOut: 24 * time.Hour,
 			ClosePendingTimeOut:  5 * time.Second,
+			FileStorage:          "",
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),
-		FileStorage:   "",
 		Quiet:         true,
 		DPI:           false,
 		ResolverConfig: resolvers.Config{

@@ -100,6 +100,7 @@ func Run() {
 			PacketBufferSize:    *flagPacketBuffer,
 			SnapLen:             *flagSnapLen,
 			Promisc:             *flagPromiscMode,
+			LogErrors:           *flagLogErrors,
 			EncoderConfig: encoder.Config{
 				Buffer:               *flagBuffer,
 				Compression:          *flagCompress,
@@ -129,6 +130,8 @@ func Run() {
 				FlowTimeOut:          *flagFlowTimeOut,
 				CloseInactiveTimeOut: *flagCloseInactiveTimeout,
 				ClosePendingTimeOut:  *flagClosePendingTimeout,
+				FileStorage:          *flagFileStorage,
+				CalculateEntropy:     *flagCalcEntropy,
 			},
 			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),

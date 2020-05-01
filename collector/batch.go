@@ -57,9 +57,6 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 		return chans, nil, err
 	}
 
-	// set live mode
-	encoder.LiveMode = true
-
 	// defer c.cleanup()
 
 	// read packets in background routine
