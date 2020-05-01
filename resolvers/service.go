@@ -47,6 +47,8 @@ type port struct {
 	num     int
 }
 
+var pathReplacer = strings.NewReplacer("/", "-", " ", "-", "]", "", "[", "", ")", "", "(", "")
+
 // InitServiceDB initializes the ports to service names mapping
 func InitServiceDB() {
 
@@ -98,9 +100,12 @@ func InitServiceDB() {
 				fmt.Println("invalid range", parts)
 				continue
 			}
+			if r[3] == "Reserved" {
+				continue
+			}
 			for i := start; i <= end; i++ {
 				p := port{
-					service: r[3],
+					service: filepath.Clean(pathReplacer.Replace(strings.ToLower(r[3]))),
 					num:     i,
 				}
 				if r[2] == "tcp" {
@@ -118,8 +123,11 @@ func InitServiceDB() {
 				fmt.Println(err)
 				continue
 			}
+			if r[3] == "Reserved" {
+				continue
+			}
 			p := port{
-				service: r[3],
+				service: filepath.Clean(pathReplacer.Replace(strings.ToLower(r[3]))),
 				num:     num,
 			}
 			if r[2] == "tcp" {

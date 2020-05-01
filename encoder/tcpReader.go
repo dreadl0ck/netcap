@@ -23,7 +23,6 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -151,16 +150,12 @@ func (h *tcpReader) Run(f *tcpConnectionFactory) {
 
 func (h *tcpReader) getServiceName(data []byte) string {
 
-	dstPort, _ := strconv.Atoi(h.parent.transport.Dst().String())
-	//srcPort, _ := strconv.Atoi(h.parent.transport.Src().String())
-
-	//s := resolvers.LookupServiceByPort(srcPort, "tcp")
-	//if s != "" && s != "Reserved" {
-	//	return filepath.Clean(strings.ReplaceAll(s, " ", "-"))
-	//}
-	s := resolvers.LookupServiceByPort(dstPort, "tcp")
-	if s != "" && s != "Reserved" {
-		return filepath.Clean(strings.ReplaceAll(s, " ", "-"))
+	var (
+		dstPort, _ = strconv.Atoi(h.parent.transport.Dst().String())
+		s = resolvers.LookupServiceByPort(dstPort, "tcp")
+	)
+	if s != "" {
+		return s
 	}
 
 	if utf8.ValidString(string(data)) {
