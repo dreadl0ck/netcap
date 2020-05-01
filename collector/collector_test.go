@@ -110,8 +110,8 @@ func TestCapturePCAP(t *testing.T) {
 			MemBufferSize:        netcap.DefaultBufferSize,
 			FlushEvery:           100,
 			NoDefrag:             false,
-			Checksum:             false,
-			NoOptCheck:           false,
+			Checksum:             false, // TODO: use defaults
+			NoOptCheck:           false, // TODO: use defaults
 			IgnoreFSMerr:         false,
 			AllowMissingInit:     false,
 			Debug:                false,

@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"fmt"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
@@ -85,8 +86,6 @@ func (c *Collector) cleanup(force bool) {
 	c.closeErrorLogFile()
 	c.Stats()
 
-	encoder.NumSavedStreams()
-
 	// encoder.DumpTop5LinkFlows()
 	// encoder.DumpTop5NetworkFlows()
 	// encoder.DumpTop5TransportFlows()
@@ -100,5 +99,9 @@ func (c *Collector) cleanup(force bool) {
 		if err != nil {
 			c.printStdOut("failed to close logfile:", err)
 		}
+	}
+
+	if !c.config.Quiet {
+		fmt.Println("execution time", time.Since(c.start))
 	}
 }
