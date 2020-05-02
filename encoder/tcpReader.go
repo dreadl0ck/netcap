@@ -25,8 +25,6 @@ import (
 	"strconv"
 	"time"
 	"unicode/utf8"
-
-	"github.com/mgutz/ansi"
 )
 
 /*
@@ -189,7 +187,7 @@ func (h *tcpReader) saveStream(data []byte) error {
 	// append to files
 	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, 0700)
 	if err != nil {
-		logReassemblyError("TCP Banner create", "Cannot create %s: %s\n", base, err)
+		logReassemblyError("TCP stream create", "Cannot create %s: %s\n", base, err)
 		return err
 	}
 
@@ -197,37 +195,19 @@ func (h *tcpReader) saveStream(data []byte) error {
 	r := bytes.NewBuffer(data)
 	w, err := io.Copy(f, r)
 	if err != nil {
-		logReassemblyError("TCP Banner", "%s: failed to save TCP banner %s (l:%d): %s\n", h.ident, base, w, err)
+		logReassemblyError("TCP stream", "%s: failed to save TCP stream %s (l:%d): %s\n", h.ident, base, w, err)
 	} else {
-		logReassemblyInfo("%s: Saved TCP Banner %s (l:%d)\n", h.ident, base, w)
+		logReassemblyInfo("%s: Saved TCP stream %s (l:%d)\n", h.ident, base, w)
 	}
 
 	err = f.Close()
 	if err != nil {
-		logReassemblyError("TCP Banner", "%s: failed to close TCP banner file %s (l:%d): %s\n", h.ident, base, w, err)
+		logReassemblyError("TCP stream", "%s: failed to close TCP stream file %s (l:%d): %s\n", h.ident, base, w, err)
 	}
 
-	// TODO: write Banner audit record to disk
-	//writeBanner(&types.Banner{
-	// ...
-	//	Timestamp:   h.parent.firstPacket.String(),
-	//	Name:        fileName,
-	//	Length:      int64(len(body)),
-	//	Hash:        hex.EncodeToString(cryptoutils.MD5Data(body)),
-	//	Location:    target,
-	//	Ident:       h.ident,
-	//	Source:      source,
-	//	ContentType: ctype,
-	//	Context: &types.PacketContext{
-	//		SrcIP:   h.parent.net.Src().String(),
-	//		DstIP:   h.parent.net.Dst().String(),
-	//		SrcPort: h.parent.transport.Src().String(),
-	//		DstPort: h.parent.transport.Dst().String(),
-	//	},
-	//})
+	saveServiceBanner(h, data)
 
-	// we read the data until EOF, so there is nothing more left
-	return io.EOF
+	return nil
 }
 
 func tcpDebug(args ...interface{}) {
@@ -238,19 +218,43 @@ func tcpDebug(args ...interface{}) {
 
 func (h *tcpReader) readStream(b *bufio.Reader) error {
 
+	// read 512kB chunks of data
 	var data = make([]byte, 512)
+	//var totalRead int
+	//
+	//for {
+	//	// Careful: using ioutil.ReadAll here causes a data race!
+	//	// TODO: data race! buffer the data and read in a loop instead
+	//	// n, err := io.ReadFull(b, data) // Read until the buffer is full and return
+	//	n, err := b.Read(data) // will read any data we can get and return
+	//	//tcpDebug(ansi.Blue, h.ident, "readBanner: read", n, "bytes", ansi.Reset)
+	//	fmt.Println(ansi.Blue, h.ident, "readBanner: read", n, "bytes", ansi.Reset)
+	//	if err == io.EOF || err == io.ErrUnexpectedEOF {
+	//		totalRead += n
+	//		break
+	//	} else if err != nil {
+	//		logReassemblyError("readBanner", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
+	//		return err
+	//	}
+	//	totalRead += n
+	//	if totalRead == 512 {
+	//		// done
+	//		break
+	//	}
+	//}
+	//
+	//if totalRead < 512 {
+	//	data = data[:totalRead]
+	//}
 
-	//n, err := io.ReadFull(b, data)
-	// Careful: using ioutil.ReadAll here causes a data race!
-	n, err := b.Read(data)
+	// TODO: this is racy, buffer properly
+	n, err := io.ReadFull(b, data)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
 		logReassemblyError("readBanner", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
 		return err
 	}
-
-	tcpDebug(ansi.Blue, h.ident, "readBanner: read", n, "bytes", ansi.Reset)
 
 	h.saveStream(data[:n])
 

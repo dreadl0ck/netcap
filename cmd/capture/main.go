@@ -221,14 +221,10 @@ func Run() {
 		}
 	}
 
-	if !*flagQuiet {
-		fmt.Println("done in", time.Since(start))
-	} else {
-		if *flagTime {
-			// stat input file
-			stat, _ := os.Stat(*flagInput)
-			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start))
-		}
+	if *flagTime {
+		// stat input file
+		stat, _ := os.Stat(*flagInput)
+		fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start))
 	}
 
 	// memory profiling

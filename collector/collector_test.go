@@ -146,12 +146,7 @@ func TestCapturePCAP(t *testing.T) {
 
 	c.PrintConfiguration()
 
-	// start timer
-	start := time.Now()
-
 	if err := c.CollectPcapNG("../tests/The-Ultimate-PCAP-v20200224.pcapng"); err != nil {
 		t.Fatal("failed to collect audit records from pcapng file: ", err)
 	}
-
-	fmt.Println("done in", time.Since(start))
 }

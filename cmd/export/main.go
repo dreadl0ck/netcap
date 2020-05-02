@@ -15,19 +15,17 @@ package export
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/collector"
+	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/metrics"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/evilsocket/islazy/tui"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
 	"strconv"
-	"time"
-
-	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/dreadl0ck/netcap/metrics"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/tui"
 
 	"github.com/dreadl0ck/netcap"
 )
@@ -173,9 +171,6 @@ func Run() {
 			return
 		}
 
-		// start timer
-		start := time.Now()
-
 		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
 		// setting BPF filters is not yet supported by the pcapgo package
 		if *flagBPF != "" {
@@ -204,8 +199,6 @@ func Run() {
 				log.Fatal("failed to collect audit records from pcapng file: ", err)
 			}
 		}
-
-		fmt.Println("done in", time.Since(start))
 
 		// memory profiling
 		if *flagMemProfile {
