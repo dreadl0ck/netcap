@@ -31,7 +31,7 @@ require (
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5 // indirect
+	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
 	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect

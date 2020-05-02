@@ -34,7 +34,7 @@ var (
 	flagFields          = fs.Bool("fields", false, "print available fields for an audit record file and exit")
 	flagSeparator       = fs.String("sep", ",", "set separator string for csv output")
 	flagCSV             = fs.Bool("csv", false, "print output data as csv with header line")
-	flagPrintStructured = fs.Bool("struc", false, "print output as structured objects")
+	flagPrintStructured = fs.Bool("struc", true, "print output as structured objects")
 	flagTSV             = fs.Bool("tsv", false, "print output as tab separated values")
 	flagHeader          = fs.Bool("header", false, "print audit record file header and exit")
 	flagTable           = fs.Bool("table", false, "print output as table view (thanks @evilsocket)")
