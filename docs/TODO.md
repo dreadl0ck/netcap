@@ -1,18 +1,19 @@
 # TODOs
 
-- HTTP audit records: extend to preserve all header fields on the HTTP audit records, add Via and X-powered by to global http meta store
-- add option to write entire HTTP streams to disk
-- add Service audit record for TCP and UDP banners
-- grab UDP banners as well
-- implement banner grabbing (e.g. first 512k bytes, or first 5 seconds) and save the banners in a global banner store
+- ask before overriding data from a previous run in the same folder, confirm with enter
+- implement removing tcpstreams directory on init
+- colorize struc output when outputting to a tty
+- add option to write all TCP streams to disk
+
+- implement analyzeBanner() to determine the service version. Can we integrate the nmap database?
+- add Service audit record for UDP banners
+- grab UDP banners as well and add option save all UDP streams to disk
 
 - extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
 
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
     -> collect decoding errors from all test pcaps and deduplicate!
-
-- official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt 
 
 ## v0.5 Documentation
 
@@ -58,6 +59,7 @@
 
 ## General
 
+- official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt 
 - net split tool: add support to split pcaps into connections, like: $ mkdir all_split && dreadbook:test alien$ PcapSplitter -o all_split -f all.pcap -m connection
 - ICS pcaps: failed to collect audit records from pcapng file: Unknown magic 73726576
 - add net grep tool, similar to ngrep
