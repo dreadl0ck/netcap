@@ -437,12 +437,23 @@ func colorizeProto(in string, colorMap map[string]string) string {
 		}
 
 		parts := strings.Split(line, ":")
-		b.WriteString(colorMap[parts[0]])
-		b.WriteString(utils.Pad(parts[0], max))
-		b.WriteString(ansi.Reset)
-		b.WriteString(":")
-		b.WriteString(strings.Join(parts[1:], ":"))
-		b.WriteString("\n")
+		if len(parts) > 1 {
+			b.WriteString(colorMap[parts[0]])
+			if strings.Contains(line, "<") {
+				b.WriteString(utils.Pad(parts[0], max-1))
+			} else {
+				b.WriteString(utils.Pad(parts[0], max))
+			}
+			b.WriteString(ansi.Reset)
+			if !strings.Contains(line, "<") {
+				b.WriteString(":")
+			}
+			b.WriteString(strings.Join(parts[1:], ":"))
+			b.WriteString("\n")
+		} else {
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
 	}
 	return b.String()
 }
