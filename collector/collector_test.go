@@ -7,6 +7,7 @@ import (
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -81,7 +82,12 @@ func TestCaptureLive(t *testing.T) {
 		os.Exit(0)
 	}()
 
-	err := c.CollectLive("lo0", "")
+	var iface = "lo"
+	if runtime.GOOS == "darwin" {
+		iface = "lo0"
+	}
+
+	err := c.CollectLive(iface, "")
 	if err != nil {
 		t.Fatal("failed to collect live packets: ", err)
 	}

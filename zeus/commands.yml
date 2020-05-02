@@ -175,8 +175,9 @@ commands:
 
     download-test-pcaps:
         description: fetches the pcap files for the unit tests
+        help: uses git, wget and 7za to download several test pcap files
         exec: |
-            cd tests
+            mkdir -p tests && cd tests
             wget https://weberblog.net/wp-content/uploads/2020/02/The-Ultimate-PCAP.7z
             7za x The-Ultimate-PCAP.7z
             git clone https://github.com/wireshark/wireshark
