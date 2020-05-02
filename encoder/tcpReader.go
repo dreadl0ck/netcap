@@ -205,7 +205,9 @@ func (h *tcpReader) saveStream(data []byte) error {
 		logReassemblyError("TCP stream", "%s: failed to close TCP stream file %s (l:%d): %s\n", h.ident, base, w, err)
 	}
 
-	saveServiceBanner(h, data)
+	if !h.isClient {
+		saveServiceBanner(h, data)
+	}
 
 	return nil
 }
@@ -219,44 +221,61 @@ func tcpDebug(args ...interface{}) {
 func (h *tcpReader) readStream(b *bufio.Reader) error {
 
 	// read 512kB chunks of data
-	var data = make([]byte, 512)
-	//var totalRead int
-	//
-	//for {
-	//	// Careful: using ioutil.ReadAll here causes a data race!
-	//	// TODO: data race! buffer the data and read in a loop instead
-	//	// n, err := io.ReadFull(b, data) // Read until the buffer is full and return
-	//	n, err := b.Read(data) // will read any data we can get and return
-	//	//tcpDebug(ansi.Blue, h.ident, "readBanner: read", n, "bytes", ansi.Reset)
-	//	fmt.Println(ansi.Blue, h.ident, "readBanner: read", n, "bytes", ansi.Reset)
-	//	if err == io.EOF || err == io.ErrUnexpectedEOF {
-	//		totalRead += n
-	//		break
-	//	} else if err != nil {
-	//		logReassemblyError("readBanner", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
-	//		return err
-	//	}
-	//	totalRead += n
-	//	if totalRead == 512 {
-	//		// done
-	//		break
-	//	}
-	//}
-	//
-	//if totalRead < 512 {
-	//	data = data[:totalRead]
-	//}
+	var (
+		// the data buffer that we will return from this call
+		// initialize empty with a capacity of 512
+		data = make([]byte, 0, 512)
 
-	// TODO: this is racy, buffer properly
-	n, err := io.ReadFull(b, data)
+		// the intermediate buffer used for each Read invocation
+		readbuf = make([]byte, 512)
+	)
+
+	for {
+		// Careful: using ioutil.ReadAll here causes a data race!
+		// alternatively:
+		// n, err := io.ReadFull(b, data) // will wait forever if the flow sends less than 512 bytes of data or never sends an EOF
+
+		n, err := b.Read(readbuf)
+		//fmt.Println(ansi.Blue, h.ident, "readStream: read", n, "bytes (total", len(data), ")", err, ansi.Reset)
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			break
+		} else if err != nil {
+			logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
+			return err
+		}
+
+		// if we got the buffer full, stop
+		if n == 512 {
+			data = readbuf
+
+			// done
+			break
+		} else {
+
+			// if we got less, buffer the data and keep reading
+			data = append(data, readbuf[:n]...)
+		}
+	}
+
+	return h.saveStream(data)
+}
+
+func (h *tcpReader) readStreamOnce(b *bufio.Reader) error {
+
+	// the data buffer that we will return from this call
+	// initialize empty with a capacity of 512
+	var data = make([]byte, 0, 512)
+
+	// this works to capture the entire stream, and is race free.
+	// the downside is that every successful read (e.g. a single line) results in a write
+	// which causes excessive syscalls
+	n, err := b.Read(data)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
 		logReassemblyError("readBanner", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
 		return err
 	}
-
 	h.saveStream(data[:n])
-
 	return nil
 }
