@@ -221,7 +221,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				Product:        values[1], // Name of the server (Apache, Nginx, ...)
 				Vendor:         values[3], // Unfitting name, but operating system
 				Version:        values[2], // Version as found after the '/'
-				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+				DeviceProfiles: []string{dpIdent},
 				Source:         "userAgents: " + userAgents,
 				Service:        service,
 				DPIResults:     protos,
@@ -241,7 +241,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				Product:        values[1], // Name of the server (Apache, Nginx, ...)
 				Vendor:         "unknown", // Unfitting name, but operating system
 				Version:        values[2], // Version as found after the '/'
-				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+				DeviceProfiles: []string{dpIdent},
 				Source:         "userAgents: " + userAgents,
 				Service:        service,
 				DPIResults:     protos,
