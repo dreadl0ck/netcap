@@ -218,7 +218,7 @@ func tcpDebug(args ...interface{}) {
 	}
 }
 
-func (h *tcpReader) readStream(b *bufio.Reader) error {
+func (h *tcpReader) readStreamBuffered(b *bufio.Reader) error {
 
 	// read 512kB chunks of data
 	var (
@@ -255,20 +255,18 @@ func (h *tcpReader) readStream(b *bufio.Reader) error {
 			// if we got less, buffer the data and keep reading
 			data = append(data, readbuf[:n]...)
 		}
+
+		// throttle?
+		//time.Sleep(100 * time.Millisecond)
 	}
 
 	return h.saveStream(data)
 }
 
-func (h *tcpReader) readStreamOnce(b *bufio.Reader) error {
+func (h *tcpReader) readStream(b *bufio.Reader) error {
 
-	// the data buffer that we will return from this call
-	// initialize empty with a capacity of 512
-	var data = make([]byte, 0, 512)
+	var data = make([]byte, 512)
 
-	// this works to capture the entire stream, and is race free.
-	// the downside is that every successful read (e.g. a single line) results in a write
-	// which causes excessive syscalls
 	n, err := b.Read(data)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
