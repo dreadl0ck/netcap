@@ -305,13 +305,6 @@ func AnalyzeSoftware(i *packetInfo) {
 	}
 	httpStore.Unlock()
 
-	// TODO: parse TCP banner to extract version information
-	// To ensure this does not race with the reassembly, we could create a new variant of this function
-	// that additionally uses the TCP banner for all stream based services
-	//and invoke it when a banner for the stream is available, see the TODO in encoder/service.go line 93
-	//ServiceStore.Lock()
-	//ServiceStore.Unlock()
-
 	// TLS fingerprinting
 	if ja3Hash != "" {
 		ja3Result = resolvers.LookupJa3(ja3Hash)
