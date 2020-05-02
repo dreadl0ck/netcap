@@ -138,6 +138,7 @@ enum Type {
     NC_POP3                        = 93;
     NC_TLSServerHello              = 94;
     NC_SOFTWARE                    = 95;
+    NC_SERVICE                     = 96;
 }
 
 /*
@@ -1865,25 +1866,12 @@ message Software {
     string   Flow                         = 9;
 }
 
-message Banner {
-    string   Timestamp                    = 1;
-    string   IP                           = 2;
-    string   Port                         = 3;
-    bytes    Banner                       = 4;
-}
-
 message Service {
     string   Timestamp                    = 1;
     string   IP                           = 2;
     string   Port                         = 3;
     string   Name                         = 4;
-}
-
-// TODO: or combine?
-message TCPService {
-    string   Timestamp                    = 1;
-    string   IP                           = 2;
-    string   Port                         = 3;
-    string   Name                         = 4;
     bytes    Banner                       = 5;
+    string   Protocol                     = 6;
+    string   Flow                          = 7;
 }

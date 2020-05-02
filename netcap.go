@@ -154,6 +154,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.TLSServerHello)
 	case types.Type_NC_SOFTWARE:
 		record = new(types.Software)
+	case types.Type_NC_SERVICE:
+		record = new(types.Service)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

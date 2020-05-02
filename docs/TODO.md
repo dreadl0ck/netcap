@@ -1,5 +1,7 @@
 # TODOs
 
+- HTTP audit records: extend to preserve all header fields on the HTTP audit records, add Via and X-powered by to global http meta store
+- add option to write entire HTTP streams to disk
 - add Service audit record for TCP and UDP banners
 - grab UDP banners as well
 - implement banner grabbing (e.g. first 512k bytes, or first 5 seconds) and save the banners in a global banner store

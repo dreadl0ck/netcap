@@ -105,6 +105,8 @@ var reassemblyStats struct {
 	overlapBytes        int64
 	overlapPackets      int64
 	savedStreams        int64
+	numSoftware         int64
+	numServices         int64
 }
 
 /*
@@ -645,6 +647,8 @@ func CleanupReassembly(wait bool) {
 		rows = append(rows, []string{"overlap packets", strconv.FormatInt(reassemblyStats.overlapPackets, 10)})
 		rows = append(rows, []string{"overlap bytes", strconv.FormatInt(reassemblyStats.overlapBytes, 10)})
 		rows = append(rows, []string{"saved streams", strconv.FormatInt(reassemblyStats.savedStreams, 10)})
+		rows = append(rows, []string{"numSoftware", strconv.FormatInt(reassemblyStats.numSoftware, 10)})
+		rows = append(rows, []string{"numServices", strconv.FormatInt(reassemblyStats.numServices, 10)})
 		statsMutex.Unlock()
 
 		tui.Table(utils.ReassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)

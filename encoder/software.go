@@ -103,9 +103,6 @@ var (
 		Items: make(map[string]*Software),
 	}
 
-	// TODO: create a central stats source for this and other metrics: encoderStats
-	numSoftware int64
-
 	//parser, errInitUAParser = uaparser.New("./regexes.yaml")
 	//pMu sync.Mutex
 )
@@ -312,7 +309,9 @@ func AnalyzeSoftware(i *packetInfo) {
 			updateSoftwareAuditRecord(dp, p, i)
 		} else {
 			SoftwareStore.Items[s.Product+"/"+s.Version] = s
-			numSoftware++
+			statsMutex.Lock()
+			reassemblyStats.numSoftware++
+			statsMutex.Unlock()
 		}
 	}
 	SoftwareStore.Unlock()
