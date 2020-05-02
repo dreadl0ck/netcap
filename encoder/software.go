@@ -158,9 +158,16 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 	if serviceNameDst != "" {
 		service = serviceNameDst
 	}
-	var s []*Software
-	// test ua parser pkg
-	// TODO: implement a caching layer, to ensure each UA is only parsed once + add regexes to db directory
+
+	var (
+		s []*Software
+		dpIdent = dp.MacAddr
+	)
+	if dp.DeviceManufacturer != "" {
+		dpIdent += "-" + dp.DeviceManufacturer
+	}
+
+	// process user agents
 	for _, ua := range strings.Split(userAgents, "| ") {
 		pMu.Lock()
 		client, ok := userAgentCaching[ua]
@@ -194,7 +201,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				Product:        product,
 				Vendor:         vendor,
 				Version:        version,
-				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+				DeviceProfiles: []string{dpIdent},
 				Source:         "userAgents: " + userAgents,
 				Service:        service,
 				DPIResults:     protos,
@@ -212,7 +219,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 					Vendor:         findVendor(serverNames),
 					Version:        findVersion(serverNames, p),
 					Source:         "serverNames: " + serverNames,
-					DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+					DeviceProfiles: []string{dpIdent},
 					Service:        service,
 					DPIResults:     protos,
 					Flow:           f,
@@ -227,7 +234,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 						Product:        p,
 						Vendor:         findVendor(ja3Result),
 						Version:        findVersion(ja3Result, p),
-						DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+						DeviceProfiles: []string{dpIdent},
 						Source:         "ja3Result: " + ja3Result,
 						Service:        service,
 						DPIResults:     protos,
