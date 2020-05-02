@@ -1,8 +1,11 @@
 # TODOs
 
+- add separate flag to write all TCP streams to disk
+- use JSON encoder from new protobuf release! 
+- credential harvester also nice for CTF! make it configurable to specify the flag format
+
 - ask before overriding data from a previous run in the same folder, confirm with enter
 - implement removing tcpstreams directory on init
-- add option to write all TCP streams to disk
 
 - implement analyzeBanner() to determine the service version. Can we integrate the nmap database?
 - add Service audit record for UDP banners
