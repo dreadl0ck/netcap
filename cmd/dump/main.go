@@ -100,6 +100,7 @@ func Run() {
 				UTC:          *flagUTC,
 				Fields:       *flagFields,
 				JSON:         *flagJSON,
+				CSV:          *flagCSV,
 			},
 		)
 		return

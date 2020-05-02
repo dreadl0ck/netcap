@@ -159,9 +159,16 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 	if serviceNameDst != "" {
 		service = serviceNameDst
 	}
-	var s []*Software
-	// test ua parser pkg
-	// TODO: implement a caching layer, to ensure each UA is only parsed once + add regexes to db directory
+
+	var (
+		s       []*Software
+		dpIdent = dp.MacAddr
+	)
+	if dp.DeviceManufacturer != "" {
+		dpIdent += "-" + dp.DeviceManufacturer
+	}
+
+	// process user agents
 	for _, ua := range strings.Split(userAgents, "| ") {
 		pMu.Lock()
 		client, ok := userAgentCaching[ua]
@@ -195,7 +202,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				Product:        product,
 				Vendor:         vendor,
 				Version:        version,
-				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+				DeviceProfiles: []string{dpIdent},
 				Source:         "userAgents: " + userAgents,
 				Service:        service,
 				DPIResults:     protos,
@@ -354,13 +361,6 @@ func AnalyzeSoftware(i *packetInfo) {
 		xPoweredBy = val
 	}
 	httpStore.Unlock()
-
-	// TODO: parse TCP banner to extract version information
-	// To ensure this does not race with the reassembly, we could create a new variant of this function
-	// that additionally uses the TCP banner for all stream based services
-	//and invoke it when a banner for the stream is available, see the TODO in encoder/service.go line 93
-	//ServiceStore.Lock()
-	//ServiceStore.Unlock()
 
 	// TLS fingerprinting
 	if ja3Hash != "" {

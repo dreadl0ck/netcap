@@ -90,7 +90,8 @@ func saveServiceBanner(h *tcpReader, banner []byte) {
 		//}
 	}
 
-	// TODO: now that we have the banner, invoke the service analyzer here
+	// TODO: now that we have the banner, lets try to extract further information from it
+	// s.Product, s.Vendor, s.Version = analyzeBanner(banner)
 
 	// add new service
 	ServiceStore.Lock()
