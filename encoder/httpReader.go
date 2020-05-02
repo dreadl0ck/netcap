@@ -49,9 +49,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
-	"github.com/dreadl0ck/cryptoutils"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -62,6 +59,10 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/dreadl0ck/cryptoutils"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts
@@ -73,12 +74,20 @@ type HTTPMetaStore struct {
 	// mapped ip address to user agents
 	UserAgents map[string]string
 
+	// mapped ip address to user agents
+	Vias map[string]string
+
+	// mapped ip address to user agents
+	XPoweredBy map[string]string
+
 	sync.Mutex
 }
 
 var httpStore = &HTTPMetaStore{
 	ServerNames: make(map[string]string),
 	UserAgents:  make(map[string]string),
+	Vias:        make(map[string]string),
+	XPoweredBy:  make(map[string]string),
 }
 
 /*
@@ -212,6 +221,26 @@ func writeHTTP(h *types.HTTP) {
 			}
 		} else {
 			httpStore.ServerNames[h.DstIP] = h.ServerName
+		}
+	}
+
+	if val, ok := h.ResponseHeader["Via"]; ok {
+		if sn, ok := httpStore.Vias[h.DstIP]; ok {
+			if !strings.Contains(sn, val) {
+				httpStore.Vias[h.DstIP] = sn + "| " + val
+			}
+		} else {
+			httpStore.Vias[h.DstIP] = val
+		}
+	}
+
+	if val, ok := h.ResponseHeader["X-Powered-By"]; ok {
+		if sn, ok := httpStore.XPoweredBy[h.DstIP]; ok {
+			if !strings.Contains(sn, val) {
+				httpStore.XPoweredBy[h.DstIP] = sn + "| " + val
+			}
+		} else {
+			httpStore.XPoweredBy[h.DstIP] = val
 		}
 	}
 

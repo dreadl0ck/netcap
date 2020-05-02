@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -147,7 +148,7 @@ func findVersion(in string, product string) string {
 	return ""
 }
 
-func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames string, protos []string) (software []*Software) {
+func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
 
 	//fmt.Println(serviceNameSrc, serviceNameDst, manufacturer, ja3Result, userAgents, serverNames, protos)
 
@@ -203,40 +204,81 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		})
 	}
 
-	for _, p := range products {
-		if strings.Contains(serverNames, p) {
-			s = append(s, &Software{
-				Software: &types.Software{
-					Timestamp:      i.timestamp,
-					Product:        p,
-					Vendor:         findVendor(serverNames),
-					Version:        findVersion(serverNames, p),
-					Source:         "serverNames: " + serverNames,
-					DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
-					Service:        service,
-					DPIResults:     protos,
-					Flow:           f,
-				},
-			})
-		}
-		if ja3Result != "" {
-			if strings.Contains(ja3Result, p) {
-				s = append(s, &Software{
-					Software: &types.Software{
-						Timestamp:      i.timestamp,
-						Product:        p,
-						Vendor:         findVendor(ja3Result),
-						Version:        findVersion(ja3Result, p),
-						DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
-						Source:         "ja3Result: " + ja3Result,
-						Service:        service,
-						DPIResults:     protos,
-						Flow:           f,
-					},
-				})
-			}
-		}
+	re, _ := regexp.Compile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
+	for _, sn := range strings.Split(serverNames, "| ") {
+		pMu.Lock()
+		var values []string = re.FindStringSubmatch(sn)
+		s = append(s, &Software{
+			Software: &types.Software{
+				Timestamp:      i.timestamp,
+				Product:        values[1], // Name of the server (Apache, Nginx, ...)
+				Vendor:         values[3], // Unfitting name, but operating system
+				Version:        values[2], // Version as found after the '/'
+				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+				Source:         "userAgents: " + userAgents,
+				Service:        service,
+				DPIResults:     protos,
+				Flow:           f,
+			},
+		})
+		pMu.Unlock()
 	}
+
+	re, _ = regexp.Compile(`(.*?)(?:(?:/)(.*?))?$`)
+	for _, pb := range strings.Split(xPoweredBy, "| ") {
+		pMu.Lock()
+		var values []string = re.FindStringSubmatch(pb)
+		s = append(s, &Software{
+			Software: &types.Software{
+				Timestamp:      i.timestamp,
+				Product:        values[1], // Name of the server (Apache, Nginx, ...)
+				Vendor:         "unknown", // Unfitting name, but operating system
+				Version:        values[2], // Version as found after the '/'
+				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+				Source:         "userAgents: " + userAgents,
+				Service:        service,
+				DPIResults:     protos,
+				Flow:           f,
+			},
+		})
+		pMu.Unlock()
+	}
+
+	// for _, p := range products {
+	// 	if strings.Contains(serverNames, p) {
+	// 		s = append(s, &Software{
+	// 			Software: &types.Software{
+	// 				Timestamp:      i.timestamp,
+	// 				Product:        p,
+	// 				Vendor:         findVendor(serverNames),
+	// 				Version:        findVersion(serverNames, p),
+	// 				Source:         "serverNames: " + serverNames,
+	// 				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+	// 				Service:        service,
+	// 				DPIResults:     protos,
+	// 				Flow:           f,
+	// 			},
+	// 		})
+	// 	}
+
+	// if ja3Result != "" {
+	// 	if strings.Contains(ja3Result, p) {
+	// 		s = append(s, &Software{
+	// 			Software: &types.Software{
+	// 				Timestamp:      i.timestamp,
+	// 				Product:        p,
+	// 				Vendor:         findVendor(ja3Result),
+	// 				Version:        findVersion(ja3Result, p),
+	// 				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+	// 				Source:         "ja3Result: " + ja3Result,
+	// 				Service:        service,
+	// 				DPIResults:     protos,
+	// 				Flow:           f,
+	// 			},
+	// 		})
+	// 	}
+	// }
+	// }
 
 	return s
 }
@@ -251,6 +293,8 @@ func AnalyzeSoftware(i *packetInfo) {
 		protos                         []string
 		userAgents, serverNames        string
 		f                              string
+		vias                           string
+		xPoweredBy                     string
 	)
 	if ja3Hash == "" {
 		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
@@ -297,11 +341,17 @@ func AnalyzeSoftware(i *packetInfo) {
 
 	// Check available HTTP meta infos
 	httpStore.Lock()
-	if uas, ok := httpStore.UserAgents[i.srcIP]; ok {
-		userAgents = uas
+	if val, ok := httpStore.UserAgents[i.srcIP]; ok {
+		userAgents = val
 	}
-	if sns, ok := httpStore.ServerNames[i.dstIP]; ok {
-		serverNames = sns
+	if val, ok := httpStore.ServerNames[i.dstIP]; ok {
+		serverNames = val
+	}
+	if val, ok := httpStore.Vias[i.dstIP]; ok {
+		vias = val
+	}
+	if val, ok := httpStore.XPoweredBy[i.dstIP]; ok {
+		xPoweredBy = val
 	}
 	httpStore.Unlock()
 
@@ -318,7 +368,7 @@ func AnalyzeSoftware(i *packetInfo) {
 	}
 
 	dp := getDeviceProfile(i.srcMAC, i)
-	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames, protos)
+	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames, protos, vias, xPoweredBy)
 	if len(software) == 0 {
 		return
 	}
