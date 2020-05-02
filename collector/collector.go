@@ -298,6 +298,10 @@ func (c *Collector) Stats() {
 	}
 
 	fmt.Fprintln(target, res)
+
+	if c.config.EncoderConfig.SaveStreams {
+		fmt.Fprintln(target, "saved streams:", encoder.NumSavedStreams())
+	}
 }
 
 // updates the progress indicator and writes to stdout.

@@ -109,6 +109,12 @@ var reassemblyStats struct {
 	numServices         int64
 }
 
+func NumSavedStreams() int64 {
+	statsMutex.Lock()
+	defer statsMutex.Unlock()
+	return reassemblyStats.savedStreams
+}
+
 /*
  * The TCP factory: returns a new Connection
  */

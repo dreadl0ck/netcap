@@ -32,7 +32,7 @@ type Service struct {
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicServiceMap struct {
-	// map Product Name + "Version" to Service?
+	// map Server IP + Port to Service
 	Items map[string]*Service
 	sync.Mutex
 }
@@ -61,6 +61,8 @@ func saveServiceBanner(h *tcpReader, banner []byte) {
 	ServiceStore.Lock()
 	if _, ok := ServiceStore.Items[ident]; ok {
 		ServiceStore.Unlock()
+
+		// banner exists. nothing to do
 		return
 	}
 	ServiceStore.Unlock()
@@ -71,8 +73,8 @@ func saveServiceBanner(h *tcpReader, banner []byte) {
 	s.IP = h.parent.net.Dst().String()
 	s.Port = h.parent.transport.Dst().String()
 
-	// set flow ident
-	s.Flow = h.parent.ident
+	// set flow ident, h.parent.ident is the client flow
+	s.Flow = h.ident
 
 	dst, err := strconv.Atoi(h.parent.transport.Dst().String())
 	if err == nil {
@@ -80,14 +82,15 @@ func saveServiceBanner(h *tcpReader, banner []byte) {
 		//case layers.LayerTypeTCP:
 			s.Protocol = "TCP"
 			s.Name = resolvers.LookupServiceByPort(dst, "tcp")
-		// TODO: Since this code is invoked as part of the TCP stream reassembly
-		// UDP banner grabbing is currently not supported
+		// TODO: Since this code is invoked as part of the TCP stream reassembly UDP banner grabbing is currently not supported
 		//case layers.LayerTypeUDP:
 		//	s.Protocol = "UDP"
 		//	s.Name = resolvers.LookupServiceByPort(dst, "udp")
 		//default:
 		//}
 	}
+
+	// TODO: now that we have the banner, invoke the service analyzer here
 
 	// add new service
 	ServiceStore.Lock()
