@@ -165,7 +165,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		pMu.Lock()
 		client, ok := userAgentCaching[ua]
 		if !ok {
-			client := parser.Parse(ua)
+			client = parser.Parse(ua)
 			utils.DebugLog.Println("UserAgent.Family:", client.UserAgent.Family) // "Amazon Silk"
 			utils.DebugLog.Println("UserAgent.Major:", client.UserAgent.Major)   // "1"
 			utils.DebugLog.Println("UserAgent.Minor:", client.UserAgent.Minor)   // "1"
@@ -179,12 +179,21 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 			userAgentCaching[ua] = client
 		}
 		pMu.Unlock()
+		var product, vendor, version = "unknown", "unknown", "unknown"
+
+		if client.Device != nil {
+			product = client.Device.Family
+		}
+		if client.UserAgent != nil {
+			vendor = client.UserAgent.Family
+			version = client.UserAgent.Major + "." + client.UserAgent.Minor + "." + client.UserAgent.Patch
+		}
 		s = append(s, &Software{
 			Software: &types.Software{
 				Timestamp:      i.timestamp,
-				Product:        client.Device.Family,
-				Vendor:         client.UserAgent.Family,
-				Version:        client.UserAgent.Major + "." + client.UserAgent.Minor + "." + client.UserAgent.Patch,
+				Product:        product,
+				Vendor:         vendor,
+				Version:        version,
 				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
 				Source:         "userAgents: " + userAgents,
 				Service:        service,
