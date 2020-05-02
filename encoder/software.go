@@ -14,15 +14,16 @@
 package encoder
 
 import (
+	"log"
+	"strconv"
+	"strings"
+	"sync/atomic"
+
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
-	"log"
-	"strconv"
-	"strings"
-	"sync/atomic"
 
 	"sync"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/golang/protobuf/proto"
+	"github.com/ua-parser/uap-go/uaparser"
 )
 
 var products = []string{
@@ -90,6 +92,8 @@ type AtomicSoftwareMap struct {
 	sync.Mutex
 }
 
+var userAgentCaching = make(map[string]*uaparser.Client)
+
 // Size returns the number of elements in the Items map
 func (a *AtomicSoftwareMap) Size() int {
 	a.Lock()
@@ -103,8 +107,8 @@ var (
 		Items: make(map[string]*Software),
 	}
 
-	//parser, errInitUAParser = uaparser.New("./regexes.yaml")
-	//pMu sync.Mutex
+	parser, errInitUAParser = uaparser.New("/usr/local/etc/netcap/dbs/regexes.yaml")
+	pMu                     sync.Mutex
 )
 
 func findVendor(in string) string {
@@ -154,42 +158,43 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 	if serviceNameDst != "" {
 		service = serviceNameDst
 	}
-
+	var s []*Software
 	// test ua parser pkg
 	// TODO: implement a caching layer, to ensure each UA is only parsed once + add regexes to db directory
-	//for _, ua := range strings.Split(userAgents, "| ") {
-	//	pMu.Lock()
-	//	client := parser.Parse(ua)
-	//	pMu.Unlock()
-	//	fmt.Println("UserAgent.Family:", client.UserAgent.Family)  // "Amazon Silk"
-	//	fmt.Println("UserAgent.Major:", client.UserAgent.Major)   // "1"
-	//	fmt.Println("UserAgent.Minor:", client.UserAgent.Minor)   // "1"
-	//	fmt.Println("UserAgent.Patch:", client.UserAgent.Patch)   // "0-80"
-	//	fmt.Println("Os.Family:", client.Os.Family)         // "Android"
-	//	fmt.Println("Os.Major:", client.Os.Major)          // ""
-	//	fmt.Println("Os.Minor:", client.Os.Minor)          // ""
-	//	fmt.Println("Os.Patch:", client.Os.Patch)          // ""
-	//	fmt.Println("Os.PatchMinor:", client.Os.PatchMinor)     // ""
-	//	fmt.Println("Device.Family:", client.Device.Family)     // "Kindle Fire"
-	//}
-
-	var s []*Software
-	for _, p := range products {
-		if strings.Contains(userAgents, p) {
-			s = append(s, &Software{
-				Software: &types.Software{
-					Timestamp:      i.timestamp,
-					Product:        p,
-					Vendor:         findVendor(userAgents),
-					Version:        findVersion(userAgents, p),
-					DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
-					Source:         "userAgents: " + userAgents,
-					Service:        service,
-					DPIResults:     protos,
-					Flow:           f,
-				},
-			})
+	for _, ua := range strings.Split(userAgents, "| ") {
+		pMu.Lock()
+		client, ok := userAgentCaching[ua]
+		if !ok {
+			client := parser.Parse(ua)
+			utils.DebugLog.Println("UserAgent.Family:", client.UserAgent.Family) // "Amazon Silk"
+			utils.DebugLog.Println("UserAgent.Major:", client.UserAgent.Major)   // "1"
+			utils.DebugLog.Println("UserAgent.Minor:", client.UserAgent.Minor)   // "1"
+			utils.DebugLog.Println("UserAgent.Patch:", client.UserAgent.Patch)   // "0-80"
+			utils.DebugLog.Println("Os.Family:", client.Os.Family)               // "Android"
+			utils.DebugLog.Println("Os.Major:", client.Os.Major)                 // ""
+			utils.DebugLog.Println("Os.Minor:", client.Os.Minor)                 // ""
+			utils.DebugLog.Println("Os.Patch:", client.Os.Patch)                 // ""
+			utils.DebugLog.Println("Os.PatchMinor:", client.Os.PatchMinor)       // ""
+			utils.DebugLog.Println("Device.Family:", client.Device.Family)       // "Kindle Fire"
+			userAgentCaching[ua] = client
 		}
+		pMu.Unlock()
+		s = append(s, &Software{
+			Software: &types.Software{
+				Timestamp:      i.timestamp,
+				Product:        client.Device.Family,
+				Vendor:         client.UserAgent.Family,
+				Version:        client.UserAgent.Major + "." + client.UserAgent.Minor + "." + client.UserAgent.Patch,
+				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
+				Source:         "userAgents: " + userAgents,
+				Service:        service,
+				DPIResults:     protos,
+				Flow:           f,
+			},
+		})
+	}
+
+	for _, p := range products {
 		if strings.Contains(serverNames, p) {
 			s = append(s, &Software{
 				Software: &types.Software{
@@ -349,6 +354,9 @@ func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
 }
 
 var softwareEncoder = CreateCustomEncoder(types.Type_NC_SOFTWARE, "Software", func(d *CustomEncoder) error {
+	if errInitUAParser != nil {
+		return errInitUAParser
+	}
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
