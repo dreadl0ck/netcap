@@ -14,6 +14,8 @@
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
     -> collect decoding errors from all test pcaps and deduplicate!
+    
+- monitor repo with LGTM 
 
 ## v0.5 Documentation
 
