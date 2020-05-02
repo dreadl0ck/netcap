@@ -2,13 +2,13 @@
 
 - ask before overriding data from a previous run in the same folder, confirm with enter
 - implement removing tcpstreams directory on init
-- colorize struc output when outputting to a tty
 - add option to write all TCP streams to disk
 
 - implement analyzeBanner() to determine the service version. Can we integrate the nmap database?
 - add Service audit record for UDP banners
 - grab UDP banners as well and add option save all UDP streams to disk
 
+- use YARA to scan the service banners?
 - extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
 
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
@@ -59,6 +59,7 @@
 
 ## General
 
+- implement the connection history string in the same manner as zeek
 - official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt 
 - net split tool: add support to split pcaps into connections, like: $ mkdir all_split && dreadbook:test alien$ PcapSplitter -o all_split -f all.pcap -m connection
 - ICS pcaps: failed to collect audit records from pcapng file: Unknown magic 73726576

@@ -17,7 +17,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/mgutz/ansi"
 	"github.com/namsral/flag"
+	"golang.org/x/crypto/ssh/terminal"
 	"io"
 	"log"
 	"os"
@@ -97,6 +99,7 @@ type DumpConfig struct {
 	Fields        bool
 	JSON          bool
 	MemBufferSize int
+	CSV           bool
 }
 
 // Dump reads the specified netcap file
@@ -104,6 +107,7 @@ type DumpConfig struct {
 func Dump(c DumpConfig) {
 
 	var (
+		isTTY  = terminal.IsTerminal(int(os.Stdout.Fd()))
 		count  = 0
 		r, err = Open(c.Path, c.MemBufferSize)
 	)
@@ -121,6 +125,7 @@ func Dump(c DumpConfig) {
 		record = InitRecord(header.Type)
 		// rows for table print
 		rows [][]string
+		colorMap map[string]string
 	)
 
 	types.Select(record, c.Selection)
@@ -149,15 +154,9 @@ func Dump(c DumpConfig) {
 		}
 		count++
 
-		if c.Structured {
-			os.Stdout.WriteString(header.Type.String())
-			os.Stdout.WriteString("\n")
-			os.Stdout.WriteString(proto.MarshalTextString(record))
-			os.Stdout.WriteString("\n")
-			continue
-		}
-
 		if p, ok := record.(types.AuditRecord); ok {
+
+			// JSON
 			if c.JSON {
 				marshaled, err := json.MarshalIndent(p, "  ", " ")
 				if err != nil {
@@ -167,6 +166,8 @@ func Dump(c DumpConfig) {
 				os.Stdout.WriteString("\n")
 				continue
 			}
+
+			// Table View
 			if c.Table {
 				rows = append(rows, p.CSVRecord())
 
@@ -176,14 +177,34 @@ func Dump(c DumpConfig) {
 				}
 				continue
 			}
-			os.Stdout.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
+
+			// CSV
+			if c.CSV {
+				os.Stdout.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
+				continue
+			}
+
+			// default: structured
+			if isTTY {
+				os.Stdout.WriteString(ansi.White)
+				os.Stdout.WriteString(header.Type.String())
+				os.Stdout.WriteString(ansi.Reset)
+				os.Stdout.WriteString("\n")
+				os.Stdout.WriteString(colorizeProto(proto.MarshalTextString(record), colorMap))
+			} else {
+				os.Stdout.WriteString(header.Type.String())
+				os.Stdout.WriteString("\n")
+				os.Stdout.WriteString(proto.MarshalTextString(record))
+			}
+
+			os.Stdout.WriteString("\n")
 		} else {
 			fmt.Printf("type: %#v\n", record)
 			log.Fatal("type does not implement the types.AuditRecord interface")
 		}
-
 	}
 
+	// in table mode: dump remaining
 	if c.Table {
 		if p, ok := record.(types.AuditRecord); ok {
 			tui.Table(os.Stdout, p.CSVHeader(), rows)
@@ -194,6 +215,7 @@ func Dump(c DumpConfig) {
 		}
 	}
 
+	// avoid breaking JSON parsers by appending number of records
 	if !c.JSON {
 		fmt.Println(count, "records.")
 	}
@@ -353,4 +375,74 @@ func GenerateConfig(fs *flag.FlagSet, tool string) {
 		}
 	})
 	os.Exit(0)
+}
+
+
+var (
+	colors = []string{ansi.Yellow,ansi.Blue,ansi.Green,ansi.Cyan,ansi.Magenta,ansi.Red,ansi.LightBlue,ansi.LightRed,ansi.LightGreen,ansi.LightYellow,ansi.LightCyan}
+	numColors = len(colors)
+	max int
+)
+
+func colorizeProto(in string, colorMap map[string]string) string {
+
+	var (
+		b     strings.Builder
+		index int
+	)
+
+	if colorMap == nil {
+		colorMap = make(map[string]string)
+
+		for i, line := range strings.Split(in, "\n") {
+			if len(line) == 0 {
+				continue
+			}
+			if line == "\n" {
+				b.WriteString("\n")
+				continue
+			}
+
+			if i >= numColors {
+				index = i % numColors
+			} else {
+				index = i
+			}
+
+			parts := strings.Split(line, ":")
+
+			length := len(parts[0])
+			if length > max {
+				max = length
+			}
+
+			colorMap[parts[0]] = colors[index]
+		}
+	}
+
+	for i, line := range strings.Split(in, "\n") {
+
+		if len(line) == 0 {
+			continue
+		}
+		if line == "\n" {
+			b.WriteString("\n")
+			continue
+		}
+
+		if i >= numColors {
+			index = i % numColors
+		} else {
+			index = i
+		}
+
+		parts := strings.Split(line, ":")
+		b.WriteString(colorMap[parts[0]])
+		b.WriteString(utils.Pad(parts[0], max))
+		b.WriteString(ansi.Reset)
+		b.WriteString(":")
+		b.WriteString(strings.Join(parts[1:], ":"))
+		b.WriteString("\n")
+	}
+	return b.String()
 }
