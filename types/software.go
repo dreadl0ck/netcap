@@ -43,8 +43,8 @@ func (a Software) JSON() (string, error) {
 
 var softwareMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_SOFTWARE.String()),
-		Help: Type_NC_SOFTWARE.String() + " audit records",
+		Name: strings.ToLower(Type_NC_Software.String()),
+		Help: Type_NC_Software.String() + " audit records",
 	},
 	fieldsSoftware[1:],
 )

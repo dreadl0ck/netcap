@@ -93,7 +93,11 @@ type AtomicSoftwareMap struct {
 	sync.Mutex
 }
 
-var userAgentCaching = make(map[string]*uaparser.Client)
+var (
+	userAgentCaching = make(map[string]*userAgent)
+	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
+	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
+)
 
 // Size returns the number of elements in the Items map
 func (a *AtomicSoftwareMap) Size() int {
@@ -148,6 +152,14 @@ func findVersion(in string, product string) string {
 	return ""
 }
 
+type userAgent struct {
+	client *uaparser.Client
+	product string
+	vendor string
+	version string
+	full string
+}
+
 func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
 
 	//fmt.Println(serviceNameSrc, serviceNameDst, manufacturer, ja3Result, userAgents, serverNames, protos)
@@ -165,56 +177,86 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		dpIdent = dp.MacAddr
 	)
 	if dp.DeviceManufacturer != "" {
-		dpIdent += "-" + dp.DeviceManufacturer
+		dpIdent += " <" + dp.DeviceManufacturer + ">"
 	}
 
 	// process user agents
+	// TODO: check for userAgents retrieved by Ja3 lookup as well
 	for _, ua := range strings.Split(userAgents, "| ") {
 		pMu.Lock()
-		client, ok := userAgentCaching[ua]
+		userInfo, ok := userAgentCaching[ua]
 		if !ok {
-			client = parser.Parse(ua)
-			utils.DebugLog.Println("UserAgent.Family:", client.UserAgent.Family) // "Amazon Silk"
-			utils.DebugLog.Println("UserAgent.Major:", client.UserAgent.Major)   // "1"
-			utils.DebugLog.Println("UserAgent.Minor:", client.UserAgent.Minor)   // "1"
-			utils.DebugLog.Println("UserAgent.Patch:", client.UserAgent.Patch)   // "0-80"
-			utils.DebugLog.Println("Os.Family:", client.Os.Family)               // "Android"
-			utils.DebugLog.Println("Os.Major:", client.Os.Major)                 // ""
-			utils.DebugLog.Println("Os.Minor:", client.Os.Minor)                 // ""
-			utils.DebugLog.Println("Os.Patch:", client.Os.Patch)                 // ""
-			utils.DebugLog.Println("Os.PatchMinor:", client.Os.PatchMinor)       // ""
-			utils.DebugLog.Println("Device.Family:", client.Device.Family)       // "Kindle Fire"
-			userAgentCaching[ua] = client
+			client := parser.Parse(ua)
+
+			//utils.DebugLog.Println("UserAgent.Family:", client.UserAgent.Family) // "Amazon Silk"
+			//utils.DebugLog.Println("UserAgent.Major:", client.UserAgent.Major)   // "1"
+			//utils.DebugLog.Println("UserAgent.Minor:", client.UserAgent.Minor)   // "1"
+			//utils.DebugLog.Println("UserAgent.Patch:", client.UserAgent.Patch)   // "0-80"
+			//utils.DebugLog.Println("Os.Family:", client.Os.Family)               // "Android"
+			//utils.DebugLog.Println("Os.Major:", client.Os.Major)                 // ""
+			//utils.DebugLog.Println("Os.Minor:", client.Os.Minor)                 // ""
+			//utils.DebugLog.Println("Os.Patch:", client.Os.Patch)                 // ""
+			//utils.DebugLog.Println("Os.PatchMinor:", client.Os.PatchMinor)       // ""
+			//utils.DebugLog.Println("Device.Family:", client.Device.Family)       // "Kindle Fire"
+
+			var full, product, vendor, version string
+			if client.UserAgent != nil {
+				vendor = client.UserAgent.Family
+				version = client.UserAgent.Major
+				if client.UserAgent.Minor != "" {
+					version += "." + client.UserAgent.Minor
+				}
+				if client.UserAgent.Patch != "" {
+					version += "." + client.UserAgent.Patch
+				}
+				full += " " + client.UserAgent.Family
+				full += " " + client.UserAgent.Major
+				full += " " + client.UserAgent.Minor
+				full += " " + client.UserAgent.Patch
+			}
+			if client.Os != nil {
+				full += " " + client.Os.Family
+				full += " " + client.Os.Major
+				full += " " + client.Os.Minor
+				full += " " + client.Os.Patch
+				full += " " + client.Os.PatchMinor
+			}
+			if client.Device != nil {
+				product = client.Device.Family
+				full += " " + client.Device.Family
+			}
+
+			userInfo = &userAgent{
+				client:  client,
+				product: product,
+				vendor:  vendor,
+				version: version,
+				full:    strings.TrimSpace(full),
+			}
+			userAgentCaching[ua] = userInfo
 		}
 		pMu.Unlock()
-		var product, vendor, version = "unknown", "unknown", "unknown"
 
-		if client.Device != nil {
-			product = client.Device.Family
-		}
-		if client.UserAgent != nil {
-			vendor = client.UserAgent.Family
-			version = client.UserAgent.Major + "." + client.UserAgent.Minor + "." + client.UserAgent.Patch
-		}
 		s = append(s, &Software{
 			Software: &types.Software{
 				Timestamp:      i.timestamp,
-				Product:        product,
-				Vendor:         vendor,
-				Version:        version,
+				Product:        userInfo.product,
+				Vendor:         userInfo.vendor,
+				Version:        userInfo.version,
 				DeviceProfiles: []string{dpIdent},
-				Source:         "userAgents: " + userAgents,
+				SourceName:     "UserAgent",
+				SourceData:     ua,
 				Service:        service,
 				DPIResults:     protos,
 				Flow:           f,
+				Notes:          userInfo.full,
 			},
 		})
 	}
 
-	re, _ := regexp.Compile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
 	for _, sn := range strings.Split(serverNames, "| ") {
 		pMu.Lock()
-		var values []string = re.FindStringSubmatch(sn)
+		var values = regExpServerName.FindStringSubmatch(sn)
 		s = append(s, &Software{
 			Software: &types.Software{
 				Timestamp:      i.timestamp,
@@ -222,7 +264,8 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				Vendor:         values[3], // Unfitting name, but operating system
 				Version:        values[2], // Version as found after the '/'
 				DeviceProfiles: []string{dpIdent},
-				Source:         "userAgents: " + userAgents,
+				SourceName:     "ServerName",
+				SourceData:     sn,
 				Service:        service,
 				DPIResults:     protos,
 				Flow:           f,
@@ -231,10 +274,9 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		pMu.Unlock()
 	}
 
-	re, _ = regexp.Compile(`(.*?)(?:(?:/)(.*?))?$`)
 	for _, pb := range strings.Split(xPoweredBy, "| ") {
 		pMu.Lock()
-		var values []string = re.FindStringSubmatch(pb)
+		var values = regexpXPoweredBy.FindStringSubmatch(pb)
 		s = append(s, &Software{
 			Software: &types.Software{
 				Timestamp:      i.timestamp,
@@ -242,7 +284,8 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				Vendor:         "unknown", // Unfitting name, but operating system
 				Version:        values[2], // Version as found after the '/'
 				DeviceProfiles: []string{dpIdent},
-				Source:         "userAgents: " + userAgents,
+				SourceName:     "X-Powered-By",
+				SourceData:     pb,
 				Service:        service,
 				DPIResults:     protos,
 				Flow:           f,
@@ -251,41 +294,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		pMu.Unlock()
 	}
 
-	// for _, p := range products {
-	// 	if strings.Contains(serverNames, p) {
-	// 		s = append(s, &Software{
-	// 			Software: &types.Software{
-	// 				Timestamp:      i.timestamp,
-	// 				Product:        p,
-	// 				Vendor:         findVendor(serverNames),
-	// 				Version:        findVersion(serverNames, p),
-	// 				Source:         "serverNames: " + serverNames,
-	// 				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
-	// 				Service:        service,
-	// 				DPIResults:     protos,
-	// 				Flow:           f,
-	// 			},
-	// 		})
-	// 	}
-
-	// if ja3Result != "" {
-	// 	if strings.Contains(ja3Result, p) {
-	// 		s = append(s, &Software{
-	// 			Software: &types.Software{
-	// 				Timestamp:      i.timestamp,
-	// 				Product:        p,
-	// 				Vendor:         findVendor(ja3Result),
-	// 				Version:        findVersion(ja3Result, p),
-	// 				DeviceProfiles: []string{dp.MacAddr + "-" + dp.DeviceManufacturer},
-	// 				Source:         "ja3Result: " + ja3Result,
-	// 				Service:        service,
-	// 				DPIResults:     protos,
-	// 				Flow:           f,
-	// 			},
-	// 		})
-	// 	}
-	// }
-	// }
+	// TODO: check Via metadata
 
 	return s
 }
@@ -399,20 +408,25 @@ func NewSoftware(i *packetInfo) *Software {
 
 func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
 
-	ident := dp.MacAddr + "-" + dp.DeviceManufacturer
+	var (
+		dpIdent = dp.MacAddr
+	)
+	if dp.DeviceManufacturer != "" {
+		dpIdent += " <" + dp.DeviceManufacturer + ">"
+	}
 
 	p.Lock()
 	for _, pr := range p.DeviceProfiles {
-		if pr == ident {
+		if pr == dpIdent {
 			p.Unlock()
 			return
 		}
 	}
-	p.DeviceProfiles = append(p.DeviceProfiles, ident)
+	p.DeviceProfiles = append(p.DeviceProfiles, dpIdent)
 	p.Unlock()
 }
 
-var softwareEncoder = CreateCustomEncoder(types.Type_NC_SOFTWARE, "Software", func(d *CustomEncoder) error {
+var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", func(d *CustomEncoder) error {
 	if errInitUAParser != nil {
 		return errInitUAParser
 	}
