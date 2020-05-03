@@ -14,7 +14,6 @@
 package encoder
 
 import (
-	"fmt"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"strconv"
 
@@ -121,7 +120,6 @@ var serviceEncoder = CreateCustomEncoder(types.Type_NC_Service, "Service", func(
 	// flush writer
 	if !e.writer.IsChanWriter {
 		for _, c := range ServiceStore.Items {
-			fmt.Println("write", c.Service.Flow)
 			c.Lock()
 			e.write(c.Service)
 			c.Unlock()

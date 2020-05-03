@@ -1,6 +1,5 @@
 # TODOs
 
-- confirm delete: add force config field for unit tests
 - add separate flag to write also HTTP and POP3 TCP streams to disk 
 
 - implement analyzeBanner() to determine the service version. Can we integrate the nmap database?
