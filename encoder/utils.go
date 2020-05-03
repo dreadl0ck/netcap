@@ -90,7 +90,8 @@ func calcMd5(s string) string {
 	return hex.EncodeToString(out)
 }
 
-var fieldMap = make(map[string]int)
+var typeMap = make(map[string]int)
+var fieldNameMap = make(map[string]int)
 
 func countFields(t types.Type) int {
 	recordFields := 0
@@ -103,6 +104,7 @@ func countFields(t types.Type) int {
 
 			// get StructField
 			field := auditRecord.Type().Field(i)
+			fieldNameMap[field.Name]++
 
 			switch field.Type.String() {
 			case "string", "int32", "uint32", "bool", "int64", "uint64", "uint8", "float64":
@@ -112,12 +114,12 @@ func countFields(t types.Type) int {
 				if field.Type.Elem().Kind() == reflect.Struct {
 					//fmt.Println("  ", field.Name, field.Type, field.Type.Elem().NumField())
 					recordFields += field.Type.Elem().NumField()
-					fieldMap[strings.TrimPrefix(field.Type.String(), "*")] = field.Type.Elem().NumField()
+					typeMap[strings.TrimPrefix(field.Type.String(), "*")] = field.Type.Elem().NumField()
 				} else {
 					if field.Type.Elem().Kind() == reflect.Ptr {
 						recordFields += field.Type.Elem().Elem().NumField()
 						//fmt.Println("  ", field.Name, field.Type, field.Type.Elem().Elem().NumField())
-						fieldMap[strings.TrimPrefix(strings.TrimPrefix(field.Type.String(), "[]"), "*")] = field.Type.Elem().Elem().NumField()
+						typeMap[strings.TrimPrefix(strings.TrimPrefix(field.Type.String(), "[]"), "*")] = field.Type.Elem().Elem().NumField()
 					} else {
 						// scalar array types
 						//fmt.Println("  ", field.Name, field.Type, "1")
@@ -128,7 +130,7 @@ func countFields(t types.Type) int {
 		}
 	}
 
-	fieldMap["types."+strings.TrimPrefix(t.String(), "NC_")] = recordFields
+	typeMap["types."+strings.TrimPrefix(t.String(), "NC_")] = recordFields
 
 	return recordFields
 }
@@ -180,13 +182,22 @@ func ShowEncoders() {
 	}
 
 	var rows [][]string
-	for _, p := range rankByWordCount(fieldMap) {
+	for _, p := range rankByWordCount(typeMap) {
 		rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
 	}
+	fmt.Println("\nTypes:")
 	tui.Table(os.Stdout, []string{"Type", "NumFields"}, rows)
+
+	rows = [][]string{}
+	for _, p := range rankByWordCount(fieldNameMap) {
+		rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
+	}
+	fmt.Println("\nFields:")
+	tui.Table(os.Stdout, []string{"Name", "Count"}, rows)
 
 	fmt.Println("> total fields: ", totalFields)
 	fmt.Println("> total audit records:", totalAuditRecords)
+	fmt.Println("> number of unique fields:", len(fieldNameMap))
 }
 
 // Entropy returns the shannon entropy value
