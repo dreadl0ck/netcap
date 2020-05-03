@@ -19,7 +19,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/evilsocket/islazy/tui"
 	"math"
+	"os"
+	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -86,15 +90,103 @@ func calcMd5(s string) string {
 	return hex.EncodeToString(out)
 }
 
+var fieldMap = make(map[string]int)
+
+func countFields(t types.Type) int {
+	recordFields := 0
+	if r, ok := netcap.InitRecord(t).(types.AuditRecord); ok {
+
+		auditRecord := reflect.ValueOf(r).Elem()
+
+		// iterate over audit record fields
+		for i := 0; i < auditRecord.NumField(); i++ {
+
+			// get StructField
+			field := auditRecord.Type().Field(i)
+
+			switch field.Type.String() {
+			case "string", "int32", "uint32", "bool", "int64", "uint64", "uint8", "float64":
+				recordFields++
+				//fmt.Println("  ", field.Name, field.Type, "1")
+			default:
+				if field.Type.Elem().Kind() == reflect.Struct {
+					//fmt.Println("  ", field.Name, field.Type, field.Type.Elem().NumField())
+					recordFields += field.Type.Elem().NumField()
+					fieldMap[strings.TrimPrefix(field.Type.String(), "*")] = field.Type.Elem().NumField()
+				} else {
+					if field.Type.Elem().Kind() == reflect.Ptr {
+						recordFields += field.Type.Elem().Elem().NumField()
+						//fmt.Println("  ", field.Name, field.Type, field.Type.Elem().Elem().NumField())
+						fieldMap[strings.TrimPrefix(strings.TrimPrefix(field.Type.String(), "[]"), "*")] = field.Type.Elem().Elem().NumField()
+					} else {
+						// scalar array types
+						//fmt.Println("  ", field.Name, field.Type, "1")
+						recordFields++
+					}
+				}
+			}
+		}
+	}
+
+	fieldMap["types."+strings.TrimPrefix(t.String(), "NC_")] = recordFields
+
+	return recordFields
+}
+
+func rankByWordCount(wordFrequencies map[string]int) PairList{
+	pl := make(PairList, len(wordFrequencies))
+	i := 0
+	for k, v := range wordFrequencies {
+		pl[i] = Pair{k, v}
+		i++
+	}
+	sort.Sort(sort.Reverse(pl))
+	return pl
+}
+
+type Pair struct {
+	Key string
+	Value int
+}
+
+type PairList []Pair
+
+func (p PairList) Len() int { return len(p) }
+func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+func (p PairList) Swap(i, j int){ p[i], p[j] = p[j], p[i] }
+
 func ShowEncoders() {
+
+	var (
+		totalFields, totalAuditRecords int
+	)
+
 	fmt.Println("custom:", len(customEncoderSlice))
 	for _, e := range customEncoderSlice {
-		fmt.Println("+", e.Name)
+		totalAuditRecords++
+		f := countFields(e.Type)
+		totalFields += f
+		fmt.Println("+", e.Type.String(), "(", f ,")")
 	}
+	fmt.Println("> custom encoder fields: ", totalFields)
+	fmt.Println("> custom encoder audit records:", totalAuditRecords)
+
 	fmt.Println("layer:", len(layerEncoderSlice))
 	for _, e := range layerEncoderSlice {
-		fmt.Println("+", e.Layer.String())
+		totalAuditRecords++
+		f := countFields(e.Type)
+		totalFields += f
+		fmt.Println("+", e.Layer.String(), "(", f ,")")
 	}
+
+	var rows [][]string
+	for _, p := range rankByWordCount(fieldMap) {
+		rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
+	}
+	tui.Table(os.Stdout, []string{"Type", "NumFields"}, rows)
+
+	fmt.Println("> total fields: ", totalFields)
+	fmt.Println("> total audit records:", totalAuditRecords)
 }
 
 // Entropy returns the shannon entropy value
