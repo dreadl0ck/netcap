@@ -1863,7 +1863,7 @@ message Software {
     string   SourceName                   = 6;
     repeated string DPIResults            = 7;
     string   Service                      = 8;
-    string   Flow                         = 9;
+    repeated string   Flows               = 9;
     string   SourceData                   = 10;
     string   Notes                        = 11;
 }

@@ -9,12 +9,13 @@
 - ask before overriding data from a previous run in the same folder, confirm with enter
 - implement removing tcpstreams directory on init
 
+- snort / suricata rules that identify services?
+
 - implement analyzeBanner() to determine the service version. Can we integrate the nmap database?
 - add Service audit record for UDP banners
 - grab UDP banners as well and add option save all UDP streams to disk
 
-- use YARA to scan the service banners?
-- extend updating software records (currently only new device profiles are added, but the flows are not updated) associate devices with flows?
+- use YARA to scan the service banners? any public yara rules for service detection?
 
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
