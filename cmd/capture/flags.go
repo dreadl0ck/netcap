@@ -81,7 +81,7 @@ var (
 	flagFreeOSMemory          = fs.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
 	flagReassembleConnections = fs.Bool("reassemble-connections", true, "reassemble TCP connections")
 
-	flagTCPDebug = fs.Bool("tcp-debug", false, "add debug output for TCP connections to debug.log")
+	flagTCPDebug    = fs.Bool("tcp-debug", false, "add debug output for TCP connections to debug.log")
 	flagSaveStreams = fs.Bool("streams", false, "save raw TCP connections")
 	flagSaveBanners = fs.Bool("banners", false, "save first 512k bytes of raw TCP connections")
 

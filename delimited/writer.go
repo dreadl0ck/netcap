@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 )
 
 // Writer outputs delimited records to an io.Writer

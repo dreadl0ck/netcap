@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/encoder"
@@ -9,6 +11,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 // Init sets up the collector and starts the configured number of workers
@@ -51,6 +55,32 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
+	// check for files from previous run in the output directory
+	// and ask the user if they can be overwritten
+	files, _ := filepath.Glob(filepath.Join(c.config.EncoderConfig.Out, "*.ncap.gz"))
+	filesBare, _ := filepath.Glob(filepath.Join(c.config.EncoderConfig.Out, "*.ncap"))
+
+	files = append(files, filesBare...)
+
+	streamPath := filepath.Join(c.config.EncoderConfig.Out, "tcpstreams")
+	_, errStreams := os.Stat(streamPath)
+	if len(files) > 0 || errStreams == nil {
+
+		var msg = strconv.Itoa(len(files)) + " audit record files found in output path! Overwrite?"
+		if errStreams == nil {
+			msg = "Data from previous runs found in output path! Overwrite?"
+		}
+
+		if !confirm(msg) {
+			return errors.New("aborted.")
+		}
+
+		if errStreams == nil {
+			// clear streams if present
+			os.RemoveAll(streamPath)
+		}
+	}
+
 	// initialize encoders
 	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)
 	encoder.InitCustomEncoders(c.config.EncoderConfig, c.config.Quiet)
@@ -81,4 +111,23 @@ func (c *Collector) Init() (err error) {
 	c.mu.Unlock()
 
 	return
+}
+
+// displays a prompt message to the terminal and returns a bool indicating the user decision
+func confirm(s string) bool {
+
+	r := bufio.NewReader(os.Stdin)
+
+	fmt.Printf("%s [Y/n]: ", s)
+	res, err := r.ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// empty input, e.g: "\n"
+	if len(res) < 2 {
+		return true
+	}
+
+	return strings.ToLower(strings.TrimSpace(res))[0] != 'n'
 }

@@ -1,28 +1,21 @@
 # TODOs
 
-- TODO: check Via metadata, use useragents retrieved from ja3 lookup as well
-
-- add separate flag to write all TCP streams to disk
-- use JSON encoder from new protobuf release! 
-- credential harvester also nice for CTF! make it configurable to specify the flag format
-
-- ask before overriding data from a previous run in the same folder, confirm with enter
-- implement removing tcpstreams directory on init
-
-- snort / suricata rules that identify services?
+- add separate flag to write also HTTP and POP3 TCP streams to disk 
 
 - implement analyzeBanner() to determine the service version. Can we integrate the nmap database?
 - add Service audit record for UDP banners
-- grab UDP banners as well and add option save all UDP streams to disk
+- save all UDP streams to disk
 
+- TODO: check Via metadata, use useragents retrieved from ja3 lookup as well
+- Credentials Audit Record harvesters: HTTP Basic Auth, POP3 credentials, SNMP, telnet/rsh/rexec, HTTP login forms, MySQL, CustomRegex (for example CTF flag format), FTP, SMTP
+
+- snort / suricata rules that identify services?
 - use YARA to scan the service banners? any public yara rules for service detection?
 
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
     -> collect decoding errors from all test pcaps and deduplicate!
     
-- monitor repo with LGTM 
-
 ## v0.5 Documentation
 
 - Blog: Threat hunting with Netcap and Maltego
@@ -67,6 +60,8 @@
 
 ## General
 
+- use JSON encoder from new protobuf release, when gogo integrated the new protobuf V2 API: https://pkg.go.dev/google.golang.org/protobuf/encoding/protojson?tab=doc
+- monitor repo with LGTM
 - implement the connection history string in the same manner as zeek
 - official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt 
 - net split tool: add support to split pcaps into connections, like: $ mkdir all_split && dreadbook:test alien$ PcapSplitter -o all_split -f all.pcap -m connection

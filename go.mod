@@ -13,7 +13,7 @@ require (
 	github.com/evilsocket/islazy v1.10.6
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.0
+	github.com/golang/protobuf v1.4.0 // indirect
 	github.com/klauspost/compress v1.10.5 // indirect
 	github.com/klauspost/pgzip v1.2.3
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect

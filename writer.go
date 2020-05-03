@@ -25,7 +25,7 @@ import (
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 )
 
 /*

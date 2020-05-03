@@ -17,7 +17,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 )
 
 var icmpv6EchoEncoder = CreateLayerEncoder(types.Type_NC_ICMPv6Echo, layers.LayerTypeICMPv6Echo, func(layer gopacket.Layer, timestamp string) proto.Message {

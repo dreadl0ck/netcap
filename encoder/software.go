@@ -31,7 +31,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/ua-parser/uap-go/uaparser"
 )
 
@@ -153,11 +153,11 @@ func findVersion(in string, product string) string {
 }
 
 type userAgent struct {
-	client *uaparser.Client
+	client  *uaparser.Client
 	product string
-	vendor string
+	vendor  string
 	version string
-	full string
+	full    string
 }
 
 func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
@@ -248,7 +248,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				SourceData:     ua,
 				Service:        service,
 				DPIResults:     protos,
-				Flows:           []string{f},
+				Flows:          []string{f},
 				Notes:          userInfo.full,
 			},
 		})
@@ -268,7 +268,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				SourceData:     sn,
 				Service:        service,
 				DPIResults:     protos,
-				Flows:           []string{f},
+				Flows:          []string{f},
 			},
 		})
 		pMu.Unlock()
@@ -288,7 +288,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				SourceData:     pb,
 				Service:        service,
 				DPIResults:     protos,
-				Flows:           []string{f},
+				Flows:          []string{f},
 			},
 		})
 		pMu.Unlock()
@@ -425,10 +425,10 @@ func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
 	p.DeviceProfiles = append(p.DeviceProfiles, dpIdent)
 	tl := i.p.TransportLayer()
 	if tl != nil {
-		p.Flows = append(p.Flows, i.srcIP + ":" + tl.TransportFlow().Src().String() + "->" + i.dstIP + ":" + tl.TransportFlow().Dst().String())
+		p.Flows = append(p.Flows, i.srcIP+":"+tl.TransportFlow().Src().String()+"->"+i.dstIP+":"+tl.TransportFlow().Dst().String())
 	} else {
 		// no transport layer
-		p.Flows = append(p.Flows, i.srcIP + "->" + i.dstIP)
+		p.Flows = append(p.Flows, i.srcIP+"->"+i.dstIP)
 	}
 	p.Unlock()
 }

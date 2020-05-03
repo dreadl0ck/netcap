@@ -16,7 +16,7 @@ package io
 import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"io"
 	"strings"
 	"sync"
@@ -54,7 +54,8 @@ func (w *CSVWriter) WriteRecord(msg proto.Message) (int, error) {
 		return w.w.Write([]byte(strings.Join(csv.CSVRecord(), ",") + "\n"))
 	}
 
-	panic("can not write as CSV" + msg.String())
+	spew.Dump(msg)
+	panic("can not write as CSV")
 }
 
 func (w *CSVWriter) Close() error {

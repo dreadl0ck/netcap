@@ -17,7 +17,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 )
 
 var ethernetCTPEncoder = CreateLayerEncoder(types.Type_NC_EthernetCTP, layers.LayerTypeEthernetCTP, func(layer gopacket.Layer, timestamp string) proto.Message {
