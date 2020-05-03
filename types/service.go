@@ -43,8 +43,8 @@ func (a Service) JSON() (string, error) {
 
 var serviceMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: strings.ToLower(Type_NC_SERVICE.String()),
-		Help: Type_NC_SERVICE.String() + " audit records",
+		Name: strings.ToLower(Type_NC_Service.String()),
+		Help: Type_NC_Service.String() + " audit records",
 	},
 	fieldsService[1:],
 )

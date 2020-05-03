@@ -137,8 +137,8 @@ enum Type {
     NC_Diameter                    = 92;
     NC_POP3                        = 93;
     NC_TLSServerHello              = 94;
-    NC_SOFTWARE                    = 95;
-    NC_SERVICE                     = 96;
+    NC_Software                    = 95;
+    NC_Service                     = 96;
 }
 
 /*
@@ -1859,11 +1859,13 @@ message Software {
     string   Product                      = 2;
     string   Vendor                       = 3;
     string   Version                      = 4;
-    repeated string        DeviceProfiles = 5;
-    string   Source                       = 6;
+    repeated string DeviceProfiles        = 5;
+    string   SourceName                   = 6;
     repeated string DPIResults            = 7;
     string   Service                      = 8;
     string   Flow                         = 9;
+    string   SourceData                   = 10;
+    string   Notes                        = 11;
 }
 
 message Service {

@@ -1,5 +1,7 @@
 # TODOs
 
+- TODO: check Via metadata, use useragents retrieved from ja3 lookup as well
+
 - add separate flag to write all TCP streams to disk
 - use JSON encoder from new protobuf release! 
 - credential harvester also nice for CTF! make it configurable to specify the flag format

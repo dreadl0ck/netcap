@@ -112,7 +112,7 @@ func NewService(ts string) *Service {
 	}
 }
 
-var serviceEncoder = CreateCustomEncoder(types.Type_NC_SERVICE, "Service", func(d *CustomEncoder) error {
+var serviceEncoder = CreateCustomEncoder(types.Type_NC_Service, "Service", func(d *CustomEncoder) error {
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 	return nil
