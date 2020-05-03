@@ -248,7 +248,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				SourceData:     ua,
 				Service:        service,
 				DPIResults:     protos,
-				Flow:           f,
+				Flows:           []string{f},
 				Notes:          userInfo.full,
 			},
 		})
@@ -268,7 +268,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				SourceData:     sn,
 				Service:        service,
 				DPIResults:     protos,
-				Flow:           f,
+				Flows:           []string{f},
 			},
 		})
 		pMu.Unlock()
@@ -288,7 +288,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 				SourceData:     pb,
 				Service:        service,
 				DPIResults:     protos,
-				Flow:           f,
+				Flows:           []string{f},
 			},
 		})
 		pMu.Unlock()
@@ -423,6 +423,13 @@ func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
 		}
 	}
 	p.DeviceProfiles = append(p.DeviceProfiles, dpIdent)
+	tl := i.p.TransportLayer()
+	if tl != nil {
+		p.Flows = append(p.Flows, i.srcIP + ":" + tl.TransportFlow().Src().String() + "->" + i.dstIP + ":" + tl.TransportFlow().Dst().String())
+	} else {
+		// no transport layer
+		p.Flows = append(p.Flows, i.srcIP + "->" + i.dstIP)
+	}
 	p.Unlock()
 }
 
