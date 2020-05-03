@@ -22,7 +22,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/tlsx"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 )
 
 var tlsServerHelloEncoder = CreateCustomEncoder(types.Type_NC_TLSServerHello, "TLSServerHello", nil, func(p gopacket.Packet) proto.Message {

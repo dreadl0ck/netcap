@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
-	proto "github.com/golang/protobuf/proto"
+	proto "github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
 )
 

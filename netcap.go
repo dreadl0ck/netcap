@@ -17,7 +17,7 @@ import (
 	"io"
 
 	"github.com/dreadl0ck/netcap/types"
-	proto "github.com/golang/protobuf/proto"
+	proto "github.com/gogo/protobuf/proto"
 )
 
 // InitRecord initializes a new record of the given type

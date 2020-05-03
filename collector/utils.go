@@ -23,7 +23,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcap"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"golang.org/x/net/bpf"
 )
 

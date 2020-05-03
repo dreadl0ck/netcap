@@ -124,7 +124,7 @@ func Dump(c DumpConfig) {
 		header = r.ReadHeader()
 		record = InitRecord(header.Type)
 		// rows for table print
-		rows [][]string
+		rows     [][]string
 		colorMap map[string]string
 	)
 
@@ -158,7 +158,7 @@ func Dump(c DumpConfig) {
 
 			// JSON
 			if c.JSON {
-				marshaled, err := json.MarshalIndent(p, "  ", " ")
+				marshaled, err := json.Marshal(p)
 				if err != nil {
 					log.Fatal("failed to marshal json:", err)
 				}
@@ -377,11 +377,10 @@ func GenerateConfig(fs *flag.FlagSet, tool string) {
 	os.Exit(0)
 }
 
-
 var (
-	colors = []string{ansi.Yellow,ansi.LightRed,ansi.Cyan,ansi.Magenta,ansi.Blue,ansi.LightGreen,ansi.LightCyan,ansi.LightMagenta, ansi.LightYellow, ansi.Green, ansi.LightBlue, ansi.Red}
+	colors    = []string{ansi.Yellow, ansi.LightRed, ansi.Cyan, ansi.Magenta, ansi.Blue, ansi.LightGreen, ansi.LightCyan, ansi.LightMagenta, ansi.LightYellow, ansi.Green, ansi.LightBlue, ansi.Red}
 	numColors = len(colors)
-	max int
+	max       int
 )
 
 func colorizeProto(in string, colorMap map[string]string) string {

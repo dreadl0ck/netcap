@@ -16,7 +16,7 @@ package encoder
 import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 )
 
 var pop3Encoder = CreateCustomEncoder(types.Type_NC_POP3, "POP3", func(d *CustomEncoder) error {

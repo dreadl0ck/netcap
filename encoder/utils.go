@@ -135,7 +135,7 @@ func countFields(t types.Type) int {
 	return recordFields
 }
 
-func rankByWordCount(wordFrequencies map[string]int) PairList{
+func rankByWordCount(wordFrequencies map[string]int) PairList {
 	pl := make(PairList, len(wordFrequencies))
 	i := 0
 	for k, v := range wordFrequencies {
@@ -147,15 +147,15 @@ func rankByWordCount(wordFrequencies map[string]int) PairList{
 }
 
 type Pair struct {
-	Key string
+	Key   string
 	Value int
 }
 
 type PairList []Pair
 
-func (p PairList) Len() int { return len(p) }
+func (p PairList) Len() int           { return len(p) }
 func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
-func (p PairList) Swap(i, j int){ p[i], p[j] = p[j], p[i] }
+func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 func ShowEncoders() {
 
@@ -168,7 +168,7 @@ func ShowEncoders() {
 		totalAuditRecords++
 		f := countFields(e.Type)
 		totalFields += f
-		fmt.Println("+", e.Type.String(), "(", f ,")")
+		fmt.Println("+", e.Type.String(), "(", f, ")")
 	}
 	fmt.Println("> custom encoder fields: ", totalFields)
 	fmt.Println("> custom encoder audit records:", totalAuditRecords)
@@ -178,7 +178,7 @@ func ShowEncoders() {
 		totalAuditRecords++
 		f := countFields(e.Type)
 		totalFields += f
-		fmt.Println("+", e.Layer.String(), "(", f ,")")
+		fmt.Println("+", e.Layer.String(), "(", f, ")")
 	}
 
 	var rows [][]string

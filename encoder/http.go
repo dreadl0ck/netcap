@@ -23,7 +23,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 )
 
 var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *CustomEncoder) error {
