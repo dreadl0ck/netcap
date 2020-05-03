@@ -379,7 +379,7 @@ func GenerateConfig(fs *flag.FlagSet, tool string) {
 
 
 var (
-	colors = []string{ansi.Yellow,ansi.Blue,ansi.Green,ansi.Cyan,ansi.Magenta,ansi.Red,ansi.LightBlue,ansi.LightRed,ansi.LightGreen,ansi.LightYellow,ansi.LightCyan}
+	colors = []string{ansi.Yellow,ansi.LightRed,ansi.Cyan,ansi.Magenta,ansi.Blue,ansi.LightGreen,ansi.LightCyan,ansi.LightMagenta, ansi.LightYellow, ansi.Green, ansi.LightBlue, ansi.Red}
 	numColors = len(colors)
 	max int
 )
@@ -445,9 +445,9 @@ func colorizeProto(in string, colorMap map[string]string) string {
 				b.WriteString(utils.Pad(parts[0], max))
 			}
 			b.WriteString(ansi.Reset)
-			if !strings.Contains(line, "<") {
-				b.WriteString(":")
-			}
+			//if !strings.Contains(line, "<") {
+			//	b.WriteString(":")
+			//}
 			b.WriteString(strings.Join(parts[1:], ":"))
 			b.WriteString("\n")
 		} else {
