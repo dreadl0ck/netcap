@@ -66,13 +66,15 @@ func (c *Collector) Init() (err error) {
 	_, errStreams := os.Stat(streamPath)
 	if len(files) > 0 || errStreams == nil {
 
-		var msg = strconv.Itoa(len(files)) + " audit record files found in output path! Overwrite?"
-		if errStreams == nil {
-			msg = "Data from previous runs found in output path! Overwrite?"
-		}
-
-		if !confirm(msg) {
-			return errors.New("aborted.")
+		// only prompt if quiet mode is not active
+		if !c.config.Quiet {
+			var msg = strconv.Itoa(len(files)) + " audit record files found in output path! Overwrite?"
+			if errStreams == nil {
+				msg = "Data from previous runs found in output path! Overwrite?"
+			}
+			if !confirm(msg) {
+				return errors.New("aborted.")
+			}
 		}
 
 		if errStreams == nil {
