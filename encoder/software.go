@@ -14,7 +14,10 @@
 package encoder
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -97,6 +100,7 @@ var (
 	userAgentCaching = make(map[string]*userAgent)
 	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
+	ja3Caching       = make(map[string]string)
 )
 
 // Size returns the number of elements in the Items map
@@ -160,9 +164,39 @@ type userAgent struct {
 	full    string
 }
 
-func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
+type Process struct {
+	Process string `json:"process"`
+	JA3     string `json:"JA3"`
+	JA3s    string `json:"JA3S"`
+}
+
+type Client struct {
+	Os        string    `json:"os"`
+	Arch      string    `json:"arch"`
+	Processes []Process `json:"processes"`
+}
+
+type Server struct {
+	Server  string   `json:"server"`
+	Clients []Client `json:"clients"`
+}
+
+type Ja3CombinationsDB struct {
+	Servers []Server `json:"servers"`
+}
+
+func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
 
 	//fmt.Println(serviceNameSrc, serviceNameDst, manufacturer, ja3Result, userAgents, serverNames, protos)
+
+	// TODO: move the following code where suitable. Not sure whether where tho.
+	// Used to load the JSON database of JA3/JA3S combinations.
+	ja3CombinationsDBJson, _ := os.Open("/usr/local/etc/netcap/dbs/ja_3_3s.json") // Possibly catch error
+	defer ja3CombinationsDBJson.Close()
+	byteValue, _ := ioutil.ReadAll(ja3CombinationsDBJson)
+	var ja3db Ja3CombinationsDB
+	json.Unmarshal(byteValue, &ja3db)
+	// finished loading
 
 	var service string
 	if serviceNameSrc != "" {
@@ -294,7 +328,54 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		pMu.Unlock()
 	}
 
-	// TODO: check Via metadata
+	// Only do JA3 fingerprinting when both ja3 and ja3s are present, aka when the server Hello is captured
+	if len(JA3) > 0 && len(JA3s) > 0 {
+		// fmt.Println(JA3)
+		// fmt.Println(JA3s)
+		for _, server := range ja3db.Servers {
+			serverName := server.Server
+			for _, client := range server.Clients {
+				clientName := client.Os + "(" + client.Arch + ")"
+				for _, process := range client.Processes {
+					processName := process.Process
+					if process.JA3 == JA3 && process.JA3s == JA3s {
+						pMu.Lock()
+						var values = regExpServerName.FindStringSubmatch(serverName)
+						s = append(s, &Software{
+							Software: &types.Software{
+								Timestamp:      i.timestamp,
+								Product:        values[1], // Name of the server (Apache, Nginx, ...)
+								Vendor:         values[3], // Unfitting name, but operating system
+								Version:        values[2], // Version as found after the '/'
+								DeviceProfiles: []string{dpIdent},
+								SourceName:     "JA3s",
+								SourceData:     JA3s,
+								Service:        service,
+								DPIResults:     protos,
+								Flows:          []string{f},
+							},
+						})
+						s = append(s, &Software{
+							Software: &types.Software{
+								Timestamp:      i.timestamp,
+								Product:        processName, // Name of the browser, including verison
+								Vendor:         clientName,  // Name of the OS
+								Version:        "",          // TODO parse client name
+								DeviceProfiles: []string{dpIdent},
+								SourceName:     "JA3",
+								SourceData:     JA3,
+								Service:        service,
+								DPIResults:     protos,
+								Flows:          []string{f},
+							},
+						})
+						pMu.Unlock()
+					}
+				}
+			}
+
+		}
+	}
 
 	return s
 }
@@ -305,7 +386,8 @@ func AnalyzeSoftware(i *packetInfo) {
 	var (
 		serviceNameSrc, serviceNameDst string
 		ja3Hash                        = ja3.DigestHexPacket(i.p)
-		ja3Result                      string
+		JA3s                           string
+		JA3                            string
 		protos                         []string
 		userAgents, serverNames        string
 		f                              string
@@ -371,13 +453,29 @@ func AnalyzeSoftware(i *packetInfo) {
 	}
 	httpStore.Unlock()
 
+	// Temporariliy left out. To be decided how to proceed about this.
 	// TLS fingerprinting
-	if ja3Hash != "" {
-		ja3Result = resolvers.LookupJa3(ja3Hash)
+	// if ja3Hash != "" {
+	// 	ja3Result = resolvers.LookupJa3(ja3Hash)
+	// }
+
+	// The uderlying assumption is that we will always observe a client TLS Hello than a server TLS Hello
+	// Assuming the packet captured corresponds to the server Hello, first try to see if a client Hello (client being the
+	// destination IP) was observed. If not, this is the client. Therefore add client ja3 signature to the store.
+	if len(ja3Hash) > 0 {
+		var ok bool
+		JA3, ok = ja3Caching[i.dstIP]
+		if !ok {
+			ja3Caching[i.srcIP] = ja3Hash
+			JA3 = ""
+			JA3s = ""
+		} else {
+			JA3s = ja3Hash
+		}
 	}
 
 	dp := getDeviceProfile(i.srcMAC, i)
-	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames, protos, vias, xPoweredBy)
+	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames, protos, vias, xPoweredBy)
 	if len(software) == 0 {
 		return
 	}
