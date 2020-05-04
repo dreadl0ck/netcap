@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/dreadl0ck/gopacket"
@@ -82,17 +83,72 @@ func saveTCPServiceBanner(h *tcpReader, banner []byte) {
 
 	// match banner against nmap service probes
 	for _, serviceProbe := range serviceProbes {
-		if serviceProbe.RegEx.Match(banner) {
-			if c.Debug {
-				fmt.Println("MATCH!", ident)
-				fmt.Println(serviceProbe)
-				fmt.Println("Banner:")
-				fmt.Println(hex.Dump(banner))
+		if useRE2 {
+			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
+
+				s.Product = serviceProbe.Ident
+				s.Vendor = serviceProbe.Vendor
+				s.Version = serviceProbe.Version
+
+				if strings.Contains(serviceProbe.Version, "$1") {
+					if len(m) > 1 {
+						s.Version = strings.Replace(serviceProbe.Version, "$1", m[1], 1)
+					}
+				}
+
+				if strings.Contains(serviceProbe.Hostname, "$1") {
+					if len(m) > 1 {
+						s.Notes = strings.Replace(serviceProbe.Hostname, "$1", m[1], 1) + "; "
+					}
+				}
+
+				// TODO: make a group extraction util
+				if strings.Contains(serviceProbe.Info, "$1") {
+					if len(m) > 1 {
+						s.Product += strings.Replace(serviceProbe.Info, "$1", m[1], 1)
+					}
+				}
+				if strings.Contains(s.Product, "$2") {
+					if len(m) > 2 {
+						s.Product += strings.Replace(serviceProbe.Info, "$2", m[2], 1)
+					}
+				}
+
+				if c.Debug {
+					fmt.Println("\n\nMATCH!", ident)
+					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
+				}
 			}
-			s.Product = serviceProbe.Ident
-			s.Vendor = serviceProbe.Vendor
-			s.Version = serviceProbe.Version
-			// TODO: expand $1, $2 substrings if used
+		} else {
+			if m, err := serviceProbe.RegEx2.FindStringMatch(string(banner)); err == nil && m != nil {
+
+				s.Product = serviceProbe.Ident
+				s.Vendor = serviceProbe.Vendor
+				s.Version = serviceProbe.Version
+
+				if strings.Contains(serviceProbe.Version, "$1") {
+					if len(m.Groups()) > 1 {
+						s.Version = strings.Replace(serviceProbe.Version, "$1", m.Groups()[1].Captures[0].String(), 1)
+					}
+				}
+
+				// TODO: make a group extraction util
+				if strings.Contains(serviceProbe.Info, "$1") {
+					if len(m.Groups()) > 1 {
+						s.Product += strings.Replace(serviceProbe.Info, "$1", m.Groups()[1].Captures[0].String(), 1)
+					}
+				}
+				if strings.Contains(s.Product, "$2") {
+					if len(m.Groups()) > 2 {
+						s.Product += strings.Replace(serviceProbe.Info, "$2", m.Groups()[2].Captures[0].String(), 1)
+					}
+				}
+
+				if c.Debug {
+					fmt.Println("\nMATCH!", ident)
+					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
+				}
+			}
 		}
 	}
 

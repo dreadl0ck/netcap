@@ -1879,4 +1879,5 @@ message Service {
     string   Product                      = 8;
     string   Vendor                       = 9;
     string   Version                      = 10;
+    string   Notes                        = 11;
 }

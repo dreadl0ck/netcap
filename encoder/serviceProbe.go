@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dlclark/regexp2"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/mgutz/ansi"
 	"io"
@@ -15,10 +16,20 @@ import (
 	"unicode"
 )
 
-var serviceProbes []*ServiceProbe
+var (
+	serviceProbes []*ServiceProbe
+	ignoredProbes = map[string]struct{}{
+		"pc-duo-gw": {},
+		"ventrilo":  {},
+		"pc-duo":    {},
+		"ssl":       {},
+	}
+	useRE2 = true
+)
 
 type ServiceProbe struct {
 	RegEx           *regexp.Regexp
+	RegEx2          *regexp2.Regexp
 	RegExRaw        string
 	Vendor          string
 	Version         string
@@ -130,6 +141,13 @@ func InitProbes() error {
 			continue
 		}
 		if strings.HasPrefix(line, "match") {
+
+			ident := strings.Fields(line)[1]
+			if _, ok := ignoredProbes[ident]; ok {
+				utils.DebugLog.Println("ignoring probe", ident)
+				continue
+			}
+
 			var (
 				spaces    int
 				delim     byte
@@ -139,7 +157,8 @@ func InitProbes() error {
 				parseMeta bool
 				s         = new(ServiceProbe)
 			)
-			s.Ident = strings.Fields(line)[1]
+			s.Ident = ident
+
 			for {
 				b, err := r.ReadByte()
 				if err == io.EOF {
@@ -227,7 +246,7 @@ func InitProbes() error {
 					case "i":
 						s.CaseInsensitive = true
 					case "s":
-						s.CaseInsensitive = true
+						s.IncludeNewlines = true
 					}
 					continue
 				}
@@ -268,21 +287,36 @@ func InitProbes() error {
 			// compile regex
 			var (
 				errCompile error
-				reg = string(regex)
+				finalReg   = "(?m"
 			)
+
+			// To change the default matching behavior, you can add a set of flags to the beginning of a regular expression.
+			// For example, the prefix "(?is)" makes the matching case-insensitive and lets . match \n. (The default matching is case-sensitive and . doesn’t match \n.)
 			if s.CaseInsensitive {
-				reg = "(?i)" + reg
+				finalReg += "i"
 			}
 			if s.IncludeNewlines {
-				reg = "(?s)" + reg
+				finalReg += "s"
 			}
-			s.RegEx, errCompile = regexp.Compile(reg)
+			finalReg += ")" + strings.TrimSpace(string(regex))
+
+			if useRE2 {
+				s.RegEx, errCompile = regexp.Compile(finalReg)
+			} else {
+				s.RegEx2, errCompile = regexp2.Compile(finalReg, 0) // regexp.RE2)
+			}
+
 			if errCompile != nil {
 				if c.Debug {
-					fmt.Println("failed to compile regex:", ansi.Red, errCompile, ansi.White, string(regex), ansi.Reset)
+					if useRE2 {
+						fmt.Println("failed to compile regex:", ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
+					} else {
+						fmt.Println("failed to compile regex:", ansi.Red, errCompile, ansi.Reset)
+						fmt.Println(ansi.White, line, ansi.Reset)
+					}
 				}
 			} else {
-				s.RegExRaw = reg
+				s.RegExRaw = finalReg
 				serviceProbes = append(serviceProbes, s)
 			}
 		}

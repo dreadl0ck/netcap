@@ -15,6 +15,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dlclark/regexp2 v1.2.0 h1:8sAhBGEM0dRWogWqWyQeIJnxjWO6oIjl8FKqREDsGfk=
+github.com/dlclark/regexp2 v1.2.0/go.mod h1:2pZnwuY/m+8K6iRw6wQdMtk+rH5tNGR1i55kozfMjCc=
 github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4 h1:CQVDSWmSoaOzH65ZxS3b16QiD7cbpFgoYZEy6YHRlNE=
 github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
 github.com/dreadl0ck/go-dpi v0.0.0-20200429152202-653b4f217bbf h1:LVWiiETxTRfEQwK6fMKVOVzBXcO3ZXg1dXwywPDPDUk=
