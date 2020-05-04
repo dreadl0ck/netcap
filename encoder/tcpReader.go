@@ -206,7 +206,7 @@ func (h *tcpReader) saveStream(data []byte) error {
 	}
 
 	if !h.isClient {
-		saveServiceBanner(h, data)
+		saveTCPServiceBanner(h, data)
 	}
 
 	return nil

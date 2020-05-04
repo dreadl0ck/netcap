@@ -14,9 +14,10 @@
 package encoder
 
 import (
+	"encoding/hex"
+	"fmt"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"strconv"
-
 	"sync"
 
 	"github.com/dreadl0ck/gopacket"
@@ -50,11 +51,9 @@ var (
 	}
 )
 
-func saveServiceBanner(h *tcpReader, banner []byte) {
+func saveTCPServiceBanner(h *tcpReader, banner []byte) {
 
-	var (
-		ident = h.parent.net.Dst().String() + ":" + h.parent.transport.Dst().String()
-	)
+	ident := h.parent.net.Dst().String() + ":" + h.parent.transport.Dst().String()
 
 	// check if we already have a banner for the IP + Port combination
 	ServiceStore.Lock()
@@ -77,20 +76,25 @@ func saveServiceBanner(h *tcpReader, banner []byte) {
 
 	dst, err := strconv.Atoi(h.parent.transport.Dst().String())
 	if err == nil {
-		//switch tl.LayerType() {
-		//case layers.LayerTypeTCP:
 		s.Protocol = "TCP"
 		s.Name = resolvers.LookupServiceByPort(dst, "tcp")
-		// TODO: Since this code is invoked as part of the TCP stream reassembly UDP banner grabbing is currently not supported
-		//case layers.LayerTypeUDP:
-		//	s.Protocol = "UDP"
-		//	s.Name = resolvers.LookupServiceByPort(dst, "udp")
-		//default:
-		//}
 	}
 
-	// TODO: now that we have the banner, lets try to extract further information from it
-	// s.Product, s.Vendor, s.Version = analyzeBanner(banner)
+	// match banner against nmap service probes
+	for _, serviceProbe := range serviceProbes {
+		if serviceProbe.RegEx.Match(banner) {
+			if c.Debug {
+				fmt.Println("MATCH!", ident)
+				fmt.Println(serviceProbe)
+				fmt.Println("Banner:")
+				fmt.Println(hex.Dump(banner))
+			}
+			s.Product = serviceProbe.Ident
+			s.Vendor = serviceProbe.Vendor
+			s.Version = serviceProbe.Version
+			// TODO: expand $1, $2 substrings if used
+		}
+	}
 
 	// add new service
 	ServiceStore.Lock()
@@ -112,7 +116,7 @@ func NewService(ts string) *Service {
 }
 
 var serviceEncoder = CreateCustomEncoder(types.Type_NC_Service, "Service", func(d *CustomEncoder) error {
-	return nil
+	return InitProbes()
 }, func(p gopacket.Packet) proto.Message {
 	return nil
 }, func(e *CustomEncoder) error {
