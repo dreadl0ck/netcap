@@ -188,7 +188,7 @@ type Ja3CombinationsDB struct {
 
 func parseUserAgent(ua string) *userAgent {
 	var (
-		client = parser.Parse(ua)
+		client                         = parser.Parse(ua)
 		full, product, vendor, version string
 	)
 	if client.UserAgent != nil {
@@ -302,9 +302,9 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		var values = regexpXPoweredBy.FindStringSubmatch(pb)
 		s = append(s, &Software{
 			Software: &types.Software{
-				Timestamp:      i.timestamp,
-				Product:        values[1], // Name of the server (Apache, Nginx, ...)
-				Vendor:         "unknown", // Unfitting name, but operating system
+				Timestamp: i.timestamp,
+				Product:   values[1], // Name of the server (Apache, Nginx, ...)
+				//Vendor:         "unknown", // Unfitting name, but operating system
 				Version:        values[2], // Version as found after the '/'
 				DeviceProfiles: []string{dpIdent},
 				SourceName:     "X-Powered-By",
