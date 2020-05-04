@@ -531,7 +531,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 		return err
 	}
 
-	utils.DebugLog.Println("loaded Ja3/ja3S database")
+	utils.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
 
 	return nil
 }, func(p gopacket.Packet) proto.Message {
