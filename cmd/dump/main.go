@@ -101,6 +101,7 @@ func Run() {
 				Fields:       *flagFields,
 				JSON:         *flagJSON,
 				CSV:          *flagCSV,
+				ForceColors:  *flagForceColors,
 			},
 		)
 		return
