@@ -1,5 +1,7 @@
 # TODOs
 
+- automate removing backtracking by replacing it with a * or group wildcard (*) when using re2
+
 - map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc
 - net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode?
 - add separate flag to write also HTTP and POP3 TCP streams to disk 
