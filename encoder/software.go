@@ -14,6 +14,8 @@
 package encoder
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"regexp"
 	"strconv"
@@ -97,6 +99,7 @@ var (
 	userAgentCaching = make(map[string]*userAgent)
 	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
+	ja3Caching       = make(map[string]string)
 )
 
 // Size returns the number of elements in the Items map
@@ -114,6 +117,8 @@ var (
 
 	parser, errInitUAParser = uaparser.New("/usr/local/etc/netcap/dbs/regexes.yaml")
 	pMu                     sync.Mutex
+
+	ja3db Ja3CombinationsDB
 )
 
 func findVendor(in string) string {
@@ -160,7 +165,68 @@ type userAgent struct {
 	full    string
 }
 
-func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
+type Process struct {
+	Process string `json:"process"`
+	JA3     string `json:"JA3"`
+	JA3s    string `json:"JA3S"`
+}
+
+type Client struct {
+	Os        string    `json:"os"`
+	Arch      string    `json:"arch"`
+	Processes []Process `json:"processes"`
+}
+
+type Server struct {
+	Server  string   `json:"server"`
+	Clients []Client `json:"clients"`
+}
+
+type Ja3CombinationsDB struct {
+	Servers []Server `json:"servers"`
+}
+
+func parseUserAgent(ua string) *userAgent {
+	var (
+		client = parser.Parse(ua)
+		full, product, vendor, version string
+	)
+	if client.UserAgent != nil {
+		vendor = client.UserAgent.Family
+		version = client.UserAgent.Major
+		if client.UserAgent.Minor != "" {
+			version += "." + client.UserAgent.Minor
+		}
+		if client.UserAgent.Patch != "" {
+			version += "." + client.UserAgent.Patch
+		}
+		full += " " + client.UserAgent.Family
+		full += " " + client.UserAgent.Major
+		full += " " + client.UserAgent.Minor
+		full += " " + client.UserAgent.Patch
+	}
+	if client.Os != nil {
+		full += " " + client.Os.Family
+		full += " " + client.Os.Major
+		full += " " + client.Os.Minor
+		full += " " + client.Os.Patch
+		full += " " + client.Os.PatchMinor
+	}
+	if client.Device != nil {
+		product = client.Device.Family
+		full += " " + client.Device.Family
+	}
+
+	return &userAgent{
+		client:  client,
+		product: product,
+		vendor:  vendor,
+		version: version,
+		full:    strings.TrimSpace(full),
+	}
+}
+
+func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
 
 	//fmt.Println(serviceNameSrc, serviceNameDst, manufacturer, ja3Result, userAgents, serverNames, protos)
 
@@ -186,54 +252,9 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		pMu.Lock()
 		userInfo, ok := userAgentCaching[ua]
 		if !ok {
-			client := parser.Parse(ua)
-
-			//utils.DebugLog.Println("UserAgent.Family:", client.UserAgent.Family) // "Amazon Silk"
-			//utils.DebugLog.Println("UserAgent.Major:", client.UserAgent.Major)   // "1"
-			//utils.DebugLog.Println("UserAgent.Minor:", client.UserAgent.Minor)   // "1"
-			//utils.DebugLog.Println("UserAgent.Patch:", client.UserAgent.Patch)   // "0-80"
-			//utils.DebugLog.Println("Os.Family:", client.Os.Family)               // "Android"
-			//utils.DebugLog.Println("Os.Major:", client.Os.Major)                 // ""
-			//utils.DebugLog.Println("Os.Minor:", client.Os.Minor)                 // ""
-			//utils.DebugLog.Println("Os.Patch:", client.Os.Patch)                 // ""
-			//utils.DebugLog.Println("Os.PatchMinor:", client.Os.PatchMinor)       // ""
-			//utils.DebugLog.Println("Device.Family:", client.Device.Family)       // "Kindle Fire"
-
-			var full, product, vendor, version string
-			if client.UserAgent != nil {
-				vendor = client.UserAgent.Family
-				version = client.UserAgent.Major
-				if client.UserAgent.Minor != "" {
-					version += "." + client.UserAgent.Minor
-				}
-				if client.UserAgent.Patch != "" {
-					version += "." + client.UserAgent.Patch
-				}
-				full += " " + client.UserAgent.Family
-				full += " " + client.UserAgent.Major
-				full += " " + client.UserAgent.Minor
-				full += " " + client.UserAgent.Patch
-			}
-			if client.Os != nil {
-				full += " " + client.Os.Family
-				full += " " + client.Os.Major
-				full += " " + client.Os.Minor
-				full += " " + client.Os.Patch
-				full += " " + client.Os.PatchMinor
-			}
-			if client.Device != nil {
-				product = client.Device.Family
-				full += " " + client.Device.Family
-			}
-
-			userInfo = &userAgent{
-				client:  client,
-				product: product,
-				vendor:  vendor,
-				version: version,
-				full:    strings.TrimSpace(full),
-			}
+			userInfo = parseUserAgent(ua)
 			userAgentCaching[ua] = userInfo
+			utils.DebugLog.Println("UserAgent:", userInfo.full)
 		}
 		pMu.Unlock()
 
@@ -254,6 +275,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		})
 	}
 
+	// HTTP Server Name
 	for _, sn := range strings.Split(serverNames, "| ") {
 		pMu.Lock()
 		var values = regExpServerName.FindStringSubmatch(sn)
@@ -274,6 +296,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		pMu.Unlock()
 	}
 
+	// X-Powered-By HTTP Header
 	for _, pb := range strings.Split(xPoweredBy, "| ") {
 		pMu.Lock()
 		var values = regexpXPoweredBy.FindStringSubmatch(pb)
@@ -294,7 +317,53 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		pMu.Unlock()
 	}
 
-	// TODO: check Via metadata
+	// Only do JA3 fingerprinting when both ja3 and ja3s are present, aka when the server Hello is captured
+	if len(JA3) > 0 && len(JA3s) > 0 {
+		// fmt.Println(JA3)
+		// fmt.Println(JA3s)
+		for _, server := range ja3db.Servers {
+			serverName := server.Server
+			for _, client := range server.Clients {
+				clientName := client.Os + "(" + client.Arch + ")"
+				for _, process := range client.Processes {
+					processName := process.Process
+					if process.JA3 == JA3 && process.JA3s == JA3s {
+						pMu.Lock()
+						var values = regExpServerName.FindStringSubmatch(serverName)
+						s = append(s, &Software{
+							Software: &types.Software{
+								Timestamp:      i.timestamp,
+								Product:        values[1], // Name of the server (Apache, Nginx, ...)
+								Vendor:         values[3], // Unfitting name, but operating system
+								Version:        values[2], // Version as found after the '/'
+								DeviceProfiles: []string{dpIdent},
+								SourceName:     "JA3s",
+								SourceData:     JA3s,
+								Service:        service,
+								DPIResults:     protos,
+								Flows:          []string{f},
+							},
+						})
+						s = append(s, &Software{
+							Software: &types.Software{
+								Timestamp:      i.timestamp,
+								Product:        processName, // Name of the browser, including version
+								Vendor:         clientName,  // Name of the OS
+								Version:        "",          // TODO parse client name
+								DeviceProfiles: []string{dpIdent},
+								SourceName:     "JA3",
+								SourceData:     JA3,
+								Service:        service,
+								DPIResults:     protos,
+								Flows:          []string{f},
+							},
+						})
+						pMu.Unlock()
+					}
+				}
+			}
+		}
+	}
 
 	return s
 }
@@ -305,7 +374,8 @@ func AnalyzeSoftware(i *packetInfo) {
 	var (
 		serviceNameSrc, serviceNameDst string
 		ja3Hash                        = ja3.DigestHexPacket(i.p)
-		ja3Result                      string
+		JA3s                           string
+		JA3                            string
 		protos                         []string
 		userAgents, serverNames        string
 		f                              string
@@ -371,13 +441,23 @@ func AnalyzeSoftware(i *packetInfo) {
 	}
 	httpStore.Unlock()
 
-	// TLS fingerprinting
-	if ja3Hash != "" {
-		ja3Result = resolvers.LookupJa3(ja3Hash)
+	// The underlying assumption is that we will always observe a client TLS Hello before seeing a server TLS Hello
+	// Assuming the packet captured corresponds to the server Hello, first try to see if a client Hello (client being the
+	// destination IP) was observed. If not, this is the client. Therefore add client ja3 signature to the store.
+	if len(ja3Hash) > 0 {
+		var ok bool
+		JA3, ok = ja3Caching[i.dstIP]
+		if !ok {
+			ja3Caching[i.srcIP] = ja3Hash
+			JA3 = ""
+			JA3s = ""
+		} else {
+			JA3s = ja3Hash
+		}
 	}
 
 	dp := getDeviceProfile(i.srcMAC, i)
-	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, ja3Result, userAgents, serverNames, protos, vias, xPoweredBy)
+	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames, protos, vias, xPoweredBy)
 	if len(software) == 0 {
 		return
 	}
@@ -434,9 +514,25 @@ func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
 }
 
 var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", func(d *CustomEncoder) error {
+
 	if errInitUAParser != nil {
 		return errInitUAParser
 	}
+
+	// Load the JSON database of JA3/JA3S combinations into memory
+	data, err := ioutil.ReadFile("/usr/local/etc/netcap/dbs/ja_3_3s.json")
+	if err != nil {
+		return err
+	}
+
+	// unpack JSON
+	err = json.Unmarshal(data, &ja3db)
+	if err != nil {
+		return err
+	}
+
+	utils.DebugLog.Println("loaded Ja3/ja3S database")
+
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 
