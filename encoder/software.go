@@ -526,7 +526,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	// unpack JSON
-	err = json.Unmarshal(data, &ja3db)
+	err = json.Unmarshal(data, &ja3db.Servers)
 	if err != nil {
 		return err
 	}
