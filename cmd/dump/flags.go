@@ -46,4 +46,5 @@ var (
 	flagVersion         = fs.Bool("version", false, "print netcap package version and exit")
 	flagJSON            = fs.Bool("json", false, "print as JSON")
 	flagMemBufferSize   = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")
+	flagForceColors     = fs.Bool("c", false, "force colors")
 )

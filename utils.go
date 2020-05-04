@@ -100,6 +100,7 @@ type DumpConfig struct {
 	JSON          bool
 	MemBufferSize int
 	CSV           bool
+	ForceColors   bool
 }
 
 // Dump reads the specified netcap file
@@ -107,7 +108,7 @@ type DumpConfig struct {
 func Dump(c DumpConfig) {
 
 	var (
-		isTTY  = terminal.IsTerminal(int(os.Stdout.Fd()))
+		isTTY  = terminal.IsTerminal(int(os.Stdout.Fd())) || c.ForceColors
 		count  = 0
 		r, err = Open(c.Path, c.MemBufferSize)
 	)
