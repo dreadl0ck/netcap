@@ -300,7 +300,10 @@ func InitProbes() error {
 			}
 			finalReg += ")" + strings.TrimSpace(string(regex))
 
+			before := finalReg
+
 			if useRE2 {
+				finalReg = clean(finalReg)
 				s.RegEx, errCompile = regexp.Compile(finalReg)
 			} else {
 				s.RegEx2, errCompile = regexp2.Compile(finalReg, 0) // regexp.RE2)
@@ -309,6 +312,7 @@ func InitProbes() error {
 			if errCompile != nil {
 				if c.Debug {
 					if useRE2 {
+						fmt.Println("before:", before)
 						fmt.Println("failed to compile regex:", ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
 					} else {
 						fmt.Println("failed to compile regex:", ansi.Red, errCompile, ansi.Reset)
@@ -335,4 +339,131 @@ func DumpServiceProbes() {
 			fmt.Println(string(data))
 		}
 	}
+}
+
+func clean(in string) string {
+	var (
+		r                   = bytes.NewReader([]byte(in))
+		out                 []byte
+		check               bool
+		ignore              bool
+		firstQuestionMark   = true
+		stopCnt, startCount = -1, -1
+		resetEscaped, escaped bool
+		lastchar byte
+	)
+	for {
+		b, err := r.ReadByte()
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				break
+			}
+		}
+		debug := func(args ...interface{}) {
+			// TODO: make debug mode configurable
+			//fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, in)
+		}
+		if string(b) == "\\" && !escaped {
+			debug("set escaped to true")
+			escaped = true
+		} else {
+			if escaped {
+				if resetEscaped {
+					debug("reset escaped")
+					// reset
+					escaped = false
+					resetEscaped = false
+				} else {
+					// reset escaped next round
+					resetEscaped = true
+				}
+			}
+		}
+		if ignore {
+			if string(b) == ")" {
+
+				if !escaped {
+
+					stopCnt++
+					debug("stopCnt++")
+
+					if startCount == stopCnt {
+
+						debug("stop ignore")
+
+						ignore = false
+						out = append(out, byte(')'))
+						check = false
+
+						stopCnt = 0
+						startCount = 0
+
+						lastchar = b
+						continue
+					}
+				} else {
+					debug("ignoring because escaped")
+				}
+			}
+			if string(b) == "(" {
+				if !escaped {
+					startCount++
+					debug("startCount++")
+				}
+			}
+			debug("ignore")
+
+			lastchar = b
+			continue
+		}
+		if string(b) == "(" {
+
+			debug("got parentheses")
+			if !escaped {
+				startCount++
+				debug("startCount++")
+			}
+
+			out = append(out, b)
+			check = true
+
+			lastchar = b
+			continue
+		}
+		if check {
+			if string(b) == "?" && lastchar == '(' {
+
+				debug("got ?")
+				if firstQuestionMark {
+					firstQuestionMark = false
+				} else {
+					debug("write .*")
+					out = append(out, byte('.'))
+					out = append(out, byte('*'))
+					ignore = true
+
+					lastchar = b
+					continue
+				}
+			}
+		}
+		if string(b) == ")" {
+			if !escaped {
+				stopCnt++
+				debug("stopCnt++")
+			}
+		}
+		if string(b) == "(" {
+			if !escaped {
+				startCount++
+				debug("startCount++")
+			}
+		}
+		debug("collect")
+		out = append(out, b)
+		lastchar = b
+	}
+	return string(out)
 }
