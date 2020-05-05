@@ -383,6 +383,36 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 	logReassemblyDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
 }
 
+// TODO: feed data into intermediary buffer, so this operation is non blocking and does not need an extra goroutine?
+func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(t.ident, "recovered:", err)
+		}
+	}()
+	if dir == reassembly.TCPDirClientToServer && !t.reversed {
+		t.client.BytesChan() <- data
+	} else {
+		t.server.BytesChan() <- data
+	}
+}
+
+func (t *tcpConnection) feedDataTimeout(dir reassembly.TCPFlowDirection, data []byte) {
+	if dir == reassembly.TCPDirClientToServer && !t.reversed {
+		select {
+		case t.client.BytesChan() <- data:
+		case <-time.After(1 * time.Second):
+			fmt.Println(t.ident, "timeout")
+		}
+	} else {
+		select {
+		case t.server.BytesChan() <- data:
+		case <-time.After(1 * time.Second):
+			fmt.Println(t.ident, "timeout")
+		}
+	}
+}
+
 func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
 
 	length, saved := sg.Lengths()
@@ -405,22 +435,14 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 			if c.HexDump {
 				logReassemblyDebug("Feeding http with:\n%s", hex.Dump(data))
 			}
-			if dir == reassembly.TCPDirClientToServer && !t.reversed {
-				t.client.BytesChan() <- data
-			} else {
-				t.server.BytesChan() <- data
-			}
+			go t.feedData(dir, data)
 		}
 	case t.isPOP3:
 		if length > 0 {
 			if c.HexDump {
 				logReassemblyDebug("Feeding POP3 with:\n%s", hex.Dump(data))
 			}
-			if dir == reassembly.TCPDirClientToServer && !t.reversed {
-				t.client.BytesChan() <- data
-			} else {
-				t.server.BytesChan() <- data
-			}
+			go t.feedData(dir, data)
 		}
 	default:
 
@@ -434,11 +456,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 				if c.HexDump {
 					logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
 				}
-				if dir == reassembly.TCPDirClientToServer && !t.reversed {
-					t.client.BytesChan() <- data
-				} else {
-					t.server.BytesChan() <- data
-				}
+				go t.feedData(dir, data)
 			}
 		}
 	}

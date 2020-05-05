@@ -18,13 +18,28 @@ import (
 
 var (
 	serviceProbes []*ServiceProbe
-	ignoredProbes = map[string]struct{}{
-		"pc-duo-gw": {},
-		"ventrilo":  {},
-		"pc-duo":    {},
-		"ssl":       {},
+
+	// ignored probes for RE2 engine
+	ignoredProbesRE2 = map[string]struct{}{
+		"pc-duo-gw":          {},
+		"ventrilo":           {},
+		"pc-duo":             {},
+		"ssl":                {},
+		"hpdss":              {},
+		"xinetd":             {},
+		"qotd":               {},
+		"basestation":        {},
+		"modem":              {},
+		"sharp-remote":       {},
+		"crossmatchverifier": {},
+		"landesk-rc":         {},
 	}
-	useRE2 = true
+
+	// ignored probes for other engine
+	ignoredProbes = map[string]struct{}{}
+
+	// TODO: make configurable
+	useRE2        = true
 )
 
 type ServiceProbe struct {
@@ -143,9 +158,16 @@ func InitProbes() error {
 		if strings.HasPrefix(line, "match") {
 
 			ident := strings.Fields(line)[1]
-			if _, ok := ignoredProbes[ident]; ok {
-				utils.DebugLog.Println("ignoring probe", ident)
-				continue
+			if useRE2 {
+				if _, ok := ignoredProbesRE2[ident]; ok {
+					utils.DebugLog.Println("ignoring probe", ident)
+					continue
+				}
+			} else {
+				if _, ok := ignoredProbes[ident]; ok {
+					utils.DebugLog.Println("ignoring probe", ident)
+					continue
+				}
 			}
 
 			var (
@@ -298,8 +320,8 @@ func InitProbes() error {
 			if s.IncludeNewlines {
 				finalReg += "s"
 			}
-			finalReg += ")" + strings.TrimSpace(string(regex))
 
+			finalReg += ")" + strings.TrimSpace(string(regex))
 			before := finalReg
 
 			if useRE2 {
@@ -312,10 +334,12 @@ func InitProbes() error {
 			if errCompile != nil {
 				if c.Debug {
 					if useRE2 {
-						fmt.Println("before:", before)
-						fmt.Println("failed to compile regex:", ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
+						if before != finalReg {
+							fmt.Println("before != finalReg:", before)
+						}
+						fmt.Println("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
 					} else {
-						fmt.Println("failed to compile regex:", ansi.Red, errCompile, ansi.Reset)
+						fmt.Println("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.Reset)
 						fmt.Println(ansi.White, line, ansi.Reset)
 					}
 				}
@@ -353,6 +377,14 @@ func DumpServiceProbes() {
 			fmt.Println(string(data))
 		}
 	}
+}
+
+// an attempt to use a regex to clean a regex from backtracking.
+var regexBacktracking = regexp.MustCompile("\\(\\?.*\\)")
+
+func cleanRegex(in string) string {
+	in = strings.ReplaceAll(in, "\\1", "(.*)")
+	return regexBacktracking.ReplaceAllString(in, "(.*)")
 }
 
 // clean implements a simple state machine to replace all backtracking operations
@@ -420,7 +452,7 @@ func clean(in string) string {
 							missing := stopCnt - numIgnored
 							debug("missing )", missing)
 							if missing > 0 {
-								for i:=0;i<missing;i++ {
+								for i := 0; i < missing; i++ {
 									debug("add missing )", missing, numIgnored)
 									out = append(out, byte(')'))
 								}
