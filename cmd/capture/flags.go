@@ -104,4 +104,5 @@ var (
 	flagFlowTimeOut          = fs.Duration("flow-timeout", netcap.DefaultFlowTimeOut, "closes flows older than flowTimeout")
 	flagClosePendingTimeout  = fs.Duration("close-pending-timeout", netcap.DefaultClosePendingTimeout, "reassembly: close connections that have pending bytes")
 	flagCloseInactiveTimeout = fs.Duration("close-inactive-timeout", netcap.DefaultCloseInactiveTimeout, "reassembly: close connections that are inactive")
+	flagUseRE2               = fs.Bool("re2", true, "if true uses the default golang re2 regex engine for service detection")
 )
