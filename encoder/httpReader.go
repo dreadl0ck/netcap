@@ -49,6 +49,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
+	"github.com/dreadl0ck/cryptoutils"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -59,10 +62,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-
-	"github.com/dreadl0ck/cryptoutils"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts
