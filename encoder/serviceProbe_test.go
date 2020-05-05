@@ -58,6 +58,22 @@ var tests = []regexTest{
 		input:    "(?ms)^Content-Length: [0-9]+\n\n<\\?xml version=\"1\\.0\"\\?>\\s*<xmlsysd init=\"1\">\\s*<system>\\s*<identity>\\s*<hostname>([^<]*)</hostname>\\s*<hostip>([^<]*)</hostip>\\s*</identity>\\s*</system>\\s*<proc>\\s*<version>([^<]*)</version>\\s*</proc>\\s*</xmlsysd>",
 		expected: "(?ms)^Content-Length: [0-9]+\n\n<\\?xml version=\"1\\.0\"\\?>\\s*<xmlsysd init=\"1\">\\s*<system>\\s*<identity>\\s*<hostname>([^<]*)</hostname>\\s*<hostip>([^<]*)</hostip>\\s*</identity>\\s*</system>\\s*<proc>\\s*<version>([^<]*)</version>\\s*</proc>\\s*</xmlsysd>",
 	},
+	{
+		name:     "",
+		input:    "(?m)^220 ([-\\w_.]+) ESMTP (?:[^(]+? )?\\(Ubuntu\\)\\r\\n502 5\\.5\\.2 Error: command not recognized\\r\\n",
+		expected: "(?m)^220 ([-\\w_.]+) ESMTP (.*)?\\(Ubuntu\\)\\r\\n502 5\\.5\\.2 Error: command not recognized\\r\\n",
+	},
+	{
+		name:     "",
+		input:    "(?m)^\\0\\0\\0a\\xffSMBr\\0\\0\\0\\0\\x80\\0{16}@\\x06\\0\\0\\x01\\0\\x11\\x07\\0\\x03\\x01\\0\\x14\\0@\\x1e\\0\\0\\xff\\xff\\0\\0....\\x14\\x02\\0{10}..\\x08\\x1c\\0.{8}((?:(?!\\0\\0).)+?)\\0\\0",
+		expected: "(?m)^\\0\\0\\0a\\xffSMBr\\0\\0\\0\\0\\x80\\0{16}@\\x06\\0\\0\\x01\\0\\x11\\x07\\0\\x03\\x01\\0\\x14\\0@\\x1e\\0\\0\\xff\\xff\\0\\0....\\x14\\x02\\0{10}..\\x08\\x1c\\0.{8}((.*))\\0\\0",
+	},
+	// TODO: nested backtracking ...
+	//{
+	//	name:     "",
+	//	input:    "(?m)^SSH-([\\d.]+)-(?=[\\w._-]{5,15}\\r?\\n$).*(?:[a-z](?:[A-Z]\\d|\\d[A-Z])|[A-Z](?:[a-z]\\d|\\d[a-z])|\\d(?:[a-z][A-Z]|[A-Z][a-z]))",
+	//	expected: "(?m)^SSH-([\\d.]+)-(.*).*(.*)",
+	//},
 }
 
 func TestCleanRegex(t *testing.T) {

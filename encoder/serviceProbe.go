@@ -361,7 +361,7 @@ func DumpServiceProbes() {
 // to ensure compatibility with the re2 engine
 func clean(in string) string {
 	var (
-		r                     = bytes.NewReader([]byte(in))
+		r                     = bytes.NewReader([]byte(strings.ReplaceAll(in, "\\1", "(.*)")))
 		out                   []byte
 		check                 bool
 		ignore                bool
@@ -371,6 +371,7 @@ func clean(in string) string {
 		lastchar              byte
 		count                 int
 		nextCloses            bool
+		numIgnored            int
 	)
 	for {
 		b, err := r.ReadByte()
@@ -384,7 +385,7 @@ func clean(in string) string {
 		count++
 		debug := func(args ...interface{}) {
 			// TODO: make debug mode configurable
-			//fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, colorize(in, count))
+			//fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, colorize(in, count), numIgnored)
 		}
 		if string(b) == "\\" && !escaped {
 			debug("set escaped to true")
@@ -412,9 +413,21 @@ func clean(in string) string {
 
 					if startCount == stopCnt || nextCloses {
 
-						debug("stop ignore")
-
 						ignore = false
+						debug("stop ignore", "add missing )", numIgnored > 1 && stopCnt != 0)
+
+						if numIgnored > 1 && stopCnt != 0 {
+							missing := stopCnt - numIgnored
+							debug("missing )", missing)
+							if missing > 0 {
+								for i:=0;i<missing;i++ {
+									debug("add missing )", missing, numIgnored)
+									out = append(out, byte(')'))
+								}
+							}
+						}
+
+						debug("add trailing )")
 						out = append(out, byte(')'))
 						check = false
 
@@ -424,12 +437,14 @@ func clean(in string) string {
 						lastchar = b
 						continue
 					}
+					debug("numIgnored++")
+					numIgnored++
 				} else {
 					debug("ignoring because escaped")
 				}
 			}
 			if string(b) == "(" {
-				if !escaped {
+				if !escaped && lastchar != '^' {
 					startCount++
 					debug("startCount++")
 					nextCloses = false
