@@ -36,10 +36,11 @@ var (
 	}
 
 	// ignored probes for other engine
-	ignoredProbes = map[string]struct{}{}
-
-	// TODO: make configurable
-	useRE2        = true
+	ignoredProbes = map[string]struct{}{
+		"pc-duo-gw":          {},
+		"ventrilo":           {},
+		"pc-duo":             {},
+	}
 )
 
 type ServiceProbe struct {
@@ -158,7 +159,7 @@ func InitProbes() error {
 		if strings.HasPrefix(line, "match") {
 
 			ident := strings.Fields(line)[1]
-			if useRE2 {
+			if c.UseRE2 {
 				if _, ok := ignoredProbesRE2[ident]; ok {
 					utils.DebugLog.Println("ignoring probe", ident)
 					continue
@@ -324,7 +325,7 @@ func InitProbes() error {
 			finalReg += ")" + strings.TrimSpace(string(regex))
 			before := finalReg
 
-			if useRE2 {
+			if c.UseRE2 {
 				finalReg = clean(finalReg)
 				s.RegEx, errCompile = regexp.Compile(finalReg)
 			} else {
@@ -333,7 +334,7 @@ func InitProbes() error {
 
 			if errCompile != nil {
 				if c.Debug {
-					if useRE2 {
+					if c.UseRE2 {
 						if before != finalReg {
 							fmt.Println("before != finalReg:", before)
 						}

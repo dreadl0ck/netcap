@@ -23,7 +23,6 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"time"
 	"unicode/utf8"
 )
 
@@ -45,8 +44,6 @@ func (h *tcpReader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 		case h.data, ok = <-h.bytes:
-		case <-time.After(c.ClosePendingTimeOut):
-			return 0, io.EOF
 		}
 	}
 	if !ok || len(h.data) == 0 {

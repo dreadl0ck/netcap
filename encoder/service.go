@@ -83,7 +83,7 @@ func saveTCPServiceBanner(h *tcpReader, banner []byte) {
 
 	// match banner against nmap service probes
 	for _, serviceProbe := range serviceProbes {
-		if useRE2 {
+		if c.UseRE2 {
 			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
 				s.Product = serviceProbe.Ident

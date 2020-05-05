@@ -63,8 +63,6 @@ func (h *pop3Reader) Read(p []byte) (int, error) {
 	for ok && len(h.data) == 0 {
 		select {
 		case h.data, ok = <-h.bytes:
-		case <-time.After(c.ClosePendingTimeOut):
-			return 0, io.EOF
 		}
 	}
 	if !ok || len(h.data) == 0 {
@@ -462,6 +460,13 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				continue
 			case "LIST", "UIDL":
 				var n int
+				// ensure safe array access
+				if len(h.parent.pop3Responses) < h.resIndex {
+					time.Sleep(100 * time.Millisecond) // not there yet? wait a little and retry
+					if len(h.parent.pop3Responses) < h.resIndex {
+						continue
+					}
+				}
 				for _, reply := range h.parent.pop3Responses[h.resIndex:] {
 					if reply.Command == "." {
 						numMails++
@@ -474,6 +479,13 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				continue
 			case "RETR":
 				var n int
+				// ensure safe array access
+				if len(h.parent.pop3Responses) < h.resIndex {
+					time.Sleep(100 * time.Millisecond) // not there yet? wait a little and retry
+					if len(h.parent.pop3Responses) < h.resIndex {
+						continue
+					}
+				}
 				for _, reply := range h.parent.pop3Responses[h.resIndex:] {
 					if reply.Command == "." {
 						mails = append(mails, h.parseMail([]byte(mailBuf)))

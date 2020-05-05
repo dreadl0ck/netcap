@@ -387,7 +387,7 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte) {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println(t.ident, "recovered:", err)
+			//fmt.Println(t.ident, "recovered:", err)
 		}
 	}()
 	if dir == reassembly.TCPDirClientToServer && !t.reversed {
@@ -401,14 +401,14 @@ func (t *tcpConnection) feedDataTimeout(dir reassembly.TCPFlowDirection, data []
 	if dir == reassembly.TCPDirClientToServer && !t.reversed {
 		select {
 		case t.client.BytesChan() <- data:
-		case <-time.After(1 * time.Second):
-			fmt.Println(t.ident, "timeout")
+		case <-time.After(100 * time.Millisecond):
+			//fmt.Println(t.ident, "timeout")
 		}
 	} else {
 		select {
 		case t.server.BytesChan() <- data:
-		case <-time.After(1 * time.Second):
-			fmt.Println(t.ident, "timeout")
+		case <-time.After(100 * time.Millisecond):
+			//fmt.Println(t.ident, "timeout")
 		}
 	}
 }
@@ -435,14 +435,14 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 			if c.HexDump {
 				logReassemblyDebug("Feeding http with:\n%s", hex.Dump(data))
 			}
-			go t.feedData(dir, data)
+			t.feedDataTimeout(dir, data)
 		}
 	case t.isPOP3:
 		if length > 0 {
 			if c.HexDump {
 				logReassemblyDebug("Feeding POP3 with:\n%s", hex.Dump(data))
 			}
-			go t.feedData(dir, data)
+			t.feedDataTimeout(dir, data)
 		}
 	default:
 
@@ -456,7 +456,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 				if c.HexDump {
 					logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
 				}
-				go t.feedData(dir, data)
+				t.feedDataTimeout(dir, data)
 			}
 		}
 	}

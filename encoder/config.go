@@ -52,14 +52,17 @@ func SetConfig(cfg Config) {
 // DefaultConfig is a sane example configuration for the encoder package
 var DefaultConfig = Config{
 	Buffer:               true,
+	MemBufferSize:        netcap.DefaultBufferSize,
 	Compression:          true,
 	CSV:                  false,
 	IncludeEncoders:      "",
 	ExcludeEncoders:      "",
+	Out:                  "",
+	WriteChan:            false,
+	Source:               "",
 	IncludePayloads:      false,
 	Export:               false,
 	AddContext:           true,
-	MemBufferSize:        netcap.DefaultBufferSize,
 	FlushEvery:           100,
 	NoDefrag:             false,
 	Checksum:             false,
@@ -82,6 +85,7 @@ var DefaultConfig = Config{
 	SaveStreams:          false,
 	SaveBanner:           false,
 	TCPDebug:             false,
+	UseRE2:               true,
 }
 
 // Config contains configuration parameters
@@ -189,4 +193,8 @@ type Config struct {
 
 	// Enable verbose TCP debug log messages in debug.log
 	TCPDebug bool
+
+	// Use the RE2 engine from the go standard library
+	// if this is set to false an alternative regex engine that is compatible to the .NET syntax will be used for service banner detection
+	UseRE2 bool
 }
