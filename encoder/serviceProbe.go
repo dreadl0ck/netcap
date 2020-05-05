@@ -331,6 +331,20 @@ func InitProbes() error {
 	return nil
 }
 
+func colorize(in string, num int) string {
+
+	var out string
+
+	for i, c := range in {
+		if i == num-1 {
+			out = in[:i] + ansi.Red + string(c) + ansi.Reset + in[i+1:]
+			break
+		}
+	}
+
+	return out
+}
+
 // DumpServiceProbes prints all loaded probes as JSON
 func DumpServiceProbes() {
 	for _, p := range serviceProbes {
@@ -341,16 +355,22 @@ func DumpServiceProbes() {
 	}
 }
 
+// clean implements a simple state machine to replace all backtracking operations
+// indicated by (?
+// with a wildcard group match operation (.*)
+// to ensure compatibility with the re2 engine
 func clean(in string) string {
 	var (
-		r                   = bytes.NewReader([]byte(in))
-		out                 []byte
-		check               bool
-		ignore              bool
-		firstQuestionMark   = true
-		stopCnt, startCount = -1, -1
+		r                     = bytes.NewReader([]byte(in))
+		out                   []byte
+		check                 bool
+		ignore                bool
+		firstQuestionMark     = true
+		stopCnt, startCount   = -1, -1
 		resetEscaped, escaped bool
-		lastchar byte
+		lastchar              byte
+		count                 int
+		nextCloses            bool
 	)
 	for {
 		b, err := r.ReadByte()
@@ -361,9 +381,10 @@ func clean(in string) string {
 				break
 			}
 		}
+		count++
 		debug := func(args ...interface{}) {
 			// TODO: make debug mode configurable
-			//fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, in)
+			//fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, colorize(in, count))
 		}
 		if string(b) == "\\" && !escaped {
 			debug("set escaped to true")
@@ -389,7 +410,7 @@ func clean(in string) string {
 					stopCnt++
 					debug("stopCnt++")
 
-					if startCount == stopCnt {
+					if startCount == stopCnt || nextCloses {
 
 						debug("stop ignore")
 
@@ -411,6 +432,7 @@ func clean(in string) string {
 				if !escaped {
 					startCount++
 					debug("startCount++")
+					nextCloses = false
 				}
 			}
 			debug("ignore")
@@ -435,10 +457,11 @@ func clean(in string) string {
 		if check {
 			if string(b) == "?" && lastchar == '(' {
 
-				debug("got ?")
+				debug("found backtracking")
 				if firstQuestionMark {
 					firstQuestionMark = false
 				} else {
+					nextCloses = true
 					debug("write .*")
 					out = append(out, byte('.'))
 					out = append(out, byte('*'))

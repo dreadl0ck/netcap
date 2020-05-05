@@ -48,17 +48,16 @@ var tests = []regexTest{
 		input:    "(?mi)^\\xff\\xfd\\x18\\xff\\xfa\\x18\\x01\\xff\\xf0\\xff\\xfb\\x01\\xff\\xfb\\x03\\xff\\xfd\\x01\\r\\n\\r\\nUltrix(?:-32)? V([\\d.]+) \\(Rev\\.? (\\d+)\\) \\(([^)]+)\\)\\r\\n\\r\\r\\n\\rlogin:",
 		expected: "(?mi)^\\xff\\xfd\\x18\\xff\\xfa\\x18\\x01\\xff\\xf0\\xff\\xfb\\x01\\xff\\xfb\\x03\\xff\\xfd\\x01\\r\\n\\r\\nUltrix(.*)? V([\\d.]+) \\(Rev\\.? (\\d+)\\) \\(([^)]+)\\)\\r\\n\\r\\r\\n\\rlogin:",
 	},
-	// TODO: make these work as well
-	//{
-	//	name:     "",
-	//	input:    "(?m)^220 FUJI XEROX DocuPrint ([A-Z][A-Z\\d]+(?: ?[a-zA-Z]{1,2})?)\\r\\n",
-	//	expected: "(?m)^220 FUJI XEROX DocuPrint ([A-Z][A-Z\\d]+(.*)?)\\r\\n",
-	//},
-	//{
-	//	name:     "",
-	//	input:    "(?ms)^Content-Length: [0-9]+\n\n<\\?xml version=\"1\\.0\"\\?>\\s*<xmlsysd init=\"1\">\\s*<system>\\s*<identity>\\s*<hostname>([^<]*)</hostname>\\s*<hostip>([^<]*)</hostip>\\s*</identity>\\s*</system>\\s*<proc>\\s*<version>([^<]*)</version>\\s*</proc>\\s*</xmlsysd>",
-	//	expected: "(?ms)^Content-Length: [0-9]+\n\n<\\?xml version=\"1\\.0\"\\?>\\s*<xmlsysd init=\"1\">\\s*<system>\\s*<identity>\\s*<hostname>([^<]*)</hostname>\\s*<hostip>([^<]*)</hostip>\\s*</identity>\\s*</system>\\s*<proc>\\s*<version>([^<]*)</version>\\s*</proc>\\s*</xmlsysd>",
-	//},
+	{
+		name:     "",
+		input:    "(?m)^220 FUJI XEROX DocuPrint ([A-Z][A-Z\\d]+(?: ?[a-zA-Z]{1,2})?)\\r\\n",
+		expected: "(?m)^220 FUJI XEROX DocuPrint ([A-Z][A-Z\\d]+(.*)?)\\r\\n",
+	},
+	{
+		name:     "",
+		input:    "(?ms)^Content-Length: [0-9]+\n\n<\\?xml version=\"1\\.0\"\\?>\\s*<xmlsysd init=\"1\">\\s*<system>\\s*<identity>\\s*<hostname>([^<]*)</hostname>\\s*<hostip>([^<]*)</hostip>\\s*</identity>\\s*</system>\\s*<proc>\\s*<version>([^<]*)</version>\\s*</proc>\\s*</xmlsysd>",
+		expected: "(?ms)^Content-Length: [0-9]+\n\n<\\?xml version=\"1\\.0\"\\?>\\s*<xmlsysd init=\"1\">\\s*<system>\\s*<identity>\\s*<hostname>([^<]*)</hostname>\\s*<hostip>([^<]*)</hostip>\\s*</identity>\\s*</system>\\s*<proc>\\s*<version>([^<]*)</version>\\s*</proc>\\s*</xmlsysd>",
+	},
 }
 
 func TestCleanRegex(t *testing.T) {
