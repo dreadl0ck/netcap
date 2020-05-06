@@ -262,10 +262,12 @@ func CloseGzipWriters(writers ...*gzip.Writer) {
 }
 
 func (w *Writer) Close() (name string, size int64) {
+
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	if w.compress {
-		w.mu.Lock()
 		CloseGzipWriters(w.gWriter)
-		w.mu.Unlock()
 	}
 	if w.buffer {
 		FlushWriters(w.bWriter)

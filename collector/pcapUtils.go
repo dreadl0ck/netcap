@@ -30,55 +30,63 @@ func (c *Collector) closePcapFiles() error {
 
 	// unknown.pcap
 
-	err := c.unkownPcapWriterBuffered.Flush()
-	if err != nil {
-		return err
-	}
-
-	i, err := c.unknownPcapFile.Stat()
-	if err != nil {
-		return err
-	}
-
-	if err := c.unknownPcapFile.Sync(); err != nil {
-		return err
-	}
-	if err := c.unknownPcapFile.Close(); err != nil {
-		return err
-	}
-
-	// if file is empty, or a pcap with just the header
-	if i.Size() == 0 || i.Size() == 24 {
-		//println("removing", fd.Name())
-		err := os.Remove(c.unknownPcapFile.Name())
+	if c.unkownPcapWriterBuffered != nil {
+		err := c.unkownPcapWriterBuffered.Flush()
 		if err != nil {
-			return errors.Wrap(err, "failed to remove file: "+c.unknownPcapFile.Name())
+			return err
+		}
+	}
+
+	if c.unknownPcapFile != nil {
+		i, err := c.unknownPcapFile.Stat()
+		if err != nil {
+			return err
+		}
+
+		if err := c.unknownPcapFile.Sync(); err != nil {
+			return err
+		}
+		if err := c.unknownPcapFile.Close(); err != nil {
+			return err
+		}
+
+		// if file is empty, or a pcap with just the header
+		if i.Size() == 0 || i.Size() == 24 {
+			//println("removing", fd.Name())
+			err := os.Remove(c.unknownPcapFile.Name())
+			if err != nil {
+				return errors.Wrap(err, "failed to remove file: "+c.unknownPcapFile.Name())
+			}
 		}
 	}
 
 	// errors.pcap
 
-	if err := c.errorsPcapWriterBuffered.Flush(); err != nil {
-		return err
-	}
-
-	i, err = c.errorsPcapFile.Stat()
-	if err != nil {
-		return err
-	}
-
-	if err := c.errorsPcapFile.Sync(); err != nil {
-		return err
-	}
-	if err := c.errorsPcapFile.Close(); err != nil {
-		return err
-	}
-
-	// if file is empty, or a pcap with just the header
-	if i.Size() == 0 || i.Size() == 24 {
-		//println("removing", fd.Name())
-		if err := os.Remove(c.errorsPcapFile.Name()); err != nil {
+	if c.errorsPcapWriterBuffered != nil {
+		if err := c.errorsPcapWriterBuffered.Flush(); err != nil {
 			return err
+		}
+	}
+
+	if c.errorsPcapFile != nil {
+		i, err := c.errorsPcapFile.Stat()
+		if err != nil {
+			return err
+		}
+
+		if err := c.errorsPcapFile.Sync(); err != nil {
+			return err
+		}
+		if err := c.errorsPcapFile.Close(); err != nil {
+			return err
+		}
+
+		// if file is empty, or a pcap with just the header
+		if i.Size() == 0 || i.Size() == 24 {
+			//println("removing", fd.Name())
+			if err := os.Remove(c.errorsPcapFile.Name()); err != nil {
+				return err
+			}
 		}
 	}
 

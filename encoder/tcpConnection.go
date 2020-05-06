@@ -148,14 +148,14 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 	switch {
 	case stream.isHTTP:
 		stream.client = &httpReader{
-			bytes:    make(chan []byte),
+			bytes:    make(chan []byte, 100),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &httpReader{
-			bytes:   make(chan []byte),
+			bytes:   make(chan []byte, 100),
 			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 			hexdump: c.HexDump,
 			parent:  stream,
@@ -171,14 +171,14 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 
 	case stream.isPOP3:
 		stream.client = &pop3Reader{
-			bytes:    make(chan []byte),
+			bytes:    make(chan []byte, 100),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &pop3Reader{
-			bytes:   make(chan []byte),
+			bytes:   make(chan []byte, 100),
 			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 			hexdump: c.HexDump,
 			parent:  stream,
@@ -202,14 +202,14 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		if c.SaveStreams {
 
 			stream.client = &tcpReader{
-				bytes:    make(chan []byte),
+				bytes:    make(chan []byte, 100),
 				ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 				hexdump:  c.HexDump,
 				parent:   stream,
 				isClient: true,
 			}
 			stream.server = &tcpReader{
-				bytes:   make(chan []byte),
+				bytes:   make(chan []byte, 100),
 				ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 				hexdump: c.HexDump,
 				parent:  stream,
@@ -385,11 +385,6 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 
 // TODO: feed data into intermediary buffer, so this operation is non blocking and does not need an extra goroutine?
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte) {
-	defer func() {
-		if err := recover(); err != nil {
-			//fmt.Println(t.ident, "recovered:", err)
-		}
-	}()
 	if dir == reassembly.TCPDirClientToServer && !t.reversed {
 		t.client.BytesChan() <- data
 	} else {
@@ -435,14 +430,14 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 			if c.HexDump {
 				logReassemblyDebug("Feeding http with:\n%s", hex.Dump(data))
 			}
-			t.feedDataTimeout(dir, data)
+			t.feedData(dir, data)
 		}
 	case t.isPOP3:
 		if length > 0 {
 			if c.HexDump {
 				logReassemblyDebug("Feeding POP3 with:\n%s", hex.Dump(data))
 			}
-			t.feedDataTimeout(dir, data)
+			t.feedData(dir, data)
 		}
 	default:
 
@@ -456,7 +451,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 				if c.HexDump {
 					logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
 				}
-				t.feedDataTimeout(dir, data)
+				t.feedData(dir, data)
 			}
 		}
 	}

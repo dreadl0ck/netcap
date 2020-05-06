@@ -177,6 +177,7 @@ func (h *tcpReader) saveStream(data []byte) error {
 
 	utils.ReassemblyLog.Println("saveStream", base)
 
+	// TODO: rename to saveChunk? this is not called once for every stream anymore
 	statsMutex.Lock()
 	reassemblyStats.savedStreams++
 	statsMutex.Unlock()
