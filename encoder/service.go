@@ -52,7 +52,26 @@ var (
 	}
 )
 
+func addInfo(old string, new string) string {
+	if len(old) == 0 {
+		return new
+	} else {
+		var b strings.Builder
+		b.WriteString(old)
+		b.WriteString(" | ")
+		b.WriteString(new)
+		return b.String()
+	}
+}
+
+// saves the banner for a TCP service to the filesystem
+// and limits the length of the saved data to the BannerSize value from the config
 func saveTCPServiceBanner(h *tcpReader, banner []byte) {
+
+	// limit length of data
+	if len(banner) >= c.BannerSize {
+		banner = banner[:c.BannerSize]
+	}
 
 	ident := h.parent.net.Dst().String() + ":" + h.parent.transport.Dst().String()
 
@@ -86,31 +105,31 @@ func saveTCPServiceBanner(h *tcpReader, banner []byte) {
 		if c.UseRE2 {
 			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
-				s.Product = serviceProbe.Ident
-				s.Vendor = serviceProbe.Vendor
-				s.Version = serviceProbe.Version
+				s.Product = addInfo(s.Product, serviceProbe.Ident)
+				s.Vendor = addInfo(s.Vendor, serviceProbe.Vendor)
+				s.Version = addInfo(s.Version, serviceProbe.Version)
 
 				if strings.Contains(serviceProbe.Version, "$1") {
 					if len(m) > 1 {
-						s.Version = strings.Replace(serviceProbe.Version, "$1", m[1], 1)
+						s.Version = addInfo(s.Version, strings.Replace(serviceProbe.Version, "$1", m[1], 1))
 					}
 				}
 
 				if strings.Contains(serviceProbe.Hostname, "$1") {
 					if len(m) > 1 {
-						s.Notes = strings.Replace(serviceProbe.Hostname, "$1", m[1], 1) + "; "
+						s.Notes = addInfo(s.Notes, strings.Replace(serviceProbe.Hostname, "$1", m[1], 1))
 					}
 				}
 
-				// TODO: make a group extraction util
+				// TODO: make a group extraction util and expand all groups in all strings properly
 				if strings.Contains(serviceProbe.Info, "$1") {
 					if len(m) > 1 {
-						s.Product += strings.Replace(serviceProbe.Info, "$1", m[1], 1)
+						s.Product = addInfo(s.Product, strings.Replace(serviceProbe.Info, "$1", m[1], 1))
 					}
 				}
 				if strings.Contains(s.Product, "$2") {
 					if len(m) > 2 {
-						s.Product += strings.Replace(serviceProbe.Info, "$2", m[2], 1)
+						s.Product = addInfo(s.Product, strings.Replace(serviceProbe.Info, "$2", m[2], 1))
 					}
 				}
 
@@ -122,25 +141,25 @@ func saveTCPServiceBanner(h *tcpReader, banner []byte) {
 		} else {
 			if m, err := serviceProbe.RegEx2.FindStringMatch(string(banner)); err == nil && m != nil {
 
-				s.Product = serviceProbe.Ident
-				s.Vendor = serviceProbe.Vendor
-				s.Version = serviceProbe.Version
+				s.Product = addInfo(s.Product, serviceProbe.Ident)
+				s.Vendor = addInfo(s.Vendor, serviceProbe.Vendor)
+				s.Version = addInfo(s.Version, serviceProbe.Version)
 
 				if strings.Contains(serviceProbe.Version, "$1") {
 					if len(m.Groups()) > 1 {
-						s.Version = strings.Replace(serviceProbe.Version, "$1", m.Groups()[1].Captures[0].String(), 1)
+						s.Version = addInfo(s.Version, strings.Replace(serviceProbe.Version, "$1", m.Groups()[1].Captures[0].String(), 1))
 					}
 				}
 
 				// TODO: make a group extraction util
 				if strings.Contains(serviceProbe.Info, "$1") {
 					if len(m.Groups()) > 1 {
-						s.Product += strings.Replace(serviceProbe.Info, "$1", m.Groups()[1].Captures[0].String(), 1)
+						s.Product = addInfo(s.Product, strings.Replace(serviceProbe.Info, "$1", m.Groups()[1].Captures[0].String(), 1))
 					}
 				}
 				if strings.Contains(s.Product, "$2") {
 					if len(m.Groups()) > 2 {
-						s.Product += strings.Replace(serviceProbe.Info, "$2", m.Groups()[2].Captures[0].String(), 1)
+						s.Product = addInfo(s.Product, strings.Replace(serviceProbe.Info, "$2", m.Groups()[2].Captures[0].String(), 1))
 					}
 				}
 
