@@ -139,6 +139,7 @@ enum Type {
     NC_TLSServerHello              = 94;
     NC_Software                    = 95;
     NC_Service                     = 96;
+    NC_Credentials                 = 97;
 }
 
 /*
@@ -1880,4 +1881,13 @@ message Service {
     string   Vendor                       = 9;
     string   Version                      = 10;
     string   Notes                        = 11;
+}
+
+message Credentials {
+    string Timestamp = 1;
+    string Service   = 2;
+    string Flow      = 3;
+    string User      = 4;
+    string Password  = 5;
+    string Notes     = 6;
 }
