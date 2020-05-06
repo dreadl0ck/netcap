@@ -40,6 +40,7 @@ var (
 		pop3Encoder,
 		softwareEncoder,
 		serviceEncoder,
+		credentialsEncoder,
 	} // contains all available custom encoders
 )
 

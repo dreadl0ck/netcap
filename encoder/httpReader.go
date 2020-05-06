@@ -167,6 +167,18 @@ func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 					clientIP:  res.clientIP,
 					serverIP:  res.serverIP,
 				})
+
+				if u, p, ok := res.response.Request.BasicAuth(); ok {
+					if u != "" || p != "" {
+						credentialsEncoder.write(&types.Credentials{
+							Timestamp: h.parent.firstPacket.String(),
+							Service:   "HTTP Basic Auth",
+							Flow:      h.ident,
+							User:      u,
+							Password:  p,
+						})
+					}
+				}
 			} else {
 				// response without matching request
 				// dont add to output for now
@@ -179,13 +191,25 @@ func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 
 		for _, req := range h.parent.requests {
 			if req != nil {
-				h := &types.HTTP{}
-				setRequest(h, req)
+				ht := &types.HTTP{}
+				setRequest(ht, req)
 
 				atomic.AddInt64(&httpEncoder.numRequests, 1)
 				atomic.AddInt64(&httpEncoder.numUnansweredRequests, 1)
 
-				writeHTTP(h)
+				if u, p, ok := req.request.BasicAuth(); ok {
+					if u != "" || p != "" {
+						credentialsEncoder.write(&types.Credentials{
+							Timestamp: h.parent.firstPacket.String(),
+							Service:   "HTTP Basic Auth",
+							Flow:      h.ident,
+							User:      u,
+							Password:  p,
+						})
+					}
+				}
+
+				writeHTTP(ht)
 			} else {
 				atomic.AddInt64(&httpEncoder.numNilRequests, 1)
 			}

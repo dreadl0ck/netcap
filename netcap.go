@@ -156,6 +156,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Software)
 	case types.Type_NC_Service:
 		record = new(types.Service)
+	case types.Type_NC_Credentials:
+		record = new(types.Credentials)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

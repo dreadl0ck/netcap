@@ -116,6 +116,16 @@ func (h *pop3Reader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 			Pass:      pass,
 			Mails:     mails,
 		}
+		
+		if user != "" || pass != "" {
+			credentialsEncoder.write(&types.Credentials{
+				Timestamp: h.parent.firstPacket.String(),
+				Service:   "POP3",
+				Flow:      h.ident,
+				User:      user,
+				Password:  pass,
+			})
+		}
 
 		// export metrics if configured
 		if pop3Encoder.export {
