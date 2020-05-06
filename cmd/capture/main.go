@@ -167,7 +167,9 @@ func Run() {
 			SaveStreams:          *flagSaveStreams,
 			SaveBanner:           *flagSaveBanners,
 			TCPDebug:             *flagTCPDebug,
-			UseRE2: *flagUseRE2,
+			UseRE2:               *flagUseRE2,
+			BannerSize:           *flagBannerSize,
+			StreamDecoderBufSize: *flagStreamDecoderBufSize,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    *flagReverseDNS,

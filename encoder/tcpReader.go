@@ -37,6 +37,9 @@ type tcpReader struct {
 	data     []byte
 	hexdump  bool
 	parent   *tcpConnection
+
+	clientData bytes.Buffer
+	serverData bytes.Buffer
 }
 
 func (h *tcpReader) Read(p []byte) (int, error) {
@@ -62,6 +65,13 @@ func (h *tcpReader) BytesChan() chan []byte {
 func (h *tcpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
 
 	// fmt.Println("TCP cleanup", h.ident)
+
+	// save data for the current stream
+	if !h.isClient {
+		h.saveStream(h.serverData.Bytes())
+	} else {
+		h.saveStream(h.clientData.Bytes())
+	}
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -177,7 +187,6 @@ func (h *tcpReader) saveStream(data []byte) error {
 
 	utils.ReassemblyLog.Println("saveStream", base)
 
-	// TODO: rename to saveChunk? this is not called once for every stream anymore
 	statsMutex.Lock()
 	reassemblyStats.savedStreams++
 	statsMutex.Unlock()
@@ -269,9 +278,15 @@ func (h *tcpReader) readStream(b *bufio.Reader) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logReassemblyError("readBanner", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
+		logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
 		return err
 	}
-	h.saveStream(data[:n])
+
+	if h.isClient {
+		h.clientData.Write(data[:n])
+	} else {
+		h.serverData.Write(data[:n])
+	}
+
 	return nil
 }

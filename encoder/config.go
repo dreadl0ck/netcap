@@ -197,4 +197,10 @@ type Config struct {
 	// Use the RE2 engine from the go standard library
 	// if this is set to false an alternative regex engine that is compatible to the .NET syntax will be used for service banner detection
 	UseRE2 bool
+
+	// Length of the stored service banner in bytes
+	BannerSize int
+
+	// size of the channel used to pass reassembled stream data to a stream decoder
+	StreamDecoderBufSize int
 }

@@ -124,6 +124,8 @@ type tcpConnectionFactory struct {
 	decodeHTTP bool
 	decodePOP3 bool
 	numActive  int64
+	//streamReaders []ConnectionReader
+	streamReaders []*tcpReader
 	sync.Mutex
 }
 
@@ -148,14 +150,14 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 	switch {
 	case stream.isHTTP:
 		stream.client = &httpReader{
-			bytes:    make(chan []byte, 100),
+			bytes:    make(chan []byte, c.StreamDecoderBufSize),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &httpReader{
-			bytes:   make(chan []byte, 100),
+			bytes:   make(chan []byte, c.StreamDecoderBufSize),
 			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 			hexdump: c.HexDump,
 			parent:  stream,
@@ -164,6 +166,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		// kickoff decoders for client and server
 		factory.wg.Add(2)
 		factory.Lock()
+		//factory.streamReaders = append(factory.streamReaders, stream.client)
+		//factory.streamReaders = append(factory.streamReaders, stream.server)
 		factory.numActive += 2
 		factory.Unlock()
 		go stream.client.Run(factory)
@@ -171,14 +175,14 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 
 	case stream.isPOP3:
 		stream.client = &pop3Reader{
-			bytes:    make(chan []byte, 100),
+			bytes:    make(chan []byte, c.StreamDecoderBufSize),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &pop3Reader{
-			bytes:   make(chan []byte, 100),
+			bytes:   make(chan []byte, c.StreamDecoderBufSize),
 			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 			hexdump: c.HexDump,
 			parent:  stream,
@@ -187,6 +191,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		// kickoff decoders for client and server
 		factory.wg.Add(2)
 		factory.Lock()
+		//factory.streamReaders = append(factory.streamReaders, stream.client)
+		//factory.streamReaders = append(factory.streamReaders, stream.server)
 		factory.numActive += 2
 		factory.Unlock()
 		go stream.client.Run(factory)
@@ -202,14 +208,14 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		if c.SaveStreams {
 
 			stream.client = &tcpReader{
-				bytes:    make(chan []byte, 100),
+				bytes:    make(chan []byte, c.StreamDecoderBufSize),
 				ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 				hexdump:  c.HexDump,
 				parent:   stream,
 				isClient: true,
 			}
 			stream.server = &tcpReader{
-				bytes:   make(chan []byte, 100),
+				bytes:   make(chan []byte, c.StreamDecoderBufSize),
 				ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 				hexdump: c.HexDump,
 				parent:  stream,
@@ -218,6 +224,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 			// kickoff readers for client and server
 			factory.wg.Add(2)
 			factory.Lock()
+			factory.streamReaders = append(factory.streamReaders, stream.client.(*tcpReader))
+			factory.streamReaders = append(factory.streamReaders, stream.server.(*tcpReader))
 			factory.numActive += 2
 			factory.Unlock()
 			go stream.client.Run(factory)
@@ -383,7 +391,6 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 	logReassemblyDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
 }
 
-// TODO: feed data into intermediary buffer, so this operation is non blocking and does not need an extra goroutine?
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte) {
 	if dir == reassembly.TCPDirClientToServer && !t.reversed {
 		t.client.BytesChan() <- data
@@ -598,6 +605,8 @@ func CleanupReassembly(wait bool) {
 		if !Quiet {
 			fmt.Print("waiting for last streams to finish processing...")
 		}
+
+		// wait for remaining connections to finish processing
 		select {
 		case <-waitForConns():
 			if !Quiet {
@@ -608,6 +617,25 @@ func CleanupReassembly(wait bool) {
 				fmt.Println(" timeout after", netcap.DefaultReassemblyTimeout)
 			}
 		}
+
+		// flush the remaining streams to disk
+		streamFactory.Lock()
+		for _, s := range streamFactory.streamReaders {
+			if s != nil {
+				if s.isClient {
+					err := s.saveStream(s.clientData.Bytes())
+					if err != nil {
+						fmt.Println("failed to save stream", err)
+					}
+				} else {
+					err := s.saveStream(s.serverData.Bytes())
+					if err != nil {
+						fmt.Println("failed to save stream", err)
+					}
+				}
+			}
+		}
+		streamFactory.Unlock()
 	}
 
 	// create a memory snapshot for debugging

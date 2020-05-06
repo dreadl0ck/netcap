@@ -1,13 +1,14 @@
 # TODOs
 
+- make a group extraction util and expand all groups in all strings properly
+- add keyword filter and compile as regex?
 - map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc
 - net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode?
 - add separate flag to write also HTTP and POP3 TCP streams to disk 
 
 - extract TLS certificates! alert if selfsigned
-- check zeek logic and regexes for software identification 
+- check zeek logic and regexes for software identification
 
-- implement analyzeBanner() to determine the service version. Can we integrate the nmap database?
 - add Service audit record for UDP banners
 - save all UDP streams to disk
 
