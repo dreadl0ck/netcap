@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
@@ -66,14 +67,12 @@ func addInfo(old string, new string) string {
 
 // saves the banner for a TCP service to the filesystem
 // and limits the length of the saved data to the BannerSize value from the config
-func saveTCPServiceBanner(h *tcpReader, banner []byte) {
+func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, net, transport gopacket.Flow) {
 
 	// limit length of data
 	if len(banner) >= c.BannerSize {
 		banner = banner[:c.BannerSize]
 	}
-
-	ident := h.parent.net.Dst().String() + ":" + h.parent.transport.Dst().String()
 
 	// check if we already have a banner for the IP + Port combination
 	ServiceStore.Lock()
@@ -86,15 +85,15 @@ func saveTCPServiceBanner(h *tcpReader, banner []byte) {
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	s := NewService(h.parent.firstPacket.String())
+	s := NewService(firstPacket.String())
 	s.Banner = banner
-	s.IP = h.parent.net.Dst().String()
-	s.Port = h.parent.transport.Dst().String()
+	s.IP = net.Dst().String()
+	s.Port = transport.Dst().String()
 
 	// set flow ident, h.parent.ident is the client flow
-	s.Flow = h.ident
+	s.Flow = ident
 
-	dst, err := strconv.Atoi(h.parent.transport.Dst().String())
+	dst, err := strconv.Atoi(transport.Dst().String())
 	if err == nil {
 		s.Protocol = "TCP"
 		s.Name = resolvers.LookupServiceByPort(dst, "tcp")

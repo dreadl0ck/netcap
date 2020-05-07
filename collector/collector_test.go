@@ -55,7 +55,7 @@ func TestCaptureLive(t *testing.T) {
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),
-		Quiet:         false,
+		Quiet:         true,
 		DPI:           false,
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    false,

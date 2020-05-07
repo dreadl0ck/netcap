@@ -36,6 +36,7 @@ var tcpConnectionHarvesters = []CredentialHarvester{
 
 // FTP protocol
 var ftpCredentialsRegex, errFtpRegex = regexp.Compile("220(.*)\\r\\nUSER\\s(.*)\\r\\n331(.*)\\r\\nPASS\\s(.*)\\r\\n")
+
 func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	if m := ftpCredentialsRegex.FindStringSubmatch(string(data)); m != nil {

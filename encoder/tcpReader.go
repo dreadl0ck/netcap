@@ -16,6 +16,8 @@ package encoder
 import (
 	"bufio"
 	"bytes"
+	"fmt"
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/mgutz/ansi"
@@ -24,6 +26,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 	"unicode/utf8"
 )
 
@@ -41,6 +44,8 @@ type tcpReader struct {
 
 	clientData bytes.Buffer
 	serverData bytes.Buffer
+
+	saved bool
 }
 
 func (h *tcpReader) Read(p []byte) (int, error) {
@@ -56,6 +61,28 @@ func (h *tcpReader) Read(p []byte) (int, error) {
 
 	l := copy(p, h.data)
 	h.data = h.data[l:]
+
+	dataCpy := p[:l]
+
+	h.parent.Lock()
+
+	// write raw
+	h.parent.conversationRaw.Write(dataCpy)
+
+	// colored for debugging
+	if h.isClient {
+		h.parent.conversationColored.WriteString(ansi.Red + string(dataCpy) + ansi.Reset)
+	} else {
+		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
+	}
+	h.parent.Unlock()
+
+	if h.isClient {
+		h.clientData.Write(dataCpy)
+	} else {
+		h.serverData.Write(dataCpy)
+	}
+
 	return l, nil
 }
 
@@ -68,10 +95,12 @@ func (h *tcpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connect
 	// fmt.Println("TCP cleanup", h.ident)
 
 	// save data for the current stream
-	if !h.isClient {
-		h.saveStream(h.serverData.Bytes())
-	} else {
-		h.saveStream(h.clientData.Bytes())
+	if h.isClient {
+		err := saveConnection(h.ConversationRaw(), h.ConversationColored(), h.Ident(), h.FirstPacket(), h.Transport())
+		if err != nil {
+			fmt.Println("failed to save stream", err)
+		}
+		h.saved = true
 	}
 
 	// determine if one side of the stream has already been closed
@@ -149,10 +178,10 @@ func (h *tcpReader) Run(f *tcpConnectionFactory) {
 	}
 }
 
-func (h *tcpReader) getServiceName(data []byte) string {
+func getServiceName(data []byte, destination gopacket.Flow) string {
 
 	var (
-		dstPort, _ = strconv.Atoi(h.parent.transport.Dst().String())
+		dstPort, _ = strconv.Atoi(destination.Dst().String())
 		s          = resolvers.LookupServiceByPort(dstPort, "tcp")
 	)
 	if s != "" {
@@ -165,7 +194,10 @@ func (h *tcpReader) getServiceName(data []byte) string {
 	return "unknown"
 }
 
-func (h *tcpReader) saveConnection(raw []byte, colored []byte) error {
+func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
+
+	//fmt.Println("save conn", ident, len(raw), len(colored))
+	//fmt.Println(string(colored))
 
 	// prevent saving zero bytes
 	if len(raw) == 0 {
@@ -174,7 +206,7 @@ func (h *tcpReader) saveConnection(raw []byte, colored []byte) error {
 
 	// run harvesters against raw data
 	for _, ch := range tcpConnectionHarvesters {
-		if c := ch(raw, h.ident, h.parent.firstPacket); c != nil {
+		if c := ch(raw, ident, firstPacket); c != nil {
 
 			// write audit record
 			writeCredentials(c)
@@ -186,13 +218,13 @@ func (h *tcpReader) saveConnection(raw []byte, colored []byte) error {
 	}
 
 	var (
-		typ = h.getServiceName(raw)
+		typ = getServiceName(raw, transport)
 
 		// path for storing the data
 		root = filepath.Join(c.Out, "tcpConnections", typ)
 
 		// file basename
-		base = filepath.Clean(path.Base(h.ident)) + ".bin"
+		base = filepath.Clean(path.Base(ident)) + ".bin"
 	)
 
 	// make sure root path exists
@@ -217,20 +249,20 @@ func (h *tcpReader) saveConnection(raw []byte, colored []byte) error {
 	r := bytes.NewBuffer(colored)
 	w, err := io.Copy(f, r)
 	if err != nil {
-		logReassemblyError("TCP stream", "%s: failed to save TCP conn %s (l:%d): %s\n", h.ident, base, w, err)
+		logReassemblyError("TCP stream", "%s: failed to save TCP conn %s (l:%d): %s\n", ident, base, w, err)
 	} else {
-		logReassemblyInfo("%s: Saved TCP conn %s (l:%d)\n", h.ident, base, w)
+		logReassemblyInfo("%s: Saved TCP conn %s (l:%d)\n", ident, base, w)
 	}
 
 	err = f.Close()
 	if err != nil {
-		logReassemblyError("TCP conn", "%s: failed to close TCP conn file %s (l:%d): %s\n", h.ident, base, w, err)
+		logReassemblyError("TCP conn", "%s: failed to close TCP conn file %s (l:%d): %s\n", ident, base, w, err)
 	}
 
 	return nil
 }
 
-func (h *tcpReader) saveStream(data []byte) error {
+func saveStream(data []byte, ident string, isClient bool, firstPacket time.Time, net, transport gopacket.Flow) error {
 
 	// prevent saving zero bytes
 	if len(data) == 0 {
@@ -238,13 +270,13 @@ func (h *tcpReader) saveStream(data []byte) error {
 	}
 
 	var (
-		typ = h.getServiceName(data)
+		typ = getServiceName(data, transport)
 
 		// path for storing the data
 		root = filepath.Join(c.Out, "tcpStreams", typ)
 
 		// file basename
-		base = filepath.Clean(path.Base(h.ident)) + ".bin"
+		base = filepath.Clean(path.Base(ident)) + ".bin"
 	)
 
 	// make sure root path exists
@@ -268,18 +300,18 @@ func (h *tcpReader) saveStream(data []byte) error {
 	r := bytes.NewBuffer(data)
 	w, err := io.Copy(f, r)
 	if err != nil {
-		logReassemblyError("TCP stream", "%s: failed to save TCP stream %s (l:%d): %s\n", h.ident, base, w, err)
+		logReassemblyError("TCP stream", "%s: failed to save TCP stream %s (l:%d): %s\n", ident, base, w, err)
 	} else {
-		logReassemblyInfo("%s: Saved TCP stream %s (l:%d)\n", h.ident, base, w)
+		logReassemblyInfo("%s: Saved TCP stream %s (l:%d)\n", ident, base, w)
 	}
 
 	err = f.Close()
 	if err != nil {
-		logReassemblyError("TCP stream", "%s: failed to close TCP stream file %s (l:%d): %s\n", h.ident, base, w, err)
+		logReassemblyError("TCP stream", "%s: failed to close TCP stream file %s (l:%d): %s\n", ident, base, w, err)
 	}
 
-	if !h.isClient {
-		saveTCPServiceBanner(h, data)
+	if !isClient {
+		saveTCPServiceBanner(data, ident, firstPacket, net, transport)
 	}
 
 	return nil
@@ -291,56 +323,11 @@ func tcpDebug(args ...interface{}) {
 	}
 }
 
-func (h *tcpReader) readStreamBuffered(b *bufio.Reader) error {
-
-	// read 512kB chunks of data
-	var (
-		// the data buffer that we will return from this call
-		// initialize empty with a capacity of 512
-		data = make([]byte, 0, 512)
-
-		// the intermediate buffer used for each Read invocation
-		readbuf = make([]byte, 512)
-	)
-
-	for {
-		// Careful: using ioutil.ReadAll here causes a data race!
-		// alternatively:
-		// n, err := io.ReadFull(b, data) // will wait forever if the flow sends less than 512 bytes of data or never sends an EOF
-
-		n, err := b.Read(readbuf)
-		//fmt.Println(ansi.Blue, h.ident, "readStream: read", n, "bytes (total", len(data), ")", err, ansi.Reset)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			break
-		} else if err != nil {
-			logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
-			return err
-		}
-
-		// if we got the buffer full, stop
-		if n == 512 {
-			data = readbuf
-
-			// done
-			break
-		} else {
-
-			// if we got less, buffer the data and keep reading
-			data = append(data, readbuf[:n]...)
-		}
-
-		// throttle?
-		//time.Sleep(100 * time.Millisecond)
-	}
-
-	return h.saveStream(data)
-}
-
 func (h *tcpReader) readStream(b *bufio.Reader) error {
 
 	var data = make([]byte, 512)
 
-	n, err := b.Read(data)
+	_, err := b.Read(data)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
@@ -348,24 +335,42 @@ func (h *tcpReader) readStream(b *bufio.Reader) error {
 		return err
 	}
 
-	h.parent.Lock()
-
-	// write raw
-	h.parent.conversationRaw.Write(data[:n])
-
-	// colored for debugging
-	if h.isClient {
-		h.parent.conversationColored.WriteString(ansi.Red + string(data[:n]) + ansi.Reset)
-	} else {
-		h.parent.conversationColored.WriteString(ansi.Blue + string(data[:n]) + ansi.Reset)
-	}
-	h.parent.Unlock()
-
-	if h.isClient {
-		h.clientData.Write(data[:n])
-	} else {
-		h.serverData.Write(data[:n])
-	}
-
 	return nil
+}
+
+func (h *tcpReader) ClientStream() []byte {
+	return h.clientData.Bytes()
+}
+
+func (h *tcpReader) ServerStream() []byte {
+	return h.serverData.Bytes()
+}
+
+func (h *tcpReader) ConversationRaw() []byte {
+	return h.parent.conversationRaw.Bytes()
+}
+
+func (h *tcpReader) ConversationColored() []byte {
+	return h.parent.conversationColored.Bytes()
+}
+
+func (h *tcpReader) IsClient() bool {
+	return h.isClient
+}
+
+func (h *tcpReader) Ident() string {
+	return h.parent.ident
+}
+func (h *tcpReader) Network() gopacket.Flow {
+	return h.parent.net
+}
+func (h *tcpReader) Transport() gopacket.Flow {
+	return h.parent.transport
+}
+func (h *tcpReader) FirstPacket() time.Time {
+	return h.parent.firstPacket
+}
+
+func (h *tcpReader) Saved() bool {
+	return h.saved
 }

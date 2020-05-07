@@ -49,9 +49,12 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
+	"fmt"
 	"github.com/dreadl0ck/cryptoutils"
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/mgutz/ansi"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -62,6 +65,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts
@@ -100,6 +104,7 @@ type httpReader struct {
 	data     []byte
 	hexdump  bool
 	parent   *tcpConnection
+	saved    bool
 }
 
 func (h *httpReader) Read(p []byte) (int, error) {
@@ -115,6 +120,24 @@ func (h *httpReader) Read(p []byte) (int, error) {
 
 	l := copy(p, h.data)
 	h.data = h.data[l:]
+
+	//fmt.Println(h.ident, "HTTP read:\n", hex.Dump(p[:l]), h.isClient)
+
+	dataCpy := p[:l]
+
+	h.parent.Lock()
+
+	// write raw
+	h.parent.conversationRaw.Write(dataCpy)
+
+	// colored for debugging
+	if h.isClient {
+		h.parent.conversationColored.WriteString(ansi.Red + string(dataCpy) + ansi.Reset)
+	} else {
+		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
+	}
+	h.parent.Unlock()
+
 	return l, nil
 }
 
@@ -123,6 +146,16 @@ func (h *httpReader) BytesChan() chan []byte {
 }
 
 func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
+
+	//fmt.Println("HTTP cleanup", h.ident)
+
+	if h.isClient {
+		err := saveConnection(h.ConversationRaw(), h.ConversationColored(), h.Ident(), h.FirstPacket(), h.Transport())
+		if err != nil {
+			fmt.Println("failed to save connection", err)
+		}
+		h.saved = true
+	}
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -787,4 +820,40 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	}
 
 	return nil
+}
+
+func (h *httpReader) ClientStream() []byte {
+	return nil
+}
+
+func (h *httpReader) ServerStream() []byte {
+	return nil
+}
+
+func (h *httpReader) ConversationRaw() []byte {
+	return h.parent.conversationRaw.Bytes()
+}
+
+func (h *httpReader) ConversationColored() []byte {
+	return h.parent.conversationColored.Bytes()
+}
+
+func (h *httpReader) IsClient() bool {
+	return h.isClient
+}
+
+func (h *httpReader) Ident() string {
+	return h.parent.ident
+}
+func (h *httpReader) Network() gopacket.Flow {
+	return h.parent.net
+}
+func (h *httpReader) Transport() gopacket.Flow {
+	return h.parent.transport
+}
+func (h *httpReader) FirstPacket() time.Time {
+	return h.parent.firstPacket
+}
+func (h *httpReader) Saved() bool {
+	return h.saved
 }
