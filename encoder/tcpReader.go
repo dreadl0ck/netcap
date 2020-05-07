@@ -202,7 +202,7 @@ func (h *tcpReader) saveConnection(raw []byte, colored []byte) error {
 	utils.ReassemblyLog.Println("saveConnection", base)
 
 	statsMutex.Lock()
-	reassemblyStats.savedStreams++
+	reassemblyStats.savedConnections++
 	statsMutex.Unlock()
 
 	// append to files
