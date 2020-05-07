@@ -301,6 +301,7 @@ func (c *Collector) Stats() {
 
 	if c.config.EncoderConfig.SaveStreams {
 		fmt.Fprintln(target, "saved streams:", encoder.NumSavedStreams())
+		fmt.Fprintln(target, "saved connections:", encoder.NumSavedConns())
 	}
 }
 

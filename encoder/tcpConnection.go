@@ -117,18 +117,36 @@ func NumSavedStreams() int64 {
 	return reassemblyStats.savedStreams
 }
 
+func NumSavedConns() int64 {
+	statsMutex.Lock()
+	defer statsMutex.Unlock()
+	return reassemblyStats.savedConnections
+}
+
 /*
  * The TCP factory: returns a new Connection
  */
 
 type tcpConnectionFactory struct {
-	wg         sync.WaitGroup
-	decodeHTTP bool
-	decodePOP3 bool
-	numActive  int64
-	//streamReaders []ConnectionReader
-	streamReaders []*tcpReader
+	wg            sync.WaitGroup
+	decodeHTTP    bool
+	decodePOP3    bool
+	numActive     int64
+	streamReaders []StreamReader
 	sync.Mutex
+}
+
+type StreamReader interface {
+	ClientStream() []byte
+	ServerStream() []byte
+	ConversationRaw() []byte
+	ConversationColored() []byte
+	IsClient() bool
+	Ident() string
+	Network() gopacket.Flow
+	Transport() gopacket.Flow
+	FirstPacket() time.Time
+	Saved() bool
 }
 
 // New handles a new stream received from the assembler
@@ -168,8 +186,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		// kickoff decoders for client and server
 		factory.wg.Add(2)
 		factory.Lock()
-		//factory.streamReaders = append(factory.streamReaders, stream.client)
-		//factory.streamReaders = append(factory.streamReaders, stream.server)
+		factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
+		factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
 		factory.numActive += 2
 		factory.Unlock()
 		go stream.client.Run(factory)
@@ -193,8 +211,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		// kickoff decoders for client and server
 		factory.wg.Add(2)
 		factory.Lock()
-		//factory.streamReaders = append(factory.streamReaders, stream.client)
-		//factory.streamReaders = append(factory.streamReaders, stream.server)
+		factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
+		factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
 		factory.numActive += 2
 		factory.Unlock()
 		go stream.client.Run(factory)
@@ -226,8 +244,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 			// kickoff readers for client and server
 			factory.wg.Add(2)
 			factory.Lock()
-			factory.streamReaders = append(factory.streamReaders, stream.client.(*tcpReader))
-			factory.streamReaders = append(factory.streamReaders, stream.server.(*tcpReader))
+			factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
+			factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
 			factory.numActive += 2
 			factory.Unlock()
 			go stream.client.Run(factory)
@@ -291,7 +309,7 @@ type tcpConnection struct {
 	// if set, indicates that either client or server http reader was closed already
 	last bool
 
-	conversationRaw bytes.Buffer
+	conversationRaw     bytes.Buffer
 	conversationColored bytes.Buffer
 
 	sync.Mutex
@@ -623,12 +641,24 @@ func CleanupReassembly(wait bool) {
 			}
 		}
 
+		if !Quiet {
+			fmt.Print("flushing remaining TCP streams to disk... ")
+		}
+
+		// TODO: parallelize?
 		// flush the remaining streams to disk
 		streamFactory.Lock()
-		for _, s := range streamFactory.streamReaders {
+		for i, s := range streamFactory.streamReaders {
 			if s != nil {
-				if s.isClient {
-					err := s.saveStream(s.clientData.Bytes())
+				if !Quiet {
+					clearLine()
+					fmt.Print("flushing remaining TCP streams to disk... ", "(", i, "/", len(streamFactory.streamReaders), ")")
+				}
+				if s.Saved() {
+					continue
+				}
+				if s.IsClient() {
+					err := saveStream(s.ClientStream(), s.Ident(), s.IsClient(), s.FirstPacket(), s.Network(), s.Transport())
 					if err != nil {
 						fmt.Println("failed to save stream", err)
 					}
@@ -640,12 +670,12 @@ func CleanupReassembly(wait bool) {
 
 					// save the entire conversation.
 					// we only need to do this once, when client part of the connection is closed
-					err = s.saveConnection(s.parent.conversationRaw.Bytes(), s.parent.conversationColored.Bytes())
+					err = saveConnection(s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
 					if err != nil {
-						fmt.Println("failed to save stream", err)
+						fmt.Println("failed to save connection", err)
 					}
 				} else {
-					err := s.saveStream(s.serverData.Bytes())
+					err := saveStream(s.ServerStream(), s.Ident(), s.IsClient(), s.FirstPacket(), s.Network(), s.Transport())
 					if err != nil {
 						fmt.Println("failed to save stream", err)
 					}
@@ -653,6 +683,9 @@ func CleanupReassembly(wait bool) {
 			}
 		}
 		streamFactory.Unlock()
+		if !Quiet {
+			fmt.Println()
+		}
 	}
 
 	// create a memory snapshot for debugging

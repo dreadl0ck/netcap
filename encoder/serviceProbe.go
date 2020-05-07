@@ -37,9 +37,9 @@ var (
 
 	// ignored probes for other engine
 	ignoredProbes = map[string]struct{}{
-		"pc-duo-gw":          {},
-		"ventrilo":           {},
-		"pc-duo":             {},
+		"pc-duo-gw": {},
+		"ventrilo":  {},
+		"pc-duo":    {},
 	}
 )
 

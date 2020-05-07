@@ -1,5 +1,6 @@
 # TODOs
 
+- move tcpFactory into separate file
 - make a group extraction util and expand all groups in all strings properly
 - add keyword filter and compile as regex?
 - map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc

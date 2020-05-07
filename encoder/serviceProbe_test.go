@@ -7,8 +7,8 @@ import (
 )
 
 type regexTest struct {
-	name string
-	input string
+	name     string
+	input    string
 	expected string
 }
 
