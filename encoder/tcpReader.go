@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/mgutz/ansi"
 	"io"
 	"os"
 	"path"
@@ -164,6 +165,71 @@ func (h *tcpReader) getServiceName(data []byte) string {
 	return "unknown"
 }
 
+func (h *tcpReader) saveConnection(raw []byte, colored []byte) error {
+
+	// prevent saving zero bytes
+	if len(raw) == 0 {
+		return nil
+	}
+
+	// run harvesters against raw data
+	for _, ch := range tcpConnectionHarvesters {
+		if c := ch(raw, h.ident, h.parent.firstPacket); c != nil {
+
+			// write audit record
+			credentialsEncoder.write(c)
+
+			// stop after a match for now
+			// TODO: make configurable
+			break
+		}
+	}
+
+	var (
+		typ = h.getServiceName(raw)
+
+		// path for storing the data
+		root = filepath.Join(c.Out, "tcpConnections", typ)
+
+		// file basename
+		base = filepath.Clean(path.Base(h.ident)) + ".bin"
+	)
+
+	// make sure root path exists
+	os.MkdirAll(root, directoryPermission)
+	base = path.Join(root, base)
+
+	utils.ReassemblyLog.Println("saveConnection", base)
+
+	statsMutex.Lock()
+	reassemblyStats.savedStreams++
+	statsMutex.Unlock()
+
+	// append to files
+	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, 0700)
+	if err != nil {
+		logReassemblyError("TCP conn create", "Cannot create %s: %s\n", base, err)
+		return err
+	}
+
+	// save the colored version
+	// assign a new buffer
+	r := bytes.NewBuffer(colored)
+	w, err := io.Copy(f, r)
+	if err != nil {
+		logReassemblyError("TCP stream", "%s: failed to save TCP conn %s (l:%d): %s\n", h.ident, base, w, err)
+	} else {
+		logReassemblyInfo("%s: Saved TCP conn %s (l:%d)\n", h.ident, base, w)
+	}
+
+	err = f.Close()
+	if err != nil {
+		logReassemblyError("TCP conn", "%s: failed to close TCP conn file %s (l:%d): %s\n", h.ident, base, w, err)
+	}
+
+	return nil
+}
+
 func (h *tcpReader) saveStream(data []byte) error {
 
 	// prevent saving zero bytes
@@ -175,7 +241,7 @@ func (h *tcpReader) saveStream(data []byte) error {
 		typ = h.getServiceName(data)
 
 		// path for storing the data
-		root = filepath.Join(c.Out, "tcpstreams", typ)
+		root = filepath.Join(c.Out, "tcpStreams", typ)
 
 		// file basename
 		base = filepath.Clean(path.Base(h.ident)) + ".bin"
@@ -281,6 +347,19 @@ func (h *tcpReader) readStream(b *bufio.Reader) error {
 		logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
 		return err
 	}
+
+	h.parent.Lock()
+
+	// write raw
+	h.parent.conversationRaw.Write(data[:n])
+
+	// colored for debugging
+	if h.isClient {
+		h.parent.conversationColored.WriteString(ansi.Red + string(data[:n]) + ansi.Reset)
+	} else {
+		h.parent.conversationColored.WriteString(ansi.Blue + string(data[:n]) + ansi.Reset)
+	}
+	h.parent.Unlock()
 
 	if h.isClient {
 		h.clientData.Write(data[:n])
