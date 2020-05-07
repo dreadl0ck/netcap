@@ -492,7 +492,7 @@ func CleanupReassembly(wait bool) {
 			if s != nil {
 				if !Quiet {
 					clearLine()
-					fmt.Print("flushing remaining TCP streams to disk... ", "(", i, "/", len(streamFactory.streamReaders), ")")
+					fmt.Print("flushing remaining TCP streams to disk... ", "(", i+1, "/", len(streamFactory.streamReaders), ")")
 				}
 				if s.Saved() {
 					continue

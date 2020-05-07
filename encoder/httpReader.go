@@ -831,10 +831,14 @@ func (h *httpReader) ServerStream() []byte {
 }
 
 func (h *httpReader) ConversationRaw() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.parent.conversationRaw.Bytes()
 }
 
 func (h *httpReader) ConversationColored() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.parent.conversationColored.Bytes()
 }
 

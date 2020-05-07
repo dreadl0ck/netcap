@@ -816,10 +816,14 @@ func (h *pop3Reader) ServerStream() []byte {
 }
 
 func (h *pop3Reader) ConversationRaw() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.parent.conversationRaw.Bytes()
 }
 
 func (h *pop3Reader) ConversationColored() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.parent.conversationColored.Bytes()
 }
 
