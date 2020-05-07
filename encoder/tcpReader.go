@@ -75,13 +75,13 @@ func (h *tcpReader) Read(p []byte) (int, error) {
 	} else {
 		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
 	}
-	h.parent.Unlock()
 
 	if h.isClient {
 		h.clientData.Write(dataCpy)
 	} else {
 		h.serverData.Write(dataCpy)
 	}
+	h.parent.Unlock()
 
 	return l, nil
 }
@@ -339,18 +339,26 @@ func (h *tcpReader) readStream(b *bufio.Reader) error {
 }
 
 func (h *tcpReader) ClientStream() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.clientData.Bytes()
 }
 
 func (h *tcpReader) ServerStream() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.serverData.Bytes()
 }
 
 func (h *tcpReader) ConversationRaw() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.parent.conversationRaw.Bytes()
 }
 
 func (h *tcpReader) ConversationColored() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.parent.conversationColored.Bytes()
 }
 
