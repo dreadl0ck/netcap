@@ -14,14 +14,18 @@
 package encoder
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
+	"log"
+	"regexp"
+	"strings"
+	"sync/atomic"
+	"time"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
-	"log"
-	"regexp"
-	"sync/atomic"
-	"time"
 )
 
 // CredentialHarvester is a function that takes the data of a bi-directional network stream over TCP
@@ -37,25 +41,215 @@ var tcpConnectionHarvesters = []CredentialHarvester{
 // FTP protocol
 var ftpCredentialsRegex, errFtpRegex = regexp.Compile("220(.*)\\r\\nUSER\\s(.*)\\r\\n331(.*)\\r\\nPASS\\s(.*)\\r\\n")
 
+var (
+	reFTP               = regexp.MustCompile(`220(?:.*?)\r\nUSER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
+	reHTTP              = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
+	reSMTPPlainSeparate = regexp.MustCompile(`(?:.*?)AUTH PLAIN\r\n334\r\n(.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
+	reSMTPPlainSingle   = regexp.MustCompile(`(?:.*?)AUTH PLAIN (.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
+	reSMTPLogin         = regexp.MustCompile(`(?:.*?)AUTH LOGIN\r\n334 VXNlcm5hbWU6\r\n(.*?)\r\n334 UGFzc3dvcmQ6\r\n(.*?)\r\n235(?:.*?)Authentication successful(?:.*?)$`)
+	reSMTPCramMd5       = regexp.MustCompile(`(?:.*?)AUTH CRAM-MD5(?:\r\n)334\s(.*?)(?:\r\n)(.*?)(\r\n)235(?:.*?)Authentication successful(?:.*?)$`)
+	reTelnet            = regexp.MustCompile(`(?:.*?)login:([\s\S]*?)\r\n(?:.*?)\r\nPassword:([\s\S]*?)\r\n(?:.*?)`)
+	reIMAPPlainSingle   = regexp.MustCompile(`(?:.*?)LOGIN\s(.*?)\s(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
+	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)LOGIN\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
+	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)AUTHENTICATE PLAIN\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
+	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)authentication successful(?:.*?)$`)
+)
+
 func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-
-	if m := ftpCredentialsRegex.FindStringSubmatch(string(data)); m != nil {
-
-		if len(m) <= 4 {
-			fmt.Println("FTP credential harvester: not enough groups from regex", m)
-			return nil
-		}
-
+	matches := reFTP.FindSubmatch(data)
+	if len(matches) > 1 {
+		username := string(matches[1])
+		password := string(matches[2])
 		return &types.Credentials{
 			Timestamp: ts.String(),
 			Service:   "FTP",
 			Flow:      ident,
-			User:      m[2],
-			Password:  m[4],
+			User:      username,
+			Password:  password,
 		}
 	}
 
 	return nil
+}
+
+func httpBasicAuthHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+	matches := reHTTP.FindSubmatch(data)
+	if len(matches) > 1 {
+		data, err := base64.StdEncoding.DecodeString(string(matches[1]))
+		if err != nil {
+			fmt.Println("Captured HTTP Basic Auth credentials, but could not decode them")
+		}
+		creds := strings.Split(string(data), ":")
+		username := creds[0]
+		password := creds[1]
+		return &types.Credentials{
+			Timestamp: ts.String(),
+			Service:   "HTTP Basic Auth",
+			Flow:      ident,
+			User:      username,
+			Password:  password,
+		}
+	}
+
+	return nil
+}
+
+func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+	var username string
+	var password string
+	var service string
+	matchesPlainSeparate := reSMTPPlainSeparate.FindSubmatch(data)
+	matchesPlainSingle := reSMTPPlainSingle.FindSubmatch(data)
+	matchesLogin := reSMTPLogin.FindSubmatch(data)
+	matchesCramMd5 := reSMTPCramMd5.FindSubmatch(data)
+
+	if len(matchesPlainSeparate) > 1 {
+		data, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
+		if err != nil {
+			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
+		}
+		data = bytes.Trim(data, "\x00")
+		username = string(data)
+		username = username + "\x00"
+		password = "" // With plain creds password and username are concatenated.
+		service = "SMTP Auth Plain"
+	}
+
+	if len(matchesPlainSingle) > 1 {
+		data, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
+		if err != nil {
+			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
+		}
+		data = bytes.Trim(data, "\x00")
+		username = string(data)
+		username = username + "\x00"
+		password = "" // With plain creds password and username are concatenated.
+		service = "SMTP Auth Plain"
+	}
+
+	if len(matchesLogin) > 1 {
+		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
+		if err != nil {
+			fmt.Println("Captured SMTP Auth Login credentials, but could not decode them")
+		}
+		username = string(usernameBin)
+		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesLogin[2]))
+		if err != nil {
+			fmt.Println("Captured SMTP Auth Login credentials, but could not decode them")
+		}
+		password = string(passwordBin)
+		service = "SMTP Auth Login"
+	}
+
+	if len(matchesCramMd5) > 1 {
+		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[1]))
+		if err != nil {
+			fmt.Println("Captured SMTP CARM-MD5 credentials, but could not decode them")
+		}
+		username = string(usernameBin) // This is really the challenge
+		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[2]))
+		if err != nil {
+			fmt.Println("Captured SMTP CARM-MD5 credentials, but could not decode them")
+		}
+		password = string(passwordBin) // And this is the hash
+		service = "SMTP Auth CRAM-MD5"
+	}
+
+	if len(username) > 0 {
+		return &types.Credentials{
+			Timestamp: ts.String(),
+			Service:   service,
+			Flow:      ident,
+			User:      username,
+			Password:  password,
+		}
+	}
+	return nil
+}
+
+func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+	matches := reTelnet.FindSubmatch(data)
+	if len(matches) > 1 {
+		userWrong := string(matches[1])
+		var username string
+		for i, letter := range userWrong {
+			if i%2 == 0 {
+				username = username + string(letter)
+			}
+		}
+		password := string(matches[2])
+		return &types.Credentials{
+			Timestamp: ts.String(),
+			Service:   "Telnet",
+			Flow:      ident,
+			User:      username,
+			Password:  password,
+		}
+	}
+	return nil
+}
+
+func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+	var username string
+	var password string
+	matchesPlainSeparate := reIMATPlainSeparate.FindSubmatch(data)
+	matchesPlainSingle := reIMAPPlainSingle.FindSubmatch(data)
+	matchesLogin := reIMAPPlainAuth.FindSubmatch(data)
+	matchesCramMd5 := reIMAPPCramMd5.FindSubmatch(data)
+
+	if len(matchesPlainSingle) > 1 {
+		username = string(matchesPlainSingle[1])
+		password = string(matchesPlainSingle[2])
+	}
+
+	if len(matchesPlainSeparate) > 1 {
+		fmt.Println(string(matchesPlainSeparate[1]))
+		fmt.Println(string(matchesPlainSeparate[2]))
+		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
+		if err != nil {
+			fmt.Println("Captured IMAP credentials, but could not decode them")
+		}
+		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[2]))
+		if err != nil {
+			fmt.Println("Captured IMAP credentials, but could not decode them")
+		}
+		username = string(usernameBin)
+		password = string(passwordBin)
+	}
+
+	if len(matchesLogin) > 1 {
+		creds, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
+		if err != nil {
+			fmt.Println("Captured IMAP credentials, but could not decode them")
+		}
+		username = string(creds)
+		password = "" // With this authentication method username and password are concatenated
+	}
+
+	if len(matchesCramMd5) > 1 {
+		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[1]))
+		if err != nil {
+			fmt.Println("Captured IMAP credentials, but could not decode them")
+		}
+		username = string(usernameBin) // This is really the challenge
+		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[2]))
+		if err != nil {
+			fmt.Println("Captured IMAP credentials, but could not decode them")
+		}
+		password = string(passwordBin) // And this is the hash
+	}
+
+	if len(username) > 0 {
+		return &types.Credentials{
+			Timestamp: ts.String(),
+			Service:   "IMAP",
+			Flow:      ident,
+			User:      username,
+			Password:  password,
+		}
+	}
+	return nil
+
 }
 
 var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credentials", func(d *CustomEncoder) error {
