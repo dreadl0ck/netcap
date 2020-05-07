@@ -18,7 +18,9 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+	"log"
 	"regexp"
+	"sync/atomic"
 	"time"
 )
 
@@ -68,3 +70,31 @@ var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credent
 }, func(e *CustomEncoder) error {
 	return nil
 })
+
+// credStore is used to deduplicate the credentials written to disk
+// it maps an identifier in the format: c.Service + c.User + c.Password
+// to the flow ident where the data was observed
+var credStore = make(map[string]string)
+
+// writeCredentials is a util that should be used to write credential audit to disk
+// it will deduplicate the audit records to avoid repeating information on disk
+func writeCredentials(c *types.Credentials) {
+
+	ident := c.Service + c.User + c.Password
+
+	// prevent saving duplicate credentials
+	if _, ok := credStore[ident]; ok {
+		return
+	}
+	credStore[ident] = c.Flow
+
+	if credentialsEncoder.export {
+		c.Inc()
+	}
+
+	atomic.AddInt64(&credentialsEncoder.numRecords, 1)
+	err := credentialsEncoder.writer.Write(c)
+	if err != nil {
+		log.Fatal("failed to write proto: ", err)
+	}
+}

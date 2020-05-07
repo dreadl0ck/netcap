@@ -118,10 +118,10 @@ func (h *pop3Reader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 		}
 		
 		if user != "" || pass != "" {
-			credentialsEncoder.write(&types.Credentials{
+			writeCredentials(&types.Credentials{
 				Timestamp: h.parent.firstPacket.String(),
 				Service:   "POP3",
-				Flow:      h.ident,
+				Flow:      h.parent.ident,
 				User:      user,
 				Password:  pass,
 			})
