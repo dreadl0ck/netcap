@@ -177,7 +177,7 @@ func (h *tcpReader) saveConnection(raw []byte, colored []byte) error {
 		if c := ch(raw, h.ident, h.parent.firstPacket); c != nil {
 
 			// write audit record
-			credentialsEncoder.write(c)
+			writeCredentials(c)
 
 			// stop after a match for now
 			// TODO: make configurable

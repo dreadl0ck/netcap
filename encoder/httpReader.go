@@ -170,10 +170,10 @@ func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 
 				if u, p, ok := res.response.Request.BasicAuth(); ok {
 					if u != "" || p != "" {
-						credentialsEncoder.write(&types.Credentials{
+						writeCredentials(&types.Credentials{
 							Timestamp: h.parent.firstPacket.String(),
 							Service:   "HTTP Basic Auth",
-							Flow:      h.ident,
+							Flow:      h.parent.ident,
 							User:      u,
 							Password:  p,
 						})
@@ -199,10 +199,10 @@ func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 
 				if u, p, ok := req.request.BasicAuth(); ok {
 					if u != "" || p != "" {
-						credentialsEncoder.write(&types.Credentials{
+						writeCredentials(&types.Credentials{
 							Timestamp: h.parent.firstPacket.String(),
 							Service:   "HTTP Basic Auth",
-							Flow:      h.ident,
+							Flow:      h.parent.ident,
 							User:      u,
 							Password:  p,
 						})
