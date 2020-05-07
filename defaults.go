@@ -13,7 +13,7 @@ const (
 	DefaultFlowTimeOut          = 10 * time.Second
 	DefaultClosePendingTimeout  = 3 * time.Second
 	DefaultCloseInactiveTimeout = 5 * time.Second
-	DefaultReassemblyTimeout    = 300 * time.Millisecond
+	DefaultReassemblyTimeout    = 500 * time.Millisecond
 	DefaultCompressionBlockSize = 1024 * 1024 // 1MB
 	DefaultAllowMissingInit     = true
 )

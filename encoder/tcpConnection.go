@@ -45,6 +45,7 @@
 package encoder
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
@@ -288,6 +289,9 @@ type tcpConnection struct {
 
 	// if set, indicates that either client or server http reader was closed already
 	last bool
+
+	conversationRaw bytes.Buffer
+	conversationColored bytes.Buffer
 
 	sync.Mutex
 }
@@ -624,6 +628,18 @@ func CleanupReassembly(wait bool) {
 			if s != nil {
 				if s.isClient {
 					err := s.saveStream(s.clientData.Bytes())
+					if err != nil {
+						fmt.Println("failed to save stream", err)
+					}
+
+					//if c.Debug {
+					//	fmt.Println(ansi.White, s.ident, ansi.Red, "Client", ansi.Blue, "Server")
+					//	fmt.Println(string(s.parent.conversationColored.Bytes()), ansi.Reset)
+					//}
+
+					// save the entire conversation.
+					// we only need to do this once, when client part of the connection is closed
+					err = s.saveConnection(s.parent.conversationRaw.Bytes(), s.parent.conversationColored.Bytes())
 					if err != nil {
 						fmt.Println("failed to save stream", err)
 					}

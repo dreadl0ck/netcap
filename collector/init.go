@@ -62,9 +62,11 @@ func (c *Collector) Init() (err error) {
 
 	files = append(files, filesBare...)
 
-	streamPath := filepath.Join(c.config.EncoderConfig.Out, "tcpstreams")
+	streamPath := filepath.Join(c.config.EncoderConfig.Out, "tcpStreams")
+	connPath := filepath.Join(c.config.EncoderConfig.Out, "tcpStreams")
 	_, errStreams := os.Stat(streamPath)
-	if len(files) > 0 || errStreams == nil {
+	_, errConns := os.Stat(connPath)
+	if len(files) > 0 || errStreams == nil || errConns == nil {
 
 		// only prompt if quiet mode is not active
 		if !c.config.Quiet {
@@ -77,9 +79,10 @@ func (c *Collector) Init() (err error) {
 			}
 		}
 
-		if errStreams == nil {
-			// clear streams if present
+		// clear streams if present
+		if errStreams == nil || errConns == nil {
 			os.RemoveAll(streamPath)
+			os.RemoveAll(connPath)
 		}
 	}
 
