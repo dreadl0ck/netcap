@@ -165,7 +165,7 @@ Password: password
 Last login: Sat Mar 21 16:34:17 CET 2020 on tty1
 Welcome to Ubuntu 18.04.4 LTS (GNU/Linux 5.3.0-51-generic x86_64)`)
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := smtpHarvester([]byte(finalData), "test", time.Now())
+	c := telnetHarvester([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
