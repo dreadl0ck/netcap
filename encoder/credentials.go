@@ -14,7 +14,6 @@
 package encoder
 
 import (
-	"bytes"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -48,7 +47,7 @@ var (
 	reSMTPPlainSingle   = regexp.MustCompile(`(?:.*?)AUTH PLAIN (.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
 	reSMTPLogin         = regexp.MustCompile(`(?:.*?)AUTH LOGIN\r\n334 VXNlcm5hbWU6\r\n(.*?)\r\n334 UGFzc3dvcmQ6\r\n(.*?)\r\n235(?:.*?)Authentication successful(?:.*?)$`)
 	reSMTPCramMd5       = regexp.MustCompile(`(?:.*?)AUTH CRAM-MD5(?:\r\n)334\s(.*?)(?:\r\n)(.*?)(\r\n)235(?:.*?)Authentication successful(?:.*?)$`)
-	reTelnet            = regexp.MustCompile(`(?:.*?)login:([\s\S]*?)\r\n(?:.*?)\r\nPassword:([\s\S]*?)\r\n(?:.*?)`)
+	reTelnet            = regexp.MustCompile(`(?:.*?)login:\s(.*?)\r\n(?:.*?)\r\nPassword:\s(.*?)\r\n(?:.*?)`)
 	reIMAPPlainSingle   = regexp.MustCompile(`(?:.*?)LOGIN\s(.*?)\s(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
 	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)LOGIN\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
 	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)AUTHENTICATE PLAIN\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
@@ -108,21 +107,31 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		if err != nil {
 			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
 		}
-		data = bytes.Trim(data, "\x00")
-		username = string(data)
-		username = username + "\x00"
+		var newData []byte
+		for _, b := range data {
+			if b != byte(0) {
+				newData = append(newData, b)
+			}
+		}
+		//newData = append(newData, 0)
+		username = string(newData)
 		password = "" // With plain creds password and username are concatenated.
 		service = "SMTP Auth Plain"
 	}
 
 	if len(matchesPlainSingle) > 1 {
-		data, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
+		data, err := base64.StdEncoding.DecodeString(string(matchesPlainSingle[1]))
 		if err != nil {
 			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
 		}
-		data = bytes.Trim(data, "\x00")
-		username = string(data)
-		username = username + "\x00"
+		var newData []byte
+		for _, b := range data {
+			if b != byte(0) {
+				newData = append(newData, b)
+			}
+		}
+		//newData = append(newData, 0)
+		username = string(newData)
 		password = "" // With plain creds password and username are concatenated.
 		service = "SMTP Auth Plain"
 	}
