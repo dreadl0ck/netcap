@@ -164,7 +164,7 @@ func Run() {
 			ClosePendingTimeOut:  *flagClosePendingTimeout,
 			FileStorage:          *flagFileStorage,
 			CalculateEntropy:     *flagCalcEntropy,
-			SaveStreams:          *flagSaveStreams,
+			SaveConns:            *flagSaveConns,
 			SaveBanner:           *flagSaveBanners,
 			TCPDebug:             *flagTCPDebug,
 			UseRE2:               *flagUseRE2,

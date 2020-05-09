@@ -99,16 +99,9 @@ var reassemblyStats struct {
 	biggestChunkPackets int64
 	overlapBytes        int64
 	overlapPackets      int64
-	savedStreams        int64
 	savedConnections    int64
 	numSoftware         int64
 	numServices         int64
-}
-
-func NumSavedStreams() int64 {
-	statsMutex.Lock()
-	defer statsMutex.Unlock()
-	return reassemblyStats.savedStreams
 }
 
 func NumSavedConns() int64 {
@@ -316,7 +309,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 			return
 		}
 
-		if c.SaveStreams {
+		if c.SaveConns {
 			if length > 0 {
 				if c.HexDump {
 					logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
@@ -482,7 +475,7 @@ func CleanupReassembly(wait bool) {
 		}
 
 		if !Quiet {
-			fmt.Print("flushing remaining TCP streams to disk... ")
+			fmt.Print("processing remaining TCP streams... ")
 		}
 
 		// TODO: parallelize?
@@ -492,33 +485,23 @@ func CleanupReassembly(wait bool) {
 			if s != nil {
 				if !Quiet {
 					clearLine()
-					fmt.Print("flushing remaining TCP streams to disk... ", "(", i+1, "/", len(streamFactory.streamReaders), ")")
+					fmt.Print("processing remaining TCP streams... ", "(", i+1, "/", len(streamFactory.streamReaders), ")")
 				}
+				// do not process streams that have been saved already by their cleanup functions
+				// because the corresponding connection has been closed
 				if s.Saved() {
 					continue
 				}
 				if s.IsClient() {
-					err := saveStream(s.ClientStream(), s.Ident(), s.IsClient(), s.FirstPacket(), s.Network(), s.Transport())
-					if err != nil {
-						fmt.Println("failed to save stream", err)
-					}
-
-					//if c.Debug {
-					//	fmt.Println(ansi.White, s.ident, ansi.Red, "Client", ansi.Blue, "Server")
-					//	fmt.Println(string(s.parent.conversationColored.Bytes()), ansi.Reset)
-					//}
-
 					// save the entire conversation.
 					// we only need to do this once, when client part of the connection is closed
-					err = saveConnection(s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
+					err := saveConnection(s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
 					if err != nil {
 						fmt.Println("failed to save connection", err)
 					}
 				} else {
-					err := saveStream(s.ServerStream(), s.Ident(), s.IsClient(), s.FirstPacket(), s.Network(), s.Transport())
-					if err != nil {
-						fmt.Println("failed to save stream", err)
-					}
+					// save the service banner
+					saveTCPServiceBanner(s.ServerStream(), s.Ident(), s.FirstPacket(), s.Network(), s.Transport())
 				}
 			}
 		}
@@ -583,7 +566,6 @@ func CleanupReassembly(wait bool) {
 		rows = append(rows, []string{"biggest-chunk bytes", strconv.FormatInt(reassemblyStats.biggestChunkBytes, 10)})
 		rows = append(rows, []string{"overlap packets", strconv.FormatInt(reassemblyStats.overlapPackets, 10)})
 		rows = append(rows, []string{"overlap bytes", strconv.FormatInt(reassemblyStats.overlapBytes, 10)})
-		rows = append(rows, []string{"saved streams", strconv.FormatInt(reassemblyStats.savedStreams, 10)})
 		rows = append(rows, []string{"saved connections", strconv.FormatInt(reassemblyStats.savedConnections, 10)})
 		rows = append(rows, []string{"numSoftware", strconv.FormatInt(reassemblyStats.numSoftware, 10)})
 		rows = append(rows, []string{"numServices", strconv.FormatInt(reassemblyStats.numServices, 10)})

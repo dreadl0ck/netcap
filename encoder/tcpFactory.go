@@ -35,6 +35,8 @@ var (
  * The TCP factory: returns a new Connection
  */
 
+// internal data structure to handle new network streams
+// and spawn the stream decoder routines for processing the data
 type tcpConnectionFactory struct {
 	wg            sync.WaitGroup
 	decodeHTTP    bool
@@ -44,6 +46,9 @@ type tcpConnectionFactory struct {
 	sync.Mutex
 }
 
+// StreamReader is an interface used to describe a processed uni-directional stream
+// it is used to close the remaining open streams and process the remaining data
+// when the engine is stopped
 type StreamReader interface {
 	ClientStream() []byte
 	ServerStream() []byte
@@ -133,7 +138,7 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 			return stream
 		}
 
-		if c.SaveStreams {
+		if c.SaveConns {
 
 			stream.client = &tcpReader{
 				bytes:    make(chan []byte, c.StreamDecoderBufSize),

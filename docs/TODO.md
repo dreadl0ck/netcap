@@ -1,22 +1,23 @@
 # TODOs
 
+- make size of tcp stream that gets matched against the harvester configurable
+- service: add reverse DNS lookup
+- process remaining connections with a worker pool
+- config.SaveBanner unused?
+- connections should also evaluate the source port for sorting the files: example tcpConnections/unknown/165.227.109.154->192.168.1.47-22->52875.bin should be sorted to SSH
+- add filter flag to only include internal services?
+- make stop after harvester match configurable
+
 - make a group extraction util and expand all groups in all strings properly
-- add keyword filter and compile as regex?
+- add keyword filter and compile as regex? username, password etc might appear somewhere in stream contents, e.g inside HTML etc
+
 - map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc
 - net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode?
-- add separate flag to write also HTTP and POP3 TCP streams to disk 
-
+ 
 - extract TLS certificates! alert if selfsigned
-- check zeek logic and regexes for software identification
 
 - add Service audit record for UDP banners
-- save all UDP streams to disk
-
-- TODO: check Via metadata, use useragents retrieved from ja3 lookup as well
-- Credentials Audit Record harvesters: HTTP Basic Auth, POP3 credentials, SNMP, telnet/rsh/rexec, HTTP login forms, MySQL, CustomRegex (for example CTF flag format), FTP, SMTP
-
-- snort / suricata rules that identify services?
-- use YARA to scan the service banners? any public yara rules for service detection?
+- add flag to save all UDP conversations to disk
 
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 

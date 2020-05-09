@@ -19,6 +19,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -321,6 +322,7 @@ var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credent
 // it maps an identifier in the format: c.Service + c.User + c.Password
 // to the flow ident where the data was observed
 var credStore = make(map[string]string)
+var credStoreMu sync.Mutex
 
 // writeCredentials is a util that should be used to write credential audit to disk
 // it will deduplicate the audit records to avoid repeating information on disk
@@ -329,10 +331,13 @@ func writeCredentials(c *types.Credentials) {
 	ident := c.Service + c.User + c.Password
 
 	// prevent saving duplicate credentials
+	credStoreMu.Lock()
 	if _, ok := credStore[ident]; ok {
+		credStoreMu.Unlock()
 		return
 	}
 	credStore[ident] = c.Flow
+	credStoreMu.Unlock()
 
 	if credentialsEncoder.export {
 		c.Inc()
