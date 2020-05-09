@@ -209,6 +209,14 @@ commands:
                 rm -rf "$f.net"
             done
 
+    merge-test-pcaps:
+        exec: |
+            while IFS= read -r line; do
+                FILES+=("$line")
+            done < <(find tests -type f -name "*.pcap" -o -name "*.pcapng" | sort)
+            declare -p FILES
+            mergecap -w tests/merged.pcapng "${FILES[@]}"
+
     pack-dbs:
         description: pack all dbs that can be shared as a zip archive
         help: the resulting archive will be put into the resolvers folder
