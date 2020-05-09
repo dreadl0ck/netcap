@@ -309,13 +309,11 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 			return
 		}
 
-		if c.SaveConns {
-			if length > 0 {
-				if c.HexDump {
-					logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
-				}
-				t.feedData(dir, data)
+		if length > 0 {
+			if c.HexDump {
+				logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
 			}
+			t.feedData(dir, data)
 		}
 	}
 }

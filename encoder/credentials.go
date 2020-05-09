@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"regexp"
@@ -71,8 +72,15 @@ var (
 	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)authentication successful(?:.*?)$`)
 )
 
+func harvesterDebug(ident string, data []byte, args ...interface{}) {
+	fmt.Println(ident, "\n", hex.Dump(data), args)
+}
+
 // harvester for the FTP protocol
 func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+
+	//harvesterDebug(ident, data, "FTP")
+
 	matches := reFTP.FindSubmatch(data)
 	if len(matches) > 1 {
 		username := string(matches[1])
