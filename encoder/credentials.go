@@ -42,7 +42,8 @@ var ftpCredentialsRegex, errFtpRegex = regexp.Compile("220(.*)\\r\\nUSER\\s(.*)\
 
 var (
 	reFTP               = regexp.MustCompile(`220(?:.*?)\r\nUSER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
-	reHTTP              = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
+	reHTTPBasic         = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
+	reHTTPDigest        = regexp.MustCompile(`(?:.*?)Authorization: Digest (.*?)\r\n`)
 	reSMTPPlainSeparate = regexp.MustCompile(`(?:.*?)AUTH PLAIN\r\n334\r\n(.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
 	reSMTPPlainSingle   = regexp.MustCompile(`(?:.*?)AUTH PLAIN (.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
 	reSMTPLogin         = regexp.MustCompile(`(?:.*?)AUTH LOGIN\r\n334 VXNlcm5hbWU6\r\n(.*?)\r\n334 UGFzc3dvcmQ6\r\n(.*?)\r\n235(?:.*?)Authentication successful(?:.*?)$`)
@@ -71,16 +72,28 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
-func httpBasicAuthHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-	matches := reHTTP.FindSubmatch(data)
-	if len(matches) > 1 {
-		data, err := base64.StdEncoding.DecodeString(string(matches[1]))
+func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+	matchesBasic := reHTTPBasic.FindSubmatch(data)
+	matchesDigest := reHTTPDigest.FindSubmatch(data)
+	var username string
+	var password string
+
+	if len(matchesBasic) > 1 {
+		data, err := base64.StdEncoding.DecodeString(string(matchesBasic[1]))
 		if err != nil {
 			fmt.Println("Captured HTTP Basic Auth credentials, but could not decode them")
 		}
 		creds := strings.Split(string(data), ":")
-		username := creds[0]
-		password := creds[1]
+		username = creds[0]
+		password = creds[1]
+	}
+
+	if len(matchesDigest) > 1 {
+		username = string(matchesDigest[1])
+		password = "" // This doesn't retrieve creds per se. It retrieves the info needed to crack them
+	}
+
+	if len(username) > 1 {
 		return &types.Credentials{
 			Timestamp: ts.String(),
 			Service:   "HTTP Basic Auth",
@@ -89,7 +102,6 @@ func httpBasicAuthHarvester(data []byte, ident string, ts time.Time) *types.Cred
 			Password:  password,
 		}
 	}
-
 	return nil
 }
 

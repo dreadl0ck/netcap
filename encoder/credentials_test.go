@@ -51,7 +51,7 @@ Accept-Language: en-US,en;q=0.9
 If-None-Match: W/"5ea9593d-2aa6"
 If-Modified-Since: Wed, 29 Apr 2020 10:38:53 GMT`)
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := httpBasicAuthHarvester([]byte(finalData), "test", time.Now())
+	c := httpHarvester([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -62,6 +62,24 @@ If-Modified-Since: Wed, 29 Apr 2020 10:38:53 GMT`)
 
 	if c.Password != "password" {
 		t.Fatal("incorrect pass, got:", c.Password, "expected: password")
+	}
+
+	data = []byte(`GET /dir/index.html HTTP/1.0
+Host: localhost
+Authorization: Digest username="Mufasa", realm="testrealm@host.com", nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", uri="/dir/index.html", qop=auth, nc=00000001, cnonce="0a4f113b", response="6629fae49393a05397450978507c4ef1", opaque="5ccc069c403ebaf9f0171e9517f40e41"
+`)
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester([]byte(finalData), "test", time.Now())
+	if c == nil {
+		t.Fatal("no credentials found")
+	}
+
+	if c.User != "username=\"Mufasa\", realm=\"testrealm@host.com\", nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", uri=\"/dir/index.html\", qop=auth, nc=00000001, cnonce=\"0a4f113b\", response=\"6629fae49393a05397450978507c4ef1\", opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"" {
+		t.Fatal("incorrect pass, got:", c.User, "expected: the long digest headers")
+	}
+
+	if c.Password != "" {
+		t.Fatal("incorrect pass, got:", c.Password, "expected: ")
 	}
 }
 
