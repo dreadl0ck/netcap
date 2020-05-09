@@ -213,16 +213,66 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		return nil
 	}
 
-	// run harvesters against raw data
-	for _, ch := range tcpConnectionHarvesters {
-		if c := ch(raw, ident, firstPacket); c != nil {
+	// TODO: only use harvesters when credential audit record type is loaded!
+
+	var (
+		banner = make([]byte, 0, c.BannerSize)
+		found bool
+		tried *CredentialHarvester
+	)
+
+	// copy c.BannerSize number of bytes from the raw conversation
+	// to use for the credential harvesters
+	for i, b := range raw {
+		if i >= c.BannerSize {
+			break
+		}
+		banner = append(banner, b)
+	}
+
+	// convert service port to integer
+	dstPort, err := strconv.Atoi(transport.Dst().String())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// check if its a well known port and use the harvester for that one
+	if ch, ok := harvesterPortMapping[dstPort]; ok {
+		if c := ch(banner, ident, firstPacket); c != nil {
 
 			// write audit record
 			writeCredentials(c)
 
-			// stop after a match for now
+			// we found a match and will stop processing
 			// TODO: make configurable
-			break
+			found = true
+		} else {
+			// save the address of the harvester function
+			// we dont need to run it again
+			tried = &ch
+		}
+	}
+
+	// if we dont have a match yet, match against all available harvesters
+	if !found {
+
+		// iterate over all harvesters
+		for _, ch := range tcpConnectionHarvesters {
+
+			// if the port based first guess has not been found, do not run this harvester again
+			if &ch != tried {
+
+				// execute harvester
+				if c := ch(banner, ident, firstPacket); c != nil {
+
+					// write audit record
+					writeCredentials(c)
+
+					// stop after a match for now
+					// TODO: make configurable
+					break
+				}
+			}
 		}
 	}
 
