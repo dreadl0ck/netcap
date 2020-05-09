@@ -33,12 +33,30 @@ import (
 // on success a pointer to a types.Credential is returned, nil otherwise
 type CredentialHarvester func(data []byte, ident string, ts time.Time) *types.Credentials
 
-// harvesters to be ran against all seen bi-directional communication in a TCP session
-var tcpConnectionHarvesters = []CredentialHarvester{
-	ftpHarvester,
-}
-
 var (
+	// harvesters to be ran against all seen bi-directional communication in a TCP session
+	// new harvesters must be added here in order to get called
+	tcpConnectionHarvesters = []CredentialHarvester{
+		ftpHarvester,
+		httpHarvester,
+		smtpHarvester,
+		telnetHarvester,
+		imapHarvester,
+	}
+
+	// mapped port number to the harvester based on the IANA standards
+	// used for the first guess which harvester to use
+	harvesterPortMapping = map[int]CredentialHarvester{
+		21: ftpHarvester,
+		80: httpHarvester,
+		587: smtpHarvester,
+		465: smtpHarvester,
+		25: smtpHarvester,
+		23: telnetHarvester,
+		143: imapHarvester,
+	}
+
+	// regular expressions for the harvesters
 	reFTP               = regexp.MustCompile(`220(?:.*?)\r\nUSER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
 	reHTTPBasic         = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
 	reHTTPDigest        = regexp.MustCompile(`(?:.*?)Authorization: Digest (.*?)\r\n`)
@@ -53,6 +71,7 @@ var (
 	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)authentication successful(?:.*?)$`)
 )
 
+// harvester for the FTP protocol
 func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	matches := reFTP.FindSubmatch(data)
 	if len(matches) > 1 {
@@ -70,6 +89,7 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
+// harvester for the HTTP protocol
 func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	var (
@@ -106,6 +126,7 @@ func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
+// harvester for the SMTP protocol
 func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	var (
@@ -210,6 +231,7 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
+// harvester for telnet traffic
 func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	matches := reTelnet.FindSubmatch(data)
 	if len(matches) > 1 {
@@ -232,6 +254,7 @@ func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials
 	return nil
 }
 
+// harvester for the IMAP protocol
 func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	var (
