@@ -138,32 +138,29 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 			return stream
 		}
 
-		if c.SaveConns {
-
-			stream.client = &tcpReader{
-				bytes:    make(chan []byte, c.StreamDecoderBufSize),
-				ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
-				hexdump:  c.HexDump,
-				parent:   stream,
-				isClient: true,
-			}
-			stream.server = &tcpReader{
-				bytes:   make(chan []byte, c.StreamDecoderBufSize),
-				ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
-				hexdump: c.HexDump,
-				parent:  stream,
-			}
-
-			// kickoff readers for client and server
-			factory.wg.Add(2)
-			factory.Lock()
-			factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
-			factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
-			factory.numActive += 2
-			factory.Unlock()
-			go stream.client.Run(factory)
-			go stream.server.Run(factory)
+		stream.client = &tcpReader{
+			bytes:    make(chan []byte, c.StreamDecoderBufSize),
+			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
+			hexdump:  c.HexDump,
+			parent:   stream,
+			isClient: true,
 		}
+		stream.server = &tcpReader{
+			bytes:   make(chan []byte, c.StreamDecoderBufSize),
+			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
+			hexdump: c.HexDump,
+			parent:  stream,
+		}
+
+		// kickoff readers for client and server
+		factory.wg.Add(2)
+		factory.Lock()
+		factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
+		factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
+		factory.numActive += 2
+		factory.Unlock()
+		go stream.client.Run(factory)
+		go stream.server.Run(factory)
 	}
 
 	return stream
