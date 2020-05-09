@@ -42,8 +42,8 @@ type tcpReader struct {
 	hexdump  bool
 	parent   *tcpConnection
 
-	clientData bytes.Buffer
-	serverData bytes.Buffer
+	serviceBanner bytes.Buffer
+	serviceBannerBytes int
 
 	saved bool
 }
@@ -76,10 +76,16 @@ func (h *tcpReader) Read(p []byte) (int, error) {
 		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
 	}
 
-	if h.isClient {
-		h.clientData.Write(dataCpy)
-	} else {
-		h.serverData.Write(dataCpy)
+	// save server stream for banner identification
+	// stores c.BannerSize number of bytes of the server side stream
+	if !h.isClient && h.serviceBannerBytes < c.BannerSize {
+		for _, b := range dataCpy {
+			h.serviceBanner.WriteByte(b)
+			h.serviceBannerBytes++
+			if h.serviceBannerBytes == c.BannerSize {
+				break
+			}
+		}
 	}
 	h.parent.Unlock()
 
@@ -100,6 +106,9 @@ func (h *tcpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connect
 		if err != nil {
 			fmt.Println("failed to save stream", err)
 		}
+		h.saved = true
+	} else {
+		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport)
 		h.saved = true
 	}
 
@@ -217,6 +226,10 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		}
 	}
 
+	if !c.SaveConns {
+		return nil
+	}
+
 	var (
 		typ = getServiceName(raw, transport)
 
@@ -262,61 +275,6 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	return nil
 }
 
-func saveStream(data []byte, ident string, isClient bool, firstPacket time.Time, net, transport gopacket.Flow) error {
-
-	// prevent saving zero bytes
-	if len(data) == 0 {
-		return nil
-	}
-
-	var (
-		typ = getServiceName(data, transport)
-
-		// path for storing the data
-		root = filepath.Join(c.Out, "tcpStreams", typ)
-
-		// file basename
-		base = filepath.Clean(path.Base(ident)) + ".bin"
-	)
-
-	// make sure root path exists
-	os.MkdirAll(root, directoryPermission)
-	base = path.Join(root, base)
-
-	utils.ReassemblyLog.Println("saveStream", base)
-
-	statsMutex.Lock()
-	reassemblyStats.savedStreams++
-	statsMutex.Unlock()
-
-	// append to files
-	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, 0700)
-	if err != nil {
-		logReassemblyError("TCP stream create", "Cannot create %s: %s\n", base, err)
-		return err
-	}
-
-	// now assign a new buffer
-	r := bytes.NewBuffer(data)
-	w, err := io.Copy(f, r)
-	if err != nil {
-		logReassemblyError("TCP stream", "%s: failed to save TCP stream %s (l:%d): %s\n", ident, base, w, err)
-	} else {
-		logReassemblyInfo("%s: Saved TCP stream %s (l:%d)\n", ident, base, w)
-	}
-
-	err = f.Close()
-	if err != nil {
-		logReassemblyError("TCP stream", "%s: failed to close TCP stream file %s (l:%d): %s\n", ident, base, w, err)
-	}
-
-	if !isClient {
-		saveTCPServiceBanner(data, ident, firstPacket, net, transport)
-	}
-
-	return nil
-}
-
 func tcpDebug(args ...interface{}) {
 	if c.TCPDebug {
 		utils.DebugLog.Println(args...)
@@ -341,13 +299,13 @@ func (h *tcpReader) readStream(b *bufio.Reader) error {
 func (h *tcpReader) ClientStream() []byte {
 	h.parent.Lock()
 	defer h.parent.Unlock()
-	return h.clientData.Bytes()
+	return nil // h.clientData.Bytes()
 }
 
 func (h *tcpReader) ServerStream() []byte {
 	h.parent.Lock()
 	defer h.parent.Unlock()
-	return h.serverData.Bytes()
+	return h.serviceBanner.Bytes()
 }
 
 func (h *tcpReader) ConversationRaw() []byte {

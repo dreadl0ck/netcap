@@ -299,8 +299,7 @@ func (c *Collector) Stats() {
 
 	fmt.Fprintln(target, res)
 
-	if c.config.EncoderConfig.SaveStreams {
-		fmt.Fprintln(target, "saved streams:", encoder.NumSavedStreams())
+	if c.config.EncoderConfig.SaveConns {
 		fmt.Fprintln(target, "saved connections:", encoder.NumSavedConns())
 	}
 }

@@ -60,6 +60,8 @@ type pop3Reader struct {
 	user, pass, token string
 
 	saved bool
+	serviceBanner bytes.Buffer
+	serviceBannerBytes int
 }
 
 func (h *pop3Reader) Read(p []byte) (int, error) {
@@ -89,6 +91,18 @@ func (h *pop3Reader) Read(p []byte) (int, error) {
 	} else {
 		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
 	}
+
+	// save server stream for banner identification
+	// stores c.BannerSize number of bytes of the server side stream
+	if !h.isClient && h.serviceBannerBytes < c.BannerSize {
+		for _, b := range dataCpy {
+			h.serviceBanner.WriteByte(b)
+			h.serviceBannerBytes++
+			if h.serviceBannerBytes == c.BannerSize {
+				break
+			}
+		}
+	}
 	h.parent.Unlock()
 
 	return l, nil
@@ -107,6 +121,9 @@ func (h *pop3Reader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 		if err != nil {
 			fmt.Println("failed to save connection", err)
 		}
+		h.saved = true
+	} else {
+		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport)
 		h.saved = true
 	}
 
@@ -812,7 +829,9 @@ func (h *pop3Reader) ClientStream() []byte {
 }
 
 func (h *pop3Reader) ServerStream() []byte {
-	return nil
+	h.parent.Lock()
+	defer h.parent.Unlock()
+	return h.serviceBanner.Bytes()
 }
 
 func (h *pop3Reader) ConversationRaw() []byte {

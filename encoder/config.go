@@ -82,7 +82,7 @@ var DefaultConfig = Config{
 	ClosePendingTimeOut:  5 * time.Second,
 	FileStorage:          "files",
 	CalculateEntropy:     false,
-	SaveStreams:          false,
+	SaveConns:            false,
 	SaveBanner:           false,
 	TCPDebug:             false,
 	UseRE2:               true,
@@ -185,8 +185,8 @@ type Config struct {
 	// Calculate entropy for payloads in Ethernet and IP audit records
 	CalculateEntropy bool
 
-	// Save the entire raw TCP stream for all connections over ports that are not modeled as audit records
-	SaveStreams bool
+	// Save the entire raw TCP conversations for all tracked connections to disk
+	SaveConns bool
 
 	// Save service banners of raw TCP streams for all connections that are not modeled as audit records
 	SaveBanner bool

@@ -82,7 +82,7 @@ var (
 	flagReassembleConnections = fs.Bool("reassemble-connections", true, "reassemble TCP connections")
 
 	flagTCPDebug    = fs.Bool("tcp-debug", false, "add debug output for TCP connections to debug.log")
-	flagSaveStreams = fs.Bool("streams", false, "save raw TCP connections")
+	flagSaveConns   = fs.Bool("conns", false, "save raw TCP connections")
 	flagSaveBanners = fs.Bool("banners", false, "save first 512k bytes of raw TCP connections")
 
 	flagCalcEntropy          = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
