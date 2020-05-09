@@ -38,9 +38,6 @@ var tcpConnectionHarvesters = []CredentialHarvester{
 	ftpHarvester,
 }
 
-// FTP protocol
-var ftpCredentialsRegex, errFtpRegex = regexp.Compile("220(.*)\\r\\nUSER\\s(.*)\\r\\n331(.*)\\r\\nPASS\\s(.*)\\r\\n")
-
 var (
 	reFTP               = regexp.MustCompile(`220(?:.*?)\r\nUSER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
 	reHTTPBasic         = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
@@ -74,10 +71,13 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 }
 
 func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-	matchesBasic := reHTTPBasic.FindSubmatch(data)
-	matchesDigest := reHTTPDigest.FindSubmatch(data)
-	var username string
-	var password string
+
+	var (
+		matchesBasic = reHTTPBasic.FindSubmatch(data)
+		matchesDigest = reHTTPDigest.FindSubmatch(data)
+		username string
+		password string
+	)
 
 	if len(matchesBasic) > 1 {
 		data, err := base64.StdEncoding.DecodeString(string(matchesBasic[1]))
@@ -107,22 +107,27 @@ func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 }
 
 func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-	var username string
-	var password string
-	var service string
-	matchesPlainSeparate := reSMTPPlainSeparate.FindSubmatch(data)
-	matchesPlainSingle := reSMTPPlainSingle.FindSubmatch(data)
-	matchesLogin := reSMTPLogin.FindSubmatch(data)
-	matchesCramMd5 := reSMTPCramMd5.FindSubmatch(data)
+
+	var (
+		username string
+		password string
+		service string
+		matchesPlainSeparate = reSMTPPlainSeparate.FindSubmatch(data)
+		matchesPlainSingle = reSMTPPlainSingle.FindSubmatch(data)
+		matchesLogin = reSMTPLogin.FindSubmatch(data)
+		matchesCramMd5 = reSMTPCramMd5.FindSubmatch(data)
+	)
 
 	if len(matchesPlainSeparate) > 1 {
 		data, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
 		if err != nil {
 			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
 		}
-		var newDataUsername []byte
-		var newDataPassword []byte
-		var nulled bool = false
+		var (
+			newDataUsername []byte
+			newDataPassword []byte
+			nulled bool
+		)
 		for _, b := range data {
 			if b == byte(0) {
 				nulled = true
@@ -144,9 +149,11 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		if err != nil {
 			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
 		}
-		var newDataUsername []byte
-		var newDataPassword []byte
-		var nulled bool = false
+		var (
+			newDataUsername []byte
+			newDataPassword []byte
+			nulled bool
+		)
 		for _, b := range data {
 			if b == byte(0) {
 				nulled = true
@@ -226,12 +233,15 @@ func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials
 }
 
 func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-	var username string
-	var password string
-	matchesPlainSeparate := reIMATPlainSeparate.FindSubmatch(data)
-	matchesPlainSingle := reIMAPPlainSingle.FindSubmatch(data)
-	matchesLogin := reIMAPPlainAuth.FindSubmatch(data)
-	matchesCramMd5 := reIMAPPCramMd5.FindSubmatch(data)
+
+	var (
+		username string
+		password string
+		matchesPlainSeparate = reIMATPlainSeparate.FindSubmatch(data)
+		matchesPlainSingle = reIMAPPlainSingle.FindSubmatch(data)
+		matchesLogin = reIMAPPlainAuth.FindSubmatch(data)
+		matchesCramMd5 = reIMAPPCramMd5.FindSubmatch(data)
+	)
 
 	if len(matchesPlainSingle) > 1 {
 		username = string(matchesPlainSingle[1])
@@ -256,10 +266,12 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		if err != nil {
 			fmt.Println("Captured IMAP credentials, but could not decode them")
 		}
-		var newDataAuthCID []byte
-		var newDataAuthZID []byte
-		var newDataPassword []byte
-		var step int = 0
+		var (
+			newDataAuthCID []byte
+			newDataAuthZID []byte
+			newDataPassword []byte
+			step int = 0
+		)
 		for _, b := range data {
 			if b == byte(0) {
 				step++
@@ -301,16 +313,9 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		}
 	}
 	return nil
-
 }
 
 var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credentials", func(d *CustomEncoder) error {
-
-	// credential encoder init: check errors from compiling harvester regexes here
-	if errFtpRegex != nil {
-		return errFtpRegex
-	}
-
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 	return nil
@@ -318,11 +323,13 @@ var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credent
 	return nil
 })
 
-// credStore is used to deduplicate the credentials written to disk
-// it maps an identifier in the format: c.Service + c.User + c.Password
-// to the flow ident where the data was observed
-var credStore = make(map[string]string)
-var credStoreMu sync.Mutex
+var (
+	// credStore is used to deduplicate the credentials written to disk
+	// it maps an identifier in the format: c.Service + c.User + c.Password
+	// to the flow ident where the data was observed
+	credStore = make(map[string]string)
+	credStoreMu sync.Mutex
+)
 
 // writeCredentials is a util that should be used to write credential audit to disk
 // it will deduplicate the audit records to avoid repeating information on disk
