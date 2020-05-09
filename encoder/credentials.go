@@ -48,9 +48,9 @@ var (
 	reSMTPLogin         = regexp.MustCompile(`(?:.*?)AUTH LOGIN\r\n334 VXNlcm5hbWU6\r\n(.*?)\r\n334 UGFzc3dvcmQ6\r\n(.*?)\r\n235(?:.*?)Authentication successful(?:.*?)$`)
 	reSMTPCramMd5       = regexp.MustCompile(`(?:.*?)AUTH CRAM-MD5(?:\r\n)334\s(.*?)(?:\r\n)(.*?)(\r\n)235(?:.*?)Authentication successful(?:.*?)$`)
 	reTelnet            = regexp.MustCompile(`(?:.*?)login:\s(.*?)\r\n(?:.*?)\r\nPassword:\s(.*?)\r\n(?:.*?)`)
-	reIMAPPlainSingle   = regexp.MustCompile(`(?:.*?)LOGIN\s(.*?)\s(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
-	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)LOGIN\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
-	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)AUTHENTICATE PLAIN\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
+	reIMAPPlainSingle   = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\s(.*?)\s(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
+	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
+	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)(?:AUTHENTICATE PLAIN|authenticate plain)\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
 	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)authentication successful(?:.*?)$`)
 )
 
@@ -107,15 +107,22 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		if err != nil {
 			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
 		}
-		var newData []byte
+		var newDataUsername []byte
+		var newDataPassword []byte
+		var nulled bool = false
 		for _, b := range data {
-			if b != byte(0) {
-				newData = append(newData, b)
+			if b == byte(0) {
+				nulled = true
+			} else {
+				if nulled {
+					newDataPassword = append(newDataPassword, b)
+				} else {
+					newDataUsername = append(newDataUsername, b)
+				}
 			}
 		}
-		//newData = append(newData, 0)
-		username = string(newData)
-		password = "" // With plain creds password and username are concatenated.
+		username = string(newDataUsername)
+		password = string(newDataPassword)
 		service = "SMTP Auth Plain"
 	}
 
@@ -124,15 +131,22 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		if err != nil {
 			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
 		}
-		var newData []byte
+		var newDataUsername []byte
+		var newDataPassword []byte
+		var nulled bool = false
 		for _, b := range data {
-			if b != byte(0) {
-				newData = append(newData, b)
+			if b == byte(0) {
+				nulled = true
+			} else {
+				if nulled {
+					newDataPassword = append(newDataPassword, b)
+				} else {
+					newDataUsername = append(newDataUsername, b)
+				}
 			}
 		}
-		//newData = append(newData, 0)
-		username = string(newData)
-		password = "" // With plain creds password and username are concatenated.
+		username = string(newDataUsername)
+		password = string(newDataPassword)
 		service = "SMTP Auth Plain"
 	}
 
@@ -212,8 +226,6 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	}
 
 	if len(matchesPlainSeparate) > 1 {
-		fmt.Println(string(matchesPlainSeparate[1]))
-		fmt.Println(string(matchesPlainSeparate[2]))
 		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
 		if err != nil {
 			fmt.Println("Captured IMAP credentials, but could not decode them")
@@ -227,12 +239,30 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	}
 
 	if len(matchesLogin) > 1 {
-		creds, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
+		data, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
 		if err != nil {
 			fmt.Println("Captured IMAP credentials, but could not decode them")
 		}
-		username = string(creds)
-		password = "" // With this authentication method username and password are concatenated
+		var newDataAuthCID []byte
+		var newDataAuthZID []byte
+		var newDataPassword []byte
+		var step int = 0
+		for _, b := range data {
+			if b == byte(0) {
+				step++
+			} else {
+				switch step {
+				case 0:
+					newDataAuthCID = append(newDataAuthCID, b)
+				case 1:
+					newDataAuthZID = append(newDataAuthZID, b)
+				case 2:
+					newDataPassword = append(newDataPassword, b)
+				}
+			}
+		}
+		username = string(newDataAuthCID) + " | " + string(newDataAuthZID)
+		password = string(newDataPassword)
 	}
 
 	if len(matchesCramMd5) > 1 {
