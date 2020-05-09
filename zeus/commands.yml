@@ -189,6 +189,9 @@ commands:
             mv tests/ICS-pcap/MODBUS/digitalbond\ pcaps tests/ICS-pcap/MODBUS/digitalbond-pcaps
             mv tests/ICS-pcap/DNP3/digitalbond\ pcaps tests/ICS-pcap/DNP3/digitalbond-pcaps
             git clone https://github.com/tatsui-geek/malware-traffic-analysis.net
+            git clone https://github.com/rahard/pcapfiles.git
+            git clone https://github.com/markofu/pcaps.git morepcaps
+            rm -f morepcaps/PracticalPacketAnalysis/ppa-capture-files/http-fault-post.pcap
 
     test-pcaps:
         exec: |
@@ -211,11 +214,13 @@ commands:
 
     merge-test-pcaps:
         exec: |
+            rm -f tests/merged.pcapng
             while IFS= read -r line; do
                 FILES+=("$line")
             done < <(find tests -type f -name "*.pcap" -o -name "*.pcapng" | sort)
             declare -p FILES
             mergecap -w tests/merged.pcapng "${FILES[@]}"
+            du -h tests/merged.pcapng
 
     pack-dbs:
         description: pack all dbs that can be shared as a zip archive
