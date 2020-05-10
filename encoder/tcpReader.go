@@ -17,10 +17,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 	"io"
 	"os"
 	"path"
@@ -28,6 +24,11 @@ import (
 	"strconv"
 	"time"
 	"unicode"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/mgutz/ansi"
 )
 
 /*
@@ -42,7 +43,7 @@ type tcpReader struct {
 	hexdump  bool
 	parent   *tcpConnection
 
-	serviceBanner bytes.Buffer
+	serviceBanner      bytes.Buffer
 	serviceBannerBytes int
 
 	saved bool
@@ -199,7 +200,7 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 
 	// what about the source port?
 	srcPort, _ := strconv.Atoi(flow.Src().String())
-	s          = resolvers.LookupServiceByPort(srcPort, "tcp")
+	s = resolvers.LookupServiceByPort(srcPort, "tcp")
 	if s != "" {
 		return s
 	}
@@ -239,8 +240,8 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 
 	var (
 		banner = make([]byte, 0, c.BannerSize)
-		found bool
-		tried *CredentialHarvester
+		found  bool
+		tried  *CredentialHarvester
 	)
 
 	// copy c.BannerSize number of bytes from the raw conversation
@@ -258,8 +259,29 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		fmt.Println(err)
 	}
 
+	srcPort, err := strconv.Atoi(transport.Src().String())
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	// check if its a well known port and use the harvester for that one
 	if ch, ok := harvesterPortMapping[dstPort]; ok {
+		if c := ch(banner, ident, firstPacket); c != nil {
+
+			// write audit record
+			writeCredentials(c)
+
+			// we found a match and will stop processing
+			// TODO: make configurable
+			found = true
+		} else {
+			// save the address of the harvester function
+			// we dont need to run it again
+			tried = &ch
+		}
+	}
+
+	if ch, ok := harvesterPortMapping[srcPort]; ok {
 		if c := ch(banner, ident, firstPacket); c != nil {
 
 			// write audit record
