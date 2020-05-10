@@ -445,7 +445,7 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 	}
 }
 
-func CleanupReassembly(wait bool) {
+func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
 	cMu.Lock()
 	if c.Debug {
@@ -472,11 +472,17 @@ func CleanupReassembly(wait bool) {
 			}
 		}
 
+		// flush assemblers
+		// must be done after waiting for connections or there might be data loss
+		for _, a := range assemblers {
+			utils.ReassemblyLog.Printf("assembler flush: %d closed\n", a.FlushAll())
+		}
+
 		if !Quiet {
 			fmt.Print("processing remaining TCP streams... ")
 		}
 
-		// TODO: parallelize?
+		// TODO: parallelize using worker pattern
 		// flush the remaining streams to disk
 		streamFactory.Lock()
 		for i, s := range streamFactory.streamReaders {
