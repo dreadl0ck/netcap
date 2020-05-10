@@ -230,18 +230,17 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 
 	//fmt.Println(serviceNameSrc, serviceNameDst, manufacturer, ja3Result, userAgents, serverNames, protos)
 
-	var service string
+	var (
+		service string
+		s       []*Software
+		dpIdent = dp.MacAddr
+	)
 	if serviceNameSrc != "" {
 		service = serviceNameSrc
 	}
 	if serviceNameDst != "" {
 		service = serviceNameDst
 	}
-
-	var (
-		s       []*Software
-		dpIdent = dp.MacAddr
-	)
 	if dp.DeviceManufacturer != "" {
 		dpIdent += " <" + dp.DeviceManufacturer + ">"
 	}
@@ -249,6 +248,9 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 	// process user agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
 	for _, ua := range strings.Split(userAgents, "| ") {
+		if len(ua) == 0 || ua == " " {
+			continue
+		}
 		pMu.Lock()
 		userInfo, ok := userAgentCaching[ua]
 		if !ok {
@@ -277,6 +279,9 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 
 	// HTTP Server Name
 	for _, sn := range strings.Split(serverNames, "| ") {
+		if len(sn) == 0 || sn == " " {
+			continue
+		}
 		pMu.Lock()
 		var values = regExpServerName.FindStringSubmatch(sn)
 		s = append(s, &Software{
@@ -298,6 +303,9 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 
 	// X-Powered-By HTTP Header
 	for _, pb := range strings.Split(xPoweredBy, "| ") {
+		if len(pb) == 0 || pb == " " {
+			continue
+		}
 		pMu.Lock()
 		var values = regexpXPoweredBy.FindStringSubmatch(pb)
 		s = append(s, &Software{

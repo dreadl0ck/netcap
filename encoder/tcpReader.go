@@ -27,7 +27,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
-	"unicode/utf8"
+	"unicode"
 )
 
 /*
@@ -187,20 +187,42 @@ func (h *tcpReader) Run(f *tcpConnectionFactory) {
 	}
 }
 
-func getServiceName(data []byte, destination gopacket.Flow) string {
+func getServiceName(data []byte, flow gopacket.Flow) string {
 
 	var (
-		dstPort, _ = strconv.Atoi(destination.Dst().String())
+		dstPort, _ = strconv.Atoi(flow.Dst().String())
 		s          = resolvers.LookupServiceByPort(dstPort, "tcp")
 	)
 	if s != "" {
 		return s
 	}
 
-	if utf8.ValidString(string(data)) {
-		return "utf8"
+	// what about the source port?
+	srcPort, _ := strconv.Atoi(flow.Src().String())
+	s          = resolvers.LookupServiceByPort(srcPort, "tcp")
+	if s != "" {
+		return s
 	}
+
+	// still no clue? lets check if its ascii
+	if isAscii(data) {
+		return "ascii"
+	}
+
 	return "unknown"
+}
+
+// checks if input consists of ascii characters
+func isAscii(d []byte) bool {
+	if len(d) == 0 {
+		return false
+	}
+	for i := 0; i < len(d); i++ {
+		if d[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }
 
 func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
@@ -281,7 +303,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	}
 
 	var (
-		typ = getServiceName(raw, transport)
+		typ = getServiceName(banner, transport)
 
 		// path for storing the data
 		root = filepath.Join(c.Out, "tcpConnections", typ)

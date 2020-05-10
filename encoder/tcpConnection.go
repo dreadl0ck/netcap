@@ -457,7 +457,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	// wait for stream reassembly to finish
 	if c.WaitForConnections || wait {
 		if !Quiet {
-			fmt.Print("waiting for last streams to finish processing...")
+			fmt.Print("\nwaiting for last streams to finish processing...")
 		}
 
 		// wait for remaining connections to finish processing

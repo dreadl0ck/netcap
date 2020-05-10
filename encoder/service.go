@@ -53,9 +53,12 @@ var (
 	}
 )
 
+// addInfo is util to append information to a string using a delimiter
 func addInfo(old string, new string) string {
 	if len(old) == 0 {
 		return new
+	} else if len(new) == 0 {
+		return old
 	} else {
 		var b strings.Builder
 		b.WriteString(old)
