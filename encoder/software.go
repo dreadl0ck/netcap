@@ -38,52 +38,6 @@ import (
 	"github.com/ua-parser/uap-go/uaparser"
 )
 
-var products = []string{
-	"Windows NT",
-	"Win64",
-	"Trident",
-	"Firefox",
-	"Chrome",
-	"Safari",
-	"Apache",
-	"nginx",
-	"AmazonS3",
-	"PHP",
-	"Java",
-	"Microsoft-IIS",
-	"Netscape-Enterprise",
-	"Syntactic",
-	"Squid",
-	"Python-urllib",
-	"Edge",
-	"Opera",
-	"Firebird",
-	"Iceweasel",
-	"lighttpd",
-	"Apache-Coyote",
-	"Sun-ONE-Web-Server",
-	"OracleAS-Web-Cache-10g",
-	"Sun-Java-System-Web-Server",
-	// Mozilla ? e.g: Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)
-}
-
-var vendors = []string{
-	"Apple",
-	"Microsoft",
-	"Cisco",
-	"Mozilla",
-	"BlackBerry",
-}
-
-var operatingSystems = []string{
-	"ubuntu",
-	"macOS",
-	"linux",
-	"windows",
-	"android",
-	"ios",
-}
-
 type Software struct {
 	*types.Software
 	sync.Mutex
@@ -121,42 +75,6 @@ var (
 
 	ja3db Ja3CombinationsDB
 )
-
-func findVendor(in string) string {
-	for _, v := range vendors {
-		if strings.Contains(in, v) {
-			return v
-		}
-	}
-	return ""
-}
-
-// e.g: XXX Firefox/12.0 YYY -> [ "XXX Firefox" "/12.0 YYY" ] -> 12.0
-// e.g: XXX Windows NT 6.1 YYY -> [ "XXX Windows NT" " 6.1 YYY" ] -> 6.1
-func findVersion(in string, product string) string {
-	parts := strings.Split(in, product)
-	if len(parts) > 1 {
-		if strings.HasPrefix(parts[1], "/") {
-			return strings.TrimSuffix(
-				strings.TrimSuffix(
-					strings.Fields(
-						strings.TrimPrefix(parts[1], "/"),
-					)[0],
-					";"),
-				"|")
-		}
-		if strings.HasPrefix(parts[1], " ") {
-			return strings.TrimSuffix(
-				strings.TrimSuffix(
-					strings.Fields(
-						strings.TrimPrefix(parts[1], " "),
-					)[0],
-					";"),
-				"|")
-		}
-	}
-	return ""
-}
 
 type userAgent struct {
 	client  *uaparser.Client
