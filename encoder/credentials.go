@@ -70,6 +70,7 @@ var (
 	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)`)
 	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)(?:AUTHENTICATE PLAIN|authenticate plain)\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)`)
 	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)`)
+	reGenericVersion    = regexp.MustCompile(`([A-Za-z]*?)\s([0-9]+)(?:\.)?([0-9]+)?(?:\.)?([0-9]+)?`)
 )
 
 func harvesterDebug(ident string, data []byte, args ...interface{}) {
@@ -356,6 +357,25 @@ var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credent
 }, func(e *CustomEncoder) error {
 	return nil
 })
+
+// harvester for the FTP protocol
+func findVersions(data []byte, ident string, ts time.Time) *types.Software {
+
+	//harvesterDebug(ident, data, "FTP")
+
+	matches := reGenericVersion.FindSubmatch(data)
+	if len(matches) > 1 {
+		return &types.Software{
+			Timestamp: ts.String(),
+			Product:   string(matches[1]),
+			Version:   string(matches[2]) + "." + string(matches[3]) + "." + string(matches[4]),
+			Flows:     []string{ident},
+			Notes:     "Found by matching possible version format",
+		}
+	}
+
+	return nil
+}
 
 var (
 	// credStore is used to deduplicate the credentials written to disk
