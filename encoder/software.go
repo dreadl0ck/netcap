@@ -236,22 +236,26 @@ func parseUserAgent(ua string) *userAgent {
 }
 
 // harvester for the FTP protocol
-func grabVersion(data []byte, ident string, ts time.Time) *types.Software {
+func grabVersion(data []byte, ident string, ts time.Time) (software []*Software) {
 
 	//harvesterDebug(ident, data, "FTP")
+	var s []*Software
 
 	matches := reGenericVersion.FindSubmatch(data)
 	if len(matches) > 1 {
-		return &types.Software{
-			Timestamp: ts.String(),
-			Product:   string(matches[1]),
-			Version:   string(matches[2]) + "." + string(matches[3]) + "." + string(matches[4]),
-			Flows:     []string{ident},
-			Notes:     "Found by matching possible version format",
-		}
+		s = append(s, &Software{
+			Software: &types.Software{
+				Timestamp: ts.String(),
+				Product:   string(matches[1]),
+				Version:   string(matches[2]) + "." + string(matches[3]) + "." + string(matches[4]),
+				Flows:     []string{ident},
+				Notes:     "Found by matching possible version format",
+			},
+		})
 	}
 
-	return nil
+	return s
+
 }
 
 func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
