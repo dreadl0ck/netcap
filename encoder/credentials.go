@@ -48,12 +48,12 @@ var (
 	// mapped port number to the harvester based on the IANA standards
 	// used for the first guess which harvester to use
 	harvesterPortMapping = map[int]CredentialHarvester{
-		21: ftpHarvester,
-		80: httpHarvester,
+		21:  ftpHarvester,
+		80:  httpHarvester,
 		587: smtpHarvester,
 		465: smtpHarvester,
-		25: smtpHarvester,
-		23: telnetHarvester,
+		25:  smtpHarvester,
+		23:  telnetHarvester,
 		143: imapHarvester,
 	}
 
@@ -62,14 +62,14 @@ var (
 	reHTTPBasic         = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
 	reHTTPDigest        = regexp.MustCompile(`(?:.*?)Authorization: Digest (.*?)\r\n`)
 	reSMTPPlainSeparate = regexp.MustCompile(`(?:.*?)AUTH PLAIN\r\n334\r\n(.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
-	reSMTPPlainSingle   = regexp.MustCompile(`(?:.*?)AUTH PLAIN (.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
-	reSMTPLogin         = regexp.MustCompile(`(?:.*?)AUTH LOGIN\r\n334 VXNlcm5hbWU6\r\n(.*?)\r\n334 UGFzc3dvcmQ6\r\n(.*?)\r\n235(?:.*?)Authentication successful(?:.*?)$`)
-	reSMTPCramMd5       = regexp.MustCompile(`(?:.*?)AUTH CRAM-MD5(?:\r\n)334\s(.*?)(?:\r\n)(.*?)(\r\n)235(?:.*?)Authentication successful(?:.*?)$`)
+	reSMTPPlainSingle   = regexp.MustCompile(`(?:.*?)AUTH PLAIN (.*?)\r\n235(?:.*?)`)
+	reSMTPLogin         = regexp.MustCompile(`(?:.*?)AUTH LOGIN\r\n334 VXNlcm5hbWU6\r\n(.*?)\r\n334 UGFzc3dvcmQ6\r\n(.*?)\r\n235(?:.*?)`)
+	reSMTPCramMd5       = regexp.MustCompile(`(?:.*?)AUTH CRAM-MD5(?:\r\n)334\s(.*?)(?:\r\n)(.*?)(\r\n)235(?:.*?)`)
 	reTelnet            = regexp.MustCompile(`(?:.*?)login:\s(.*?)\r\n(?:.*?)\r\nPassword:\s(.*?)\r\n(?:.*?)`)
-	reIMAPPlainSingle   = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\s(.*?)\s(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
-	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
-	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)(?:AUTHENTICATE PLAIN|authenticate plain)\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)Logged in(?:.*?)$`)
-	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)authentication successful(?:.*?)$`)
+	reIMAPPlainSingle   = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\s(.*?)\s(.*?)\r\n(?:.*?)`)
+	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)`)
+	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)(?:AUTHENTICATE PLAIN|authenticate plain)\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)`)
+	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)`)
 )
 
 func harvesterDebug(ident string, data []byte, args ...interface{}) {
@@ -101,10 +101,10 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	var (
-		matchesBasic = reHTTPBasic.FindSubmatch(data)
+		matchesBasic  = reHTTPBasic.FindSubmatch(data)
 		matchesDigest = reHTTPDigest.FindSubmatch(data)
-		username string
-		password string
+		username      string
+		password      string
 	)
 
 	if len(matchesBasic) > 1 {
@@ -136,15 +136,14 @@ func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 // harvester for the SMTP protocol
 func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-
 	var (
-		username string
-		password string
-		service string
+		username             string
+		password             string
+		service              string
 		matchesPlainSeparate = reSMTPPlainSeparate.FindSubmatch(data)
-		matchesPlainSingle = reSMTPPlainSingle.FindSubmatch(data)
-		matchesLogin = reSMTPLogin.FindSubmatch(data)
-		matchesCramMd5 = reSMTPCramMd5.FindSubmatch(data)
+		matchesPlainSingle   = reSMTPPlainSingle.FindSubmatch(data)
+		matchesLogin         = reSMTPLogin.FindSubmatch(data)
+		matchesCramMd5       = reSMTPCramMd5.FindSubmatch(data)
 	)
 
 	if len(matchesPlainSeparate) > 1 {
@@ -155,7 +154,7 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		var (
 			newDataUsername []byte
 			newDataPassword []byte
-			nulled bool
+			nulled          bool
 		)
 		for _, b := range data {
 			if b == byte(0) {
@@ -181,7 +180,7 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		var (
 			newDataUsername []byte
 			newDataPassword []byte
-			nulled bool
+			nulled          bool
 		)
 		for _, b := range data {
 			if b == byte(0) {
@@ -264,19 +263,20 @@ func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials
 
 // harvester for the IMAP protocol
 func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-
 	var (
-		username string
-		password string
+		username             string
+		password             string
+		service              string
 		matchesPlainSeparate = reIMATPlainSeparate.FindSubmatch(data)
-		matchesPlainSingle = reIMAPPlainSingle.FindSubmatch(data)
-		matchesLogin = reIMAPPlainAuth.FindSubmatch(data)
-		matchesCramMd5 = reIMAPPCramMd5.FindSubmatch(data)
+		matchesPlainSingle   = reIMAPPlainSingle.FindSubmatch(data)
+		matchesLogin         = reIMAPPlainAuth.FindSubmatch(data)
+		matchesCramMd5       = reIMAPPCramMd5.FindSubmatch(data)
 	)
 
 	if len(matchesPlainSingle) > 1 {
 		username = string(matchesPlainSingle[1])
 		password = string(matchesPlainSingle[2])
+		service = "IMAP Plain Single Line"
 	}
 
 	if len(matchesPlainSeparate) > 1 {
@@ -290,6 +290,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		}
 		username = string(usernameBin)
 		password = string(passwordBin)
+		service = "IMAP Plain Separate Line"
 	}
 
 	if len(matchesLogin) > 1 {
@@ -298,10 +299,10 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 			fmt.Println("Captured IMAP credentials, but could not decode them")
 		}
 		var (
-			newDataAuthCID []byte
-			newDataAuthZID []byte
+			newDataAuthCID  []byte
+			newDataAuthZID  []byte
 			newDataPassword []byte
-			step int = 0
+			step            int = 0
 		)
 		for _, b := range data {
 			if b == byte(0) {
@@ -319,6 +320,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		}
 		username = string(newDataAuthCID) + " | " + string(newDataAuthZID)
 		password = string(newDataPassword)
+		service = "IMAP Login"
 	}
 
 	if len(matchesCramMd5) > 1 {
@@ -332,12 +334,13 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 			fmt.Println("Captured IMAP credentials, but could not decode them")
 		}
 		password = string(passwordBin) // And this is the hash
+		service = "IMAP CRAM-MD5"
 	}
 
 	if len(username) > 0 {
 		return &types.Credentials{
 			Timestamp: ts.String(),
-			Service:   "IMAP",
+			Service:   service,
 			Flow:      ident,
 			User:      username,
 			Password:  password,
@@ -358,7 +361,7 @@ var (
 	// credStore is used to deduplicate the credentials written to disk
 	// it maps an identifier in the format: c.Service + c.User + c.Password
 	// to the flow ident where the data was observed
-	credStore = make(map[string]string)
+	credStore   = make(map[string]string)
 	credStoreMu sync.Mutex
 )
 
