@@ -70,7 +70,6 @@ var (
 	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)`)
 	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)(?:AUTHENTICATE PLAIN|authenticate plain)\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)`)
 	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)`)
-	reGenericVersion    = regexp.MustCompile(`([A-Za-z]*?)\s([0-9]+)(?:\.)?([0-9]+)?(?:\.)?([0-9]+)?`)
 )
 
 func harvesterDebug(ident string, data []byte, args ...interface{}) {
