@@ -55,6 +55,7 @@ var (
 	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
 	ja3Caching       = make(map[string]string)
+	reGenericVersion = regexp.MustCompile(`(?:[A-Za-z]*?)\s(?:[0-9]+)(?:\.)?(?:[0-9]+)?(?:\.)?(?:[0-9]+)?`)
 )
 
 // Size returns the number of elements in the Items map
@@ -161,15 +162,18 @@ func grabVersion(data []byte, ident string, ts time.Time) (software []*Software)
 
 	matches := reGenericVersion.FindSubmatch(data)
 	if len(matches) > 1 {
-		s = append(s, &Software{
-			Software: &types.Software{
-				Timestamp: ts.String(),
-				Product:   string(matches[1]),
-				Version:   string(matches[2]) + "." + string(matches[3]) + "." + string(matches[4]),
-				Flows:     []string{ident},
-				Notes:     "Found by matching possible version format",
-			},
-		})
+		for _, v := range matches {
+			parsed := strings.Split(string(v), " ")
+			s = append(s, &Software{
+				Software: &types.Software{
+					Timestamp: ts.String(),
+					Product:   parsed[0],
+					Version:   parsed[1],
+					Flows:     []string{ident},
+					Notes:     "Found by matching possible version format",
+				},
+			})
+		}
 	}
 
 	return s
