@@ -1,7 +1,9 @@
 # TODOs
 
+- service: show num bytes
 - add flag for writing empty conns to disk or not
 - make size of tcp stream that gets matched against the harvester configurable separately
+
 - process remaining connections with a worker pool
 - service: add reverse DNS lookup
 - config.SaveBanner unused?
