@@ -1,0 +1,31 @@
+[34m* OK IMAP server ready H mimap13 96217
+[0m[34m* CAPABILITY IMAP4rev1 CHILDREN ENABLE ID IDLE LIST-EXTENDED LIST-STATUS LITERAL+ MOVE NAMESPACE QUOTA SASL-IR SORT THREAD=ORDEREDSUBJECT UIDPLUS UNSELECT WITHIN STARTTLS AUTH=LOGIN AUTH=PLAIN
+1 OK CAPABILITY completed
+[0m[31m1 capability
+[0m[31m2 authenticate plain
+[0m[34m+ 
+[0m[34m2 OK AUTHENTICATE completed
+[0m[31mAGRpZ2l0YWxpbnZlc3RpZ2F0b3JAbmV0d29ya3NpbXMuY29tAG5hcGllcjEyMw==
+[0m[31m3 ID ("name" "Thunderbird" "version" "17.0.8")
+[0m[34m3 OK ID completed
+[0m[31m4 append "Sent" (\Seen) {452+}
+[0m[31mMessage-ID: <521663E3.7090401@networksims.com>
+Date: Thu, 22 Aug 2013 20:17:55 +0100
+From: DI <digitalinvestigator@networksims.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: w.buchanan@napier.ac.uk
+CC: w_j_buchanan@hotmail.com
+Subject: Testing
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+Hello ... how are you?
+
+Bill.
+
+[0m[34m4 OK [APPENDUID 1377199071 1] APPEND completed
+[0m[31m5 logout
+[0m[34m* BYE Server logging out
+5 OK LOGOUT completed
+[0m

@@ -1,0 +1,37 @@
+[34m220 smtp.1und1.de (mreu2) Welcome to Nemesis ESMTP server
+[0m[31mEHLO [192.168.0.4]
+[0m[34m250-smtp.1und1.de
+[0m[34m250-STARTTLS
+250-AUTH LOGIN PLAIN
+250-AUTH=LOGIN PLAIN
+250-SIZE 120000000
+250 HELP
+[0m[31mAUTH PLAIN AGRpZ2l0YWxpbnZlc3RpZ2F0b3JAbmV0d29ya3NpbXMuY29tAG5hcGllcjEyMw==
+[0m[34m235 Authentication successful
+[0m[31mMAIL FROM:<digitalinvestigator@networksims.com> SIZE=452
+[0m[34m250 OK
+[0m[31mRCPT TO:<w.buchanan@napier.ac.uk>
+[0m[34m250 OK
+[0m[31mRCPT TO:<w_j_buchanan@hotmail.com>
+[0m[34m250 OK
+[0m[31mDATA
+[0m[34m354 Enter mail, end with "." on a line by itself
+[0m[31mMessage-ID: <521663E3.7090401@networksims.com>
+Date: Thu, 22 Aug 2013 20:17:55 +0100
+From: DI <digitalinvestigator@networksims.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: w.buchanan@napier.ac.uk
+CC: w_j_buchanan@hotmail.com
+Subject: Testing
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+Hello ... how are you?
+
+Bill.
+[0m[31m.
+[0m[34m250 Message 0MIjEq-1VEnJO3RVo-002UBE accepted by mreu2.kundenserver.de
+[0m[31mQUIT
+[0m[34m221 OK
+[0m
