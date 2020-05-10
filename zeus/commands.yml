@@ -192,6 +192,7 @@ commands:
             git clone https://github.com/rahard/pcapfiles.git
             git clone https://github.com/markofu/pcaps.git morepcaps
             rm -f morepcaps/PracticalPacketAnalysis/ppa-capture-files/http-fault-post.pcap
+            git clone https://github.com/odedshimon/BruteShark
 
     test-pcaps:
         exec: |
