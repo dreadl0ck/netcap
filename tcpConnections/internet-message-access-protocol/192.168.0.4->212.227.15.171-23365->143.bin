@@ -1,0 +1,491 @@
+[34m16 OK IDLE completed
+17 OK LIST completed
+18 OK CREATE completed
+19 OK SUBSCRIBE completed
+* LIST (\HasNoChildren) "/" Sent
+20 OK LIST completed
++ idling
+21 OK IDLE completed
+22 OK NOOP completed
+* QUOTAROOT INBOX ""
+* QUOTA "" (STORAGE 5 2048000 MESSAGE 2 40000)
+23 OK GETQUOTAROOT completed
+* 1 FETCH (UID 1 FLAGS (\Recent))
+24 OK UID FETCH completed
++ idling
+* 2 EXISTS
+* 2 RECENT
+25 OK IDLE completed
+26 OK NOOP completed
+* QUOTAROOT INBOX ""
+* QUOTA "" (STORAGE 14 2048000 MESSAGE 3 40000)
+27 OK GETQUOTAROOT completed
+* 2 FETCH (UID 2 FLAGS (\Recent))
+28 OK UID FETCH completed
+* 2 FETCH (UID 2 RFC822.SIZE 8412 FLAGS (\Recent) BODY[HEADER.FIELDS (FROM TO CC BCC SUBJECT DATE MESSAGE-ID PRIORITY X-PRIORITY REFERENCES NEWSGROUPS IN-REPLY-TO CONTENT-TYPE)] {384}
+From: "Buchanan, Bill" <B.Buchanan@napier.ac.uk>
+To: "digitalinvestigator@networksims.com"
+	<digitalinvestigator@networksims.com>
+Subject: Testing
+Date: Thu, 22 Aug 2013 19:18:52 +0000
+Message-ID: <BF8FAC832FD171479CA19CA1FEA2254216D203E1@MER-EXCH1.napier.ac.uk>
+Content-Type: multipart/alternative;
+	boundary="_000_BF8FAC832FD171479CA19CA1FEA2254216D203E1MEREXCH1napiera_"
+
+)
+29 OK UID FETCH completed
+* 2 FETCH (UID 2 RFC822.SIZE 8412 BODY[] {8412}
+Return-Path: <B.Buchanan@napier.ac.uk>
+Delivery-Date: Thu, 22 Aug 2013 21:18:59 +0200
+Received-SPF: pass (mxeu5: domain of napier.ac.uk designates 216.32.180.184 as permitted sender) client-ip=216.32.180.184; envelope-from=B.Buchanan@napier.ac.uk; helo=co1outboundpool.messaging.microsoft.com;
+Received: from co1outboundpool.messaging.microsoft.com (co1ehsobe001.messaging.microsoft.com [216.32.180.184])
+	by mx.kundenserver.de (node=mxeu5) with ESMTP (Nemesis)
+	id 0LalaO-1VwtZq3DAW-00kuzg for digitalinvestigator@networksims.com; Thu, 22 Aug 2013 21:18:59 +0200
+Received: from mail36-co1-R.bigfish.com (10.243.78.252) by
+ CO1EHSOBE010.bigfish.com (10.243.66.73) with Microsoft SMTP Server id
+ 14.1.225.22; Thu, 22 Aug 2013 19:18:56 +0000
+Received: from mail36-co1 (localhost [127.0.0.1])	by mail36-co1-R.bigfish.com
+ (Postfix) with ESMTP id 1F681A001F7	for
+ <digitalinvestigator@networksims.com>; Thu, 22 Aug 2013 19:18:56 +0000 (UTC)
+X-Forefront-Antispam-Report: CIP:146.176.4.2;KIP:(null);UIP:(null);IPV:NLI;H:MER-EXCH2.napier.ac.uk;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(z569dhzc85fhzz1f42h208ch1ee6h1de0h1d18h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1d7338h17326ah18c673h1de096h8275bh8275dh1de097hz2fh2a8h839hd25hf0ah1288h12a5h12bdh137ah1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1b2fh1bceh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h1155h)
+Received-SPF: pass (mail36-co1: domain of napier.ac.uk designates 146.176.4.2 as permitted sender) client-ip=146.176.4.2; envelope-from=B.Buchanan@napier.ac.uk; helo=MER-EXCH2.napier.ac.uk ;napier.ac.uk ;
+Received: from mail36-co1 (localhost.localdomain [127.0.0.1]) by mail36-co1
+ (MessageSwitch) id 1377199134562697_3355; Thu, 22 Aug 2013 19:18:54 +0000
+ (UTC)
+Received: from CO1EHSMHS025.bigfish.com (unknown [10.243.78.253])	by
+ mail36-co1.bigfish.com (Postfix) with ESMTP id 7CE84C4003F	for
+ <digitalinvestigator@networksims.com>; Thu, 22 Aug 2013 19:18:54 +0000 (UTC)
+Received: from MER-EXCH2.napier.ac.uk (146.176.4.2) by
+ CO1EHSMHS025.bigfish.com (10.243.66.35) with Microsoft SMTP Server (TLS) id
+ 14.16.227.3; Thu, 22 Aug 2013 19:18:54 +0000
+Received: from MER-EXCH1.napier.ac.uk ([fe80::f936:ca4b:b8b2:23c3]) by
+ MER-EXCH2.napier.ac.uk ([fe80::c4c:e335:b1d8:973c%15]) with mapi id
+ 14.02.0318.004; Thu, 22 Aug 2013 20:18:52 +0100
+From: "Buchanan, Bill" <B.Buchanan@napier.ac.uk>
+To: "digitalinvestigator@networksims.com"
+	<digitalinvestigator@networksims.com>
+Subject: Testing
+Thread-Topic: Testing
+Thread-Index: Ac6fbGYXtgSn00khQmGKggSIaX5OQw==
+Date: Thu, 22 Aug 2013 19:18:52 +0000
+Message-ID: <BF8FAC832FD171479CA19CA1FEA2254216D203E1@MER-EXCH1.napier.ac.uk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach:
+X-MS-TNEF-Correlator:
+x-originating-ip: [146.176.4.13]
+Content-Ty[0m[34mpe: multipart/alternative;
+	boundary="_000_BF8FAC832FD171479CA19CA1FEA2254216D203E1MEREXCH1napiera_"
+MIME-Version: 1.0
+Return-Path: B.Buchanan@napier.ac.uk
+X-OriginatorOrg: napier.ac.uk
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Envelope-To: digitalinvestigator@networksims.com
+
+--_000_BF8FAC832FD171479CA19CA1FEA2254216D203E1MEREXCH1napiera_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+How are you tooo.....
+
+I am fine.
+
+DI 2
+
+
+Edinburgh Napier University offers industry informed courses which combine =
+the optimum balance of theory and practice to equip graduates for success i=
+n today's competitive global job market. 92.3% of our graduates are in work=
+ or further study within six months of leaving. With over 17,000 students f=
+rom over 110 countries, we are an international University and are also pro=
+ud to be the largest UK provider of higher education in Hong Kong.
+
+This message is intended for the addressee(s) only
+and should not be read, copied or disclosed to anyone else outwith the Univ=
+ersity without the permission of the sender. It is your responsibility to e=
+nsure that this message and any attachments are scanned for viruses or othe=
+r defects. =
+
+Edinburgh Napier University does not accept liability for any loss or
+damage which may result from this email or any attachment, or for errors or=
+ omissions arising after it was sent. Email is not a secure medium. Email e=
+ntering the University's system is subject to routine monitoring and filter=
+ing by the University. =
+
+
+Edinburgh Napier University is a registered Scottish
+charity.
+Registration number SC018373
+
+
+--_000_BF8FAC832FD171479CA19CA1FEA2254216D203E1MEREXCH1napiera_
+Content-Type: text/html; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+<html xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:o=3D"urn:schemas-micr=
+osoft-com:office:office" xmlns:w=3D"urn:schemas-microsoft-com:office:word" =
+xmlns:m=3D"http://schemas.microsoft.com/office/2004/12/omml" xmlns=3D"http:=
+//www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dus-ascii"=
+>
+<meta name=3D"Generator" content=3D"Microsoft Word 15 (filtered medium)">
+<style><!--
+/* Font Definitions */
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+/* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0cm;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:"Calibri","sans-serif";
+	mso-fareast-language:EN-US;}
+a:link, span.MsoHyperlink
+	{mso-style-priority:99;
+	color:#0563C1;
+	text-decoration:underline;}
+a:visited, span.MsoHyperlinkFollowed
+	{mso-style-priority:99;
+	color:#954F72;
+	text-decoration:underline;}
+span.EmailStyle17
+	{mso-style-type:personal-compose;
+	font-family:"Calibri","sans-serif";
+	color:windowtext;}
+.MsoChpDefault
+	{mso-style-type:export-only;
+	font-family:"Calibri","sans-serif";
+	mso-fareast-language:EN-US;}
+@page WordSection1
+	{size:612.0pt 792.0pt;
+	margin:72.0pt 72.0pt 72.0pt 72.0pt;}
+div.WordSection1
+	{page:WordSection1;}
+--></style><!--[if gte mso 9]><xml>
+<o:shapedefaults v:ext=3D"edit" spidmax=3D"1026" />
+</xml><![endif]--><!--[if gte mso 9]><xml>
+<o:shapelayout v:ext=3D"edit">
+<o:idmap v:ext=3D"edit" data=3D"1" />
+</o:shapelayout></xml><![endif]-->
+</head>
+<body lang=3D"EN-GB" link=3D"#0563C1" vlink=3D"#954F72">
+<div class=3D"WordSection1">
+<p class=3D"MsoNormal">How are you tooo&#8230;..<o:p></o:p></p>
+<p class=3D"MsoNormal"><o:p>&nbsp;</o:p></p>
+<p class=3D"MsoNormal">I am fine.<o:p></o:p></p>
+<p class=3D"MsoNormal"><o:p>&nbsp;</o:p></p>
+<p class=3D"MsoNormal">DI 2<o:p></o:p></p>
+</div>
+<br clear=3Dall> <head>=0D
+<style type=3D"text/css"> .style1 { font-family: Arial; } .style2 { font-si=
+ze: 9.0pt; } .style3 { color: #000000; } </style>=0D
+</head>=0D
+<p><span class=3D"style1"><span class=3D"style2">Edinburgh Napier Universit=
+y offers industry inf[0m[34mormed courses which combine the optimum balance of the=
+ory and practice to equip graduates for success in today's competitive glob=
+al job market. 92.3% of our graduates are in work or further study within s=
+ix months of leaving. With over 17,000 students from over 110 countries, we=
+ are an international University and are also proud to be the largest UK pr=
+ovider of higher education in Hong Kong. </span></span></p>=0D
+<p><span class=3D"style1"><span class=3D"style2">=0D
+<span class=3D"style1&lt;span class=3D" style1=3D""><span class=3D"style3">=
+This message is intended for the addressee(s) only =0D
+and should not be read, copied or disclosed to anyone else outwith the =0D
+University without the permission of the sender.<br>=0D
+It is your responsibility to ensure that this message and any attachments a=
+re =0D
+scanned for viruses or other defects. Edinburgh Napier University does not =
+=0D
+accept liability for any loss or damage which may result from this email or=
+ any =0D
+attachment, or for errors or omissions arising after it was sent. Email is =
+not a =0D
+secure medium. Email entering the University's system is subject to routine=
+ =0D
+monitoring and filtering by the University.<br>=0D
+<br>=0D
+Edinburgh Napier University is a registered Scottish charity. Registration =
+=0D
+number SC018373</span></span></p>=0D
+</span></span>=0D
+
+</body>
+</html>
+
+
+--_000_BF8FAC832FD171479CA19CA1FEA2254216D203E1MEREXCH1napiera_--
+)
+30 OK UID FETCH completed
+* 2 FETCH (UID 2 BODY[HEADER.FIELDS (CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] {115}
+Content-Type: multipart/alternative;
+	boundary="_000_BF8FAC832FD171479CA19CA1FEA2254216D203E1MEREXCH1napiera_"
+
+ BODY[TEXT]<0> {2048}
+--_000_BF8FAC832FD171479CA19CA1FEA2254216D203E1MEREXCH1napiera_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+How are you tooo.....
+
+I am fine.
+
+DI 2
+
+
+Edinburgh Napier University offers industry informed courses which combine =
+the optimum balance of theory and practice to equip graduates for success i=
+n today's competitive global job market. 92.3% of our graduates are in work=
+ or further study within six months of leaving. With over 17,000 students f=
+rom over 110 countries, we are an international University and are also pro=
+ud to be the largest UK provider of higher education in Hong Kong.
+
+This message is intended for the addressee(s) only
+and should not be read, copied or disclosed to anyone else outwith the Univ=
+ersity without the permission of the sender. It is your responsibility to e=
+nsure that this message and any attachments are scanned for viruses or othe=
+r defects. =
+
+Edinburgh Napier University does not accept liability for any loss or
+damage which may result from this email or any attachment, or for errors or=
+ omissions arising after it was sent. Email is not a secure medium. Email e=
+ntering the University's system is subject to routine monitoring and filter=
+ing by the University. =
+
+
+Edinburgh Napier University is a registered Scottish
+charity.
+Registration number SC018373
+
+
+--_000_BF8FAC832FD171479CA19CA1FEA2254216D203E1MEREXCH1napiera_
+Content-Type: text/html; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+<html xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:o=3D"urn:schemas-micr=
+osoft-com:office:office" xmlns:w=3D"urn:schemas-microsoft-com:office:word" =
+xmlns:m=3D"http://schemas.microsoft.com/office/2004/12/omml" xmlns=3D"http:=
+//www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dus-ascii"=
+>
+<meta name=3D"Generator" content=3D"Microsoft Word 15 (filtered medium)">
+<style><!--
+/* Font Definitions */
+@font-face
+	{font-famil)
+31 OK UID FETCH completed
++ idling
+* 3 EXISTS
+* 3 RECENT
+32 OK IDLE completed
+33 OK NOOP completed
+* QUOTAROOT INBOX ""
+* QUOTA "" (STORAGE 19 2048000 MESSAGE 4 40000)
+34 OK GETQUOTAROOT completed
+* 3 FETCH (UID 3 FLAGS (\Recent))
+35 OK UID FETCH completed
+* 3 FETCH (UID 3 RFC822.SIZE 5214 FLAGS (\Recent[0m[34m) BODY[HEADER.FIELDS (FROM TO CC BCC SUBJECT DATE MESSAGE-ID PRIORITY X-PRIORITY REFERENCES NEWSGROUPS IN-REPLY-TO CONTENT-TYPE)] {440}
+From: "Buchanan, Bill" <B.Buchanan@napier.ac.uk>
+To: DI <digitalinvestigator@networksims.com>
+CC: "w_j_buchanan@hotmail.com" <w_j_buchanan@hotmail.com>
+Subject: RE: Testing
+Date: Thu, 22 Aug 2013 19:19:11 +0000
+Message-ID: <BF8FAC832FD171479CA19CA1FEA2254216D203F0@MER-EXCH1.napier.ac.uk>
+References: <521663E3.7090401@networksims.com>
+In-Reply-To: <521663E3.7090401@networksims.com>
+Content-Type: text/plain; charset="us-ascii"
+
+)
+36 OK UID FETCH completed
+* 3 FETCH (UID 3 RFC822.SIZE 5214 BODY[] {5214}
+Return-Path: <B.Buchanan@napier.ac.uk>
+Delivery-Date: Thu, 22 Aug 2013 21:19:21 +0200
+Received-SPF: pass (mxbap1: domain of napier.ac.uk designates 216.32.180.188 as permitted sender) client-ip=216.32.180.188; envelope-from=B.Buchanan@napier.ac.uk; helo=co1outboundpool.messaging.microsoft.com;
+Received: from co1outboundpool.messaging.microsoft.com (co1ehsobe005.messaging.microsoft.com [216.32.180.188])
+	by mx.kundenserver.de (node=mxbap1) with ESMTP (Nemesis)
+	id 0MLPgA-1VC2Ru34ja-000jOl for digitalinvestigator@networksims.com; Thu, 22 Aug 2013 21:19:21 +0200
+Received: from mail155-co1-R.bigfish.com (10.243.78.249) by
+ CO1EHSOBE015.bigfish.com (10.243.66.78) with Microsoft SMTP Server id
+ 14.1.225.22; Thu, 22 Aug 2013 19:19:18 +0000
+Received: from mail155-co1 (localhost [127.0.0.1])	by
+ mail155-co1-R.bigfish.com (Postfix) with ESMTP id 5F76F7801AF;	Thu, 22 Aug
+ 2013 19:19:18 +0000 (UTC)
+X-Forefront-Antispam-Report: CIP:146.176.4.2;KIP:(null);UIP:(null);IPV:NLI;H:MER-EXCH2.napier.ac.uk;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z569dhz542I1447Izz1f42h208ch1ee6h1de0h1d18h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h177df4h17326ah1de096h1954cbhc704dh8275bh1de097hz2fh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h1155h)
+Received-SPF: pass (mail155-co1: domain of napier.ac.uk designates 146.176.4.2 as permitted sender) client-ip=146.176.4.2; envelope-from=B.Buchanan@napier.ac.uk; helo=MER-EXCH2.napier.ac.uk ;napier.ac.uk ;
+Received: from mail155-co1 (localhost.localdomain [127.0.0.1]) by mail155-co1
+ (MessageSwitch) id 1377199155586911_3660; Thu, 22 Aug 2013 19:19:15 +0000
+ (UTC)
+Received: from CO1EHSMHS030.bigfish.com (unknown [10.243.78.233])	by
+ mail155-co1.bigfish.com (Postfix) with ESMTP id 8C36A600053;	Thu, 22 Aug 2013
+ 19:19:15 +0000 (UTC)
+Received: from MER-EXCH2.napier.ac.uk (146.176.4.2) by
+ CO1EHSMHS030.bigfish.com (10.243.66.40) with Microsoft SMTP Server (TLS) id
+ 14.16.227.3; Thu, 22 Aug 2013 19:19:14 +0000
+Received: from MER-EXCH1.napier.ac.uk ([fe80::f936:ca4b:b8b2:23c3]) by
+ MER-EXCH2.napier.ac.uk ([fe80::c4c:e335:b1d8:973c%15]) with mapi id
+ 14.02.0318.004; Thu, 22 Aug 2013 20:19:12 +0100
+From: "Buchanan, Bill" <B.Buchanan@napier.ac.uk>
+To: DI <digitalinvestigator@networksims.com>
+CC: "w_j_buchanan@hotmail.com" <w_j_buchanan@hotmail.com>
+Subject: RE: Testing
+Thread-Topic: Testing
+Thread-Index: AQHOn2xRdWdGPnwS70WTY4VHcrLIv5mhmhbw
+Date: Thu, 22 Aug 2013 19:19:11 +0000
+Message-ID: <BF8FAC832FD171479CA19CA1FEA2254216D203F0@MER-EXCH1.napier.ac.uk>
+References: <521663E3.7090401@networksims.com>
+In-Reply-To: <521663E3.7090401@networksims.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach:
+X-MS-TNEF-Correlator:
+x-originating-ip: [146.176.4.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+Return-Path: B.Buchanan@napier.ac.uk
+X-OriginatorOrg: napier.ac.uk
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Envelope-To: digitalinvestigator@networksims.com
+
+Thanks for the email.
+
+
+
+
+
+Details:
+Prof. William Buchanan, PhD, FBCS, FIET,
+CEng, BSc (Hons), Cisco Regional Instructor,
+Address:
+Professor of Computing, IIDI/School of Computing,
+Edinburgh Napier University, =
+
+10 Colinton Road, Edinburg[0m[34mh. EH10 5DT
+Tel: =
+
+My New Web:
+Youtube:
+LinkedIn:
+Twitter:
++44 (0)131 455 2759 =
+
+http://asecuritysite.com
+http://youtube.com/billatnapier
+http://www.linkedin.com/in/billatnapier
+http://twitter.com/billatnapier
+Web:
+http://buchananweb.co.uk
+Research page: =
+
+http://www.iidi.napier.ac.uk/c/people/peopleid/79
+Skype
+billatnapier
+
+
+
+
+-----Original Message-----
+From: DI [mailto:digitalinvestigator@networksims.com] =
+
+Sent: 22 August 2013 20:18
+To: Buchanan, Bill
+Cc: w_j_buchanan@hotmail.com
+Subject: Testing
+
+Hello ... how are you?
+
+Bill.
+
+
+Edinburgh Napier University offers industry informed courses which combine =
+the optimum balance of theory and practice to equip graduates for success i=
+n today's competitive global job market. 92.3% of our graduates are in work=
+ or further study within six months of leaving. With over 17,000 students f=
+rom over 110 countries, we are an international University and are also pro=
+ud to be the largest UK provider of higher education in Hong Kong.
+
+This message is intended for the addressee(s) only
+and should not be read, copied or disclosed to anyone else outwith the Univ=
+ersity without the permission of the sender. It is your responsibility to e=
+nsure that this message and any attachments are scanned for viruses or othe=
+r defects. =
+
+Edinburgh Napier University does not accept liability for any loss or
+damage which may result from this email or any attachment, or for errors or=
+ omissions arising after it was sent. Email is not a secure medium. Email e=
+ntering the University's system is subject to routine monitoring and filter=
+ing by the University. =
+
+
+Edinburgh Napier University is a registered Scottish
+charity.
+Registration number SC018373
+
+
+)
+37 OK UID FETCH completed
++ idling
+38 OK IDLE completed
+* 2 FETCH (FLAGS (\Recent \Seen) UID 2)
+39 OK UID STORE completed
++ idling
+40 OK IDLE completed
+* 3 FETCH (FLAGS (\Recent \Seen) UID 3)
+41 OK UID STORE completed
++ idling
+42 OK IDLE completed
+* 1 FETCH (FLAGS (\Recent \Seen) UID 1)
+43 OK UID STORE completed
++ idling
+44 OK IDLE completed
+45 OK CLOSE completed
+* BYE Server logging out
+46 OK LOGOUT completed
+[0m[31mDONE
+17 list "" "Sent"
+18 create "Sent"
+19 subscribe "Sent"
+20 list "" "Sent"
+21 IDLE
+DONE
+22 noop
+23 getquotaroot "INBOX"
+24 UID fetch 2:* (FLAGS)
+25 IDLE
+DONE
+26 noop
+27 getquotaroot "INBOX"
+28 UID fetch 2:* (FLAGS)
+29 UID fetch 2 (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (From To Cc Bcc Subject Date Message-ID Priority X-Priority References Newsgroups In-Reply-To Content-Type)])
+30 UID fetch 2 (UID RFC822.SIZE BODY.PEEK[])
+31 UID fetch 2 (UID BODY.PEEK[HEADER.FIELDS (Content-Type Content-Transfer-Encoding)] BODY.PEEK[TEXT]<0.2048>)
+32 IDLE
+DONE
+33 noop
+34 getquotaroot "INBOX"
+35 UID fetch 3:* (FLAGS)
+36 UID fetch 3 (UID RFC822.SIZE FLAGS BODY.PEEK[HEADER.FIELDS (From To Cc Bcc Subject Date Message-ID Priority X-Priority References Newsgroups In-Reply-To Content-Type)])
+37 UID fetch 3 (UID RFC822.SIZE BODY.PEEK[])
+38 IDLE
+DONE
+39 uid store 2 +Flags (\Seen)
+40 IDLE
+DONE
+41 uid store 3 +Flags (\Seen)
+42 IDLE
+DONE
+43 uid store 1 +Flags (\Seen)
+44 IDLE
+DONE
+45 close
+46 logout
+[0m
