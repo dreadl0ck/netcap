@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
@@ -232,6 +233,25 @@ func parseUserAgent(ua string) *userAgent {
 		version: version,
 		full:    strings.TrimSpace(full),
 	}
+}
+
+// harvester for the FTP protocol
+func grabVersion(data []byte, ident string, ts time.Time) *types.Software {
+
+	//harvesterDebug(ident, data, "FTP")
+
+	matches := reGenericVersion.FindSubmatch(data)
+	if len(matches) > 1 {
+		return &types.Software{
+			Timestamp: ts.String(),
+			Product:   string(matches[1]),
+			Version:   string(matches[2]) + "." + string(matches[3]) + "." + string(matches[4]),
+			Flows:     []string{ident},
+			Notes:     "Found by matching possible version format",
+		}
+	}
+
+	return nil
 }
 
 func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
