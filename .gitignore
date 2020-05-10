@@ -1,4 +1,5 @@
 zeus/data.yml
+tcpConnections
 tests
 .idea
 types/python
