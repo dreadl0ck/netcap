@@ -15,8 +15,6 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
-
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 
@@ -39,11 +37,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 				// nil packet is used to exit goroutine
 				if packet == nil {
-
-					// cleanup reassembly
-					if c.config.ReassembleConnections {
-						utils.ReassemblyLog.Printf("assembler flush: %d closed\n", assembler.FlushAll())
-					}
 					return
 				}
 
@@ -183,7 +176,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 func (c *Collector) initWorkers() []chan *packet {
 	workers := make([]chan *packet, c.config.Workers)
 	for i := range workers {
-		workers[i] = c.worker(reassembly.NewAssembler(encoder.StreamPool))
+		a := reassembly.NewAssembler(encoder.StreamPool)
+		c.assemblers = append(c.assemblers, a)
+		workers[i] = c.worker(a)
 	}
 	return workers
 }

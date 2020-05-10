@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"io"
 	"log"
 	"os"
@@ -86,6 +87,8 @@ type Collector struct {
 	isLive   bool
 	shutdown bool
 	mu       sync.Mutex
+
+	assemblers []*reassembly.Assembler
 }
 
 // New returns a new Collector instance.
