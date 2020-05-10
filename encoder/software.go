@@ -204,6 +204,10 @@ func parseUserAgent(ua string) *userAgent {
 		full += " " + client.UserAgent.Major
 		full += " " + client.UserAgent.Minor
 		full += " " + client.UserAgent.Patch
+
+		if vendor == "Other" {
+			vendor = ""
+		}
 	}
 	if client.Os != nil {
 		full += " " + client.Os.Family
@@ -215,6 +219,10 @@ func parseUserAgent(ua string) *userAgent {
 	if client.Device != nil {
 		product = client.Device.Family
 		full += " " + client.Device.Family
+
+		if product == "Other" {
+			product = ""
+		}
 	}
 
 	return &userAgent{
