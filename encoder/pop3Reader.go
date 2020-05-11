@@ -62,6 +62,8 @@ type pop3Reader struct {
 	saved bool
 	serviceBanner bytes.Buffer
 	serviceBannerBytes int
+
+	numBytes int
 }
 
 func (h *pop3Reader) Read(p []byte) (int, error) {
@@ -123,7 +125,7 @@ func (h *pop3Reader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 		}
 		h.saved = true
 	} else {
-		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport)
+		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
 		h.saved = true
 	}
 
@@ -865,6 +867,14 @@ func (h *pop3Reader) FirstPacket() time.Time {
 
 func (h *pop3Reader) Saved() bool {
 	return h.saved
+}
+
+func (h *pop3Reader) NumBytes() int {
+	return h.numBytes
+}
+
+func (h *pop3Reader) Client() StreamReader {
+	return h.parent.client.(StreamReader)
 }
 
 // TODO: write unit test for this

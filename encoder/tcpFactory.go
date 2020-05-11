@@ -60,6 +60,8 @@ type StreamReader interface {
 	Transport() gopacket.Flow
 	FirstPacket() time.Time
 	Saved() bool
+	NumBytes() int
+	Client() StreamReader
 }
 
 // New handles a new stream received from the assembler

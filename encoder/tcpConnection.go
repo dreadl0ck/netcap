@@ -505,7 +505,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 					}
 				} else {
 					// save the service banner
-					saveTCPServiceBanner(s.ServerStream(), s.Ident(), s.FirstPacket(), s.Network(), s.Transport())
+					saveTCPServiceBanner(s.ServerStream(), s.Ident(), s.FirstPacket(), s.Network(), s.Transport(), s.NumBytes(), s.Client().NumBytes())
 				}
 			}
 		}
