@@ -54,9 +54,9 @@ var (
 	userAgentCaching = make(map[string]*userAgent)
 	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
-	ja3Cache       = make(map[string]string)
-	jaCacheMutex sync.Mutex
-	reGenericVersion = regexp.MustCompile(`(?:[A-Za-z]*?)\s(?:[0-9]+)(?:\.)?(?:[0-9]+)?(?:\.)?(?:[0-9]+)?`)
+	ja3Cache         = make(map[string]string)
+	jaCacheMutex     sync.Mutex
+	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
 	hasshMap         = make(map[string]SSHHash)
 )
 
@@ -171,26 +171,13 @@ func softwareHarvester(data []byte, ident string, ts time.Time, service string, 
 
 	var s []*Software
 
-	matches := reGenericVersion.FindStringSubmatch(string(data))
+	matches := reGenericVersion.FindAll(data, -1)
 
 	if len(matches) > 0 {
 		for _, v := range matches {
-			var version string
-			parsed := strings.Split(v, " ")
-			if len(parsed) > 1 {
-				version = parsed[1]
-			}
 			s = append(s, &Software{
 				Software: &types.Software{
-					Timestamp:      ts.String(),
-					Product:        parsed[0],
-					Service:        service,
-					SourceName:     "Generic Version Format",
-					SourceData:     string(data),
-					Version:        version,
-					Flows:          []string{ident},
-					DeviceProfiles: []string{dpIdent},
-					DPIResults:     protos,
+					Notes: string(v),
 				},
 			})
 		}
