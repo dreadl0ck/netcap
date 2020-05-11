@@ -56,6 +56,7 @@ var (
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
 	ja3Caching       = make(map[string]string)
 	reGenericVersion = regexp.MustCompile(`(?:[A-Za-z]*?)\s(?:[0-9]+)(?:\.)?(?:[0-9]+)?(?:\.)?(?:[0-9]+)?`)
+	hasshMap         = make(map[string]SSHHash)
 )
 
 // Size returns the number of elements in the Items map
@@ -74,7 +75,8 @@ var (
 	parser, errInitUAParser = uaparser.New("/usr/local/etc/netcap/dbs/regexes.yaml")
 	pMu                     sync.Mutex
 
-	ja3db Ja3CombinationsDB
+	ja3db   Ja3CombinationsDB
+	hasshDB []SSHHash
 )
 
 type userAgent struct {
@@ -104,6 +106,14 @@ type Server struct {
 
 type Ja3CombinationsDB struct {
 	Servers []Server `json:"servers"`
+}
+
+type SSHHash struct {
+	Image            string `json:"image"`
+	ImageVersion     string `json:"imageVersion"`
+	SSHClient        string `json:"sshClient"`
+	SSHClientVersion string `json"sshClientVersion"`
+	Hash             string `json:"hash"`
 }
 
 // process a raw user agent string and returned a structured instance
@@ -510,6 +520,22 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	err = json.Unmarshal(data, &ja3db.Servers)
 	if err != nil {
 		return err
+	}
+
+	// Load the JSON database of HASSH signaures
+	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hassh.json")
+	if err != nil {
+		return err
+	}
+
+	// unpack JSON
+	err = json.Unmarshal(data, &hasshDB)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range hasshDB {
+		hasshMap[entry.Hash] = entry // Holds redundant info, but couldn't figure a more elegant way to do this
 	}
 
 	utils.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
