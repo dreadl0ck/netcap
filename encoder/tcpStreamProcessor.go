@@ -37,10 +37,10 @@ func (c *tcpStreamProcessor) handleStream(s StreamReader) {
 	c.wg.Add(1)
 
 	// make it work for 1 worker only, can be used for debugging
-	if len(c.workers) == 1 {
-		c.workers[0] <- s
-		return
-	}
+	//if c.numWorkers == 1 {
+	//	c.workers[0] <- s
+	//	return
+	//}
 
 	// send the packetInfo to the encoder routine
 	c.workers[c.next] <- s
