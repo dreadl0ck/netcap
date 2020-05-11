@@ -1,6 +1,5 @@
 # TODOs
 
-- only use harvesters when credential audit record type is loaded
 - process remaining connections with a worker pool
 - service: add reverse DNS lookup
 - config.SaveBanner unused?
