@@ -1,10 +1,7 @@
 # TODOs
 
-- process remaining connections with a worker pool
 - service: add reverse DNS lookup
-- connections should also evaluate the source port for sorting the files: example tcpConnections/unknown/165.227.109.154->192.168.1.47-22->52875.bin should be sorted to SSH
 - add filter flag to only include internal services?
-- make stop after harvester match configurable
 
 - make a group extraction util and expand all groups in all strings properly
 - add keyword filter and compile as regex? username, password etc might appear somewhere in stream contents, e.g inside HTML etc
