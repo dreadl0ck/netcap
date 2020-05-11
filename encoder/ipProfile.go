@@ -236,7 +236,9 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 		},
 	}
 
+	ipProfiles.Lock()
 	ipProfiles.Items[ipAddr] = p
+	ipProfiles.Unlock()
 
 	return p
 }
