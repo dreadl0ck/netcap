@@ -478,41 +478,29 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			utils.ReassemblyLog.Printf("assembler flush: %d closed\n", a.FlushAll())
 		}
 
+		streamFactory.Lock()
+		numTotal := len(streamFactory.streamReaders)
+		streamFactory.Unlock()
 		if !Quiet {
-			fmt.Print("processing remaining TCP streams... ")
+			fmt.Print("processing remaining open TCP streams... ", numTotal)
 		}
 
-		// TODO: parallelize using worker pattern
+		sp := new(tcpStreamProcessor)
+		sp.initWorkers()
+		sp.numTotal = numTotal
+
 		// flush the remaining streams to disk
 		streamFactory.Lock()
-		for i, s := range streamFactory.streamReaders {
+		for _, s := range streamFactory.streamReaders {
 			if s != nil {
-				if !Quiet {
-					clearLine()
-					fmt.Print("processing remaining TCP streams... ", "(", i+1, "/", len(streamFactory.streamReaders), ")")
-				}
-				// do not process streams that have been saved already by their cleanup functions
-				// because the corresponding connection has been closed
-				if s.Saved() {
-					continue
-				}
-				if s.IsClient() {
-					// save the entire conversation.
-					// we only need to do this once, when client part of the connection is closed
-					err := saveConnection(s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
-					if err != nil {
-						fmt.Println("failed to save connection", err)
-					}
-				} else {
-					// save the service banner
-					saveTCPServiceBanner(s.ServerStream(), s.Ident(), s.FirstPacket(), s.Network(), s.Transport(), s.NumBytes(), s.Client().NumBytes())
-				}
+				sp.handleStream(s)
 			}
 		}
 		streamFactory.Unlock()
 		if !Quiet {
 			fmt.Println()
 		}
+		sp.wg.Wait()
 	}
 
 	// create a memory snapshot for debugging

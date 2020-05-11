@@ -163,7 +163,7 @@ func (c *Collector) handlePacket(p *packet) {
 	// increment or reset next
 	if c.config.Workers >= c.next+1 {
 		// reset
-		c.next = 1
+		c.next = 0
 	} else {
 		c.next++
 	}
@@ -194,7 +194,7 @@ func (c *Collector) handlePacketTimeout(p *packet) {
 	// increment or reset next
 	if c.config.Workers >= c.next+1 {
 		// reset
-		c.next = 1
+		c.next = 0
 	} else {
 		c.next++
 	}
