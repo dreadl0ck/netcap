@@ -45,7 +45,7 @@ type Software struct {
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicSoftwareMap struct {
-	// map Product Name + "Version" to Software?
+	// mapped product + version to software
 	Items map[string]*Software
 	sync.Mutex
 }
@@ -106,6 +106,7 @@ type Ja3CombinationsDB struct {
 	Servers []Server `json:"servers"`
 }
 
+// process a raw user agent string and returned a structured instance
 func parseUserAgent(ua string) *userAgent {
 	var (
 		client                         = parser.Parse(ua)
@@ -154,32 +155,41 @@ func parseUserAgent(ua string) *userAgent {
 	}
 }
 
-// harvester for the FTP protocol
-func grabVersion(data []byte, ident string, ts time.Time) (software []*Software) {
+// generic version harvester, scans the payload using a regular expression
+func softwareHarvester(data []byte, ident string, ts time.Time, service string, dpIdent string, protos []string) (software []*Software) {
 
-	//harvesterDebug(ident, data, "FTP")
 	var s []*Software
 
-	matches := reGenericVersion.FindSubmatch(data)
-	if len(matches) > 1 {
+	matches := reGenericVersion.FindStringSubmatch(string(data))
+
+	if len(matches) > 0 {
 		for _, v := range matches {
-			parsed := strings.Split(string(v), " ")
+			var version string
+			parsed := strings.Split(v, " ")
+			if len(parsed) > 1 {
+				version = parsed[1]
+			}
 			s = append(s, &Software{
 				Software: &types.Software{
-					Timestamp: ts.String(),
-					Product:   parsed[0],
-					Version:   parsed[1],
-					Flows:     []string{ident},
-					Notes:     "Found by matching possible version format",
+					Timestamp:      ts.String(),
+					Product:        parsed[0],
+					Service:        service,
+					SourceName:     "Generic Version Format",
+					SourceData:     string(data),
+					Version:        version,
+					Flows:          []string{ident},
+					DeviceProfiles: []string{dpIdent},
+					DPIResults:     protos,
 				},
 			})
 		}
 	}
 
 	return s
-
 }
 
+// tries to determine the kind of software and version
+// based on the provided input data
 func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
 
 	//fmt.Println(serviceNameSrc, serviceNameDst, manufacturer, ja3Result, userAgents, serverNames, protos)
@@ -199,7 +209,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		dpIdent += " <" + dp.DeviceManufacturer + ">"
 	}
 
-	// process user agents
+	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
 	for _, ua := range strings.Split(userAgents, "| ") {
 		if len(ua) == 0 || ua == " " {
@@ -264,9 +274,8 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		var values = regexpXPoweredBy.FindStringSubmatch(pb)
 		s = append(s, &Software{
 			Software: &types.Software{
-				Timestamp: i.timestamp,
-				Product:   values[1], // Name of the server (Apache, Nginx, ...)
-				//Vendor:         "unknown", // Unfitting name, but operating system
+				Timestamp:      i.timestamp,
+				Product:        values[1], // Name of the server (Apache, Nginx, ...)
 				Version:        values[2], // Version as found after the '/'
 				DeviceProfiles: []string{dpIdent},
 				SourceName:     "X-Powered-By",
@@ -281,8 +290,6 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 
 	// Only do JA3 fingerprinting when both ja3 and ja3s are present, aka when the server Hello is captured
 	if len(JA3) > 0 && len(JA3s) > 0 {
-		// fmt.Println(JA3)
-		// fmt.Println(JA3s)
 		for _, server := range ja3db.Servers {
 			serverName := server.Server
 			for _, client := range server.Clients {
@@ -327,10 +334,18 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		}
 	}
 
+	// if nothing was found with all above attempts, try to throw the generic version number harvester at it
+	// and see if this delivers anything interesting
+	if len(s) == 0 {
+		return softwareHarvester(i.p.Data(), dpIdent, i.p.Metadata().CaptureInfo.Timestamp, service, dpIdent, protos)
+	}
+
 	return s
 }
 
 // AnalyzeSoftware tries to identify software based on observations from the data
+// this function first gathers as much data as possible and then calls into whatSoftware
+// to determine what software the packet belongs to
 func AnalyzeSoftware(i *packetInfo) {
 
 	var (
@@ -418,13 +433,17 @@ func AnalyzeSoftware(i *packetInfo) {
 		}
 	}
 
+	// fetch the associated device profile
 	dp := getDeviceProfile(i.srcMAC, i)
+
+	// now that we have some information at hands
+	// try to determine what kind of software it is
 	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames, protos, vias, xPoweredBy)
 	if len(software) == 0 {
 		return
 	}
 
-	// lookup profile
+	// add new audit records or update existing
 	SoftwareStore.Lock()
 	for _, s := range software {
 		if p, ok := SoftwareStore.Items[s.Product+"/"+s.Version]; ok {

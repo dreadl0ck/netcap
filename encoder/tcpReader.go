@@ -226,15 +226,7 @@ func isAscii(d []byte) bool {
 	return true
 }
 
-func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
-
-	//fmt.Println("save conn", ident, len(raw), len(colored))
-	//fmt.Println(string(colored))
-
-	// prevent saving zero bytes
-	if len(raw) == 0 {
-		return nil
-	}
+func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacket time.Time) []byte {
 
 	// TODO: only use harvesters when credential audit record type is loaded!
 
@@ -320,9 +312,24 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		}
 	}
 
+	return banner
+}
+
+func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
+
+	// prevent processing zero bytes
+	if len(raw) == 0 {
+		return nil
+	}
+
+	banner := runHarvesters(raw, transport, ident, firstPacket)
+
 	if !c.SaveConns {
 		return nil
 	}
+
+	//fmt.Println("save conn", ident, len(raw), len(colored))
+	//fmt.Println(string(colored))
 
 	var (
 		typ = getServiceName(banner, transport)
