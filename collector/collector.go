@@ -87,6 +87,7 @@ type Collector struct {
 	isLive   bool
 	shutdown bool
 	mu       sync.Mutex
+	numWorkers int
 
 	assemblers []*reassembly.Assembler
 }
@@ -152,16 +153,16 @@ func (c *Collector) handleSignals() {
 func (c *Collector) handlePacket(p *packet) {
 
 	// make it work for 1 worker only, can be used for debugging
-	if len(c.workers) == 1 {
-		c.workers[0] <- p
-		return
-	}
+	//if c.numWorkers == 1 {
+	//	c.workers[0] <- p
+	//	return
+	//}
 
 	// send the packetInfo to the encoder routine
 	c.workers[c.next] <- p
 
 	// increment or reset next
-	if c.config.Workers >= c.next+1 {
+	if c.config.Workers == c.next+1 {
 		// reset
 		c.next = 0
 	} else {
@@ -192,7 +193,7 @@ func (c *Collector) handlePacketTimeout(p *packet) {
 	}
 
 	// increment or reset next
-	if c.config.Workers >= c.next+1 {
+	if c.config.Workers == c.next+1 {
 		// reset
 		c.next = 0
 	} else {

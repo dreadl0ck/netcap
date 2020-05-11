@@ -259,7 +259,8 @@ func (p *StreamPool) getConnection(k key, end bool, ts time.Time, tcp *layers.TC
 	conn2, half2, rev2 := p.getHalf(k)
 	if conn2 != nil {
 		if conn2.key != k {
-			panic("FIXME: other dir added in the meantime...")
+			// TODO: fix this
+			//panic("FIXME: other dir added in the meantime...")
 		}
 		// FIXME: delete s ?
 		return conn2, half2, rev2
