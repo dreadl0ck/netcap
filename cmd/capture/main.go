@@ -165,7 +165,6 @@ func Run() {
 			FileStorage:          *flagFileStorage,
 			CalculateEntropy:     *flagCalcEntropy,
 			SaveConns:            *flagSaveConns,
-			SaveBanner:           *flagSaveBanners,
 			TCPDebug:             *flagTCPDebug,
 			UseRE2:               *flagUseRE2,
 			BannerSize:           *flagBannerSize,

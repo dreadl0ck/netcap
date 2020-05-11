@@ -83,7 +83,6 @@ var DefaultConfig = Config{
 	FileStorage:          "files",
 	CalculateEntropy:     false,
 	SaveConns:            false,
-	SaveBanner:           false,
 	TCPDebug:             false,
 	UseRE2:               true,
 	HarvesterBannerSize:  512,
@@ -190,9 +189,6 @@ type Config struct {
 
 	// Save the entire raw TCP conversations for all tracked connections to disk
 	SaveConns bool
-
-	// Save service banners of raw TCP streams for all connections that are not modeled as audit records
-	SaveBanner bool
 
 	// Enable verbose TCP debug log messages in debug.log
 	TCPDebug bool

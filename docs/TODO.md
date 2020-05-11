@@ -2,7 +2,6 @@
 
 - process remaining connections with a worker pool
 - service: add reverse DNS lookup
-- config.SaveBanner unused?
 - connections should also evaluate the source port for sorting the files: example tcpConnections/unknown/165.227.109.154->192.168.1.47-22->52875.bin should be sorted to SSH
 - add filter flag to only include internal services?
 - make stop after harvester match configurable
