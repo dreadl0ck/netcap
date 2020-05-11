@@ -12,7 +12,7 @@ type regexTest struct {
 	expected string
 }
 
-func (r regexTest) run(t *testing.T) {
+func (r regexTest) testCleanRegex(t *testing.T) {
 
 	// remove backtracking from regex and replace with a group of a single char repetition (.*)
 	out := clean(r.input)
@@ -27,7 +27,7 @@ func (r regexTest) run(t *testing.T) {
 	}
 }
 
-var tests = []regexTest{
+var serviceProbeTests = []regexTest{
 	{
 		name:     "",
 		input:    "(?ms)^\\x00\\x03\\xf1\\x26.{88}(.*)\\0\\0(?:.*?:){5}(.*)\\0\\0$",
@@ -77,7 +77,7 @@ var tests = []regexTest{
 }
 
 func TestCleanRegex(t *testing.T) {
-	for _, r := range tests {
-		r.run(t)
+	for _, r := range serviceProbeTests {
+		r.testCleanRegex(t)
 	}
 }
