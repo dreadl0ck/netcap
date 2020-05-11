@@ -54,7 +54,8 @@ var (
 	userAgentCaching = make(map[string]*userAgent)
 	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
-	ja3Caching       = make(map[string]string)
+	ja3Cache       = make(map[string]string)
+	jaCacheMutex sync.Mutex
 	reGenericVersion = regexp.MustCompile(`(?:[A-Za-z]*?)\s(?:[0-9]+)(?:\.)?(?:[0-9]+)?(?:\.)?(?:[0-9]+)?`)
 	hasshMap         = make(map[string]SSHHash)
 )
@@ -433,9 +434,13 @@ func AnalyzeSoftware(i *packetInfo) {
 	// destination IP) was observed. If not, this is the client. Therefore add client ja3 signature to the store.
 	if len(ja3Hash) > 0 {
 		var ok bool
-		JA3, ok = ja3Caching[i.dstIP]
+		jaCacheMutex.Lock()
+		JA3, ok = ja3Cache[i.dstIP]
+		jaCacheMutex.Unlock()
 		if !ok {
-			ja3Caching[i.srcIP] = ja3Hash
+			jaCacheMutex.Lock()
+			ja3Cache[i.srcIP] = ja3Hash
+			jaCacheMutex.Unlock()
 			JA3 = ""
 			JA3s = ""
 		} else {

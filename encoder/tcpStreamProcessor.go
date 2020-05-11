@@ -59,7 +59,7 @@ func (c *tcpStreamProcessor) handleStream(s StreamReader) {
 func (c *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader {
 
 	// init channel to receive input packets
-	chanInput := make(chan StreamReader, 0)
+	chanInput := make(chan StreamReader, 10)
 
 	// start worker
 	go func() {
@@ -90,10 +90,8 @@ func (c *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader 
 
 			c.Lock()
 			c.numDone++
-			if c.numDone%100 == 0 {
-				clearLine()
-				fmt.Print("processing remaining open TCP streams... ", "(", c.numDone, "/", c.numTotal, ")")
-			}
+			clearLine()
+			fmt.Print("processing remaining open TCP streams... ", "(", c.numDone, "/", c.numTotal, ")")
 			c.Unlock()
 
 			wg.Done()

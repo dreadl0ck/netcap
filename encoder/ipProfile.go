@@ -56,7 +56,9 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 		return nil
 	}
 
+	ipProfiles.Lock()
 	if p, ok := ipProfiles.Items[ipAddr]; ok {
+		ipProfiles.Unlock()
 
 		p.Lock()
 
@@ -146,6 +148,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 
 		return p
 	}
+	ipProfiles.Unlock()
 
 	var (
 		protos   = make(map[string]*types.Protocol)
