@@ -70,7 +70,7 @@ func addInfo(old string, new string) string {
 
 // saves the banner for a TCP service to the filesystem
 // and limits the length of the saved data to the BannerSize value from the config
-func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, net, transport gopacket.Flow) {
+func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, net, transport gopacket.Flow, numBytesServer int, numBytesClient int) {
 
 	// limit length of data
 	if len(banner) >= c.BannerSize {
@@ -88,7 +88,7 @@ func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, ne
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	s := NewService(firstPacket.String())
+	s := NewService(firstPacket.String(), numBytesServer, numBytesClient)
 	s.Banner = banner
 	s.IP = net.Dst().String()
 	s.Port = transport.Dst().String()
@@ -184,10 +184,12 @@ func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, ne
 }
 
 // NewDeviceProfile creates a new device specific profile
-func NewService(ts string) *Service {
+func NewService(ts string, numBytesServer int, numBytesClient int) *Service {
 	return &Service{
 		Service: &types.Service{
 			Timestamp: ts,
+			BytesServer: int32(numBytesServer),
+			BytesClient: int32(numBytesClient),
 		},
 	}
 }

@@ -107,6 +107,7 @@ type httpReader struct {
 	saved    bool
 	serviceBanner bytes.Buffer
 	serviceBannerBytes int
+	numBytes int
 }
 
 func (h *httpReader) Read(p []byte) (int, error) {
@@ -121,6 +122,7 @@ func (h *httpReader) Read(p []byte) (int, error) {
 	}
 
 	l := copy(p, h.data)
+	h.numBytes += l
 	h.data = h.data[l:]
 
 	//fmt.Println(h.ident, "HTTP read:\n", hex.Dump(p[:l]), h.isClient)
@@ -170,7 +172,7 @@ func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 		}
 		h.saved = true
 	} else {
-		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport)
+		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
 		h.saved = true
 	}
 
@@ -879,4 +881,12 @@ func (h *httpReader) FirstPacket() time.Time {
 }
 func (h *httpReader) Saved() bool {
 	return h.saved
+}
+
+func (h *httpReader) NumBytes() int {
+	return h.numBytes
+}
+
+func (h *httpReader) Client() StreamReader {
+	return h.parent.client.(StreamReader)
 }

@@ -43,6 +43,8 @@ type tcpReader struct {
 	hexdump  bool
 	parent   *tcpConnection
 
+	numBytes int
+
 	serviceBanner      bytes.Buffer
 	serviceBannerBytes int
 
@@ -61,6 +63,7 @@ func (h *tcpReader) Read(p []byte) (int, error) {
 	}
 
 	l := copy(p, h.data)
+	h.numBytes += l
 	h.data = h.data[l:]
 
 	dataCpy := p[:l]
@@ -109,7 +112,7 @@ func (h *tcpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connect
 		}
 		h.saved = true
 	} else {
-		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport)
+		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
 		h.saved = true
 	}
 
@@ -358,6 +361,11 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		return err
 	}
 
+	// do not colorize the data written to disk if its just a single keepalive byte
+	if len(raw) == 1 {
+		colored = raw
+	}
+
 	// save the colored version
 	// assign a new buffer
 	r := bytes.NewBuffer(colored)
@@ -440,4 +448,12 @@ func (h *tcpReader) FirstPacket() time.Time {
 
 func (h *tcpReader) Saved() bool {
 	return h.saved
+}
+
+func (h *tcpReader) NumBytes() int {
+	return h.numBytes
+}
+
+func (h *tcpReader) Client() StreamReader {
+	return h.parent.client.(StreamReader)
 }
