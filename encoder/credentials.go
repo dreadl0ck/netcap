@@ -35,6 +35,8 @@ import (
 type CredentialHarvester func(data []byte, ident string, ts time.Time) *types.Credentials
 
 var (
+	useHarvesters = false
+
 	// harvesters to be ran against all seen bi-directional communication in a TCP session
 	// new harvesters must be added here in order to get called
 	tcpConnectionHarvesters = []CredentialHarvester{

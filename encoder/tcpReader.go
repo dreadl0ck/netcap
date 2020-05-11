@@ -231,7 +231,11 @@ func isAscii(d []byte) bool {
 
 func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacket time.Time) []byte {
 
-	// TODO: only use harvesters when credential audit record type is loaded!
+	// only use harvesters when credential audit record type is loaded
+	// useHarvesters is set after the custom encoder initialization
+	if !useHarvesters {
+		return raw
+	}
 
 	var (
 		banner = make([]byte, 0, c.HarvesterBannerSize)
@@ -261,14 +265,15 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 
 	// check if its a well known port and use the harvester for that one
 	if ch, ok := harvesterPortMapping[dstPort]; ok {
-		if c := ch(banner, ident, firstPacket); c != nil {
+		if creds := ch(banner, ident, firstPacket); creds != nil {
 
 			// write audit record
-			writeCredentials(c)
+			writeCredentials(creds)
 
 			// we found a match and will stop processing
-			// TODO: make configurable
-			found = true
+			if c.StopAfterHarvesterMatch {
+				found = true
+			}
 		} else {
 			// save the address of the harvester function
 			// we dont need to run it again
@@ -277,14 +282,15 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 	}
 
 	if ch, ok := harvesterPortMapping[srcPort]; ok {
-		if c := ch(banner, ident, firstPacket); c != nil {
+		if creds := ch(banner, ident, firstPacket); creds != nil {
 
 			// write audit record
-			writeCredentials(c)
+			writeCredentials(creds)
 
 			// we found a match and will stop processing
-			// TODO: make configurable
-			found = true
+			if c.StopAfterHarvesterMatch {
+				found = true
+			}
 		} else {
 			// save the address of the harvester function
 			// we dont need to run it again
@@ -302,14 +308,15 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 			if &ch != tried {
 
 				// execute harvester
-				if c := ch(banner, ident, firstPacket); c != nil {
+				if creds := ch(banner, ident, firstPacket); creds != nil {
 
 					// write audit record
-					writeCredentials(c)
+					writeCredentials(creds)
 
 					// stop after a match for now
-					// TODO: make configurable
-					break
+					if c.StopAfterHarvesterMatch {
+						break
+					}
 				}
 			}
 		}

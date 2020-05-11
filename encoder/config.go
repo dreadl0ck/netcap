@@ -88,6 +88,7 @@ var DefaultConfig = Config{
 	UseRE2:               true,
 	HarvesterBannerSize:  512,
 	BannerSize:           512,
+	StopAfterHarvesterMatch: true,
 }
 
 // Config contains configuration parameters
@@ -208,4 +209,7 @@ type Config struct {
 
 	// size of the channel used to pass reassembled stream data to a stream decoder
 	StreamDecoderBufSize int
+
+	// stop processing the conversation when the first harvester returns a result
+	StopAfterHarvesterMatch bool
 }

@@ -182,7 +182,20 @@ func InitCustomEncoders(c Config, quiet bool) {
 		CustomEncoders = append(CustomEncoders, e)
 	}
 
+	if isCustomEncoderLoaded("Credentials") {
+		useHarvesters = true
+	}
+
 	utils.DebugLog.Println("initialized", len(CustomEncoders), "custom encoders")
+}
+
+func isCustomEncoderLoaded(name string) bool {
+	for _, e := range customEncoderSlice {
+		if e.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // CreateCustomEncoder returns a new CustomEncoder instance
