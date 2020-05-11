@@ -274,11 +274,10 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 			if c.StopAfterHarvesterMatch {
 				found = true
 			}
-		} else {
-			// save the address of the harvester function
-			// we dont need to run it again
-			tried = &ch
 		}
+		// save the address of the harvester function
+		// we dont need to run it again
+		tried = &ch
 	}
 
 	if ch, ok := harvesterPortMapping[srcPort]; ok {
@@ -291,11 +290,10 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 			if c.StopAfterHarvesterMatch {
 				found = true
 			}
-		} else {
-			// save the address of the harvester function
-			// we dont need to run it again
-			tried = &ch
 		}
+		// save the address of the harvester function
+		// we dont need to run it again
+		tried = &ch
 	}
 
 	// if we dont have a match yet, match against all available harvesters
