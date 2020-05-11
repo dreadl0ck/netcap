@@ -86,6 +86,8 @@ var DefaultConfig = Config{
 	SaveBanner:           false,
 	TCPDebug:             false,
 	UseRE2:               true,
+	HarvesterBannerSize:  512,
+	BannerSize:           512,
 }
 
 // Config contains configuration parameters
@@ -198,8 +200,11 @@ type Config struct {
 	// if this is set to false an alternative regex engine that is compatible to the .NET syntax will be used for service banner detection
 	UseRE2 bool
 
-	// Length of the stored service banner in bytes
+	// Maximum number of bytes stored as service banner
 	BannerSize int
+
+	// Maximum number of bytes of the client and server conversation to be used for the harvesters
+	HarvesterBannerSize int
 
 	// size of the channel used to pass reassembled stream data to a stream decoder
 	StreamDecoderBufSize int
