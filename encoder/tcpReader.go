@@ -234,15 +234,15 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 	// TODO: only use harvesters when credential audit record type is loaded!
 
 	var (
-		banner = make([]byte, 0, c.BannerSize)
+		banner = make([]byte, 0, c.HarvesterBannerSize)
 		found  bool
 		tried  *CredentialHarvester
 	)
 
-	// copy c.BannerSize number of bytes from the raw conversation
+	// copy c.HarvesterBannerSize number of bytes from the raw conversation
 	// to use for the credential harvesters
 	for i, b := range raw {
-		if i >= c.BannerSize {
+		if i >= c.HarvesterBannerSize {
 			break
 		}
 		banner = append(banner, b)

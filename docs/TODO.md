@@ -1,7 +1,6 @@
 # TODOs
 
- - make size of tcp stream that gets matched against the harvester configurable separately
-
+- only use harvesters when credential audit record type is loaded
 - process remaining connections with a worker pool
 - service: add reverse DNS lookup
 - config.SaveBanner unused?

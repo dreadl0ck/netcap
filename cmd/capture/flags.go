@@ -106,5 +106,6 @@ var (
 	flagCloseInactiveTimeout = fs.Duration("close-inactive-timeout", netcap.DefaultCloseInactiveTimeout, "reassembly: close connections that are inactive")
 	flagUseRE2               = fs.Bool("re2", true, "if true uses the default golang re2 regex engine for service detection")
 	flagBannerSize           = fs.Int("bsize", 512, "size of the stored service banners in bytes")
+	flagHarvesterBannerSize  = fs.Int("hbsize", 512, "size of the data passed to the credential harvesters in bytes")
 	flagStreamDecoderBufSize = fs.Int("sbuf-size", 0, "size for channel used to pass data to the stream decoders. default is unbuffered")
 )
