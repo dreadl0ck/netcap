@@ -285,11 +285,14 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 //      2) overwrite queued part
 
 func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerContext) {
-	var next *page
-	cur := half.last
-	bytes := a.cacheLP.bytes
-	start := a.cacheLP.seq
-	end := start.Add(len(bytes))
+
+	var (
+		next  *page
+		cur   = half.last
+		bytes = a.cacheLP.bytes
+		start = a.cacheLP.seq
+		end   = start.Add(len(bytes))
+	)
 
 	a.dump("before checkOverlap", half)
 
@@ -471,8 +474,12 @@ func (a *Assembler) overlapExisting(half *halfconnection, start, end Sequence, b
 	if diff == 0 {
 		return bytes, start
 	}
-	s := 0
-	e := len(bytes)
+
+	var (
+		s = 0
+		e = len(bytes)
+	)
+
 	// TODO: depending on strategy, we might want to shrink half.saved if possible
 	if e != 0 {
 		if *debugLog {
@@ -481,17 +488,20 @@ func (a *Assembler) overlapExisting(half *halfconnection, start, end Sequence, b
 		half.overlapPackets++
 		half.overlapBytes += diff
 	}
+
 	s += diff
 	if s >= e {
 		// Completely included in sent
 		s = e
 	}
 	bytes = bytes[s:]
+
 	return bytes, half.nextSeq
 }
 
 // Prepare send or queue
 func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection, ci gopacket.CaptureInfo, start bool, end bool, action assemblerAction, ac AssemblerContext) assemblerAction {
+
 	a.cacheLP.bytes = bytes
 	a.cacheLP.start = start
 	a.cacheLP.end = end
@@ -535,14 +545,17 @@ func (a *Assembler) setStatsToSG(half *halfconnection) {
 // Build the ScatterGather object, i.e. prepend saved bytes and
 // append continuous bytes.
 func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
+
 	// find if there are skipped bytes
 	skip := -1
 	if half.nextSeq != invalidSequence {
 		skip = half.nextSeq.Difference(a.ret[0].getSeq())
 	}
 	last := a.ret[0].getSeq().Add(a.ret[0].length())
+
 	// Prepend saved bytes
 	saved := a.addPending(half, a.ret[0].getSeq())
+
 	// Append continuous bytes
 	nextSeq := a.addContiguous(half, last)
 	a.cacheSG.all = a.ret
@@ -552,17 +565,21 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	a.cacheSG.toKeep = -1
 	a.setStatsToSG(half)
 	a.dump("after buildSG", half)
+
 	return a.ret[len(a.ret)-1].isEnd(), nextSeq
 }
 
 func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
-	cur := 0
-	ndx := 0
-	skip := 0
+
+	var (
+		r    byteContainer
+		cur  = 0
+		ndx  = 0
+		skip = 0
+	)
 
 	a.dump("cleanSG(start)", half)
 
-	var r byteContainer
 	// Find first page to keep
 	if a.cacheSG.toKeep < 0 {
 		ndx = len(a.cacheSG.all)
@@ -602,7 +619,9 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 		}
 		half.pages -= r.release(a.pc)
 	}
+
 	a.dump("after consumed release", half)
+
 	// Keep un-consumed pages
 	nbKept := 0
 	half.saved = nil
@@ -618,6 +637,7 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 		saved = last
 		nbKept += nb
 	}
+
 	if *debugLog {
 		log.Printf("Remaining %d chunks in SG\n", nbKept)
 		log.Printf("%s\n", a.Dump())
@@ -628,19 +648,23 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 // sendToConnection sends the current values in a.ret to the connection, closing
 // the connection if the last thing sent had End set.
 func (a *Assembler) sendToConnection(conn *connection, half *halfconnection, ac AssemblerContext) Sequence {
+
 	if *debugLog {
 		fmt.Printf("sendToConnection\n")
 	}
+
 	end, nextSeq := a.buildSG(half)
 	//fmt.Println("after buildSG")
 	half.stream.ReassembledSG(&a.cacheSG, ac) // TODO: this blocks
 	//fmt.Println("after ReassembledSG")
 	a.cleanSG(half, ac)
 	//fmt.Println("after cleanSG")
+
 	if end {
 		a.closeHalfConnection(conn, half)
 		//fmt.Println("after closeHalfConnection")
 	}
+
 	if *debugLog {
 		log.Printf("after sendToConnection: nextSeq: %d\n", nextSeq)
 	}
