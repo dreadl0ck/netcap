@@ -15,6 +15,7 @@ package capture
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dustin/go-humanize"
 	"log"
@@ -118,6 +119,10 @@ func Run() {
 		source = "unknown"
 	}
 
+	if *flagReassemblyDebug {
+		reassembly.Debug = true
+	}
+
 	// init collector
 	c := collector.New(collector.Config{
 		Workers:               *flagWorkers,
@@ -133,43 +138,43 @@ func Run() {
 		FreeOSMem:             *flagFreeOSMemory,
 		LogErrors:             *flagLogErrors,
 		EncoderConfig: encoder.Config{
-			Buffer:               *flagBuffer,
-			MemBufferSize:        *flagMemBufferSize,
-			Compression:          *flagCompress,
-			CSV:                  *flagCSV,
-			IncludeEncoders:      *flagInclude,
-			ExcludeEncoders:      *flagExclude,
-			Out:                  *flagOutDir,
-			WriteChan:            false,
-			Source:               source,
-			IncludePayloads:      *flagPayload,
-			Export:               false,
-			AddContext:           *flagContext,
-			FlushEvery:           *flagFlushevery,
-			NoDefrag:             *flagNodefrag,
-			Checksum:             *flagChecksum,
-			NoOptCheck:           *flagNooptcheck,
-			IgnoreFSMerr:         *flagIgnorefsmerr,
-			AllowMissingInit:     *flagAllowmissinginit,
-			Debug:                *flagDebug,
-			HexDump:              *flagHexdump,
-			WaitForConnections:   *flagWaitForConnections,
-			WriteIncomplete:      *flagWriteincomplete,
-			MemProfile:           *flagMemprofile,
-			ConnFlushInterval:    *flagConnFlushInterval,
-			ConnTimeOut:          *flagConnTimeOut,
-			FlowFlushInterval:    *flagFlowFlushInterval,
-			FlowTimeOut:          *flagFlowTimeOut,
-			CloseInactiveTimeOut: *flagCloseInactiveTimeout,
-			ClosePendingTimeOut:  *flagClosePendingTimeout,
-			FileStorage:          *flagFileStorage,
-			CalculateEntropy:     *flagCalcEntropy,
-			SaveConns:            *flagSaveConns,
-			TCPDebug:             *flagTCPDebug,
-			UseRE2:               *flagUseRE2,
-			BannerSize:           *flagBannerSize,
-			StreamDecoderBufSize: *flagStreamDecoderBufSize,
-			HarvesterBannerSize:  *flagHarvesterBannerSize,
+			Buffer:                  *flagBuffer,
+			MemBufferSize:           *flagMemBufferSize,
+			Compression:             *flagCompress,
+			CSV:                     *flagCSV,
+			IncludeEncoders:         *flagInclude,
+			ExcludeEncoders:         *flagExclude,
+			Out:                     *flagOutDir,
+			WriteChan:               false,
+			Source:                  source,
+			IncludePayloads:         *flagPayload,
+			Export:                  false,
+			AddContext:              *flagContext,
+			FlushEvery:              *flagFlushevery,
+			NoDefrag:                *flagNodefrag,
+			Checksum:                *flagChecksum,
+			NoOptCheck:              *flagNooptcheck,
+			IgnoreFSMerr:            *flagIgnorefsmerr,
+			AllowMissingInit:        *flagAllowmissinginit,
+			Debug:                   *flagDebug,
+			HexDump:                 *flagHexdump,
+			WaitForConnections:      *flagWaitForConnections,
+			WriteIncomplete:         *flagWriteincomplete,
+			MemProfile:              *flagMemprofile,
+			ConnFlushInterval:       *flagConnFlushInterval,
+			ConnTimeOut:             *flagConnTimeOut,
+			FlowFlushInterval:       *flagFlowFlushInterval,
+			FlowTimeOut:             *flagFlowTimeOut,
+			CloseInactiveTimeOut:    *flagCloseInactiveTimeout,
+			ClosePendingTimeOut:     *flagClosePendingTimeout,
+			FileStorage:             *flagFileStorage,
+			CalculateEntropy:        *flagCalcEntropy,
+			SaveConns:               *flagSaveConns,
+			TCPDebug:                *flagTCPDebug,
+			UseRE2:                  *flagUseRE2,
+			BannerSize:              *flagBannerSize,
+			StreamDecoderBufSize:    *flagStreamDecoderBufSize,
+			HarvesterBannerSize:     *flagHarvesterBannerSize,
 			StopAfterHarvesterMatch: *flagStopAfterHarvesterMatch,
 		},
 		ResolverConfig: resolvers.Config{

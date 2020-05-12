@@ -7,12 +7,9 @@
 package reassembly
 
 import (
-	"flag"
 	"log"
 	"time"
 )
-
-var memLog = flag.Bool("assembly_memuse_log", defaultDebug, "If true, the github.com/dreadl0ck/gopacket/reassembly library will log information regarding its memory use every once in a while.")
 
 /*
  * pageCache
@@ -46,7 +43,7 @@ func (c *pageCache) grow() {
 	for i := range pages {
 		c.free = append(c.free, &pages[i])
 	}
-	if *memLog {
+	if Debug {
 		log.Println("PageCache: created", c.pcSize, "new pages, size:", c.size, "cap:", cap(c.free), "len:", len(c.free))
 	}
 	// control next shrink attempt
@@ -76,7 +73,7 @@ func (c *pageCache) tryShrink() {
 
 // next returns a clean, ready-to-use page object.
 func (c *pageCache) next(ts time.Time) (p *page) {
-	if *memLog {
+	if Debug {
 		c.pageRequests++
 		if c.pageRequests&0xFFFF == 0 {
 			log.Println("PageCache:", c.pageRequests, "requested,", c.used, "used,", len(c.free), "free")
@@ -90,7 +87,7 @@ func (c *pageCache) next(ts time.Time) (p *page) {
 	p.seen = ts
 	p.bytes = p.buf[:0]
 	c.used++
-	if *memLog {
+	if Debug {
 		log.Printf("allocator returns %s\n", p)
 	}
 	c.ops++
@@ -105,7 +102,7 @@ func (c *pageCache) next(ts time.Time) (p *page) {
 // replace replaces a page into the pageCache.
 func (c *pageCache) replace(p *page) {
 	c.used--
-	if *memLog {
+	if Debug {
 		log.Printf("replacing %s\n", p)
 	}
 	p.prev = nil

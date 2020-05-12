@@ -21,7 +21,6 @@
 package reassembly
 
 import (
-	"flag"
 	"github.com/dreadl0ck/gopacket"
 )
 
@@ -30,10 +29,7 @@ import (
 // - implement chunked (cheap) reads and Reader() interface
 // - better organize file: split files: 'mem', 'misc' (seq + flow)
 
-var defaultDebug = false
-
-// TODO: add to flagSet
-var debugLog = flag.Bool("assembly_debug_log", defaultDebug, "If true, the github.com/dreadl0ck/gopacket/reassembly library will log verbose debugging information (at least one line per packet)")
+var Debug = false
 
 // TCPAssemblyStats provides some figures for a ScatterGather
 type TCPAssemblyStats struct {

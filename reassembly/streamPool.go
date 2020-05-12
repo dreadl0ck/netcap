@@ -45,7 +45,7 @@ func (p *StreamPool) grow() {
 	for i := range conns {
 		p.free = append(p.free, &conns[i])
 	}
-	if *memLog {
+	if Debug {
 		log.Println("StreamPool: created", p.nextAlloc, "new connections")
 	}
 	p.nextAlloc *= 2
@@ -105,7 +105,7 @@ func (p *StreamPool) connections() []*connection {
 }
 
 func (p *StreamPool) newConnection(k key, s Stream, ts time.Time) (c *connection, h *halfconnection, r *halfconnection) {
-	if *memLog {
+	if Debug {
 		p.newConnectionCount++
 		if p.newConnectionCount&0x7FFF == 0 {
 			log.Println("StreamPool:", p.newConnectionCount, "requests,", len(p.conns), "used,", len(p.free), "free")

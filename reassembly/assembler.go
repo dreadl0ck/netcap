@@ -183,7 +183,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 
 	conn, half, rev = a.connPool.getConnection(key, false, timestamp, t, ac)
 	if conn == nil {
-		if *debugLog {
+		if Debug {
 			log.Printf("%v got empty packet on otherwise empty connection", key)
 		}
 		return
@@ -194,21 +194,21 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		half.lastSeen = timestamp
 	}
 	a.start = half.nextSeq == invalidSequence && t.SYN
-	if *debugLog {
+	if Debug {
 		if half.nextSeq < rev.ackSeq {
 			log.Printf("Delay detected on %v, data is acked but not assembled yet (acked %v, nextSeq %v)", key, rev.ackSeq, half.nextSeq)
 		}
 	}
 
 	if !half.stream.Accept(t, ci, half.dir, half.nextSeq, &a.start, ac) {
-		if *debugLog {
+		if Debug {
 			log.Printf("Ignoring packet")
 		}
 		return
 	}
 	if half.closed {
 		// this way is closed
-		if *debugLog {
+		if Debug {
 			log.Printf("%v got packet on closed half", key)
 		}
 		return
@@ -226,31 +226,31 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	a.dump("AssembleWithContext()", half)
 	if half.nextSeq == invalidSequence {
 		if t.SYN {
-			if *debugLog {
+			if Debug {
 				log.Printf("%v saw first SYN packet, returning immediately, seq=%v", key, seq)
 			}
 			seq = seq.Add(1)
 			half.nextSeq = seq
 			action.queue = false
 		} else if a.start {
-			if *debugLog {
+			if Debug {
 				log.Printf("%v start forced", key)
 			}
 			half.nextSeq = seq
 			action.queue = false
 		} else {
-			if *debugLog {
+			if Debug {
 				log.Printf("%v waiting for start, storing into connection", key)
 			}
 		}
 	} else {
 		diff := half.nextSeq.Difference(seq)
 		if diff > 0 {
-			if *debugLog {
+			if Debug {
 				log.Printf("%v gap in sequence numbers (%v, %v) diff %v, storing into connection", key, half.nextSeq, seq, diff)
 			}
 		} else {
-			if *debugLog {
+			if Debug {
 				log.Printf("%v found contiguous data (%v, %v), returning immediately: len:%d", key, seq, half.nextSeq, len(bytes))
 			}
 			action.queue = false
@@ -268,7 +268,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 			half.nextSeq = half.nextSeq.Add(1)
 		}
 	}
-	if *debugLog {
+	if Debug {
 		log.Printf("%v nextSeq:%d", key, half.nextSeq)
 	}
 }
@@ -301,13 +301,13 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 	//             [s <--ds-- : --de--> e]
 	for cur != nil {
 
-		if *debugLog {
+		if Debug {
 			log.Printf("cur = %p (%s)\n", cur, cur)
 		}
 
 		// end < cur.start: continue (5)
 		if end.Difference(cur.seq) > 0 {
-			if *debugLog {
+			if Debug {
 				log.Printf("case 5\n")
 			}
 			next = cur
@@ -318,7 +318,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 		curEnd := cur.seq.Add(len(cur.bytes))
 		// start > cur.end: stop (1)
 		if start.Difference(curEnd) <= 0 {
-			if *debugLog {
+			if Debug {
 				log.Printf("case 1\n")
 			}
 			break
@@ -329,7 +329,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 
 		// end > cur.end && start < cur.start: drop (3)
 		if diffEnd <= 0 && diffStart >= 0 {
-			if *debugLog {
+			if Debug {
 				log.Printf("case 3\n")
 			}
 			if cur.isPacket() {
@@ -355,7 +355,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 
 		// end > cur.end && start < cur.end: drop cur's end (2)
 		if diffEnd < 0 && start.Difference(curEnd) > 0 {
-			if *debugLog {
+			if Debug {
 				log.Printf("case 2\n")
 			}
 			cur.bytes = cur.bytes[:-start.Difference(cur.seq)]
@@ -364,7 +364,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 
 		// start < cur.start && end > cur.start: drop cur's start (4)
 		if diffStart > 0 && end.Difference(cur.seq) < 0 {
-			if *debugLog {
+			if Debug {
 				log.Printf("case 4\n")
 			}
 			cur.bytes = cur.bytes[-end.Difference(cur.seq):]
@@ -374,13 +374,13 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 
 		// end < cur.end && start > cur.start: replace bytes inside cur (6)
 		if diffEnd > 0 && diffStart < 0 {
-			if *debugLog {
+			if Debug {
 				log.Printf("case 6\n")
 			}
 			copy(cur.bytes[-diffStart:-diffStart+len(bytes)], bytes)
 			bytes = bytes[:0]
 		} else {
-			if *debugLog {
+			if Debug {
 				log.Printf("no overlap\n")
 			}
 			next = cur
@@ -397,25 +397,25 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 		half.queuedBytes += len(bytes)
 		half.pages += numPages
 		if cur != nil {
-			if *debugLog {
+			if Debug {
 				log.Printf("adding %s after %s", p, cur)
 			}
 			cur.next = p
 			p.prev = cur
 		} else {
-			if *debugLog {
+			if Debug {
 				log.Printf("adding %s as first", p)
 			}
 			half.first = p
 		}
 		if next != nil {
-			if *debugLog {
+			if Debug {
 				log.Printf("setting %s as next of new %s", next, p2)
 			}
 			p2.next = next
 			next.prev = p2
 		} else {
-			if *debugLog {
+			if Debug {
 				log.Printf("setting %s as last", p2)
 			}
 			half.last = p2
@@ -427,7 +427,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 // Warning: this is a low-level dumper, i.e. a.ret or a.cacheSG might
 // be strange, but it could be ok.
 func (a *Assembler) dump(text string, half *halfconnection) {
-	if !*debugLog {
+	if !Debug {
 		return
 	}
 	log.Printf("%s: dump\n", text)
@@ -482,7 +482,7 @@ func (a *Assembler) overlapExisting(half *halfconnection, start, end Sequence, b
 
 	// TODO: depending on strategy, we might want to shrink half.saved if possible
 	if e != 0 {
-		if *debugLog {
+		if Debug {
 			log.Printf("Overlap detected: ignoring current packet's first %d bytes", diff)
 		}
 		half.overlapPackets++
@@ -513,7 +513,7 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 		a.checkOverlap(half, true, ac)
 		if (a.MaxBufferedPagesPerConnection > 0 && half.pages >= a.MaxBufferedPagesPerConnection) ||
 			(a.MaxBufferedPagesTotal > 0 && a.pc.used >= a.MaxBufferedPagesTotal) {
-			if *debugLog {
+			if Debug {
 				log.Printf("hit max buffer size: %+v, %v, %v", a.AssemblerOptions, half.pages, a.pc.used)
 			}
 			action.queue = false
@@ -638,7 +638,7 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 		nbKept += nb
 	}
 
-	if *debugLog {
+	if Debug {
 		log.Printf("Remaining %d chunks in SG\n", nbKept)
 		log.Printf("%s\n", a.Dump())
 		a.dump("after cleanSG()", half)
@@ -649,7 +649,7 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 // the connection if the last thing sent had End set.
 func (a *Assembler) sendToConnection(conn *connection, half *halfconnection, ac AssemblerContext) Sequence {
 
-	if *debugLog {
+	if Debug {
 		fmt.Printf("sendToConnection\n")
 	}
 
@@ -665,7 +665,7 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection, ac 
 		//fmt.Println("after closeHalfConnection")
 	}
 
-	if *debugLog {
+	if Debug {
 		log.Printf("after sendToConnection: nextSeq: %d\n", nextSeq)
 	}
 	return nextSeq
@@ -679,7 +679,7 @@ func (a *Assembler) addPending(half *halfconnection, firstSeq Sequence) int {
 	s := 0
 	ret := []byteContainer{}
 	for p := half.saved; p != nil; p = p.next {
-		if *debugLog {
+		if Debug {
 			log.Printf("adding pending @%p %s (%s)\n", p, p, hex.EncodeToString(p.bytes))
 		}
 		ret = append(ret, p)
@@ -705,7 +705,7 @@ func (a *Assembler) addPending(half *halfconnection, firstSeq Sequence) int {
 func (a *Assembler) addContiguous(half *halfconnection, lastSeq Sequence) Sequence {
 	page := half.first
 	if page == nil {
-		if *debugLog {
+		if Debug {
 			log.Printf("addContiguous(%d): no pages\n", lastSeq)
 		}
 		return lastSeq
@@ -714,7 +714,7 @@ func (a *Assembler) addContiguous(half *halfconnection, lastSeq Sequence) Sequen
 		lastSeq = page.seq
 	}
 	for page != nil && lastSeq.Difference(page.seq) == 0 {
-		if *debugLog {
+		if Debug {
 			log.Printf("addContiguous: lastSeq: %d, first.seq=%d, page.seq=%d\n", half.nextSeq, half.first.seq, page.seq)
 		}
 		lastSeq = lastSeq.Add(len(page.bytes))
@@ -735,7 +735,7 @@ func (a *Assembler) addContiguous(half *halfconnection, lastSeq Sequence) Sequen
 // first set of bytes we have.  If we have no bytes saved, it closes the
 // connection.
 func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
-	if *debugLog {
+	if Debug {
 		log.Printf("skipFlush %v\n", half.nextSeq)
 	}
 	// Well, it's embarassing it there is still something in half.saved
@@ -753,7 +753,7 @@ func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
 }
 
 func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) {
-	if *debugLog {
+	if Debug {
 		log.Printf("%v closing", conn)
 	}
 	//half.Lock()
@@ -777,7 +777,7 @@ func (a *Assembler) addNextFromConn(conn *halfconnection) {
 	if conn.first == nil {
 		return
 	}
-	if *debugLog {
+	if Debug {
 		log.Printf("   adding from conn (%v, %v) %v (%d)\n", conn.first.seq, conn.nextSeq, conn.nextSeq-conn.first.seq, len(conn.first.bytes))
 	}
 	a.ret = append(a.ret, conn.first)
