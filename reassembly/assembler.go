@@ -172,14 +172,17 @@ type assemblerAction struct {
 //    zero or one call to ReassembledSG on a single stream
 //    zero or one call to ReassemblyComplete on the same stream
 func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac AssemblerContext) {
-	var conn *connection
-	var half *halfconnection
-	var rev *halfconnection
+
+	var (
+		conn      *connection
+		half      *halfconnection
+		rev       *halfconnection
+		key       = key{netFlow, t.TransportFlow()}
+		ci        = ac.GetCaptureInfo()
+		timestamp = ci.Timestamp
+	)
 
 	a.ret = a.ret[:0]
-	key := key{netFlow, t.TransportFlow()}
-	ci := ac.GetCaptureInfo()
-	timestamp := ci.Timestamp
 
 	conn, half, rev = a.connPool.getConnection(key, false, timestamp, t, ac)
 	if conn == nil {
@@ -190,6 +193,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	}
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
+
 	if half.lastSeen.Before(timestamp) {
 		half.lastSeen = timestamp
 	}
@@ -324,8 +328,10 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 			break
 		}
 
-		diffStart := start.Difference(cur.seq)
-		diffEnd := end.Difference(curEnd)
+		var (
+			diffStart = start.Difference(cur.seq)
+			diffEnd   = end.Difference(curEnd)
+		)
 
 		// end > cur.end && start < cur.start: drop (3)
 		if diffEnd <= 0 && diffStart >= 0 {
@@ -756,14 +762,15 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) 
 	if Debug {
 		log.Printf("%v closing", conn)
 	}
-	//half.Lock()
+
 	half.closed = true
-	//half.Unlock()
+
 	for p := half.first; p != nil; p = p.next {
 		// FIXME: it should be already empty
 		a.pc.replace(p)
 		half.pages--
 	}
+
 	if conn.s2c.closed && conn.c2s.closed {
 		if half.stream.ReassemblyComplete(nil) { //FIXME: which context to pass ?
 			a.connPool.remove(conn)
@@ -817,9 +824,12 @@ type FlushOptions struct {
 // Returns the number of connections flushed, and of those, the number closed
 // because of the flush.
 func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
-	conns := a.connPool.connections()
-	closes := 0
-	flushes := 0
+
+	var (
+		conns   = a.connPool.connections()
+		closes  = 0
+		flushes = 0
+	)
 	for _, conn := range conns {
 		remove := false
 		conn.mu.Lock()

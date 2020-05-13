@@ -7,6 +7,7 @@ import (
 
 /* one-way connection, i.e. halfconnection */
 type halfconnection struct {
+
 	dir               TCPFlowDirection
 	pages             int      // Number of pages used (both in first/last and saved)
 	saved             *page    // Doubly-linked list of in-order pages (seq < nextSeq) already given to Stream who told us to keep
@@ -16,23 +17,21 @@ type halfconnection struct {
 	created, lastSeen time.Time
 	stream            Stream
 	closed            bool
+
 	// for stats
 	queuedBytes    int
 	queuedPackets  int
 	overlapBytes   int
 	overlapPackets int
-
-	//sync.Mutex
 }
 
 func (half *halfconnection) String() string {
 	closed := ""
 
-	//half.Lock()
 	if half.closed {
 		closed = "closed "
 	}
-	//half.Unlock()
+
 	return fmt.Sprintf("%screated:%v, last:%v", closed, half.created, half.lastSeen)
 }
 
