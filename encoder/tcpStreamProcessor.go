@@ -75,6 +75,7 @@ func (c *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader 
 				if s.Saved() {
 					break
 				}
+				//fmt.Println(s.Ident(), "has not been saved yet", s.Saved(), fmt.Sprintf("tcpReader: %p", s))
 				if s.IsClient() {
 					// save the entire conversation.
 					// we only need to do this once, when client part of the connection is closed

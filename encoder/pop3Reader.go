@@ -59,8 +59,8 @@ type pop3Reader struct {
 
 	user, pass, token string
 
-	saved bool
-	serviceBanner bytes.Buffer
+	saved              bool
+	serviceBanner      bytes.Buffer
 	serviceBannerBytes int
 
 	numBytes int
@@ -118,15 +118,17 @@ func (h *pop3Reader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 
 	// fmt.Println("POP3 cleanup", h.ident)
 
+	h.parent.Lock()
+	h.saved = true
+	h.parent.Unlock()
+
 	if h.isClient {
 		err := saveConnection(h.ConversationRaw(), h.ConversationColored(), h.Ident(), h.FirstPacket(), h.Transport())
 		if err != nil {
 			fmt.Println("failed to save connection", err)
 		}
-		h.saved = true
 	} else {
 		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
-		h.saved = true
 	}
 
 	// determine if one side of the stream has already been closed
@@ -866,10 +868,14 @@ func (h *pop3Reader) FirstPacket() time.Time {
 }
 
 func (h *pop3Reader) Saved() bool {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.saved
 }
 
 func (h *pop3Reader) NumBytes() int {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.numBytes
 }
 

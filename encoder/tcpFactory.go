@@ -68,14 +68,15 @@ type StreamReader interface {
 func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
+	//fmt.Printf("* NEW: %s %s\n", net, transport)
 
 	stream := &tcpConnection{
-		net:         net,
-		transport:   transport,
-		isHTTP:      factory.decodeHTTP && (tcp.SrcPort == 80 || tcp.DstPort == 80),
-		isPOP3:      factory.decodePOP3 && (tcp.SrcPort == 110 || tcp.DstPort == 110),
-		isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
-		reversed:    tcp.SrcPort == 80,
+		net:       net,
+		transport: transport,
+		isHTTP:    factory.decodeHTTP && (tcp.SrcPort == 80 || tcp.DstPort == 80),
+		isPOP3:    factory.decodePOP3 && (tcp.SrcPort == 110 || tcp.DstPort == 110),
+		isHTTPS:   tcp.SrcPort == 443 || tcp.DstPort == 443,
+		isSSH:     tcp.SrcPort == 22 || tcp.DstPort == 22,
 		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),
@@ -92,6 +93,31 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 			isClient: true,
 		}
 		stream.server = &httpReader{
+			bytes:   make(chan []byte, c.StreamDecoderBufSize),
+			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
+			hexdump: c.HexDump,
+			parent:  stream,
+		}
+
+		// kickoff decoders for client and server
+		factory.wg.Add(2)
+		factory.Lock()
+		factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
+		factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
+		factory.numActive += 2
+		factory.Unlock()
+		go stream.client.Run(factory)
+		go stream.server.Run(factory)
+
+	case stream.isSSH:
+		stream.client = &sshReader{
+			bytes:    make(chan []byte, c.StreamDecoderBufSize),
+			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
+			hexdump:  c.HexDump,
+			parent:   stream,
+			isClient: true,
+		}
+		stream.server = &sshReader{
 			bytes:   make(chan []byte, c.StreamDecoderBufSize),
 			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 			hexdump: c.HexDump,

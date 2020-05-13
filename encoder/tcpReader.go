@@ -102,7 +102,10 @@ func (h *tcpReader) BytesChan() chan []byte {
 
 func (h *tcpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
 
-	// fmt.Println("TCP cleanup", h.ident)
+	h.parent.Lock()
+	h.saved = true
+	h.parent.Unlock()
+	//fmt.Println("TCP cleanup", h.ident, fmt.Sprintf("tcpReader: %p", h), "SAVED")
 
 	// save data for the current stream
 	if h.isClient {
@@ -110,10 +113,8 @@ func (h *tcpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connect
 		if err != nil {
 			fmt.Println("failed to save stream", err)
 		}
-		h.saved = true
 	} else {
 		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
-		h.saved = true
 	}
 
 	// determine if one side of the stream has already been closed
@@ -397,9 +398,7 @@ func tcpDebug(args ...interface{}) {
 
 func (h *tcpReader) readStream(b *bufio.Reader) error {
 
-	var data = make([]byte, 512)
-
-	_, err := b.Read(data)
+	_, _, err := b.ReadLine()
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
@@ -452,10 +451,14 @@ func (h *tcpReader) FirstPacket() time.Time {
 }
 
 func (h *tcpReader) Saved() bool {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.saved
 }
 
 func (h *tcpReader) NumBytes() int {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.numBytes
 }
 

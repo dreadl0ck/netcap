@@ -187,7 +187,7 @@ func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, ne
 func NewService(ts string, numBytesServer int, numBytesClient int) *Service {
 	return &Service{
 		Service: &types.Service{
-			Timestamp: ts,
+			Timestamp:   ts,
 			BytesServer: int32(numBytesServer),
 			BytesClient: int32(numBytesClient),
 		},

@@ -69,7 +69,7 @@ import (
 )
 
 var (
-	numErrors     uint
+	numErrors uint
 
 	requests  = 0
 	responses = 0
@@ -121,12 +121,14 @@ type tcpConnection struct {
 
 	net, transport gopacket.Flow
 
-	fsmerr   bool
-	isHTTP   bool
-	isPOP3   bool
-	isHTTPS  bool
-	reversed bool
-	ident    string
+	fsmerr bool
+
+	isHTTP  bool
+	isHTTPS bool
+	isPOP3  bool
+	isSSH   bool
+
+	ident string
 
 	client ConnectionReader
 	server ConnectionReader
@@ -248,7 +250,7 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 }
 
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte) {
-	if dir == reassembly.TCPDirClientToServer && !t.reversed {
+	if dir == reassembly.TCPDirClientToServer {
 		t.client.BytesChan() <- data
 	} else {
 		t.server.BytesChan() <- data
@@ -256,7 +258,7 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte) {
 }
 
 func (t *tcpConnection) feedDataTimeout(dir reassembly.TCPFlowDirection, data []byte) {
-	if dir == reassembly.TCPDirClientToServer && !t.reversed {
+	if dir == reassembly.TCPDirClientToServer {
 		select {
 		case t.client.BytesChan() <- data:
 		case <-time.After(100 * time.Millisecond):
@@ -287,63 +289,39 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	}
 
 	data := sg.Fetch(length)
-	switch {
-	case t.isHTTP:
-		if length > 0 {
-			if c.HexDump {
-				logReassemblyDebug("Feeding http with:\n%s", hex.Dump(data))
-			}
-			t.feedData(dir, data)
-		}
-	case t.isPOP3:
-		if length > 0 {
-			if c.HexDump {
-				logReassemblyDebug("Feeding POP3 with:\n%s", hex.Dump(data))
-			}
-			t.feedData(dir, data)
-		}
-	default:
 
-		// do not process encrypted HTTP streams for now
-		if t.isHTTPS {
-			return
-		}
+	// do not process encrypted HTTP streams for now
+	if t.isHTTPS {
+		return
+	}
 
-		if length > 0 {
-			if c.HexDump {
-				logReassemblyDebug("Feeding TCP stream reader with:\n%s", hex.Dump(data))
-			}
-			t.feedData(dir, data)
+	if length > 0 {
+		if c.HexDump {
+			logReassemblyDebug("Feeding stream reader with:\n%s", hex.Dump(data))
 		}
+		t.feedData(dir, data)
 	}
 }
 
 func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
 	logReassemblyDebug("%s: Connection closed\n", t.ident)
-	if t.isHTTP {
-		// closing here causes a panic sometimes because the channel is already closed
-		// as a temporary bugfix, closing the channels was omitted.
-		// channels don't have to be closed.
-		// they will be garbage collected if no goroutines reference them any more
 
-		// fmt.Println("close", t.ident, "client")
-		// close(t.client.bytes)
-		// fmt.Println("close", t.ident, "server")
-		// close(t.server.bytes)
+	// channels don't have to be closed.
+	// they will be garbage collected if no goroutines reference them any more
+	// we will attempt to close anyway to free up so some resources if possible
+	// in case one is already closed there will be a panic
+	// we need to recover from that and do the same for the server
+	// by using two anonymous functions this is possible
+	// I created a snippet to verify: https://goplay.space/#m8-zwTuGrgS
+	func() {
+		defer recovery()
+		close(t.client.BytesChan())
+	}()
+	func() {
+		defer recovery()
+		close(t.server.BytesChan())
+	}()
 
-		// in case one is already closed there will be a panic
-		// we need to recover from that and do the same for the server
-		// by using two anonymous functions this is possible
-		// I created a snippet to verify: https://goplay.space/#m8-zwTuGrgS
-		func() {
-			defer recovery()
-			close(t.client.BytesChan())
-		}()
-		func() {
-			defer recovery()
-			close(t.server.BytesChan())
-		}()
-	}
 	// do not remove the connection to allow last ACK
 	return false
 }
@@ -359,10 +337,10 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	data := packet.Data()
 
 	// lock to sync with read on destroy
-	errorsMapMutex.Lock()
+	statsMutex.Lock()
 	count++
 	dataBytes += int64(len(data))
-	errorsMapMutex.Unlock()
+	statsMutex.Unlock()
 
 	// defrag the IPv4 packet if required
 	if !c.NoDefrag {
@@ -414,8 +392,12 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
 
+	statsMutex.Lock()
+	doFlush := count%c.FlushEvery == 0
+	statsMutex.Unlock()
+
 	// flush connections in interval
-	if count%c.FlushEvery == 0 {
+	if doFlush {
 		ref := packet.Metadata().CaptureInfo.Timestamp
 		flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-c.ClosePendingTimeOut), TC: ref.Add(-c.CloseInactiveTimeOut)})
 
