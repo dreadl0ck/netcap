@@ -34,17 +34,17 @@ func (c *Collector) cleanup(force bool) {
 		return ch
 	}
 
-	if c.config.ReassembleConnections {
-		// teardown the TCP stream reassembly and print stats
-		encoder.CleanupReassembly(!force, c.assemblers)
-	}
-
 	c.printStdOut("\nwaiting for main collector wait group...")
 	select {
 	case <-waitForCollector():
 		c.printlnStdOut(" done!")
 	case <-time.After(c.config.EncoderConfig.ClosePendingTimeOut):
 		c.printStdOut(" timeout after ", c.config.EncoderConfig.ClosePendingTimeOut)
+	}
+
+	if c.config.ReassembleConnections {
+		// teardown the TCP stream reassembly and print stats
+		encoder.CleanupReassembly(!force, c.assemblers)
 	}
 
 	// flush all layer encoders
