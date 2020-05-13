@@ -54,8 +54,8 @@ var (
 	userAgentCaching = make(map[string]*userAgent)
 	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
-	ja3Cache       = make(map[string]string)
-	jaCacheMutex sync.Mutex
+	ja3Cache         = make(map[string]string)
+	jaCacheMutex     sync.Mutex
 	reGenericVersion = regexp.MustCompile(`(?:[A-Za-z]*?)\s(?:[0-9]+)(?:\.)?(?:[0-9]+)?(?:\.)?(?:[0-9]+)?`)
 	hasshMap         = make(map[string]SSHHash)
 )

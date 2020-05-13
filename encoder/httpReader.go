@@ -98,16 +98,16 @@ var httpStore = &HTTPMetaStore{
  */
 
 type httpReader struct {
-	ident    string
-	isClient bool
-	bytes    chan []byte
-	data     []byte
-	hexdump  bool
-	parent   *tcpConnection
-	saved    bool
-	serviceBanner bytes.Buffer
+	ident              string
+	isClient           bool
+	bytes              chan []byte
+	data               []byte
+	hexdump            bool
+	parent             *tcpConnection
+	saved              bool
+	serviceBanner      bytes.Buffer
 	serviceBannerBytes int
-	numBytes int
+	numBytes           int
 }
 
 func (h *httpReader) Read(p []byte) (int, error) {
@@ -164,16 +164,17 @@ func (h *httpReader) BytesChan() chan []byte {
 func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
 
 	//fmt.Println("HTTP cleanup", h.ident)
+	h.parent.Lock()
+	h.saved = true
+	h.parent.Unlock()
 
 	if h.isClient {
 		err := saveConnection(h.ConversationRaw(), h.ConversationColored(), h.Ident(), h.FirstPacket(), h.Transport())
 		if err != nil {
 			fmt.Println("failed to save connection", err)
 		}
-		h.saved = true
 	} else {
 		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
-		h.saved = true
 	}
 
 	// determine if one side of the stream has already been closed
@@ -880,10 +881,14 @@ func (h *httpReader) FirstPacket() time.Time {
 	return h.parent.firstPacket
 }
 func (h *httpReader) Saved() bool {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.saved
 }
 
 func (h *httpReader) NumBytes() int {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.numBytes
 }
 
