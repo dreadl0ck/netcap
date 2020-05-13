@@ -56,8 +56,8 @@ var (
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
 	ja3Cache         = make(map[string]string)
 	jaCacheMutex     sync.Mutex
-	reGenericVersion = regexp.MustCompile(`(?:[A-Za-z]*?)\s(?:[0-9]+)(?:\.)?(?:[0-9]+)?(?:\.)?(?:[0-9]+)?`)
-	hasshMap         = make(map[string]SSHHash)
+	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
+	hasshMap         = make(map[string][]SSHSoftware)
 )
 
 // Size returns the number of elements in the Items map
@@ -109,12 +109,14 @@ type Ja3CombinationsDB struct {
 	Servers []Server `json:"servers"`
 }
 
+type SSHSoftware struct {
+	Version    string `json:"name"`
+	Likelyhood string `json:"likelyhood"`
+}
+
 type SSHHash struct {
-	Image            string `json:"image"`
-	ImageVersion     string `json:"imageVersion"`
-	SSHClient        string `json:"sshClient"`
-	SSHClientVersion string `json"sshClientVersion"`
-	Hash             string `json:"hash"`
+	Hash      string        `json:"hash"`
+	Softwares []SSHSoftware `json:"software"`
 }
 
 // process a raw user agent string and returned a structured instance
@@ -171,26 +173,13 @@ func softwareHarvester(data []byte, ident string, ts time.Time, service string, 
 
 	var s []*Software
 
-	matches := reGenericVersion.FindStringSubmatch(string(data))
+	matches := reGenericVersion.FindAll(data, -1)
 
 	if len(matches) > 0 {
 		for _, v := range matches {
-			var version string
-			parsed := strings.Split(v, " ")
-			if len(parsed) > 1 {
-				version = parsed[1]
-			}
 			s = append(s, &Software{
 				Software: &types.Software{
-					Timestamp:      ts.String(),
-					Product:        parsed[0],
-					Service:        service,
-					SourceName:     "Generic Version Format",
-					SourceData:     string(data),
-					Version:        version,
-					Flows:          []string{ident},
-					DeviceProfiles: []string{dpIdent},
-					DPIResults:     protos,
+					Notes: string(v),
 				},
 			})
 		}
@@ -202,8 +191,6 @@ func softwareHarvester(data []byte, ident string, ts time.Time, service string, 
 // tries to determine the kind of software and version
 // based on the provided input data
 func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
-
-	//fmt.Println(serviceNameSrc, serviceNameDst, manufacturer, ja3Result, userAgents, serverNames, protos)
 
 	var (
 		service string
@@ -347,10 +334,26 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 
 	// if nothing was found with all above attempts, try to throw the generic version number harvester at it
 	// and see if this delivers anything interesting
+
+	var hassh string = "00d352967f27037847ef46466c07c06b"
+	if len(hassh) > 0 {
+		if fingerprint, ok := hasshMap[hassh]; ok {
+			for _, soft := range fingerprint {
+				s = append(s, &Software{
+					Software: &types.Software{
+						Version: soft.Version,
+						Notes:   "Likelyhood: " + soft.Likelyhood,
+					},
+				})
+			}
+		}
+	}
+
 	if len(s) == 0 {
 		return softwareHarvester(i.p.Data(), dpIdent, i.p.Metadata().CaptureInfo.Timestamp, service, dpIdent, protos)
 	}
 
+	// Defining the variable here to avoid errors. This should be passed as a parameter and contain the hassh value
 	return s
 }
 
@@ -528,7 +531,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	// Load the JSON database of HASSH signaures
-	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hassh.json")
+	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdb_full.json")
 	if err != nil {
 		return err
 	}
@@ -540,7 +543,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	for _, entry := range hasshDB {
-		hasshMap[entry.Hash] = entry // Holds redundant info, but couldn't figure a more elegant way to do this
+		hasshMap[entry.Hash] = entry.Softwares // Holds redundant info, but couldn't figure a more elegant way to do this
 	}
 
 	utils.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
