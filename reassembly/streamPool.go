@@ -31,7 +31,7 @@ import (
 type StreamPool struct {
 	conns              map[key]*connection
 	users              int
-	mu                 sync.RWMutex
+	mu                 sync.Mutex
 	factory            StreamFactory
 	free               []*connection
 	all                [][]connection
@@ -95,12 +95,12 @@ func NewStreamPool(factory StreamFactory) *StreamPool {
 }
 
 func (p *StreamPool) connections() []*connection {
-	p.mu.RLock()
+	p.mu.Lock()
 	conns := make([]*connection, 0, len(p.conns))
 	for _, conn := range p.conns {
 		conns = append(conns, conn)
 	}
-	p.mu.RUnlock()
+	p.mu.Unlock()
 	return conns
 }
 
@@ -137,22 +137,25 @@ func (p *StreamPool) getHalf(k key) (*connection, *halfconnection, *halfconnecti
 // does not already exist, returns nil.  This allows us to check for a
 // connection without actually creating one if it doesn't already exist.
 func (p *StreamPool) getConnection(k key, end bool, ts time.Time, tcp *layers.TCP, ac AssemblerContext) (*connection, *halfconnection, *halfconnection) {
-	p.mu.RLock()
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	conn, half, rev := p.getHalf(k)
-	p.mu.RUnlock()
+
 	if end || conn != nil {
 		return conn, half, rev
 	}
+
 	s := p.factory.New(k[0], k[1], tcp, ac)
-	p.mu.Lock()
-	defer p.mu.Unlock()
+
 	conn, half, rev = p.newConnection(k, s, ts)
+
 	conn2, half2, rev2 := p.getHalf(k)
 	if conn2 != nil {
 		if conn2.key != k {
-			// TODO: fix this
-			fmt.Println("other dir added in meantime")
-			//panic("FIXME: other dir added in the meantime...")
+			fmt.Println(conn.key, conn.c2s)
+			panic("FIXME: other dir added in the meantime...")
 		}
 		// FIXME: delete s ?
 		return conn2, half2, rev2
@@ -160,4 +163,3 @@ func (p *StreamPool) getConnection(k key, end bool, ts time.Time, tcp *layers.TC
 	p.conns[k] = conn
 	return conn, half, rev
 }
-

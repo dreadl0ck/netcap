@@ -5,7 +5,7 @@ package reassembly
 // TCPDirClientToServer is assigned to half-connection for the first received
 // packet, hence might be wrong if packets are not received in order.
 // It's up to the caller (e.g. in Accept()) to decide if the direction should
-// be interpretted differently.
+// be interpreted differently.
 type TCPFlowDirection bool
 
 // Value are not really useful
