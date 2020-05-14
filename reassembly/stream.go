@@ -30,7 +30,7 @@ type Stream interface {
 	// It should return true if the connection should be removed from the pool
 	// It can return false if it want to see subsequent packets with Accept(), e.g. to
 	// see FIN-ACK, for deeper state-machine analysis.
-	ReassemblyComplete(ac AssemblerContext) bool
+	ReassemblyComplete(ac AssemblerContext, firstFlow gopacket.Flow) bool
 }
 
 // StreamFactory is used by assembly to create a new stream for each

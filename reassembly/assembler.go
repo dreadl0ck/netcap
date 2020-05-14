@@ -197,6 +197,10 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	if half.lastSeen.Before(timestamp) {
 		half.lastSeen = timestamp
 	}
+	if half.firstSeen.After(timestamp) {
+		half.firstSeen = timestamp
+		half.flow = netFlow
+	}
 	a.start = half.nextSeq == invalidSequence && t.SYN
 	if Debug {
 		if half.nextSeq < rev.ackSeq {
@@ -264,7 +268,6 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	action = a.handleBytes(bytes, seq, half, ci, t.SYN, t.RST || t.FIN, action, ac)
 	if len(a.ret) > 0 {
 		action.nextSeq = a.sendToConnection(conn, half, ac)
-		//log.Println("after sendToConnection")
 	}
 	if action.nextSeq != invalidSequence {
 		half.nextSeq = action.nextSeq
@@ -446,7 +449,7 @@ func (a *Assembler) dump(text string, half *halfconnection) {
 			nb := 0
 			log.Printf(" * half.first = %p, queued chunks:", p)
 			for p != nil {
-				log.Printf("\t%s bytes:%s\n", p, hex.EncodeToString(p.bytes))
+				log.Printf("\t%s bytes:\n%s\n", p, hex.Dump(p.bytes))
 				s += len(p.bytes)
 				nb++
 				p = p.next
@@ -457,17 +460,17 @@ func (a *Assembler) dump(text string, half *halfconnection) {
 		log.Printf(" * half.saved = %p\n", half.saved)
 		p = half.saved
 		for p != nil {
-			log.Printf("\tseq:%d %s bytes:%s\n", p.getSeq(), p, hex.EncodeToString(p.bytes))
+			log.Printf("\tseq:%d %s bytes:\n%s\n", p.getSeq(), p, hex.Dump(p.bytes))
 			p = p.next
 		}
 	}
 	log.Printf(" * a.ret\n")
 	for i, r := range a.ret {
-		log.Printf("\t%d: %v b:%s\n", i, r.captureInfo(), hex.EncodeToString(r.getBytes()))
+		log.Printf("\t%d: %v b:\n%s\n", i, r.captureInfo(), hex.Dump(r.getBytes()))
 	}
 	log.Printf(" * a.cacheSG.all\n")
 	for i, r := range a.cacheSG.all {
-		log.Printf("\t%d: %v b:%s\n", i, r.captureInfo(), hex.EncodeToString(r.getBytes()))
+		log.Printf("\t%d: %v b:\n%s\n", i, r.captureInfo(), hex.Dump(r.getBytes()))
 	}
 }
 
@@ -562,8 +565,11 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	// Prepend saved bytes
 	saved := a.addPending(half, a.ret[0].getSeq())
 
+	// TODO: make configurable? appending continuous bytes will obscure the conversation flow...
 	// Append continuous bytes
-	nextSeq := a.addContiguous(half, last)
+	//nextSeq := a.addContiguous(half, last)
+
+	nextSeq := last
 	a.cacheSG.all = a.ret
 	a.cacheSG.Direction = half.dir
 	a.cacheSG.Skip = skip
@@ -660,15 +666,11 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection, ac 
 	}
 
 	end, nextSeq := a.buildSG(half)
-	//fmt.Println("after buildSG")
-	half.stream.ReassembledSG(&a.cacheSG, ac) // TODO: this blocks
-	//fmt.Println("after ReassembledSG")
+	half.stream.ReassembledSG(&a.cacheSG, ac)
 	a.cleanSG(half, ac)
-	//fmt.Println("after cleanSG")
 
 	if end {
 		a.closeHalfConnection(conn, half)
-		//fmt.Println("after closeHalfConnection")
 	}
 
 	if Debug {
@@ -752,7 +754,26 @@ func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
 	}
 	a.ret = a.ret[:0]
 	a.addNextFromConn(half)
-	nextSeq := a.sendToConnection(conn, half, a.ret[0].assemblerContext())
+
+	// default: use context of first elem
+	var ctx AssemblerContext
+	ctx = a.ret[0].assemblerContext()
+
+	// overwrite the context with the first context of non empty data!
+	// this is needed to preserve the correct order when reconstructing conversations
+	// consider the following byteContainers being returned:
+	//2020/05/13 19:37:32  * a.ret
+	//2020/05/13 19:37:32 	0: {2016-05-02 02:55:59.9922 +0000 UTC 0 0 0 []} b:     <- empty!
+	//2020/05/13 19:37:32 	1: {2016-05-02 02:55:59.9942 +0000 UTC 70 70 0 []} b:   <- use the context from this one instead
+	//00000000  64 69 72 0a                                       |data.|
+	for _, data := range a.ret {
+		if data.length() != 0 {
+			ctx = data.assemblerContext()
+			break
+		}
+	}
+
+	nextSeq := a.sendToConnection(conn, half, ctx)
 	if nextSeq != invalidSequence {
 		half.nextSeq = nextSeq
 	}
@@ -772,7 +793,21 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) 
 	}
 
 	if conn.s2c.closed && conn.c2s.closed {
-		if half.stream.ReassemblyComplete(nil) { //FIXME: which context to pass ?
+
+		// pass context with timestamp of the first packet seen
+		var (
+			ac assemblerSimpleContext
+			flow gopacket.Flow
+		)
+		if conn.c2s.firstSeen.Before(conn.s2c.firstSeen) {
+			ac.Timestamp = conn.c2s.firstSeen
+			flow = conn.c2s.flow
+		} else {
+			ac.Timestamp = conn.s2c.firstSeen
+			flow = conn.s2c.flow
+		}
+
+		if half.stream.ReassemblyComplete(&ac, flow) {
 			a.connPool.remove(conn)
 		}
 	}

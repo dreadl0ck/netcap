@@ -11,7 +11,7 @@ import (
 type connection struct {
 	key      key // client->server
 	c2s, s2c halfconnection
-	mu       sync.RWMutex
+	mu       sync.Mutex
 }
 
 func (c *connection) reset(k key, s Stream, ts time.Time) {
@@ -22,6 +22,7 @@ func (c *connection) reset(k key, s Stream, ts time.Time) {
 		created:  ts,
 		lastSeen: ts,
 		stream:   s,
+		firstSeen: ts,
 	}
 	c.c2s, c.s2c = base, base
 	c.c2s.dir, c.s2c.dir = TCPDirClientToServer, TCPDirServerToClient
