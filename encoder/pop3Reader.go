@@ -17,8 +17,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"net/http"
@@ -26,6 +26,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -49,8 +50,9 @@ var pop3Debug = false
 type pop3Reader struct {
 	ident    string
 	isClient bool
-	bytes    chan []byte
-	data     []byte
+	dataChan chan *Data
+	data     []*Data
+	merged   DataSlice
 	hexdump  bool
 	parent   *tcpConnection
 
@@ -67,69 +69,35 @@ type pop3Reader struct {
 }
 
 func (h *pop3Reader) Read(p []byte) (int, error) {
-	ok := true
-	for ok && len(h.data) == 0 {
-		select {
-		case h.data, ok = <-h.bytes:
-		}
-	}
-	if !ok || len(h.data) == 0 {
+
+	var (
+		ok = true
+		data *Data
+	)
+
+	data, ok = <-h.dataChan
+	if data == nil || !ok {
 		return 0, io.EOF
 	}
 
-	l := copy(p, h.data)
-	h.data = h.data[l:]
-
-	dataCpy := p[:l]
+	// copy received data into the passed in buffer
+	l := copy(p, data.raw)
 
 	h.parent.Lock()
-
-	// write raw
-	h.parent.conversationRaw.Write(dataCpy)
-
-	// colored for debugging
-	if h.isClient {
-		h.parent.conversationColored.WriteString(ansi.Red + string(dataCpy) + ansi.Reset)
-	} else {
-		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
-	}
-
-	// save server stream for banner identification
-	// stores c.BannerSize number of bytes of the server side stream
-	if !h.isClient && h.serviceBannerBytes < c.BannerSize {
-		for _, b := range dataCpy {
-			h.serviceBanner.WriteByte(b)
-			h.serviceBannerBytes++
-			if h.serviceBannerBytes == c.BannerSize {
-				break
-			}
-		}
-	}
+	h.data = append(h.data, data)
+	h.numBytes += l
 	h.parent.Unlock()
 
 	return l, nil
 }
 
-func (h *pop3Reader) BytesChan() chan []byte {
-	return h.bytes
+func (h *pop3Reader) DataChan() chan *Data {
+	return h.dataChan
 }
 
 func (h *pop3Reader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
 
 	// fmt.Println("POP3 cleanup", h.ident)
-
-	h.parent.Lock()
-	h.saved = true
-	h.parent.Unlock()
-
-	if h.isClient {
-		err := saveConnection(h.ConversationRaw(), h.ConversationColored(), h.Ident(), h.FirstPacket(), h.Transport())
-		if err != nil {
-			fmt.Println("failed to save connection", err)
-		}
-	} else {
-		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
-	}
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -212,6 +180,10 @@ func (h *pop3Reader) Run(f *tcpConnectionFactory) {
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
 	defer h.Cleanup(f, s2c, c2s)
+
+	//h.parent.Lock()
+	//isClient := h.isClient
+	//h.parent.Lock()
 
 	var (
 		err error
@@ -564,6 +536,9 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 		case StateNotAuthenticated:
 			switch r.Command {
 			case "USER":
+				if len(h.parent.pop3Responses) <= h.resIndex+1 {
+					continue
+				}
 				reply := h.parent.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
 					user = r.Argument
@@ -583,6 +558,9 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				h.resIndex = h.resIndex + n
 				continue
 			case "AUTH":
+				if len(h.parent.pop3Responses) <= h.resIndex+1 {
+					continue
+				}
 				reply := h.parent.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
 					state = StateAuthenticated
@@ -594,6 +572,9 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				h.resIndex++
 				continue
 			case "PASS":
+				if len(h.parent.pop3Responses) <= h.resIndex+1 {
+					continue
+				}
 				reply := h.parent.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
 					state = StateAuthenticated
@@ -602,6 +583,9 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				h.resIndex++
 				continue
 			case "APOP": // example: APOP mrose c4c9334bac560ecc979e58001b3e22fb
+				if len(h.parent.pop3Responses) <= h.resIndex+1 {
+					continue
+				}
 				reply := h.parent.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
 					state = StateAuthenticated
@@ -833,15 +817,54 @@ func (h *pop3Reader) ClientStream() []byte {
 }
 
 func (h *pop3Reader) ServerStream() []byte {
+	var buf bytes.Buffer
+
 	h.parent.Lock()
 	defer h.parent.Unlock()
-	return h.serviceBanner.Bytes()
+
+	// save server stream for banner identification
+	// stores c.BannerSize number of bytes of the server side stream
+	for _, d := range h.parent.server.DataSlice() {
+		for _, b := range d.raw {
+			buf.WriteByte(b)
+		}
+	}
+
+	return buf.Bytes()
 }
 
-func (h *pop3Reader) ConversationRaw() []byte {
+func (h *pop3Reader)  ConversationRaw() []byte {
+
 	h.parent.Lock()
 	defer h.parent.Unlock()
+
+	// do this only once, this method will be called once for each side of a connection
+	if len(h.merged) == 0 {
+
+		// concatenate both client and server data fragments
+		h.merged = append(h.parent.client.DataSlice(), h.parent.server.DataSlice()...)
+
+		// sort based on their timestamps
+		sort.Sort(h.merged)
+
+		// create the buffer with the entire conversation
+		for _, c := range h.merged {
+			//fmt.Println(h.ident, c.ac.GetCaptureInfo().Timestamp, c.ac.GetCaptureInfo().Length)
+
+			h.parent.conversationRaw.Write(c.raw)
+			if c.dir == reassembly.TCPDirClientToServer {
+				h.parent.conversationColored.WriteString(ansi.Red + string(c.raw) + ansi.Reset)
+			} else {
+				h.parent.conversationColored.WriteString(ansi.Blue + string(c.raw) + ansi.Reset)
+			}
+		}
+	}
+
 	return h.parent.conversationRaw.Bytes()
+}
+
+func (h *pop3Reader) DataSlice() DataSlice {
+	return h.data
 }
 
 func (h *pop3Reader) ConversationColored() []byte {
@@ -881,6 +904,37 @@ func (h *pop3Reader) NumBytes() int {
 
 func (h *pop3Reader) Client() StreamReader {
 	return h.parent.client.(StreamReader)
+}
+
+func (h *pop3Reader) SetClient(v bool) {
+	h.isClient = v
+}
+
+func (h *pop3Reader) MarkSaved() {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+	h.saved = true
+}
+
+func (h *pop3Reader) ServiceBanner() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+
+	if h.serviceBanner.Len() == 0 {
+		// save server stream for banner identification
+		// stores c.BannerSize number of bytes of the server side stream
+		for _, d := range h.parent.server.DataSlice() {
+			for _, b := range d.raw {
+				h.serviceBanner.WriteByte(b)
+				h.serviceBannerBytes++
+				if h.serviceBannerBytes == c.BannerSize {
+					break
+				}
+			}
+		}
+	}
+
+	return h.serviceBanner.Bytes()
 }
 
 // TODO: write unit test for this

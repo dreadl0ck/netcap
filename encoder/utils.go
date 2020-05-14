@@ -31,6 +31,31 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+
+// e.g: 192.168.1.47->165.227.109.154-53032->80
+// to 53032->80
+func chopTransportIdent(in string) string {
+	arr := strings.Split(in, "-")
+	if len(arr) != 4 {
+		return ""
+	}
+	return arr[2] + "-" + arr[3]
+}
+
+// e.g: 192.168.1.47->165.227.109.154-53032->80
+// to 165.227.109.154->192.168.1.47-80->53032
+func reverseIdent(i string) string {
+	arr := strings.Split(i, "->")
+	if len(arr) != 3 {
+		return ""
+	}
+	middle := strings.Split(arr[1], "-")
+	if len(middle) != 2 {
+		return ""
+	}
+	return middle[0] + "->" + arr[0] + "-" + arr[2] + "->" + middle[1]
+}
+
 // MarkdownOverview dumps a Markdown summary of all available encoders and their fields
 func MarkdownOverview() {
 	fmt.Println("# NETCAP Overview " + netcap.Version)
@@ -146,11 +171,13 @@ func rankByWordCount(wordFrequencies map[string]int) PairList {
 	return pl
 }
 
+// Pair describes a key and an associated value
 type Pair struct {
 	Key   string
 	Value int
 }
 
+// PairList implements sort.Interface
 type PairList []Pair
 
 func (p PairList) Len() int           { return len(p) }
