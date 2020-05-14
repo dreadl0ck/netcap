@@ -136,6 +136,7 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 
 		conn.Unlock()
 	} else {
+
 		// create a new Connection
 		conn := &types.Connection{}
 		conn.UID = calcMd5(conn.String())
@@ -160,7 +161,7 @@ var connectionEncoder = CreateCustomEncoder(types.Type_NC_Connection, "Connectio
 			conn.ApplicationProto = al.LayerType().String()
 			conn.AppPayloadSize = int32(len(al.Payload()))
 		}
-		Connections.Items[conn.String()] = &Conn{
+		Connections.Items[connID.String()] = &Conn{
 			Connection: conn,
 		}
 
