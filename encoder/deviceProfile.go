@@ -63,14 +63,20 @@ var (
 // GetDeviceProfile fetches a known profile and updates it or returns a new one
 func getDeviceProfile(macAddr string, i *packetInfo) *DeviceProfile {
 
+	Profiles.Lock()
 	if p, ok := Profiles.Items[macAddr]; ok {
+		Profiles.Unlock()
 		applyDeviceProfileUpdate(p, i)
 		return p
 	}
+	Profiles.Unlock()
 
 	// create new profile
 	p := NewDeviceProfile(i)
+
+	Profiles.Lock()
 	Profiles.Items[macAddr] = p
+	Profiles.Unlock()
 
 	return p
 }

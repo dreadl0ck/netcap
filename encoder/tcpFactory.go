@@ -55,6 +55,7 @@ type StreamReader interface {
 	ConversationRaw() []byte
 	ConversationColored() []byte
 	IsClient() bool
+	SetClient(bool)
 	Ident() string
 	Network() gopacket.Flow
 	Transport() gopacket.Flow
@@ -62,138 +63,138 @@ type StreamReader interface {
 	Saved() bool
 	NumBytes() int
 	Client() StreamReader
+	ServiceBanner() []byte
+	MarkSaved()
 }
 
 // New handles a new stream received from the assembler
+// this is the entry point for new network streams
+// depending on the used ports, a dedicated stream reader instance will be started and subsequently fed with new data from the stream
+// TODO: add logic to identify protocol and update the used decoder after we saw some traffic from the connection
 func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
-	//fmt.Printf("* NEW: %s %s\n", net, transport)
 
 	stream := &tcpConnection{
-		net:       net,
-		transport: transport,
-		isHTTP:    factory.decodeHTTP && (tcp.SrcPort == 80 || tcp.DstPort == 80),
-		isPOP3:    factory.decodePOP3 && (tcp.SrcPort == 110 || tcp.DstPort == 110),
-		isHTTPS:   tcp.SrcPort == 443 || tcp.DstPort == 443,
-		isSSH:     tcp.SrcPort == 22 || tcp.DstPort == 22,
+		net:         net,
+		transport:   transport,
+		isHTTP:      factory.decodeHTTP && (tcp.SrcPort == 80 || tcp.DstPort == 80),
+		isPOP3:      factory.decodePOP3 && (tcp.SrcPort == 110 || tcp.DstPort == 110),
+		isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
+		isSSH:       tcp.SrcPort == 22 || tcp.DstPort == 22,
 		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),
 		firstPacket: ac.GetCaptureInfo().Timestamp,
 	}
 
+	clientIdent := filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
+	serverIdent := filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
+
+	// do not write encrypted HTTP streams to disk for now
+	if stream.isHTTPS {
+		// don't capture encrypted HTTPS traffic
+		return stream
+	}
+
 	switch {
 	case stream.isHTTP:
+
+		// handle out of order packets
+		if tcp.DstPort != 80 {
+			clientIdent = filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse()))
+			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
+		}
+
 		stream.client = &httpReader{
-			bytes:    make(chan []byte, c.StreamDecoderBufSize),
-			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
+			dataChan:    make(chan *Data, c.StreamDecoderBufSize),
+			ident:    clientIdent,
 			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &httpReader{
-			bytes:   make(chan []byte, c.StreamDecoderBufSize),
-			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
+			dataChan:    make(chan *Data, c.StreamDecoderBufSize),
+			ident:   serverIdent,
 			hexdump: c.HexDump,
 			parent:  stream,
 		}
 
-		// kickoff decoders for client and server
-		factory.wg.Add(2)
-		factory.Lock()
-		factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
-		factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
-		factory.numActive += 2
-		factory.Unlock()
-		go stream.client.Run(factory)
-		go stream.server.Run(factory)
-
 	case stream.isSSH:
+
+		// handle out of order packets
+		if tcp.DstPort != 22 {
+			clientIdent = filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse()))
+			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
+		}
+
 		stream.client = &sshReader{
-			bytes:    make(chan []byte, c.StreamDecoderBufSize),
-			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
+			dataChan:    make(chan *Data, c.StreamDecoderBufSize),
+			ident:    clientIdent,
 			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &sshReader{
-			bytes:   make(chan []byte, c.StreamDecoderBufSize),
-			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
+			dataChan:    make(chan *Data, c.StreamDecoderBufSize),
+			ident:   serverIdent,
 			hexdump: c.HexDump,
 			parent:  stream,
 		}
 
-		// kickoff decoders for client and server
-		factory.wg.Add(2)
-		factory.Lock()
-		factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
-		factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
-		factory.numActive += 2
-		factory.Unlock()
-		go stream.client.Run(factory)
-		go stream.server.Run(factory)
-
 	case stream.isPOP3:
+
+		// handle out of order packets
+		if tcp.DstPort != 110 {
+			clientIdent = filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse()))
+			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
+		}
+
 		stream.client = &pop3Reader{
-			bytes:    make(chan []byte, c.StreamDecoderBufSize),
+			dataChan:     make(chan *Data, c.StreamDecoderBufSize),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &pop3Reader{
-			bytes:   make(chan []byte, c.StreamDecoderBufSize),
+			dataChan:     make(chan *Data, c.StreamDecoderBufSize),
 			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
 			hexdump: c.HexDump,
 			parent:  stream,
 		}
 
-		// kickoff decoders for client and server
-		factory.wg.Add(2)
-		factory.Lock()
-		factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
-		factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
-		factory.numActive += 2
-		factory.Unlock()
-		go stream.client.Run(factory)
-		go stream.server.Run(factory)
-	default:
-
-		// do not write encrypted HTTP streams to disk for now
-		if stream.isHTTPS {
-			// don't capture encrypted HTTPS traffic
-			return stream
-		}
-
+	default: // process unknown TCP stream
 		stream.client = &tcpReader{
-			bytes:    make(chan []byte, c.StreamDecoderBufSize),
+			dataChan: make(chan *Data, c.StreamDecoderBufSize),
 			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 			hexdump:  c.HexDump,
 			parent:   stream,
 			isClient: true,
 		}
 		stream.server = &tcpReader{
-			bytes:   make(chan []byte, c.StreamDecoderBufSize),
-			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
-			hexdump: c.HexDump,
-			parent:  stream,
+			dataChan: make(chan *Data, c.StreamDecoderBufSize),
+			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
+			hexdump:  c.HexDump,
+			parent:   stream,
 		}
-
-		// kickoff readers for client and server
-		factory.wg.Add(2)
-		factory.Lock()
-		factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
-		factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
-		factory.numActive += 2
-		factory.Unlock()
-		go stream.client.Run(factory)
-		go stream.server.Run(factory)
 	}
+
+	// kickoff readers for client and server
+	factory.wg.Add(2)
+	factory.Lock()
+	factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
+	factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
+	factory.numActive += 2
+	factory.Unlock()
+	go stream.client.Run(factory)
+	go stream.server.Run(factory)
 
 	return stream
 }
 
+// WaitGoRoutines waits until the goroutines launched to process TCP streams are done
+// this will block forever if there are streams that are never shutdown (via RST or FIN flags)
 func (factory *tcpConnectionFactory) WaitGoRoutines() {
 
 	if !Quiet {

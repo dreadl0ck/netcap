@@ -19,10 +19,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/sshx"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/mgutz/ansi"
 	"io"
+	"sort"
 	"time"
 )
 
@@ -33,8 +35,9 @@ import (
 type sshReader struct {
 	ident    string
 	isClient bool
-	bytes    chan []byte
-	data     []byte
+	dataChan chan *Data
+	data     []*Data
+	merged   DataSlice
 	hexdump  bool
 	parent   *tcpConnection
 
@@ -47,70 +50,35 @@ type sshReader struct {
 }
 
 func (h *sshReader) Read(p []byte) (int, error) {
-	ok := true
-	for ok && len(h.data) == 0 {
-		select {
-		case h.data, ok = <-h.bytes:
-		}
-	}
-	if !ok || len(h.data) == 0 {
+
+	var (
+		ok = true
+		data *Data
+	)
+
+	data, ok = <-h.dataChan
+	if data == nil || !ok {
 		return 0, io.EOF
 	}
 
-	l := copy(p, h.data)
-	h.numBytes += l
-	h.data = h.data[l:]
-
-	dataCpy := p[:l]
+	// copy received data into the passed in buffer
+	l := copy(p, data.raw)
 
 	h.parent.Lock()
-
-	// write raw
-	h.parent.conversationRaw.Write(dataCpy)
-
-	// colored for debugging
-	if h.isClient {
-		h.parent.conversationColored.WriteString(ansi.Red + string(dataCpy) + ansi.Reset)
-	} else {
-		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
-	}
-
-	// save server stream for banner identification
-	// stores c.BannerSize number of bytes of the server side stream
-	if !h.isClient && h.serviceBannerBytes < c.BannerSize {
-		for _, b := range dataCpy {
-			h.serviceBanner.WriteByte(b)
-			h.serviceBannerBytes++
-			if h.serviceBannerBytes == c.BannerSize {
-				break
-			}
-		}
-	}
+	h.data = append(h.data, data)
+	h.numBytes += l
 	h.parent.Unlock()
 
 	return l, nil
 }
 
-func (h *sshReader) BytesChan() chan []byte {
-	return h.bytes
+func (h *sshReader) DataChan() chan *Data {
+	return h.dataChan
 }
 
 func (h *sshReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
 
 	// fmt.Println("TCP cleanup", h.ident)
-	h.parent.Lock()
-	h.saved = true
-	h.parent.Unlock()
-
-	// save data for the current stream
-	if h.isClient {
-		err := saveConnection(h.ConversationRaw(), h.ConversationColored(), h.Ident(), h.FirstPacket(), h.Transport())
-		if err != nil {
-			fmt.Println("failed to save stream", err)
-		}
-	} else {
-		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
-	}
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -165,13 +133,7 @@ func (h *sshReader) Run(f *tcpConnectionFactory) {
 		b   = bufio.NewReader(h)
 	)
 	for {
-		if h.isClient {
-			// read client request until EOF
-			err = h.readStream(b)
-		} else {
-			// read server response until EOF
-			err = h.readStream(b)
-		}
+		err = h.readStream(b)
 		if err != nil {
 
 			// exit on EOF
@@ -238,6 +200,10 @@ func (h *sshReader) readStream(b *bufio.Reader) error {
 	return nil
 }
 
+func (h *sshReader) DataSlice() DataSlice {
+	return h.data
+}
+
 func (h *sshReader) ClientStream() []byte {
 	h.parent.Lock()
 	defer h.parent.Unlock()
@@ -245,14 +211,49 @@ func (h *sshReader) ClientStream() []byte {
 }
 
 func (h *sshReader) ServerStream() []byte {
+	var buf bytes.Buffer
+
 	h.parent.Lock()
 	defer h.parent.Unlock()
-	return h.serviceBanner.Bytes()
+
+	// save server stream for banner identification
+	// stores c.BannerSize number of bytes of the server side stream
+	for _, d := range h.parent.server.DataSlice() {
+		for _, b := range d.raw {
+			buf.WriteByte(b)
+		}
+	}
+
+	return buf.Bytes()
 }
 
 func (h *sshReader) ConversationRaw() []byte {
+
 	h.parent.Lock()
 	defer h.parent.Unlock()
+
+	// do this only once, this method will be called once for each side of a connection
+	if len(h.merged) == 0 {
+
+		// concatenate both client and server data fragments
+		h.merged = append(h.parent.client.DataSlice(), h.parent.server.DataSlice()...)
+
+		// sort based on their timestamps
+		sort.Sort(h.merged)
+
+		// create the buffer with the entire conversation
+		for _, c := range h.merged {
+			//fmt.Println(h.ident, c.ac.GetCaptureInfo().Timestamp, c.ac.GetCaptureInfo().Length)
+
+			h.parent.conversationRaw.Write(c.raw)
+			if c.dir == reassembly.TCPDirClientToServer {
+				h.parent.conversationColored.WriteString(ansi.Red + string(c.raw) + ansi.Reset)
+			} else {
+				h.parent.conversationColored.WriteString(ansi.Blue + string(c.raw) + ansi.Reset)
+			}
+		}
+	}
+
 	return h.parent.conversationRaw.Bytes()
 }
 
@@ -285,6 +286,12 @@ func (h *sshReader) Saved() bool {
 	return h.saved
 }
 
+func (h *sshReader) MarkSaved() {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+	h.saved = true
+}
+
 func (h *sshReader) NumBytes() int {
 	h.parent.Lock()
 	defer h.parent.Unlock()
@@ -293,4 +300,29 @@ func (h *sshReader) NumBytes() int {
 
 func (h *sshReader) Client() StreamReader {
 	return h.parent.client.(StreamReader)
+}
+
+func (h *sshReader) SetClient(v bool) {
+	h.isClient = v
+}
+
+func (h *sshReader) ServiceBanner() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+
+	if h.serviceBanner.Len() == 0 {
+		// save server stream for banner identification
+		// stores c.BannerSize number of bytes of the server side stream
+		for _, d := range h.parent.server.DataSlice() {
+			for _, b := range d.raw {
+				h.serviceBanner.WriteByte(b)
+				h.serviceBannerBytes++
+				if h.serviceBannerBytes == c.BannerSize {
+					break
+				}
+			}
+		}
+	}
+
+	return h.serviceBanner.Bytes()
 }

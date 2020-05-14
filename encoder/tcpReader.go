@@ -17,10 +17,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/mgutz/ansi"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"time"
 	"unicode"
@@ -28,7 +31,6 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 )
 
 /*
@@ -38,8 +40,9 @@ import (
 type tcpReader struct {
 	ident    string
 	isClient bool
-	bytes    chan []byte
-	data     []byte
+	dataChan chan *Data
+	data     []*Data
+	merged   DataSlice
 	hexdump  bool
 	parent   *tcpConnection
 
@@ -52,70 +55,33 @@ type tcpReader struct {
 }
 
 func (h *tcpReader) Read(p []byte) (int, error) {
-	ok := true
-	for ok && len(h.data) == 0 {
-		select {
-		case h.data, ok = <-h.bytes:
-		}
-	}
-	if !ok || len(h.data) == 0 {
+
+	var (
+		ok = true
+		data *Data
+	)
+
+	data, ok = <-h.dataChan
+	if data == nil || !ok {
 		return 0, io.EOF
 	}
 
-	l := copy(p, h.data)
-	h.numBytes += l
-	h.data = h.data[l:]
-
-	dataCpy := p[:l]
+	// copy received data into the passed in buffer
+	l := copy(p, data.raw)
 
 	h.parent.Lock()
-
-	// write raw
-	h.parent.conversationRaw.Write(dataCpy)
-
-	// colored for debugging
-	if h.isClient {
-		h.parent.conversationColored.WriteString(ansi.Red + string(dataCpy) + ansi.Reset)
-	} else {
-		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
-	}
-
-	// save server stream for banner identification
-	// stores c.BannerSize number of bytes of the server side stream
-	if !h.isClient && h.serviceBannerBytes < c.BannerSize {
-		for _, b := range dataCpy {
-			h.serviceBanner.WriteByte(b)
-			h.serviceBannerBytes++
-			if h.serviceBannerBytes == c.BannerSize {
-				break
-			}
-		}
-	}
+	h.data = append(h.data, data)
+	h.numBytes += l
 	h.parent.Unlock()
 
 	return l, nil
 }
 
-func (h *tcpReader) BytesChan() chan []byte {
-	return h.bytes
+func (h *tcpReader) DataChan() chan *Data {
+	return h.dataChan
 }
 
 func (h *tcpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
-
-	h.parent.Lock()
-	h.saved = true
-	h.parent.Unlock()
-	//fmt.Println("TCP cleanup", h.ident, fmt.Sprintf("tcpReader: %p", h), "SAVED")
-
-	// save data for the current stream
-	if h.isClient {
-		err := saveConnection(h.ConversationRaw(), h.ConversationColored(), h.Ident(), h.FirstPacket(), h.Transport())
-		if err != nil {
-			fmt.Println("failed to save stream", err)
-		}
-	} else {
-		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
-	}
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -170,13 +136,7 @@ func (h *tcpReader) Run(f *tcpConnectionFactory) {
 		b   = bufio.NewReader(h)
 	)
 	for {
-		if h.isClient {
-			// read client request until EOF
-			err = h.readStream(b)
-		} else {
-			// read server response until EOF
-			err = h.readStream(b)
-		}
+		err = h.readStream(b)
 		if err != nil {
 
 			// exit on EOF
@@ -398,15 +358,16 @@ func tcpDebug(args ...interface{}) {
 
 func (h *tcpReader) readStream(b *bufio.Reader) error {
 
-	_, _, err := b.ReadLine()
-	if err == io.EOF || err == io.ErrUnexpectedEOF {
-		return err
-	} else if err != nil {
-		logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
-		return err
+	var err error
+	for {
+		_, err = b.ReadByte()
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			return err
+		} else if err != nil {
+			logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
+			return err
+		}
 	}
-
-	return nil
 }
 
 func (h *tcpReader) ClientStream() []byte {
@@ -416,14 +377,97 @@ func (h *tcpReader) ClientStream() []byte {
 }
 
 func (h *tcpReader) ServerStream() []byte {
+	var buf bytes.Buffer
+
 	h.parent.Lock()
 	defer h.parent.Unlock()
+
+	// save server stream for banner identification
+	// stores c.BannerSize number of bytes of the server side stream
+	for _, d := range h.parent.server.DataSlice() {
+		for _, b := range d.raw {
+			buf.WriteByte(b)
+		}
+	}
+
+	return buf.Bytes()
+}
+
+func (h *tcpReader) ServiceBanner() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+
+	if h.serviceBanner.Len() == 0 {
+		// save server stream for banner identification
+		// stores c.BannerSize number of bytes of the server side stream
+		for _, d := range h.parent.server.DataSlice() {
+			for _, b := range d.raw {
+				h.serviceBanner.WriteByte(b)
+				h.serviceBannerBytes++
+				if h.serviceBannerBytes == c.BannerSize {
+					break
+				}
+			}
+		}
+	}
+
 	return h.serviceBanner.Bytes()
 }
 
 func (h *tcpReader) ConversationRaw() []byte {
 	h.parent.Lock()
 	defer h.parent.Unlock()
+
+	// do this only once, this method will be called once for each side of a connection
+	if len(h.merged) == 0 {
+
+		// concatenate both client and server data fragments
+		h.merged = append(h.parent.client.DataSlice(), h.parent.server.DataSlice()...)
+
+		// TODO: check client or server data slices separately
+		// debug code to check if the sorting changed the packet order
+		//var order = make([]int64, len(h.merged))
+		//for _, c := range h.merged {
+		//	order = append(order, c.ac.GetCaptureInfo().Timestamp.Unix())
+		//}
+		//fmt.Println("SORTING")
+
+		// sort based on their timestamps
+		sort.Sort(h.merged)
+
+		// debug code to check if the sorting changed the packet order
+		//var orderNew = make([]int64, len(h.merged))
+		//for _, c := range h.merged {
+		//	orderNew = append(orderNew, c.ac.GetCaptureInfo().Timestamp.Unix())
+		//}
+		//for i, o := range order {
+		//	if orderNew[i] != o {
+		//		fmt.Println(fmt.Println("\nORDER DIFFERS!"))
+		//		break
+		//	}
+		//}
+
+		// create the buffer with the entire conversation
+		for _, d := range h.merged {
+			//fmt.Println(h.ident, d.ac.GetCaptureInfo().Timestamp, d.ac.GetCaptureInfo().Length)
+
+			h.parent.conversationRaw.Write(d.raw)
+			if d.dir == reassembly.TCPDirClientToServer {
+				if c.Debug {
+					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n")
+				} else {
+					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
+				}
+			} else {
+				if c.Debug {
+					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n")
+				} else {
+					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
+				}
+			}
+		}
+	}
+
 	return h.parent.conversationRaw.Bytes()
 }
 
@@ -435,6 +479,10 @@ func (h *tcpReader) ConversationColored() []byte {
 
 func (h *tcpReader) IsClient() bool {
 	return h.isClient
+}
+
+func (h *tcpReader) DataSlice() DataSlice {
+	return h.data
 }
 
 func (h *tcpReader) Ident() string {
@@ -456,6 +504,12 @@ func (h *tcpReader) Saved() bool {
 	return h.saved
 }
 
+func (h *tcpReader) MarkSaved() {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+	h.saved = true
+}
+
 func (h *tcpReader) NumBytes() int {
 	h.parent.Lock()
 	defer h.parent.Unlock()
@@ -464,4 +518,8 @@ func (h *tcpReader) NumBytes() int {
 
 func (h *tcpReader) Client() StreamReader {
 	return h.parent.client.(StreamReader)
+}
+
+func (h *tcpReader) SetClient(v bool) {
+	h.isClient = v
 }

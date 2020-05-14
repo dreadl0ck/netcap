@@ -78,14 +78,14 @@ func (c *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader 
 				//fmt.Println(s.Ident(), "has not been saved yet", s.Saved(), fmt.Sprintf("tcpReader: %p", s))
 				if s.IsClient() {
 					// save the entire conversation.
-					// we only need to do this once, when client part of the connection is closed
+					// we only need to do this once, when the client part of the connection is closed
 					err := saveConnection(s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
 					if err != nil {
 						fmt.Println("failed to save connection", err)
 					}
 				} else {
 					// save the service banner
-					saveTCPServiceBanner(s.ServerStream(), s.Ident(), s.FirstPacket(), s.Network(), s.Transport(), s.NumBytes(), s.Client().NumBytes())
+					saveTCPServiceBanner(s.ServiceBanner(), s.Ident(), s.FirstPacket(), s.Network(), s.Transport(), s.NumBytes(), s.Client().NumBytes())
 				}
 			}
 

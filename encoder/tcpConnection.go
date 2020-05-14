@@ -48,24 +48,21 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
-	"net/http"
 	"os"
 	"runtime/pprof"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/evilsocket/islazy/tui"
-
-	"github.com/dreadl0ck/netcap/types"
-
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/evilsocket/islazy/tui"
 )
 
 var (
@@ -114,7 +111,9 @@ func NumSavedConns() int64 {
  * TCP Connection
  */
 
-/* It's a connection (bidirectional) */
+// internal structure that describes a bi-directional TCP connection
+// It implements the reassembly.Stream interface to handle the incoming data
+// and manage the stream lifecycle
 type tcpConnection struct {
 	tcpstate   *reassembly.TCPSimpleFSM
 	optchecker reassembly.TCPOptionCheck
@@ -147,25 +146,16 @@ type tcpConnection struct {
 	conversationRaw     bytes.Buffer
 	conversationColored bytes.Buffer
 
+	saved bool
+
 	sync.Mutex
 }
 
-type httpRequest struct {
-	request   *http.Request
-	timestamp string
-	clientIP  string
-	serverIP  string
-}
-
-type httpResponse struct {
-	response  *http.Response
-	timestamp string
-	clientIP  string
-	serverIP  string
-}
-
+// Accept decides whether the TCP packet should be accepted
+// start could be modified to force a start even if no SYN have been seen
 func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
-	// FSM
+
+	// Finite State Machine
 	if !t.tcpstate.CheckState(tcp, dir) {
 		logReassemblyError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
 		statsMutex.Lock()
@@ -179,7 +169,8 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 			return false
 		}
 	}
-	// Options
+
+	// TCP Options
 	err := t.optchecker.Accept(tcp, ci, dir, nextSeq, start)
 	if err != nil {
 		logReassemblyError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
@@ -190,7 +181,8 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 			return false
 		}
 	}
-	// Checksum
+
+	// TCP Checksum
 	accept := true
 	if c.Checksum {
 		c, err := tcp.ComputeChecksum()
@@ -202,6 +194,8 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 			accept = false
 		}
 	}
+
+	// stats
 	if !accept {
 		statsMutex.Lock()
 		reassemblyStats.rejectOpt++
@@ -249,30 +243,70 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 	logReassemblyDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
 }
 
-func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte) {
+func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
+
+	// Copy the data before passing it to the handler
+	// Because the passed in buffer can be reused as soon as the ReassembledSG function returned
+	dataCpy := make([]byte, len(data))
+	l := copy(dataCpy, data)
+
+	if l != len(data) {
+		log.Fatal("l != len(data): ", l, " != ", len(data), " ident:", t.ident)
+	}
+
+	// pass data either to client or server
 	if dir == reassembly.TCPDirClientToServer {
-		t.client.BytesChan() <- data
+		t.client.DataChan() <- &Data{
+			raw: dataCpy,
+			ac:  ac,
+			dir: dir,
+		}
 	} else {
-		t.server.BytesChan() <- data
+		t.server.DataChan() <- &Data{
+			raw: dataCpy,
+			ac:  ac,
+			dir: dir,
+		}
 	}
 }
 
-func (t *tcpConnection) feedDataTimeout(dir reassembly.TCPFlowDirection, data []byte) {
+func (t *tcpConnection) feedDataTimeout(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
+
+	// Copy the data before passing it to the handler
+	// Because the passed in buffer can be reused as soon as the ReassembledSG function returned
+	dataCpy := make([]byte, len(data))
+	l := copy(dataCpy, data)
+
+	if l != len(data) {
+		log.Fatal("l != len(data): ", l, " != ", len(data), " ident:", t.ident)
+	}
+
 	if dir == reassembly.TCPDirClientToServer {
 		select {
-		case t.client.BytesChan() <- data:
+		case t.client.DataChan() <- &Data{
+			raw: dataCpy,
+			ac:  ac,
+			dir: dir,
+		}:
 		case <-time.After(100 * time.Millisecond):
 			//fmt.Println(t.ident, "timeout")
 		}
 	} else {
 		select {
-		case t.server.BytesChan() <- data:
+		case t.server.DataChan() <- &Data{
+			raw: dataCpy,
+			ac:  ac,
+			dir: dir,
+		}:
 		case <-time.After(100 * time.Millisecond):
 			//fmt.Println(t.ident, "timeout")
 		}
 	}
 }
 
+// ReassembledSG is called zero or more times and delivers the data for a stream
+// The ScatterGather buffer is reused after each Reassembled call
+// so it's important to copy anything you need out of it (or use KeepFrom())
 func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
 
 	length, saved := sg.Lengths()
@@ -295,15 +329,86 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		return
 	}
 
+	//fmt.Println("got raw data:", len(data), ac.GetCaptureInfo().Timestamp, "\n", hex.Dump(data))
+
 	if length > 0 {
 		if c.HexDump {
 			logReassemblyDebug("Feeding stream reader with:\n%s", hex.Dump(data))
 		}
-		t.feedData(dir, data)
+		t.feedData(dir, data, ac)
 	}
 }
 
-func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
+// ReassemblyComplete is called when assembly decides there is
+// no more data for this Stream, either because a FIN or RST packet
+// was seen, or because the stream has timed out without any new
+// packet data (due to a call to FlushCloseOlderThan).
+// It should return true if the connection should be removed from the pool
+// It can return false if it want to see subsequent packets with Accept(), e.g. to
+// see FIN-ACK, for deeper state-machine analysis.
+func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow gopacket.Flow) bool {
+
+	//fmt.Println(t.ident, "t.firstPacket:", t.firstPacket, "ac.Timestamp", ac.GetCaptureInfo().Timestamp)
+
+	// is this packet older than the oldest packet we saw for this connection?
+	// if yes, if check the direction of the client is correct
+	if !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp) && t.firstPacket.After(ac.GetCaptureInfo().Timestamp) {
+
+		// update first packet timestamp on connection
+		t.Lock()
+		t.firstPacket = ac.GetCaptureInfo().Timestamp
+		t.Unlock()
+
+		if t.client != nil && t.server != nil {
+			// check if flow is identical or needs to be flipped
+			if !(t.client.(StreamReader).Network() == flow) {
+
+				// flip
+				t.Lock()
+
+				t.ident = reverseIdent(t.ident)
+				//fmt.Println("flip! new", ansi.Red + t.ident + ansi.Reset)
+
+				t.client.(StreamReader).SetClient(false)
+				t.server.(StreamReader).SetClient(true)
+
+				t.client, t.server = t.server, t.client
+
+				// fix directions for all data fragments
+				for _, d := range t.client.DataSlice() {
+					d.dir = reassembly.TCPDirClientToServer
+				}
+				for _, d := range t.server.DataSlice() {
+					d.dir = reassembly.TCPDirServerToClient
+				}
+				t.Unlock()
+			}
+		}
+	}
+
+	utils.DebugLog.Println("ReassemblyComplete", t.ident)
+	//fmt.Println("ReassemblyComplete", t.ident)
+
+	// save data for the current stream
+	if t.client != nil {
+
+		t.client.(StreamReader).MarkSaved()
+
+		// client
+		err := saveConnection(t.client.(StreamReader).ConversationRaw(), t.client.(StreamReader).ConversationColored(), t.client.(StreamReader).Ident(), t.client.(StreamReader).FirstPacket(), t.client.(StreamReader).Transport())
+		if err != nil {
+			fmt.Println("failed to save stream", err)
+		}
+	}
+
+	if t.server != nil {
+
+		t.client.(StreamReader).MarkSaved()
+
+		// server
+		saveTCPServiceBanner(t.server.(StreamReader).ServiceBanner(), t.server.(StreamReader).Ident(), t.server.(StreamReader).FirstPacket(), t.server.(StreamReader).Network(), t.server.(StreamReader).Transport(), t.server.(StreamReader).NumBytes(), t.client.(StreamReader).NumBytes())
+	}
+
 	logReassemblyDebug("%s: Connection closed\n", t.ident)
 
 	// channels don't have to be closed.
@@ -315,11 +420,11 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext) bool 
 	// I created a snippet to verify: https://goplay.space/#m8-zwTuGrgS
 	func() {
 		defer recovery()
-		close(t.client.BytesChan())
+		close(t.client.DataChan())
 	}()
 	func() {
 		defer recovery()
-		close(t.server.BytesChan())
+		close(t.server.DataChan())
 	}()
 
 	// do not remove the connection to allow last ACK
@@ -400,7 +505,6 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	if doFlush {
 		ref := packet.Metadata().CaptureInfo.Timestamp
 		flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-c.ClosePendingTimeOut), TC: ref.Add(-c.CloseInactiveTimeOut)})
-
 		utils.DebugLog.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref)
 	}
 }
@@ -463,22 +567,17 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		streamFactory.Lock()
 		numTotal := len(streamFactory.streamReaders)
 		streamFactory.Unlock()
-		if !Quiet {
-			fmt.Print("processing remaining open TCP streams... ", numTotal)
-		}
 
 		sp := new(tcpStreamProcessor)
 		sp.initWorkers()
 		sp.numTotal = numTotal
 
 		// flush the remaining streams to disk
-		streamFactory.Lock()
 		for _, s := range streamFactory.streamReaders {
 			if s != nil {
 				sp.handleStream(s)
 			}
 		}
-		streamFactory.Unlock()
 		if !Quiet {
 			fmt.Println()
 		}

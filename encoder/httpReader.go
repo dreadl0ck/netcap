@@ -49,9 +49,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
-	"fmt"
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/mgutz/ansi"
@@ -61,6 +61,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -94,14 +95,29 @@ var httpStore = &HTTPMetaStore{
 }
 
 /*
- * HTTP part
+ * HTTP
  */
+
+type httpRequest struct {
+	request   *http.Request
+	timestamp string
+	clientIP  string
+	serverIP  string
+}
+
+type httpResponse struct {
+	response  *http.Response
+	timestamp string
+	clientIP  string
+	serverIP  string
+}
 
 type httpReader struct {
 	ident              string
 	isClient           bool
-	bytes              chan []byte
-	data               []byte
+	dataChan              chan *Data
+	data               []*Data
+	merged             DataSlice
 	hexdump            bool
 	parent             *tcpConnection
 	saved              bool
@@ -111,71 +127,33 @@ type httpReader struct {
 }
 
 func (h *httpReader) Read(p []byte) (int, error) {
-	ok := true
-	for ok && len(h.data) == 0 {
-		select {
-		case h.data, ok = <-h.bytes:
-		}
-	}
-	if !ok || len(h.data) == 0 {
+
+	var (
+		ok = true
+		data *Data
+	)
+
+	data, ok = <-h.dataChan
+	if data == nil || !ok {
 		return 0, io.EOF
 	}
 
-	l := copy(p, h.data)
-	h.numBytes += l
-	h.data = h.data[l:]
-
-	//fmt.Println(h.ident, "HTTP read:\n", hex.Dump(p[:l]), h.isClient)
-
-	dataCpy := p[:l]
+	// copy received data into the passed in buffer
+	l := copy(p, data.raw)
 
 	h.parent.Lock()
-
-	// write raw
-	h.parent.conversationRaw.Write(dataCpy)
-
-	// colored for debugging
-	if h.isClient {
-		h.parent.conversationColored.WriteString(ansi.Red + string(dataCpy) + ansi.Reset)
-	} else {
-		h.parent.conversationColored.WriteString(ansi.Blue + string(dataCpy) + ansi.Reset)
-	}
-
-	// save server stream for banner identification
-	// stores c.BannerSize number of bytes of the server side stream
-	if !h.isClient && h.serviceBannerBytes < c.BannerSize {
-		for _, b := range dataCpy {
-			h.serviceBanner.WriteByte(b)
-			h.serviceBannerBytes++
-			if h.serviceBannerBytes == c.BannerSize {
-				break
-			}
-		}
-	}
+	h.data = append(h.data, data)
+	h.numBytes += l
 	h.parent.Unlock()
 
 	return l, nil
 }
 
-func (h *httpReader) BytesChan() chan []byte {
-	return h.bytes
+func (h *httpReader) DataChan() chan *Data {
+	return h.dataChan
 }
 
 func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
-
-	//fmt.Println("HTTP cleanup", h.ident)
-	h.parent.Lock()
-	h.saved = true
-	h.parent.Unlock()
-
-	if h.isClient {
-		err := saveConnection(h.ConversationRaw(), h.ConversationColored(), h.Ident(), h.FirstPacket(), h.Transport())
-		if err != nil {
-			fmt.Println("failed to save connection", err)
-		}
-	} else {
-		saveTCPServiceBanner(h.serviceBanner.Bytes(), h.parent.ident, h.parent.firstPacket, h.parent.net, h.parent.transport, h.numBytes, h.parent.client.(StreamReader).NumBytes())
-	}
 
 	// determine if one side of the stream has already been closed
 	h.parent.Lock()
@@ -353,6 +331,12 @@ func (h *httpReader) Run(f *tcpConnectionFactory) {
 		err error
 		b   = bufio.NewReader(h)
 	)
+
+	// TODO: Locking here causes a deadlock?
+	//h.parent.Lock()
+	//isClient := h.isClient
+	//h.parent.Lock()
+
 	for {
 		// handle parsing HTTP requests
 		if h.isClient {
@@ -805,9 +789,13 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 
 	logReassemblyInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
 
+	h.parent.Lock()
+	t := utils.TimeToString(h.parent.firstPacket)
+	h.parent.Unlock()
+
 	request := &httpRequest{
 		request:   req,
-		timestamp: utils.TimeToString(h.parent.firstPacket),
+		timestamp: t,
 		clientIP:  h.parent.net.Src().String(),
 		serverIP:  h.parent.net.Dst().String(),
 	}
@@ -842,19 +830,66 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	return nil
 }
 
+func (h *httpReader) DataSlice() DataSlice {
+	return h.data
+}
+
 func (h *httpReader) ClientStream() []byte {
 	return nil
 }
 
 func (h *httpReader) ServerStream() []byte {
+	var buf bytes.Buffer
+
 	h.parent.Lock()
 	defer h.parent.Unlock()
-	return h.serviceBanner.Bytes()
+
+	// save server stream for banner identification
+	// stores c.BannerSize number of bytes of the server side stream
+	for _, d := range h.parent.server.DataSlice() {
+		for _, b := range d.raw {
+			buf.WriteByte(b)
+		}
+	}
+
+	return buf.Bytes()
 }
 
 func (h *httpReader) ConversationRaw() []byte {
 	h.parent.Lock()
 	defer h.parent.Unlock()
+
+	// do this only once, this method will be called once for each side of a connection
+	if len(h.merged) == 0 {
+
+		// concatenate both client and server data fragments
+		h.merged = append(h.parent.client.DataSlice(), h.parent.server.DataSlice()...)
+
+		// sort based on their timestamps
+		sort.Sort(h.merged)
+
+		// create the buffer with the entire conversation
+		for _, d := range h.merged {
+
+			//fmt.Println(h.ident, d.ac.GetCaptureInfo().Timestamp, d.ac.GetCaptureInfo().Length)
+
+			h.parent.conversationRaw.Write(d.raw)
+			if d.dir == reassembly.TCPDirClientToServer {
+				if c.Debug {
+					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n")
+				} else {
+					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
+				}
+			} else {
+				if c.Debug {
+					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n")
+				} else {
+					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
+				}
+			}
+		}
+	}
+
 	return h.parent.conversationRaw.Bytes()
 }
 
@@ -894,4 +929,35 @@ func (h *httpReader) NumBytes() int {
 
 func (h *httpReader) Client() StreamReader {
 	return h.parent.client.(StreamReader)
+}
+
+func (h *httpReader) SetClient(v bool) {
+	h.isClient = v
+}
+
+func (h *httpReader) MarkSaved() {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+	h.saved = true
+}
+
+func (h *httpReader) ServiceBanner() []byte {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+
+	if h.serviceBanner.Len() == 0 {
+		// save server stream for banner identification
+		// stores c.BannerSize number of bytes of the server side stream
+		for _, d := range h.parent.server.DataSlice() {
+			for _, b := range d.raw {
+				h.serviceBanner.WriteByte(b)
+				h.serviceBannerBytes++
+				if h.serviceBannerBytes == c.BannerSize {
+					break
+				}
+			}
+		}
+	}
+
+	return h.serviceBanner.Bytes()
 }
