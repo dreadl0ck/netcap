@@ -17,6 +17,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/gopacket/layers"
@@ -150,6 +151,8 @@ func (c *Collector) CollectPcap(path string) error {
 		return err
 	}
 
+	stopProgress := c.printProgressInterval()
+
 	for {
 
 		// fetch the next packetdata and packetheader
@@ -162,8 +165,24 @@ func (c *Collector) CollectPcap(path string) error {
 			return errors.Wrap(err, "Error reading packet data: ")
 		}
 
+		// increment atomic packet counter
+		atomic.AddInt64(&c.current, 1)
+
+		// must be locked, otherwise a race occurs when sending a SIGINT
+		//  and triggering wg.Wait() in another goroutine...
+		c.statMutex.Lock()
+
+		// increment wait group for packet processing
+		c.wg.Add(1)
+
+		c.statMutex.Unlock()
+
 		c.handleRawPacketData(data, ci)
 	}
+
+
+	stopProgress <- struct{}{}
+
 	c.cleanup(false)
 	return nil
 }
