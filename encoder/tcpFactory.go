@@ -43,6 +43,7 @@ type tcpConnectionFactory struct {
 	wg            sync.WaitGroup
 	decodeHTTP    bool
 	decodePOP3    bool
+	decodeSSH    bool
 	numActive     int64
 	streamReaders []StreamReader
 	deadlock.Mutex
@@ -80,14 +81,25 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 	stream := &tcpConnection{
 		net:         net,
 		transport:   transport,
-		isHTTP:      factory.decodeHTTP && (tcp.SrcPort == 80 || tcp.DstPort == 80),
-		isPOP3:      factory.decodePOP3 && (tcp.SrcPort == 110 || tcp.DstPort == 110),
+		isHTTP:      tcp.SrcPort == 80 || tcp.DstPort == 80,
+		isPOP3:      tcp.SrcPort == 110 || tcp.DstPort == 110,
 		isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
 		isSSH:       tcp.SrcPort == 22 || tcp.DstPort == 22,
 		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),
 		firstPacket: ac.GetCaptureInfo().Timestamp,
+	}
+
+	// dont process stream if protocol is disabled
+	if stream.isSSH && !streamFactory.decodeSSH {
+		return stream
+	}
+	if stream.isHTTP && !streamFactory.decodeHTTP {
+		return stream
+	}
+	if stream.isPOP3 && !streamFactory.decodePOP3 {
+		return stream
 	}
 
 	clientIdent := filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
