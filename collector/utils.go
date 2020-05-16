@@ -37,7 +37,7 @@ type packet struct {
 func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
 
 	// show progress
-	c.printProgress()
+	//c.printProgress()
 
 	// pass packet to a worker routine
 	c.handlePacket(&packet{
