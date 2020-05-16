@@ -49,12 +49,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
-	"github.com/dreadl0ck/cryptoutils"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -67,7 +61,32 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/dreadl0ck/cryptoutils"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/mgutz/ansi"
 )
+
+// CMSHeaders is the list of identifying headers for CMSs, frontend frameworks, ...
+var CMSHeadersList []string = []string{"powered", "X-CDN-Forward", "X-Pardot-Rsp", "Expires", "Weglot-Translated", "X-Powered-By", "X-Drupal-Cache", "X-AH-Environment", "X-Pardot-Route", "Derak-Umbrage", "MicrosoftSharePointTeamServices", "x-platform-processor", "X-Jenkins", "X-Wix-Request-Id", "X-Drectory-Script", "X-B3-Flags", "IBM-Web2-Location", "X-Generated-By", "azure-version", "DNNOutputCache", "x-shopify-stage", "content-disposition", "x-vercel-cache", "X-Powered-PublicCMS", "X-JIVE-USER-ID", "X-Foswikiuri", "cf-ray", "section-io-id", "X-Ghost-Cache-Status", "Access-Control-Allow-Headers", "x-fw-serve", "X-Swiftlet-Cache", "X-EC-Debug", "X-Varnish-Action", "azure-slotname", "X-Pardot-LB", "X-Mod-Pagespeed", "Cookie", "CMS-Version", "x-via-fastly", "X-SharePointHealthScore", "SPRequestGuid", "X-GitHub-Request-Id", "sw-context-token", "X-Akamai-Transformed", "X-Umbraco-Version", "X-Rocket-Nginx-Bypass", "x-fw-server", "x-platform-router", "X-Compressed-By", "Link", "Arastta", "Vary", "X-Protected-By", "WebDevSrc", "x-bubble-capacity-limit", "Fastly-Debug-Digest", "X-Akaunting", "server", "X-Fastcgi-Cache", "x-litespeed-cache", "x-platform-cluster", "X-Firefox-Spdy", "X-GoCache-CacheStatus", "X-B3-ParentSpanId", "X-Includable-Version", "host-header", "cf-cache-status", "x-bubble-capacity-used", "X-Confluence-Request-Time", "section-io-origin-status", "Server", "X-KoobooCMS-Version", "X-Wix-Server-Artifact-Id", "Servlet-engine", "X-Generator", "X-CF2", "X-Page-Speed", "X-CDN", "x-bubble-perf", "x-jive-chrome-wrapped", "X-Backdrop-Cache", "X-Jimdo-Instance", "X-Scholica-Version", "X-Shopery", "X-Supplied-By", "X-Jimdo-Wid", "X-Varnish-Age", "X-DataDome-CID", "X-Powered-By-Plesk", "x-shopid", "x-zendesk-user-id", "azure-sitename", "X-DataDome", "x-fw-static", "X-Foswikiaction", "X-StatusPage-Version", "X-AspNet-Version", "x-vercel-id", "x-pantheon-styx-hostname", "sw-version-id", "X-Dotclear-Static-Cache", "sw-language-id", "Link", "X-Arastta", "sw-invalidation-states", "X-Powered-CMS", "X-Advertising-By", "X-Hacker", "x-now-trace", "X-B3-TraceId", "X-NF-Request-ID", "Composed-By", "solodev_session", "X-Wix-Renderer-Server", "X-CF1", "x-oracle-dms-ecid", "X-Unbounce-PageId", "X-Elcodi", "OracleCommerceCloud-Version", "COMMERCE-SERVER-SOFTWARE", "x-platform-server", "X-WPE-Loopback-Upstream-Addr", "kbn-name", "X-Backside-Transport", "X-Amz-Cf-Id", "X-ATG-Version", "X-Flex-Lang", "X-Jive-Flow-Id", "X-Flow-Powered", "X-Fastly-Request-ID", "X-B3-Sampled", "SharePointHealthScore", "X-ServedBy", "kbn-version", "X-Varnish", "WP-Super-Cache", "Via", "X-Jive-Request-Id", "X-Rack-Cache", "X-dynaTrace-JS-Agent", "X-Streams-Distribution", "X-Lift-Version", "X-Spip-Cache", "section-io-origin-time-seconds", "X-B3-SpanId", "X-StatusPage-Skip-Logging", "X-epages-RequestId", "Itx-Generated-Timestamp", "X-XRDS-Location", "X-MCF-ID", "x-lw-cache", "x-fw-type", "X-JSL", "x-fw-hash", "x-sucuri-id", "X-Varnish-Hostname", "x-kinsta-cache", "X-Content-Encoded-By", "wpe-backend", "x-powered-by", "X-Varnish-Cache", "azure-regionname", "x-envoy-upstream-service-time", "Liferay-Portal", "Powered-By", "X-Pass-Why", "AR-PoweredBy", "X-Global-Transaction-ID", "x-sucuri-cache", "X-Tumblr-User"}
+
+// CSMCookies is the list of identifying cookies for CMSs, frontend frameworks, ...
+var CSMCookiesList []string = []string{"MRHSHin", "PHPSESSI", "cookie_nam", "dps_site_i", "pyrocm", "_gphw_mod", "OSTSESSI", "i_like_gogit", "koken_referre", "_zendesk_shared_sessio", "cs_secure_sessio", "lm_onlin", "e107_t", "FOSWIKISTRIKEON", "memberstac", "Domai", "bigwareCsi", "vtex_sessio", "LastMRH_Sessio", "OJSSI", "LithiumVisito", "_kjb_sessio", "ekmpowersho", "swell-sessio", "CMSPreferredCultur", "kohanasessio", "iexexchanger_sessio", "NS_VE", "xf_csr", "MoodleSessio", "ASPSESSIO", "ipbWWLsession_i", "OpenGro", "CMSSESSI", "sf_redirec", "F5_S", "laravel_sessio", "MRHSessio", "TI", "ipbWWLmodpid", "PIWIK_SESSI", "_hybri", "botble_sessio", "websale_a", "xi", "MRHSequenc", "ZENDSERVERSESSI", "TWIKISI", "TNE", "_session_i", "__cfdui", "PUBLICCMS_USE", "ci_csrf_toke", "__utm", "_zendesk_cooki", "EPiServe", "nette-browse", "ushahid", "flyspray_projec", "FESESSIONI", "ahoy_trac", "phpb", "F5_HT_shrinke", "InstantCMS[logdate", "VivvoSessionI", "3dvisi", "cpsessio", "ICMSSessio", "AWSAL", "sensorsdata2015jssdkcros", "osCsi", "_solusquar", "JSESSIONI", "i_like_gite", "REVEL_SESSIO", "ImpressCM", "DokuWik", "OCSESSI", "EPiTrac", "MAKACSESSIO", "sensorsdata2015sessio", "ZM_TES", "INVENIOSESSIO", "hotaru_mobil", "wgSessio", "ASP.NET_SessionI", "PrestaSho", "F5_fullW", "com.salesforc", "JTLSHO", "cakeph", "Dynamicwe", "exp_csrf_toke", "_g", "k_visi", "CraftSessionI", "SC_ANALYTICS_GLOBAL_COOKI", "_ga", "graffitibo", "ahoy_visi", "xf_sessio", "_help_center_sessio", "SFOSWIKISI", "YII_CSRF_TOKE", "PLAY_SESSIO", "cprelogi", "fronten", "_gitlab_sessio", "_redmine_sessio", "exp_tracke", "spincms_sessio", "bblastvisi", "ci_sessio", "__derak_use", "REVEL_FLAS", "ARRAffinit", "bf_sessio", "ahoy_visito", "AWSEL", "datadom", "pinoox_sessio", "grwng_ui", "sails.si", "DotNetNukeAnonymou", "blesta_si", "Bugzilla_login_request_cooki", "exp_last_activit", "eZSESSI", "gr_user_i", "ARK_I", "CONCRETE", "_gauges", "TiPMi", "bblastactivit", "uCo", "Grand.custome", "Nop.custome", "AWSALBCOR", "MOODLEID", "VtexWorkspac", "phsi", "__derak_aut", "october_sessio", "bbsessionhas", "MOIN_SESSIO", "VtexFingerPrin", "bigWAdminI"}
+
+// HeaderForApps -> HTTP header structure
+type HeaderForApps struct {
+	HeaderName  string
+	HeaderValue string
+}
+
+// CookieForApps -> HTTP cookie structure
+type CookieForApps struct {
+	CookieName  string
+	CookieValue string
+}
 
 // HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts
 type HTTPMetaStore struct {
@@ -84,6 +103,10 @@ type HTTPMetaStore struct {
 	// mapped ip address to user agents
 	XPoweredBy map[string]string
 
+	CMSHeaders map[string][]HeaderForApps
+
+	CMSCookies map[string][]CookieForApps
+
 	sync.Mutex
 }
 
@@ -92,6 +115,8 @@ var httpStore = &HTTPMetaStore{
 	UserAgents:  make(map[string]string),
 	Vias:        make(map[string]string),
 	XPoweredBy:  make(map[string]string),
+	CMSHeaders:  make(map[string][]HeaderForApps),
+	CMSCookies:  make(map[string][]CookieForApps),
 }
 
 /*
@@ -115,7 +140,7 @@ type httpResponse struct {
 type httpReader struct {
 	ident              string
 	isClient           bool
-	dataChan              chan *Data
+	dataChan           chan *Data
 	data               []*Data
 	merged             DataSlice
 	hexdump            bool
@@ -129,7 +154,7 @@ type httpReader struct {
 func (h *httpReader) Read(p []byte) (int, error) {
 
 	var (
-		ok = true
+		ok   = true
 		data *Data
 	)
 
@@ -217,7 +242,7 @@ func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 				continue
 			}
 
-			writeHTTP(ht)
+			writeHTTP(ht, h.ident)
 		}
 
 		for _, req := range h.parent.requests {
@@ -240,7 +265,7 @@ func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 					}
 				}
 
-				writeHTTP(ht)
+				writeHTTP(ht, h.ident)
 			} else {
 				atomic.AddInt64(&httpEncoder.numNilRequests, 1)
 			}
@@ -254,7 +279,7 @@ func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connec
 	f.Unlock()
 }
 
-func writeHTTP(h *types.HTTP) {
+func writeHTTP(h *types.HTTP, ident string) {
 
 	httpStore.Lock()
 
@@ -298,7 +323,54 @@ func writeHTTP(h *types.HTTP) {
 		}
 	}
 
+	// Iterate over the possible CMS headers. If present, add them to the httpStore
+	for _, cmsHeader := range CMSHeadersList {
+		if x, ok := h.ResponseHeader[cmsHeader]; ok {
+			httpStore.CMSHeaders[h.DstIP] = append(httpStore.CMSHeaders[h.DstIP], HeaderForApps{HeaderName: cmsHeader, HeaderValue: x})
+		}
+	}
+
+	// If HTTP intructions are sent to set a cookie used by CMSs (of other apps), add the key and possible value to the httpStore
+	if toSet, ok := h.ResponseHeader["Set-Cookie"]; ok {
+		parsedCookie := strings.Split(toSet, "=")
+		cookieKey := parsedCookie[0]
+		var cookieValue string
+		if len(parsedCookie) > 1 {
+			cookieValue = parsedCookie[1]
+		}
+		for _, csmCookie := range CSMCookiesList {
+			if cookieKey == csmCookie {
+				httpStore.CMSCookies[h.DstIP] = append(httpStore.CMSCookies[h.DstIP], CookieForApps{CookieName: cookieKey, CookieValue: cookieValue})
+			}
+		}
+	}
+
+	cmsHeaders := httpStore.CMSHeaders[h.DstIP]
+
 	httpStore.Unlock()
+
+	// TODO
+	// get source port and convert to integer
+	// src, err := strconv.Atoi(tl.TransportFlow().Src().String())
+	// if err == nil {
+	// 	switch tl.LayerType() {
+	// 	case layers.LayerTypeTCP:
+	// 		serviceNameSrc = resolvers.LookupServiceByPort(src, "tcp")
+	// 	case layers.LayerTypeUDP:
+	// 		serviceNameSrc = resolvers.LookupServiceByPort(src, "udp")
+	// 	default:
+	// 	}
+	// }
+	// dst, err := strconv.Atoi(tl.TransportFlow().Dst().String())
+	// if err == nil {
+	// 	switch tl.LayerType() {
+	// 	case layers.LayerTypeTCP:
+	// 		serviceNameDst = resolvers.LookupServiceByPort(dst, "tcp")
+	// 	case layers.LayerTypeUDP:
+	// 		serviceNameDst = resolvers.LookupServiceByPort(dst, "udp")
+	// 	default:
+	// 	}
+	// }
 
 	// export metrics if configured
 	if httpEncoder.export {
@@ -311,6 +383,27 @@ func writeHTTP(h *types.HTTP) {
 	if err != nil {
 		errorMap.Inc(err.Error())
 	}
+
+	software := whatSoftwareHTTP(nil, ident, "", "", h, cmsHeaders, []CookieForApps{})
+
+	if len(software) == 0 {
+		return
+	}
+
+	// add new audit records or update existing
+	SoftwareStore.Lock()
+	for _, s := range software {
+		if _, ok := SoftwareStore.Items[s.Product+"/"+s.Version]; ok {
+			//updateSoftwareAuditRecord(dp, p, i)
+		} else {
+			SoftwareStore.Items[s.Product+"/"+s.Version] = s
+			statsMutex.Lock()
+			reassemblyStats.numSoftware++
+			statsMutex.Unlock()
+		}
+	}
+	SoftwareStore.Unlock()
+
 }
 
 // run starts decoding HTTP traffic in a single direction

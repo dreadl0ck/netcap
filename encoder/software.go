@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -58,6 +59,7 @@ var (
 	jaCacheMutex     sync.Mutex
 	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
 	hasshMap         = make(map[string][]SSHSoftware)
+	cmsDB            = make(map[string]interface{})
 )
 
 // Size returns the number of elements in the Items map
@@ -79,6 +81,8 @@ var (
 	ja3db   Ja3CombinationsDB
 	hasshDB []SSHHash
 )
+
+//var CSMMeta []string = []string{"elqCurESit", "MRHSHin", "foswiki.WIKINAM", "Kajab", "PHPSESSI", "NREU", "_ACPuzzl", "dps_site_i", "pyrocm", "google_tag_manage", "rlAppVersio", "i_like_gogit", "SyntaxHighlighte", "Crite", "_zendesk_shared_sessio", "Phase", "vgln", "cs_secure_sessio", "googleta", "usabilla_liv", "_goStatsRu", "e107_t", "Immutabl", "babli", "Captchm", "OWA.config.baseUr", "rainloopI18", "_gauge", "Larave", "ct_nOp", "ado.maste", "powered-b", "csrf-para", "ATInterne", "advst_is_above_the_fol", "Rx.Symbo", "OJSSI", "$jit.versio", "analytic", "gsapVersion", "catberry.versio", "MODX_MEDIA_PAT", "IsOwaPremiumBrowse", "Shapecs", "ngMateria", "Min", "jQuery.mobile.versio", "firebase.SDK_VERSIO", "EC_ROOT_DOMAI", "_COMSCOR", "nv.versio", "tc_var", "Ecwi", "dle_roo", "mejs.versio", "foswiki.SERVERTIM", "og", "robin_storage_setting", "F5_S", "bit", "Infern", "ct_nSuUr", "AnalysysAgen", "ko.versio", "wt_t", "vaadi", "CKEDITO", "__SENTRY_", "hubspo", "Countl", "TypechoCommen", "Ex", "Stackl", "Fingerprint", "PUBLICCMS_USE", "MooTool", "Gravata", "_zendesk_cooki", "_cfEmail", "gbWhLan", "_carbonad", "_hs", "cp_C4w1ldN2d9PmVrk", "sc_securit", "nette-browse", "Mag", "Ha.VERSIO", "ShellInABo", "Raven.confi", "flyspray_projec", "Kinetic.versio", "ravenOptions.whitelistUrl", "ahoy_trac", "Braintre", "Cufo", "fbit", "phpb", "oxTopMen", "_bsa", "versio", "MyB", "MOD", "protovi", "Elm.Main.ini", "AlgoliaSearc", "basket.isValidIte", "priceDisplayPrecisio", "gaplugins.E", "UC_ITEM_INFO_SERVIC", "Braintree.versio", "osCsi", "ng.prob", "REVEL_SESSIO", "OCSESSI", "SFDCCm", "EPiTrac", "MAKACSESSIO", "_mf", "eomportal-i", "YStor", "__gvizguard_", "window.LOJA_I", "squirrelmail_loginpage_onloa", "epage", "EcwidCar", "Ushahid", "Vue.versio", "LF.CommentCoun", "oxInputValidato", "freeProductTranslatio", "reinvigorat", "TEALIUMENABLE", "jcomment", "clickHeatServe", "Hamme", "RakutenApplicatio", "DOCUMENTATION_OPTION", "tinyMCE.majorVersio", "rcmai", "JetshopDat", "cakeph", "Rx.CompositeDisposabl", "CRLT.CONFIG.ASMJS_NAM", "Dynamicwe", "__vw", "__avng8", "SonarReques", "WHMC", "_g", "k_visi", "Comandi", "swa", "AmChart", "catberr", "MaterialIconToggl", "SC_ANALYTICS_GLOBAL_COOKI", "recaptch", "jQuery.fn.tooltip.Constructor.VERSIO", "kmGetSessio", "piAI", "_ga", "gemius_hi", "Squarespac", "Snap.versio", "jQuery.pja", "ahoy_visi", "Decimal.ROUND_HALF_FLOO", "Backbone.VERSIO", "jenkinsCIGloba", "YII_CSRF_TOKE", "Copyrigh", "momen", "VW", "Jobbe", "fronten", "_gitlab_sessio", "efCor", "discuzVersio", "bootstrap.Alert.VERSIO", "Wicke", "ci_sessio", "Sfj", "elementorFrontend.getElement", "Gerri", "wsc_rendermod", "__derak_use", "wik", "oxModalPopu", "Inferno.versio", "__inspl", "disqus_shortnam", "gl.dashboardOption", "CCM_IMAGE_PAT", "foswik", "keyword", "bf_sessio", "requirejs.versio", "titl", "Sentr", "signalDat", "sublimevide", "Embe", "Instabo", "exp_last_activit", "padimpex", "_usr", "__gwtlistene", "gr_user_i", "PREBID_TIMEOU", "gemius_ini", "hj.apiUrlBas", "mivaJS.Scree", "_klarnaCheckou", "app.cache.discussionLis", "mivaJS.Product_I", "VtexWorkspac", "Ray", "_bubble_page_load_dat", "blessing.versio", "Backdro", "GSF", "hljs.listLanguage", "marke", "elqSiteI", "bugsnagClien", "Matom", "kampyl", "bigwareCsi", "shope", "SobiProUr", "___dart__$dart_dartObject_ZxYxX_0", "_satellit", "Shopcad", "_robin_getRobinJ", "__gwt_getMetaPropert", "ScrollReveal().versio", "parcelRequir", "Bugsna", "s_accoun", "HelloBa", "_gphw_mod", "bounce", "eny", "PDFJ", "Ionic.versio", "adroll_adv_i", "_sf_endp", "lm_onlin", "_sf_async_confi", "Immutable.versio", "smf", "xliteConfi", "shptUr", "prettyPrin", "FOSWIKISTRIKEON", "ipb_va", "Modernizr._versio", "Hoga", "DISQU", "__gwt", "Marionett", "WEBXPA", "gbWhMs", "CMSPreferredCultur", "wink.versio", "Pris", "MemberStac", "MoodleSessio", "go.GraphObjec", "yandex_metrik", "laravel_sessio", "search.indexNam", "Boke", "RISK", "SWFObjec", "LiveStor", "FyreLoade", "___dart_dispatch_record_ZxYxX_0", "L.PosAnimatio", "DC.identifie", "_pa", "Sweetalert", "_hybri", "botble_sessio", "adxinserthtm", "AjaxShoppingCar", "woocommerce_param", "_statcounte", "xi", "ef.versio", "DISCUZCOD", "SmartAdServe", "s_objectI", "soundManager.versio", "Umbrac", "Harava", "particlesJ", "xcart_web_di", "EPiServe", "gaGloba", "Webz", "ushahid", "Foundation.versio", "__gwt_activeModule", "confluence-request-tim", "FESESSIONI", "CloudFlar", "IPBoar", "LSHelper", "Fingerprin", "UserVoic", "AU", "mixpane", "Fingerprint2.VERSIO", "criteo_pubta", "cpsessio", "ICMSSessio", "AWSAL", "MivaVM_AP", "react.versio", "application-nam", "sensorsdata2015jssdkcros", "SFDCSessionVar", "galleryAuthToke", "Client.Anonymou", "Interco", "kendo.versio", "Posterou", "BUGZILL", "adrive", "jQuery.fn.select", "sensorsdata2015sessio", "Webflo", "web_autho", "mivaJS.Product_Cod", "BaconPlaye", "wp_usernam", "dayj", "d3.versio", "jiraf", "taigaConfi", "Redoc.versio", "elqLoa", "React.versio", "wgSessio", "optimizel", "ASP.NET_SessionI", "avng8", "Jooml", "pdfjs-dist/build/pdf.versio", "com.salesforc", "TrackJ", "JSChar", "Autho", "Shiny.addCustomMessageHandle", "LiveAgen", "exp_csrf_toke", "videojs.VERSIO", "_bs", "ajs-version-numbe", "HotleadControlle", "Mustache.versio", "owa_cmd", "CryptoLoo", "webtrekkUnloadObject", "pinoo", "L.DistanceGri", "pma_absolute_ur", "_bsap_serving_callbac", "epomCustomParam", "Ember.VERSIO", "xt_clic", "KAMPYLE_COMMO", "El", "eomportal-instancei", "derakCloud.ini", "tiddlywiki-versio", "_help_center_sessio", "PLAY_SESSIO", "ClarityIcon", "spincms_sessio", "style_cookie_setting", "MM_showHideLayer", "zbxCallPostScript", "Chart.defaults.doughnu", "Kineti", "pdfjsLib.versio", "YUI.versio", "Plotly.versio", "LHread", "X-Imperia-Live-Inf", "MauticTrackingObjec", "gemius_pendin", "pjax-timeou", "ahoy_visito", "AWSEL", "jQuery.fn.jquer", "$ji", "rdoc_rel_prefi", "chart.ctx.bezierCurveT", "YAHOO.VERSIO", "szmvar", "webtrekkHeatmapObject", "DotNetNukeAnonymou", "jseMin", "k_trac", "Bugzilla_login_request_cooki", "google_ad", "eomportal-uui", "cnzz_protoco", "Transifex.live.lib_versio", "jQuery.ui.versio", "wt_ttv", "_gauges", "__mobxGloba", "Makesho", "mm_current_user_i", "TweenMa", "IAI_Aja", "addthi", "ProgI", "FTB_AddEven", "MM_showMen", "rainloo", "tiddle", "_adcopy-puzzle-image-imag", "titanEnable", "ct_siteunde", "head.browser.nam", "SIM.mediu", "__APOLLO_CLIENT_", "MOODLEID", "phsi", "quantserv", "__derak_aut", "october_sessio", "laterpay", "pligg", "mivaJ", "GoogleAnalyticsObjec", "K2RatingUR", "pp_gemius_hi", "_monoTracke", "VtexFingerPrin", "__SAPPER_", "bigWAdminI", "pp_title", "DedeContaine", "pwidget_confi", "yandex_ad_forma", "google-play-ap", "_W.configDomai", "asciinem", "pw_adloade", "mathj", "WebTrend", "Bokeh.versio", "WTOptimiz", "MakeshopLogUniqueI", "OSTSESSI", "_.differenceB", "koken_referre", "adroll_pix_i", "Quil", "VuVeoxaConten", "adosResult", "Munchki", "doj", "kend", "UserEngag", "MM_preloadImage", "gbWhUti", "Ricksha", "ado", "xtsit", "discuz_ui", "SuUr", "Domai", "pp_image", "sensorsdata_app_js_bridge_call_j", "a2apage_ini", "OneStat_Pagevie", "LastMRH_Sessio", "ArtifactoryUpdate", "__APOLLO_CLIENT__.versio", "_kjb_sessio", "EPrint", "ekmpowersho", "criteo_", "piTracke", "Highchart", "mivaJS.Pag", "angula", "ASPSESSIO", "roundcub", "ngTestabilityRegistrie", "XRegExp.versio", "ipbWWLsession_i", "GitLa", "CMSSESSI", "_.VERSIO", "sf_redirec", "MRHSessio", "setMIfram", "GENERATO", "SuLoade", "autho", "Phoeni", "websale_a", "MochiKi", "gx.gxVersio", "cargo_titl", "go.versio", "pjax-replac", "Meteo", "ipsSetting", "MathJax.versio", "Lis", "TWIKISI", "_session_i", "ct_ta", "padeditba", "angular.version.ful", "PAYPA", "bitbucke", "newreli", "apple-itunes-ap", "BWEU", "hea", "clickTaleStartEventSigna", "fligh", "__mobxInstanceCoun", "phpdebugba", "Swiftyp", "eomportal-lastUpdat", "InstantCMS[logdate", "Marionette.VERSIO", "gbWhVe", "DotNetNuk", "Shopif", "Exhibi", "_.restArgument", "_solusquar", "JSESSIONI", "Typekit.config.j", "i_like_gite", "DC.titl", "LinkSmar", "Drupa", "ImpressCM", "DokuWik", "vl_disabl", "vivv", "videoj", "priceDisplayMetho", "ZM_TES", "eomportal-loi", "tita", "hotaru_mobil", "elq_globa", "PrestaSho", "_babelPolyfil", "JTLSHO", "click", "Raycha", "SHARETHI", "vBulleti", "ng.coreToken", "UC_SETTING", "clob", "CoinHiv", "Goog_AdSense", "dojo.version.majo", "bubble_hostname_modifie", "Flickit", "moment.versio", "Backbon", "mm_use", "graffitibo", "piHostnam", "__admin_media_prefix_", "xf_sessio", "wixBiSessio", "SFOSWIKISI", "bubble_environmen", "KM_COOKIE_DOMAI", "cprelogi", "_redmine_sessio", "__googleVisualizationAbstractRendererElementsCount_", "exp_tracke", "Zept", "io.versio", "asciido", "mm_licens", "Shin", "CodeMirror.versio", "CE", "rio", "pp_alreadyInitialize", "designe", "REVEL_FLAS", "Zenfoli", "nv.addGrap", "ARRAffinit", "datadom", "Nett", "ado.slav", "ch_clien", "blesta_si", "oxLoginBo", "SPDesignerProgI", "eZSESSI", "CKEDITOR.versio", "PhpDebugBa", "mermai", "TiPMi", "Highcharts.versio", "_fusio", "PARSEL", "typeahea", "setMRefUR", "Keyword", "disqus_ur", "OpenLayers.VERSION_NUMBE", "generato", "FTB_AP", "Grand.custome", "Nop.custome", "PUNB", "PrefixFre", "xoop", "Powered-B", "CodeMirro", "bbsessionhas", "yandex_partner_i", "Elm.Main.embe", "WebtrekkV", "Handlebar", "Fusion.arcSit", "OB_releaseVe", "cookie_nam", "EC_GLOBAL_DATETIM", "ch_color_site_lin", "COMSCOR", "Colorm", "PDFJS.versio", "Handlebars.VERSIO", "gerrit_u", "Zone.roo", "ArvanClou", "webi", "volusio", "pdfjsDistBuildPdf.versio", "memberstac", "jQuery.migrateWarning", "mm_confi", "ol.CanvasMa", "Swipe", "webtrekkLinktrackObject", "vtex_sessio", "__mobxGlobal", "EC_GLOBAL_INF", "Pagevam", "LithiumVisito", "swell-sessio", "show_switch2gu", "Prototype.Versio", "webtrekkV", "kohanasessio", "fn_compare_string", "iexexchanger_sessio", "_pdfjsCompatibilityChecke", "NS_VE", "xf_csr", "Ext.versio", "s_INS", "bubble_versio", "sa.lib_versio", "s_cod", "UC_IMAGE_SERVICE|ITEM_INFO_SERVIC", "RightJ", "OpenGro", "piCI", "kmPageInf", "L.versio", "piProtoco", "__chang", "Recaptch", "hljs.highlightBloc", "go_msi", "sap.ui.versio", "VideoJ", "TI", "NET", "SonarMeasure", "_spBodyOnLoadCalle", "descriptio", "ipbWWLmodpid", "PIWIK_SESSI", "YW", "AFRAME.versio", "Kamv", "io.Socke", "OutbrainPermaLin", "MRHSequenc", "ActO", "jQ", "Piwi", "aho", "__ins", "Scriptaculous.Versio", "ZENDSERVERSESSI", "TNE", "gbWhProx", "Polymer.versio", "_bsaPR", "SoundManage", "__cfdui", "ci_csrf_toke", "Sentry.SDK_VERSIO", "__utm", "mivaJS.Store_Cod", "XF.GuestUsernam", "webtrek", "snoob", "dnn.apiversio", "LIVESTREET_SECURITY_KE", "F5_HT_shrinke", "copyrigh", "gwt", "pbj", "Nette.versio", "ucCatalo", "VivvoSessionI", "3dvisi", "webtrekkConfi", "Hammer.VERSIO", "Discours", "vl_c", "_ekmpinpoin", "_.templateSettings.imports._.templateSettings.imports._.VERSIO", "reddi", "og", "HotLeadfactor", "awesomplet", "M.cor", "CKEDITOR_BASEPAT", "algoliasearch.versio", "ac_bgclick_UR", "jir", "swell.versio", "ACPuzzl", "sc_projec", "INVENIOSESSIO", "$nux", "THREE.REVISIO", "Y.Moodl", "webpackJson", "F5_fullW", "__gwt_isKnownPropertyValu", "EPJS_menu_templat", "jenkinsRule", "Luigi", "MathJa", "SSsd", "SFDCAp", "RDStatio", "CraftSessionI", "Char", "adcopy-puzzle-image-imag", "phpcm", "Reveal.VERSIO", "adyen.encrypt.versio", "_mb_site_gui", "Stripe.versio", "SystemI", "__google_ad_url", "pp_description", "MochiKit.MochiKit.VERSIO", "__NEXT_DATA_", "$.fancybox.versio", "MooTools.versio", "pjax-pus", "shopte", "Telescop", "Bizwe", "shopf", "Exhibit.versio", "actionheroClien", "bblastvisi", "WebFont", "djang", "Phaser.VERSIO", "zano", "xChar", "ant", "dwAnalytic", "twemoj", "$.fn.gallery_valig", "robin_setting", "Mobif", "OAS_A", "gambi", "Sazit", "esyndica", "style", "pinoox_sessio", "grwng_ui", "sails.si", "oxCookieNot", "__gwt_stylesLoade", "app.forum.freshnes", "jQuery.migrateVersio", "Lifera", "riskifiedBeaconLoa", "ARK_I", "CONCRETE", "LITHIU", "TeaLea", "ado.placemen", "owa_baseUr", "bblastactivit", "bugsna", "uCo", "fyr", "mw.util.toggleTo", "Timeplo", "iam_dat", "AWSALBCOR", "deepMine", "_go_track_sr", "Ext.versions.extjs.versio", "Ionic.confi", "jqueryMigrat", "VarienFor", "MivaVM_Versio", "Raphael.versio", "Meteor.releas", "SFDCPag", "MOIN_SESSIO", "mej", "LS_JSO", "KOH"}
 
 type userAgent struct {
 	client  *uaparser.Client
@@ -118,6 +122,15 @@ type SSHHash struct {
 	Hash      string        `json:"hash"`
 	Softwares []SSHSoftware `json:"software"`
 }
+
+// type AppInfo struct {
+// 	headers map[string]interface{} `json:"headers"`
+// 	cookies map[string]interface{} `json:"cookies"`
+// }
+
+// type App struct {
+// 	name
+// }
 
 // process a raw user agent string and returned a structured instance
 func parseUserAgent(ua string) *userAgent {
@@ -190,7 +203,7 @@ func softwareHarvester(data []byte, ident string, ts time.Time, service string, 
 
 // tries to determine the kind of software and version
 // based on the provided input data
-func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string) (software []*Software) {
+func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string, CMSHeaders []HeaderForApps, CMSCookies []CookieForApps) (software []*Software) {
 
 	var (
 		service string
@@ -205,85 +218,6 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 	}
 	if dp.DeviceManufacturer != "" {
 		dpIdent += " <" + dp.DeviceManufacturer + ">"
-	}
-
-	// HTTP User Agents
-	// TODO: check for userAgents retrieved by Ja3 lookup as well
-	for _, ua := range strings.Split(userAgents, "| ") {
-		if len(ua) == 0 || ua == " " {
-			continue
-		}
-		pMu.Lock()
-		userInfo, ok := userAgentCaching[ua]
-		if !ok {
-			userInfo = parseUserAgent(ua)
-			userAgentCaching[ua] = userInfo
-			utils.DebugLog.Println("UserAgent:", userInfo.full)
-		}
-		pMu.Unlock()
-
-		s = append(s, &Software{
-			Software: &types.Software{
-				Timestamp:      i.timestamp,
-				Product:        userInfo.product,
-				Vendor:         userInfo.vendor,
-				Version:        userInfo.version,
-				DeviceProfiles: []string{dpIdent},
-				SourceName:     "UserAgent",
-				SourceData:     ua,
-				Service:        service,
-				DPIResults:     protos,
-				Flows:          []string{f},
-				Notes:          userInfo.full,
-			},
-		})
-	}
-
-	// HTTP Server Name
-	for _, sn := range strings.Split(serverNames, "| ") {
-		if len(sn) == 0 || sn == " " {
-			continue
-		}
-		pMu.Lock()
-		var values = regExpServerName.FindStringSubmatch(sn)
-		s = append(s, &Software{
-			Software: &types.Software{
-				Timestamp:      i.timestamp,
-				Product:        values[1], // Name of the server (Apache, Nginx, ...)
-				Vendor:         values[3], // Unfitting name, but operating system
-				Version:        values[2], // Version as found after the '/'
-				DeviceProfiles: []string{dpIdent},
-				SourceName:     "ServerName",
-				SourceData:     sn,
-				Service:        service,
-				DPIResults:     protos,
-				Flows:          []string{f},
-			},
-		})
-		pMu.Unlock()
-	}
-
-	// X-Powered-By HTTP Header
-	for _, pb := range strings.Split(xPoweredBy, "| ") {
-		if len(pb) == 0 || pb == " " {
-			continue
-		}
-		pMu.Lock()
-		var values = regexpXPoweredBy.FindStringSubmatch(pb)
-		s = append(s, &Software{
-			Software: &types.Software{
-				Timestamp:      i.timestamp,
-				Product:        values[1], // Name of the server (Apache, Nginx, ...)
-				Version:        values[2], // Version as found after the '/'
-				DeviceProfiles: []string{dpIdent},
-				SourceName:     "X-Powered-By",
-				SourceData:     pb,
-				Service:        service,
-				DPIResults:     protos,
-				Flows:          []string{f},
-			},
-		})
-		pMu.Unlock()
 	}
 
 	// Only do JA3 fingerprinting when both ja3 and ja3s are present, aka when the server Hello is captured
@@ -357,6 +291,136 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 	return s
 }
 
+func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst string, h *types.HTTP, CMSHeaders []HeaderForApps, CMSCookies []CookieForApps) (software []*Software) {
+
+	var (
+		service string
+		s       []*Software
+		//dpIdent = dp.MacAddr
+	)
+	if serviceNameSrc != "" {
+		service = serviceNameSrc
+	}
+	if serviceNameDst != "" {
+		service = serviceNameDst
+	}
+	// if dp.DeviceManufacturer != "" {
+	// 	dpIdent += " <" + dp.DeviceManufacturer + ">"
+	// }
+
+	// HTTP User Agents
+	// TODO: check for userAgents retrieved by Ja3 lookup as well
+	// TODO: Don't iterate
+	for _, ua := range strings.Split(h.UserAgent, "| ") {
+		if len(ua) == 0 || ua == " " {
+			continue
+		}
+		pMu.Lock()
+		userInfo, ok := userAgentCaching[ua]
+		if !ok {
+			userInfo = parseUserAgent(ua)
+			userAgentCaching[ua] = userInfo
+			utils.DebugLog.Println("UserAgent:", userInfo.full)
+		}
+		pMu.Unlock()
+
+		s = append(s, &Software{
+			Software: &types.Software{
+				Timestamp: h.Timestamp,
+				Product:   userInfo.product,
+				Vendor:    userInfo.vendor,
+				Version:   userInfo.version,
+				//DeviceProfiles: []string{dpIdent},
+				SourceName: "UserAgent",
+				SourceData: ua,
+				Service:    service,
+				Flows:      []string{f},
+				Notes:      userInfo.full,
+			},
+		})
+	}
+
+	// HTTP Server Name
+	for _, sn := range strings.Split(h.ServerName, "| ") {
+		if len(sn) == 0 || sn == " " {
+			continue
+		}
+		pMu.Lock()
+		var values = regExpServerName.FindStringSubmatch(sn)
+		s = append(s, &Software{
+			Software: &types.Software{
+				Timestamp: h.Timestamp,
+				Product:   values[1], // Name of the server (Apache, Nginx, ...)
+				Vendor:    values[3], // Unfitting name, but operating system
+				Version:   values[2], // Version as found after the '/'
+				//DeviceProfiles: []string{dpIdent},
+				SourceName: "ServerName",
+				SourceData: sn,
+				Service:    service,
+				Flows:      []string{f},
+			},
+		})
+		pMu.Unlock()
+	}
+
+	// X-Powered-By HTTP Header
+	for _, pb := range strings.Split(h.RequestHeader["X-Powered-By"], "| ") {
+		if len(pb) == 0 || pb == " " {
+			continue
+		}
+		pMu.Lock()
+		var values = regexpXPoweredBy.FindStringSubmatch(pb)
+		s = append(s, &Software{
+			Software: &types.Software{
+				Timestamp: h.Timestamp,
+				Product:   values[1], // Name of the server (Apache, Nginx, ...)
+				Version:   values[2], // Version as found after the '/'
+				//DeviceProfiles: []string{dpIdent},
+				SourceName: "X-Powered-By",
+				SourceData: pb,
+				Service:    service,
+				Flows:      []string{f},
+			},
+		})
+		pMu.Unlock()
+	}
+
+	// Try to detect apps
+	if receivedHeaders, ok := httpStore.CMSHeaders[h.DstIP]; ok {
+		for k, v := range cmsDB {
+			if headers, ok := v.(map[string]interface{})["headers"]; ok {
+				for key, val := range headers.(map[string]interface{}) {
+					for _, receivedHeader := range receivedHeaders {
+						re, err := regexp.Compile(val.(string))
+						if err != nil {
+							fmt.Println("Failed to compile:    " + val.(string))
+						} else {
+							if strings.ToLower(receivedHeader.HeaderName) == strings.ToLower(key) && (re.MatchString(receivedHeader.HeaderValue) || val == "") {
+								pMu.Lock()
+								s = append(s, &Software{
+									Software: &types.Software{
+										Timestamp:  h.Timestamp,
+										Product:    k,
+										Version:    "",
+										SourceName: key,
+										Service:    service,
+										Flows:      []string{f},
+									},
+								})
+								pMu.Unlock()
+							}
+						}
+
+					}
+				}
+			}
+		}
+	}
+
+	// Defining the variable here to avoid errors. This should be passed as a parameter and contain the hassh value
+	return s
+}
+
 // AnalyzeSoftware tries to identify software based on observations from the data
 // this function first gathers as much data as possible and then calls into whatSoftware
 // to determine what software the packet belongs to
@@ -372,6 +436,8 @@ func AnalyzeSoftware(i *packetInfo) {
 		f                              string
 		vias                           string
 		xPoweredBy                     string
+		cmsHeaders                     []HeaderForApps
+		cmsCookies                     []CookieForApps
 	)
 	if ja3Hash == "" {
 		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
@@ -430,6 +496,12 @@ func AnalyzeSoftware(i *packetInfo) {
 	if val, ok := httpStore.XPoweredBy[i.dstIP]; ok {
 		xPoweredBy = val
 	}
+	if val, ok := httpStore.CMSHeaders[i.dstIP]; ok {
+		cmsHeaders = val
+	}
+	if val, ok := httpStore.CMSCookies[i.dstIP]; ok {
+		cmsCookies = val
+	}
 	httpStore.Unlock()
 
 	// The underlying assumption is that we will always observe a client TLS Hello before seeing a server TLS Hello
@@ -456,7 +528,7 @@ func AnalyzeSoftware(i *packetInfo) {
 
 	// now that we have some information at hands
 	// try to determine what kind of software it is
-	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames, protos, vias, xPoweredBy)
+	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames, protos, vias, xPoweredBy, cmsHeaders, cmsCookies)
 	if len(software) == 0 {
 		return
 	}
@@ -541,6 +613,13 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	if err != nil {
 		return err
 	}
+
+	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/cmsdbTest.json")
+	if err != nil {
+		return err
+	}
+
+	json.Unmarshal([]byte(data), &cmsDB)
 
 	for _, entry := range hasshDB {
 		hasshMap[entry.Hash] = entry.Softwares // Holds redundant info, but couldn't figure a more elegant way to do this
