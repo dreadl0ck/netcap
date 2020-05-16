@@ -14,7 +14,8 @@
 package collector
 
 import (
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 	"sync/atomic"
 
 	"github.com/dreadl0ck/gopacket"
@@ -30,7 +31,7 @@ import (
 type AtomicPcapGoWriter struct {
 	count int64
 	w     pcapgo.Writer
-	sync.Mutex
+	deadlock.Mutex
 }
 
 // WritePacket writes a packet into the writer.

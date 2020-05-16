@@ -19,7 +19,8 @@ import (
 	"github.com/dreadl0ck/netcap/resolvers"
 	"strconv"
 	"strings"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
@@ -29,14 +30,14 @@ import (
 
 type Service struct {
 	*types.Service
-	sync.Mutex
+	deadlock.Mutex
 }
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicServiceMap struct {
 	// map Server IP + Port to Service
 	Items map[string]*Service
-	sync.Mutex
+	deadlock.Mutex
 }
 
 // Size returns the number of elements in the Items map

@@ -29,7 +29,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
 
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
@@ -40,14 +41,14 @@ import (
 
 type Software struct {
 	*types.Software
-	sync.Mutex
+	deadlock.Mutex
 }
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicSoftwareMap struct {
 	// mapped product + version to software
 	Items map[string]*Software
-	sync.Mutex
+	deadlock.Mutex
 }
 
 var (
@@ -55,7 +56,7 @@ var (
 	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
 	ja3Cache         = make(map[string]string)
-	jaCacheMutex     sync.Mutex
+	jaCacheMutex     deadlock.Mutex
 	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
 	hasshMap         = make(map[string][]SSHSoftware)
 )
@@ -74,7 +75,7 @@ var (
 	}
 
 	parser, errInitUAParser = uaparser.New("/usr/local/etc/netcap/dbs/regexes.yaml")
-	pMu                     sync.Mutex
+	pMu                     deadlock.Mutex
 
 	ja3db   Ja3CombinationsDB
 	hasshDB []SSHHash

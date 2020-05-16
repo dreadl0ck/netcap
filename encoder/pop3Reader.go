@@ -181,9 +181,9 @@ func (h *pop3Reader) Run(f *tcpConnectionFactory) {
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
 	defer h.Cleanup(f, s2c, c2s)
 
-	//h.parent.Lock()
-	//isClient := h.isClient
-	//h.parent.Lock()
+	h.parent.Lock()
+	isClient := h.isClient
+	h.parent.Unlock()
 
 	var (
 		err error
@@ -191,7 +191,7 @@ func (h *pop3Reader) Run(f *tcpConnectionFactory) {
 	)
 	for {
 		// handle parsing POP3 requests
-		if h.isClient {
+		if isClient {
 			err = h.readRequest(b, c2s)
 		} else {
 			// handle parsing POP3 responses

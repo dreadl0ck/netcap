@@ -28,6 +28,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.5.1
 	github.com/prometheus/procfs v0.0.11 // indirect
+	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/sirupsen/logrus v1.5.0
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe

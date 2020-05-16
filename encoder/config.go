@@ -16,7 +16,8 @@ package encoder
 import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/utils"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 	"time"
 
 	"github.com/dreadl0ck/netcap/reassembly"
@@ -24,7 +25,7 @@ import (
 
 var (
 	c   Config
-	cMu sync.Mutex
+	cMu deadlock.Mutex
 )
 
 const (

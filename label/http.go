@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"

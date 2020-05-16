@@ -19,12 +19,13 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"io"
 	"strings"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 )
 
 type CSVWriter struct {
 	w io.Writer
-	sync.Mutex
+	deadlock.Mutex
 }
 
 func NewCSVWriter(w io.Writer) *CSVWriter {

@@ -64,7 +64,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 	"sync/atomic"
 	"time"
 )
@@ -84,7 +85,7 @@ type HTTPMetaStore struct {
 	// mapped ip address to user agents
 	XPoweredBy map[string]string
 
-	sync.Mutex
+	deadlock.Mutex
 }
 
 var httpStore = &HTTPMetaStore{
@@ -332,14 +333,13 @@ func (h *httpReader) Run(f *tcpConnectionFactory) {
 		b   = bufio.NewReader(h)
 	)
 
-	// TODO: Locking here causes a deadlock?
-	//h.parent.Lock()
-	//isClient := h.isClient
-	//h.parent.Lock()
+	h.parent.Lock()
+	isClient := h.isClient
+	h.parent.Unlock()
 
 	for {
 		// handle parsing HTTP requests
-		if h.isClient {
+		if isClient {
 			err = h.readRequest(b, c2s)
 		} else {
 			// handle parsing HTTP responses
@@ -932,6 +932,8 @@ func (h *httpReader) Client() StreamReader {
 }
 
 func (h *httpReader) SetClient(v bool) {
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	h.isClient = v
 }
 

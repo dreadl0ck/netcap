@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 
+
 	"github.com/dreadl0ck/netcap"
 	pb "gopkg.in/cheggaaa/pb.v1"
 )

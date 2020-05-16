@@ -20,7 +20,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"
@@ -54,7 +55,7 @@ type Writer struct {
 	out          string
 	IsChanWriter bool
 
-	mu sync.Mutex
+	mu deadlock.Mutex
 }
 
 /*
