@@ -17,14 +17,15 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 	"time"
 )
 
 var (
 	timeout           = 10 * time.Second
 	dnsNamesDB        = make(map[string][]string)
-	dnsNamesMu        sync.Mutex
+	dnsNamesMu        deadlock.Mutex
 	privateIPBlocks   []*net.IPNet
 	disableReverseDNS = true
 )

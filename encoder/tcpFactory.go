@@ -20,7 +20,9 @@ import (
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"path/filepath"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"sync"
+
 	"time"
 )
 
@@ -43,7 +45,7 @@ type tcpConnectionFactory struct {
 	decodePOP3    bool
 	numActive     int64
 	streamReaders []StreamReader
-	sync.Mutex
+	deadlock.Mutex
 }
 
 // StreamReader is an interface used to describe a processed uni-directional stream

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/sshx"
@@ -191,7 +192,7 @@ func (h *sshReader) readStream(b *bufio.Reader) error {
 					fmt.Println(err)
 				}
 
-				//spew.Dump(init)
+				spew.Dump(init)
 				break
 			}
 		}

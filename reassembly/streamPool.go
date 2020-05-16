@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/gopacket/layers"
 	"log"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 	"time"
 )
 
@@ -31,7 +32,7 @@ import (
 type StreamPool struct {
 	conns              map[key]*connection
 	users              int
-	mu                 sync.Mutex
+	mu                 deadlock.Mutex
 	factory            StreamFactory
 	free               []*connection
 	all                [][]connection

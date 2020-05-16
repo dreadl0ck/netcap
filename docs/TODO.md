@@ -1,7 +1,9 @@
 # TODOs
 
-- update reassembly unit tests
+- parse HTTP and POP3 after reordering
+- add full stream SMTP parsing
 
+- update reassembly unit tests
 - service: add reverse DNS lookup
 - add filter flag to only include internal services?
 

@@ -20,6 +20,7 @@ import (
 	"log"
 	"path/filepath"
 	"sync"
+
 	"time"
 
 	"github.com/dreadl0ck/netcap/utils"

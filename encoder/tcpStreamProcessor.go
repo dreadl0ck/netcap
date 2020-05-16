@@ -15,6 +15,7 @@ package encoder
 import (
 	"fmt"
 	"runtime"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"sync"
 )
 
@@ -27,7 +28,7 @@ type tcpStreamProcessor struct {
 	wg         sync.WaitGroup
 	numDone    int
 	numTotal   int
-	sync.Mutex
+	deadlock.Mutex
 }
 
 // to process the streams in parallel

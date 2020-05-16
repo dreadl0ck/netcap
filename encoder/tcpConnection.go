@@ -52,7 +52,8 @@ import (
 	"os"
 	"runtime/pprof"
 	"strconv"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -71,13 +72,13 @@ var (
 	requests  = 0
 	responses = 0
 	// synchronizes access to stats
-	statsMutex sync.Mutex
+	statsMutex deadlock.Mutex
 
 	count          = 0
 	dataBytes      = int64(0)
 	start          = time.Now()
 	errorsMap      = make(map[string]uint)
-	errorsMapMutex sync.Mutex
+	errorsMapMutex deadlock.Mutex
 )
 
 var reassemblyStats struct {
@@ -148,7 +149,7 @@ type tcpConnection struct {
 
 	saved bool
 
-	sync.Mutex
+	deadlock.Mutex
 }
 
 // Accept decides whether the TCP packet should be accepted
@@ -364,13 +365,12 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 			if !(t.client.(StreamReader).Network() == flow) {
 
 				// flip
-				t.Lock()
-
-				t.ident = reverseIdent(t.ident)
-				//fmt.Println("flip! new", ansi.Red + t.ident + ansi.Reset)
-
 				t.client.(StreamReader).SetClient(false)
 				t.server.(StreamReader).SetClient(true)
+
+				t.Lock()
+				t.ident = reverseIdent(t.ident)
+				//fmt.Println("flip! new", ansi.Red + t.ident + ansi.Reset)
 
 				t.client, t.server = t.server, t.client
 
@@ -409,8 +409,6 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 		saveTCPServiceBanner(t.server.(StreamReader).ServiceBanner(), t.server.(StreamReader).Ident(), t.server.(StreamReader).FirstPacket(), t.server.(StreamReader).Network(), t.server.(StreamReader).Transport(), t.server.(StreamReader).NumBytes(), t.client.(StreamReader).NumBytes())
 	}
 
-	logReassemblyDebug("%s: Connection closed\n", t.ident)
-
 	// channels don't have to be closed.
 	// they will be garbage collected if no goroutines reference them any more
 	// we will attempt to close anyway to free up so some resources if possible
@@ -426,6 +424,8 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 		defer recovery()
 		close(t.server.DataChan())
 	}()
+
+	logReassemblyDebug("%s: Connection closed\n", t.ident)
 
 	// do not remove the connection to allow last ACK
 	return false

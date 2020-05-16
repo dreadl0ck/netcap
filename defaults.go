@@ -5,7 +5,7 @@ import "time"
 const (
 	DefaultBufferSize           = 1024 * 1024 // 1MB
 	DefaultFlushEvery           = 1000
-	DefaultPacketBuffer         = 10
+	DefaultPacketBuffer         = 0
 	DefaultSnapLen              = 1514
 	DefaultConnFlushInterval    = 10000
 	DefaultConnTimeOut          = 10 * time.Second

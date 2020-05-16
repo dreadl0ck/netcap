@@ -449,18 +449,25 @@ func (h *tcpReader) ConversationRaw() []byte {
 
 		// create the buffer with the entire conversation
 		for _, d := range h.merged {
-			//fmt.Println(h.ident, d.ac.GetCaptureInfo().Timestamp, d.ac.GetCaptureInfo().Length)
 
 			h.parent.conversationRaw.Write(d.raw)
 			if d.dir == reassembly.TCPDirClientToServer {
 				if c.Debug {
-					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n")
+					var ts string
+					if d.ac != nil {
+						ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
+					}
+					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + ts)
 				} else {
 					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
 				}
 			} else {
 				if c.Debug {
-					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n")
+					var ts string
+					if d.ac != nil {
+						ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
+					}
+					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + ts)
 				} else {
 					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
 				}

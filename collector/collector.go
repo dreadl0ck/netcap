@@ -26,12 +26,14 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
-	"sync"
+	deadlock "github.com/sasha-s/go-deadlock"
+
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/utils"
@@ -49,7 +51,7 @@ type Collector struct {
 	workers []chan *packet
 
 	// synchronization
-	statMutex sync.Mutex
+	statMutex deadlock.Mutex
 	wg        sync.WaitGroup
 	next      int
 	current   int64
@@ -86,7 +88,7 @@ type Collector struct {
 
 	isLive     bool
 	shutdown   bool
-	mu         sync.Mutex
+	mu         deadlock.Mutex
 	numWorkers int
 
 	assemblers []*reassembly.Assembler
