@@ -354,6 +354,63 @@ func (c *Collector) printProgress() {
 	}
 }
 
+// updates the progress indicator and writes to stdout periodically
+func (c *Collector) printProgressInterval() chan struct{} {
+
+	var stop = make(chan struct{})
+
+	go func() {
+		for {
+			select {
+			case <- stop:
+				return
+			case <- time.After(1 * time.Second):
+
+				// must be locked, otherwise a race occurs when sending a SIGINT
+				//  and triggering wg.Wait() in another goroutine...
+				c.statMutex.Lock()
+
+				// dont print message when collector is about to shutdown
+				if c.shutdown {
+					c.statMutex.Unlock()
+					return
+				}
+				c.statMutex.Unlock()
+
+				curr := atomic.LoadInt64(&c.current)
+				num := atomic.LoadInt64(&c.numPackets)
+
+				if !c.config.Quiet {
+					// using a strings.Builder for assembling string for performance
+					// TODO: could be refactored to use a byte slice with a fixed length instead
+					// TODO: add Builder to collector and flush it every cycle to reduce allocations
+					// also only print flows and collections when the corresponding encoders are active
+					var b strings.Builder
+					b.Grow(65)
+					b.WriteString("decoding packets... (")
+					b.WriteString(utils.Progress(curr, num))
+					b.WriteString(") flows: ")
+					b.WriteString(strconv.Itoa(encoder.Flows.Size()))
+					b.WriteString(" connections: ")
+					b.WriteString(strconv.Itoa(encoder.Connections.Size()))
+					b.WriteString(" profiles: ")
+					b.WriteString(strconv.Itoa(encoder.Profiles.Size()))
+					b.WriteString(" services: ")
+					b.WriteString(strconv.Itoa(encoder.ServiceStore.Size()))
+					b.WriteString(" packets: ")
+					b.WriteString(strconv.Itoa(int(curr)))
+
+					// print
+					clearLine()
+					os.Stdout.WriteString(b.String())
+				}
+			}
+		}
+	}()
+
+	return stop
+}
+
 // GetNumPackets returns the current number of processed packets
 func (c *Collector) GetNumPackets() int64 {
 	return atomic.LoadInt64(&c.current)

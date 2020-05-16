@@ -20,7 +20,12 @@ func (d DataSlice) Len() int {
 	return len(d)
 }
 func (d DataSlice) Less(i, j int) bool {
-	return d[i].ac.GetCaptureInfo().Timestamp.Before(d[j].ac.GetCaptureInfo().Timestamp)
+	data1 := d[i]
+	data2 := d[j]
+	if data1.ac == nil || data2.ac == nil {
+		return false
+	}
+	return data1.ac.GetCaptureInfo().Timestamp.Before(data2.ac.GetCaptureInfo().Timestamp)
 }
 func (d DataSlice) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
