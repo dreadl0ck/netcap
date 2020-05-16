@@ -346,7 +346,6 @@ func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst strin
 		if len(sn) == 0 || sn == " " {
 			continue
 		}
-		pMu.Lock()
 		var values = regExpServerName.FindStringSubmatch(sn)
 		s = append(s, &Software{
 			Software: &types.Software{
@@ -361,7 +360,6 @@ func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst strin
 				Flows:      []string{f},
 			},
 		})
-		pMu.Unlock()
 	}
 
 	// X-Powered-By HTTP Header
@@ -369,7 +367,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst strin
 		if len(pb) == 0 || pb == " " {
 			continue
 		}
-		pMu.Lock()
+
 		var values = regexpXPoweredBy.FindStringSubmatch(pb)
 		s = append(s, &Software{
 			Software: &types.Software{
@@ -383,35 +381,33 @@ func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst strin
 				Flows:      []string{f},
 			},
 		})
-		pMu.Unlock()
 	}
 
 	// Try to detect apps
 	if receivedHeaders, ok := httpStore.CMSHeaders[h.DstIP]; ok {
 		for k, v := range cmsDB {
-			if headers, ok := v.(map[string]interface{})["headers"]; ok {
-				for key, val := range headers.(map[string]interface{}) {
-					for _, receivedHeader := range receivedHeaders {
-						re, err := regexp.Compile(val.(string))
-						if err != nil {
-							fmt.Println("Failed to compile:    " + val.(string))
-						} else {
-							if strings.ToLower(receivedHeader.HeaderName) == strings.ToLower(key) && (re.MatchString(receivedHeader.HeaderValue) || val == "") {
-								pMu.Lock()
-								s = append(s, &Software{
-									Software: &types.Software{
-										Timestamp:  h.Timestamp,
-										Product:    k,
-										Version:    "",
-										SourceName: key,
-										Service:    service,
-										Flows:      []string{f},
-									},
-								})
-								pMu.Unlock()
+			if headers, ok := v.(map[string]interface{}); ok {
+				if hdrs, ok := headers["headers"]; ok {
+					for key, val := range hdrs.(map[string]interface{}) {
+						for _, receivedHeader := range receivedHeaders {
+							re, err := regexp.Compile(val.(string))
+							if err != nil {
+								fmt.Println("Failed to compile:    " + val.(string))
+							} else {
+								if strings.ToLower(receivedHeader.HeaderName) == strings.ToLower(key) && (re.MatchString(receivedHeader.HeaderValue) || val == "") {
+									s = append(s, &Software{
+										Software: &types.Software{
+											Timestamp:  h.Timestamp,
+											Product:    k,
+											Version:    "",
+											SourceName: key,
+											Service:    service,
+											Flows:      []string{f},
+										},
+									})
+								}
 							}
 						}
-
 					}
 				}
 			}
@@ -620,7 +616,10 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 		return err
 	}
 
-	json.Unmarshal([]byte(data), &cmsDB)
+	err = json.Unmarshal(data, &cmsDB)
+	if err != nil {
+		return err
+	}
 
 	for _, entry := range hasshDB {
 		hasshMap[entry.Hash] = entry.Softwares // Holds redundant info, but couldn't figure a more elegant way to do this
