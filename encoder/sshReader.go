@@ -18,15 +18,17 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
+	"sort"
+	"time"
+
 	"github.com/davecgh/go-spew/spew"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/sshx"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/mgutz/ansi"
-	"io"
-	"sort"
-	"time"
 )
 
 /*
@@ -53,7 +55,7 @@ type sshReader struct {
 func (h *sshReader) Read(p []byte) (int, error) {
 
 	var (
-		ok = true
+		ok   = true
 		data *Data
 	)
 
