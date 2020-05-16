@@ -41,6 +41,7 @@ var (
 		softwareEncoder,
 		serviceEncoder,
 		credentialsEncoder,
+		sshEncoder,
 	} // contains all available custom encoders
 )
 

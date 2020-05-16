@@ -325,6 +325,17 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 
 	data := sg.Fetch(length)
 
+	// dont process stream if protocol is disabled
+	if t.isSSH && !streamFactory.decodeSSH {
+		return
+	}
+	if t.isHTTP && !streamFactory.decodeHTTP {
+		return
+	}
+	if t.isPOP3 && !streamFactory.decodePOP3 {
+		return
+	}
+
 	// do not process encrypted HTTP streams for now
 	if t.isHTTPS {
 		return

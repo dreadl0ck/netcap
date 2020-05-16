@@ -140,6 +140,7 @@ enum Type {
     NC_Software                    = 95;
     NC_Service                     = 96;
     NC_Credentials                 = 97;
+    NC_SSH                         = 98;
 }
 
 /*
@@ -1892,4 +1893,13 @@ message Credentials {
     string User      = 4;
     string Password  = 5;
     string Notes     = 6;
+}
+
+message SSH {
+    string Timestamp  = 1;
+    string HASSH      = 2;
+    string Flow       = 3;
+    string Notes      = 4;
+    string Ident      = 5;
+    string Algorithms = 6;
 }

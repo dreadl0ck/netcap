@@ -351,7 +351,7 @@ func writeHTTP(h *types.HTTP, ident string) {
 
 	httpStore.Unlock()
 
-	// TODO
+	// TODO: fixme
 	// get source port and convert to integer
 	// src, err := strconv.Atoi(tl.TransportFlow().Src().String())
 	// if err == nil {
@@ -396,6 +396,7 @@ func writeHTTP(h *types.HTTP, ident string) {
 	SoftwareStore.Lock()
 	for _, s := range software {
 		if _, ok := SoftwareStore.Items[s.Product+"/"+s.Version]; ok {
+			// TODO: fixme
 			//updateSoftwareAuditRecord(dp, p, i)
 		} else {
 			SoftwareStore.Items[s.Product+"/"+s.Version] = s

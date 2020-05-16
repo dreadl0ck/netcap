@@ -267,9 +267,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		}
 	}
 
-	// if nothing was found with all above attempts, try to throw the generic version number harvester at it
-	// and see if this delivers anything interesting
-
+	// SSH Fingerprinting
 	var hassh string = "00d352967f27037847ef46466c07c06b"
 	if len(hassh) > 0 {
 		if fingerprint, ok := hasshMap[hassh]; ok {
@@ -284,6 +282,8 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 		}
 	}
 
+	// if nothing was found with all above attempts, try to throw the generic version number harvester at it
+	// and see if this delivers anything interesting
 	if len(s) == 0 {
 		return softwareHarvester(i.p.Data(), dpIdent, i.p.Metadata().CaptureInfo.Timestamp, service, dpIdent, protos)
 	}
