@@ -18,14 +18,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/sshx"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 	"io"
 	"sort"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/mgutz/ansi"
 )
 
 /*
@@ -52,7 +52,7 @@ type sshReader struct {
 func (h *sshReader) Read(p []byte) (int, error) {
 
 	var (
-		ok = true
+		ok   = true
 		data *Data
 	)
 
@@ -185,8 +185,8 @@ func (h *sshReader) readStream(b *bufio.Reader) error {
 				//fmt.Println("padding", padding, "length", length)
 				//fmt.Println(hex.Dump(data[i:i+length-padding-1]))
 
-				var init sshx.KexInitMsg
-				err = sshx.Unmarshal(data[i:i+length-padding-1], &init)
+				//var init sshx.KexInitMsg
+				//err = sshx.Unmarshal(data[i:i+length-padding-1], &init)
 				if err != nil {
 					fmt.Println(err)
 				}
