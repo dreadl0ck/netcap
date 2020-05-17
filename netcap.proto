@@ -1877,7 +1877,7 @@ message Service {
     string   Name                         = 4;
     bytes    Banner                       = 5;
     string   Protocol                     = 6;
-    string   Flow                         = 7;
+    repeated string   Flows               = 7;
     string   Product                      = 8;
     string   Vendor                       = 9;
     string   Version                      = 10;

@@ -20,6 +20,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/utils"
 	"io"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -195,6 +196,12 @@ func (h *tcpStreamReader) MarkSaved() {
 	h.parent.Lock()
 	defer h.parent.Unlock()
 	h.saved = true
+}
+
+func (h *tcpStreamReader) ServiceIdent() string {
+	h.parent.Lock()
+	defer h.parent.Unlock()
+	return filepath.Clean(fmt.Sprintf("%s->%s", h.parent.server.Network().Dst(), h.parent.server.Transport().Dst()))
 }
 
 func (h *tcpStreamReader) ServiceBanner() []byte {

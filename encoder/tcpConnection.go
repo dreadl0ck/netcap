@@ -414,7 +414,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 		t.server.MarkSaved()
 
 		// server
-		saveTCPServiceBanner(t.server.ServiceBanner(), t.server.Ident(), t.server.FirstPacket(), t.server.Network(), t.server.Transport(), t.server.NumBytes(), t.client.NumBytes())
+		saveTCPServiceBanner(t.server)
 	}
 
 	// channels don't have to be closed.

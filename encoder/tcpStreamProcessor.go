@@ -86,7 +86,7 @@ func (c *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader 
 					}
 				} else {
 					// save the service banner
-					saveTCPServiceBanner(s.ServiceBanner(), s.Ident(), s.FirstPacket(), s.Network(), s.Transport(), s.NumBytes(), s.Client().NumBytes())
+					saveTCPServiceBanner(s)
 				}
 			}
 
