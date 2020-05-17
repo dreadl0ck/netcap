@@ -22,8 +22,6 @@ import (
 	"path/filepath"
 	deadlock "github.com/sasha-s/go-deadlock"
 	"sync"
-
-	"time"
 )
 
 var (
@@ -49,27 +47,6 @@ type tcpConnectionFactory struct {
 	deadlock.Mutex
 }
 
-// StreamReader is an interface used to describe a processed uni-directional stream
-// it is used to close the remaining open streams and process the remaining data
-// when the engine is stopped
-type StreamReader interface {
-	ClientStream() []byte
-	ServerStream() []byte
-	ConversationRaw() []byte
-	ConversationColored() []byte
-	IsClient() bool
-	SetClient(bool)
-	Ident() string
-	Network() gopacket.Flow
-	Transport() gopacket.Flow
-	FirstPacket() time.Time
-	Saved() bool
-	NumBytes() int
-	Client() StreamReader
-	ServiceBanner() []byte
-	MarkSaved()
-}
-
 // New handles a new stream received from the assembler
 // this is the entry point for new network streams
 // depending on the used ports, a dedicated stream reader instance will be started and subsequently fed with new data from the stream
@@ -77,6 +54,7 @@ type StreamReader interface {
 func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
+	//fmt.Printf("* NEW: %s %s\n", net, transport)
 
 	stream := &tcpConnection{
 		net:         net,
@@ -120,19 +98,11 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
 		}
 
-		stream.client = &httpReader{
-			dataChan:    make(chan *Data, c.StreamDecoderBufSize),
-			ident:    clientIdent,
-			hexdump:  c.HexDump,
-			parent:   stream,
-			isClient: true,
+		stream.decoder = &httpReader{
+			parent: stream,
 		}
-		stream.server = &httpReader{
-			dataChan:    make(chan *Data, c.StreamDecoderBufSize),
-			ident:   serverIdent,
-			hexdump: c.HexDump,
-			parent:  stream,
-		}
+		stream.client = newTCPStreamReader(stream, clientIdent, true)
+		stream.server = newTCPStreamReader(stream, serverIdent, false)
 
 	case stream.isSSH:
 
@@ -142,19 +112,11 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
 		}
 
-		stream.client = &sshReader{
-			dataChan:    make(chan *Data, c.StreamDecoderBufSize),
-			ident:    clientIdent,
-			hexdump:  c.HexDump,
+		stream.decoder = &sshReader{
 			parent:   stream,
-			isClient: true,
 		}
-		stream.server = &sshReader{
-			dataChan:    make(chan *Data, c.StreamDecoderBufSize),
-			ident:   serverIdent,
-			hexdump: c.HexDump,
-			parent:  stream,
-		}
+		stream.client = newTCPStreamReader(stream, clientIdent, true)
+		stream.server = newTCPStreamReader(stream, serverIdent, false)
 
 	case stream.isPOP3:
 
@@ -164,41 +126,26 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
 		}
 
-		stream.client = &pop3Reader{
-			dataChan:     make(chan *Data, c.StreamDecoderBufSize),
-			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
-			hexdump:  c.HexDump,
+		stream.decoder = &pop3Reader{
 			parent:   stream,
-			isClient: true,
 		}
-		stream.server = &pop3Reader{
-			dataChan:     make(chan *Data, c.StreamDecoderBufSize),
-			ident:   filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
-			hexdump: c.HexDump,
-			parent:  stream,
-		}
+		stream.client = newTCPStreamReader(stream, clientIdent, true)
+		stream.server = newTCPStreamReader(stream, serverIdent, false)
 
 	default: // process unknown TCP stream
-		stream.client = &tcpReader{
-			dataChan: make(chan *Data, c.StreamDecoderBufSize),
-			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
-			hexdump:  c.HexDump,
-			parent:   stream,
-			isClient: true,
-		}
-		stream.server = &tcpReader{
-			dataChan: make(chan *Data, c.StreamDecoderBufSize),
-			ident:    filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse())),
-			hexdump:  c.HexDump,
+		stream.decoder = &tcpReader{
 			parent:   stream,
 		}
+		stream.client = newTCPStreamReader(stream, clientIdent, true)
+		stream.server = newTCPStreamReader(stream, serverIdent, false)
 	}
 
-	// kickoff readers for client and server
+	// kickoff reader
 	factory.wg.Add(2)
+
 	factory.Lock()
-	factory.streamReaders = append(factory.streamReaders, stream.client.(StreamReader))
-	factory.streamReaders = append(factory.streamReaders, stream.server.(StreamReader))
+	factory.streamReaders = append(factory.streamReaders, stream.client)
+	factory.streamReaders = append(factory.streamReaders, stream.client)
 	factory.numActive += 2
 	factory.Unlock()
 	go stream.client.Run(factory)

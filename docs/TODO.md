@@ -1,6 +1,5 @@
 # TODOs
 
-- parse HTTP and POP3 after reordering
 - add full stream SMTP parsing
 
 - update reassembly unit tests

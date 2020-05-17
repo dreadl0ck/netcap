@@ -565,7 +565,7 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	// Prepend saved bytes
 	saved := a.addPending(half, a.ret[0].getSeq())
 
-	// TODO: make configurable? appending continuous bytes will obscure the conversation flow...
+	// TODO: make configurable? appending continuous bytes will obscure the conversation flow when using multiple assemblers concurrently...
 	// Append continuous bytes
 	//nextSeq := a.addContiguous(half, last)
 
