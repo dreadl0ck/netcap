@@ -21,7 +21,6 @@ import (
 	"strings"
 	deadlock "github.com/sasha-s/go-deadlock"
 
-	"time"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
@@ -71,36 +70,46 @@ func addInfo(old string, new string) string {
 
 // saves the banner for a TCP service to the filesystem
 // and limits the length of the saved data to the BannerSize value from the config
-func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, net, transport gopacket.Flow, numBytesServer int, numBytesClient int) {
+func saveTCPServiceBanner(s StreamReader) {
+
+	banner := s.ServiceBanner()
 
 	// limit length of data
 	if len(banner) >= c.BannerSize {
 		banner = banner[:c.BannerSize]
 	}
 
+	ident := s.Ident()
+
 	// check if we already have a banner for the IP + Port combination
 	ServiceStore.Lock()
-	if _, ok := ServiceStore.Items[ident]; ok {
-		ServiceStore.Unlock()
+	if serv, ok := ServiceStore.Items[s.ServiceIdent()]; ok {
+		defer ServiceStore.Unlock()
 
-		// banner exists. nothing to do
+		for _, f := range serv.Flows {
+			if f == ident {
+				return
+			}
+		}
+
+		serv.Flows = append(serv.Flows, ident)
 		return
 	}
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	s := NewService(firstPacket.String(), numBytesServer, numBytesClient)
-	s.Banner = banner
-	s.IP = net.Dst().String()
-	s.Port = transport.Dst().String()
+	serv := NewService(s.FirstPacket().String(), s.NumBytes(), s.Client().NumBytes())
+	serv.Banner = banner
+	serv.IP = s.Network().Dst().String()
+	serv.Port = s.Transport().Dst().String()
 
 	// set flow ident, h.parent.ident is the client flow
-	s.Flow = ident
+	serv.Flows = []string{s.Ident()}
 
-	dst, err := strconv.Atoi(transport.Dst().String())
+	dst, err := strconv.Atoi(s.Transport().Dst().String())
 	if err == nil {
-		s.Protocol = "TCP"
-		s.Name = resolvers.LookupServiceByPort(dst, "tcp")
+		serv.Protocol = "TCP"
+		serv.Name = resolvers.LookupServiceByPort(dst, "tcp")
 	}
 
 	// match banner against nmap service probes
@@ -108,66 +117,66 @@ func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, ne
 		if c.UseRE2 {
 			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
-				s.Product = addInfo(s.Product, serviceProbe.Ident)
-				s.Vendor = addInfo(s.Vendor, serviceProbe.Vendor)
-				s.Version = addInfo(s.Version, serviceProbe.Version)
+				serv.Product = addInfo(serv.Product, serviceProbe.Ident)
+				serv.Vendor = addInfo(serv.Vendor, serviceProbe.Vendor)
+				serv.Version = addInfo(serv.Version, serviceProbe.Version)
 
 				if strings.Contains(serviceProbe.Version, "$1") {
 					if len(m) > 1 {
-						s.Version = addInfo(s.Version, strings.Replace(serviceProbe.Version, "$1", m[1], 1))
+						serv.Version = addInfo(serv.Version, strings.Replace(serviceProbe.Version, "$1", m[1], 1))
 					}
 				}
 
 				if strings.Contains(serviceProbe.Hostname, "$1") {
 					if len(m) > 1 {
-						s.Notes = addInfo(s.Notes, strings.Replace(serviceProbe.Hostname, "$1", m[1], 1))
+						serv.Notes = addInfo(serv.Notes, strings.Replace(serviceProbe.Hostname, "$1", m[1], 1))
 					}
 				}
 
 				// TODO: make a group extraction util and expand all groups in all strings properly
 				if strings.Contains(serviceProbe.Info, "$1") {
 					if len(m) > 1 {
-						s.Product = addInfo(s.Product, strings.Replace(serviceProbe.Info, "$1", m[1], 1))
+						serv.Product = addInfo(serv.Product, strings.Replace(serviceProbe.Info, "$1", m[1], 1))
 					}
 				}
-				if strings.Contains(s.Product, "$2") {
+				if strings.Contains(serv.Product, "$2") {
 					if len(m) > 2 {
-						s.Product = addInfo(s.Product, strings.Replace(serviceProbe.Info, "$2", m[2], 1))
+						serv.Product = addInfo(serv.Product, strings.Replace(serviceProbe.Info, "$2", m[2], 1))
 					}
 				}
 
 				if c.Debug {
-					fmt.Println("\n\nMATCH!", ident)
+					fmt.Println("\n\nMATCH!", s.Ident())
 					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
 				}
 			}
 		} else {
 			if m, err := serviceProbe.RegEx2.FindStringMatch(string(banner)); err == nil && m != nil {
 
-				s.Product = addInfo(s.Product, serviceProbe.Ident)
-				s.Vendor = addInfo(s.Vendor, serviceProbe.Vendor)
-				s.Version = addInfo(s.Version, serviceProbe.Version)
+				serv.Product = addInfo(serv.Product, serviceProbe.Ident)
+				serv.Vendor = addInfo(serv.Vendor, serviceProbe.Vendor)
+				serv.Version = addInfo(serv.Version, serviceProbe.Version)
 
 				if strings.Contains(serviceProbe.Version, "$1") {
 					if len(m.Groups()) > 1 {
-						s.Version = addInfo(s.Version, strings.Replace(serviceProbe.Version, "$1", m.Groups()[1].Captures[0].String(), 1))
+						serv.Version = addInfo(serv.Version, strings.Replace(serviceProbe.Version, "$1", m.Groups()[1].Captures[0].String(), 1))
 					}
 				}
 
 				// TODO: make a group extraction util
 				if strings.Contains(serviceProbe.Info, "$1") {
 					if len(m.Groups()) > 1 {
-						s.Product = addInfo(s.Product, strings.Replace(serviceProbe.Info, "$1", m.Groups()[1].Captures[0].String(), 1))
+						serv.Product = addInfo(serv.Product, strings.Replace(serviceProbe.Info, "$1", m.Groups()[1].Captures[0].String(), 1))
 					}
 				}
-				if strings.Contains(s.Product, "$2") {
+				if strings.Contains(serv.Product, "$2") {
 					if len(m.Groups()) > 2 {
-						s.Product = addInfo(s.Product, strings.Replace(serviceProbe.Info, "$2", m.Groups()[2].Captures[0].String(), 1))
+						serv.Product = addInfo(serv.Product, strings.Replace(serviceProbe.Info, "$2", m.Groups()[2].Captures[0].String(), 1))
 					}
 				}
 
 				if c.Debug {
-					fmt.Println("\nMATCH!", ident)
+					fmt.Println("\nMATCH!", s.Ident())
 					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
 				}
 			}
@@ -176,7 +185,7 @@ func saveTCPServiceBanner(banner []byte, ident string, firstPacket time.Time, ne
 
 	// add new service
 	ServiceStore.Lock()
-	ServiceStore.Items[ident] = s
+	ServiceStore.Items[s.ServiceIdent()] = serv
 	ServiceStore.Unlock()
 
 	statsMutex.Lock()

@@ -32,6 +32,7 @@ type StreamReader interface {
 	Client() StreamReader
 	ServiceBanner() []byte
 	MarkSaved()
+	ServiceIdent() string
 }
 
 // StreamDecoder is the interface for processing a bi-directional network connection
