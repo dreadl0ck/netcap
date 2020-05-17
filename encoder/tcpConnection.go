@@ -48,9 +48,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/mgutz/ansi"
 	"log"
 	"os"
 	"runtime/pprof"
+	"sort"
 	"strconv"
 	deadlock "github.com/sasha-s/go-deadlock"
 
@@ -61,7 +63,6 @@ import (
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
 )
@@ -130,24 +131,19 @@ type tcpConnection struct {
 
 	ident string
 
-	client ConnectionReader
-	server ConnectionReader
+	decoder StreamDecoder
+	client StreamReader
+	server StreamReader
 
 	firstPacket time.Time
-
-	requests  []*httpRequest
-	responses []*httpResponse
-
-	pop3Requests  []*types.POP3Request
-	pop3Responses []*types.POP3Response
-
-	// if set, indicates that either client or server http reader was closed already
-	last bool
 
 	conversationRaw     bytes.Buffer
 	conversationColored bytes.Buffer
 
-	saved bool
+	// if set, indicates that either client or server stream reader was closed already
+	last bool
+
+	merged   StreamDataSlice
 
 	deadlock.Mutex
 }
@@ -257,53 +253,53 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 
 	// pass data either to client or server
 	if dir == reassembly.TCPDirClientToServer {
-		t.client.DataChan() <- &Data{
+		t.client.DataChan() <- &StreamData{
 			raw: dataCpy,
 			ac:  ac,
 			dir: dir,
 		}
 	} else {
-		t.server.DataChan() <- &Data{
+		t.server.DataChan() <- &StreamData{
 			raw: dataCpy,
 			ac:  ac,
 			dir: dir,
 		}
 	}
 }
-
-func (t *tcpConnection) feedDataTimeout(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
-
-	// Copy the data before passing it to the handler
-	// Because the passed in buffer can be reused as soon as the ReassembledSG function returned
-	dataCpy := make([]byte, len(data))
-	l := copy(dataCpy, data)
-
-	if l != len(data) {
-		log.Fatal("l != len(data): ", l, " != ", len(data), " ident:", t.ident)
-	}
-
-	if dir == reassembly.TCPDirClientToServer {
-		select {
-		case t.client.DataChan() <- &Data{
-			raw: dataCpy,
-			ac:  ac,
-			dir: dir,
-		}:
-		case <-time.After(100 * time.Millisecond):
-			//fmt.Println(t.ident, "timeout")
-		}
-	} else {
-		select {
-		case t.server.DataChan() <- &Data{
-			raw: dataCpy,
-			ac:  ac,
-			dir: dir,
-		}:
-		case <-time.After(100 * time.Millisecond):
-			//fmt.Println(t.ident, "timeout")
-		}
-	}
-}
+//
+//func (t *tcpConnection) feedDataTimeout(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
+//
+//	// Copy the data before passing it to the handler
+//	// Because the passed in buffer can be reused as soon as the ReassembledSG function returned
+//	dataCpy := make([]byte, len(data))
+//	l := copy(dataCpy, data)
+//
+//	if l != len(data) {
+//		log.Fatal("l != len(data): ", l, " != ", len(data), " ident:", t.ident)
+//	}
+//
+//	if dir == reassembly.TCPDirClientToServer {
+//		select {
+//		case t.client.DataChan() <- &StreamData{
+//			raw: dataCpy,
+//			ac:  ac,
+//			dir: dir,
+//		}:
+//		case <-time.After(100 * time.Millisecond):
+//			//fmt.Println(t.ident, "timeout")
+//		}
+//	} else {
+//		select {
+//		case t.server.DataChan() <- &StreamData{
+//			raw: dataCpy,
+//			ac:  ac,
+//			dir: dir,
+//		}:
+//		case <-time.After(100 * time.Millisecond):
+//			//fmt.Println(t.ident, "timeout")
+//		}
+//	}
+//}
 
 // ReassembledSG is called zero or more times and delivers the data for a stream
 // The ScatterGather buffer is reused after each Reassembled call
@@ -373,17 +369,18 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 
 		if t.client != nil && t.server != nil {
 			// check if flow is identical or needs to be flipped
-			if !(t.client.(StreamReader).Network() == flow) {
+			if !(t.client.Network() == flow) {
 
 				// flip
-				t.client.(StreamReader).SetClient(false)
-				t.server.(StreamReader).SetClient(true)
+				t.client.SetClient(false)
+				t.server.SetClient(true)
 
 				t.Lock()
 				t.ident = reverseIdent(t.ident)
 				//fmt.Println("flip! new", ansi.Red + t.ident + ansi.Reset)
 
 				t.client, t.server = t.server, t.client
+				t.transport, t.net = t.transport.Reverse(), t.net.Reverse()
 
 				// fix directions for all data fragments
 				for _, d := range t.client.DataSlice() {
@@ -403,10 +400,10 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 	// save data for the current stream
 	if t.client != nil {
 
-		t.client.(StreamReader).MarkSaved()
+		t.client.MarkSaved()
 
 		// client
-		err := saveConnection(t.client.(StreamReader).ConversationRaw(), t.client.(StreamReader).ConversationColored(), t.client.(StreamReader).Ident(), t.client.(StreamReader).FirstPacket(), t.client.(StreamReader).Transport())
+		err := saveConnection(t.ConversationRaw(), t.ConversationColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
 		if err != nil {
 			fmt.Println("failed to save stream", err)
 		}
@@ -414,10 +411,10 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 
 	if t.server != nil {
 
-		t.client.(StreamReader).MarkSaved()
+		t.server.MarkSaved()
 
 		// server
-		saveTCPServiceBanner(t.server.(StreamReader).ServiceBanner(), t.server.(StreamReader).Ident(), t.server.(StreamReader).FirstPacket(), t.server.(StreamReader).Network(), t.server.(StreamReader).Transport(), t.server.(StreamReader).NumBytes(), t.client.(StreamReader).NumBytes())
+		saveTCPServiceBanner(t.server.ServiceBanner(), t.server.Ident(), t.server.FirstPacket(), t.server.Network(), t.server.Transport(), t.server.NumBytes(), t.client.NumBytes())
 	}
 
 	// channels don't have to be closed.
@@ -436,7 +433,21 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 		close(t.server.DataChan())
 	}()
 
-	logReassemblyDebug("%s: Connection closed\n", t.ident)
+	if t.decoder != nil {
+
+		// create streams
+		var (
+			// client to server
+			c2s = Stream{t.net, t.transport}
+			// server to client
+			s2c = Stream{t.net.Reverse(), t.transport.Reverse()}
+		)
+
+		// call the associated decoder
+		t.decoder.Decode(s2c, c2s)
+	}
+
+	logReassemblyDebug("%s: Stream closed\n", t.ident)
 
 	// do not remove the connection to allow last ACK
 	return false
@@ -681,4 +692,57 @@ func waitForConns() chan struct{} {
 	}()
 
 	return out
+}
+
+func (h *tcpConnection) ConversationRaw() []byte {
+
+	h.Lock()
+	defer h.Unlock()
+
+	// do this only once, this method will be called once for each side of a connection
+	if len(h.conversationRaw.Bytes()) == 0 {
+
+		// concatenate both client and server data fragments
+		h.merged = append(h.client.DataSlice(), h.server.DataSlice()...)
+
+		// sort based on their timestamps
+		sort.Sort(h.merged)
+
+		// create the buffer with the entire conversation
+		for _, d := range h.merged {
+
+			//fmt.Println(h.ident, d.ac.GetCaptureInfo().Timestamp, d.ac.GetCaptureInfo().Length)
+
+			h.conversationRaw.Write(d.raw)
+			if d.dir == reassembly.TCPDirClientToServer {
+				if c.Debug {
+					var ts string
+					if d.ac != nil {
+						ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
+					}
+					h.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + ts)
+				} else {
+					h.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
+				}
+			} else {
+				if c.Debug {
+					var ts string
+					if d.ac != nil {
+						ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
+					}
+					h.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + ts)
+				} else {
+					h.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
+				}
+			}
+		}
+	}
+
+	return h.conversationRaw.Bytes()
+}
+
+func (h *tcpConnection) ConversationColored() []byte {
+	h.Lock()
+	defer h.Unlock()
+	return h.conversationColored.Bytes()
 }

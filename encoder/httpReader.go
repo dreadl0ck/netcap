@@ -49,27 +49,24 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
+
 	"strconv"
 	"strings"
 
 	deadlock "github.com/sasha-s/go-deadlock"
 
 	"sync/atomic"
-	"time"
 
 	"github.com/dreadl0ck/cryptoutils"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 )
 
 // CMSHeaders is the list of identifying headers for CMSs, frontend frameworks, ...
@@ -112,6 +109,8 @@ type HTTPMetaStore struct {
 	deadlock.Mutex
 }
 
+// global store for selected http meta information
+// TODO: add a util to dump
 var httpStore = &HTTPMetaStore{
 	ServerNames: make(map[string]string),
 	UserAgents:  make(map[string]string),
@@ -140,145 +139,132 @@ type httpResponse struct {
 }
 
 type httpReader struct {
-	ident              string
-	isClient           bool
-	dataChan           chan *Data
-	data               []*Data
-	merged             DataSlice
-	hexdump            bool
-	parent             *tcpConnection
-	saved              bool
-	serviceBanner      bytes.Buffer
-	serviceBannerBytes int
-	numBytes           int
+	parent    *tcpConnection
+	requests  []*httpRequest
+	responses []*httpResponse
 }
 
-func (h *httpReader) Read(p []byte) (int, error) {
+func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 
+	// parse conversation
 	var (
-		ok   = true
-		data *Data
+		buf bytes.Buffer
+		previousDir reassembly.TCPFlowDirection
 	)
-
-	data, ok = <-h.dataChan
-	if data == nil || !ok {
-		return 0, io.EOF
+	if len(h.parent.merged) > 0 {
+		previousDir = h.parent.merged[0].dir
 	}
 
-	// copy received data into the passed in buffer
-	l := copy(p, data.raw)
+	for _, d := range h.parent.merged {
 
-	h.parent.Lock()
-	h.data = append(h.data, data)
-	h.numBytes += l
-	h.parent.Unlock()
+		if d.dir == previousDir {
+			//fmt.Println(d.dir, "collect", len(d.raw), d.ac.GetCaptureInfo().Timestamp)
+			buf.Write(d.raw)
+		} else {
+			var err error
 
-	return l, nil
-}
+			//fmt.Println(hex.Dump(buf.Bytes()))
 
-func (h *httpReader) DataChan() chan *Data {
-	return h.dataChan
-}
-
-func (h *httpReader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
-
-	// determine if one side of the stream has already been closed
-	h.parent.Lock()
-	if !h.parent.last {
-
-		// signal wait group
-		f.wg.Done()
-		f.Lock()
-		f.numActive--
-		f.Unlock()
-
-		// indicate close on the parent tcpConnection
-		h.parent.last = true
-
-		// free lock
-		h.parent.Unlock()
-
-		return
-	}
-	h.parent.Unlock()
-
-	// cleanup() is called twice - once for each direction of the stream
-	// this check ensures the audit record collection is executed only if one side has been closed already
-	// to ensure all necessary requests and responses are present
-	if h.parent.last {
-
-		for _, res := range h.parent.responses {
-
-			// populate types.HTTP with all infos from response
-			ht := newHTTPFromResponse(res.response)
-
-			_ = h.findRequest(res.response, s2c)
-
-			atomic.AddInt64(&httpEncoder.numResponses, 1)
-
-			// now add request information
-			if res.response.Request != nil {
-				atomic.AddInt64(&httpEncoder.numRequests, 1)
-				setRequest(ht, &httpRequest{
-					request:   res.response.Request,
-					timestamp: res.timestamp,
-					clientIP:  res.clientIP,
-					serverIP:  res.serverIP,
-				})
-
-				if u, p, ok := res.response.Request.BasicAuth(); ok {
-					if u != "" || p != "" {
-						writeCredentials(&types.Credentials{
-							Timestamp: h.parent.firstPacket.String(),
-							Service:   "HTTP Basic Auth",
-							Flow:      h.parent.ident,
-							User:      u,
-							Password:  p,
-						})
-					}
+			b := bufio.NewReader(&buf)
+			if previousDir == reassembly.TCPDirClientToServer {
+				for err != io.EOF && err != io.ErrUnexpectedEOF {
+					err = h.readRequest(b, c2s)
 				}
 			} else {
-				// response without matching request
-				// dont add to output for now
-				atomic.AddInt64(&httpEncoder.numUnmatchedResp, 1)
-				continue
-			}
-
-			writeHTTP(ht, h.ident)
-		}
-
-		for _, req := range h.parent.requests {
-			if req != nil {
-				ht := &types.HTTP{}
-				setRequest(ht, req)
-
-				atomic.AddInt64(&httpEncoder.numRequests, 1)
-				atomic.AddInt64(&httpEncoder.numUnansweredRequests, 1)
-
-				if u, p, ok := req.request.BasicAuth(); ok {
-					if u != "" || p != "" {
-						writeCredentials(&types.Credentials{
-							Timestamp: h.parent.firstPacket.String(),
-							Service:   "HTTP Basic Auth",
-							Flow:      h.parent.ident,
-							User:      u,
-							Password:  p,
-						})
-					}
+				for err != io.EOF && err != io.ErrUnexpectedEOF {
+					err = h.readResponse(b, s2c)
 				}
-
-				writeHTTP(ht, h.ident)
-			} else {
-				atomic.AddInt64(&httpEncoder.numNilRequests, 1)
 			}
+			//if err != nil {
+			//	fmt.Println(err)
+			//}
+			buf.Reset()
+			previousDir = d.dir
+
+			buf.Write(d.raw)
+			continue
 		}
 	}
+	var err error
+	b := bufio.NewReader(&buf)
+	if previousDir == reassembly.TCPDirClientToServer {
+		for err != io.EOF && err != io.ErrUnexpectedEOF {
+			err = h.readRequest(b, c2s)
+		}
+	} else {
+		for err != io.EOF && err != io.ErrUnexpectedEOF {
+			err = h.readResponse(b, s2c)
+		}
+	}
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
 
-	// signal wait group
-	f.wg.Done()
-	f.Lock()
-	f.numActive--
-	f.Unlock()
+	for _, res := range h.responses {
+
+		// populate types.HTTP with all infos from response
+		ht := newHTTPFromResponse(res.response)
+
+		_ = h.findRequest(res.response, s2c)
+
+		atomic.AddInt64(&httpEncoder.numResponses, 1)
+
+		// now add request information
+		if res.response.Request != nil {
+			atomic.AddInt64(&httpEncoder.numRequests, 1)
+			setRequest(ht, &httpRequest{
+				request:   res.response.Request,
+				timestamp: res.timestamp,
+				clientIP:  res.clientIP,
+				serverIP:  res.serverIP,
+			})
+
+			if u, p, ok := res.response.Request.BasicAuth(); ok {
+				if u != "" || p != "" {
+					writeCredentials(&types.Credentials{
+						Timestamp: h.parent.firstPacket.String(),
+						Service:   "HTTP Basic Auth",
+						Flow:      h.parent.ident,
+						User:      u,
+						Password:  p,
+					})
+				}
+			}
+		} else {
+			// response without matching request
+			// dont add to output for now
+			atomic.AddInt64(&httpEncoder.numUnmatchedResp, 1)
+			continue
+		}
+
+		writeHTTP(ht, h.parent.ident)
+	}
+
+	for _, req := range h.requests {
+		if req != nil {
+			ht := &types.HTTP{}
+			setRequest(ht, req)
+
+			atomic.AddInt64(&httpEncoder.numRequests, 1)
+			atomic.AddInt64(&httpEncoder.numUnansweredRequests, 1)
+
+			if u, p, ok := req.request.BasicAuth(); ok {
+				if u != "" || p != "" {
+					writeCredentials(&types.Credentials{
+						Timestamp: h.parent.firstPacket.String(),
+						Service:   "HTTP Basic Auth",
+						Flow:      h.parent.ident,
+						User:      u,
+						Password:  p,
+					})
+				}
+			}
+
+			writeHTTP(ht, h.parent.ident)
+		} else {
+			atomic.AddInt64(&httpEncoder.numNilRequests, 1)
+		}
+	}
 }
 
 func writeHTTP(h *types.HTTP, ident string) {
@@ -332,7 +318,7 @@ func writeHTTP(h *types.HTTP, ident string) {
 		}
 	}
 
-	// If HTTP intructions are sent to set a cookie used by CMSs (of other apps), add the key and possible value to the httpStore
+	// If HTTP instructions are sent to set a cookie used by CMSs (of other apps), add the key and possible value to the httpStore
 	if toSet, ok := h.ResponseHeader["Set-Cookie"]; ok {
 		parsedCookie := strings.Split(toSet, "=")
 		cookieKey := parsedCookie[0]
@@ -409,78 +395,32 @@ func writeHTTP(h *types.HTTP, ident string) {
 
 }
 
-// run starts decoding HTTP traffic in a single direction
-func (h *httpReader) Run(f *tcpConnectionFactory) {
-
-	// create streams
-	var (
-		// client to server
-		c2s = Connection{h.parent.net, h.parent.transport}
-		// server to client
-		s2c = Connection{h.parent.net.Reverse(), h.parent.transport.Reverse()}
-	)
-
-	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.Cleanup(f, s2c, c2s)
-
-	var (
-		err error
-		b   = bufio.NewReader(h)
-	)
-
-	h.parent.Lock()
-	isClient := h.isClient
-	h.parent.Unlock()
-
-	for {
-		// handle parsing HTTP requests
-		if isClient {
-			err = h.readRequest(b, c2s)
-		} else {
-			// handle parsing HTTP responses
-			err = h.readResponse(b, s2c)
-		}
-		if err != nil {
-
-			// exit on EOF
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				return
-			}
-
-			utils.ReassemblyLog.Println("HTTP stream encountered an error", c2s, err)
-
-			// continue processing the stream
-			continue
-		}
-	}
-}
-
 // HTTP Response
 
-func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
+func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 
 	// try to read HTTP response from the buffered reader
 	res, err := http.ReadResponse(b, nil)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logReassemblyError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
 		return err
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	s := len(body)
 	if err != nil {
-		logReassemblyError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
+		logReassemblyError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.parent.ident, s, err)
 	} else {
 		res.Body.Close()
 
 		// Restore body so it can be read again
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
-	if h.hexdump {
-		logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
-	}
+	//if h.parent.hexdump {
+	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+	//}
 
 	sym := ","
 	if res.ContentLength > 0 && res.ContentLength != int64(s) {
@@ -494,7 +434,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	}
 
 	encoding := res.Header["Content-Encoding"]
-	logReassemblyInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
+	logReassemblyInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.parent.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 
 	// increment counter
 	statsMutex.Lock()
@@ -502,7 +442,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	statsMutex.Unlock()
 
 	h.parent.Lock()
-	h.parent.responses = append(h.parent.responses, &httpResponse{
+	h.responses = append(h.responses, &httpResponse{
 		response:  res,
 		timestamp: h.parent.firstPacket.String(),
 		clientIP:  h.parent.net.Src().String(),
@@ -519,8 +459,8 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 			host         string
 			source       = "HTTP RESPONSE"
 			ctype        string
-			numResponses = len(h.parent.responses)
-			numRequests  = len(h.parent.requests)
+			numResponses = len(h.responses)
+			numRequests  = len(h.requests)
 		)
 		h.parent.Unlock()
 
@@ -529,7 +469,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 
 			// fetch it
 			h.parent.Lock()
-			req := h.parent.requests[numResponses-1]
+			req := h.requests[numResponses-1]
 			h.parent.Unlock()
 			if req != nil {
 				name = path.Base(req.request.URL.Path)
@@ -546,7 +486,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Connection) error {
 	return nil
 }
 
-func (h *httpReader) findRequest(res *http.Response, s2c Connection) string {
+func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 
 	// try to find the matching HTTP request for the response
 	var (
@@ -555,9 +495,9 @@ func (h *httpReader) findRequest(res *http.Response, s2c Connection) string {
 	)
 
 	h.parent.Lock()
-	if len(h.parent.requests) != 0 {
+	if len(h.requests) != 0 {
 		// take the request from the parent stream and delete it from there
-		req, h.parent.requests = h.parent.requests[0].request, h.parent.requests[1:]
+		req, h.requests = h.requests[0].request, h.requests[1:]
 		reqURL = req.URL.String()
 	}
 	h.parent.Unlock()
@@ -763,7 +703,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		ext = fileExtensionForContentType(ctype)
 
 		// file basename
-		base = filepath.Clean(name+"-"+path.Base(h.ident)) + ext
+		base = filepath.Clean(name+"-"+path.Base(h.parent.ident)) + ext
 	)
 	if err != nil {
 		base = "incomplete-" + base
@@ -794,9 +734,9 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		}
 
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+h.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+h.parent.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		} else {
-			target = path.Join(root, filepath.Clean(name+"-"+h.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean(name+"-"+h.parent.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		}
 
 		n++
@@ -828,9 +768,9 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		}
 		f.Close()
 		if err != nil {
-			logReassemblyError("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
+			logReassemblyError("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, err)
 		} else {
-			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
+			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, w)
 		}
 	}
 
@@ -841,7 +781,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		Length:              int64(len(body)),
 		Hash:                hex.EncodeToString(cryptoutils.MD5Data(body)),
 		Location:            target,
-		Ident:               h.ident,
+		Ident:               h.parent.ident,
 		Source:              source,
 		ContentTypeDetected: ctype,
 		ContentType:         contentType,
@@ -858,12 +798,12 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 
 // HTTP Request
 
-func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
+func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	req, err := http.ReadRequest(b)
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logReassemblyError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
 		return err
 	}
 
@@ -878,11 +818,11 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 		// Restore body so it can be read again
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
-	if h.hexdump {
-		logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
-	}
+	//if h.tcpStreamReader.hexdump {
+	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+	//}
 
-	logReassemblyInfo("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
+	logReassemblyInfo("HTTP/%s Request: %s %s (body:%d)\n", h.parent.ident, req.Method, req.URL, s)
 
 	h.parent.Lock()
 	t := utils.TimeToString(h.parent.firstPacket)
@@ -904,7 +844,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	statsMutex.Unlock()
 
 	h.parent.Lock()
-	h.parent.requests = append(h.parent.requests, request)
+	h.requests = append(h.requests, request)
 	h.parent.Unlock()
 
 	if req.Method == "POST" {
@@ -923,138 +863,4 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Connection) error {
 	}
 
 	return nil
-}
-
-func (h *httpReader) DataSlice() DataSlice {
-	return h.data
-}
-
-func (h *httpReader) ClientStream() []byte {
-	return nil
-}
-
-func (h *httpReader) ServerStream() []byte {
-	var buf bytes.Buffer
-
-	h.parent.Lock()
-	defer h.parent.Unlock()
-
-	// save server stream for banner identification
-	// stores c.BannerSize number of bytes of the server side stream
-	for _, d := range h.parent.server.DataSlice() {
-		for _, b := range d.raw {
-			buf.WriteByte(b)
-		}
-	}
-
-	return buf.Bytes()
-}
-
-func (h *httpReader) ConversationRaw() []byte {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-
-	// do this only once, this method will be called once for each side of a connection
-	if len(h.merged) == 0 {
-
-		// concatenate both client and server data fragments
-		h.merged = append(h.parent.client.DataSlice(), h.parent.server.DataSlice()...)
-
-		// sort based on their timestamps
-		sort.Sort(h.merged)
-
-		// create the buffer with the entire conversation
-		for _, d := range h.merged {
-
-			//fmt.Println(h.ident, d.ac.GetCaptureInfo().Timestamp, d.ac.GetCaptureInfo().Length)
-
-			h.parent.conversationRaw.Write(d.raw)
-			if d.dir == reassembly.TCPDirClientToServer {
-				if c.Debug {
-					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n")
-				} else {
-					h.parent.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
-				}
-			} else {
-				if c.Debug {
-					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n")
-				} else {
-					h.parent.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
-				}
-			}
-		}
-	}
-
-	return h.parent.conversationRaw.Bytes()
-}
-
-func (h *httpReader) ConversationColored() []byte {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return h.parent.conversationColored.Bytes()
-}
-
-func (h *httpReader) IsClient() bool {
-	return h.isClient
-}
-
-func (h *httpReader) Ident() string {
-	return h.parent.ident
-}
-func (h *httpReader) Network() gopacket.Flow {
-	return h.parent.net
-}
-func (h *httpReader) Transport() gopacket.Flow {
-	return h.parent.transport
-}
-func (h *httpReader) FirstPacket() time.Time {
-	return h.parent.firstPacket
-}
-func (h *httpReader) Saved() bool {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return h.saved
-}
-
-func (h *httpReader) NumBytes() int {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return h.numBytes
-}
-
-func (h *httpReader) Client() StreamReader {
-	return h.parent.client.(StreamReader)
-}
-
-func (h *httpReader) SetClient(v bool) {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	h.isClient = v
-}
-
-func (h *httpReader) MarkSaved() {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	h.saved = true
-}
-
-func (h *httpReader) ServiceBanner() []byte {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-
-	if h.serviceBanner.Len() == 0 {
-		// save server stream for banner identification
-		// stores c.BannerSize number of bytes of the server side stream
-		for _, d := range h.parent.server.DataSlice() {
-			for _, b := range d.raw {
-				h.serviceBanner.WriteByte(b)
-				h.serviceBannerBytes++
-				if h.serviceBannerBytes == c.BannerSize {
-					break
-				}
-			}
-		}
-	}
-
-	return h.serviceBanner.Bytes()
 }

@@ -1,15 +1,15 @@
 /*
- * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
+* NETCAP - Traffic Analysis Framework
+* Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+*
+* THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+* WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+* ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+* WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+* ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+* OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
 
 package encoder
 
@@ -17,7 +17,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
-	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 	"io"
@@ -26,7 +25,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -42,174 +40,115 @@ import (
 )
 
 /*
- * POP3 part
+* POP3 part
  */
 
 var pop3Debug = false
 
 type pop3Reader struct {
-	ident    string
-	isClient bool
-	dataChan chan *Data
-	data     []*Data
-	merged   DataSlice
-	hexdump  bool
-	parent   *tcpConnection
+	parent *tcpConnection
 
-	reqIndex int
-	resIndex int
+	pop3Requests  []*types.POP3Request
+	pop3Responses []*types.POP3Response
+	reqIndex      int
+	resIndex      int
 
 	user, pass, token string
-
-	saved              bool
-	serviceBanner      bytes.Buffer
-	serviceBannerBytes int
-
-	numBytes int
 }
 
-func (h *pop3Reader) Read(p []byte) (int, error) {
+func (h *pop3Reader) Decode(c2s, s2c Stream) {
 
 	var (
-		ok = true
-		data *Data
+		buf bytes.Buffer
+		previousDir reassembly.TCPFlowDirection
 	)
-
-	data, ok = <-h.dataChan
-	if data == nil || !ok {
-		return 0, io.EOF
+	if len(h.parent.merged) > 0 {
+		previousDir = h.parent.merged[0].dir
 	}
 
-	// copy received data into the passed in buffer
-	l := copy(p, data.raw)
+	// parse conversation
+	for _, d := range h.parent.merged {
 
-	h.parent.Lock()
-	h.data = append(h.data, data)
-	h.numBytes += l
-	h.parent.Unlock()
-
-	return l, nil
-}
-
-func (h *pop3Reader) DataChan() chan *Data {
-	return h.dataChan
-}
-
-func (h *pop3Reader) Cleanup(f *tcpConnectionFactory, s2c Connection, c2s Connection) {
-
-	// fmt.Println("POP3 cleanup", h.ident)
-
-	// determine if one side of the stream has already been closed
-	h.parent.Lock()
-	if !h.parent.last {
-
-		// signal wait group
-		f.wg.Done()
-		f.Lock()
-		f.numActive--
-		f.Unlock()
-
-		// indicate close on the parent tcpConnection
-		h.parent.last = true
-
-		// free lock
-		h.parent.Unlock()
-
-		return
-	}
-	h.parent.Unlock()
-
-	// cleanup() is called twice - once for each direction of the stream
-	// this check ensures the audit record collection is executed only if one side has been closed already
-	// to ensure all necessary requests and responses are present
-	if h.parent.last {
-		mails, user, pass, token := h.parseMails()
-		pop3Msg := &types.POP3{
-			Timestamp: h.parent.firstPacket.String(),
-			ClientIP:  h.parent.net.Src().String(),
-			ServerIP:  h.parent.net.Dst().String(),
-			AuthToken: token,
-			User:      user,
-			Pass:      pass,
-			Mails:     mails,
-		}
-
-		if user != "" || pass != "" {
-			writeCredentials(&types.Credentials{
-				Timestamp: h.parent.firstPacket.String(),
-				Service:   "POP3",
-				Flow:      h.parent.ident,
-				User:      user,
-				Password:  pass,
-			})
-		}
-
-		// export metrics if configured
-		if pop3Encoder.export {
-			pop3Msg.Inc()
-		}
-
-		// write record to disk
-		atomic.AddInt64(&pop3Encoder.numRecords, 1)
-		err := pop3Encoder.writer.Write(pop3Msg)
-		if err != nil {
-			errorMap.Inc(err.Error())
-		}
-
-		// inserts a newline to increase readability
-		mailDebug()
-	}
-
-	// signal wait group
-	f.wg.Done()
-	f.Lock()
-	f.numActive--
-	f.Unlock()
-}
-
-// run starts decoding POP3 traffic in a single direction
-func (h *pop3Reader) Run(f *tcpConnectionFactory) {
-
-	// create streams
-	var (
-		// client to server
-		c2s = Connection{h.parent.net, h.parent.transport}
-		// server to client
-		s2c = Connection{h.parent.net.Reverse(), h.parent.transport.Reverse()}
-	)
-
-	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.Cleanup(f, s2c, c2s)
-
-	h.parent.Lock()
-	isClient := h.isClient
-	h.parent.Unlock()
-
-	var (
-		err error
-		b   = bufio.NewReader(h)
-	)
-	for {
-		// handle parsing POP3 requests
-		if isClient {
-			err = h.readRequest(b, c2s)
+		if d.dir == previousDir {
+			//fmt.Println(d.dir, "collect", len(d.raw), d.ac.GetCaptureInfo().Timestamp)
+			buf.Write(d.raw)
 		} else {
-			// handle parsing POP3 responses
-			err = h.readResponse(b, s2c)
-		}
-		if err != nil {
+			var err error
 
-			// exit on EOF
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				return
+			//fmt.Println(hex.Dump(buf.Bytes()))
+
+			b := bufio.NewReader(&buf)
+			if previousDir == reassembly.TCPDirClientToServer {
+				for err != io.EOF && err != io.ErrUnexpectedEOF {
+					err = h.readRequest(b, c2s)
+				}
+			} else {
+				for err != io.EOF && err != io.ErrUnexpectedEOF {
+					err = h.readResponse(b, s2c)
+				}
 			}
+			//if err != nil {
+			//	fmt.Println(err)
+			//}
+			buf.Reset()
+			previousDir = d.dir
 
-			utils.ReassemblyLog.Println("POP3 stream encountered an error", c2s, err)
-
-			// continue processing the stream
+			buf.Write(d.raw)
 			continue
 		}
 	}
+	var err error
+	b := bufio.NewReader(&buf)
+	if previousDir == reassembly.TCPDirClientToServer {
+		for err != io.EOF && err != io.ErrUnexpectedEOF {
+			err = h.readRequest(b, c2s)
+		}
+	} else {
+		for err != io.EOF && err != io.ErrUnexpectedEOF {
+			err = h.readResponse(b, s2c)
+		}
+	}
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+
+	//fmt.Println("POP3", h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
+
+	mails, user, pass, token := h.parseMails()
+	pop3Msg := &types.POP3{
+		Timestamp: h.parent.firstPacket.String(),
+		ClientIP:  h.parent.net.Src().String(),
+		ServerIP:  h.parent.net.Dst().String(),
+		AuthToken: token,
+		User:      user,
+		Pass:      pass,
+		Mails:     mails,
+	}
+
+	if user != "" || pass != "" {
+		writeCredentials(&types.Credentials{
+			Timestamp: h.parent.firstPacket.String(),
+			Service:   "POP3",
+			Flow:      h.parent.ident,
+			User:      user,
+			Password:  pass,
+		})
+	}
+
+	// export metrics if configured
+	if pop3Encoder.export {
+		pop3Msg.Inc()
+	}
+
+	// write record to disk
+	atomic.AddInt64(&pop3Encoder.numRecords, 1)
+	err = pop3Encoder.writer.Write(pop3Msg)
+	if err != nil {
+		errorMap.Inc(err.Error())
+	}
+
+	// inserts a newline to increase readability
+	mailDebug()
 }
 
 // TODO: use saveFile to extract attachments
@@ -237,7 +176,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		ext = fileExtensionForContentType(ctype)
 
 		// file basename
-		base = filepath.Clean(name+"-"+path.Base(h.ident)) + ext
+		base = filepath.Clean(name+"-"+path.Base(h.parent.ident)) + ext
 	)
 	if err != nil {
 		base = "incomplete-" + base
@@ -268,9 +207,9 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		}
 
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+h.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+h.parent.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		} else {
-			target = path.Join(root, filepath.Clean(name+"-"+h.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean(name+"-"+h.parent.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		}
 
 		n++
@@ -302,9 +241,9 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		}
 		f.Close()
 		if err != nil {
-			logReassemblyError("POP3-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
+			logReassemblyError("POP3-save", "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, err)
 		} else {
-			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.ident, target, w)
+			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, w)
 		}
 	}
 
@@ -315,7 +254,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		Length:      int64(len(body)),
 		Hash:        hex.EncodeToString(cryptoutils.MD5Data(body)),
 		Location:    target,
-		Ident:       h.ident,
+		Ident:       h.parent.ident,
 		Source:      source,
 		ContentType: ctype,
 		Context: &types.PacketContext{
@@ -335,7 +274,7 @@ func mailDebug(args ...interface{}) {
 	}
 }
 
-func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Connection) error {
+func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
 
 	tp := textproto.NewReader(b)
 
@@ -344,16 +283,16 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Connection) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		utils.DebugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.ident, err, err, err)
+		utils.DebugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
 		return err
 	}
 
-	mailDebug(ansi.Red, h.ident, "readRequest", line, ansi.Reset)
+	mailDebug(ansi.Red, h.parent.ident, "readRequest", line, ansi.Reset)
 
 	cmd, args := getCommand(line)
 
 	h.parent.Lock()
-	h.parent.pop3Requests = append(h.parent.pop3Requests, &types.POP3Request{
+	h.pop3Requests = append(h.pop3Requests, &types.POP3Request{
 		Command:  cmd,
 		Argument: strings.Join(args, " "),
 	})
@@ -366,7 +305,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Connection) error {
 	return nil
 }
 
-func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Connection) error {
+func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Stream) error {
 
 	tp := textproto.NewReader(b)
 
@@ -375,17 +314,17 @@ func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Connection) error {
 	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		return err
 	} else if err != nil {
-		logReassemblyError("POP3-response", "POP3/%s Response error: %s (%v,%+v)\n", h.ident, err, err, err)
+		logReassemblyError("POP3-response", "POP3/%s Response error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
 		return err
 	}
 
-	mailDebug(ansi.Blue, h.ident, "readResponse", line, ansi.Reset)
+	mailDebug(ansi.Blue, h.parent.ident, "readResponse", line, ansi.Reset)
 
 	cmd, args := getCommand(line)
 
 	if validPop3ServerCommand(cmd) {
 		h.parent.Lock()
-		h.parent.pop3Responses = append(h.parent.pop3Responses, &types.POP3Response{
+		h.pop3Responses = append(h.pop3Responses, &types.POP3Response{
 			Command: cmd,
 			Message: strings.Join(args, " "),
 		})
@@ -395,7 +334,7 @@ func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Connection) error {
 			line = "\n"
 		}
 		h.parent.Lock()
-		h.parent.pop3Responses = append(h.parent.pop3Responses, &types.POP3Response{
+		h.pop3Responses = append(h.pop3Responses, &types.POP3Response{
 			Message: line,
 		})
 		h.parent.Unlock()
@@ -453,12 +392,12 @@ const (
 
 func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string) {
 
-	if len(h.parent.pop3Responses) == 0 || len(h.parent.pop3Requests) == 0 {
+	if len(h.pop3Responses) == 0 || len(h.pop3Requests) == 0 {
 		return
 	}
 
 	// check if server hello
-	serverHello := h.parent.pop3Responses[0]
+	serverHello := h.pop3Responses[0]
 	if serverHello.Command != "+OK" {
 		return
 	}
@@ -470,13 +409,13 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 		state    POP3State = StateNotAuthenticated
 		numMails int
 		next     = func() *types.POP3Request {
-			return h.parent.pop3Requests[h.reqIndex]
+			return h.pop3Requests[h.reqIndex]
 		}
 		mailBuf string
 	)
 
 	for {
-		if h.reqIndex == len(h.parent.pop3Requests) {
+		if h.reqIndex == len(h.pop3Requests) {
 			return
 		}
 		r := next()
@@ -492,13 +431,13 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 			case "LIST", "UIDL":
 				var n int
 				// ensure safe array access
-				if len(h.parent.pop3Responses) < h.resIndex {
+				if len(h.pop3Responses) < h.resIndex {
 					time.Sleep(100 * time.Millisecond) // not there yet? wait a little and retry
-					if len(h.parent.pop3Responses) < h.resIndex {
+					if len(h.pop3Responses) < h.resIndex {
 						continue
 					}
 				}
-				for _, reply := range h.parent.pop3Responses[h.resIndex:] {
+				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == "." {
 						numMails++
 						h.resIndex++
@@ -511,13 +450,13 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 			case "RETR":
 				var n int
 				// ensure safe array access
-				if len(h.parent.pop3Responses) < h.resIndex {
+				if len(h.pop3Responses) < h.resIndex {
 					time.Sleep(100 * time.Millisecond) // not there yet? wait a little and retry
-					if len(h.parent.pop3Responses) < h.resIndex {
+					if len(h.pop3Responses) < h.resIndex {
 						continue
 					}
 				}
-				for _, reply := range h.parent.pop3Responses[h.resIndex:] {
+				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == "." {
 						mails = append(mails, h.parseMail([]byte(mailBuf)))
 						mailBuf = ""
@@ -536,10 +475,10 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 		case StateNotAuthenticated:
 			switch r.Command {
 			case "USER":
-				if len(h.parent.pop3Responses) <= h.resIndex+1 {
+				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
-				reply := h.parent.pop3Responses[h.resIndex+1]
+				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
 					user = r.Argument
 				}
@@ -547,7 +486,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				continue
 			case "CAPA":
 				var n int
-				for _, reply := range h.parent.pop3Responses[h.resIndex:] {
+				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == "." {
 						numMails++
 						h.resIndex++
@@ -558,24 +497,26 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				h.resIndex = h.resIndex + n
 				continue
 			case "AUTH":
-				if len(h.parent.pop3Responses) <= h.resIndex+1 {
+				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
-				reply := h.parent.pop3Responses[h.resIndex+1]
+				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
 					state = StateAuthenticated
-					r := h.parent.pop3Requests[h.reqIndex]
-					if r != nil {
-						token = r.Command
+					if len(h.pop3Requests) < h.reqIndex {
+						r := h.pop3Requests[h.reqIndex]
+						if r != nil {
+							token = r.Command
+						}
 					}
 				}
 				h.resIndex++
 				continue
 			case "PASS":
-				if len(h.parent.pop3Responses) <= h.resIndex+1 {
+				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
-				reply := h.parent.pop3Responses[h.resIndex+1]
+				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
 					state = StateAuthenticated
 					pass = r.Argument
@@ -583,10 +524,10 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				h.resIndex++
 				continue
 			case "APOP": // example: APOP mrose c4c9334bac560ecc979e58001b3e22fb
-				if len(h.parent.pop3Responses) <= h.resIndex+1 {
+				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
-				reply := h.parent.pop3Responses[h.resIndex+1]
+				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
 					state = StateAuthenticated
 					parts := strings.Split(r.Argument, " ")
@@ -638,7 +579,7 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 
 		// should be an uppercase char if header field
 		// multi line values start with a whitespace
-		if unicode.IsUpper(rune(parts[0][0])) {
+		if len(parts[0]) > 0 && unicode.IsUpper(rune(parts[0][0])) {
 			if parts[0] == "Envelope-To" {
 				collectBody = true
 			}
@@ -652,6 +593,9 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 }
 
 func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
+
+	mailDebug(ansi.Yellow, "parseMail", h.parent.ident, ansi.Reset)
+
 	header, body := splitMailHeaderAndBody(buf)
 	mail := &types.Mail{
 		ReturnPath:      header["Return-Path"],
@@ -690,7 +634,7 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 		tr           = textproto.NewReader(bufio.NewReader(bytes.NewReader([]byte(body))))
 	)
 
-	mailDebug(ansi.White, h.ident, body)
+	mailDebug(ansi.White, h.parent.ident, body)
 
 	for {
 		line, err := tr.ReadLine()
@@ -703,7 +647,7 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 			}
 		}
 
-		mailDebug(ansi.Green, h.ident, "readLine", line)
+		mailDebug(ansi.Green, h.parent.ident, "readLine", line)
 
 		if currentPart != nil {
 			if parsePayload {
@@ -810,131 +754,6 @@ func copyMailPart(part *types.MailPart) *types.MailPart {
 		Content:  part.Content,
 		Filename: part.Filename,
 	}
-}
-
-func (h *pop3Reader) ClientStream() []byte {
-	return nil
-}
-
-func (h *pop3Reader) ServerStream() []byte {
-	var buf bytes.Buffer
-
-	h.parent.Lock()
-	defer h.parent.Unlock()
-
-	// save server stream for banner identification
-	// stores c.BannerSize number of bytes of the server side stream
-	for _, d := range h.parent.server.DataSlice() {
-		for _, b := range d.raw {
-			buf.WriteByte(b)
-		}
-	}
-
-	return buf.Bytes()
-}
-
-func (h *pop3Reader)  ConversationRaw() []byte {
-
-	h.parent.Lock()
-	defer h.parent.Unlock()
-
-	// do this only once, this method will be called once for each side of a connection
-	if len(h.merged) == 0 {
-
-		// concatenate both client and server data fragments
-		h.merged = append(h.parent.client.DataSlice(), h.parent.server.DataSlice()...)
-
-		// sort based on their timestamps
-		sort.Sort(h.merged)
-
-		// create the buffer with the entire conversation
-		for _, c := range h.merged {
-			//fmt.Println(h.ident, c.ac.GetCaptureInfo().Timestamp, c.ac.GetCaptureInfo().Length)
-
-			h.parent.conversationRaw.Write(c.raw)
-			if c.dir == reassembly.TCPDirClientToServer {
-				h.parent.conversationColored.WriteString(ansi.Red + string(c.raw) + ansi.Reset)
-			} else {
-				h.parent.conversationColored.WriteString(ansi.Blue + string(c.raw) + ansi.Reset)
-			}
-		}
-	}
-
-	return h.parent.conversationRaw.Bytes()
-}
-
-func (h *pop3Reader) DataSlice() DataSlice {
-	return h.data
-}
-
-func (h *pop3Reader) ConversationColored() []byte {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return h.parent.conversationColored.Bytes()
-}
-
-func (h *pop3Reader) IsClient() bool {
-	return h.isClient
-}
-
-func (h *pop3Reader) Ident() string {
-	return h.parent.ident
-}
-func (h *pop3Reader) Network() gopacket.Flow {
-	return h.parent.net
-}
-func (h *pop3Reader) Transport() gopacket.Flow {
-	return h.parent.transport
-}
-func (h *pop3Reader) FirstPacket() time.Time {
-	return h.parent.firstPacket
-}
-
-func (h *pop3Reader) Saved() bool {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return h.saved
-}
-
-func (h *pop3Reader) NumBytes() int {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return h.numBytes
-}
-
-func (h *pop3Reader) Client() StreamReader {
-	return h.parent.client.(StreamReader)
-}
-
-func (h *pop3Reader) SetClient(v bool) {
-	h.isClient = v
-}
-
-func (h *pop3Reader) MarkSaved() {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	h.saved = true
-}
-
-func (h *pop3Reader) ServiceBanner() []byte {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-
-	if h.serviceBanner.Len() == 0 {
-		// save server stream for banner identification
-		// stores c.BannerSize number of bytes of the server side stream
-		for _, d := range h.parent.server.DataSlice() {
-			for _, b := range d.raw {
-				h.serviceBanner.WriteByte(b)
-				h.serviceBannerBytes++
-				if h.serviceBannerBytes == c.BannerSize {
-					break
-				}
-			}
-		}
-	}
-
-	return h.serviceBanner.Bytes()
 }
 
 // TODO: write unit test for this
