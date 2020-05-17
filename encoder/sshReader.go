@@ -19,32 +19,71 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/sshx"
 	"github.com/dreadl0ck/netcap/types"
 	"strings"
 )
 
 /*
-* TCP
-*/
+ * SSH - The Secure Shell Protocol
+ */
 
 type sshReader struct {
 	parent   *tcpConnection
+	clientIdent string
+	serverIdent string
+	clientKexInit *sshx.KexInitMsg
+	serverKexInit *sshx.KexInitMsg
 }
 
 func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 
-	r := bufio.NewReader(bytes.NewReader(h.parent.ConversationRaw()))
+	// parse conversation
+	var (
+		buf bytes.Buffer
+		previousDir reassembly.TCPFlowDirection
+	)
+	if len(h.parent.merged) > 0 {
+		previousDir = h.parent.merged[0].dir
+	}
+
+	for _, d := range h.parent.merged {
+
+		if d.dir == previousDir {
+			buf.Write(d.raw)
+		} else {
+			h.searchKexInit(bufio.NewReader(&buf))
+
+			buf.Reset()
+
+			previousDir = d.dir
+			buf.Write(d.raw)
+			continue
+		}
+	}
+	h.searchKexInit(bufio.NewReader(&buf))
+}
+
+func (h *sshReader) searchKexInit(r *bufio.Reader) {
+
+	if h.serverKexInit != nil && h.clientKexInit != nil {
+		return
+	}
 
 	for {
-
 		data, _, err := r.ReadLine()
 		if err != nil {
 			break
 		}
 
-		//fmt.Println(hex.Dump(data))
+		if h.clientIdent == "" {
+			h.clientIdent = string(data)
+			continue
+		} else if h.serverIdent == "" {
+			h.serverIdent = string(data)
+			continue
+		}
 
 		for i, b := range data {
 
@@ -73,23 +112,35 @@ func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 					fmt.Println(err)
 				}
 
-				spew.Dump("found SSH KexInit", h.parent.ident, init)
+				//spew.Dump("found SSH KexInit", h.parent.ident, init)
 				hash, raw := computeHASSH(init)
+				if h.clientKexInit == nil {
+					sshEncoder.write(&types.SSH{
+						Timestamp:  h.parent.client.FirstPacket().String(),
+						HASSH:      hash,
+						Flow:       h.parent.ident,
+						Ident:      h.clientIdent,
+						Algorithms: raw,
+					})
+					h.clientKexInit = &init
+				} else {
+					sshEncoder.write(&types.SSH{
+						Timestamp:  h.parent.client.FirstPacket().String(),
+						HASSH:      hash,
+						Flow:       reverseIdent(h.parent.ident),
+						Ident:      h.serverIdent,
+						Algorithms: raw,
+					})
+					h.serverKexInit = &init
+				}
 
-				sshEncoder.write(&types.SSH{
-					Timestamp:  h.parent.client.FirstPacket().String(),
-					HASSH:      hash,
-					Flow:       h.parent.ident,
-					Notes:      "",
-					Ident:      "", // TODO: add open ssh self ident
-					Algorithms: raw,
-				})
 				break
 			}
 		}
 	}
 }
 
+// HASSH SSH Fingerprint
 func computeHASSH(init sshx.KexInitMsg) (hash string, raw string) {
 
 	var b strings.Builder
