@@ -9,7 +9,7 @@
 * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+ */
 
 package encoder
 
@@ -19,10 +19,12 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"fmt"
+	"strings"
+
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/sshx"
 	"github.com/dreadl0ck/netcap/types"
-	"strings"
+	"github.com/sasha-s/go-deadlock"
 )
 
 /*
@@ -30,18 +32,19 @@ import (
  */
 
 type sshReader struct {
-	parent   *tcpConnection
-	clientIdent string
-	serverIdent string
+	parent        *tcpConnection
+	clientIdent   string
+	serverIdent   string
 	clientKexInit *sshx.KexInitMsg
 	serverKexInit *sshx.KexInitMsg
+	software      []*types.Software
 }
 
 func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 
 	// parse conversation
 	var (
-		buf bytes.Buffer
+		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
 	)
 	if len(h.parent.merged) > 0 {
@@ -63,6 +66,26 @@ func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 		}
 	}
 	h.searchKexInit(bufio.NewReader(&buf))
+	if len(h.software) == 0 {
+		return
+	}
+
+	// add new audit records or update existing
+	SoftwareStore.Lock()
+	for _, s := range h.software {
+		if _, ok := SoftwareStore.Items[s.Product+"/"+s.Version]; ok {
+			// TODO updateSoftwareAuditRecord(dp, p, i)
+		} else {
+			SoftwareStore.Items[s.Product+"/"+s.Version] = &Software{
+				s,
+				deadlock.Mutex{},
+			}
+			statsMutex.Lock()
+			reassemblyStats.numSoftware++
+			statsMutex.Unlock()
+		}
+	}
+	SoftwareStore.Unlock()
 }
 
 func (h *sshReader) searchKexInit(r *bufio.Reader) {
@@ -134,6 +157,22 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 					h.serverKexInit = &init
 				}
 
+				// TODO fetch device profile
+				for _, soft := range hashDBMap[hash] {
+					h.software = append(h.software, &types.Software{
+						Timestamp: h.parent.client.FirstPacket().String(),
+						Product:   soft.Version, // Name of the server (Apache, Nginx, ...)
+						Vendor:    "",           // Unfitting name, but operating system
+						Version:   "",           // Version as found after the '/'
+						//DeviceProfiles: []string{dpIdent},
+						SourceName: "HASSH",
+						SourceData: hash,
+						Service:    "SSH",
+						//DPIResults:     protos,
+						Flows: []string{h.parent.ident},
+						Notes: "Likelyhood: " + soft.Likelyhood,
+					})
+				}
 				break
 			}
 		}
