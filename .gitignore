@@ -15,7 +15,8 @@ pcaps
 .vscode
 *.log
 *.pcap
-*.pcapng
+*/*.pcap
+*/*.pcapng
 *.ncap*
 zeus/.history
 zeus/dumps
