@@ -1,5 +1,7 @@
 # TODOs
 
+- add Service audit record for UDP banners
+- add flag to save all UDP conversations to disk
 - add full stream SMTP parsing
 
 - update reassembly unit tests
@@ -13,9 +15,6 @@
 - net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode?
  
 - extract TLS certificates! alert if selfsigned
-
-- add Service audit record for UDP banners
-- add flag to save all UDP conversations to disk
 
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
