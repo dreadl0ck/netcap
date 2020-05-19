@@ -19,8 +19,7 @@ type StreamReader interface {
 
 	ClientStream() []byte
 	ServerStream() []byte
-	//ConversationRaw() []byte
-	//ConversationColored() []byte
+
 	IsClient() bool
 	SetClient(bool)
 	Ident() string
@@ -33,6 +32,10 @@ type StreamReader interface {
 	ServiceBanner() []byte
 	MarkSaved()
 	ServiceIdent() string
+
+	// util functions that provide access to the entire stream via parent
+	ConversationRaw() []byte
+	ConversationColored() []byte
 }
 
 // StreamDecoder is the interface for processing a bi-directional network connection

@@ -49,13 +49,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/mgutz/ansi"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"log"
 	"os"
 	"runtime/pprof"
 	"sort"
 	"strconv"
-	deadlock "github.com/sasha-s/go-deadlock"
-
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -458,6 +457,12 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	// prevent passing any non TCP packets in here
 	tcpLayer := packet.Layer(layers.LayerTypeTCP)
 	if tcpLayer == nil {
+
+		udpLayer := packet.Layer(layers.LayerTypeUDP)
+		if udpLayer != nil {
+			handleUDP(packet, udpLayer)
+		}
+
 		return
 	}
 
@@ -604,6 +609,11 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			fmt.Println()
 		}
 		sp.wg.Wait()
+
+		// process UDP streams
+		if c.SaveConns {
+			saveAllUDPConnections()
+		}
 	}
 
 	// create a memory snapshot for debugging

@@ -154,6 +154,14 @@ func (h *tcpStreamReader) ServerStream() []byte {
 	return buf.Bytes()
 }
 
+func (h *tcpStreamReader) ConversationRaw() []byte {
+	return h.parent.ConversationRaw()
+}
+
+func (h *tcpStreamReader) ConversationColored() []byte {
+	return h.parent.ConversationColored()
+}
+
 func (h *tcpStreamReader) IsClient() bool {
 	return h.isClient
 }
