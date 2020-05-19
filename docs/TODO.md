@@ -1,21 +1,24 @@
 # TODOs
 
-- add Service audit record for UDP banners
-- add flag to save all UDP conversations to disk
+- Maltego integration
 - add full stream SMTP parsing
+- DHCP Fingerprinting
 
-- update reassembly unit tests
-- service: add reverse DNS lookup
-- add filter flag to only include internal services?
+- passive DNS: create hosts mapping
+- service: add reverse DNS lookup?
+
+- add field to service if internal or external
+- add filter flag to only include internal services
+- add flag to exclude services than transferred no data
 
 - make a group extraction util and expand all groups in all strings properly
 - add keyword filter and compile as regex? username, password etc might appear somewhere in stream contents, e.g inside HTML etc
+- extract TLS certificates! alert if selfsigned
 
+- update reassembly unit tests
 - map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc
 - net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode?
  
-- extract TLS certificates! alert if selfsigned
-
 - capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
     -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
     -> collect decoding errors from all test pcaps and deduplicate!
