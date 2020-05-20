@@ -18,17 +18,28 @@ import (
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+	"strconv"
+	"strings"
 )
 
 var dhcpv4Encoder = CreateLayerEncoder(types.Type_NC_DHCPv4, layers.LayerTypeDHCPv4, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if dhcp4, ok := layer.(*layers.DHCPv4); ok {
-		var opts []*types.DHCPOption
-		for _, o := range dhcp4.Options {
+
+		var (
+			opts []*types.DHCPOption
+			fp strings.Builder
+			length = len(dhcp4.Options) - 1
+		)
+		for i, o := range dhcp4.Options {
 			opts = append(opts, &types.DHCPOption{
 				Data:   o.Data,
 				Length: int32(o.Length),
 				Type:   int32(o.Type),
 			})
+			fp.WriteString(strconv.Itoa(int(o.Type)))
+			if i != length {
+				fp.WriteString(",")
+			}
 		}
 
 		return &types.DHCPv4{
@@ -48,6 +59,7 @@ var dhcpv4Encoder = CreateLayerEncoder(types.Type_NC_DHCPv4, layers.LayerTypeDHC
 			ServerName:   []byte(dhcp4.ServerName),
 			File:         []byte(dhcp4.File),
 			Options:      opts,
+			Fingerprint: fp.String(),
 		}
 	}
 	return nil

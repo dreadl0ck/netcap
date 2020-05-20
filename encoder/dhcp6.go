@@ -18,19 +18,30 @@ import (
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+	"strconv"
+	"strings"
 )
 
 var dhcpv6Encoder = CreateLayerEncoder(types.Type_NC_DHCPv6, layers.LayerTypeDHCPv6, func(layer gopacket.Layer, timestamp string) proto.Message {
 	if dhcp6, ok := layer.(*layers.DHCPv6); ok {
 
-		var opts []*types.DHCPv6Option
-		for _, o := range dhcp6.Options {
+		var (
+			opts []*types.DHCPv6Option
+			fp strings.Builder
+			length = len(dhcp6.Options) - 1
+		)
+		for i, o := range dhcp6.Options {
 			opts = append(opts, &types.DHCPv6Option{
 				Data:   o.Data,
 				Length: int32(o.Length),
 				Code:   int32(o.Code),
 			})
+			fp.WriteString(strconv.Itoa(int(o.Code)))
+			if i != length {
+				fp.WriteString(",")
+			}
 		}
+
 		return &types.DHCPv6{
 			Timestamp:     timestamp,
 			MsgType:       int32(dhcp6.MsgType),
@@ -39,6 +50,7 @@ var dhcpv6Encoder = CreateLayerEncoder(types.Type_NC_DHCPv6, layers.LayerTypeDHC
 			PeerAddr:      dhcp6.PeerAddr.String(),
 			TransactionID: []byte(dhcp6.TransactionID),
 			Options:       opts,
+			Fingerprint: fp.String(),
 		}
 	}
 	return nil
