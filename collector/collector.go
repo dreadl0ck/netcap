@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -258,7 +259,7 @@ func (c *Collector) Stats() {
 	if c.config.Quiet {
 		target = logFileHandle
 	} else {
-		target = os.Stderr
+		target = io.MultiWriter(os.Stderr, logFileHandle)
 	}
 
 	rows := [][]string{}
@@ -479,7 +480,7 @@ func (c *Collector) InitLogging() error {
 	}
 
 	var err error
-	logFileHandle, err = os.OpenFile("netcap.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, c.config.OutDirPermission)
+	logFileHandle, err = os.OpenFile(filepath.Join(c.config.EncoderConfig.Out, "netcap.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, c.config.OutDirPermission)
 	if err != nil {
 		return err
 	}
