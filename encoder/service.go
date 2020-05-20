@@ -98,7 +98,7 @@ func saveTCPServiceBanner(s StreamReader) {
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	serv := NewService(s.FirstPacket().String(), s.NumBytes(), s.Client().NumBytes())
+	serv := NewService(s.FirstPacket().String(), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
 	serv.Banner = banner
 	serv.IP = s.Network().Dst().String()
 	serv.Port = s.Transport().Dst().String()
@@ -194,12 +194,13 @@ func saveTCPServiceBanner(s StreamReader) {
 }
 
 // NewDeviceProfile creates a new device specific profile
-func NewService(ts string, numBytesServer int, numBytesClient int) *Service {
+func NewService(ts string, numBytesServer int, numBytesClient int, ip string) *Service {
 	return &Service{
 		Service: &types.Service{
 			Timestamp:   ts,
 			BytesServer: int32(numBytesServer),
 			BytesClient: int32(numBytesClient),
+			Hostname:    strings.Join(resolvers.LookupDNSNames(ip), "; "),
 		},
 	}
 }

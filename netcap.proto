@@ -751,7 +751,8 @@ message DHCPv4 {
     bytes File                   = 15;
     repeated DHCPOption Options  = 16;
 
-    PacketContext Context = 17;
+    PacketContext Context     = 17;
+    string        Fingerprint = 18;
 }
 
 message DHCPOption {
@@ -769,7 +770,8 @@ message DHCPv6 {
     bytes TransactionID           = 6;
     repeated DHCPv6Option Options = 7;
 
-    PacketContext Context = 8;
+    PacketContext Context     = 8;
+    string        Fingerprint = 9;
 }
 
 message DHCPv6Option {
@@ -1884,6 +1886,7 @@ message Service {
     string   Notes                        = 11;
     int32    BytesServer                  = 12;
     int32    BytesClient                  = 13;
+    string   Hostname                     = 14;
 }
 
 message Credentials {
