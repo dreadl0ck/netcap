@@ -433,7 +433,7 @@ func (c *Collector) FreeOSMemory() {
 // PrintConfiguration dumps the current collector config to stdout
 func (c *Collector) PrintConfiguration() {
 
-	// ensure the logfile handle gets openend
+	// ensure the logfile handle gets opened
 	err := c.InitLogging()
 	if err != nil {
 		log.Fatal("failed to open logfile:", err)
@@ -454,7 +454,18 @@ func (c *Collector) PrintConfiguration() {
 	logFileHandle.Write(cdata)
 
 	netcap.FPrintBuildInfo(target)
+
+	// print build information
 	fmt.Fprintln(target, "> PID:", os.Getpid())
+
+	if c.config.EncoderConfig.Debug {
+		// in debug mode: dump config to stdout
+		target = io.MultiWriter(os.Stdout, logFileHandle)
+	} else {
+		// default: write configuration into netcap.log
+		target = logFileHandle
+		fmt.Println() // add newline
+	}
 
 	// print configuration as table
 	tui.Table(target, []string{"Setting", "Value"}, [][]string{
