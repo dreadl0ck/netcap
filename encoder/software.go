@@ -596,7 +596,10 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 
 	// Load vulnerabilities DB index
 	indexName := "/usr/local/etc/netcap/dbs/exploits.bleve"
-	vulnerabilitiesIndex, _ = bleve.Open(indexName)
+	vulnerabilitiesIndex, err = bleve.Open(indexName)
+	if err != nil {
+		return err
+	}
 
 	utils.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
 
