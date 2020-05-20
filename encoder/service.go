@@ -17,10 +17,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/dreadl0ck/netcap/resolvers"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"strconv"
 	"strings"
-	deadlock "github.com/sasha-s/go-deadlock"
-
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"

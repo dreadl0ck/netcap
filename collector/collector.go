@@ -35,7 +35,6 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	deadlock "github.com/sasha-s/go-deadlock"
 
-
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/utils"
 
@@ -366,9 +365,9 @@ func (c *Collector) printProgressInterval() chan struct{} {
 	go func() {
 		for {
 			select {
-			case <- stop:
+			case <-stop:
 				return
-			case <- time.After(1 * time.Second):
+			case <-time.After(1 * time.Second):
 
 				// must be locked, otherwise a race occurs when sending a SIGINT
 				//  and triggering wg.Wait() in another goroutine...

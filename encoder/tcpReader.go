@@ -34,7 +34,7 @@ import (
  */
 
 type tcpReader struct {
-	parent   *tcpConnection
+	parent *tcpConnection
 }
 
 func (h *tcpReader) Decode(c2s, s2c Stream) {

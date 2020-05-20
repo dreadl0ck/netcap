@@ -7,7 +7,6 @@ package sshx
 import (
 	"io"
 	"sync"
-
 )
 
 // buffer provides a linked list buffer for data exchange

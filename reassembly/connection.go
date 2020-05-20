@@ -19,11 +19,11 @@ func (c *connection) reset(k key, s Stream, ts time.Time) {
 	c.mu.Lock()
 	c.key = k
 	base := halfconnection{
-		nextSeq:  invalidSequence,
-		ackSeq:   invalidSequence,
-		created:  ts,
-		lastSeen: ts,
-		stream:   s,
+		nextSeq:   invalidSequence,
+		ackSeq:    invalidSequence,
+		created:   ts,
+		lastSeen:  ts,
+		stream:    s,
 		firstSeen: ts,
 	}
 	c.c2s, c.s2c = base, base

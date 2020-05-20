@@ -16,6 +16,7 @@ package encoder
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/blevesearch/bleve/document"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -177,21 +178,53 @@ func parseUserAgent(ua string) *userAgent {
 // Make the threshold configurable (Possibly), and changing the stdout output
 func vulnerabilitiesLookup(s []*Software) {
 	for _, software := range s {
-		queryTerm := software.Product + " " + software.Version
-		query := bleve.NewMatchQuery(queryTerm)
-		search := bleve.NewSearchRequest(query)
-		searchResults, err := vulnerabilitiesIndex.Search(search)
+		var (
+			queryTerm          = software.Product + " " + software.Version
+			query              = bleve.NewMatchQuery(queryTerm)
+			search             = bleve.NewSearchRequest(query)
+			searchResults, err = vulnerabilitiesIndex.Search(search)
+		)
 		if err != nil {
-			fmt.Println(err)
+			utils.DebugLog.Println("failed to search for vulnerable software:", err)
 			return
 		}
 		for _, v := range searchResults.Hits {
 			if v.Score > 3 {
 				doc, _ := vulnerabilitiesIndex.Document(v.ID)
-				fmt.Println(string(doc.Fields[2].Value()))
+				writeVuln(software.Software, doc)
 			}
 		}
 	}
+}
+
+type vulnerabilityStore struct {
+	items map[string]struct{}
+	deadlock.Mutex
+}
+
+var vulnStore = vulnerabilityStore{
+	items: make(map[string]struct{}),
+}
+
+func writeVuln(software *types.Software, doc *document.Document) {
+
+	vulnStore.Lock()
+	if _, ok := vulnStore.items[string(doc.Fields[2].Value())]; ok {
+		vulnStore.Unlock()
+		// exists, exit.
+		return
+	} else {
+		vulnStore.items[string(doc.Fields[2].Value())] = struct{}{}
+	}
+	vulnStore.Unlock()
+
+	vulnerabilityEncoder.write(&types.Vulnerability{
+		Timestamp:   software.Timestamp,
+		Software:    software,
+		Description: strings.Trim(string(doc.Fields[2].Value()), "\""),
+		File:        string(doc.Fields[1].Value()),
+		ID:          string(doc.Fields[0].Value()),
+	})
 }
 
 // generic version harvester, scans the payload using a regular expression

@@ -17,10 +17,10 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"log"
 	"regexp"
 	"strings"
-	deadlock "github.com/sasha-s/go-deadlock"
 
 	"sync/atomic"
 	"time"

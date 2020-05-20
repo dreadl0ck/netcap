@@ -14,8 +14,8 @@ package encoder
 
 import (
 	"fmt"
-	"runtime"
 	deadlock "github.com/sasha-s/go-deadlock"
+	"runtime"
 	"sync"
 )
 

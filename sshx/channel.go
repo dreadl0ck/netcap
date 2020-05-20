@@ -8,10 +8,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"io"
 	"log"
-	deadlock "github.com/sasha-s/go-deadlock"
-
 )
 
 const (

@@ -16,8 +16,8 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"net"
 	deadlock "github.com/sasha-s/go-deadlock"
+	"net"
 
 	"time"
 )

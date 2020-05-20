@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dreadl0ck/gopacket/layers"
-	"log"
 	deadlock "github.com/sasha-s/go-deadlock"
+	"log"
 
 	"time"
 )

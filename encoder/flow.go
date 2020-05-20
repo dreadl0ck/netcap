@@ -19,8 +19,8 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
-	"log"
 	deadlock "github.com/sasha-s/go-deadlock"
+	"log"
 
 	"sync/atomic"
 )

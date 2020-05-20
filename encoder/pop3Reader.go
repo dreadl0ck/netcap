@@ -9,7 +9,7 @@
 * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+ */
 
 package encoder
 
@@ -59,7 +59,7 @@ type pop3Reader struct {
 func (h *pop3Reader) Decode(c2s, s2c Stream) {
 
 	var (
-		buf bytes.Buffer
+		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
 	)
 	if len(h.parent.merged) > 0 {
