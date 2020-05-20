@@ -1906,6 +1906,7 @@ message SSH {
     string Notes      = 4;
     string Ident      = 5;
     string Algorithms = 6;
+    bool   IsClient   = 7;
 }
 
 message Vulnerability {

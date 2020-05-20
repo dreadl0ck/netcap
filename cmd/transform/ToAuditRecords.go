@@ -32,6 +32,7 @@ var auditRecords = []string{
 	"DHCPv4",
 	"DHCPv6",
 	"Flow",
+	"Vulnerability",
 }
 
 var maltegoBaseConfig = collector.Config{
@@ -158,6 +159,7 @@ func ToAuditRecords() {
 }
 
 func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start time.Time) {
+
 	// generate maltego transform
 	trx := maltego.MaltegoTransform{}
 
@@ -185,10 +187,11 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 				displayName += "s"
 			}
 		}
+		if strings.HasSuffix(name, "y") {
+			name = name[:len(name)-1] + "ies"
+		}
 		ent.SetValue(displayName)
 
-		// di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
-		// ent.AddDisplayInformation(di, "Netcap Info")
 
 		ent.AddProperty("path", "Path", "strict", ident)
 		ent.AddProperty("description", "Description", "strict", name+".ncap.gz")
@@ -199,6 +202,8 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 		// add notes for specific audit records here
 		switch name {
 		case "DeviceProfile":
+			di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
+			ent.AddDisplayInformation(di, "Netcap Info")
 			ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
 		}
 	}
