@@ -20,6 +20,7 @@ import (
 
 var (
 	Quiet          bool
+	CurrentConfig  Config
 	dataBaseSource string
 )
 
@@ -34,6 +35,7 @@ func init() {
 func Init(c Config, quiet bool) {
 
 	Quiet = quiet
+	CurrentConfig = c
 
 	if c.ReverseDNS {
 		disableReverseDNS = false
