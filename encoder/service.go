@@ -194,12 +194,18 @@ func saveTCPServiceBanner(s StreamReader) {
 
 // NewDeviceProfile creates a new device specific profile
 func NewService(ts string, numBytesServer int, numBytesClient int, ip string) *Service {
+	var host string
+	if resolvers.CurrentConfig.ReverseDNS {
+		host = strings.Join(resolvers.LookupDNSNames(ip), "; ")
+	} else if resolvers.CurrentConfig.LocalDNS {
+		host = resolvers.LookupDNSNameLocal(ip)
+	}
 	return &Service{
 		Service: &types.Service{
 			Timestamp:   ts,
 			BytesServer: int32(numBytesServer),
 			BytesClient: int32(numBytesClient),
-			Hostname:    strings.Join(resolvers.LookupDNSNames(ip), "; "),
+			Hostname:    host,
 		},
 	}
 }
