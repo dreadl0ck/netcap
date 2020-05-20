@@ -17,6 +17,7 @@ package collector
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"io"
@@ -488,6 +489,20 @@ func (c *Collector) InitLogging() error {
 	// prevent reopen
 	if logFileHandle != nil {
 		return nil
+	}
+
+	if len(c.config.EncoderConfig.Out) != 0 {
+		if stat, err := os.Stat(c.config.EncoderConfig.Out); err != nil {
+			os.MkdirAll(c.config.EncoderConfig.Out, os.FileMode(outDirPermissionDefault))
+			stat, err = os.Stat(c.config.EncoderConfig.Out)
+			if err != nil{
+				return err
+			}
+		} else {
+			if !stat.IsDir() {
+				return errors.New("expected a directory, but got a file for output path")
+			}
+		}
 	}
 
 	var err error
