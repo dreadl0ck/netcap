@@ -97,15 +97,22 @@ var reassemblyStats struct {
 	biggestChunkPackets int64
 	overlapBytes        int64
 	overlapPackets      int64
-	savedConnections    int64
+	savedTCPConnections int64
+	savedUDPConnections int64
 	numSoftware         int64
 	numServices         int64
 }
 
-func NumSavedConns() int64 {
+func NumSavedTCPConns() int64 {
 	statsMutex.Lock()
 	defer statsMutex.Unlock()
-	return reassemblyStats.savedConnections
+	return reassemblyStats.savedTCPConnections
+}
+
+func NumSavedUDPConns() int64 {
+	statsMutex.Lock()
+	defer statsMutex.Unlock()
+	return reassemblyStats.savedUDPConnections
 }
 
 /*
@@ -671,7 +678,8 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		rows = append(rows, []string{"biggest-chunk bytes", strconv.FormatInt(reassemblyStats.biggestChunkBytes, 10)})
 		rows = append(rows, []string{"overlap packets", strconv.FormatInt(reassemblyStats.overlapPackets, 10)})
 		rows = append(rows, []string{"overlap bytes", strconv.FormatInt(reassemblyStats.overlapBytes, 10)})
-		rows = append(rows, []string{"saved connections", strconv.FormatInt(reassemblyStats.savedConnections, 10)})
+		rows = append(rows, []string{"saved TCP connections", strconv.FormatInt(reassemblyStats.savedTCPConnections, 10)})
+		rows = append(rows, []string{"saved UDP connections", strconv.FormatInt(reassemblyStats.savedUDPConnections, 10)})
 		rows = append(rows, []string{"numSoftware", strconv.FormatInt(reassemblyStats.numSoftware, 10)})
 		rows = append(rows, []string{"numServices", strconv.FormatInt(reassemblyStats.numServices, 10)})
 		statsMutex.Unlock()
