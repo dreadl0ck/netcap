@@ -3,6 +3,7 @@ module github.com/dreadl0ck/netcap
 go 1.13
 
 require (
+	github.com/blevesearch/bleve v1.0.7
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dlclark/regexp2 v1.2.0
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4

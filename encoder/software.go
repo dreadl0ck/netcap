@@ -24,6 +24,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/blevesearch/bleve"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/netcap/resolvers"
@@ -60,7 +61,8 @@ var (
 	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
 	hasshMap         = make(map[string][]SSHSoftware)
 	// Used to store CMS related information, and to do the CMS lookup
-	cmsDB = make(map[string]interface{})
+	cmsDB                = make(map[string]interface{})
+	vulnerabilitiesIndex bleve.Index
 )
 
 // Size returns the number of elements in the Items map
@@ -169,6 +171,26 @@ func parseUserAgent(ua string) *userAgent {
 		vendor:  vendor,
 		version: version,
 		full:    strings.TrimSpace(full),
+	}
+}
+
+// Make the threshold configurable (Possibly), and changing the stdout output
+func vulnerabilitiesLookup(s []*Software) {
+	for _, software := range s {
+		queryTerm := software.Product + " " + software.Version
+		query := bleve.NewMatchQuery(queryTerm)
+		search := bleve.NewSearchRequest(query)
+		searchResults, err := vulnerabilitiesIndex.Search(search)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		for _, v := range searchResults.Hits {
+			if v.Score > 3 {
+				doc, _ := vulnerabilitiesIndex.Document(v.ID)
+				fmt.Println(string(doc.Fields[2].Value()))
+			}
+		}
 	}
 }
 
@@ -382,6 +404,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 	}
 
 	// Defining the variable here to avoid errors. This should be passed as a parameter and contain the hassh value
+	vulnerabilitiesLookup(s)
 	return s
 }
 
@@ -570,6 +593,10 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	for _, entry := range hasshDB {
 		hasshMap[entry.Hash] = entry.Softwares // Holds redundant info, but couldn't figure a more elegant way to do this
 	}
+
+	// Load vulnerabilities DB index
+	indexName := "/usr/local/etc/netcap/dbs/exploits.bleve"
+	vulnerabilitiesIndex, _ = bleve.Open(indexName)
 
 	utils.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
 
