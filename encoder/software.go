@@ -59,7 +59,8 @@ var (
 	jaCacheMutex     deadlock.Mutex
 	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
 	hasshMap         = make(map[string][]SSHSoftware)
-	cmsDB            = make(map[string]interface{})
+	// Used to store CMS related information, and to do the CMS lookup
+	cmsDB = make(map[string]interface{})
 )
 
 // Size returns the number of elements in the Items map
@@ -301,7 +302,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (software []*Software) {
 
 	var (
-		s       []*Software
+		s []*Software
 		//dpIdent = dp.MacAddr
 	)
 	// if dp.DeviceManufacturer != "" {
