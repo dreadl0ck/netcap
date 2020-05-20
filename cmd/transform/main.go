@@ -17,6 +17,53 @@ func Run() {
 
 	log.Println("os.Args:", os.Args)
 	switch os.Args[2] {
+
+	// core
+	case "ToAuditRecords":
+		ToAuditRecords()
+	case "GetDeviceProfilesWithDPI":
+		ToAuditRecordsWithDPI()
+
+	// SSH
+	case "ToClients":
+		//ToClients()
+	case "ToServers":
+		//ToServers()
+
+	// Software
+	case "ToProducts":
+		ToProducts()
+
+	// Service
+	case "ToUDPServices":
+		ToUDPServices()
+	case "ToTCPServices":
+		ToTCPServices()
+
+	// Credentials
+	case "ToUsers":
+		//ToUsers()
+	case "CredentialsToServices":
+		//CredentialsToDevices()
+
+	// File
+	case "ToFileTypes":
+		ToFileTypes()
+
+	// HTTP
+	case "ToHTTPHostNames":
+		ToHTTPHostNames()
+
+	// Flow
+	case "ToIANAServices":
+		ToIANAServices()
+	case "ToHighestVolumeFlows":
+		//ToHighestVolumeFlows()
+
+	// DeviceProfile
+	case "ToDevices":
+		ToDevices()
+
 	case "GetApplicationCategories":
 		GetApplicationCategories()
 	case "GetApplications":
@@ -39,14 +86,8 @@ func Run() {
 		GetDeviceContacts()
 	case "GetDeviceIPs":
 		GetDeviceIPs()
-	case "GetDeviceProfiles":
-		GetDeviceProfiles()
-	case "GetDeviceProfilesWithDPI":
-		GetDeviceProfilesWithDPI()
 	case "GetHTTPHostsFiltered":
 		GetHTTPHostsFiltered()
-	case "GetDevices":
-		GetDevices()
 	case "GetDstPorts":
 		GetDstPorts()
 	case "GetIncomingFlowsFiltered":

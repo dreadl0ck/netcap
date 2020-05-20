@@ -2,14 +2,14 @@
 
 - Maltego integration
 - add full stream SMTP parsing
-- DHCP Fingerprinting
+- add lookups for DHCP Fingerprints
 
-- passive DNS: create hosts mapping
-- service: add reverse DNS lookup?
+- make using local vs reverse dns lookups configurable for service audit records
+- passive DNS: create hosts mapping ala tshark -z hosts -r traffic.pcap
 
 - add field to service if internal or external
 - add filter flag to only include internal services
-- add flag to exclude services than transferred no data
+- add flag to exclude services that transferred no data
 
 - make a group extraction util and expand all groups in all strings properly
 - add keyword filter and compile as regex? username, password etc might appear somewhere in stream contents, e.g inside HTML etc
