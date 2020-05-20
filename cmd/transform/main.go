@@ -25,10 +25,10 @@ func Run() {
 		ToAuditRecordsWithDPI()
 
 	// SSH
-	case "ToClients":
-		//ToClients()
-	case "ToServers":
-		//ToServers()
+	case "ToSSHClients":
+		ToSSHClients()
+	case "ToSSHServers":
+		ToSSHServers()
 
 	// Software
 	case "ToProducts":
@@ -41,10 +41,8 @@ func Run() {
 		ToTCPServices()
 
 	// Credentials
-	case "ToUsers":
-		//ToUsers()
-	case "CredentialsToServices":
-		//CredentialsToDevices()
+	case "ToCredentialsByService":
+		ToCredentialsByService()
 
 	// File
 	case "ToFileTypes":
@@ -54,10 +52,14 @@ func Run() {
 	case "ToHTTPHostNames":
 		ToHTTPHostNames()
 
+	// Vulnerabilities
+	case "ToVulnerabilities":
+		ToVulnerabilities()
+
 	// Flow
 	case "ToIANAServices":
 		ToIANAServices()
-	case "ToHighestVolumeFlows":
+	//case "ToHighestVolumeFlows":
 		//ToHighestVolumeFlows()
 
 	// DeviceProfile
@@ -102,6 +104,11 @@ func Run() {
 		GetFilesForContentType()
 	case "GetGeolocation":
 		GetGeolocation()
+
+	case "GetParameterValues":
+		GetParameterValues()
+	case "GetParametersForHTTPHost":
+		GetParametersForHTTPHost()
 	case "GetHTTPContentTypes":
 		GetHTTPContentTypes()
 	case "GetHTTPCookies":
@@ -118,6 +125,7 @@ func Run() {
 		GetHTTPURLs()
 	case "GetHTTPUserAgents":
 		GetHTTPUserAgents()
+
 	case "GetMailAuthTokens":
 		GetMailAuthTokens()
 	case "GetMailFrom":
@@ -130,10 +138,7 @@ func Run() {
 		GetMailUsers()
 	case "GetMails":
 		GetMails()
-	case "GetParameterValues":
-		GetParameterValues()
-	case "GetParametersForHTTPHost":
-		GetParametersForHTTPHost()
+
 	case "GetSNIs":
 		GetSNIs()
 	case "GetSrcPorts":
