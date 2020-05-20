@@ -19,8 +19,8 @@ import (
 	"github.com/dreadl0ck/gopacket/ip4defrag"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"path/filepath"
 	deadlock "github.com/sasha-s/go-deadlock"
+	"path/filepath"
 	"sync"
 )
 
@@ -41,7 +41,7 @@ type tcpConnectionFactory struct {
 	wg            sync.WaitGroup
 	decodeHTTP    bool
 	decodePOP3    bool
-	decodeSSH    bool
+	decodeSSH     bool
 	numActive     int64
 	streamReaders []StreamReader
 	deadlock.Mutex
@@ -113,7 +113,7 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		}
 
 		stream.decoder = &sshReader{
-			parent:   stream,
+			parent: stream,
 		}
 		stream.client = newTCPStreamReader(stream, clientIdent, true)
 		stream.server = newTCPStreamReader(stream, serverIdent, false)
@@ -127,14 +127,14 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 		}
 
 		stream.decoder = &pop3Reader{
-			parent:   stream,
+			parent: stream,
 		}
 		stream.client = newTCPStreamReader(stream, clientIdent, true)
 		stream.server = newTCPStreamReader(stream, serverIdent, false)
 
 	default: // process unknown TCP stream
 		stream.decoder = &tcpReader{
-			parent:   stream,
+			parent: stream,
 		}
 		stream.client = newTCPStreamReader(stream, clientIdent, true)
 		stream.server = newTCPStreamReader(stream, serverIdent, false)

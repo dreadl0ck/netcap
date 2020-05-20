@@ -141,6 +141,7 @@ enum Type {
     NC_Service                     = 96;
     NC_Credentials                 = 97;
     NC_SSH                         = 98;
+    NC_Vulnerability               = 99;
 }
 
 /*
@@ -1905,4 +1906,13 @@ message SSH {
     string Notes      = 4;
     string Ident      = 5;
     string Algorithms = 6;
+}
+
+message Vulnerability {
+    string   Timestamp   = 1;
+    string   Description = 2;
+    string   File        = 3;
+    string   Notes       = 4;
+    string   ID          = 5;
+    Software software    = 6;
 }

@@ -180,7 +180,6 @@ func (c *Collector) CollectPcap(path string) error {
 		c.handleRawPacketData(data, ci)
 	}
 
-
 	stopProgress <- struct{}{}
 
 	c.cleanup(false)

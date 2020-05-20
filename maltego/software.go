@@ -67,9 +67,9 @@ func SoftwareTransform(count SoftwareCountFunc, transform SoftwareTransformation
 
 	var (
 		software = new(types.Software)
-		pm      proto.Message
-		ok      bool
-		trx     = MaltegoTransform{}
+		pm       proto.Message
+		ok       bool
+		trx      = MaltegoTransform{}
 	)
 	pm = software
 

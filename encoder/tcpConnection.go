@@ -138,8 +138,8 @@ type tcpConnection struct {
 	ident string
 
 	decoder StreamDecoder
-	client StreamReader
-	server StreamReader
+	client  StreamReader
+	server  StreamReader
 
 	firstPacket time.Time
 
@@ -149,7 +149,7 @@ type tcpConnection struct {
 	// if set, indicates that either client or server stream reader was closed already
 	last bool
 
-	merged   StreamDataSlice
+	merged StreamDataSlice
 
 	deadlock.Mutex
 }
@@ -272,6 +272,7 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 		}
 	}
 }
+
 //
 //func (t *tcpConnection) feedDataTimeout(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
 //

@@ -7,9 +7,9 @@ package sshx
 import (
 	"encoding/binary"
 	"fmt"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"io"
 	"log"
-	deadlock "github.com/sasha-s/go-deadlock"
 	"sync"
 	"sync/atomic"
 )

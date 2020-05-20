@@ -18,7 +18,6 @@ import (
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/gogo/protobuf/proto"
 	deadlock "github.com/sasha-s/go-deadlock"
-
 )
 
 /////////////////////////////

@@ -31,7 +31,6 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-
 // e.g: 192.168.1.47->165.227.109.154-53032->80
 // to 53032->80
 func chopTransportIdent(in string) string {

@@ -8,11 +8,10 @@ import (
 	"crypto"
 	"crypto/rand"
 	"fmt"
+	"github.com/sasha-s/go-deadlock"
 	"io"
 	"math"
-	"github.com/sasha-s/go-deadlock"
 	"sync"
-
 
 	_ "crypto/sha1"
 	_ "crypto/sha256"

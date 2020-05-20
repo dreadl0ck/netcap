@@ -26,8 +26,8 @@ var dhcpv6Encoder = CreateLayerEncoder(types.Type_NC_DHCPv6, layers.LayerTypeDHC
 	if dhcp6, ok := layer.(*layers.DHCPv6); ok {
 
 		var (
-			opts []*types.DHCPv6Option
-			fp strings.Builder
+			opts   []*types.DHCPv6Option
+			fp     strings.Builder
 			length = len(dhcp6.Options) - 1
 		)
 		for i, o := range dhcp6.Options {
@@ -50,7 +50,7 @@ var dhcpv6Encoder = CreateLayerEncoder(types.Type_NC_DHCPv6, layers.LayerTypeDHC
 			PeerAddr:      dhcp6.PeerAddr.String(),
 			TransactionID: []byte(dhcp6.TransactionID),
 			Options:       opts,
-			Fingerprint: fp.String(),
+			Fingerprint:   fp.String(),
 		}
 	}
 	return nil

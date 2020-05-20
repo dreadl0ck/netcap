@@ -796,7 +796,7 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) 
 
 		// pass context with timestamp of the first packet seen
 		var (
-			ac assemblerSimpleContext
+			ac   assemblerSimpleContext
 			flow gopacket.Flow
 		)
 		if conn.c2s.firstSeen.Before(conn.s2c.firstSeen) {

@@ -5,9 +5,8 @@
 package sshx
 
 import (
-	"net"
 	deadlock "github.com/sasha-s/go-deadlock"
-
+	"net"
 )
 
 // debugHandshake, if set, prints messages sent and received.  Key

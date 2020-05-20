@@ -19,7 +19,6 @@ import (
 
 	deadlock "github.com/sasha-s/go-deadlock"
 
-
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"

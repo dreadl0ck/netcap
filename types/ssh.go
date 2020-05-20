@@ -22,7 +22,7 @@ import (
 var fieldsSSH = []string{
 	"Timestamp",
 	"HASSH",
-	"Flow" ,
+	"Flow",
 	"Notes",
 }
 

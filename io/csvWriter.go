@@ -17,10 +17,9 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"io"
 	"strings"
-	deadlock "github.com/sasha-s/go-deadlock"
-
 )
 
 type CSVWriter struct {

@@ -8,15 +8,15 @@ import (
 
 /* one-way connection, i.e. halfconnection */
 type halfconnection struct {
-	dir               TCPFlowDirection
-	pages             int      // Number of pages used (both in first/last and saved)
-	saved             *page    // Doubly-linked list of in-order pages (seq < nextSeq) already given to Stream who told us to keep
-	first, last       *page    // Doubly-linked list of out-of-order pages (seq > nextSeq)
-	nextSeq           Sequence // sequence number of in-order received bytes
-	ackSeq            Sequence
+	dir                          TCPFlowDirection
+	pages                        int      // Number of pages used (both in first/last and saved)
+	saved                        *page    // Doubly-linked list of in-order pages (seq < nextSeq) already given to Stream who told us to keep
+	first, last                  *page    // Doubly-linked list of out-of-order pages (seq > nextSeq)
+	nextSeq                      Sequence // sequence number of in-order received bytes
+	ackSeq                       Sequence
 	created, lastSeen, firstSeen time.Time
-	stream            Stream
-	closed            bool
+	stream                       Stream
+	closed                       bool
 
 	flow gopacket.Flow
 

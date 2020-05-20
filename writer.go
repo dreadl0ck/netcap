@@ -16,12 +16,11 @@ package netcap
 import (
 	"bufio"
 	gzip "github.com/klauspost/pgzip"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
-	deadlock "github.com/sasha-s/go-deadlock"
-
 
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"

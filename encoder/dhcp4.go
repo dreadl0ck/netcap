@@ -26,8 +26,8 @@ var dhcpv4Encoder = CreateLayerEncoder(types.Type_NC_DHCPv4, layers.LayerTypeDHC
 	if dhcp4, ok := layer.(*layers.DHCPv4); ok {
 
 		var (
-			opts []*types.DHCPOption
-			fp strings.Builder
+			opts   []*types.DHCPOption
+			fp     strings.Builder
 			length = len(dhcp4.Options) - 1
 		)
 		for i, o := range dhcp4.Options {
@@ -59,7 +59,7 @@ var dhcpv4Encoder = CreateLayerEncoder(types.Type_NC_DHCPv4, layers.LayerTypeDHC
 			ServerName:   []byte(dhcp4.ServerName),
 			File:         []byte(dhcp4.File),
 			Options:      opts,
-			Fingerprint: fp.String(),
+			Fingerprint:  fp.String(),
 		}
 	}
 	return nil

@@ -41,14 +41,14 @@ type UDPStream struct {
 }
 
 type UDPData struct {
-	raw []byte
-	ci gopacket.CaptureInfo
-	net gopacket.Flow
+	raw       []byte
+	ci        gopacket.CaptureInfo
+	net       gopacket.Flow
 	transport gopacket.Flow
 }
 
 var (
-	udpStreams = make(map[uint64]*UDPStream)
+	udpStreams   = make(map[uint64]*UDPStream)
 	udpStreamsMu deadlock.Mutex
 )
 
@@ -76,21 +76,21 @@ func handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
 		// update existing
 		s.Lock()
 		s.data = append(s.data, &UDPData{
-			raw: udpLayer.LayerPayload(),
-			ci: packet.Metadata().CaptureInfo,
+			raw:       udpLayer.LayerPayload(),
+			ci:        packet.Metadata().CaptureInfo,
 			transport: packet.TransportLayer().TransportFlow(),
-			net: packet.NetworkLayer().NetworkFlow(),
+			net:       packet.NetworkLayer().NetworkFlow(),
 		})
 		s.Unlock()
 	} else {
 		// add new
 		udpStreams[packet.TransportLayer().TransportFlow().FastHash()] = &UDPStream{
-			data:  []*UDPData{
+			data: []*UDPData{
 				{
-					raw: udpLayer.LayerPayload(),
-					ci: packet.Metadata().CaptureInfo,
+					raw:       udpLayer.LayerPayload(),
+					ci:        packet.Metadata().CaptureInfo,
 					transport: packet.TransportLayer().TransportFlow(),
-					net: packet.NetworkLayer().NetworkFlow(),
+					net:       packet.NetworkLayer().NetworkFlow(),
 				},
 			},
 		}
@@ -129,12 +129,12 @@ func saveAllUDPConnections() {
 		sort.Sort(s.data)
 
 		var (
-			clientNetwork gopacket.Flow
-			clientTransport gopacket.Flow
-			firstPacket time.Time
-			colored bytes.Buffer
-			raw bytes.Buffer
-			ident string
+			clientNetwork            gopacket.Flow
+			clientTransport          gopacket.Flow
+			firstPacket              time.Time
+			colored                  bytes.Buffer
+			raw                      bytes.Buffer
+			ident                    string
 			serverBytes, clientBytes int
 		)
 
@@ -183,7 +183,7 @@ func saveAllUDPConnections() {
 		}
 
 		// save service banner
-		saveUDPServiceBanner(serverBanner.Bytes(), ident, clientNetwork.Dst().String() + ":" + clientTransport.Dst().String(), firstPacket, serverBytes, clientBytes, clientNetwork, clientTransport)
+		saveUDPServiceBanner(serverBanner.Bytes(), ident, clientNetwork.Dst().String()+":"+clientTransport.Dst().String(), firstPacket, serverBytes, clientBytes, clientNetwork, clientTransport)
 	}
 	udpStreamsMu.Unlock()
 }

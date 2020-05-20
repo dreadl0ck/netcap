@@ -151,7 +151,6 @@ func ToAuditRecords() {
 	}
 	defer r.Close()
 
-
 	// restore stdout
 	os.Stdout = stdout
 
@@ -164,7 +163,7 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 
 	for _, name := range auditRecords {
 
-		ident := filepath.Join(outDir, name + ".ncap.gz")
+		ident := filepath.Join(outDir, name+".ncap.gz")
 
 		// stat generated profiles
 		stat, err := os.Stat(ident)
@@ -177,7 +176,7 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 			continue
 		}
 
-		ent := trx.AddEntity("netcap." + name + "AuditRecords", ident)
+		ent := trx.AddEntity("netcap."+name+"AuditRecords", ident)
 		ent.SetType("netcap." + name + "AuditRecords")
 
 		displayName := name
@@ -192,7 +191,7 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 		// ent.AddDisplayInformation(di, "Netcap Info")
 
 		ent.AddProperty("path", "Path", "strict", ident)
-		ent.AddProperty("description", "Description", "strict", name + ".ncap.gz")
+		ent.AddProperty("description", "Description", "strict", name+".ncap.gz")
 
 		ent.SetLinkLabel(name)
 		ent.SetLinkColor("#000000")

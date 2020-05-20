@@ -10,7 +10,6 @@ import (
 // it defines to manage a stream lifecycle and is used to close the remaining open streams
 // and process the remaining data when the engine is stopped
 type StreamReader interface {
-
 	Read(p []byte) (int, error)
 	Run(f *tcpConnectionFactory)
 	DataChan() chan *StreamData

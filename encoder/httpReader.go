@@ -117,7 +117,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 
 	// parse conversation
 	var (
-		buf bytes.Buffer
+		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
 	)
 	if len(h.parent.merged) > 0 {
