@@ -245,7 +245,10 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 	// read netcap header - ignore err as it has been checked before
 	r.ReadHeader()
 
-	top12 := sizes[len(sizes)-13:]
+	var top12 []int
+	if len(sizes) > 12 {
+		top12 = sizes[len(sizes)-12:]
+	}
 	log.Println("==> top12", top12)
 
 	for {
