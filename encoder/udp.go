@@ -222,7 +222,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 	utils.ReassemblyLog.Println("saveConnection", base)
 
 	statsMutex.Lock()
-	reassemblyStats.savedConnections++
+	reassemblyStats.savedUDPConnections++
 	statsMutex.Unlock()
 
 	// append to files

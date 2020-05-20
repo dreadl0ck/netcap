@@ -307,7 +307,8 @@ func (c *Collector) Stats() {
 	fmt.Fprintln(target, res)
 
 	if c.config.EncoderConfig.SaveConns {
-		fmt.Fprintln(target, "saved connections:", encoder.NumSavedConns())
+		fmt.Fprintln(target, "saved TCP connections:", encoder.NumSavedTCPConns())
+		fmt.Fprintln(target, "saved UDP connections:", encoder.NumSavedUDPConns())
 	}
 }
 

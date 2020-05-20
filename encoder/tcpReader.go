@@ -206,7 +206,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	utils.ReassemblyLog.Println("saveConnection", base)
 
 	statsMutex.Lock()
-	reassemblyStats.savedConnections++
+	reassemblyStats.savedTCPConnections++
 	statsMutex.Unlock()
 
 	// append to files

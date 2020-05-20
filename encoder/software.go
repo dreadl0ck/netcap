@@ -183,7 +183,7 @@ func parseUserAgent(ua string) *userAgent {
 }
 
 // generic version harvester, scans the payload using a regular expression
-func softwareHarvester(data []byte, ident string, ts time.Time, service string, dpIdent string, protos []string) (software []*Software) {
+func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (software []*Software) {
 
 	var s []*Software
 
@@ -193,7 +193,13 @@ func softwareHarvester(data []byte, ident string, ts time.Time, service string, 
 		for _, v := range matches {
 			s = append(s, &Software{
 				Software: &types.Software{
-					Notes: string(v),
+					Timestamp:      ts.String(),
+					DeviceProfiles: []string{dpIdent},
+					SourceName:     "Generic version harvester",
+					SourceData:     string(v),
+					Service:        service,
+					DPIResults:     protos,
+					Flows:          []string{flowIdent},
 				},
 			})
 		}
@@ -204,7 +210,7 @@ func softwareHarvester(data []byte, ident string, ts time.Time, service string, 
 
 // tries to determine the kind of software and version
 // based on the provided input data
-func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames string, protos []string, vias string, xPoweredBy string, CMSHeaders []HeaderForApps, CMSCookies []CookieForApps) (software []*Software) {
+func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (software []*Software) {
 
 	var (
 		service string
@@ -243,7 +249,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 								SourceData:     JA3s,
 								Service:        service,
 								DPIResults:     protos,
-								Flows:          []string{f},
+								Flows:          []string{flowIdent},
 							},
 						})
 						s = append(s, &Software{
@@ -257,7 +263,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 								SourceData:     JA3,
 								Service:        service,
 								DPIResults:     protos,
-								Flows:          []string{f},
+								Flows:          []string{flowIdent},
 							},
 						})
 						pMu.Unlock()
@@ -285,42 +291,32 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, f, serviceNameSrc, serviceNa
 	// if nothing was found with all above attempts, try to throw the generic version number harvester at it
 	// and see if this delivers anything interesting
 	if len(s) == 0 {
-		return softwareHarvester(i.p.Data(), dpIdent, i.p.Metadata().CaptureInfo.Timestamp, service, dpIdent, protos)
+		return softwareHarvester(i.p.Data(), flowIdent, i.p.Metadata().CaptureInfo.Timestamp, service, dpIdent, protos)
 	}
 
 	// Defining the variable here to avoid errors. This should be passed as a parameter and contain the hassh value
 	return s
 }
 
-func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst string, h *types.HTTP, CMSHeaders []HeaderForApps, CMSCookies []CookieForApps) (software []*Software) {
+func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (software []*Software) {
 
 	var (
-		service string
 		s       []*Software
 		//dpIdent = dp.MacAddr
 	)
-	if serviceNameSrc != "" {
-		service = serviceNameSrc
-	}
-	if serviceNameDst != "" {
-		service = serviceNameDst
-	}
 	// if dp.DeviceManufacturer != "" {
 	// 	dpIdent += " <" + dp.DeviceManufacturer + ">"
 	// }
 
 	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
-	// TODO: Don't iterate
-	for _, ua := range strings.Split(h.UserAgent, "| ") {
-		if len(ua) == 0 || ua == " " {
-			continue
-		}
+	if len(h.UserAgent) != 0 && h.UserAgent != " " {
+
 		pMu.Lock()
-		userInfo, ok := userAgentCaching[ua]
+		userInfo, ok := userAgentCaching[h.UserAgent]
 		if !ok {
-			userInfo = parseUserAgent(ua)
-			userAgentCaching[ua] = userInfo
+			userInfo = parseUserAgent(h.UserAgent)
+			userAgentCaching[h.UserAgent] = userInfo
 			utils.DebugLog.Println("UserAgent:", userInfo.full)
 		}
 		pMu.Unlock()
@@ -333,20 +329,17 @@ func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst strin
 				Version:   userInfo.version,
 				//DeviceProfiles: []string{dpIdent},
 				SourceName: "UserAgent",
-				SourceData: ua,
-				Service:    service,
-				Flows:      []string{f},
+				SourceData: h.UserAgent,
+				Service:    "HTTP",
+				Flows:      []string{flowIdent},
 				Notes:      userInfo.full,
 			},
 		})
 	}
 
 	// HTTP Server Name
-	for _, sn := range strings.Split(h.ServerName, "| ") {
-		if len(sn) == 0 || sn == " " {
-			continue
-		}
-		var values = regExpServerName.FindStringSubmatch(sn)
+	if len(h.ServerName) != 0 && h.ServerName != " " {
+		var values = regExpServerName.FindStringSubmatch(h.ServerName)
 		s = append(s, &Software{
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
@@ -355,32 +348,30 @@ func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst strin
 				Version:   values[2], // Version as found after the '/'
 				//DeviceProfiles: []string{dpIdent},
 				SourceName: "ServerName",
-				SourceData: sn,
-				Service:    service,
-				Flows:      []string{f},
+				SourceData: h.ServerName,
+				Service:    "HTTP",
+				Flows:      []string{flowIdent},
 			},
 		})
 	}
 
 	// X-Powered-By HTTP Header
-	for _, pb := range strings.Split(h.RequestHeader["X-Powered-By"], "| ") {
-		if len(pb) == 0 || pb == " " {
-			continue
+	if poweredBy, ok := h.RequestHeader["X-Powered-By"]; ok {
+		if len(poweredBy) != 0 && poweredBy != " " {
+			var values = regexpXPoweredBy.FindStringSubmatch(poweredBy)
+			s = append(s, &Software{
+				Software: &types.Software{
+					Timestamp: h.Timestamp,
+					Product:   values[1], // Name of the server (Apache, Nginx, ...)
+					Version:   values[2], // Version as found after the '/'
+					//DeviceProfiles: []string{dpIdent},
+					SourceName: "X-Powered-By",
+					SourceData: poweredBy,
+					Service:    "HTTP",
+					Flows:      []string{flowIdent},
+				},
+			})
 		}
-
-		var values = regexpXPoweredBy.FindStringSubmatch(pb)
-		s = append(s, &Software{
-			Software: &types.Software{
-				Timestamp: h.Timestamp,
-				Product:   values[1], // Name of the server (Apache, Nginx, ...)
-				Version:   values[2], // Version as found after the '/'
-				//DeviceProfiles: []string{dpIdent},
-				SourceName: "X-Powered-By",
-				SourceData: pb,
-				Service:    service,
-				Flows:      []string{f},
-			},
-		})
 	}
 
 	// Try to detect apps
@@ -401,8 +392,8 @@ func whatSoftwareHTTP(dp *DeviceProfile, f, serviceNameSrc, serviceNameDst strin
 											Product:    k,
 											Version:    "",
 											SourceName: key,
-											Service:    service,
-											Flows:      []string{f},
+											Service:    "HTTP",
+											Flows:      []string{flowIdent},
 										},
 									})
 								}
@@ -429,12 +420,7 @@ func AnalyzeSoftware(i *packetInfo) {
 		JA3s                           string
 		JA3                            string
 		protos                         []string
-		userAgents, serverNames        string
 		f                              string
-		vias                           string
-		xPoweredBy                     string
-		cmsHeaders                     []HeaderForApps
-		cmsCookies                     []CookieForApps
 	)
 	if ja3Hash == "" {
 		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
@@ -479,28 +465,6 @@ func AnalyzeSoftware(i *packetInfo) {
 		protos = append(protos, p)
 	}
 
-	// Check available HTTP meta infos
-	httpStore.Lock()
-	if val, ok := httpStore.UserAgents[i.srcIP]; ok {
-		userAgents = val
-	}
-	if val, ok := httpStore.ServerNames[i.dstIP]; ok {
-		serverNames = val
-	}
-	if val, ok := httpStore.Vias[i.dstIP]; ok {
-		vias = val
-	}
-	if val, ok := httpStore.XPoweredBy[i.dstIP]; ok {
-		xPoweredBy = val
-	}
-	if val, ok := httpStore.CMSHeaders[i.dstIP]; ok {
-		cmsHeaders = val
-	}
-	if val, ok := httpStore.CMSCookies[i.dstIP]; ok {
-		cmsCookies = val
-	}
-	httpStore.Unlock()
-
 	// The underlying assumption is that we will always observe a client TLS Hello before seeing a server TLS Hello
 	// Assuming the packet captured corresponds to the server Hello, first try to see if a client Hello (client being the
 	// destination IP) was observed. If not, this is the client. Therefore add client ja3 signature to the store.
@@ -525,7 +489,7 @@ func AnalyzeSoftware(i *packetInfo) {
 
 	// now that we have some information at hands
 	// try to determine what kind of software it is
-	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, userAgents, serverNames, protos, vias, xPoweredBy, cmsHeaders, cmsCookies)
+	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, protos)
 	if len(software) == 0 {
 		return
 	}

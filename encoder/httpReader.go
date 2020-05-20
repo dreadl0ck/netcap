@@ -302,8 +302,6 @@ func writeHTTP(h *types.HTTP, ident string) {
 		}
 	}
 
-	cmsHeaders := httpStore.CMSHeaders[h.DstIP]
-
 	httpStore.Unlock()
 
 	// TODO: fixme
@@ -341,7 +339,7 @@ func writeHTTP(h *types.HTTP, ident string) {
 		errorMap.Inc(err.Error())
 	}
 
-	software := whatSoftwareHTTP(nil, ident, "", "", h, cmsHeaders, []CookieForApps{})
+	software := whatSoftwareHTTP(nil, ident, h)
 
 	if len(software) == 0 {
 		return
