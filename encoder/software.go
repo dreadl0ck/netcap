@@ -188,6 +188,7 @@ func vulnerabilitiesLookup(s []*Software) {
 			utils.DebugLog.Println("failed to search for vulnerable software:", err)
 			return
 		}
+		fmt.Println("search for ", software.Product, software.Vendor, software.Version)
 		for _, v := range searchResults.Hits {
 			if v.Score > 3 {
 				doc, _ := vulnerabilitiesIndex.Document(v.ID)
@@ -195,6 +196,21 @@ func vulnerabilitiesLookup(s []*Software) {
 			}
 		}
 	}
+}
+
+// Make the threshold configurable (Possibly), and changing the stdout output
+func vulnerabilitiesLookupTest(software *types.Software) *bleve.SearchResult {
+	var (
+		queryTerm          = software.Product + " " + software.Version
+		query              = bleve.NewMatchQuery(queryTerm)
+		search             = bleve.NewSearchRequest(query)
+		searchResults, err = vulnerabilitiesIndex.Search(search)
+	)
+	if err != nil {
+		utils.DebugLog.Println("failed to search for vulnerable software:", err)
+		return nil
+	}
+	return searchResults
 }
 
 type vulnerabilityStore struct {

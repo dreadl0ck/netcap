@@ -1,10 +1,9 @@
 # TODOs
 
-- Maltego integration
+- integrate NVD feed and CPE database
 - add full stream SMTP parsing
 - add lookups for DHCP Fingerprints
 
-- make using local vs reverse dns lookups configurable for service audit records
 - passive DNS: create hosts mapping ala tshark -z hosts -r traffic.pcap
 
 - add field to service if internal or external
