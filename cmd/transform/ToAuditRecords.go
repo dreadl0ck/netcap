@@ -188,7 +188,7 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 			}
 		}
 		if strings.HasSuffix(name, "y") {
-			name = name[:len(name)-1] + "ies"
+			displayName = name[:len(name)-1] + "ies"
 		}
 		ent.SetValue(displayName)
 
@@ -196,7 +196,7 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 		ent.AddProperty("path", "Path", "strict", ident)
 		ent.AddProperty("description", "Description", "strict", name+".ncap.gz")
 
-		ent.SetLinkLabel(name)
+		//ent.SetLinkLabel(name)
 		ent.SetLinkColor("#000000")
 
 		// add notes for specific audit records here
