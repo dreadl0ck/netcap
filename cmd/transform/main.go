@@ -43,6 +43,8 @@ func Run() {
 	// Credentials
 	case "ToCredentialsByService":
 		ToCredentialsByService()
+	case "ToLoginInformation":
+		ToLoginInformation()
 
 	// File
 	case "ToFileTypes":
