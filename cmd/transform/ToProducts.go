@@ -10,9 +10,21 @@ func ToProducts() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, soft *types.Software, min, max uint64, profilesFile string, mac string, ipaddr string) {
 
-			ent := trx.AddEntity("netcap.Software", soft.Product)
+			val := soft.Vendor + " " + soft.Product + " " + soft.Version
+			if len(soft.SourceName) > 0 {
+				if soft.SourceName == "Generic version harvester" {
+					if len(val) == 0 {
+						val = maltego.EscapeText(soft.SourceData)
+					} else {
+						val += "\n" + maltego.EscapeText(soft.SourceData)
+					}
+				}
+				val += "\n" + soft.SourceName
+			}
+
+			ent := trx.AddEntity("netcap.Software", val)
 			ent.SetType("netcap.Software")
-			ent.SetValue(soft.Vendor + " " + soft.Product + " " + soft.Version)
+			ent.SetValue(val)
 
 			ent.AddProperty("timestamp", "Timestamp", "strict", soft.Timestamp)
 			ent.AddProperty("vendor", "Vendor", "strict", soft.Vendor)
