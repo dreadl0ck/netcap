@@ -19,7 +19,7 @@ func ToProducts() {
 			ent.AddProperty("product", "Product", "strict", soft.Product)
 			ent.AddProperty("version", "Version", "strict", soft.Version)
 			ent.AddProperty("sourcename", "SourceName", "strict", soft.SourceName)
-			ent.AddProperty("sourcedata", "SourceData", "strict", soft.SourceData)
+			ent.AddProperty("sourcedata", "SourceData", "strict", maltego.EscapeText(soft.SourceData))
 			ent.AddProperty("notes", "Notes", "strict", soft.Notes)
 
 			ent.SetLinkColor("#000000")

@@ -53,8 +53,8 @@ func Run() {
 		ToHTTPHostNames()
 
 	// Vulnerabilities
-	case "ToVulnerabilities":
-		ToVulnerabilities()
+	case "ToSoftwareVulnerabilities":
+		ToSoftwareVulnerabilities()
 
 	// Flow
 	case "ToIANAServices":
