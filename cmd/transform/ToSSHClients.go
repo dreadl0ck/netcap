@@ -10,9 +10,16 @@ func ToSSHClients() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, ssh *types.SSH, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if ssh.IsClient {
-				ent := trx.AddEntity("netcap.SSHClient", ssh.HASSH)
+
+				val := ssh.HASSH + "\n" + ssh.Flow
+				if len(ssh.Ident) > 0 {
+					val += "\n" + ssh.Ident
+				}
+				val = maltego.EscapeText(val)
+
+				ent := trx.AddEntity("netcap.SSHClient", val)
 				ent.SetType("netcap.SSHClient")
-				ent.SetValue(ssh.HASSH)
+				ent.SetValue(val)
 
 				ent.AddProperty("timestamp", "Timestamp", "strict", ssh.Timestamp)
 				ent.AddProperty("ident", "Ident", "strict", ssh.Ident)

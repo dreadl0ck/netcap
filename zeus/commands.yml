@@ -239,3 +239,20 @@ commands:
     run-prometheus:
         description: start prometheus daemon locally
         exec: prometheus --config.file prometheus/prometheus.yml
+
+    download-vulndbs:
+        description: download vulnerability databases
+        exec: |
+            # from https://github.com/scipag/vulscan
+            mkdir vulnDBs
+            cd vulnDBs
+            wget https://www.computec.ch/projekte/vulscan/download/cve.csv
+            wget https://www.computec.ch/projekte/vulscan/download/exploitdb.csv
+            wget https://www.computec.ch/projekte/vulscan/download/openvas.csv
+            wget https://www.computec.ch/projekte/vulscan/download/osvdb.csv
+            wget https://www.computec.ch/projekte/vulscan/download/scipvuldb.csv
+            wget https://www.computec.ch/projekte/vulscan/download/securityfocus.csv
+            wget https://www.computec.ch/projekte/vulscan/download/securitytracker.csv
+            wget https://www.computec.ch/projekte/vulscan/download/xforce.csv
+            echo "done, downloaded:"
+            du -h vulnDBs
