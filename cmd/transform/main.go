@@ -50,6 +50,10 @@ func Run() {
 	case "ToFileTypes":
 		ToFileTypes()
 
+	// POP3
+	case "ToFetchedMails":
+		ToFetchedMails()
+
 	// HTTP
 	case "ToHTTPHostNames":
 		ToHTTPHostNames()

@@ -1,5 +1,8 @@
 # TODOs
 
+- keep track of what software was already looked up to avoid duplicate matching (see search for log msg)
+- DHCP, DNS, HTTP transforms
+
 - integrate NVD feed and CPE database
 - add full stream SMTP parsing
 - add lookups for DHCP Fingerprints
