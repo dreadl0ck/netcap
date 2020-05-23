@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -36,6 +37,8 @@ type Exploit struct {
 }
 
 func indexData(in string) {
+
+	start := time.Now()
 
 	if strings.Contains(in, ".csv") {
 
@@ -71,56 +74,70 @@ func indexData(in string) {
 			log.Fatal(err)
 		}
 	} else if strings.Contains(in, ".json") {
-		indexName := filepath.Join(resolvers.DataBaseSource, "cve.bleve.nvd")
 
-		var index bleve.Index
+		var (
+			indexName = filepath.Join(resolvers.DataBaseSource, "cve.bleve.nvd")
+			index bleve.Index
+		)
+
+		fmt.Println("index path", indexName)
 
 		if _, err := os.Stat(indexName); !os.IsNotExist(err) {
 			index, _ = bleve.Open(indexName) // To search or update an existing index
 		} else {
 			index = makeBleveIndex(indexName) // To create a new index
 		}
-		start := time.Now()
-		years := []string{
-			"2002",
-			"2003",
-			"2004",
-			"2005",
-			"2006",
-			"2007",
-			"2008",
-			"2009",
-			"2010",
-			"2011",
-			"2012",
-			"2013",
-			"2014",
-			"2015",
-			"2016",
-			"2017",
-			"2018",
-			"2019",
-			"2020",
-		}
-		var total int
+		var (
+			start = time.Now()
+			years = []string{
+				//"2002",
+				//"2003",
+				//"2004",
+				//"2005",
+				//"2006",
+				//"2007",
+				//"2008",
+				//"2009",
+				//"2010",
+				"2011",
+				"2012",
+				"2013",
+				"2014",
+				"2015",
+				"2016",
+				"2017",
+				"2018",
+				"2019",
+				"2020",
+			}
+			total int
+		)
 		for _, year := range years {
+			fmt.Print("processing files for year ", year)
 			data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
 			if err != nil {
 				log.Fatal("Could not open file " + filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
 			}
+
 			var items = new(encoder.NVDVulnerabilityItems)
 			err = json.Unmarshal(data, items)
 			total += len(items.CVEItems)
-			for _, v := range items.CVEItems {
+			length := len(items.CVEItems)
+			for i, v := range items.CVEItems {
+				utils.ClearLine()
+				fmt.Print("processing files for year ", year, ": ", i, " / ", length)
 				index.Index(v.Cve.CVEDataMeta.ID, v)
 			}
+			fmt.Println()
 		}
 
 		//spew.Dump(items)
 		fmt.Println("loaded", total, "CVEs in", time.Since(start))
 	} else {
-		log.Fatal("Could not handle given file")
+		log.Fatal("Could not handle given file", *flagIndex)
 	}
+
+	fmt.Println("done in", time.Since(start))
 }
 
 func makeBleveIndex(indexName string) bleve.Index {
