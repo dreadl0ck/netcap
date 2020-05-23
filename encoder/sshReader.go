@@ -19,6 +19,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/reassembly"
@@ -94,89 +95,88 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 		return
 	}
 
-	for {
-		data, _, err := r.ReadLine()
-		if err != nil {
-			break
-		}
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-		if h.clientIdent == "" {
-			h.clientIdent = string(data)
-			continue
-		} else if h.serverIdent == "" {
-			h.serverIdent = string(data)
-			continue
-		}
+	if h.clientIdent == "" {
+		h.clientIdent = string(data)
+		return
+	} else if h.serverIdent == "" {
+		h.serverIdent = string(data)
+		return
+	}
 
-		for i, b := range data {
+	for i, b := range data {
 
-			if b == 0x14 { // Marks the beginning of the KexInitMsg // TODO: stop checking after X bytes, and after we already have server and client hashes
+		if b == 0x14 { // Marks the beginning of the KexInitMsg // TODO: stop checking after X bytes, and after we already have server and client hashes
 
-				if i == 0 {
-					break
-				}
-
-				if len(data[:i-1]) != 4 {
-					break
-				}
-
-				length := int(binary.BigEndian.Uint32(data[:i-1]))
-				padding := int(data[i-1])
-				if len(data) < i+length-padding-1 {
-					break
-				}
-
-				//fmt.Println("padding", padding, "length", length)
-				//fmt.Println(hex.Dump(data[i:i+length-padding-1]))
-
-				var init sshx.KexInitMsg
-				err := sshx.Unmarshal(data[i:i+length-padding-1], &init)
-				if err != nil {
-					fmt.Println(err)
-				}
-
-				//spew.Dump("found SSH KexInit", h.parent.ident, init)
-				hash, raw := computeHASSH(init)
-				if h.clientKexInit == nil {
-					sshEncoder.write(&types.SSH{
-						Timestamp:  h.parent.client.FirstPacket().String(),
-						HASSH:      hash,
-						Flow:       h.parent.ident,
-						Ident:      h.clientIdent,
-						Algorithms: raw,
-						IsClient:   true,
-					})
-					h.clientKexInit = &init
-				} else {
-					sshEncoder.write(&types.SSH{
-						Timestamp:  h.parent.client.FirstPacket().String(),
-						HASSH:      hash,
-						Flow:       reverseIdent(h.parent.ident),
-						Ident:      h.serverIdent,
-						Algorithms: raw,
-						IsClient:   false,
-					})
-					h.serverKexInit = &init
-				}
-
-				// TODO fetch device profile
-				for _, soft := range hashDBMap[hash] {
-					h.software = append(h.software, &types.Software{
-						Timestamp: h.parent.client.FirstPacket().String(),
-						Product:   soft.Version, // Name of the server (Apache, Nginx, ...)
-						Vendor:    "",           // Unfitting name, but operating system
-						Version:   "",           // Version as found after the '/'
-						//DeviceProfiles: []string{dpIdent},
-						SourceName: "HASSH",
-						SourceData: hash,
-						Service:    "SSH",
-						//DPIResults:     protos,
-						Flows: []string{h.parent.ident},
-						Notes: "Likelyhood: " + soft.Likelyhood,
-					})
-				}
+			if i == 0 {
 				break
 			}
+
+			if len(data[:i-1]) != 4 {
+				break
+			}
+
+			length := int(binary.BigEndian.Uint32(data[:i-1]))
+			padding := int(data[i-1])
+			if len(data) < i+length-padding-1 {
+				break
+			}
+
+			//fmt.Println("padding", padding, "length", length)
+			//fmt.Println(hex.Dump(data[i:i+length-padding-1]))
+
+			var init sshx.KexInitMsg
+			err := sshx.Unmarshal(data[i:i+length-padding-1], &init)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			//spew.Dump("found SSH KexInit", h.parent.ident, init)
+			hash, raw := computeHASSH(init)
+			if h.clientKexInit == nil {
+				sshEncoder.write(&types.SSH{
+					Timestamp:  h.parent.client.FirstPacket().String(),
+					HASSH:      hash,
+					Flow:       h.parent.ident,
+					Ident:      h.clientIdent,
+					Algorithms: raw,
+					IsClient:   true,
+				})
+				h.clientKexInit = &init
+			} else {
+				sshEncoder.write(&types.SSH{
+					Timestamp:  h.parent.client.FirstPacket().String(),
+					HASSH:      hash,
+					Flow:       reverseIdent(h.parent.ident),
+					Ident:      h.serverIdent,
+					Algorithms: raw,
+					IsClient:   false,
+				})
+				h.serverKexInit = &init
+			}
+
+			// TODO fetch device profile
+			for _, soft := range hashDBMap[hash] {
+				h.software = append(h.software, &types.Software{
+					Timestamp: h.parent.client.FirstPacket().String(),
+					Product:   soft.Version, // Name of the server (Apache, Nginx, ...)
+					Vendor:    "",           // Unfitting name, but operating system
+					Version:   "",           // Version as found after the '/'
+					//DeviceProfiles: []string{dpIdent},
+					SourceName: "HASSH",
+					SourceData: hash,
+					Service:    "SSH",
+					//DPIResults:     protos,
+					Flows: []string{h.parent.ident},
+					Notes: "Likelyhood: " + soft.Likelyhood,
+				})
+			}
+			break
 		}
 	}
 }
