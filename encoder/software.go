@@ -175,7 +175,9 @@ func parseUserAgent(ua string) *userAgent {
 	}
 }
 
-// Make the threshold configurable (Possibly), and changing the stdout output
+// TODO:
+// - Make the threshold configurable
+// - add caching layer to avoid repeating matching operations
 func vulnerabilitiesLookup(s []*Software) {
 	for _, software := range s {
 		var (
@@ -188,29 +190,14 @@ func vulnerabilitiesLookup(s []*Software) {
 			utils.DebugLog.Println("failed to search for vulnerable software:", err)
 			return
 		}
-		fmt.Println("search for ", software.Product, software.Vendor, software.Version)
+		//fmt.Println("search for ", software.Product, software.Vendor, software.Version)
 		for _, v := range searchResults.Hits {
-			if v.Score > 3 {
+			if v.Score > 2.5 {
 				doc, _ := vulnerabilitiesIndex.Document(v.ID)
 				writeVuln(software.Software, doc)
 			}
 		}
 	}
-}
-
-// Make the threshold configurable (Possibly), and changing the stdout output
-func vulnerabilitiesLookupTest(software *types.Software) *bleve.SearchResult {
-	var (
-		queryTerm          = software.Product + " " + software.Version
-		query              = bleve.NewMatchQuery(queryTerm)
-		search             = bleve.NewSearchRequest(query)
-		searchResults, err = vulnerabilitiesIndex.Search(search)
-	)
-	if err != nil {
-		utils.DebugLog.Println("failed to search for vulnerable software:", err)
-		return nil
-	}
-	return searchResults
 }
 
 type vulnerabilityStore struct {
