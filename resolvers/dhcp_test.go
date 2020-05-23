@@ -25,7 +25,7 @@ import (
 
 type dhcpFingerprintResult struct {
 	fingerprint string
-	expected string
+	expected    string
 }
 
 func TestDHCPRemote(t *testing.T) {
@@ -34,7 +34,7 @@ func TestDHCPRemote(t *testing.T) {
 
 	fp := "1,33,3,6,12,15,28,51,58,59,119"
 
-	r, err := http.NewRequest("GET", "https://api.fingerbank.org/api/v2/combinations/interrogate" + apiKey, bytes.NewReader([]byte("{\"dhcp_fingerprint\":\"" + fp + "\"}")))
+	r, err := http.NewRequest("GET", "https://api.fingerbank.org/api/v2/combinations/interrogate"+apiKey, bytes.NewReader([]byte("{\"dhcp_fingerprint\":\""+fp+"\"}")))
 	if err != nil {
 		t.Fatal(err)
 	}

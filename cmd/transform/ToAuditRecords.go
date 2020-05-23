@@ -192,7 +192,6 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 		}
 		ent.SetValue(displayName)
 
-
 		ent.AddProperty("path", "Path", "strict", ident)
 		ent.AddProperty("description", "Description", "strict", name+".ncap.gz")
 

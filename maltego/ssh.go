@@ -67,9 +67,9 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 
 	var (
 		ssh = new(types.SSH)
-		pm      proto.Message
-		ok      bool
-		trx     = MaltegoTransform{}
+		pm  proto.Message
+		ok  bool
+		trx = MaltegoTransform{}
 	)
 	pm = ssh
 

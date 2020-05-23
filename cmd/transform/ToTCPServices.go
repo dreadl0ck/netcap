@@ -12,7 +12,7 @@ func ToTCPServices() {
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if service.Protocol == "TCP" {
 
-				ent := trx.AddEntity("netcap.TCPService", service.IP + ":" + service.Port)
+				ent := trx.AddEntity("netcap.TCPService", service.IP+":"+service.Port)
 				ent.SetType("netcap.TCPService")
 
 				val := service.IP + ":" + service.Port
