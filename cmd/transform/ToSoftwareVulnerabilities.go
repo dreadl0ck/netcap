@@ -16,6 +16,9 @@ func ToSoftwareVulnerabilities() {
 			if len(parts) > 1 {
 				val = parts[0] + "\n" + strings.Join(parts[1:], "-")
 			}
+			if len(vuln.ID) > 0 {
+				val = "\n" + vuln.ID
+			}
 			val = maltego.EscapeText(val)
 			ent := trx.AddEntity("netcap.Vulnerability", val)
 			ent.SetType("netcap.Vulnerability")

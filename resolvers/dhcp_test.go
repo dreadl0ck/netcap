@@ -14,12 +14,56 @@
 package resolvers
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/davecgh/go-spew/spew"
+	"io/ioutil"
+	"net/http"
 	"testing"
 )
 
 type dhcpFingerprintResult struct {
 	fingerprint string
 	expected string
+}
+
+func TestDHCPRemote(t *testing.T) {
+
+	InitDHCPFingerprintAPIKey()
+
+	fp := "1,33,3,6,12,15,28,51,58,59,119"
+
+	r, err := http.NewRequest("GET", "https://api.fingerbank.org/api/v2/combinations/interrogate" + apiKey, bytes.NewReader([]byte("{\"dhcp_fingerprint\":\"" + fp + "\"}")))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(string(data))
+
+	fmt.Println(resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("api error")
+	}
+
+	var res = new(DHCPResult)
+	err = json.Unmarshal(data, resp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	spew.Dump(res)
 }
 
 func TestDHCPFingerprint(t *testing.T) {
