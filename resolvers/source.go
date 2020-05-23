@@ -21,13 +21,13 @@ import (
 var (
 	Quiet          bool
 	CurrentConfig  Config
-	dataBaseSource string
+	DataBaseSource string
 )
 
 func init() {
-	dataBaseSource = os.Getenv("NC_DATABASE_SOURCE")
-	if dataBaseSource == "" {
-		dataBaseSource = "/usr/local/etc/netcap/dbs"
+	DataBaseSource = os.Getenv("NC_DATABASE_SOURCE")
+	if DataBaseSource == "" {
+		DataBaseSource = "/usr/local/etc/netcap/dbs"
 	}
 }
 
@@ -41,7 +41,7 @@ func Init(c Config, quiet bool) {
 		disableReverseDNS = false
 	} else {
 		var hostsFound bool
-		_, err := os.Stat(filepath.Join(dataBaseSource, "hosts"))
+		_, err := os.Stat(filepath.Join(DataBaseSource, "hosts"))
 		if err == nil {
 			hostsFound = true
 		}

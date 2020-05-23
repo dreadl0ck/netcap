@@ -32,7 +32,7 @@ func InitIPWhitelist() {
 
 	var hosts int
 
-	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "ip-whitelist.csv"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "ip-whitelist.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}
