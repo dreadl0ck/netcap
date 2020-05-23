@@ -3,6 +3,7 @@ package transform
 import (
 	maltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
+	"strings"
 )
 
 func ToProducts() {
@@ -21,6 +22,15 @@ func ToProducts() {
 				}
 				val += "\n" + soft.SourceName
 			}
+			for i, f := range soft.Flows {
+				if i == 3 {
+					val += "\n..."
+					break
+				}
+				val += "\n" + f
+			}
+
+			val = maltego.EscapeText(val)
 
 			ent := trx.AddEntity("netcap.Software", val)
 			ent.SetType("netcap.Software")
@@ -30,6 +40,7 @@ func ToProducts() {
 			ent.AddProperty("vendor", "Vendor", "strict", soft.Vendor)
 			ent.AddProperty("product", "Product", "strict", soft.Product)
 			ent.AddProperty("version", "Version", "strict", soft.Version)
+			ent.AddProperty("flows", "Flows", "strict", strings.Join(soft.Flows, " | "))
 			ent.AddProperty("sourcename", "SourceName", "strict", soft.SourceName)
 			ent.AddProperty("sourcedata", "SourceData", "strict", maltego.EscapeText(soft.SourceData))
 			ent.AddProperty("notes", "Notes", "strict", soft.Notes)
