@@ -345,8 +345,6 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 
 	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
-	fmt.Println("Here")
-
 	if len(h.UserAgent) != 0 && h.UserAgent != " " {
 
 		pMu.Lock()

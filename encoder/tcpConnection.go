@@ -450,6 +450,27 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 			s2c = Stream{t.net.Reverse(), t.transport.Reverse()}
 		)
 
+		// try to determine what type of raw tcp stream and update decoder
+		// a first selection has been made based on the ports
+		// now lets peek into the data stream to make a guess
+		// TODO: always identify the decoder at this point, and treat everything as a raw TCP conn first?
+		if _, ok := t.decoder.(*tcpReader); ok {
+			switch {
+			case bytes.Contains(t.server.ServiceBanner(), []byte("HTTP")):
+				t.decoder = &httpReader{
+					parent: t.client.(*tcpStreamReader).parent,
+				}
+			case bytes.Contains(t.server.ServiceBanner(), []byte("SSH")):
+				t.decoder = &sshReader{
+					parent: t.client.(*tcpStreamReader).parent,
+				}
+			case bytes.Contains(t.server.ServiceBanner(), []byte("POP3")):
+				t.decoder = &pop3Reader{
+					parent: t.client.(*tcpStreamReader).parent,
+				}
+			}
+		}
+
 		// call the associated decoder
 		t.decoder.Decode(s2c, c2s)
 	}
