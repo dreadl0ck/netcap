@@ -61,7 +61,7 @@ var (
 	}
 
 	// regular expressions for the harvesters
-	reFTP               = regexp.MustCompile(`220(?:.*?)\r\nUSER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
+	reFTP               = regexp.MustCompile(`220(?:.*?)\r\n(?:.*)\r?\n?(?:.*)\r?\n?USER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
 	reHTTPBasic         = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
 	reHTTPDigest        = regexp.MustCompile(`(?:.*?)Authorization: Digest (.*?)\r\n`)
 	reSMTPPlainSeparate = regexp.MustCompile(`(?:.*?)AUTH PLAIN\r\n334\r\n(.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
@@ -86,6 +86,10 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	matches := reFTP.FindSubmatch(data)
 	if len(matches) > 1 {
+		//fmt.Println("FTP matches", len(matches))
+		//for _, m := range matches {
+		//	fmt.Println("-" ,string(m))
+		//}
 		username := string(matches[1])
 		password := string(matches[2])
 		return &types.Credentials{
