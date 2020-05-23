@@ -15,14 +15,19 @@ package util
 
 import (
 	"bufio"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dustin/go-humanize"
+	"io"
 	"io/ioutil"
 	"log"
+	"net/textproto"
 	"os"
 	"path/filepath"
 	"strings"
+
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -38,67 +43,162 @@ type Exploit struct {
 
 func indexData(in string) {
 
-	start := time.Now()
+	var (
+		start = time.Now()
+		indexPath string
+		index bleve.Index
+	)
 
-	if strings.Contains(in, ".csv") {
+	switch in {
+	case "mitre-cve":
+		indexPath = filepath.Join(resolvers.DataBaseSource, "mitre-cve.bleve")
+		fmt.Println("index path", indexPath)
 
-		indexName := filepath.Join(resolvers.DataBaseSource, "cve.bleve.mitre")
-		var index bleve.Index
-		if _, err := os.Stat(indexName); !os.IsNotExist(err) {
-			index, _ = bleve.Open(indexName) // To search or update an existing index
+		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
+			index, _ = bleve.Open(indexPath) // To search or update an existing index
 		} else {
-			index = makeBleveIndex(indexName) // To create a new index
+			index = makeBleveIndex(indexPath) // To create a new index
 		}
 
-		file, err := os.Open(filepath.Join(resolvers.DataBaseSource, in))
+		// wget https://cve.mitre.org/data/downloads/allitems.csv
+		file, err := os.Open(filepath.Join(resolvers.DataBaseSource, "allitems.csv"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// count total number of lines
+		tr := textproto.NewReader(bufio.NewReader(file))
+		var total int
+		for {
+			line, err := tr.ReadLine()
+			if err == io.EOF {
+				break
+			}
+			if !strings.HasPrefix(line, "#") {
+				total++
+			}
+		}
+		file.Close()
+
+		// reopen file handle
+		file, err = os.Open(filepath.Join(resolvers.DataBaseSource, "files_exploits.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer file.Close()
 
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := scanner.Text()
-			lineSlice := strings.Split(line, ",")
-			lineExploit := Exploit{
-				Id:          lineSlice[0],
-				Status:      lineSlice[1],
-				Description: lineSlice[2],
+		r := csv.NewReader(file)
+		var count int
+		for {
+			rec, err := r.Read()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				fmt.Println(err, rec)
+				continue
 			}
-			index.Index(lineExploit.Id, lineExploit)
+			count++
+			utils.ClearLine()
+			fmt.Print("processing: ", count, " / ", total)
+			e := Exploit{
+				Id:          rec[0],
+				Status:      rec[1],
+				Description: rec[2],
+			}
+			err = index.Index(e.Id, e)
+			if err != nil {
+				fmt.Println(err, r)
+			}
 		}
 
-		fmt.Println("Loaded DB")
+		fmt.Println("indexed mitre DB, num entries:", count)
 
-		if err := scanner.Err(); err != nil {
+	case "exploit-db":
+
+		indexPath = filepath.Join(resolvers.DataBaseSource, "exploit-db.bleve")
+		fmt.Println("index path", indexPath)
+
+		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
+			index, _ = bleve.Open(indexPath) // To search or update an existing index
+		} else {
+			index = makeBleveIndex(indexPath) // To create a new index
+		}
+
+		// wget https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv
+		file, err := os.Open(filepath.Join(resolvers.DataBaseSource, "files_exploits.csv"))
+		if err != nil {
 			log.Fatal(err)
 		}
-	} else if strings.Contains(in, ".json") {
 
-		var (
-			indexName = filepath.Join(resolvers.DataBaseSource, "cve.bleve.nvd")
-			index bleve.Index
-		)
+		// count total number of lines
+		tr := textproto.NewReader(bufio.NewReader(file))
+		var total int
+		for {
+			line, err := tr.ReadLine()
+			if err == io.EOF {
+				break
+			}
+			if !strings.HasPrefix(line, "#") {
+				total++
+			}
+		}
+		file.Close()
 
-		fmt.Println("index path", indexName)
+		// reopen file handle
+		file, err = os.Open(filepath.Join(resolvers.DataBaseSource, "files_exploits.csv"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
 
-		if _, err := os.Stat(indexName); !os.IsNotExist(err) {
-			index, _ = bleve.Open(indexName) // To search or update an existing index
+		r := csv.NewReader(file)
+		var count int
+		for {
+			rec, err := r.Read()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				fmt.Println(err, rec)
+				continue
+			}
+			count++
+			utils.ClearLine()
+			fmt.Print("processing: ", count, " / ", total)
+			e := Exploit{
+				Id:          rec[0],
+				Status:      rec[1],
+				Description: rec[2],
+			}
+			err = index.Index(e.Id, e)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+
+		fmt.Println("indexed exploit DB, num entries:", count)
+
+	case "nvd":
+
+		indexPath = filepath.Join(resolvers.DataBaseSource, "cve.bleve.nvd")
+		fmt.Println("index path", indexPath)
+
+		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
+			index, _ = bleve.Open(indexPath) // To search or update an existing index
 		} else {
-			index = makeBleveIndex(indexName) // To create a new index
+			index = makeBleveIndex(indexPath) // To create a new index
 		}
 		var (
 			start = time.Now()
 			years = []string{
-				//"2002",
-				//"2003",
-				//"2004",
-				//"2005",
-				//"2006",
-				//"2007",
-				//"2008",
-				//"2009",
-				//"2010",
+				"2002",
+				"2003",
+				"2004",
+				"2005",
+				"2006",
+				"2007",
+				"2008",
+				"2009",
+				"2010",
 				"2011",
 				"2012",
 				"2013",
@@ -126,25 +226,32 @@ func indexData(in string) {
 			for i, v := range items.CVEItems {
 				utils.ClearLine()
 				fmt.Print("processing files for year ", year, ": ", i, " / ", length)
-				index.Index(v.Cve.CVEDataMeta.ID, v)
+				err = index.Index(v.Cve.CVEDataMeta.ID, v)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 			fmt.Println()
 		}
 
-		//spew.Dump(items)
-		fmt.Println("loaded", total, "CVEs in", time.Since(start))
-	} else {
+		fmt.Println("loaded", total, "NVD CVEs in", time.Since(start))
+	default:
 		log.Fatal("Could not handle given file", *flagIndex)
 	}
 
-	fmt.Println("done in", time.Since(start))
+	stat, err := os.Stat(indexPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("done in", time.Since(start), "index size", humanize.Bytes(uint64(stat.Size())), "path", indexPath)
 }
 
 func makeBleveIndex(indexName string) bleve.Index {
 	mapping := bleve.NewIndexMapping()
 	index, err := bleve.New(indexName, mapping)
 	if err != nil {
-		log.Fatalln("Trouble making index!")
+		log.Fatalln("failed to create index:", err)
 	}
 	return index
 }

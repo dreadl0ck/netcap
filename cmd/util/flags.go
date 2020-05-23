@@ -40,5 +40,5 @@ var (
 	flagMemBufferSize  = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")
 	flagEnv            = fs.Bool("env", false, "print netcap environment variables and exit")
 	flagInterfaces     = fs.Bool("interfaces", false, "print netcap environment variables and exit")
-	flagIndex          = fs.String("index", "allitems.csv", "index data for full text search")
+	flagIndex          = fs.String("index", "", "index data for full text search")
 )
