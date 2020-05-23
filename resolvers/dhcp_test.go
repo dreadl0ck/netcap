@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -39,31 +38,40 @@ func TestDHCPRemote(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// send request
 	r.Header.Set("Content-Type", "application/json")
-
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// print response body
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println(string(data))
 
+	// print status
 	fmt.Println(resp.Status)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatal("api error")
 	}
 
+	// parse JSON response
 	var res = new(DHCPResult)
-	err = json.Unmarshal(data, resp)
+	err = json.Unmarshal(data, res)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	spew.Dump(res)
+	// pretty print JSON api response
+	var out bytes.Buffer
+	err = json.Indent(&out, data, " ", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(string(out.Bytes()))
 }
 
 func TestDHCPFingerprint(t *testing.T) {
