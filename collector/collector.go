@@ -495,7 +495,7 @@ func (c *Collector) InitLogging() error {
 		if stat, err := os.Stat(c.config.EncoderConfig.Out); err != nil {
 			os.MkdirAll(c.config.EncoderConfig.Out, os.FileMode(outDirPermissionDefault))
 			stat, err = os.Stat(c.config.EncoderConfig.Out)
-			if err != nil{
+			if err != nil {
 				return err
 			}
 		} else {

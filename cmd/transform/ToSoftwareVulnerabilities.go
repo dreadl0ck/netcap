@@ -42,7 +42,7 @@ func ToSoftwareVulnerabilities() {
 			ent.AddProperty("file", "File", "strict", vuln.File)
 			ent.AddProperty("notes", "Notes", "strict", maltego.EscapeText(vuln.Notes))
 			ent.AddProperty("flows", "flows", "strict", maltego.EscapeText(strings.Join(vuln.Software.Flows, ",")))
-			ent.AddProperty("software", "Software", "strict", maltego.EscapeText(vuln.Software.Product + " " + vuln.Software.Version))
+			ent.AddProperty("software", "Software", "strict", maltego.EscapeText(vuln.Software.Product+" "+vuln.Software.Version))
 
 			ent.SetLinkColor("#000000")
 			//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))

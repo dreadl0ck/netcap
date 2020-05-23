@@ -12,7 +12,7 @@ func ToUDPServices() {
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if service.Protocol == "UDP" {
 
-				ent := trx.AddEntity("netcap.UDPService", service.IP + ":" + service.Port)
+				ent := trx.AddEntity("netcap.UDPService", service.IP+":"+service.Port)
 				ent.SetType("netcap.UDPService")
 
 				val := service.IP + ":" + service.Port

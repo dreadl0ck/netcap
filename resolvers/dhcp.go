@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	dhcpFingerprintDB        = make(map[string]string)
-	dhcpFingerprintMu        deadlock.Mutex
+	dhcpFingerprintDB = make(map[string]string)
+	dhcpFingerprintMu deadlock.Mutex
 )
 
 // Fingerbank.org API
@@ -52,6 +52,7 @@ var (
 // GET /api/v2/devices/:account_key
 
 var apiKey string
+
 func InitDHCPFingerprintAPIKey() {
 	apiKey = "?key=" + os.Getenv("FINGERPRINT_API_KEY")
 }

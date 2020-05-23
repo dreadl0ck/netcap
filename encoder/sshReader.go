@@ -154,7 +154,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 						Flow:       reverseIdent(h.parent.ident),
 						Ident:      h.serverIdent,
 						Algorithms: raw,
-						IsClient: false,
+						IsClient:   false,
 					})
 					h.serverKexInit = &init
 				}

@@ -72,4 +72,9 @@ func Run() {
 		utils.ListAllNetworkInterfaces()
 		return
 	}
+
+	// TODO: use string flag to pass path and make the util configurable
+	if *flagIndex != "" {
+		indexData()
+	}
 }

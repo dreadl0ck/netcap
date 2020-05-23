@@ -67,9 +67,9 @@ func CredentialsTransform(count CredentialsCountFunc, transform CredentialsTrans
 
 	var (
 		credentials = new(types.Credentials)
-		pm      proto.Message
-		ok      bool
-		trx     = MaltegoTransform{}
+		pm          proto.Message
+		ok          bool
+		trx         = MaltegoTransform{}
 	)
 	pm = credentials
 
