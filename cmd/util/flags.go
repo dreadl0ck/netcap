@@ -14,9 +14,10 @@
 package util
 
 import (
+	"os"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/namsral/flag"
-	"os"
 )
 
 func Flags() (flags []string) {
