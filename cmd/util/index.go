@@ -17,8 +17,10 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/blevesearch/bleve"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -28,14 +30,14 @@ type Exploit struct {
 	Description string
 }
 
-func indexData() {
+func indexData(in string) {
 
-	indexName := "/usr/local/etc/netcap/dbs/cve.bleve"
+	indexName := filepath.Join(resolvers.DataBaseSource, "cve.bleve")
 
 	index := makeBleveIndex(indexName) // To create a new index
 	//index, _ := bleve.Open(indexName) // To search or update an existing index
 
-	file, err := os.Open("allitems.csv")
+	file, err := os.Open(in)
 	if err != nil {
 		log.Fatal(err)
 	}
