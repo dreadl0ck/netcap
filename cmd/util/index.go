@@ -15,13 +15,18 @@ package util
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
-	"github.com/blevesearch/bleve"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/blevesearch/bleve"
+	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/resolvers"
 )
 
 type Exploit struct {
@@ -32,33 +37,89 @@ type Exploit struct {
 
 func indexData(in string) {
 
-	indexName := filepath.Join(resolvers.DataBaseSource, "cve.bleve")
+	if strings.Contains(in, ".csv") {
 
-	index := makeBleveIndex(indexName) // To create a new index
-	//index, _ := bleve.Open(indexName) // To search or update an existing index
-
-	file, err := os.Open(in)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		lineSlice := strings.Split(line, ",")
-		lineExploit := Exploit{
-			Id:          lineSlice[0],
-			Status:      lineSlice[1],
-			Description: lineSlice[2],
+		indexName := filepath.Join(resolvers.DataBaseSource, "cve.bleve.mitre")
+		var index bleve.Index
+		if _, err := os.Stat(indexName); !os.IsNotExist(err) {
+			index, _ = bleve.Open(indexName) // To search or update an existing index
+		} else {
+			index = makeBleveIndex(indexName) // To create a new index
 		}
-		index.Index(lineExploit.Id, lineExploit)
-	}
 
-	fmt.Println("Loaded DB")
+		file, err := os.Open(filepath.Join(resolvers.DataBaseSource, in))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
 
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			lineSlice := strings.Split(line, ",")
+			lineExploit := Exploit{
+				Id:          lineSlice[0],
+				Status:      lineSlice[1],
+				Description: lineSlice[2],
+			}
+			index.Index(lineExploit.Id, lineExploit)
+		}
+
+		fmt.Println("Loaded DB")
+
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+	} else if strings.Contains(in, ".json") {
+		indexName := filepath.Join(resolvers.DataBaseSource, "cve.bleve.nvd")
+
+		var index bleve.Index
+
+		if _, err := os.Stat(indexName); !os.IsNotExist(err) {
+			index, _ = bleve.Open(indexName) // To search or update an existing index
+		} else {
+			index = makeBleveIndex(indexName) // To create a new index
+		}
+		start := time.Now()
+		years := []string{
+			"2002",
+			"2003",
+			"2004",
+			"2005",
+			"2006",
+			"2007",
+			"2008",
+			"2009",
+			"2010",
+			"2011",
+			"2012",
+			"2013",
+			"2014",
+			"2015",
+			"2016",
+			"2017",
+			"2018",
+			"2019",
+			"2020",
+		}
+		var total int
+		for _, year := range years {
+			data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
+			if err != nil {
+				log.Fatal("Could not open file " + filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
+			}
+			var items = new(encoder.NVDVulnerabilityItems)
+			err = json.Unmarshal(data, items)
+			total += len(items.CVEItems)
+			for _, v := range items.CVEItems {
+				index.Index(v.Cve.CVEDataMeta.ID, v)
+			}
+		}
+
+		//spew.Dump(items)
+		fmt.Println("loaded", total, "CVEs in", time.Since(start))
+	} else {
+		log.Fatal("Could not handle given file")
 	}
 }
 

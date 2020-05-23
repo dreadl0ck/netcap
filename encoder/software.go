@@ -16,7 +16,6 @@ package encoder
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blevesearch/bleve/document"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -24,6 +23,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/blevesearch/bleve/document"
 
 	"github.com/blevesearch/bleve"
 	"github.com/dreadl0ck/gopacket/layers"
@@ -344,6 +345,8 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 
 	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
+	fmt.Println("Here")
+
 	if len(h.UserAgent) != 0 && h.UserAgent != " " {
 
 		pMu.Lock()
