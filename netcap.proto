@@ -1915,5 +1915,5 @@ message Vulnerability {
     string   File        = 3;
     string   Notes       = 4;
     string   ID          = 5;
-    Software software    = 6;
+    Software Software    = 6;
 }
