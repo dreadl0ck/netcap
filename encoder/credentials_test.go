@@ -8,14 +8,16 @@ import (
 
 // FTP Harvester test
 func TestFTPCredentialsHarvester(t *testing.T) {
-	data := []byte(`220 (vsFTPd 3.0.3)
+
+	data := `220 (vsFTPd 3.0.3)
 USER ftpuser
 331 Please specify the password.
 PASS ftppass
 230 Login successful.
 SYST
-215 UNIX Type: L8`)
-	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
+215 UNIX Type: L8`
+
+	finalData := strings.ReplaceAll(data, "\n", "\r\n")
 
 	c := ftpHarvester([]byte(finalData), "test", time.Now())
 	if c == nil {
@@ -27,6 +29,37 @@ SYST
 	}
 
 	if c.Password != "ftppass" {
+		t.Fatal("incorrect pass, got:", c.Password, "expected: ftppass")
+	}
+
+	data = `220 (vsFTPd 3.0.3)
+OPTS UTF8 ON
+200 Always in UTF8 mode.
+USER root
+331 Please specify the password.
+PASS test123
+230 Login successful.
+PORT 145,100,110,132,194,180
+200 PORT command successful. Consider using PASV.
+NLST
+150 Here comes the directory listing.
+226 Directory send OK.
+QUIT
+221 Goodbye.
+`
+
+	finalData = strings.ReplaceAll(data, "\n", "\r\n")
+
+	c = ftpHarvester([]byte(finalData), "test", time.Now())
+	if c == nil {
+		t.Fatal("no credentials found")
+	}
+
+	if c.User != "root" {
+		t.Fatal("incorrect pass, got:", c.User, "expected: ftpuser")
+	}
+
+	if c.Password != "test123" {
 		t.Fatal("incorrect pass, got:", c.Password, "expected: ftppass")
 	}
 
