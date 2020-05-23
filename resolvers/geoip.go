@@ -56,12 +56,12 @@ func InitGeolocationDB() {
 }
 
 func initCityReader() (err error) {
-	cityReader, err = maxminddb.Open(filepath.Join(dataBaseSource, "GeoLite2-City.mmdb"))
+	cityReader, err = maxminddb.Open(filepath.Join(DataBaseSource, "GeoLite2-City.mmdb"))
 
 	return
 }
 func initAsnReader() (err error) {
-	asnReader, err = maxminddb.Open(filepath.Join(dataBaseSource, "GeoLite2-ASN.mmdb"))
+	asnReader, err = maxminddb.Open(filepath.Join(DataBaseSource, "GeoLite2-ASN.mmdb"))
 	return
 }
 

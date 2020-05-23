@@ -31,7 +31,7 @@ func InitDNSWhitelist() {
 
 	var hosts int
 
-	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "domain-whitelist.csv"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "domain-whitelist.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -59,7 +59,7 @@ func LookupJa3(hash string) string {
 func InitJa3Resolver() {
 
 	// read database dir
-	files, err := ioutil.ReadDir(dataBaseSource)
+	files, err := ioutil.ReadDir(DataBaseSource)
 	if err != nil {
 		log.Println(err)
 		return
@@ -74,7 +74,7 @@ func InitJa3Resolver() {
 		}
 
 		// read file contents into memory
-		data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, f.Name()))
+		data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, f.Name()))
 		if err != nil {
 			log.Println(err)
 			continue

@@ -53,7 +53,7 @@ var pathReplacer = strings.NewReplacer("/", "-", " ", "-", "]", "", "[", "", ")"
 func InitServiceDB() {
 
 	var (
-		f, err    = os.Open(filepath.Join(dataBaseSource, "service-names-port-numbers.csv"))
+		f, err    = os.Open(filepath.Join(DataBaseSource, "service-names-port-numbers.csv"))
 		csvReader = csv.NewReader(f)
 	)
 	if err != nil {

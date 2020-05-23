@@ -103,7 +103,7 @@ func InitDHCPFingerprintDB() {
 
 	var fingerprints int
 
-	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "dhcp-fingerprints.csv"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "dhcp-fingerprints.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}

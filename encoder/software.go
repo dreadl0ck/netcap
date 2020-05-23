@@ -192,7 +192,7 @@ func vulnerabilitiesLookup(s []*Software) {
 		}
 		//fmt.Println("search for ", software.Product, software.Vendor, software.Version)
 		for _, v := range searchResults.Hits {
-			if v.Score > 2.5 {
+			if v.Score > 2.8 {
 				doc, _ := vulnerabilitiesIndex.Document(v.ID)
 				writeVuln(software.Software, doc)
 			}

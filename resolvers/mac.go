@@ -52,7 +52,7 @@ func InitMACResolver() {
 
 	var sums int
 
-	data, err := ioutil.ReadFile(filepath.Join(dataBaseSource, "macaddress.io-db.json"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "macaddress.io-db.json"))
 	if err != nil {
 		log.Println(err)
 		return
