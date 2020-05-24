@@ -26,6 +26,8 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"time"
@@ -40,6 +42,19 @@ type Exploit struct {
 	Status      string
 	Description string
 }
+
+type NVDExploit struct {
+	Id                 string
+	Description        string
+	Severity           string
+	V2Score            string
+	AccessVector       string
+	Versions           []string
+}
+
+// used to fetch version identifier from description string from NVD item
+// if cpe url does not contain version information
+var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
 
 func indexData(in string) {
 
@@ -78,7 +93,10 @@ func indexData(in string) {
 				total++
 			}
 		}
-		file.Close()
+		err = file.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		// reopen file handle
 		file, err = os.Open(filepath.Join(resolvers.DataBaseSource, "files_exploits.csv"))
@@ -142,7 +160,10 @@ func indexData(in string) {
 				total++
 			}
 		}
-		file.Close()
+		err = file.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		// reopen file handle
 		file, err = os.Open(filepath.Join(resolvers.DataBaseSource, "files_exploits.csv"))
@@ -179,7 +200,7 @@ func indexData(in string) {
 
 	case "nvd":
 
-		indexPath = filepath.Join(resolvers.DataBaseSource, "cve.bleve.nvd")
+		indexPath = filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
@@ -224,11 +245,51 @@ func indexData(in string) {
 			total += len(items.CVEItems)
 			length := len(items.CVEItems)
 			for i, v := range items.CVEItems {
+
 				utils.ClearLine()
 				fmt.Print("processing files for year ", year, ": ", i, " / ", length)
-				err = index.Index(v.Cve.CVEDataMeta.ID, v)
-				if err != nil {
-					fmt.Println(err)
+
+				for _, entry := range v.Cve.Description.DescriptionData {
+					if entry.Lang == "en" {
+
+						var versions []string
+						for _, n := range v.Configurations.Nodes {
+							if n.Operator == "OR" {
+								for _, cpe := range n.CpeMatch {
+									if cpe.Vulnerable {
+										parts := strings.Split(cpe.Cpe23URI, ":")
+										if len(parts) > 5 {
+											v := parts[5]
+											if v != "*" && v != "-" {
+												versions = append(versions, v)
+											}
+										}
+									}
+								}
+							}
+						}
+						if len(versions) == 0 {
+							genRes := reSimpleVersion.FindString(entry.Value)
+							if genRes != "" {
+								versions = append(versions, genRes)
+							}
+						}
+						//fmt.Println(" ", v.Cve.CVEDataMeta.ID, entry.Value, " =>", versions)
+
+						e := NVDExploit{
+							Id:          v.Cve.CVEDataMeta.ID,
+							Description: entry.Value,
+							Severity:    v.Impact.BaseMetricV2.Severity,
+							V2Score:     strconv.FormatFloat(v.Impact.BaseMetricV2.CvssV2.BaseScore, 'f', 1, 64),
+							AccessVector: v.Impact.BaseMetricV2.CvssV2.AccessVector,
+							Versions: versions,
+						}
+						err = index.Index(e.Id, e)
+						if err != nil {
+							fmt.Println(err)
+						}
+						break
+					}
 				}
 			}
 			fmt.Println()
@@ -239,7 +300,8 @@ func indexData(in string) {
 		log.Fatal("Could not handle given file", *flagIndex)
 	}
 
-	stat, err := os.Stat(indexPath)
+	// retrieve size of the underlying boltdb
+	stat, err := os.Stat(filepath.Join(indexPath, "store"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -167,6 +168,21 @@ func parseUserAgent(ua string) *userAgent {
 		}
 	}
 
+	// if vendor could not be identified, try to determine based on product name
+	// TODO: add utility for this
+	if vendor == "" {
+		switch product {
+		case "Chrome", "Android":
+			vendor = "Google"
+		case "Firefox":
+			vendor = "Mozilla"
+		case "Internet Explorer", "IE":
+			vendor = "Microsoft"
+		case "Safari", "iOS", "macOS":
+			vendor = "Apple"
+		}
+	}
+
 	return &userAgent{
 		client:  client,
 		product: product,
@@ -182,8 +198,8 @@ func parseUserAgent(ua string) *userAgent {
 func vulnerabilitiesLookup(s []*Software) {
 	for _, software := range s {
 		var (
-			queryTerm          = software.Product + " " + software.Version
-			query              = bleve.NewMatchQuery(queryTerm)
+			queryTerm        = buildNVDQuery(software.Vendor, software.Product, software.Version)
+			query              = bleve.NewQueryStringQuery(queryTerm)
 			search             = bleve.NewSearchRequest(query)
 			searchResults, err = vulnerabilitiesIndex.Search(search)
 		)
@@ -193,7 +209,7 @@ func vulnerabilitiesLookup(s []*Software) {
 		}
 		//fmt.Println("search for ", software.Product, software.Vendor, software.Version)
 		for _, v := range searchResults.Hits {
-			if v.Score > 2.8 {
+			if v.Score > thresholdNVD {
 				doc, _ := vulnerabilitiesIndex.Document(v.ID)
 				writeVuln(software.Software, doc)
 			}
@@ -328,7 +344,9 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 		return softwareHarvester(i.p.Data(), flowIdent, i.p.Metadata().CaptureInfo.Timestamp, service, dpIdent, protos)
 	}
 
-	// Defining the variable here to avoid errors. This should be passed as a parameter and contain the hassh value
+	// lookup known issues with identified software
+	vulnerabilitiesLookup(s)
+
 	return s
 }
 
@@ -440,8 +458,9 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 		}
 	}
 
-	// Defining the variable here to avoid errors. This should be passed as a parameter and contain the hassh value
+	// lookup known issues with identified software
 	vulnerabilitiesLookup(s)
+
 	return s
 }
 
@@ -632,7 +651,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	// Load vulnerabilities DB index
-	indexName := "/usr/local/etc/netcap/dbs/exploits.bleve"
+	indexName := filepath.Join(resolvers.DataBaseSource, "mitre-cve.bleve")
 	vulnerabilitiesIndex, err = bleve.Open(indexName)
 	if err != nil {
 		return err
