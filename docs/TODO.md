@@ -1,5 +1,8 @@
 # TODOs
 
+40249,exploits/linux/webapps/40249.txt,"Pi-Hole Web Interface 2.8.1 - Persistent Cross-Site Scripting in Whitelist/Blacklist",2016-08-16,loneferret,webapps,linux,
+- vuln + exploit detection: trim leading v from version?
+
 - keep track of what software was already looked up to avoid duplicate matching (see search for log msg)
 - DHCP, DNS, HTTP transforms
 

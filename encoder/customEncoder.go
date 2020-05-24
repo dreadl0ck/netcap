@@ -43,6 +43,7 @@ var (
 		credentialsEncoder,
 		sshEncoder,
 		vulnerabilityEncoder,
+		exploitEncoder,
 	} // contains all available custom encoders
 )
 

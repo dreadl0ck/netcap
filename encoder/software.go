@@ -25,8 +25,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/blevesearch/bleve/document"
-
 	"github.com/blevesearch/bleve"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
@@ -66,6 +64,7 @@ var (
 	// Used to store CMS related information, and to do the CMS lookup
 	cmsDB                = make(map[string]interface{})
 	vulnerabilitiesIndex bleve.Index
+	exploitsIndex        bleve.Index
 )
 
 // Size returns the number of elements in the Items map
@@ -192,61 +191,6 @@ func parseUserAgent(ua string) *userAgent {
 	}
 }
 
-// TODO:
-// - Make the threshold configurable
-// - add caching layer to avoid repeating matching operations
-func vulnerabilitiesLookup(s []*Software) {
-	for _, software := range s {
-		var (
-			queryTerm        = buildNVDQuery(software.Vendor, software.Product, software.Version)
-			query              = bleve.NewQueryStringQuery(queryTerm)
-			search             = bleve.NewSearchRequest(query)
-			searchResults, err = vulnerabilitiesIndex.Search(search)
-		)
-		if err != nil {
-			utils.DebugLog.Println("failed to search for vulnerable software:", err)
-			return
-		}
-		//fmt.Println("search for ", software.Product, software.Vendor, software.Version)
-		for _, v := range searchResults.Hits {
-			if v.Score > thresholdNVD {
-				doc, _ := vulnerabilitiesIndex.Document(v.ID)
-				writeVuln(software.Software, doc)
-			}
-		}
-	}
-}
-
-type vulnerabilityStore struct {
-	items map[string]struct{}
-	deadlock.Mutex
-}
-
-var vulnStore = vulnerabilityStore{
-	items: make(map[string]struct{}),
-}
-
-func writeVuln(software *types.Software, doc *document.Document) {
-
-	vulnStore.Lock()
-	if _, ok := vulnStore.items[string(doc.Fields[2].Value())]; ok {
-		vulnStore.Unlock()
-		// exists, exit.
-		return
-	} else {
-		vulnStore.items[string(doc.Fields[2].Value())] = struct{}{}
-	}
-	vulnStore.Unlock()
-
-	vulnerabilityEncoder.write(&types.Vulnerability{
-		Timestamp:   software.Timestamp,
-		Software:    software,
-		Description: strings.Trim(string(doc.Fields[2].Value()), "\""),
-		File:        string(doc.Fields[1].Value()),
-		ID:          string(doc.Fields[0].Value()),
-	})
-}
-
 // generic version harvester, scans the payload using a regular expression
 func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (software []*Software) {
 
@@ -344,9 +288,6 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 		return softwareHarvester(i.p.Data(), flowIdent, i.p.Metadata().CaptureInfo.Timestamp, service, dpIdent, protos)
 	}
 
-	// lookup known issues with identified software
-	vulnerabilitiesLookup(s)
-
 	return s
 }
 
@@ -397,7 +338,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
 				Product:   values[1], // Name of the server (Apache, Nginx, ...)
-				Vendor:    values[3], // Unfitting name, but operating system
+				Notes:     "Maybe OS: " + values[3], // potentially operating system
 				Version:   values[2], // Version as found after the '/'
 				//DeviceProfiles: []string{dpIdent},
 				SourceName: "ServerName",
@@ -457,9 +398,6 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 			}
 		}
 	}
-
-	// lookup known issues with identified software
-	vulnerabilitiesLookup(s)
 
 	return s
 }
@@ -549,19 +487,54 @@ func AnalyzeSoftware(i *packetInfo) {
 		return
 	}
 
+	writeSoftware(software, func(s *Software) {
+		updateSoftwareAuditRecord(dp, s, i)
+	})
+}
+
+func writeSoftware(software []*Software, update func(s *Software)) {
+
+	var new []*types.Software
+
 	// add new audit records or update existing
 	SoftwareStore.Lock()
 	for _, s := range software {
-		if p, ok := SoftwareStore.Items[s.Product+"/"+s.Version]; ok {
-			updateSoftwareAuditRecord(dp, p, i)
+		if s == nil {
+			continue
+		}
+		s.Lock()
+		if s.Software == nil {
+			s.Unlock()
+			continue
+		}
+		ident := s.Product + "/" + s.Version
+		s.Unlock()
+		if item, ok := SoftwareStore.Items[ident]; ok {
+			if update != nil {
+				update(item)
+			}
 		} else {
-			SoftwareStore.Items[s.Product+"/"+s.Version] = s
+			//fmt.Println(SoftwareStore.Items, s.Product, s.Version)
+			SoftwareStore.Items[ident] = s
+
 			statsMutex.Lock()
 			reassemblyStats.numSoftware++
 			statsMutex.Unlock()
+
+			new = append(new, s.Software)
 		}
 	}
 	SoftwareStore.Unlock()
+
+	if len(new) > 0 {
+		// lookup known issues with identified software in the background
+		go func() {
+			for _, s := range new {
+				vulnerabilitiesLookup(s)
+				exploitsLookup(s)
+			}
+		}()
+	}
 }
 
 // NewDeviceProfile creates a new device specific profile
@@ -651,7 +624,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	// Load vulnerabilities DB index
-	indexName := filepath.Join(resolvers.DataBaseSource, "mitre-cve.bleve")
+	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
 	vulnerabilitiesIndex, err = bleve.Open(indexName)
 	if err != nil {
 		return err

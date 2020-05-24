@@ -37,19 +37,26 @@ import (
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 
+// TODO: can we use the protobuf from types package instead?
 type Exploit struct {
 	Id          string
-	Status      string
+	File        string
 	Description string
+	Date        string
+	Author      string
+	Typ         string
+	Platform    string
+	Port        string
 }
 
-type NVDExploit struct {
-	Id                 string
-	Description        string
-	Severity           string
-	V2Score            string
-	AccessVector       string
-	Versions           []string
+// TODO: can we use the protobuf from types package instead?
+type Vulnerability struct {
+	Id           string
+	Description  string
+	Severity     string
+	V2Score      string
+	AccessVector string
+	Versions     []string
 }
 
 // used to fetch version identifier from description string from NVD item
@@ -59,9 +66,9 @@ var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
 func indexData(in string) {
 
 	var (
-		start = time.Now()
+		start     = time.Now()
 		indexPath string
-		index bleve.Index
+		index     bleve.Index
 	)
 
 	switch in {
@@ -120,7 +127,6 @@ func indexData(in string) {
 			fmt.Print("processing: ", count, " / ", total)
 			e := Exploit{
 				Id:          rec[0],
-				Status:      rec[1],
 				Description: rec[2],
 			}
 			err = index.Index(e.Id, e)
@@ -187,8 +193,13 @@ func indexData(in string) {
 			fmt.Print("processing: ", count, " / ", total)
 			e := Exploit{
 				Id:          rec[0],
-				Status:      rec[1],
+				File:        rec[1],
 				Description: rec[2],
+				Date:        rec[3],
+				Author:      rec[4],
+				Typ:         rec[5],
+				Platform:    rec[6],
+				Port:        rec[7],
 			}
 			err = index.Index(e.Id, e)
 			if err != nil {
@@ -276,13 +287,13 @@ func indexData(in string) {
 						}
 						//fmt.Println(" ", v.Cve.CVEDataMeta.ID, entry.Value, " =>", versions)
 
-						e := NVDExploit{
-							Id:          v.Cve.CVEDataMeta.ID,
-							Description: entry.Value,
-							Severity:    v.Impact.BaseMetricV2.Severity,
-							V2Score:     strconv.FormatFloat(v.Impact.BaseMetricV2.CvssV2.BaseScore, 'f', 1, 64),
+						e := Vulnerability{
+							Id:           v.Cve.CVEDataMeta.ID,
+							Description:  entry.Value,
+							Severity:     v.Impact.BaseMetricV2.Severity,
+							V2Score:      strconv.FormatFloat(v.Impact.BaseMetricV2.CvssV2.BaseScore, 'f', 1, 64),
 							AccessVector: v.Impact.BaseMetricV2.CvssV2.AccessVector,
-							Versions: versions,
+							Versions:     versions,
 						}
 						err = index.Index(e.Id, e)
 						if err != nil {
