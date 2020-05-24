@@ -142,6 +142,7 @@ enum Type {
     NC_Credentials                 = 97;
     NC_SSH                         = 98;
     NC_Vulnerability               = 99;
+    NC_Exploit                     = 100;
 }
 
 /*
@@ -1910,10 +1911,27 @@ message SSH {
 }
 
 message Vulnerability {
+    string   Timestamp       = 1;
+    string   ID              = 2;
+    string   Description     = 3;
+    string   Severity        = 4;
+    string   V2Score         = 5;
+    string   AccessVector    = 6;
+    repeated string Versions = 7;
+    string   Notes           = 8;
+    Software Software        = 9;
+}
+
+message Exploit {
     string   Timestamp   = 1;
-    string   Description = 2;
-    string   File        = 3;
-    string   Notes       = 4;
-    string   ID          = 5;
-    Software Software    = 6;
+    string   ID          = 2;
+    string   Description = 3;
+    string   File        = 4;
+    string   Notes       = 5;
+    string   Date        = 6;
+    string   Author      = 7;
+    string   Typ         = 8;
+    string   Platform    = 9;
+    string   Port        = 10;
+    Software Software    = 11;
 }
