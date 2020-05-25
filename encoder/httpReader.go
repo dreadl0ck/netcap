@@ -264,7 +264,7 @@ func searchForLoginParams(req *http.Request, h *httpReader) {
 				Flow:      h.parent.ident,
 				User:      strings.Join(values, "; "),
 				Password:  pass,
-				Notes:     "HTTP Parameters",
+				Notes:     "Login Parameters",
 			})
 		}
 	}
