@@ -24,6 +24,10 @@ func Run() {
 	case "GetDeviceProfilesWithDPI":
 		ToAuditRecordsWithDPI()
 
+	// Exploits
+	case "ToSoftwareExploits":
+		ToSoftwareExploits()
+
 	// SSH
 	case "ToSSHClients":
 		ToSSHClients()
