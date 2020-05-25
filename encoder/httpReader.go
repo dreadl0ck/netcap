@@ -25,7 +25,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-
 	"strconv"
 	"strings"
 
@@ -169,6 +168,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 	//	fmt.Println(err)
 	//}
 
+	// iterate over responses
 	for _, res := range h.responses {
 
 		// populate types.HTTP with all infos from response
@@ -180,6 +180,12 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 
 		// now add request information
 		if res.response.Request != nil {
+
+			if isCustomEncoderLoaded("Credentials") {
+				searchForLoginParams(res.response.Request, h)
+				searchForBasicAuth(res.response.Request, h)
+			}
+
 			atomic.AddInt64(&httpEncoder.numRequests, 1)
 			setRequest(ht, &httpRequest{
 				request:   res.response.Request,
@@ -187,18 +193,6 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 				clientIP:  res.clientIP,
 				serverIP:  res.serverIP,
 			})
-
-			if u, p, ok := res.response.Request.BasicAuth(); ok {
-				if u != "" || p != "" {
-					writeCredentials(&types.Credentials{
-						Timestamp: h.parent.firstPacket.String(),
-						Service:   "HTTP Basic Auth",
-						Flow:      h.parent.ident,
-						User:      u,
-						Password:  p,
-					})
-				}
-			}
 		} else {
 			// response without matching request
 			// dont add to output for now
@@ -209,29 +203,69 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 		writeHTTP(ht, h.parent.ident)
 	}
 
+	// iterate over unanswered requests
 	for _, req := range h.requests {
 		if req != nil {
 			ht := &types.HTTP{}
 			setRequest(ht, req)
 
+			if isCustomEncoderLoaded("Credentials") {
+				searchForLoginParams(req.request, h)
+				searchForBasicAuth(req.request, h)
+			}
+
 			atomic.AddInt64(&httpEncoder.numRequests, 1)
 			atomic.AddInt64(&httpEncoder.numUnansweredRequests, 1)
-
-			if u, p, ok := req.request.BasicAuth(); ok {
-				if u != "" || p != "" {
-					writeCredentials(&types.Credentials{
-						Timestamp: h.parent.firstPacket.String(),
-						Service:   "HTTP Basic Auth",
-						Flow:      h.parent.ident,
-						User:      u,
-						Password:  p,
-					})
-				}
-			}
 
 			writeHTTP(ht, h.parent.ident)
 		} else {
 			atomic.AddInt64(&httpEncoder.numNilRequests, 1)
+		}
+	}
+}
+
+// search request header field for HTTP basic auth
+func searchForBasicAuth(req *http.Request, h *httpReader) {
+	if u, p, ok := req.BasicAuth(); ok {
+		if u != "" || p != "" {
+			writeCredentials(&types.Credentials{
+				Timestamp: h.parent.firstPacket.String(),
+				Service:   "HTTP Basic Auth",
+				Flow:      h.parent.ident,
+				User:      u,
+				Password:  p,
+			})
+		}
+	}
+}
+
+// search for user name and password in http url params and body params
+func searchForLoginParams(req *http.Request, h *httpReader) {
+	for name, values := range req.Form {
+		if name == "user" || name == "username" {
+
+			var (
+				pass string
+				arr []string
+				ok bool
+			)
+
+			arr, ok = req.Form["pass"]
+			if !ok {
+				arr, ok = req.Form["password"]
+			}
+			if len(arr) > 0 {
+				pass = strings.Join(arr, "; ")
+			}
+
+			writeCredentials(&types.Credentials{
+				Timestamp: h.parent.firstPacket.String(),
+				Service:   "HTTP",
+				Flow:      h.parent.ident,
+				User:      strings.Join(values, "; "),
+				Password:  pass,
+				Notes:     "HTTP Parameters",
+			})
 		}
 	}
 }

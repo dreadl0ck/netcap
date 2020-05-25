@@ -359,7 +359,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credentials", func(d *CustomEncoder) error {
 
 	if c.CustomRegex != "" {
-		r, err := regexp.Compile(c.CustomRegex)
+		_, err := regexp.Compile(c.CustomRegex)
 		if err != nil {
 			return err
 		}
