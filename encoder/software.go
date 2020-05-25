@@ -337,9 +337,9 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 		s = append(s, &Software{
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
-				Product:   values[1], // Name of the server (Apache, Nginx, ...)
+				Product:   values[1],                // Name of the server (Apache, Nginx, ...)
 				Notes:     "Maybe OS: " + values[3], // potentially operating system
-				Version:   values[2], // Version as found after the '/'
+				Version:   values[2],                // Version as found after the '/'
 				//DeviceProfiles: []string{dpIdent},
 				SourceName: "ServerName",
 				SourceData: h.ServerName,
@@ -592,7 +592,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	// Load the JSON database of HASSH signaures
-	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdb.json")
+	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdbNew.json")
 	if err != nil {
 		return err
 	}
