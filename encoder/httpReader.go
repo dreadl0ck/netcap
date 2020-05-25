@@ -246,8 +246,8 @@ func searchForLoginParams(req *http.Request, h *httpReader) {
 
 			var (
 				pass string
-				arr []string
-				ok bool
+				arr  []string
+				ok   bool
 			)
 
 			arr, ok = req.Form["pass"]

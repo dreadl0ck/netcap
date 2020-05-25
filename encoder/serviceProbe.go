@@ -2,6 +2,7 @@ package encoder
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -45,7 +46,7 @@ var (
 
 type ServiceProbe struct {
 	RegEx           *regexp.Regexp
-	RegEx2          *regexp2.Regexp
+	RegExDotNet     *regexp2.Regexp
 	RegExRaw        string
 	Vendor          string
 	Version         string
@@ -99,6 +100,87 @@ func (s *ServiceProbe) String() string {
 	b.WriteString(strconv.FormatBool(s.IncludeNewlines))
 
 	return b.String()
+}
+
+func matchServiceProbes(serv *Service, banner []byte, ident string) {
+	// match banner against nmap service probes
+	for _, serviceProbe := range serviceProbes {
+		if c.UseRE2 {
+			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
+
+				// add initial values, may contain group identifiers ($1, $2 etc)
+				serv.Product = addInfo(serv.Product, serviceProbe.Ident)
+				serv.Vendor = addInfo(serv.Vendor, serviceProbe.Vendor)
+				serv.Hostname = addInfo(serv.Hostname, serviceProbe.Hostname)
+				serv.OS = addInfo(serv.Hostname, serviceProbe.OS)
+				serv.Version = addInfo(serv.Version, serviceProbe.Version)
+
+				// extract groups
+				extractGroup(&serv.Vendor, m)
+				extractGroup(&serv.Version, m)
+				extractGroup(&serv.Hostname, m)
+				extractGroup(&serv.Product, m)
+				extractGroup(&serv.OS, m)
+
+				if c.Debug {
+					fmt.Println("\n\nMATCH!", ident)
+					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
+				}
+			}
+		} else { // use the .NET compatible regex implementation
+			if m, err := serviceProbe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
+
+				// add initial values, may contain group identifiers ($1, $2 etc)
+				serv.Product = addInfo(serv.Product, serviceProbe.Ident)
+				serv.Vendor = addInfo(serv.Vendor, serviceProbe.Vendor)
+				serv.Hostname = addInfo(serv.Hostname, serviceProbe.Hostname)
+				serv.OS = addInfo(serv.Hostname, serviceProbe.OS)
+				serv.Version = addInfo(serv.Version, serviceProbe.Version)
+
+				// extract groups
+				extractGroupDotNet(&serv.Vendor, m)
+				extractGroupDotNet(&serv.Version, m)
+				extractGroupDotNet(&serv.Hostname, m)
+				extractGroupDotNet(&serv.Product, m)
+				extractGroupDotNet(&serv.OS, m)
+
+				if c.Debug {
+					fmt.Println("\nMATCH!", ident)
+					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
+				}
+			}
+		}
+	}
+}
+
+var reGroup = regexp.MustCompile("\\$[0-9]+")
+
+func extractGroup(in *string, m []string) {
+	if strings.Contains(*in, "$") {
+		g := reGroup.FindString(*in)
+		if len(g) == 2 {
+			index, err := strconv.Atoi(string(g[1]))
+			if err == nil {
+				if len(m) > index {
+					*in = strings.Replace(*in, g, m[index], 1)
+				}
+			}
+		}
+	}
+}
+
+func extractGroupDotNet(in *string, m *regexp2.Match) {
+	if strings.Contains(*in, "$") {
+		g := reGroup.FindString(*in)
+		if len(g) == 2 {
+			index, err := strconv.Atoi(string(g[1]))
+			if err == nil {
+				if len(m.Groups()) > index {
+					*in = strings.Replace(*in, g, m.Groups()[index].Captures[0].String(), 1)
+				}
+			}
+		}
+	}
 }
 
 // only parse the match directive for now.
@@ -329,7 +411,7 @@ func InitProbes() error {
 				finalReg = clean(finalReg)
 				s.RegEx, errCompile = regexp.Compile(finalReg)
 			} else {
-				s.RegEx2, errCompile = regexp2.Compile(finalReg, 0) // regexp.RE2)
+				s.RegExDotNet, errCompile = regexp2.Compile(finalReg, 0) // regexp.RE2)
 			}
 
 			if errCompile != nil {
