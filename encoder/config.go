@@ -209,4 +209,7 @@ type Config struct {
 
 	// stop processing the conversation when the first harvester returns a result
 	StopAfterHarvesterMatch bool
+
+	// CustomRegex to use for credentials harvester
+	CustomRegex string
 }
