@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/reassembly"
@@ -89,6 +90,26 @@ func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 	SoftwareStore.Unlock()
 }
 
+func (h *sshReader) processSSHIdent(ident string, entity string) {
+	i := parseSSHIdent(ident)
+	if i != nil {
+		writeSoftware([]*Software{
+			{
+				Software: &types.Software{
+					Timestamp:      h.parent.firstPacket.String(),
+					Product:        i.productName,
+					Version:        i.productVersion,
+					SourceName:     "SSH " + entity + " Ident",
+					Service:        "SSH",
+					Flows:          []string{h.parent.ident},
+					Notes:          "SSH version: " + i.sshVersion + " OS: " + i.os,
+					SourceData:     h.serverIdent,
+				},
+			},
+		}, nil)
+	}
+}
+
 func (h *sshReader) searchKexInit(r *bufio.Reader) {
 
 	if h.serverKexInit != nil && h.clientKexInit != nil {
@@ -103,9 +124,11 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 
 	if h.clientIdent == "" {
 		h.clientIdent = string(data)
+		h.processSSHIdent(h.serverIdent, "client")
 		return
 	} else if h.serverIdent == "" {
 		h.serverIdent = string(data)
+		h.processSSHIdent(h.serverIdent, "server")
 		return
 	}
 
@@ -162,19 +185,19 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 
 			// TODO fetch device profile
 			for _, soft := range hashDBMap[hash] {
-				vendor, product, version, os := parseSSH(soft.Version)
+				sshVersion, product, version, os := parseSSHInfoFromHasshDB(soft.Version)
 				h.software = append(h.software, &types.Software{
 					Timestamp: h.parent.client.FirstPacket().String(),
-					Product:   product, // Name of the server (Apache, Nginx, ...)
-					Vendor:    vendor,  // Unfitting name, but operating system
-					Version:   version, // Version as found after the '/'
+					Product:   product,
+					Vendor:    "", // do not set the vendor for now
+					Version:   version,
 					//DeviceProfiles: []string{dpIdent},
 					SourceName: "HASSH",
 					SourceData: hash,
 					Service:    "SSH",
 					//DPIResults:     protos,
 					Flows: []string{h.parent.ident},
-					Notes: "Likelyhood: " + soft.Likelyhood + " Possible OS: " + os,
+					Notes: "Likelyhood: " + soft.Likelyhood + " Possible OS: " + os + "SSH Version: " + sshVersion,
 				})
 			}
 			break
@@ -182,23 +205,49 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 	}
 }
 
-func parseSSH(soft string) (string, string, string, string) {
-	firstSplit := strings.Split(soft, " ? ")
-	sshVersionTmp := firstSplit[0]
-	sshVersion := strings.Split(sshVersionTmp, " | ")
-	product := sshVersion[0]
-	vendorVersion := strings.Split(sshVersion[1], " ")
-	var os string
+func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, version string, os string) {
+
+	var (
+		firstSplit = strings.Split(soft, " ? ")
+		sshVersionTmp = firstSplit[0]
+		sshVersionArr = strings.Split(sshVersionTmp, " | ")
+		vendorVersion = strings.Split(sshVersionArr[1], " ")
+	)
+
 	if len(firstSplit) > 1 {
 		os = firstSplit[len(firstSplit)-1]
-		return product, vendorVersion[0], vendorVersion[1], os
-	} else {
-		os = ""
+		return sshVersionArr[0], vendorVersion[0], vendorVersion[1], os
 	}
-	return product, vendorVersion[0], vendorVersion[1], os
+	return sshVersionArr[0], vendorVersion[0], vendorVersion[1], os
+}
+
+type sshVersionInfo struct {
+	sshVersion string
+	productName string
+	productVersion string
+	os string
+}
+
+var regSSHIdent = regexp.MustCompile("^(SSH-.*)-(.*SSH[[:word:]]*)([0-9]\\.[0-9]?\\.?[[:alnum:]]?[[:alnum:]]?)[[:space:]]?([[:alnum:]]*)")
+func parseSSHIdent(ident string) *sshVersionInfo {
+	if m := regSSHIdent.FindStringSubmatch(ident); len(m) > 0 {
+
+		var os string
+		if len(m) > 4 {
+			os = m[4]
+		}
+		return &sshVersionInfo{
+			sshVersion:     m[1],
+			productName:    m[2],
+			productVersion: m[3],
+			os:             os,
+		}
+	}
+	return nil
 }
 
 // HASSH SSH Fingerprint
+// TODO: move this functionality into standalone package
 func computeHASSH(init sshx.KexInitMsg) (hash string, raw string) {
 
 	var b strings.Builder
