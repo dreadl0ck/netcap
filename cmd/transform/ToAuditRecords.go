@@ -38,8 +38,8 @@ var auditRecords = []string{
 
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets: false,
-	Workers:             1000,
-	PacketBufferSize:    100,
+	Workers:             1,
+	PacketBufferSize:    0,
 	SnapLen:             1514,
 	Promisc:             false,
 	EncoderConfig: encoder.Config{
@@ -64,7 +64,7 @@ var maltegoBaseConfig = collector.Config{
 		WaitForConnections:      true,
 		WriteIncomplete:         false,
 		MemProfile:              "",
-		ConnFlushInterval:       10000,
+		ConnFlushInterval:       1000,
 		ConnTimeOut:             10 * time.Second,
 		FlowFlushInterval:       2000,
 		FlowTimeOut:             10 * time.Second,
