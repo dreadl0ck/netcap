@@ -45,7 +45,7 @@ func SetConfig(cfg Config) {
 
 	// setup loggers
 	if c.Debug {
-		utils.InitLoggers()
+		utils.InitLoggers(c.Out)
 		pop3Debug = true
 	}
 }

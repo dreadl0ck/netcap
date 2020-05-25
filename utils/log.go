@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -19,15 +20,15 @@ var (
 	DebugLogFileHandle *os.File
 )
 
-func InitLoggers() {
+func InitLoggers(outpath string) {
 	var err error
-	DebugLogFileHandle, err = os.OpenFile("debug.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
+	DebugLogFileHandle, err = os.OpenFile(filepath.Join(outpath, "debug.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
 	if err != nil {
 		log.Fatal(err)
 	}
 	DebugLog.SetOutput(DebugLogFileHandle)
 
-	ReassemblyLogFileHandle, err = os.OpenFile("reassembly.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
+	ReassemblyLogFileHandle, err = os.OpenFile(filepath.Join(outpath, "reassembly.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
 	if err != nil {
 		log.Fatal(err)
 	}
