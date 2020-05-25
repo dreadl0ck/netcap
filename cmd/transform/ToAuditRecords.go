@@ -164,6 +164,8 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 	// generate maltego transform
 	trx := maltego.MaltegoTransform{}
 
+
+
 	for _, name := range auditRecords {
 
 		ident := filepath.Join(outDir, name+".ncap.gz")
@@ -178,6 +180,11 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 			utils.DebugLog.Println("not a file: ", err)
 			continue
 		}
+
+		// TODO: return structure from collect invocation
+		// that contains the number of records per type
+		// to avoid opening the file again
+		numRecords := netcap.Count(ident)
 
 		ent := trx.AddEntity("netcap."+name+"AuditRecords", ident)
 		ent.SetType("netcap." + name + "AuditRecords")
@@ -199,7 +206,7 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 		ent.AddProperty("path", "Path", "strict", ident)
 		ent.AddProperty("description", "Description", "strict", name+".ncap.gz")
 
-		//ent.SetLinkLabel(name)
+		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 		ent.SetLinkColor("#000000")
 
 		// add notes for specific audit records here
