@@ -350,7 +350,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 	}
 
 	// X-Powered-By HTTP Header
-	if poweredBy, ok := h.RequestHeader["X-Powered-By"]; ok {
+	if poweredBy, ok := h.ResponseHeader["X-Powered-By"]; ok {
 		if len(poweredBy) != 0 && poweredBy != " " {
 			var values = regexpXPoweredBy.FindStringSubmatch(poweredBy)
 			s = append(s, &Software{
