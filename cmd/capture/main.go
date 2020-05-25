@@ -15,14 +15,15 @@ package capture
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dustin/go-humanize"
 	"log"
 	"os"
 	"runtime/pprof"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dustin/go-humanize"
 
 	"github.com/mgutz/ansi"
 
@@ -176,6 +177,7 @@ func Run() {
 			StreamDecoderBufSize:    *flagStreamDecoderBufSize,
 			HarvesterBannerSize:     *flagHarvesterBannerSize,
 			StopAfterHarvesterMatch: *flagStopAfterHarvesterMatch,
+			CustomRegex:             *flagCustomCredsRegex,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    *flagReverseDNS,

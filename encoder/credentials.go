@@ -17,10 +17,11 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	deadlock "github.com/sasha-s/go-deadlock"
 	"log"
 	"regexp"
 	"strings"
+
+	deadlock "github.com/sasha-s/go-deadlock"
 
 	"sync/atomic"
 	"time"
@@ -359,21 +360,23 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credentials", func(d *CustomEncoder) error {
 
 	if c.CustomRegex != "" {
-		_, err := regexp.Compile(c.CustomRegex)
+		r, err := regexp.Compile(c.CustomRegex)
 		if err != nil {
 			return err
 		}
 
 		tcpConnectionHarvesters = append(tcpConnectionHarvesters, func(data []byte, ident string, ts time.Time) *types.Credentials {
-			// TODO: Giac
-			return &types.Credentials{
-				Timestamp: "",
-				Service:   "",
-				Flow:      "",
-				User:      "",
-				Password:  "",
-				Notes:     "",
+			matches := r.FindSubmatch(data)
+			if len(matches) > 1 {
+				notes := ""
+				for _, m := range matches {
+					notes += " " + string(m) + " "
+				}
+				return &types.Credentials{
+					Notes: notes,
+				}
 			}
+			return nil
 		})
 	}
 

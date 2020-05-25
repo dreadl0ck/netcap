@@ -14,9 +14,10 @@
 package capture
 
 import (
+	"os"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/namsral/flag"
-	"os"
 )
 
 func Flags() (flags []string) {
@@ -109,4 +110,5 @@ var (
 	flagHarvesterBannerSize     = fs.Int("hbsize", 512, "size of the data passed to the credential harvesters in bytes")
 	flagStreamDecoderBufSize    = fs.Int("sbuf-size", 0, "size for channel used to pass data to the stream decoders. default is unbuffered")
 	flagReassemblyDebug         = fs.Bool("reassembly-debug", false, "if true, the reassembly will log verbose debugging information")
+	flagCustomCredsRegex        = fs.String("reCustom", "", "possibility of passing a custom regex for harvesting credentials")
 )
