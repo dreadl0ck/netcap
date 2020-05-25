@@ -357,6 +357,26 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 }
 
 var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credentials", func(d *CustomEncoder) error {
+
+	if c.CustomRegex != "" {
+		r, err := regexp.Compile(c.CustomRegex)
+		if err != nil {
+			return err
+		}
+
+		tcpConnectionHarvesters = append(tcpConnectionHarvesters, func(data []byte, ident string, ts time.Time) *types.Credentials {
+			// TODO: Giac
+			return &types.Credentials{
+				Timestamp: "",
+				Service:   "",
+				Flow:      "",
+				User:      "",
+				Password:  "",
+				Notes:     "",
+			}
+		})
+	}
+
 	return nil
 }, func(p gopacket.Packet) proto.Message {
 	return nil
