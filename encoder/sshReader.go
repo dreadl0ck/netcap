@@ -162,23 +162,40 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 
 			// TODO fetch device profile
 			for _, soft := range hashDBMap[hash] {
+				vendor, product, version, os := parseSSH(soft.Version)
 				h.software = append(h.software, &types.Software{
 					Timestamp: h.parent.client.FirstPacket().String(),
-					Product:   soft.Version, // Name of the server (Apache, Nginx, ...)
-					Vendor:    "",           // Unfitting name, but operating system
-					Version:   "",           // Version as found after the '/'
+					Product:   product, // Name of the server (Apache, Nginx, ...)
+					Vendor:    vendor,  // Unfitting name, but operating system
+					Version:   version, // Version as found after the '/'
 					//DeviceProfiles: []string{dpIdent},
 					SourceName: "HASSH",
 					SourceData: hash,
 					Service:    "SSH",
 					//DPIResults:     protos,
 					Flows: []string{h.parent.ident},
-					Notes: "Likelyhood: " + soft.Likelyhood,
+					Notes: "Likelyhood: " + soft.Likelyhood + " Possible OS: " + os,
 				})
 			}
 			break
 		}
 	}
+}
+
+func parseSSH(soft string) (string, string, string, string) {
+	firstSplit := strings.Split(soft, " ? ")
+	sshVersionTmp := firstSplit[0]
+	sshVersion := strings.Split(sshVersionTmp, " | ")
+	product := sshVersion[0]
+	vendorVersion := strings.Split(sshVersion[1], " ")
+	var os string
+	if len(firstSplit) > 1 {
+		os = firstSplit[len(firstSplit)-1]
+		return product, vendorVersion[0], vendorVersion[1], os
+	} else {
+		os = ""
+	}
+	return product, vendorVersion[0], vendorVersion[1], os
 }
 
 // HASSH SSH Fingerprint
