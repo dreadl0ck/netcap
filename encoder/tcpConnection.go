@@ -464,7 +464,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 				t.decoder = &sshReader{
 					parent: t.client.(*tcpStreamReader).parent,
 				}
-			case bytes.Contains(t.server.ServiceBanner(), []byte("POP3")):
+			case bytes.Contains(t.server.ServiceBanner(), []byte("POP server ready")):
 				t.decoder = &pop3Reader{
 					parent: t.client.(*tcpStreamReader).parent,
 				}

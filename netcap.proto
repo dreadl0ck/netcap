@@ -1889,6 +1889,7 @@ message Service {
     int32    BytesServer                  = 12;
     int32    BytesClient                  = 13;
     string   Hostname                     = 14;
+    string   OS                           = 15;
 }
 
 message Credentials {

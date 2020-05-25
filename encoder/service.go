@@ -14,8 +14,6 @@
 package encoder
 
 import (
-	"encoding/hex"
-	"fmt"
 	"github.com/dreadl0ck/netcap/resolvers"
 	deadlock "github.com/sasha-s/go-deadlock"
 	"strconv"
@@ -111,76 +109,7 @@ func saveTCPServiceBanner(s StreamReader) {
 		serv.Name = resolvers.LookupServiceByPort(dst, "tcp")
 	}
 
-	// match banner against nmap service probes
-	for _, serviceProbe := range serviceProbes {
-		if c.UseRE2 {
-			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
-
-				serv.Product = addInfo(serv.Product, serviceProbe.Ident)
-				serv.Vendor = addInfo(serv.Vendor, serviceProbe.Vendor)
-				serv.Version = addInfo(serv.Version, serviceProbe.Version)
-
-				if strings.Contains(serviceProbe.Version, "$1") {
-					if len(m) > 1 {
-						serv.Version = addInfo(serv.Version, strings.Replace(serviceProbe.Version, "$1", m[1], 1))
-					}
-				}
-
-				if strings.Contains(serviceProbe.Hostname, "$1") {
-					if len(m) > 1 {
-						serv.Notes = addInfo(serv.Notes, strings.Replace(serviceProbe.Hostname, "$1", m[1], 1))
-					}
-				}
-
-				// TODO: make a group extraction util and expand all groups in all strings properly
-				if strings.Contains(serviceProbe.Info, "$1") {
-					if len(m) > 1 {
-						serv.Product = addInfo(serv.Product, strings.Replace(serviceProbe.Info, "$1", m[1], 1))
-					}
-				}
-				if strings.Contains(serv.Product, "$2") {
-					if len(m) > 2 {
-						serv.Product = addInfo(serv.Product, strings.Replace(serviceProbe.Info, "$2", m[2], 1))
-					}
-				}
-
-				if c.Debug {
-					fmt.Println("\n\nMATCH!", s.Ident())
-					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
-				}
-			}
-		} else {
-			if m, err := serviceProbe.RegEx2.FindStringMatch(string(banner)); err == nil && m != nil {
-
-				serv.Product = addInfo(serv.Product, serviceProbe.Ident)
-				serv.Vendor = addInfo(serv.Vendor, serviceProbe.Vendor)
-				serv.Version = addInfo(serv.Version, serviceProbe.Version)
-
-				if strings.Contains(serviceProbe.Version, "$1") {
-					if len(m.Groups()) > 1 {
-						serv.Version = addInfo(serv.Version, strings.Replace(serviceProbe.Version, "$1", m.Groups()[1].Captures[0].String(), 1))
-					}
-				}
-
-				// TODO: make a group extraction util
-				if strings.Contains(serviceProbe.Info, "$1") {
-					if len(m.Groups()) > 1 {
-						serv.Product = addInfo(serv.Product, strings.Replace(serviceProbe.Info, "$1", m.Groups()[1].Captures[0].String(), 1))
-					}
-				}
-				if strings.Contains(serv.Product, "$2") {
-					if len(m.Groups()) > 2 {
-						serv.Product = addInfo(serv.Product, strings.Replace(serviceProbe.Info, "$2", m.Groups()[2].Captures[0].String(), 1))
-					}
-				}
-
-				if c.Debug {
-					fmt.Println("\nMATCH!", s.Ident())
-					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
-				}
-			}
-		}
-	}
+	matchServiceProbes(serv, banner, s.Ident())
 
 	// add new service
 	ServiceStore.Lock()

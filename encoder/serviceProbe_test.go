@@ -1,6 +1,7 @@
 package encoder
 
 import (
+	"fmt"
 	"github.com/mgutz/ansi"
 	"regexp"
 	"testing"
@@ -24,6 +25,122 @@ func (r regexTest) testCleanRegex(t *testing.T) {
 	_, err := regexp.Compile(out)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestExtractGroupIdent(t *testing.T) {
+	m := reGroup.FindString("asdf$1asdf")
+	if m != "$1" {
+		t.Fatal("expected $1, got", m)
+	}
+	m = reGroup.FindString("asdf$2asdf")
+	if m != "$2" {
+		t.Fatal("expected $2, got", m)
+	}
+	m = reGroup.FindString("asdf$3asdf")
+	if m != "$3" {
+		t.Fatal("expected $3, got", m)
+	}
+}
+
+func TestExtractGroups(t *testing.T) {
+	in := "$1"
+	extractGroup(&in, []string{"", "first", "second", "third", "fourth"})
+	if in != "first" {
+		t.Fatal("expected first, got", in)
+	}
+
+	in = "$4"
+	extractGroup(&in, []string{"", "first", "second", "third", "fourth"})
+	if in != "fourth" {
+		t.Fatal("expected fourth, got", in)
+	}
+}
+
+type bannerTest struct {
+	banner  string
+	product string
+	host    string
+	os      string
+	version string
+
+	// can be used to quickly test if a regex works
+	// in case this field is set, the regex will be compiled and used instead of the loaded service probes
+	reg string
+}
+
+var serviceBanners = []bannerTest{
+	// FTP
+	{
+		banner:  "220 (vsFTPd 3.0.3)\n200 Always in UTF8 mode.\n331 Please specify the password.\n230 Login successful.\n200 PORT command successful. Consider using PASV.\n150 Here comes the directory listing.\n226 Directory send OK.\n221 Goodbye.\n",
+		product: "vsFTPd",
+		version: "3.0.3",
+		//reg: "^220\\s\\((.*)\\s(.*)\\)",
+	},
+	// SSH
+	{
+		banner:  "SSH-2.0-OpenSSH_7.6p1 Ubuntu-4ubuntu0.3",
+		product: "OpenSSH",
+		version: "7.6p1",
+		os:      "Ubuntu-4ubuntu0.3",
+		//reg: "^SSH-(.*)-(.*)_(.*)\\s(.*)",
+	},
+	// POP3
+	{
+		banner:  "+OK POP server ready H migmx027 0M8Bvu-1XYRm80CF0-00vllf\\r\\n+OK Capability list follows\\r\\n",
+		product: "POP3",
+		//reg: "^\\+OK POP server ready",
+	},
+}
+
+func TestClassifyBanners(t *testing.T) {
+
+	//c.Debug = true
+
+	// important: needs to be set prior to loading probes
+	// otherwise config is not initialized and defaults to false
+	c.UseRE2 = true
+
+	// load nmap service probes
+	err := InitProbes()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, b := range serviceBanners {
+		if b.reg != "" {
+			// invoke custom test regex
+			r := regexp.MustCompile(b.reg)
+			m := r.FindStringSubmatch(b.banner)
+			if len(m) > 1 {
+				fmt.Println("matches for test regex", m[1:])
+			}
+		} else {
+			// invoke nmap banner probes
+			b.testClassifyBanner(t)
+		}
+	}
+}
+
+func (b bannerTest) testClassifyBanner(t *testing.T) {
+
+	// make dummy service
+	serv := NewService("", 0, 0, "")
+	serv.IP = "127.0.0.1"
+	serv.Port = "21"
+	ident := "127.0.0.1->127.0.0.1-4322->21"
+	serv.Flows = []string{ident}
+
+	matchServiceProbes(serv, []byte(b.banner), ident)
+
+	if serv.Product != b.product {
+		t.Fatal("unexpected product, expected", b.product, "got:", serv.Product)
+	}
+	if serv.Version != b.version {
+		t.Fatal("unexpected version, expected", b.version, "got:", serv.Version)
+	}
+	if serv.Hostname != b.host {
+		t.Fatal("unexpected notes, expected", b.host, "got:", serv.Hostname)
 	}
 }
 
