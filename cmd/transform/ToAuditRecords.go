@@ -33,6 +33,7 @@ var auditRecords = []string{
 	"DHCPv6",
 	"Flow",
 	"Vulnerability",
+	"Exploit",
 }
 
 var maltegoBaseConfig = collector.Config{
@@ -189,6 +190,9 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 		}
 		if strings.HasSuffix(name, "y") {
 			displayName = name[:len(name)-1] + "ies"
+		}
+		if strings.HasSuffix(displayName, "t") {
+			displayName += "s"
 		}
 		ent.SetValue(displayName)
 
