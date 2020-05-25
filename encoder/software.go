@@ -592,7 +592,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	// Load the JSON database of HASSH signaures
-	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdb.json")
+	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdbNew.json")
 	if err != nil {
 		return err
 	}
