@@ -10,9 +10,14 @@ func ToLoginInformation() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, cred *types.Credentials, min, max uint64, profilesFile string, mac string, ipaddr string) {
 
-			ent := trx.AddEntity("netcap.Credentials", cred.User)
+			val := cred.User + "\n" + cred.Password + "\n" + cred.Service
+			if len(cred.Notes) > 0 {
+				val += "\n" + cred.Notes
+			}
+			val = maltego.EscapeText(val)
+			ent := trx.AddEntity("netcap.Credentials", val)
 			ent.SetType("netcap.Credentials")
-			ent.SetValue(cred.User + "\n" + cred.Password + "\n" + cred.Service)
+			ent.SetValue(val)
 
 			ent.AddProperty("timestamp", "Timestamp", "strict", cred.Timestamp)
 			ent.AddProperty("service", "Service", "strict", cred.Service)
