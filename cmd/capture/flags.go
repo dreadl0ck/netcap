@@ -83,7 +83,6 @@ var (
 
 	flagTCPDebug    = fs.Bool("tcp-debug", false, "add debug output for TCP connections to debug.log")
 	flagSaveConns   = fs.Bool("conns", false, "save raw TCP connections")
-	flagSaveBanners = fs.Bool("banners", false, "save first 512k bytes of raw TCP connections")
 
 	flagCalcEntropy             = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
 	flagLogErrors               = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
