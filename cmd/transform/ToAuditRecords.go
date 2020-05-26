@@ -56,7 +56,7 @@ var maltegoBaseConfig = collector.Config{
 		FlushEvery:              100,
 		NoDefrag:                true,
 		Checksum:                false,
-		NoOptCheck:              false,
+		NoOptCheck:              true,
 		IgnoreFSMerr:            false,
 		AllowMissingInit:        true,
 		Debug:                   false,

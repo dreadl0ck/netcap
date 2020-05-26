@@ -90,7 +90,7 @@ var (
 	flagFlushevery              = fs.Int("flushevery", netcap.DefaultFlushEvery, "flush assembler every N packets")
 	flagNodefrag                = fs.Bool("nodefrag", true, "if true, do not do IPv4 defrag")
 	flagChecksum                = fs.Bool("checksum", false, "check TCP checksum")
-	flagNooptcheck              = fs.Bool("nooptcheck", false, "do not check TCP options (useful to ignore MSS on captures with TSO)")
+	flagNooptcheck              = fs.Bool("nooptcheck", true, "do not check TCP options (useful to ignore MSS on captures with TSO)")
 	flagIgnorefsmerr            = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
 	flagAllowmissinginit        = fs.Bool("allowmissinginit", netcap.DefaultAllowMissingInit, "support streams without SYN/SYN+ACK/ACK sequence")
 	flagDebug                   = fs.Bool("debug", false, "display debug information")
