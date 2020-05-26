@@ -19,8 +19,14 @@ func Run() {
 	switch os.Args[2] {
 
 	// core
+	case "ToCaptureProcess":
+		ToCaptureProcess()
+	case "StopCaptureProcess":
+		StopCaptureProcess()
 	case "ToAuditRecords":
 		ToAuditRecords()
+	case "ToLiveAuditRecords":
+		ToLiveAuditRecords()
 	case "GetDeviceProfilesWithDPI":
 		ToAuditRecordsWithDPI()
 
