@@ -6,15 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dlclark/regexp2"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 	"io"
 	"io/ioutil"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/dlclark/regexp2"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/mgutz/ansi"
 )
 
 var (
@@ -102,6 +104,23 @@ func (s *ServiceProbe) String() string {
 	return b.String()
 }
 
+func writeSoftwareFromBanner(serv *Service, ident string) {
+	writeSoftware([]*Software{
+		{
+			Software: &types.Software{
+				Timestamp:  serv.Timestamp,
+				Product:    serv.Product,
+				Version:    serv.Version,
+				SourceName: "",
+				Service:    "",
+				Flows:      []string{ident},
+				Notes:      "",
+				SourceData: "serviceprobe",
+			},
+		},
+	}, nil)
+}
+
 func matchServiceProbes(serv *Service, banner []byte, ident string) {
 	// match banner against nmap service probes
 	for _, serviceProbe := range serviceProbes {
@@ -127,24 +146,8 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
-				// TODO: Giac, here we got a service banner match for a probe, now we can create a software audit record
-				// software audit records written with write software will be used for vuln lookups automatically
-				// make a util function for creating the software audit record from a service and invoke it also in the else part below
-				// in case the other regex engine was used
-				//writeSoftware([]*Software{
-				//	{
-				//		Software: &types.Software{
-				//			Timestamp:      serv.Timestamp,
-				//			Product:        serv.Product,
-				//			Version:        serv.Version,
-				//			SourceName:     "",
-				//			Service:        "",
-				//			Flows:          []string{ident},
-				//			Notes:          "",
-				//			SourceData:     "serviceprobe",
-				//		},
-				//	},
-				//}, nil)
+				writeSoftwareFromBanner(serv, ident)
+
 			}
 		} else { // use the .NET compatible regex implementation
 			if m, err := serviceProbe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
@@ -168,7 +171,7 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
-				// TODO: Giac invoke software audit record creation util here as well
+				writeSoftwareFromBanner(serv, ident)
 			}
 		}
 	}
