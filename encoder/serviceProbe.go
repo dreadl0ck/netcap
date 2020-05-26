@@ -108,14 +108,14 @@ func writeSoftwareFromBanner(serv *Service, ident string) {
 	writeSoftware([]*Software{
 		{
 			Software: &types.Software{
-				Timestamp:  serv.Timestamp,
-				Product:    serv.Product,
-				Version:    serv.Version,
-				SourceName: "",
-				Service:    "",
-				Flows:      []string{ident},
-				Notes:      "",
-				SourceData: "serviceprobe",
+				Timestamp:      serv.Timestamp,
+				Product:        serv.Product,
+				Vendor:         serv.Vendor,
+				Version:        serv.Version,
+				SourceName:     "Service Probe Match",
+				Service:        serv.Name,
+				Flows:          []string{ident},
+				Notes:          "Protocol: " + serv.Protocol,
 			},
 		},
 	}, nil)
