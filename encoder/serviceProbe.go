@@ -126,6 +126,25 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 					fmt.Println("\n\nMATCH!", ident)
 					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
 				}
+
+				// TODO: Giac, here we got a service banner match for a probe, now we can create a software audit record
+				// software audit records written with write software will be used for vuln lookups automatically
+				// make a util function for creating the software audit record from a service and invoke it also in the else part below
+				// in case the other regex engine was used
+				//writeSoftware([]*Software{
+				//	{
+				//		Software: &types.Software{
+				//			Timestamp:      serv.Timestamp,
+				//			Product:        serv.Product,
+				//			Version:        serv.Version,
+				//			SourceName:     "",
+				//			Service:        "",
+				//			Flows:          []string{ident},
+				//			Notes:          "",
+				//			SourceData:     "serviceprobe",
+				//		},
+				//	},
+				//}, nil)
 			}
 		} else { // use the .NET compatible regex implementation
 			if m, err := serviceProbe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
@@ -148,6 +167,8 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 					fmt.Println("\nMATCH!", ident)
 					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
 				}
+
+				// TODO: Giac invoke software audit record creation util here as well
 			}
 		}
 	}
