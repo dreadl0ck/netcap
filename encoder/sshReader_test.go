@@ -43,7 +43,7 @@ func TestParseSSHIdent(t *testing.T) {
 	if i.sshVersion != "SSH-2.0" {
 		t.Fatal("unexpected ssh version", i.sshVersion)
 	}
-	if i.productName != "OpenSSH_for_Windows_" {
+	if i.productName != "OpenSSH_for_Windows" {
 		t.Fatal("unexpected product name", i.productName)
 	}
 	if i.productVersion != "7.7" {
@@ -60,7 +60,7 @@ func TestParseSSHIdent(t *testing.T) {
 	if i.sshVersion != "SSH-2.0" {
 		t.Fatal("unexpected ssh version", i.sshVersion)
 	}
-	if i.productName != "OpenSSH_" {
+	if i.productName != "OpenSSH" {
 		t.Fatal("unexpected product name", i.productName)
 	}
 	if i.productVersion != "7.6p1" {
@@ -69,6 +69,25 @@ func TestParseSSHIdent(t *testing.T) {
 	if i.os != "Ubuntu" {
 		t.Fatal("unexpected os", i.os)
 	}
+
+	i = parseSSHIdent("SSH-2.0-PuTTY_Release_0.73")
+	if i == nil {
+		t.Fatal("failed to parse")
+	}
+	if i.sshVersion != "SSH-2.0" {
+		t.Fatal("unexpected ssh version", i.sshVersion)
+	}
+	if i.productName != "PuTTY_Release" {
+		t.Fatal("unexpected product name", i.productName)
+	}
+	if i.productVersion != "0.73" {
+		t.Fatal("unexpected product version", i.productVersion)
+	}
+	if i.os != "" {
+		t.Fatal("unexpected os", i.os)
+	}
+
+
 }
 
 func TestParseSSHKexInitMsgLength(t *testing.T) {

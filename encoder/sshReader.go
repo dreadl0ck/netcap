@@ -58,8 +58,7 @@ func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 		if d.dir == previousDir {
 			buf.Write(d.raw)
 		} else {
-			h.searchKexInit(bufio.NewReader(&buf))
-
+			h.searchKexInit(bufio.NewReader(&buf), previousDir)
 			buf.Reset()
 
 			previousDir = d.dir
@@ -67,7 +66,7 @@ func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 			continue
 		}
 	}
-	h.searchKexInit(bufio.NewReader(&buf))
+	h.searchKexInit(bufio.NewReader(&buf), previousDir)
 	if len(h.software) == 0 {
 		return
 	}
@@ -110,7 +109,7 @@ func (h *sshReader) processSSHIdent(ident string, entity string) {
 	}
 }
 
-func (h *sshReader) searchKexInit(r *bufio.Reader) {
+func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirection) {
 
 	if h.serverKexInit != nil && h.clientKexInit != nil {
 		return
@@ -122,13 +121,20 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 		return
 	}
 
-	if h.clientIdent == "" {
-		h.clientIdent = string(data)
-		h.processSSHIdent(h.serverIdent, "client")
+	if len(data) == 0 {
 		return
-	} else if h.serverIdent == "" {
-		h.serverIdent = string(data)
-		h.processSSHIdent(h.serverIdent, "server")
+	}
+
+	if h.clientIdent == "" || h.serverIdent == "" {
+
+		if dir == reassembly.TCPDirClientToServer {
+			h.clientIdent = string(data)
+			h.processSSHIdent(h.clientIdent, "client")
+		} else {
+			h.serverIdent = string(data)
+			h.processSSHIdent(h.serverIdent, "server")
+		}
+
 		return
 	}
 
@@ -161,7 +167,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 
 			//spew.Dump("found SSH KexInit", h.parent.ident, init)
 			hash, raw := computeHASSH(init)
-			if h.clientKexInit == nil {
+			if dir == reassembly.TCPDirClientToServer {
 				sshEncoder.write(&types.SSH{
 					Timestamp:  h.parent.client.FirstPacket().String(),
 					HASSH:      hash,
@@ -192,7 +198,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader) {
 					Vendor:    "", // do not set the vendor for now
 					Version:   version,
 					//DeviceProfiles: []string{dpIdent},
-					SourceName: "HASSH",
+					SourceName: "HASSH Lookup",
 					SourceData: hash,
 					Service:    "SSH",
 					//DPIResults:     protos,
@@ -228,7 +234,7 @@ type sshVersionInfo struct {
 	os string
 }
 
-var regSSHIdent = regexp.MustCompile("^(SSH-.*)-(.*SSH[[:word:]]*)([0-9]\\.[0-9]?\\.?[[:alnum:]]?[[:alnum:]]?)[[:space:]]?([[:alnum:]]*)")
+var regSSHIdent = regexp.MustCompile("^(SSH-[0-9]\\.?[0-9]?)-(.*[[:word:]]*)_([0-9]\\.[0-9]?\\.?[[:alnum:]]?[[:alnum:]]?)[[:space:]]?([[:alnum:]]*)")
 func parseSSHIdent(ident string) *sshVersionInfo {
 	if m := regSSHIdent.FindStringSubmatch(ident); len(m) > 0 {
 
