@@ -2,7 +2,10 @@ package encoder
 
 import (
 	"fmt"
+	"github.com/blevesearch/bleve"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/mgutz/ansi"
+	"path/filepath"
 	"regexp"
 	"testing"
 )
@@ -95,6 +98,19 @@ var serviceBanners = []bannerTest{
 
 func TestClassifyBanners(t *testing.T) {
 
+	// Load vulnerabilities DB index
+	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
+	var err error
+	vulnerabilitiesIndex, err = bleve.Open(indexName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	exploitsIndex, err = bleve.Open(indexName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	//c.Debug = true
 
 	// important: needs to be set prior to loading probes
@@ -102,7 +118,7 @@ func TestClassifyBanners(t *testing.T) {
 	c.UseRE2 = true
 
 	// load nmap service probes
-	err := InitProbes()
+	err = InitProbes()
 	if err != nil {
 		t.Fatal(err)
 	}
