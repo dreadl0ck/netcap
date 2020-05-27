@@ -2,12 +2,13 @@ package encoder
 
 import (
 	"fmt"
-	"github.com/blevesearch/bleve"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/mgutz/ansi"
 	"path/filepath"
 	"regexp"
 	"testing"
+
+	"github.com/blevesearch/bleve"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/mgutz/ansi"
 )
 
 type regexTest struct {
@@ -73,6 +74,12 @@ type bannerTest struct {
 }
 
 var serviceBanners = []bannerTest{
+	// Postgresql
+	{
+		banner:  "......./N...O....user.root.database.root.application_name.psql.client_encoding.WIN1252..R.........?..p...(md5c9fd3dd66713de84341542478ace7780.R........S....client_encoding.WIN1252.S....DateStyle.ISO, MDY.S....integer_datetimes.on.S....IntervalStyle.postgres.S....is_superuser.on.S....server_encoding.UTF8.S....server_version.8.4.22S....session_authorization.root.S...$standard_conforming_strings.off.S....TimeZone.UTC.K......Q._..Z....I",
+		version: "8.4.22 | 22",
+		product: "Postgresql | mongodb",
+	},
 	// FTP
 	{
 		banner:  "220 (vsFTPd 3.0.3)\n200 Always in UTF8 mode.\n331 Please specify the password.\n230 Login successful.\n200 PORT command successful. Consider using PASV.\n150 Here comes the directory listing.\n226 Directory send OK.\n221 Goodbye.\n",
