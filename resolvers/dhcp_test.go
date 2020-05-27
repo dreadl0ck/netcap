@@ -14,11 +14,6 @@
 package resolvers
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"testing"
 )
 
@@ -30,51 +25,29 @@ type dhcpFingerprintResult struct {
 func TestDHCPRemote(t *testing.T) {
 
 	InitDHCPFingerprintAPIKey()
+	//InitDHCPFingerprintDB()
 
-	fp := "1,33,3,6,12,15,28,51,58,59,119"
-
-	r, err := http.NewRequest("GET", "https://api.fingerbank.org/api/v2/combinations/interrogate"+apiKey, bytes.NewReader([]byte("{\"dhcp_fingerprint\":\""+fp+"\"}")))
+	re, err := LookupDHCPFingerprint("53,54,51,1,3,6", "MSFT 5.0", []string{"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)"})
 	if err != nil {
 		t.Fatal(err)
 	}
+	if re.DeviceName != "Operating System/Windows OS/Microsoft Windows kernel 5.x/Microsoft Windows Kernel 5.1,5.2" {
+		t.Fatal("expected Operating System/Windows OS/Microsoft Windows kernel 5.x/Microsoft Windows Kernel 5.1,5.2, got ", re.DeviceName)
+	}
 
-	// send request
-	r.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(r)
+	// win 10
+	re, err = LookupDHCPFingerprint("53,61,12,81,60,55", "MSFT 5.0", []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML(comma) like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18363"})
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// print response body
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(string(data))
-
-	// print status
-	fmt.Println(resp.Status)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("api error")
+	if re.DeviceName != "Operating System/Windows OS/Microsoft Windows Kernel 10.0" {
+		t.Fatal("expected Operating System/Windows OS/Microsoft Windows Kernel 10.0, got ", re.DeviceName)
 	}
 
-	// parse JSON response
-	var res = new(DHCPResult)
-	err = json.Unmarshal(data, res)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// pretty print JSON api response
-	var out bytes.Buffer
-	err = json.Indent(&out, data, " ", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(string(out.Bytes()))
+	//SaveFingerprintDB()
 }
 
-func TestDHCPFingerprint(t *testing.T) {
+func TestDHCPFingerprintLocal(t *testing.T) {
 
 	InitDHCPFingerprintDB()
 
@@ -99,8 +72,13 @@ func TestDHCPFingerprint(t *testing.T) {
 
 	for _, test := range tests {
 		res := LookupDHCPFingerprintLocal(test.fingerprint)
-		if res != test.expected {
+		if res == nil {
+			t.Fatal("got not result")
+		}
+		if res.DeviceName != test.expected {
 			t.Fatal("got", res, ", expected", test.expected)
 		}
 	}
+
+	SaveFingerprintDB()
 }
