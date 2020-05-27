@@ -23,6 +23,7 @@ func GetCookieValues() {
 				}
 			}
 		},
+		false,
 	)
 }
 

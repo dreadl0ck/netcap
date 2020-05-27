@@ -14,7 +14,6 @@
 package encoder
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -117,8 +116,6 @@ func saveTCPServiceBanner(s StreamReader) {
 	ServiceStore.Lock()
 	ServiceStore.Items[s.ServiceIdent()] = serv
 	ServiceStore.Unlock()
-
-	fmt.Println("Hello There")
 
 	statsMutex.Lock()
 	reassemblyStats.numServices++

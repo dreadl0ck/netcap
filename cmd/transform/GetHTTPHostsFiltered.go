@@ -37,5 +37,6 @@ func GetHTTPHostsFiltered() {
 				}
 			}
 		},
+		false,
 	)
 }

@@ -21,6 +21,7 @@ func GetCookiesForHTTPHost() {
 				}
 			}
 		},
+		false,
 	)
 }
 

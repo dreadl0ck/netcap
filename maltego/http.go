@@ -32,7 +32,7 @@ type HTTPCountFunc = func(http *types.HTTP, min, max *uint64)
 type HTTPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
 
 // HTTPTransform applies a maltego transformation over HTTP audit records
-func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
+func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
 
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
@@ -125,6 +125,8 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
-	fmt.Println(trx.ReturnOutput())
+	if !continueTransform {
+		trx.AddUIMessage("completed!", "Inform")
+		fmt.Println(trx.ReturnOutput())
+	}
 }

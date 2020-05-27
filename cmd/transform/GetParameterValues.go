@@ -27,8 +27,8 @@ func GetParameterValues() {
 						//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 					}
 				}
-
 			}
 		},
+		false,
 	)
 }

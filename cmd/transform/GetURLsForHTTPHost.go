@@ -33,5 +33,6 @@ func GetURLsForHTTPHost() {
 				}
 			}
 		},
+		false,
 	)
 }

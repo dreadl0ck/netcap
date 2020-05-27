@@ -31,5 +31,6 @@ func GetParametersForHTTPHost() {
 				}
 			}
 		},
+		false,
 	)
 }
