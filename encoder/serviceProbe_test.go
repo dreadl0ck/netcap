@@ -76,9 +76,9 @@ type bannerTest struct {
 var serviceBanners = []bannerTest{
 	// Postgresql
 	{
-		banner:  "......./N...O....user.root.database.root.application_name.psql.client_encoding.WIN1252..R.........?..p...(md5c9fd3dd66713de84341542478ace7780.R........S....client_encoding.WIN1252.S....DateStyle.ISO, MDY.S....integer_datetimes.on.S....IntervalStyle.postgres.S....is_superuser.on.S....server_encoding.UTF8.S....server_version.8.4.22S....session_authorization.root.S...$standard_conforming_strings.off.S....TimeZone.UTC.K......Q._..Z....I",
-		version: "8.4.22 | 22",
-		product: "Postgresql | mongodb",
+		banner:  "......./N...O....user.root.database.root.application_name.psql.client_encoding.WIN1252..R.........?..p...(md5c9fd3dd66713de84341542478ace7780.R........S....client_encoding.WIN1252.S....DateStyle.ISO, MDY.S....integer_datetimes.on.S....IntervalStyle.postgres.S....is_superuser.on.S....server_encoding.UTF8.S....server_version\x008.4.22\x00S....session_authorization.root.S...$standard_conforming_strings.off.S....TimeZone.UTC.K......Q._..Z....I",
+		version: "8.4.22",
+		product: "Postgresql",
 	},
 	// FTP
 	{
@@ -104,7 +104,7 @@ var serviceBanners = []bannerTest{
 }
 
 func TestClassifyBanners(t *testing.T) {
-
+	fmt.Println("Phil")
 	// Load vulnerabilities DB index
 	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
 	var err error
@@ -119,8 +119,7 @@ func TestClassifyBanners(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//c.Debug = true
-
+	c.Debug = true
 	// important: needs to be set prior to loading probes
 	// otherwise config is not initialized and defaults to false
 	c.UseRE2 = true
@@ -147,6 +146,8 @@ func TestClassifyBanners(t *testing.T) {
 }
 
 func (b bannerTest) testClassifyBanner(t *testing.T) {
+
+	fmt.Println("Giacomo")
 
 	// make dummy service
 	serv := NewService("", 0, 0, "")
