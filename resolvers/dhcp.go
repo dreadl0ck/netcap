@@ -15,10 +15,13 @@ package resolvers
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"github.com/dreadl0ck/netcap/utils"
 	deadlock "github.com/sasha-s/go-deadlock"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,9 +29,38 @@ import (
 )
 
 var (
-	dhcpFingerprintDB = make(map[string]string)
+	dhcpFingerprintDB = make(map[string]*DHCPResult)
 	dhcpFingerprintMu deadlock.Mutex
+
+	dhcpDBinitialized bool
+	dhcpDBFile = "dhcp-fingerprints.json"
 )
+
+// TODO: use a boltDB?
+func SaveFingerprintDB() {
+
+	if !dhcpDBinitialized {
+		return
+	}
+
+	data, err := json.Marshal(dhcpFingerprintDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	f, err := os.Create(filepath.Join(DataBaseSource, dhcpDBFile))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	_, err = f.Write(data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	utils.DebugLog.Println("saved fingerprint db with", len(dhcpFingerprintDB), "items")
+}
 
 // Fingerbank.org API
 // endpoint: https://api.fingerbank.org
@@ -54,6 +86,7 @@ var (
 var apiKey string
 
 func InitDHCPFingerprintAPIKey() {
+	dhcpDBinitialized = true
 	apiKey = "?key=" + os.Getenv("FINGERPRINT_API_KEY")
 }
 
@@ -80,36 +113,122 @@ type DHCPResult struct {
 	Version    string `json:"version"`
 }
 
+type DHCPFingerprintRequest struct {
+	Fingerprint string   `json:"dhcp_fingerprint"`
+	Vendor      string   `json:"dhcp_vendor"`
+	UserAgents  []string `json:"user_agents"`
+}
+
 // LookupDHCPFingerprint retrieves the data associated with an DHCP fingerprint
-func LookupDHCPFingerprint(fp string) string {
+func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCPResult, error) {
 
 	if len(fp) == 0 {
-		return ""
+		return nil, nil
 	}
 
-	// check if ip has already been resolved
+	// check if fp has already been resolved
 	dhcpFingerprintMu.Lock()
 	if res, ok := dhcpFingerprintDB[fp]; ok {
 		dhcpFingerprintMu.Unlock()
-		return res
+		return res, nil
 	}
 	dhcpFingerprintMu.Unlock()
 
-	return ""
+	// create API request
+	req := &DHCPFingerprintRequest{
+		Fingerprint: fp,
+		Vendor:      vendor,
+		UserAgents:  userAgents,
+	}
+	reqData, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// build
+	r, err := http.NewRequest("GET", "https://api.fingerbank.org/api/v2/combinations/interrogate"+apiKey, bytes.NewReader(reqData))
+	if err != nil {
+		return nil, err
+	}
+
+	// send request
+	r.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// read response body
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// check status
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("unexpected status code from fingerbank API: " + resp.Status)
+	}
+
+	// parse JSON response
+	var res = new(DHCPResult)
+	err = json.Unmarshal(data, res)
+	if err != nil {
+		return nil, err
+	}
+
+	// pretty print JSON api response
+	//var out bytes.Buffer
+	//err = json.Indent(&out, data, " ", "  ")
+	//if err != nil {
+	//	return nil, err
+	//}
+	//fmt.Println(string(out.Bytes()))
+
+	// add result to map
+	dhcpFingerprintMu.Lock()
+	dhcpFingerprintDB[fp] = res
+	dhcpFingerprintMu.Unlock()
+
+	return res, nil
 }
 
-// InitDHCPFingerprintDB initializes the DHCP fingerprint database
-// initial database source: https://raw.githubusercontent.com/karottc/fingerbank/master/upstream/startup/fingerprints.csv
+// InitDHCPFingerprintDB initializes the DHCP fingerprint database from the JSON encoded mapping persisted on disk
 func InitDHCPFingerprintDB() {
 
-	var fingerprints int
+	dhcpDBinitialized = true
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "dhcp-fingerprints.csv"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, dhcpDBFile))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	dhcpFingerprintMu.Lock()
+	err = json.Unmarshal(data, &dhcpFingerprintDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dhcpFingerprintMu.Unlock()
+
+	if !Quiet {
+		dhcpFingerprintMu.Lock()
+		utils.DebugLog.Println("loaded", len(dhcpFingerprintDB), "DHCP fingerprints")
+		dhcpFingerprintMu.Unlock()
+	}
+}
+
+// InitDHCPFingerprintDBCSV initializes the DHCP fingerprint database from a CSV formatted source
+// initial database source: https://raw.githubusercontent.com/karottc/fingerbank/master/upstream/startup/fingerprints.csv
+func InitDHCPFingerprintDBCSV() {
+
+	dhcpDBinitialized = true
+
+	var fingerprints int
+
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, dhcpDBFile))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
 
 		if len(line) == 0 {
@@ -123,7 +242,9 @@ func InitDHCPFingerprintDB() {
 
 		parts := strings.Split(string(line), "|")
 		if len(parts) == 2 {
-			dhcpFingerprintDB[parts[0]] = strings.TrimSpace(parts[1])
+			dhcpFingerprintDB[parts[0]] = &DHCPResult{
+				DeviceName: strings.TrimSpace(parts[1]),
+			}
 		}
 
 		fingerprints++
@@ -136,10 +257,10 @@ func InitDHCPFingerprintDB() {
 }
 
 // LookupDHCPFingerprintLocal retrieves the data associated with an DHCP fingerprint
-func LookupDHCPFingerprintLocal(fp string) string {
+func LookupDHCPFingerprintLocal(fp string) *DHCPResult {
 
 	if len(fp) == 0 {
-		return ""
+		return nil
 	}
 
 	// check if ip has already been resolved
@@ -150,5 +271,5 @@ func LookupDHCPFingerprintLocal(fp string) string {
 	}
 	dhcpFingerprintMu.Unlock()
 
-	return ""
+	return nil
 }

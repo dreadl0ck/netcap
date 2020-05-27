@@ -3,6 +3,7 @@ package collector
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
 	"log"
@@ -66,6 +67,8 @@ func (c *Collector) cleanup(force bool) {
 			c.files[name] = humanize.Bytes(uint64(size))
 		}
 	}
+
+	resolvers.SaveFingerprintDB()
 
 	// close the encoder logs
 	utils.CloseLogFiles()

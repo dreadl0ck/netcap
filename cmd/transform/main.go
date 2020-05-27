@@ -39,8 +39,8 @@ func Run() {
 	// DHCP
 	case "ToDHCPClients":
 		ToDHCPClients()
-	case "ToDHCPFingerprints":
-		ToDHCPFingerprints()
+	case "LookupDHCPFingerprint":
+		LookupDHCPFingerprint()
 
 	// SSH
 	case "ToSSHClients":
