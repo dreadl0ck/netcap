@@ -106,6 +106,7 @@ func TestClassifyBanners(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	indexName = filepath.Join(resolvers.DataBaseSource, "exploit-db.bleve")
 	exploitsIndex, err = bleve.Open(indexName)
 	if err != nil {
 		t.Fatal(err)
