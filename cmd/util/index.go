@@ -51,17 +51,54 @@ type Exploit struct {
 
 // TODO: can we use the protobuf from types package instead?
 type Vulnerability struct {
-	Id           string
-	Description  string
-	Severity     string
-	V2Score      string
-	AccessVector string
-	Versions     []string
+	Id                    string
+	Description           string
+	Severity              string
+	V2Score               string
+	AccessVector          string
+	AttackComplexity      string
+	PrivilegesRequired    string
+	UserInteraction       string
+	Scope                 string
+	ConfidentialityImpact string
+	IntegrityImpact       string
+	AvailabilityImpact    string
+	BaseScore             float64
+	BaseSeverity          string
+	Versions              []string
 }
 
 // used to fetch version identifier from description string from NVD item
 // if cpe url does not contain version information
 var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
+
+func intermediatePatchVersions(from string, until string) []string {
+
+	var out []string
+
+	parts := strings.Split(from, ".")
+	patch, err := strconv.Atoi(parts[len(parts)-1])
+	if err != nil {
+		return nil
+	}
+
+	untilParts := strings.Split(until, ".")
+	untilInt, err := strconv.Atoi(untilParts[len(untilParts)-1])
+	if err != nil {
+		return nil
+	}
+
+	for i := patch; i < untilInt; i++ {
+		patch++
+		if patch == untilInt {
+			break
+		}
+		parts[len(parts)-1] = strconv.Itoa(patch)
+		out = append(out, strings.Join(parts, "."))
+	}
+
+	return out
+}
 
 func indexData(in string) {
 
@@ -211,7 +248,7 @@ func indexData(in string) {
 
 	case "nvd":
 
-		indexPath = filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
+		indexPath = filepath.Join(resolvers.DataBaseSource, "nvd-v2.bleve")
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
@@ -268,11 +305,23 @@ func indexData(in string) {
 							if n.Operator == "OR" {
 								for _, cpe := range n.CpeMatch {
 									if cpe.Vulnerable {
-										parts := strings.Split(cpe.Cpe23URI, ":")
-										if len(parts) > 5 {
-											v := parts[5]
-											if v != "*" && v != "-" {
-												versions = append(versions, v)
+
+										if cpe.VersionStartIncluding != "" {
+											versions = append(versions, cpe.VersionStartIncluding)
+
+											// generate array of intermediate versions if end is set
+											if cpe.VersionEndExcluding != "" {
+												versions = append(versions, intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)...)
+											}
+										} else {
+
+											// try to get version from cpeURI
+											parts := strings.Split(cpe.Cpe23URI, ":")
+											if len(parts) > 5 {
+												v := parts[5]
+												if v != "*" && v != "-" {
+													versions = append(versions, v)
+												}
 											}
 										}
 									}
@@ -288,12 +337,21 @@ func indexData(in string) {
 						//fmt.Println(" ", v.Cve.CVEDataMeta.ID, entry.Value, " =>", versions)
 
 						e := Vulnerability{
-							Id:           v.Cve.CVEDataMeta.ID,
-							Description:  entry.Value,
-							Severity:     v.Impact.BaseMetricV2.Severity,
-							V2Score:      strconv.FormatFloat(v.Impact.BaseMetricV2.CvssV2.BaseScore, 'f', 1, 64),
-							AccessVector: v.Impact.BaseMetricV2.CvssV2.AccessVector,
-							Versions:     versions,
+							Id:                    v.Cve.CVEDataMeta.ID,
+							Description:           entry.Value,
+							Severity:              v.Impact.BaseMetricV2.Severity,
+							V2Score:               strconv.FormatFloat(v.Impact.BaseMetricV2.CvssV2.BaseScore, 'f', 1, 64),
+							AccessVector:          v.Impact.BaseMetricV2.CvssV2.AccessVector,
+							AttackComplexity:      v.Impact.BaseMetricV3.CvssV3.AttackComplexity,
+							PrivilegesRequired:    v.Impact.BaseMetricV3.CvssV3.PrivilegesRequired,
+							UserInteraction:       v.Impact.BaseMetricV3.CvssV3.UserInteraction,
+							Scope:                 v.Impact.BaseMetricV3.CvssV3.Scope,
+							ConfidentialityImpact: v.Impact.BaseMetricV3.CvssV3.ConfidentialityImpact,
+							IntegrityImpact:       v.Impact.BaseMetricV3.CvssV3.IntegrityImpact,
+							AvailabilityImpact:    v.Impact.BaseMetricV3.CvssV3.AvailabilityImpact,
+							BaseScore:             v.Impact.BaseMetricV3.CvssV3.BaseScore,
+							BaseSeverity:          v.Impact.BaseMetricV3.CvssV3.BaseSeverity,
+							Versions:              versions,
 						}
 						err = index.Index(e.Id, e)
 						if err != nil {
