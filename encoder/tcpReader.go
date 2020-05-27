@@ -16,17 +16,15 @@ package encoder
 import (
 	"bytes"
 	"fmt"
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"time"
-	"unicode"
-
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*
@@ -59,24 +57,11 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 	}
 
 	// still no clue? lets check if its ascii
-	if isAscii(data) {
+	if utils.IsAscii(data) {
 		return "ascii"
 	}
 
 	return "unknown"
-}
-
-// checks if input consists of ascii characters
-func isAscii(d []byte) bool {
-	if len(d) == 0 {
-		return false
-	}
-	for i := 0; i < len(d); i++ {
-		if d[i] > unicode.MaxASCII {
-			return false
-		}
-	}
-	return true
 }
 
 func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacket time.Time) []byte {

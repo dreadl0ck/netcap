@@ -36,6 +36,12 @@ func Run() {
 	case "OpenExploit":
 		OpenExploit()
 
+	// DHCP
+	case "ToDHCPClients":
+		ToDHCPClients()
+	case "ToDHCPFingerprints":
+		ToDHCPFingerprints()
+
 	// SSH
 	case "ToSSHClients":
 		ToSSHClients()
@@ -73,6 +79,12 @@ func Run() {
 	// Vulnerabilities
 	case "ToSoftwareVulnerabilities":
 		ToSoftwareVulnerabilities()
+	case "OpenVulnerability":
+		OpenVulnerability()
+
+	// DNS
+	case "ToDNSQuestions":
+		ToDNSQuestions()
 
 	// Flow
 	case "ToIANAServices":
@@ -165,5 +177,7 @@ func Run() {
 		GetOutgoingFlowsFiltered()
 	case "GetURLsForHTTPHost":
 		GetURLsForHTTPHost()
+	default:
+		log.Fatal("unknown transform: ", os.Args[2])
 	}
 }

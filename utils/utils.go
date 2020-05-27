@@ -21,12 +21,26 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/gogo/protobuf/proto"
 )
+
+// checks if input consists of ascii characters
+func IsAscii(d []byte) bool {
+	if len(d) == 0 {
+		return false
+	}
+	for i := 0; i < len(d); i++ {
+		if d[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
+}
 
 // ListAllNetworkInterfaces dumps a list of all visible network interfaces to stdout
 func ListAllNetworkInterfaces() {
