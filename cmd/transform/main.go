@@ -33,6 +33,8 @@ func Run() {
 	// Exploits
 	case "ToSoftwareExploits":
 		ToSoftwareExploits()
+	case "OpenExploit":
+		OpenExploit()
 
 	// SSH
 	case "ToSSHClients":
