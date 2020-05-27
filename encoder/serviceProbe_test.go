@@ -161,7 +161,7 @@ func (b bannerTest) testClassifyBanner(t *testing.T) {
 	}
 }
 
-var serviceProbeTests = []regexTest{
+var regexTests = []regexTest{
 	{
 		name:     "",
 		input:    "(?ms)^\\x00\\x03\\xf1\\x26.{88}(.*)\\0\\0(?:.*?:){5}(.*)\\0\\0$",
@@ -211,7 +211,7 @@ var serviceProbeTests = []regexTest{
 }
 
 func TestCleanRegex(t *testing.T) {
-	for _, r := range serviceProbeTests {
+	for _, r := range regexTests {
 		r.testCleanRegex(t)
 	}
 }
