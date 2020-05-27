@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"syscall"
 )
 
 func StopCaptureProcess() {
@@ -26,7 +25,8 @@ func StopCaptureProcess() {
 	}
 
 	// graceful shutdown
-	err = p.Signal(syscall.SIGINT)
+	// TODO: add windows support
+	err = p.Signal(os.Interrupt)
 	//err = p.Kill()
 	if err != nil {
 		log.Fatal(err)

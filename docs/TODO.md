@@ -1,14 +1,14 @@
 # TODOs
 
+- parse cpes, for example with https://github.com/knqyf263/go-cpe
+
 40249,exploits/linux/webapps/40249.txt,"Pi-Hole Web Interface 2.8.1 - Persistent Cross-Site Scripting in Whitelist/Blacklist",2016-08-16,loneferret,webapps,linux,
 - vuln + exploit detection: trim leading v from version?
 
 - keep track of what software was already looked up to avoid duplicate matching (see search for log msg)
 - DHCP, DNS, HTTP transforms
 
-- Exploits audit records and index for exploit db
-
-- integrate NVD feed and CPE database
+- integrate CPE database?
 - add full stream SMTP parsing
 - add lookups for DHCP Fingerprints
 
