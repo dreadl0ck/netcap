@@ -14,10 +14,12 @@
 package encoder
 
 import (
-	"github.com/dreadl0ck/netcap/resolvers"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/resolvers"
+	deadlock "github.com/sasha-s/go-deadlock"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
@@ -115,6 +117,8 @@ func saveTCPServiceBanner(s StreamReader) {
 	ServiceStore.Lock()
 	ServiceStore.Items[s.ServiceIdent()] = serv
 	ServiceStore.Unlock()
+
+	fmt.Println("Hello There")
 
 	statsMutex.Lock()
 	reassemblyStats.numServices++
