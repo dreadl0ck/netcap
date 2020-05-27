@@ -19,12 +19,12 @@ func ToLoginInformation() {
 			ent.SetType("netcap.Credentials")
 			ent.SetValue(val)
 
-			ent.AddProperty("timestamp", "Timestamp", "strict", cred.Timestamp)
-			ent.AddProperty("service", "Service", "strict", cred.Service)
-			ent.AddProperty("flow", "Flow", "strict", cred.Flow)
-			ent.AddProperty("notes", "Notes", "strict", cred.Notes)
-			ent.AddProperty("user", "User", "strict", cred.User)
-			ent.AddProperty("password", "Password", "strict", cred.Password)
+			ent.AddProperty("timestamp", "Timestamp", "strict", maltego.EscapeText(cred.Timestamp))
+			ent.AddProperty("service", "Service", "strict", maltego.EscapeText(cred.Service))
+			ent.AddProperty("flow", "Flow", "strict", maltego.EscapeText(cred.Flow))
+			ent.AddProperty("notes", "Notes", "strict", maltego.EscapeText(cred.Notes))
+			ent.AddProperty("user", "User", "strict", maltego.EscapeText(cred.User))
+			ent.AddProperty("password", "Password", "strict", maltego.EscapeText(cred.Password))
 
 			ent.SetLinkColor("#000000")
 			//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
