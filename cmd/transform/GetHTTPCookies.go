@@ -18,5 +18,6 @@ func GetHTTPCookies() {
 				}
 			}
 		},
+		false,
 	)
 }

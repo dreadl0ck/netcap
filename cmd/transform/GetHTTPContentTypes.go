@@ -45,5 +45,6 @@ func GetHTTPContentTypes() {
 				}
 			}
 		},
+		false,
 	)
 }

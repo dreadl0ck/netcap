@@ -25,5 +25,6 @@ func GetHTTPUserAgents() {
 				}
 			}
 		},
+		false,
 	)
 }

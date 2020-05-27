@@ -86,8 +86,20 @@ func SaveFingerprintDB() {
 var apiKey string
 
 func InitDHCPFingerprintAPIKey() {
+
+	k := os.Getenv("FINGERPRINT_API_KEY")
+
+	if k != "" {
+		apiKey = "?key=" + k
+	} else {
+		data, err := ioutil.ReadFile(filepath.Join("/usr/local/etc/netcap", "fingerprint_api_key"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		apiKey = "?key=" + string(data)
+	}
+
 	dhcpDBinitialized = true
-	apiKey = "?key=" + os.Getenv("FINGERPRINT_API_KEY")
 }
 
 // DHCPResult is the data structure returned from the fingerbank.org service
@@ -224,11 +236,12 @@ func InitDHCPFingerprintDBCSV() {
 
 	var fingerprints int
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, dhcpDBFile))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "dhcp-fingerprints.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	dhcpFingerprintMu.Lock()
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
 
 		if len(line) == 0 {

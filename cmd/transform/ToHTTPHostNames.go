@@ -25,5 +25,6 @@ func ToHTTPHostNames() {
 				ent.AddProperty("path", "Path", "strict", profilesFile)
 			}
 		},
+		false,
 	)
 }

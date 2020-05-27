@@ -27,5 +27,6 @@ func GetHTTPParameters() {
 				}
 			}
 		},
+		false,
 	)
 }

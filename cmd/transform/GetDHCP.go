@@ -57,7 +57,8 @@ func GetDHCP() {
 				}
 			}
 		},
+		false,
 	)
 
-	fmt.Println(results)
+	log.Println(results)
 }

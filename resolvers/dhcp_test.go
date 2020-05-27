@@ -27,7 +27,8 @@ func TestDHCPRemote(t *testing.T) {
 	InitDHCPFingerprintAPIKey()
 	//InitDHCPFingerprintDB()
 
-	re, err := LookupDHCPFingerprint("53,54,51,1,3,6", "MSFT 5.0", []string{"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)"})
+	// Win XP
+	re, err := LookupDHCPFingerprint("53,116,61,12,60,55", "MSFT 5.0", []string{"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1) SCAgent"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +36,7 @@ func TestDHCPRemote(t *testing.T) {
 		t.Fatal("expected Operating System/Windows OS/Microsoft Windows kernel 5.x/Microsoft Windows Kernel 5.1,5.2, got ", re.DeviceName)
 	}
 
-	// win 10
+	// Win 10
 	re, err = LookupDHCPFingerprint("53,61,12,81,60,55", "MSFT 5.0", []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML(comma) like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18363"})
 	if err != nil {
 		t.Fatal(err)
@@ -45,6 +46,11 @@ func TestDHCPRemote(t *testing.T) {
 	}
 
 	//SaveFingerprintDB()
+}
+
+func TestInitLocalDHCPFingerprintDB(t *testing.T) {
+	InitDHCPFingerprintDBCSV()
+	SaveFingerprintDB()
 }
 
 func TestDHCPFingerprintLocal(t *testing.T) {

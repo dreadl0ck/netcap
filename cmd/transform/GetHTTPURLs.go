@@ -32,6 +32,7 @@ func GetHTTPURLs() {
 				}
 			}
 		},
+		false,
 	)
 }
 

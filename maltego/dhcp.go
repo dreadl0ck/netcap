@@ -32,7 +32,7 @@ type DHCPCountFunc func()
 type DHCPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ip string)
 
 // DHCPTransform applies a maltego transformation over DHCP audit records
-func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
+func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, continueTransform bool) {
 
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
@@ -124,6 +124,8 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
-	fmt.Println(trx.ReturnOutput())
+	if !continueTransform {
+		trx.AddUIMessage("completed!", "Inform")
+		fmt.Println(trx.ReturnOutput())
+	}
 }
