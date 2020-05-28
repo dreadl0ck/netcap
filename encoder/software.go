@@ -624,7 +624,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	// Load vulnerabilities DB index
-	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
+	indexName := filepath.Join(resolvers.DataBaseSource, vulnDBPath)
 	vulnerabilitiesIndex, err = bleve.Open(indexName)
 	if err != nil {
 		return err
