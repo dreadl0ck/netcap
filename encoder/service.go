@@ -80,17 +80,32 @@ func saveTCPServiceBanner(s StreamReader) {
 	ident := s.Ident()
 
 	// check if we already have a banner for the IP + Port combination
+	// if multiple services have communicated with the service, we will just add the current flow
+	// we will keep the first banner that reaches the size configured in c.BannerSize
 	ServiceStore.Lock()
-	if serv, ok := ServiceStore.Items[s.ServiceIdent()]; ok {
+	if sv, ok := ServiceStore.Items[s.ServiceIdent()]; ok {
 		defer ServiceStore.Unlock()
 
-		for _, f := range serv.Flows {
+		// invoke the service probe matching on all streams towards this service
+		matchServiceProbes(sv, banner, s.Ident())
+
+		// ensure we dont duplicate any flows
+		for _, f := range sv.Flows {
 			if f == ident {
 				return
 			}
 		}
 
-		serv.Flows = append(serv.Flows, ident)
+		// collect the flow on the audit record
+		sv.Flows = append(sv.Flows, ident)
+
+		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
+		// set this service response on the service and update the timestamp
+		// more data means more information and is therefore preferred for identification purposes
+		if len(sv.Banner) < len(banner) {
+			sv.Banner = banner
+			sv.Timestamp = s.FirstPacket().String()
+		}
 		return
 	}
 	ServiceStore.Unlock()
