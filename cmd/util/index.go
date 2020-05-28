@@ -72,6 +72,8 @@ type Vulnerability struct {
 // if cpe url does not contain version information
 var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
 
+// generates max 20 intermediate versions
+// until is excluded
 func intermediatePatchVersions(from string, until string) []string {
 
 	var out []string
@@ -88,9 +90,16 @@ func intermediatePatchVersions(from string, until string) []string {
 		return nil
 	}
 
+	if patch >= untilInt {
+		// nothing to do
+		return nil
+	}
+
+	var numRounds int
 	for i := patch; i < untilInt; i++ {
 		patch++
-		if patch == untilInt {
+		numRounds++
+		if patch == untilInt || numRounds > 20 {
 			break
 		}
 		parts[len(parts)-1] = strconv.Itoa(patch)
@@ -256,6 +265,8 @@ func indexData(in string) {
 		} else {
 			index = makeBleveIndex(indexPath) // To create a new index
 		}
+		defer index.Close()
+
 		var (
 			start = time.Now()
 			years = []string{
@@ -311,7 +322,10 @@ func indexData(in string) {
 
 											// generate array of intermediate versions if end is set
 											if cpe.VersionEndExcluding != "" {
-												versions = append(versions, intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)...)
+												patchVersions := intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)
+												if patchVersions != nil {
+													versions = append(versions, patchVersions...)
+												}
 											}
 										} else {
 
