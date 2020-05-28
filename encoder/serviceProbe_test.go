@@ -78,7 +78,12 @@ var serviceBanners = []bannerTest{
 	{
 		banner:  "......./N...O....user.root.database.root.application_name.psql.client_encoding.WIN1252..R.........?..p...(md5c9fd3dd66713de84341542478ace7780.R........S....client_encoding.WIN1252.S....DateStyle.ISO, MDY.S....integer_datetimes.on.S....IntervalStyle.postgres.S....is_superuser.on.S....server_encoding.UTF8.S....server_version\x008.4.22\x00S....session_authorization.root.S...$standard_conforming_strings.off.S....TimeZone.UTC.K......Q._..Z....I",
 		version: "8.4.22",
-		product: "Postgresql",
+		product: "PostgreSQL",
+	},
+	{
+		banner: "␛[31m␀␀␀␈\\u{4}\\xD2\\u{16}/␛[0m␛[34mN␛[0m␛[31m␀␀␀O␀\\u{3}␀␀user␀root␀database␀root␀application_name␀psql␀client_encoding␀WIN1252␀␀␛[0m␛[34mR␀␀␀␈␀␀␀␀S␀␀␀\\u{1a}application_name␀psql␀S␀␀␀\\u{1c}client_encoding␀WIN1252␀S␀␀␀\\u{17}DateStyle␀ISO,•MDY␀S␀␀␀\\u{19}integer_datetimes␀on␀S␀␀␀␛Inter\n       │ valStyle␀postgres␀S␀␀␀\\u{14}is_superuser␀on␀S␀␀␀\\u{19}server_encoding␀UTF8␀S␀␀␀\\u{1a}server_version␀9.1.10␀S␀␀␀\\u{1f}session_authorization␀root␀S␀␀␀#standard_conforming_strings␀on␀S␀␀␀\\u{11}TimeZone␀UTC␀K␀␀␀\\u{c}␀␀&*␀\\x958OZ␀␀␀\\u{5}I␛[0m",
+		version: "9.1.10",
+		product: "PostgreSQL",
 	},
 	// FTP
 	{
@@ -104,7 +109,7 @@ var serviceBanners = []bannerTest{
 }
 
 func TestClassifyBanners(t *testing.T) {
-	fmt.Println("Phil")
+
 	// Load vulnerabilities DB index
 	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
 	var err error
@@ -146,8 +151,6 @@ func TestClassifyBanners(t *testing.T) {
 }
 
 func (b bannerTest) testClassifyBanner(t *testing.T) {
-
-	fmt.Println("Giacomo")
 
 	// make dummy service
 	serv := NewService("", 0, 0, "")

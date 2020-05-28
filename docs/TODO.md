@@ -1,5 +1,6 @@
 # TODOs
 
+- transforms: PCAP: open NETCAP folder + logs
 - parse cpes, for example with https://github.com/knqyf263/go-cpe
 
 40249,exploits/linux/webapps/40249.txt,"Pi-Hole Web Interface 2.8.1 - Persistent Cross-Site Scripting in Whitelist/Blacklist",2016-08-16,loneferret,webapps,linux,
