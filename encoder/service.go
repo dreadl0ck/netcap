@@ -32,7 +32,7 @@ type Service struct {
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicServiceMap struct {
-	// map Server IP + Port to Service
+	// map Server IP + Port to Servic
 	Items map[string]*Service
 	deadlock.Mutex
 }

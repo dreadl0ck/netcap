@@ -1,5 +1,12 @@
 # TODOs
 
+- save processing time in netcap.log
+- remove deadlock debugs
+- add database update command
+
+documentation:
+- index generation
+
 - transforms: PCAP: open NETCAP folder + logs
 - parse cpes, for example with https://github.com/knqyf263/go-cpe
 

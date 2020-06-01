@@ -4,7 +4,7 @@ import (
 	//"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/dreadl0ck/sshx"
+	"github.com/dreadl0ck/netcap/sshx"
 	"log"
 	"os"
 

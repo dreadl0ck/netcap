@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"io"
 	"log"
@@ -36,7 +37,6 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	deadlock "github.com/sasha-s/go-deadlock"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/dreadl0ck/netcap/encoder"
@@ -453,10 +453,7 @@ func (c *Collector) PrintConfiguration() {
 	// always write the entire configuration into the logfile
 	logFileHandle.Write(cdata)
 
-	netcap.FPrintBuildInfo(target)
-
-	// print build information
-	fmt.Fprintln(target, "> PID:", os.Getpid())
+	netcap.FPrintLogo(target)
 
 	if c.config.EncoderConfig.Debug {
 		// in debug mode: dump config to stdout
@@ -466,6 +463,11 @@ func (c *Collector) PrintConfiguration() {
 		target = logFileHandle
 		fmt.Println() // add newline
 	}
+
+	netcap.FPrintBuildInfo(target)
+
+	// print build information
+	fmt.Fprintln(target, "> PID:", os.Getpid())
 
 	// print configuration as table
 	tui.Table(target, []string{"Setting", "Value"}, [][]string{
