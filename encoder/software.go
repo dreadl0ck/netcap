@@ -592,7 +592,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	// Load the JSON database of HASSH signaures
-	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdbNew.json")
+	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdb.json")
 	if err != nil {
 		return err
 	}
@@ -609,7 +609,9 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 		hashDBMap[v.Hash] = v.Softwares
 	}
 
-	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/cmsdbTest.json")
+	utils.DebugLog.Println("loaded", len(hashDBMap), "different HASSH digests")
+
+	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/cmsdb.json")
 	if err != nil {
 		return err
 	}
@@ -620,7 +622,7 @@ var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", fu
 	}
 
 	for _, entry := range hasshDB {
-		hasshMap[entry.Hash] = entry.Softwares // Holds redundant info, but couldn't figure a more elegant way to do this
+		hasshMap[entry.Hash] = entry.Softwares // TODO: note from Giac: Holds redundant info, but couldn't figure a more elegant way to do this
 	}
 
 	// Load vulnerabilities DB index
