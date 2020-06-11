@@ -15,6 +15,7 @@ package capture
 
 import (
 	"os"
+	"runtime"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/namsral/flag"
@@ -45,7 +46,7 @@ var (
 	flagInterface    = fs.String("iface", "", "attach to network interface and capture in live mode")
 	flagCompress     = fs.Bool("comp", true, "compress output with gzip")
 	flagBuffer       = fs.Bool("buf", true, "buffer data in memory before writing to disk")
-	flagWorkers      = fs.Int("workers", 1, "number of workers")
+	flagWorkers      = fs.Int("workers", runtime.NumCPU(), "number of workers")
 	flagPacketBuffer = fs.Int("pbuf", netcap.DefaultPacketBuffer, "set packet buffer size, for channels that feed data to workers")
 
 	flagCPUProfile    = fs.Bool("cpuprof", false, "create cpu profile")
@@ -81,22 +82,28 @@ var (
 	flagFreeOSMemory          = fs.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
 	flagReassembleConnections = fs.Bool("reassemble-connections", true, "reassemble TCP connections")
 
-	flagTCPDebug    = fs.Bool("tcp-debug", false, "add debug output for TCP connections to debug.log")
-	flagSaveConns   = fs.Bool("conns", false, "save raw TCP connections")
+	flagTCPDebug  = fs.Bool("tcp-debug", false, "add debug output for TCP connections to debug.log")
+	flagSaveConns = fs.Bool("conns", false, "save raw TCP connections")
 
-	flagCalcEntropy             = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
-	flagLogErrors               = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
-	flagFlushevery              = fs.Int("flushevery", netcap.DefaultFlushEvery, "flush assembler every N packets")
-	flagNodefrag                = fs.Bool("nodefrag", true, "if true, do not do IPv4 defrag")
-	flagChecksum                = fs.Bool("checksum", false, "check TCP checksum")
-	flagNooptcheck              = fs.Bool("nooptcheck", true, "do not check TCP options (useful to ignore MSS on captures with TSO)")
-	flagIgnorefsmerr            = fs.Bool("ignorefsmerr", false, "ignore TCP FSM errors")
-	flagAllowmissinginit        = fs.Bool("allowmissinginit", netcap.DefaultAllowMissingInit, "support streams without SYN/SYN+ACK/ACK sequence")
-	flagDebug                   = fs.Bool("debug", false, "display debug information")
-	flagHexdump                 = fs.Bool("hexdump", false, "dump packets used in stream reassembly as hex to the reassembly.log file")
-	flagWaitForConnections      = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
-	flagWriteincomplete         = fs.Bool("writeincomplete", false, "write incomplete response")
-	flagMemprofile              = fs.String("memprofile", "", "write memory profile")
+	flagCalcEntropy = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
+	flagLogErrors   = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
+
+	// reassembly
+	flagFlushevery           = fs.Int("flushevery", netcap.DefaultFlushEvery, "flush assembler every N packets")
+	flagNodefrag             = fs.Bool("nodefrag", netcap.DefaultNoDefrag, "if true, do not do IPv4 defrag")
+	flagChecksum             = fs.Bool("checksum", netcap.DefaultChecksum, "check TCP checksum")
+	flagNooptcheck           = fs.Bool("nooptcheck", netcap.DefaultNoOptCheck, "do not check TCP options (useful to ignore MSS on captures with TSO)")
+	flagIgnorefsmerr         = fs.Bool("ignorefsmerr", netcap.DefaultIgnoreFSMErr, "ignore TCP FSM errors")
+	flagAllowmissinginit     = fs.Bool("allowmissinginit", netcap.DefaultAllowMissingInit, "support streams without SYN/SYN+ACK/ACK sequence")
+	flagHexdump              = fs.Bool("hexdump", false, "dump packets used in stream reassembly as hex to the reassembly.log file")
+	flagWaitForConnections   = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
+	flagWriteincomplete      = fs.Bool("writeincomplete", false, "write incomplete response")
+	flagStreamDecoderBufSize = fs.Int("sbuf-size", 0, "size for channel used to pass data to the stream decoders. default is unbuffered")
+	flagReassemblyDebug      = fs.Bool("reassembly-debug", false, "if true, the reassembly will log verbose debugging information")
+
+	flagDebug      = fs.Bool("debug", false, "display debug information")
+	flagMemprofile = fs.String("memprofile", "", "write memory profile")
+
 	flagConnFlushInterval       = fs.Int("conn-flush-interval", netcap.DefaultConnFlushInterval, "flush connections every X flows")
 	flagConnTimeOut             = fs.Duration("conn-timeout", netcap.DefaultConnTimeOut, "close connections older than X seconds")
 	flagFlowFlushInterval       = fs.Int("flow-flush-interval", netcap.DefaultFlowFlushInterval, "flushes flows every X flows")
@@ -107,7 +114,5 @@ var (
 	flagStopAfterHarvesterMatch = fs.Bool("stop-after-harvester-match", true, "stop processing the conversation after the first harvester returned a result")
 	flagBannerSize              = fs.Int("bsize", 512, "size of the stored service banners in bytes")
 	flagHarvesterBannerSize     = fs.Int("hbsize", 512, "size of the data passed to the credential harvesters in bytes")
-	flagStreamDecoderBufSize    = fs.Int("sbuf-size", 0, "size for channel used to pass data to the stream decoders. default is unbuffered")
-	flagReassemblyDebug         = fs.Bool("reassembly-debug", false, "if true, the reassembly will log verbose debugging information")
 	flagCustomCredsRegex        = fs.String("reCustom", "", "possibility of passing a custom regex for harvesting credentials")
 )

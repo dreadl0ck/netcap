@@ -48,6 +48,7 @@ func (c *Collector) Init() (err error) {
 	// set quiet mode for other subpackages
 	encoder.Quiet = c.config.Quiet
 
+	// init logfile if necessary
 	if logFileHandle == nil && c.config.Quiet {
 		err = c.InitLogging()
 		if err != nil {

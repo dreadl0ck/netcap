@@ -17,8 +17,8 @@ import (
 func ToLiveAuditRecords() {
 
 	var (
-		lt        = maltego.ParseLocalArguments(os.Args[1:])
-		path = lt.Values["path"]
+		lt    = maltego.ParseLocalArguments(os.Args[1:])
+		path  = lt.Values["path"]
 		iface = lt.Values["iface"]
 	)
 

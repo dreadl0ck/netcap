@@ -41,6 +41,7 @@ func ToAuditRecordsWithDPI() {
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)
+	c.PrintConfiguration()
 
 	// if not, use native pcapgo version
 	isPcap, err := collector.IsPcap(inputFile)

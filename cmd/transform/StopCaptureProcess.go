@@ -37,4 +37,3 @@ func StopCaptureProcess() {
 	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }
-
