@@ -21,7 +21,7 @@ func TestIntermediatePatchVersions(t *testing.T) {
 	versions := []string{"4.5.7", "4.5.8", "4.5.9", "4.5.10", "4.5.11"}
 	generated := intermediatePatchVersions("4.5.6", "4.5.12")
 
-	for i:=0;i<len(versions);i++ {
+	for i := 0; i < len(versions); i++ {
 		if versions[i] != generated[i] {
 			t.Fatal("expected ", versions[i], ", got", generated[i])
 		}

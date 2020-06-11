@@ -45,8 +45,8 @@ func LookupDHCPFingerprint() {
 	var (
 		fp, mac string
 		// mapped MAC addresses to IPs
-		addrMapping = make(map[string]string)
-		mtrx *maltego.MaltegoTransform
+		addrMapping          = make(map[string]string)
+		mtrx                 *maltego.MaltegoTransform
 		messageToFingerprint *types.DHCPv4
 	)
 

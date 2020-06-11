@@ -21,7 +21,7 @@ func ToDHCPClients() {
 			if dhcp.Operation != 1 {
 				return
 			}
-			log.Println("HW:", dhcp.ClientHWAddr + " FP: " + dhcp.Fingerprint)
+			log.Println("HW:", dhcp.ClientHWAddr+" FP: "+dhcp.Fingerprint)
 
 			ident := dhcp.ClientHWAddr + "\n" + dhcp.Fingerprint
 

@@ -81,7 +81,7 @@ var serviceBanners = []bannerTest{
 		product: "PostgreSQL",
 	},
 	{
-		banner: "␛[31m␀␀␀␈\\u{4}\\xD2\\u{16}/␛[0m␛[34mN␛[0m␛[31m␀␀␀O␀\\u{3}␀␀user␀root␀database␀root␀application_name␀psql␀client_encoding␀WIN1252␀␀␛[0m␛[34mR␀␀␀␈␀␀␀␀S␀␀␀\\u{1a}application_name␀psql␀S␀␀␀\\u{1c}client_encoding␀WIN1252␀S␀␀␀\\u{17}DateStyle␀ISO,•MDY␀S␀␀␀\\u{19}integer_datetimes␀on␀S␀␀␀␛Inter\n       │ valStyle␀postgres␀S␀␀␀\\u{14}is_superuser␀on␀S␀␀␀\\u{19}server_encoding␀UTF8␀S␀␀␀\\u{1a}server_version␀9.1.10␀S␀␀␀\\u{1f}session_authorization␀root␀S␀␀␀#standard_conforming_strings␀on␀S␀␀␀\\u{11}TimeZone␀UTC␀K␀␀␀\\u{c}␀␀&*␀\\x958OZ␀␀␀\\u{5}I␛[0m",
+		banner:  "␛[31m␀␀␀␈\\u{4}\\xD2\\u{16}/␛[0m␛[34mN␛[0m␛[31m␀␀␀O␀\\u{3}␀␀user␀root␀database␀root␀application_name␀psql␀client_encoding␀WIN1252␀␀␛[0m␛[34mR␀␀␀␈␀␀␀␀S␀␀␀\\u{1a}application_name␀psql␀S␀␀␀\\u{1c}client_encoding␀WIN1252␀S␀␀␀\\u{17}DateStyle␀ISO,•MDY␀S␀␀␀\\u{19}integer_datetimes␀on␀S␀␀␀␛Inter\n       │ valStyle␀postgres␀S␀␀␀\\u{14}is_superuser␀on␀S␀␀␀\\u{19}server_encoding␀UTF8␀S␀␀␀\\u{1a}server_version␀9.1.10␀S␀␀␀\\u{1f}session_authorization␀root␀S␀␀␀#standard_conforming_strings␀on␀S␀␀␀\\u{11}TimeZone␀UTC␀K␀␀␀\\u{c}␀␀&*␀\\x958OZ␀␀␀\\u{5}I␛[0m",
 		version: "9.1.10",
 		product: "PostgreSQL",
 	},

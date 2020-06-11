@@ -33,7 +33,7 @@ var (
 	dhcpFingerprintMu deadlock.Mutex
 
 	dhcpDBinitialized bool
-	dhcpDBFile = "dhcp-fingerprints.json"
+	dhcpDBFile        = "dhcp-fingerprints.json"
 )
 
 // TODO: use a boltDB?

@@ -1,5 +1,8 @@
 # TODOs
 
+- ensure using Service and software audit records work also when not all DBs are available
+- remove deadlock debugs
+
 ## v0.5 Documentation
 
 - Blog: Threat hunting with Netcap and Maltego
@@ -8,15 +11,12 @@
 - index generation
 - live capture with maltego
 
-- save processing time in netcap.log
-- remove deadlock debugs
-- transforms: PCAP: open NETCAP folder + logs
 - keep track of what software was already looked up to avoid duplicate matching (see search for log msg)
 - DHCP, DNS, HTTP transforms
 
 - add Show All Services transform: show both TCP and UDP
-- add different types for internal or external IPs
-- add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
+    - add different types for internal or external services
+        - add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
 
 - update reassembly unit tests
 
@@ -24,7 +24,7 @@
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - custom icon set for netcap entities
-- make snaplen configurable for GetDeviceProfiles
+- make snaplen configurable: add as propery to netcap.PCAP, default 1514
 
 - HTTP parameters: mark if source was GET or POST
 - addGetHTTPHeaders

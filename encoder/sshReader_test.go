@@ -87,7 +87,6 @@ func TestParseSSHIdent(t *testing.T) {
 		t.Fatal("unexpected os", i.os)
 	}
 
-
 }
 
 func TestParseSSHKexInitMsgLength(t *testing.T) {

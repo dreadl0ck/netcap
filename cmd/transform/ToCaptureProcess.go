@@ -19,7 +19,7 @@ func ToCaptureProcess() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	outDir := filepath.Join(home, lt.Value + ".net")
+	outDir := filepath.Join(home, lt.Value+".net")
 	log.Println("writing output to:", outDir)
 
 	// TODO: pass bpf

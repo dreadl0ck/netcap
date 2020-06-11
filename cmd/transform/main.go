@@ -29,6 +29,8 @@ func Run() {
 		ToLiveAuditRecords()
 	case "GetDeviceProfilesWithDPI":
 		ToAuditRecordsWithDPI()
+	case "OpenNetcapFolder":
+		OpenNetcapFolder()
 
 	// Exploits
 	case "ToSoftwareExploits":

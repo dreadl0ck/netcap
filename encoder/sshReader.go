@@ -95,14 +95,14 @@ func (h *sshReader) processSSHIdent(ident string, entity string) {
 		writeSoftware([]*Software{
 			{
 				Software: &types.Software{
-					Timestamp:      h.parent.firstPacket.String(),
-					Product:        i.productName,
-					Version:        i.productVersion,
-					SourceName:     "SSH " + entity + " Ident",
-					Service:        "SSH",
-					Flows:          []string{h.parent.ident},
-					Notes:          "SSH version: " + i.sshVersion + " OS: " + i.os,
-					SourceData:     h.serverIdent,
+					Timestamp:  h.parent.firstPacket.String(),
+					Product:    i.productName,
+					Version:    i.productVersion,
+					SourceName: "SSH " + entity + " Ident",
+					Service:    "SSH",
+					Flows:      []string{h.parent.ident},
+					Notes:      "SSH version: " + i.sshVersion + " OS: " + i.os,
+					SourceData: h.serverIdent,
 				},
 			},
 		}, nil)
@@ -214,7 +214,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, version string, os string) {
 
 	var (
-		firstSplit = strings.Split(soft, " ? ")
+		firstSplit    = strings.Split(soft, " ? ")
 		sshVersionTmp = firstSplit[0]
 		sshVersionArr = strings.Split(sshVersionTmp, " | ")
 		vendorVersion = strings.Split(sshVersionArr[1], " ")
@@ -228,13 +228,14 @@ func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, ve
 }
 
 type sshVersionInfo struct {
-	sshVersion string
-	productName string
+	sshVersion     string
+	productName    string
 	productVersion string
-	os string
+	os             string
 }
 
 var regSSHIdent = regexp.MustCompile("^(SSH-[0-9]\\.?[0-9]?)-(.*[[:word:]]*)_([0-9]\\.[0-9]?\\.?[[:alnum:]]?[[:alnum:]]?)[[:space:]]?([[:alnum:]]*)")
+
 func parseSSHIdent(ident string) *sshVersionInfo {
 	if m := regSSHIdent.FindStringSubmatch(ident); len(m) > 0 {
 

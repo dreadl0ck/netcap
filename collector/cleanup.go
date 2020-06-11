@@ -1,7 +1,6 @@
 package collector
 
 import (
-	"fmt"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
@@ -97,14 +96,12 @@ func (c *Collector) cleanup(force bool) {
 		c.printErrors()
 	}
 
+	c.printlnStdOut("execution time", time.Since(c.start))
+
 	if logFileHandle != nil {
 		err := logFileHandle.Close()
 		if err != nil {
 			c.printStdOut("failed to close logfile:", err)
 		}
-	}
-
-	if !c.config.Quiet {
-		fmt.Println("execution time", time.Since(c.start))
 	}
 }

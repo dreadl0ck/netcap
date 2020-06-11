@@ -5,7 +5,7 @@ import "time"
 const (
 	DefaultBufferSize           = 1024 * 1024 // 1MB
 	DefaultFlushEvery           = 1000
-	DefaultPacketBuffer         = 0
+	DefaultPacketBuffer         = 100
 	DefaultSnapLen              = 1514
 	DefaultConnFlushInterval    = 10000
 	DefaultConnTimeOut          = 10 * time.Second
@@ -15,5 +15,11 @@ const (
 	DefaultCloseInactiveTimeout = 5 * time.Second
 	DefaultReassemblyTimeout    = 1 * time.Second
 	DefaultCompressionBlockSize = 1024 * 1024 // 1MB
-	DefaultAllowMissingInit     = true
+
+	// reassembly
+	DefaultAllowMissingInit = true
+	DefaultNoDefrag         = true
+	DefaultNoOptCheck       = true
+	DefaultChecksum         = false
+	DefaultIgnoreFSMErr     = true
 )

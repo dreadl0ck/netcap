@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -38,9 +39,9 @@ var auditRecords = []string{
 
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets: false,
-	Workers:             1,
-	PacketBufferSize:    0,
-	SnapLen:             1514,
+	Workers:             runtime.NumCPU(),
+	PacketBufferSize:    netcap.DefaultPacketBuffer,
+	SnapLen:             1514, // TODO: make configurable within Maltego, add as property for pcap?
 	Promisc:             false,
 	EncoderConfig: encoder.Config{
 		Buffer:                  true,
@@ -54,11 +55,11 @@ var maltegoBaseConfig = collector.Config{
 		Export:                  false,
 		AddContext:              true,
 		FlushEvery:              100,
-		NoDefrag:                true,
-		Checksum:                false,
-		NoOptCheck:              true,
-		IgnoreFSMerr:            false,
-		AllowMissingInit:        true,
+		NoDefrag:                netcap.DefaultNoDefrag,
+		Checksum:                netcap.DefaultChecksum,
+		NoOptCheck:              netcap.DefaultNoOptCheck,
+		IgnoreFSMerr:            netcap.DefaultIgnoreFSMErr,
+		AllowMissingInit:        netcap.DefaultAllowMissingInit,
 		Debug:                   false,
 		HexDump:                 false,
 		WaitForConnections:      true,
@@ -126,6 +127,7 @@ func ToAuditRecords() {
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)
+	c.PrintConfiguration()
 
 	// if not, use native pcapgo version
 	isPcap, err := collector.IsPcap(inputFile)
@@ -164,8 +166,6 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 
 	// generate maltego transform
 	trx := maltego.MaltegoTransform{}
-
-
 
 	for _, name := range auditRecords {
 
