@@ -1,62 +1,71 @@
-builds:
--
-  main: ./cmd
-  id: net
-  binary: net
-  env:
-    - CGO_ENABLED=1
-    # experiments to compile godpi with nDPI module
-#    - CC=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-gcc
-#    - CXX=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-g++
-#    - LDFLAGS="-L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib"
-#    - CPPFLAGS="-I/usr/local/opt/libpcap/include -I/usr/local/Cellar/liblinear/2.30/include"
-#    - PKG_CONFIG_PATH="/usr/local/opt/libpcap/lib/pkgconfig"
-
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  goos:
-    - darwin
-    - windows
-
-  # Custom ldflags templates.
-  # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
-  ldflags:
-    - -L /usr/local/opt/libpcap/lib -s -w
-
-  # GOARCH to build for.
-  # For more info refer to: https://golang.org/doc/install/source#environment
-  # Defaults are 386 and amd64.
-  goarch:
-    - amd64
-    # - arm
-    # - arm64
-    # - 386
-  
-  # List of combinations of GOOS + GOARCH + GOARM to ignore.
-  # Default is empty.
-  # ignore:
-  #   - goos: windows
-  #     goarch: 386
-  #   - goos: darwin
-  #     goarch: 386
-    # - goos: linux
-    #   goarch: arm
-    #   goarm: 7
-
-  # Hooks can be used to customize the final binary,for example, to run generators.
-  # Default is both hooks empty.
-  # NETCAP uses a post hook to build the linux binaries in docker containers
-  # and push the containers to the docker registry
+before:
   hooks:
-    # this hook is used to compile the linux versions in a docker container
-    post: zeus build-linux
-    #pre: rice embed-go
+    # You may remove this if you don't use go modules.
+    - go mod download
+    # you may remove this if you don't need go generate
+    - go generate ./...
+builds:
+  - main: ./cmd
+    #id: net
+    binary: net
+    env:
+      - CGO_ENABLED=1
+      # experiments to compile godpi with nDPI module
+    #    - CC=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-gcc
+    #    - CXX=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-g++
+    #    - LDFLAGS="-L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib"
+    #    - CPPFLAGS="-I/usr/local/opt/libpcap/include -I/usr/local/Cellar/liblinear/2.30/include"
+    #    - PKG_CONFIG_PATH="/usr/local/opt/libpcap/lib/pkgconfig"
 
-brew:
-  github:
-    owner: dreadl0ck
-    name: homebrew-formulas
-  homepage: "https://github.com/dreadl0ck/netcap"
-  description: "A framework for secure and scalable network traffic analysis"
+    # For more info refer to: https://golang.org/doc/install/source#environment
+    goos:
+      - darwin
+      - windows
+
+    # Custom ldflags templates.
+    # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
+    ldflags:
+      - -L /usr/local/opt/libpcap/lib -s -w
+
+    # GOARCH to build for.
+    # For more info refer to: https://golang.org/doc/install/source#environment
+    # Defaults are 386 and amd64.
+    goarch:
+      - amd64
+      # - arm
+      # - arm64
+      # - 386
+
+      # List of combinations of GOOS + GOARCH + GOARM to ignore.
+      # Default is empty.
+      # ignore:
+      #   - goos: windows
+      #     goarch: 386
+      #   - goos: darwin
+      #     goarch: 386
+      # - goos: linux
+      #   goarch: arm
+      #   goarm: 7
+
+archives:
+  -
+    # Defaults are any files matching `LICENCE*`, `LICENSE*`,
+    # `README*` and `CHANGELOG*` (case-insensitive).
+    files:
+      - LICENSE
+      - README.md
+      - types/cpp/*
+      - types/csharp/*
+      - types/java/*
+      - types/js/*
+      - types/python/*
+      - types/rust/*
+      - types/swift/*
+      - types/netcap.pb.go
+
+    format_overrides:
+      - goos: windows
+        format: zip
 
 checksum:
   name_template: 'checksums.txt'
@@ -66,32 +75,13 @@ changelog:
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
+      - '^docs:'
+      - '^test:'
 
-archives:
-- 
-  # Defaults are any files matching `LICENCE*`, `LICENSE*`,
-  # `README*` and `CHANGELOG*` (case-insensitive).
-  files:
-    - LICENSE
-    - README.md
-    - types/cpp/*
-    - types/csharp/*
-    - types/java/*
-    - types/js/*
-    - types/python/*
-    - types/rust/*
-    - types/swift/*
-    - types/netcap.pb.go
-
-  format_overrides:
-    - goos: windows
-      format: zip
-
-    # before:
-#   hooks:
-    # you may remove this if you don't use vgo
-    #- go mod download
-    # you may remove this if you don't need go generate
-    #- go generate ./...
+brews:
+  -
+    github:
+      owner: dreadl0ck
+      name: homebrew-formulas
+    homepage: "https://github.com/dreadl0ck/netcap"
+    description: "A framework for secure and scalable network traffic analysis"
