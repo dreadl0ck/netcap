@@ -16,7 +16,8 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
+
 	"net"
 
 	"time"
@@ -25,7 +26,7 @@ import (
 var (
 	timeout           = 10 * time.Second
 	dnsNamesDB        = make(map[string][]string)
-	dnsNamesMu        deadlock.Mutex
+	dnsNamesMu        sync.Mutex
 	privateIPBlocks   []*net.IPNet
 	disableReverseDNS = true
 )

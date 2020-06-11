@@ -13,7 +13,7 @@
 
 package encoder
 
-import deadlock "github.com/sasha-s/go-deadlock"
+import "sync"
 
 ////////////////////////
 // Atomic Counter Map //
@@ -22,7 +22,7 @@ import deadlock "github.com/sasha-s/go-deadlock"
 // AtomicCounterMap maps strings to integers
 type AtomicCounterMap struct {
 	Items map[string]int64
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // NewAtomicCounterMap returns a new AtomicCounterMap

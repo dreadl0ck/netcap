@@ -16,7 +16,8 @@ package netcap
 import (
 	"bufio"
 	gzip "github.com/klauspost/pgzip"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
+
 	"log"
 	"os"
 	"path/filepath"
@@ -54,7 +55,7 @@ type Writer struct {
 	out          string
 	IsChanWriter bool
 
-	mu deadlock.Mutex
+	mu sync.Mutex
 }
 
 /*

@@ -22,11 +22,11 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/sshx"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/sasha-s/go-deadlock"
 )
 
 /*
@@ -79,7 +79,7 @@ func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 		} else {
 			SoftwareStore.Items[s.Product+"/"+s.Version] = &Software{
 				s,
-				deadlock.Mutex{},
+				sync.Mutex{},
 			}
 			statsMutex.Lock()
 			reassemblyStats.numSoftware++

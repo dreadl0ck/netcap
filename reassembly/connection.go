@@ -2,7 +2,7 @@ package reassembly
 
 import (
 	"fmt"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
 
 	"time"
 )
@@ -12,7 +12,7 @@ import (
 type connection struct {
 	key      key // client->server
 	c2s, s2c halfconnection
-	mu       deadlock.Mutex
+	mu       sync.Mutex
 }
 
 func (c *connection) reset(k key, s Stream, ts time.Time) {

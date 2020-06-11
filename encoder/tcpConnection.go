@@ -49,7 +49,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/mgutz/ansi"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
+
 	"log"
 	"os"
 	"runtime/pprof"
@@ -72,13 +73,13 @@ var (
 	requests  = 0
 	responses = 0
 	// synchronizes access to stats
-	statsMutex deadlock.Mutex
+	statsMutex sync.Mutex
 
 	count          = 0
 	dataBytes      = int64(0)
 	start          = time.Now()
 	errorsMap      = make(map[string]uint)
-	errorsMapMutex deadlock.Mutex
+	errorsMapMutex sync.Mutex
 )
 
 var reassemblyStats struct {
@@ -151,7 +152,7 @@ type tcpConnection struct {
 
 	merged StreamDataSlice
 
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // Accept decides whether the TCP packet should be accepted

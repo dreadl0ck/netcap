@@ -20,7 +20,7 @@ import (
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/tlsx"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
 
 	"sync/atomic"
 )
@@ -31,7 +31,7 @@ var LocalDNS = true
 type AtomicIPProfileMap struct {
 	// SrcIP to Profiles
 	Items map[string]*IPProfile
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map
@@ -47,7 +47,7 @@ var ipProfiles = &AtomicIPProfileMap{
 
 type IPProfile struct {
 	*types.IPProfile
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // GetIPProfile fetches a known profile and updates it or returns a new one

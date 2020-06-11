@@ -16,9 +16,10 @@ package encoder
 import (
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/dreadl0ck/netcap/resolvers"
-	deadlock "github.com/sasha-s/go-deadlock"
+
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
@@ -27,14 +28,14 @@ import (
 
 type Service struct {
 	*types.Service
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicServiceMap struct {
 	// map Server IP + Port to Servic
 	Items map[string]*Service
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map

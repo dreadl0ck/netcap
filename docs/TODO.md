@@ -1,7 +1,6 @@
 # TODOs
 
 - ensure using Service and software audit records work also when not all DBs are available
-- remove deadlock debugs
 
 ## v0.5 Documentation
 
