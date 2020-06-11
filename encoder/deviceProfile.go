@@ -15,9 +15,10 @@ package encoder
 
 import (
 	"log"
+	"sync"
 	"sync/atomic"
 
-	deadlock "github.com/sasha-s/go-deadlock"
+
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
@@ -28,14 +29,14 @@ import (
 
 type DeviceProfile struct {
 	*types.DeviceProfile
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicDeviceProfileMap struct {
 	// SrcMAC to Profiles
 	Items map[string]*DeviceProfile
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map

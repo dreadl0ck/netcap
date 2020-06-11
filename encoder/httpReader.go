@@ -27,8 +27,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
-	deadlock "github.com/sasha-s/go-deadlock"
+
 
 	"sync/atomic"
 
@@ -74,7 +75,7 @@ type HTTPMetaStore struct {
 
 	CMSCookies map[string][]CookieForApps
 
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // global store for selected http meta information

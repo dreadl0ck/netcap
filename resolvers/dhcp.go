@@ -18,7 +18,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/dreadl0ck/netcap/utils"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
+
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -30,7 +31,7 @@ import (
 
 var (
 	dhcpFingerprintDB = make(map[string]*DHCPResult)
-	dhcpFingerprintMu deadlock.Mutex
+	dhcpFingerprintMu sync.Mutex
 
 	dhcpDBinitialized bool
 	dhcpDBFile        = "dhcp-fingerprints.json"

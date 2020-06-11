@@ -19,7 +19,7 @@ import (
 	"github.com/dreadl0ck/gopacket/ip4defrag"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/reassembly"
-	deadlock "github.com/sasha-s/go-deadlock"
+
 	"path/filepath"
 	"sync"
 )
@@ -44,7 +44,7 @@ type tcpConnectionFactory struct {
 	decodeSSH     bool
 	numActive     int64
 	streamReaders []StreamReader
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // New handles a new stream received from the assembler

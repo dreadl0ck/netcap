@@ -7,7 +7,7 @@ package sshx
 import (
 	"encoding/binary"
 	"fmt"
-	deadlock "github.com/sasha-s/go-deadlock"
+
 	"io"
 	"log"
 	"sync"
@@ -21,7 +21,7 @@ const debugMux = false
 // chanList is a thread safe channel list.
 type chanList struct {
 	// protects concurrent access to chans
-	deadlock.Mutex
+	sync.Mutex
 
 	// chans are indexed by the local id of the channel, which the
 	// other side should send in the PeersId field.
@@ -92,7 +92,7 @@ type mux struct {
 
 	incomingChannels chan NewChannel
 
-	globalSentMu     deadlock.Mutex
+	globalSentMu     sync.Mutex
 	globalResponses  chan interface{}
 	incomingRequests chan *Request
 

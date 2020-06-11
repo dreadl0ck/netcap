@@ -3,7 +3,7 @@ package reassembly
 import (
 	"fmt"
 	"github.com/dreadl0ck/gopacket"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
 
 	"time"
 )
@@ -24,7 +24,7 @@ type page struct {
 	ac         AssemblerContext // only set for the first page of a packet
 	seen       time.Time
 	start, end bool
-	deadlock.Mutex
+	sync.Mutex
 }
 
 func (p *page) getBytes() []byte {

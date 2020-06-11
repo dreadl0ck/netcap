@@ -8,9 +8,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	deadlock "github.com/sasha-s/go-deadlock"
 	"io"
 	"log"
+	"sync"
 )
 
 const (
@@ -176,7 +176,7 @@ type channel struct {
 	// Since requests have no ID, there can be only one request
 	// with WantReply=true outstanding.  This lock is held by a
 	// goroutine that has such an outgoing request pending.
-	sentRequestMu deadlock.Mutex
+	sentRequestMu sync.Mutex
 
 	incomingRequests chan *Request
 
@@ -188,14 +188,14 @@ type channel struct {
 	extPending *buffer
 
 	// windowMu protects myWindow, the flow-control window.
-	windowMu deadlock.Mutex
+	windowMu sync.Mutex
 	myWindow uint32
 
 	// writeMu serializes calls to mux.conn.writePacket() and
 	// protects sentClose and packetPool. This mutex must be
 	// different from windowMu, as writePacket can block if there
 	// is a key exchange pending.
-	writeMu   deadlock.Mutex
+	writeMu   sync.Mutex
 	sentClose bool
 
 	// packetPool has a buffer for each extended channel ID to

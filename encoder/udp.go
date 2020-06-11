@@ -23,19 +23,19 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
-	"github.com/sasha-s/go-deadlock"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
 type UDPStream struct {
 	data UDPDataSlice
-	deadlock.Mutex
+	sync.Mutex
 }
 
 type UDPData struct {
@@ -47,7 +47,7 @@ type UDPData struct {
 
 var (
 	udpStreams   = make(map[uint64]*UDPStream)
-	udpStreamsMu deadlock.Mutex
+	udpStreamsMu sync.Mutex
 )
 
 // UDPDataSlice implements sort.Interface to sort data fragments based on their timestamps

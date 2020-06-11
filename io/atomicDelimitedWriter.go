@@ -17,7 +17,7 @@ package io
 import (
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/gogo/protobuf/proto"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
 )
 
 /////////////////////////////
@@ -27,7 +27,7 @@ import (
 // AtomicDelimitedWriter writes delimited proto messages synchronized
 type AtomicDelimitedWriter struct {
 	w delimited.Writer
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // PutProto writes a protocol buffer into the writer and returns an error

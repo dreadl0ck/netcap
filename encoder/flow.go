@@ -19,7 +19,8 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
+
 	"log"
 
 	"sync/atomic"
@@ -27,12 +28,12 @@ import (
 
 type Flow struct {
 	*types.Flow
-	deadlock.Mutex
+	sync.Mutex
 }
 
 type AtomicFlowMap struct {
 	Items map[string]*Flow
-	deadlock.Mutex
+	sync.Mutex
 }
 
 func (a *AtomicFlowMap) Size() int {

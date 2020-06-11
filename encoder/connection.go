@@ -16,9 +16,10 @@ package encoder
 import (
 	"log"
 	"strconv"
+	"sync"
 	"sync/atomic"
 
-	deadlock "github.com/sasha-s/go-deadlock"
+
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
@@ -28,13 +29,13 @@ import (
 
 type Conn struct {
 	*types.Connection
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // AtomicConnMap contains all connections and provides synchronized access
 type AtomicConnMap struct {
 	Items map[string]*Conn
-	deadlock.Mutex
+	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map

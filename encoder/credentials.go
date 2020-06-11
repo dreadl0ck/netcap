@@ -20,8 +20,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
-
-	deadlock "github.com/sasha-s/go-deadlock"
+	"sync"
 
 	"sync/atomic"
 	"time"
@@ -411,7 +410,7 @@ var (
 	// it maps an identifier in the format: c.Service + c.User + c.Password
 	// to the flow ident where the data was observed
 	credStore   = make(map[string]string)
-	credStoreMu deadlock.Mutex
+	credStoreMu sync.Mutex
 )
 
 // writeCredentials is a util that should be used to write credential audit to disk

@@ -5,8 +5,9 @@
 package sshx
 
 import (
-	deadlock "github.com/sasha-s/go-deadlock"
+
 	"net"
+	"sync"
 )
 
 // debugHandshake, if set, prints messages sent and received.  Key
@@ -53,7 +54,7 @@ type handshakeTransport struct {
 	incoming  chan []byte
 	readError error
 
-	mu             deadlock.Mutex
+	mu             sync.Mutex
 	writeError     error
 	sentInitPacket []byte
 	sentInitMsg    *KexInitMsg

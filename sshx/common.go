@@ -8,7 +8,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"fmt"
-	"github.com/sasha-s/go-deadlock"
 	"io"
 	"math"
 	"sync"
@@ -330,7 +329,7 @@ func appendBool(buf []byte, b bool) []byte {
 
 // newCond is a helper to hide the fact that there is no usable zero
 // value for sync.Cond.
-func newCond() *sync.Cond { return sync.NewCond(new(deadlock.Mutex)) }
+func newCond() *sync.Cond { return sync.NewCond(new(sync.Mutex)) }
 
 // window represents the buffer available to clients
 // wishing to write to a channel.

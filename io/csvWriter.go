@@ -17,14 +17,14 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
-	deadlock "github.com/sasha-s/go-deadlock"
 	"io"
 	"strings"
+	"sync"
 )
 
 type CSVWriter struct {
 	w io.Writer
-	deadlock.Mutex
+	sync.Mutex
 }
 
 func NewCSVWriter(w io.Writer) *CSVWriter {
