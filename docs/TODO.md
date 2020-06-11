@@ -1,57 +1,31 @@
 # TODOs
 
-- save processing time in netcap.log
-- remove deadlock debugs
-- add database update command
-
-documentation:
-- index generation
-
-- transforms: PCAP: open NETCAP folder + logs
-- parse cpes, for example with https://github.com/knqyf263/go-cpe
-
-40249,exploits/linux/webapps/40249.txt,"Pi-Hole Web Interface 2.8.1 - Persistent Cross-Site Scripting in Whitelist/Blacklist",2016-08-16,loneferret,webapps,linux,
-- vuln + exploit detection: trim leading v from version?
-
-- keep track of what software was already looked up to avoid duplicate matching (see search for log msg)
-- DHCP, DNS, HTTP transforms
-
-- integrate CPE database?
-- add full stream SMTP parsing
-- add lookups for DHCP Fingerprints
-
-- passive DNS: create hosts mapping ala tshark -z hosts -r traffic.pcap
-
-- add field to service if internal or external
-- add filter flag to only include internal services
-- add flag to exclude services that transferred no data
-
-- make a group extraction util and expand all groups in all strings properly
-- add keyword filter and compile as regex? username, password etc might appear somewhere in stream contents, e.g inside HTML etc
-- extract TLS certificates! alert if selfsigned
-
-- update reassembly unit tests
-- map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc
-- net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode?
- 
-- capture: add test flag, to emit output: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
-    -> collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
-    -> collect decoding errors from all test pcaps and deduplicate!
-    
 ## v0.5 Documentation
 
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana
-- Blog: Framework Introduction
+- Blog: Framework Introduction and Setup
+- index generation
+- live capture with maltego
+
+- save processing time in netcap.log
+- remove deadlock debugs
+- transforms: PCAP: open NETCAP folder + logs
+- keep track of what software was already looked up to avoid duplicate matching (see search for log msg)
+- DHCP, DNS, HTTP transforms
+
+- add Show All Services transform: show both TCP and UDP
+- add different types for internal or external IPs
+- add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
+
+- update reassembly unit tests
 
 ## Maltego Plugin
 
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
-- netcap.ServerName -> Add LookupExploits to lookup the service name and version on ExploitDB and others
 - custom icon set for netcap entities
 - make snaplen configurable for GetDeviceProfiles
-- add live capture with maltego?
-- GetUsers from HTTP BasicAuth + GetPassword
+
 - HTTP parameters: mark if source was GET or POST
 - addGetHTTPHeaders
 - GetFilesForHTTPHost
@@ -82,6 +56,17 @@ documentation:
 
 ## General
 
+- net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode? 
+- capture: add test flag, to emit output for automated tests: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
+    - collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
+    - collect decoding errors from all test pcaps and deduplicate!
+- add database update command
+- add full stream SMTP parsing
+- extract TLS certificates! alert if selfsigned
+- map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc
+- integrate CPE database?
+- parse cpes, for example with https://github.com/knqyf263/go-cpe
+- passive DNS: create hosts mapping ala tshark -z hosts -r traffic.pcap
 - use JSON encoder from new protobuf release, when gogo integrated the new protobuf V2 API: https://pkg.go.dev/google.golang.org/protobuf/encoding/protojson?tab=doc
 - monitor repo with LGTM
 - implement the connection history string in the same manner as zeek
