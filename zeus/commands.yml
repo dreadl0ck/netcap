@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION:  0.5
+    VERSION:  0.5.1
 
 # command data
 commands:
@@ -65,6 +65,7 @@ commands:
             - version-bump
             - check-version
             - gen-proto-release
+            - build-linux
         exec: goreleaser release --rm-dist
 
     # run a test release
@@ -74,6 +75,7 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
+            - build-linux
         exec: goreleaser release --rm-dist --skip-publish --skip-validate; zeus version-bump-test-undo
 
     ## Utils
