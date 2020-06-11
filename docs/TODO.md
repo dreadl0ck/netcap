@@ -175,3 +175,11 @@
 - use unique maps for each worker and merge to prevent synced maps?
 - integrate HASSH SSH fingerprinting
 - netcap go plugins?
+
+## Notes
+
+When switching sync.Mutex variables with the deadlock.Mutex variant for debugging,
+the following can be used to fix the imports after applying the global find and replace:
+
+    directories=$(go list -f {{.Dir}} ./...)
+    test -z "`for dir in $directories; do goimports -w $dir/*.go | tee /dev/stderr; done`" 
