@@ -29,6 +29,23 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+func Pluralize(name string) string {
+
+	if strings.HasSuffix(name, "e") || strings.HasSuffix(name, "w") {
+		if name != "Software" { // TODO: excludeList
+			name += "s"
+		}
+	}
+	if strings.HasSuffix(name, "y") {
+		name = name[:len(name)-1] + "ies"
+	}
+	if strings.HasSuffix(name, "t") {
+		name += "s"
+	}
+
+	return name
+}
+
 // checks if input consists of ascii characters
 func IsAscii(d []byte) bool {
 	if len(d) == 0 {

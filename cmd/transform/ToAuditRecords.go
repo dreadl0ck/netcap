@@ -103,7 +103,25 @@ func ToAuditRecords() {
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]
+		trx       = maltego.MaltegoTransform{}
 	)
+
+	// check if input PCAP path is set
+	if inputFile == "" {
+		trx.AddUIMessage("Input file path property not set!", maltego.UIM_FATAL)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file path property not set")
+		return
+	}
+
+	// check if input PCAP path exists
+	inputStat, err := os.Stat(inputFile)
+	if err != nil {
+		trx.AddUIMessage("Input file path does not exist! error: "+err.Error(), maltego.UIM_FATAL)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file path does not exist", err)
+		return
+	}
 
 	log.Println("inputFile:", inputFile)
 
@@ -159,13 +177,10 @@ func ToAuditRecords() {
 	// restore stdout
 	os.Stdout = stdout
 
-	writeAuditRecords(outDir, inputFile, r, start)
+	writeAuditRecords(trx, inputStat.Size(), outDir, inputFile, r, start)
 }
 
-func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start time.Time) {
-
-	// generate maltego transform
-	trx := maltego.MaltegoTransform{}
+func writeAuditRecords(trx maltego.MaltegoTransform, inputSize int64, outDir string, inputFile string, r *pcap.Handle, start time.Time) {
 
 	for _, name := range auditRecords {
 
@@ -190,18 +205,7 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 		ent := trx.AddEntity("netcap."+name+"AuditRecords", ident)
 		ent.SetType("netcap." + name + "AuditRecords")
 
-		displayName := name
-		if strings.HasSuffix(name, "e") || strings.HasSuffix(name, "w") {
-			if name != "Software" {
-				displayName += "s"
-			}
-		}
-		if strings.HasSuffix(name, "y") {
-			displayName = name[:len(name)-1] + "ies"
-		}
-		if strings.HasSuffix(displayName, "t") {
-			displayName += "s"
-		}
+		displayName := utils.Pluralize(name)
 		ent.SetValue(displayName)
 
 		ent.AddProperty("path", "Path", "strict", ident)
@@ -215,7 +219,7 @@ func writeAuditRecords(outDir string, inputFile string, r *pcap.Handle, start ti
 		case "DeviceProfile":
 			di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 			ent.AddDisplayInformation(di, "Netcap Info")
-			ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
+			ent.SetNote("Storage Path: " + outDir + "\nInput File Size: " + humanize.Bytes(uint64(inputSize)) + "\nOutput File Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
 		}
 	}
 

@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.YSSHClient" displayName="YSSHClient" displayNamePlural="YSSHClients" description="A Secure Shell Protocol Client" category="Netcap" smallIconResource="Netcap/call_made" largeIconResource="Netcap/call_made" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities></BaseEntities>
+ <Properties value="properties.ysshclient" displayValue="properties.ysshclient">
+  <Fields>
+   <Field name="properties.ysshclient" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="YSSHClient">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.YFileType" displayName="YFileType" displayNamePlural="YFileTypes" description="" category="Netcap" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities></BaseEntities>
+ <Properties value="properties.yfiletype" displayValue="properties.yfiletype">
+  <Fields>
+   <Field name="properties.yfiletype" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="YFileType">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

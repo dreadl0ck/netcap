@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.YHTTPStatusCode" displayName="YHTTPStatusCode" displayNamePlural="YHTTPStatusCodes" description="question_answer" category="Netcap" smallIconResource="Netcap/highlight" largeIconResource="Netcap/highlight" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities></BaseEntities>
+ <Properties value="properties.yhttpstatuscode" displayValue="properties.yhttpstatuscode">
+  <Fields>
+   <Field name="properties.yhttpstatuscode" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="YHTTPStatusCode">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

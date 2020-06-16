@@ -16,7 +16,24 @@ func ToAuditRecordsWithDPI() {
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]
+		trx       = maltego.MaltegoTransform{}
 	)
+
+	// check if input PCAP path is set
+	if inputFile == "" {
+		trx.AddUIMessage("Input file path property not set!", maltego.UIM_FATAL)
+		fmt.Println(trx.ReturnOutput())
+		log.Fatal("input file path property not set")
+	}
+
+	// check if input PCAP path exists
+	inputStat, err := os.Stat(inputFile)
+	if err != nil {
+		trx.AddUIMessage("Input file path does not exist! error: "+err.Error(), maltego.UIM_FATAL)
+		fmt.Println(trx.ReturnOutput())
+		log.Fatal("input file path does not exist", err)
+	}
+
 	log.Println("inputFile:", inputFile)
 
 	// redirect stdout filedescriptor to stderr
@@ -73,5 +90,5 @@ func ToAuditRecordsWithDPI() {
 	// restore stdout
 	os.Stdout = stdout
 
-	writeAuditRecords(outDir, inputFile, r, start)
+	writeAuditRecords(trx, inputStat.Size(), outDir, inputFile, r, start)
 }

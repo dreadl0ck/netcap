@@ -5,7 +5,6 @@
 package sshx
 
 import (
-
 	"net"
 	"sync"
 )
