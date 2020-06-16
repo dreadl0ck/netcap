@@ -183,6 +183,18 @@ func (p PairList) Len() int           { return len(p) }
 func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
+func ApplyActionToCustomEncoders(action func(e *CustomEncoder)) {
+	for _, e := range customEncoderSlice {
+		action(e)
+	}
+}
+
+func ApplyActionToLayerEncoders(action func(e *LayerEncoder)) {
+	for _, e := range layerEncoderSlice {
+		action(e)
+	}
+}
+
 func ShowEncoders() {
 
 	var (

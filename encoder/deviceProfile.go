@@ -18,8 +18,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-
-
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"

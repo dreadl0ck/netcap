@@ -224,7 +224,10 @@ func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, ve
 		os = firstSplit[len(firstSplit)-1]
 		return sshVersionArr[0], vendorVersion[0], vendorVersion[1], os
 	}
-	return sshVersionArr[0], vendorVersion[0], vendorVersion[1], os
+	if len(vendorVersion) > 1 {
+		version = vendorVersion[1]
+	}
+	return sshVersionArr[0], vendorVersion[0], version, os
 }
 
 type sshVersionInfo struct {

@@ -33,8 +33,6 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
 
-
-
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/types"

@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.YServerName" displayName="YServerName" displayNamePlural="YServerNames" description="A network server software name" category="Netcap" smallIconResource="Netcap/scanner" largeIconResource="Netcap/scanner" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities></BaseEntities>
+ <Properties value="properties.yservername" displayValue="properties.yservername">
+  <Fields>
+   <Field name="properties.yservername" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="YServerName">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

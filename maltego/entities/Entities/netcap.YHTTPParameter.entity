@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.YHTTPParameter" displayName="YHTTPParameter" displayNamePlural="YHTTPParameter" description="" category="Netcap" smallIconResource="Netcap/live_help" largeIconResource="Netcap/live_help" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities></BaseEntities>
+ <Properties value="properties.yhttpparameter" displayValue="properties.yhttpparameter">
+  <Fields>
+   <Field name="properties.yhttpparameter" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="YHTTPParameter">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

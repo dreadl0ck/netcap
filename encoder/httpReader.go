@@ -29,8 +29,6 @@ import (
 	"strings"
 	"sync"
 
-
-
 	"sync/atomic"
 
 	"github.com/dreadl0ck/cryptoutils"

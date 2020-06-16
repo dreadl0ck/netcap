@@ -1,6 +1,9 @@
 # TODOs
 
 - ensure using Service and software audit records work also when not all DBs are available
+- generate entity and transform XML ..
+
+<MaltegoEntity id="netcap.DHCPClient" displayName="DHCPClient" displayNamePlural="DHCPClients" description="A DHCP client" category="Netcap" smallIconResource="Technology/WAN" largeIconResource="Technology/WAN" allowedRoot="true" conversionOrder="2147483647" visible="true">
 
 ## v0.5 Documentation
 

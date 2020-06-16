@@ -22,7 +22,7 @@ func ToCaptureProcess() {
 	outDir := filepath.Join(home, lt.Value+".net")
 	log.Println("writing output to:", outDir)
 
-	// TODO: pass bpf
+	// TODO: pass bpf (add as property to Interface entity)
 	args := []string{"capture", "-iface", lt.Value, "-out", outDir, "-fileStorage=files", "-config=/usr/local/etc/netcap/livecapture.conf", "-quiet"}
 	log.Println("args:", args)
 

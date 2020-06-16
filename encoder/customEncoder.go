@@ -56,6 +56,8 @@ type (
 
 		// public fields
 		Name string
+		Description string
+		Icon string
 
 		Type     types.Type
 		Handler  CustomEncoderHandler

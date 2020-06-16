@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 )
 
@@ -33,30 +34,43 @@ func OpenFile() {
 		}
 	}
 
-	log.Println("open path:", lt.Values["path"])
-	f, err := os.OpenFile(lt.Values["path"], os.O_RDONLY, outDirPermission)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	var buf = make([]byte, 512)
-	_, err = io.ReadFull(f, buf)
-	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
-		log.Fatal(err)
-	}
-
-	// check if file is executable to prevent accidental execution
-	ctype := http.DetectContentType(buf)
-	log.Println("ctype:", ctype)
-	if ctype == "application/octet-stream" {
+	// the open tool uses the file extension to decide which program to pass the file to
+	// if there is an extension for known executable formats - abort
+	ext := filepath.Ext(lt.Values["path"])
+	if ext == "exe" || ext == "bin" {
+		log.Println("detected known executable file extension - aborting to prevent accidental execution!")
 		trx.AddUIMessage("completed!", "Inform")
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
+	// if there is no extension, use content type detection to determine if its an executable
+	if ext == "" {
+		log.Println("open path:", lt.Values["path"])
+		f, err := os.OpenFile(lt.Values["path"], os.O_RDONLY, outDirPermission)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
 
-	log.Println("command for opening files:", openCommandName)
+		var buf = make([]byte, 512)
+		_, err = io.ReadFull(f, buf)
+		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+			log.Fatal(err)
+		}
+
+		// check if file is executable to prevent accidental execution
+		ctype := http.DetectContentType(buf)
+		log.Println("ctype:", ctype)
+		if ctype == "application/octet-stream" {
+			log.Println("detected executable file - aborting to prevent accidental execution!")
+			trx.AddUIMessage("completed!", "Inform")
+			fmt.Println(trx.ReturnOutput())
+			return
+		}
+	}
+
 	args = append(args, lt.Values["path"])
+	log.Println("command for opening files:", openCommandName, args)
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {

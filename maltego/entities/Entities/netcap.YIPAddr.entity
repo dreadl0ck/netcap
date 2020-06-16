@@ -1,0 +1,12 @@
+<MaltegoEntity id="netcap.YIPAddr" displayName="YIPAddr" displayNamePlural="YIPAddr" description="An internet protocol (IP) network address" category="Netcap" smallIconResource="Netcap/router" largeIconResource="Netcap/router" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities>
+  <Entities>maltego.IPv4Address</Entities>
+ </BaseEntities>
+ <Properties value="properties.yipaddr" displayValue="properties.yipaddr">
+  <Fields>
+   <Field name="properties.yipaddr" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="YIPAddr">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

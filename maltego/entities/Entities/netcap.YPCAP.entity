@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.YPCAP" displayName="YPCAP" displayNamePlural="YPCAP" description="A packet capture dump file" category="Netcap" smallIconResource="Netcap/sd_storage" largeIconResource="Netcap/sd_storage" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities></BaseEntities>
+ <Properties value="properties.ypcap" displayValue="properties.ypcap">
+  <Fields>
+   <Field name="properties.ypcap" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="YPCAP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

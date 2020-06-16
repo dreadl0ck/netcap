@@ -19,8 +19,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-
-
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"

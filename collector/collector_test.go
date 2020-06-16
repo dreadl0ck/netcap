@@ -16,6 +16,7 @@ import (
 func TestCaptureLive(t *testing.T) {
 
 	// init collector
+	// TODO: use base config from PCAP test, and set to live mode
 	c := New(Config{
 		WriteUnknownPackets: false,
 		Workers:             12,
@@ -34,12 +35,12 @@ func TestCaptureLive(t *testing.T) {
 			Export:               false,
 			AddContext:           true,
 			MemBufferSize:        netcap.DefaultBufferSize,
-			FlushEvery:           100,
-			NoDefrag:             false,
-			Checksum:             false,
-			NoOptCheck:           false,
-			IgnoreFSMerr:         false,
-			AllowMissingInit:     false,
+			FlushEvery:           netcap.DefaultFlushEvery,
+			NoDefrag:             netcap.DefaultNoDefrag,
+			Checksum:             netcap.DefaultChecksum,
+			NoOptCheck:           netcap.DefaultNoOptCheck,
+			IgnoreFSMerr:         netcap.DefaultIgnoreFSMErr,
+			AllowMissingInit:     netcap.DefaultAllowMissingInit,
 			Debug:                false,
 			HexDump:              false,
 			WaitForConnections:   true,
@@ -114,12 +115,12 @@ func TestCapturePCAP(t *testing.T) {
 			Export:               false,
 			AddContext:           true,
 			MemBufferSize:        netcap.DefaultBufferSize,
-			FlushEvery:           100,
-			NoDefrag:             false,
-			Checksum:             false, // TODO: use defaults
-			NoOptCheck:           false, // TODO: use defaults
-			IgnoreFSMerr:         false,
-			AllowMissingInit:     false,
+			FlushEvery:           netcap.DefaultFlushEvery,
+			NoDefrag:             netcap.DefaultNoDefrag,
+			Checksum:             netcap.DefaultChecksum,
+			NoOptCheck:           netcap.DefaultNoOptCheck,
+			IgnoreFSMerr:         netcap.DefaultIgnoreFSMErr,
+			AllowMissingInit:     netcap.DefaultAllowMissingInit,
 			Debug:                false,
 			HexDump:              false,
 			WaitForConnections:   true,
