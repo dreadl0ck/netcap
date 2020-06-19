@@ -20,6 +20,7 @@ require (
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/fatih/color v1.9.0 // indirect
+	github.com/fogleman/gg v1.3.0
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0

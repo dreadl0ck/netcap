@@ -53,13 +53,13 @@ func TestGenerateAllEntities(t *testing.T) {
 	// generate entities for audit records
 	// *Archive entity and an entity for the actual audit record instance
 	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
-		genEntity(e.Name+"Archive", e.Name, "An archive of " + e.Name + " audit records", "")
+		genEntity(e.Name+"AuditRecords", "insert_drive_file", "An archive of " + e.Name + " audit records", "", newStringField("path"))
 		genEntity(e.Name, e.Name, e.Description, "")
 	})
 
 	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
 		name := strings.ReplaceAll(e.Layer.String() ,"/", "")
-		genEntity(name+"Archive", name, "An archive of " + e.Layer.String() + " audit records", "")
+		genEntity(name+"AuditRecords", "insert_drive_file", "An archive of " + e.Layer.String() + " audit records", "", newStringField("path"))
 		genEntity(name, name, e.Description, "")
 	})
 

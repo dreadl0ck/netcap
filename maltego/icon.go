@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/fogleman/gg"
 	"github.com/go-git/go-git/v5"
 	"github.com/golang/freetype"
 	"github.com/nfnt/resize"
@@ -109,6 +110,67 @@ func generateSizes(newBase string, newPath string) {
 			log.Fatal(err)
 		}
 	}
+}
+
+func generateAuditRecordIconV2(text string) {
+
+	const size = 96
+	im, err := gg.LoadImage("/tmp/icons/renamed/check_box_outline_blank.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dc := gg.NewContext(size, size)
+	dc.SetRGB(1, 1, 1)
+	dc.Clear()
+	dc.SetRGB(0, 0, 0)
+
+	var fontSize float64
+	switch {
+	case len(text) > 12:
+		fontSize = 6
+	case len(text) > 10:
+		fontSize = 8
+	case len(text) > 8:
+		fontSize = 10
+	case len(text) > 6:
+		fontSize = 12
+	default:
+		fontSize = 15
+	}
+	if err := dc.LoadFontFace(filepath.Join("Roboto", "Roboto-Black.ttf"), fontSize); err != nil {
+		panic(err)
+	}
+
+	//dc.DrawRoundedRectangle(0, 0, 512, 512, 0)
+	dc.DrawImage(im, 0, 0)
+	//dc.DrawStringWrapped(text, size/2, size/2, 0.5, 0.5, 80, 1, 0)
+
+	if strings.Contains(text, "ICMPv6") {
+		dc.DrawStringAnchored("ICMPv6", size/2, size/2, 0.5, 0.5)
+		dc.DrawStringAnchored(strings.TrimPrefix(text, "ICMPv6"), size/2, size/2, 0.5, 1.5)
+	} else {
+		dc.DrawStringAnchored(text, size/2, size/2, 0.5, 0.5)
+	}
+
+	dc.Clip()
+
+	var (
+		imgBase = filepath.Join("/tmp", "icons", "renamed", text)
+		imgPath = imgBase + ".png"
+	)
+
+	//for testing:
+	//imgBase = filepath.Join("/tmp", "icons", "V2", text)
+	//imgPath = imgBase + ".png"
+	//os.MkdirAll(filepath.Dir(imgBase), 0700)
+
+	err = dc.SavePNG(imgPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	generateSizes(imgBase, imgPath)
 }
 
 func generateAuditRecordIcon(text string) {

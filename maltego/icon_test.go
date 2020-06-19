@@ -15,7 +15,21 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 	})
 
 	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
-		name := strings.ReplaceAll(e.Layer.String() ,"/", "")
+		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		generateAuditRecordIcon(name)
+	})
+}
+
+func TestGenerateAuditRecordIconsV2(t *testing.T) {
+
+	//generateIcons()
+
+	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
+		generateAuditRecordIconV2(e.Name)
+	})
+
+	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
+		name := strings.ReplaceAll(e.Layer.String(),"/", "")
+		generateAuditRecordIconV2(name)
 	})
 }
