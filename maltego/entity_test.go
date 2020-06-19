@@ -4,6 +4,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/mgutz/ansi"
+	"strings"
 	"testing"
 )
 
@@ -51,13 +53,14 @@ func TestGenerateAllEntities(t *testing.T) {
 	// generate entities for audit records
 	// *Archive entity and an entity for the actual audit record instance
 	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
-		genEntity(e.Name+"Archive", e.Icon, "An archive of " + e.Name + " audit records", "")
-		genEntity(e.Name, e.Icon, e.Description, "")
+		genEntity(e.Name+"Archive", e.Name, "An archive of " + e.Name + " audit records", "")
+		genEntity(e.Name, e.Name, e.Description, "")
 	})
 
-	// TODO:
 	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
-		//genEntity(e.Name, e.Icon, e.Description, e.Parent)
+		name := strings.ReplaceAll(e.Layer.String() ,"/", "")
+		genEntity(name+"Archive", name, "An archive of " + e.Layer.String() + " audit records", "")
+		genEntity(name, name, e.Description, "")
 	})
 
 	packEntityArchive()
@@ -68,6 +71,66 @@ func TestGenerateAndPackCaptureProcessEntity(t *testing.T) {
 	genEntity("CaptureProcess", "remove_red_eye", "A capture process", "")
 	packEntityArchive()
 }
+
+func TestGenerateAndPackPCAPEntity(t *testing.T) {
+	genEntityArchive()
+	genEntity("PCAP", "sd_storage", "Packet capture file", "", newStringField("path"))
+	packEntityArchive()
+}
+
+func TestGeneratePCAPXMLEntity(t *testing.T) {
+	expected := `<MaltegoEntity id="netcap.PCAP" displayName="PCAP" displayNamePlural="PCAPs" description="Packet capture file" category="Netcap" smallIconResource="General/SharkAttack" largeIconResource="General/SharkAttack" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.filename" displayValue="properties.filename">
+  <Groups/>
+  <Fields>
+   <Field name="properties.filename" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Filename">
+    <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Path">
+    <SampleValue></SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>`
+
+	e := newEntity("PCAP", "General/SharkAttack", "Packet capture file", "", newStringField("path"))
+
+	data, err := xml.MarshalIndent(e, "", " ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("-------------------RESULT--------------------------")
+	fmt.Println(string(data))
+	fmt.Println("------------------------------------------------")
+
+	if string(data) != expected {
+
+
+		fmt.Println("-------------------EXPECTED--------------------------")
+		fmt.Println(expected)
+		fmt.Println("------------------------------------------------")
+
+		resultArr := strings.Split(string(data), "\n")
+		expectedArr := strings.Split(string(expected), "\n")
+
+		fmt.Println("len(resultArr)", len(resultArr), "len(expectedArr)", len(expectedArr))
+
+		for i, line := range expectedArr {
+			if len(resultArr) <= i {
+				break
+			}
+			if line != resultArr[i] {
+				fmt.Println(ansi.Red, resultArr[i], ansi.Reset)
+				fmt.Println(ansi.Blue, expectedArr[i], ansi.Reset)
+			} else {
+				fmt.Println(resultArr[i])
+			}
+		}
+
+		t.Fatal("unexpected output")
+	}
+}
+
 
 func TestGenerateDHCPClientXMLEntity(t *testing.T) {
 	expected := `<MaltegoEntity id="netcap.DHCPClient" displayName="DHCPClient" displayNamePlural="DHCPClients" description="A DHCP client" category="Netcap" smallIconResource="Technology/WAN" largeIconResource="Technology/WAN" allowedRoot="true" conversionOrder="2147483647" visible="true">
