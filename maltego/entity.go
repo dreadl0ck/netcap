@@ -35,7 +35,7 @@ type XMLEntity struct {
 	ConversionOrder string           `xml:"conversionOrder,attr"`
 	Visible         bool             `xml:"visible,attr"`
 
-	Entities        BaseEntities `xml:"BaseEntities"`
+	Entities        *BaseEntities `xml:"BaseEntities,omitempty"`
 	Properties      EntityProperties `xml:"Properties"`
 }
 
@@ -56,6 +56,7 @@ type EntityProperties struct {
 	Text         string   `xml:",chardata"`
 	Value        string   `xml:"value,attr"`
 	DisplayValue string   `xml:"displayValue,attr"`
+	Groups       string   `xml:"Groups"`
 	Fields       Fields   `xml:"Fields"`
 }
 
@@ -85,7 +86,11 @@ type EntityCoreInfo struct {
 	// Fields string TODO: extra fields
 }
 
-func genEntity(entName string, imgName string, description string, parent string) {
+func newEntity(entName string, imgName string, description string, parent string, fields ...PropertyField) XMLEntity {
+
+	if !strings.Contains(imgName, "/") {
+		imgName = ident + "/" + imgName
+	}
 
 	var (
 		name = netcapPrefix + entName
@@ -95,8 +100,8 @@ func genEntity(entName string, imgName string, description string, parent string
 			DisplayNamePlural: utils.Pluralize(entName),
 			Description:       description,
 			Category:          ident,
-			SmallIconResource: ident + "/" + imgName,
-			LargeIconResource: ident + "/" + imgName,
+			SmallIconResource: imgName,
+			LargeIconResource: imgName,
 			AllowedRoot:       true,
 			ConversionOrder:   "2147483647",
 			Visible:           true,
@@ -124,8 +129,12 @@ func genEntity(entName string, imgName string, description string, parent string
 		}
 	)
 
+	if len(fields) > 0 {
+		ent.Properties.Fields.Items = append(ent.Properties.Fields.Items, fields...)
+	}
+
 	if len(parent) > 0 {
-		ent.Entities = BaseEntities{
+		ent.Entities = &BaseEntities{
 			Entities: []BaseEntity{
 				{
 					Text: parent,
@@ -133,6 +142,29 @@ func genEntity(entName string, imgName string, description string, parent string
 			},
 		}
 	}
+
+	return ent
+}
+
+func newStringField(name string) PropertyField {
+	return PropertyField{
+		Name:        strings.ToLower(name),
+		Type:        "string",
+		Nullable:    true,
+		Hidden:      false,
+		Readonly:    false,
+		Description: "",
+		DisplayName: strings.Title(name),
+		SampleValue: "",
+	}
+}
+
+func genEntity(entName string, imgName string, description string, parent string, fields ...PropertyField) {
+
+	var (
+		name = netcapPrefix + entName
+		ent = newEntity(entName, imgName, description, parent, fields...)
+	)
 
 	data, err := xml.MarshalIndent(ent, "", " ")
 	if err != nil {
