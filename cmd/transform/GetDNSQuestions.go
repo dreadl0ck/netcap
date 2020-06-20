@@ -71,8 +71,8 @@ func GetDNSQuestions() {
 		if dns.Context.SrcIP == ipaddr {
 			for _, q := range dns.Questions {
 				if len(q.Name) != 0 {
-					ent := trx.AddEntity("maltego.DNSName", string(q.Name))
-					ent.SetType("maltego.DNSName")
+					ent := trx.AddEntity("netcap.DNSName", string(q.Name))
+					ent.SetType("netcap.DNSName")
 					ent.SetValue(string(q.Name))
 
 					// di := "<h3>DNS Question</h3><p>Timestamp: " + dns.Timestamp + "</p>"

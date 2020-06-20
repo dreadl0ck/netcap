@@ -1,6 +1,7 @@
 package maltego
 
 import (
+	"fmt"
 	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"testing"
@@ -22,14 +23,16 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 
 func TestGenerateAuditRecordIconsV2(t *testing.T) {
 
-	//generateIcons()
+	generateIcons()
 
 	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
+		fmt.Println(e.Name)
 		generateAuditRecordIconV2(e.Name)
 	})
 
 	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
 		name := strings.ReplaceAll(e.Layer.String(),"/", "")
+		fmt.Println(name)
 		generateAuditRecordIconV2(name)
 	})
 }

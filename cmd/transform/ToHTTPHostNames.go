@@ -10,8 +10,8 @@ func ToHTTPHostNames() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.Host != "" {
-				ent := trx.AddEntity("maltego.Website", http.Host)
-				ent.SetType("maltego.Website")
+				ent := trx.AddEntity("netcap.Website", http.Host)
+				ent.SetType("netcap.Website")
 				ent.SetValue(http.Host)
 
 				// di := "<h3>Host</h3><p>Timestamp: " + http.Timestamp + "</p>"
