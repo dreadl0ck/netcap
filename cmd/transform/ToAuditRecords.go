@@ -9,7 +9,7 @@ import (
 	maltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,23 +19,23 @@ import (
 	"time"
 )
 
-var auditRecords = []string{
-	"DeviceProfile",
-	"SSH",
-	"Credentials",
-	"Service",
-	"Software",
-	"File",
-	"HTTP",
-	"DNS",
-	"POP3",
-	"SMTP",
-	"DHCPv4",
-	"DHCPv6",
-	"Flow",
-	"Vulnerability",
-	"Exploit",
-}
+//var auditRecords = []string{
+//	"DeviceProfile",
+//	"SSH",
+//	"Credentials",
+//	"Service",
+//	"Software",
+//	"File",
+//	"HTTP",
+//	"DNS",
+//	"POP3",
+//	"SMTP",
+//	"DHCPv4",
+//	"DHCPv6",
+//	"Flow",
+//	"Vulnerability",
+//	"Exploit",
+//}
 
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets: false,
@@ -48,7 +48,7 @@ var maltegoBaseConfig = collector.Config{
 		MemBufferSize:           netcap.DefaultBufferSize,
 		Compression:             true,
 		CSV:                     false,
-		IncludeEncoders:         strings.Join(auditRecords, ","),
+		//IncludeEncoders:         strings.Join(auditRecords, ","),
 		ExcludeEncoders:         "",
 		WriteChan:               false,
 		IncludePayloads:         false,
@@ -182,17 +182,27 @@ func ToAuditRecords() {
 
 func writeAuditRecords(trx maltego.MaltegoTransform, inputSize int64, outDir string, inputFile string, r *pcap.Handle, start time.Time) {
 
-	for _, name := range auditRecords {
+	files, err := ioutil.ReadDir(outDir)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		ident := filepath.Join(outDir, name+".ncap.gz")
+	for _, f := range files {
 
-		// stat generated profiles
-		stat, err := os.Stat(ident)
-		if err != nil {
-			utils.DebugLog.Println("invalid path: ", err)
+		if !strings.HasSuffix(f.Name(), ".ncap.gz") {
 			continue
 		}
-		if stat.IsDir() {
+
+		ident := filepath.Join(outDir, f.Name())
+		name := strings.TrimSuffix(f.Name(), ".ncap.gz")
+		//
+		//// stat generated profiles
+		//stat, err := os.Stat(ident)
+		//if err != nil {
+		//	utils.DebugLog.Println("invalid path: ", err)
+		//	continue
+		//}
+		if f.IsDir() {
 			utils.DebugLog.Println("not a file: ", err)
 			continue
 		}
@@ -216,10 +226,10 @@ func writeAuditRecords(trx maltego.MaltegoTransform, inputSize int64, outDir str
 
 		// add notes for specific audit records here
 		switch name {
-		case "DeviceProfile":
-			di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
-			ent.AddDisplayInformation(di, "Netcap Info")
-			ent.SetNote("Storage Path: " + outDir + "\nInput File Size: " + humanize.Bytes(uint64(inputSize)) + "\nOutput File Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
+		//case "DeviceProfile":
+		//	di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
+		//	ent.AddDisplayInformation(di, "Netcap Info")
+		//	ent.SetNote("Storage Path: " + outDir + "\nInput File Size: " + humanize.Bytes(uint64(inputSize)) + "\nOutput File Size: " + humanize.Bytes(uint64(f.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())
 		}
 	}
 
