@@ -115,26 +115,26 @@ func generateSizes(newBase string, newPath string) {
 func generateAuditRecordIconV2(text string) {
 
 	const size = 96
-	im, err := gg.LoadImage("/tmp/icons/renamed/check_box_outline_blank.png")
+	im, err := gg.LoadPNG("/tmp/icons/renamed/check_box_outline_blank.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	dc := gg.NewContext(size, size)
-	dc.SetRGB(1, 1, 1)
+	//dc.SetRGB(1, 1, 1)
 	dc.Clear()
 	dc.SetRGB(0, 0, 0)
 
 	var fontSize float64
 	switch {
 	case len(text) > 12:
-		fontSize = 6
-	case len(text) > 10:
 		fontSize = 8
+	case len(text) > 10:
+		fontSize = 11
 	case len(text) > 8:
-		fontSize = 10
-	case len(text) > 6:
 		fontSize = 12
+	case len(text) > 6:
+		fontSize = 13
 	default:
 		fontSize = 15
 	}
@@ -154,6 +154,11 @@ func generateAuditRecordIconV2(text string) {
 	}
 
 	dc.Clip()
+
+	// not joking, Maltego fails to render images with this name
+	if text == "Vulnerability" {
+		text = "Vuln"
+	}
 
 	var (
 		imgBase = filepath.Join("/tmp", "icons", "renamed", text)

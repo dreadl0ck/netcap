@@ -80,8 +80,8 @@ func ToDNSQuestions() {
 
 				val := maltego.EscapeText(string(q.Name))
 
-				ent := trx.AddEntity("maltego.DNSName", val)
-				ent.SetType("maltego.DNSName")
+				ent := trx.AddEntity("netcap.DNSName", val)
+				ent.SetType("netcap.DNSName")
 				ent.SetValue(val)
 
 				// di := "<h3>DNS Question</h3><p>Timestamp: " + dns.Timestamp + "</p>"

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/mgutz/ansi"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -38,6 +40,8 @@ var entities = []EntityCoreInfo{
 	{"TCPService", "device_hub", "A TCP network service", ""},
 	{"UDPService", "developer_board", "A UDP network service", ""},
 	{"UserAgent", "supervisor_account", "A HTTP User Agent", ""},
+	{"Website", "web", "A HTTP Website", "maltego.Website"},
+	{"DNSName", "dns", "A DNS Name", "maltego.DNSName"},
 }
 
 // generate all entities and pack as archive
@@ -51,7 +55,7 @@ func TestGenerateAllEntities(t *testing.T) {
 	}
 
 	// generate entities for audit records
-	// *Archive entity and an entity for the actual audit record instance
+	// *AuditRecords entity and an entity for the actual audit record instance
 	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
 		genEntity(e.Name+"AuditRecords", "insert_drive_file", "An archive of " + e.Name + " audit records", "", newStringField("path"))
 		genEntity(e.Name, e.Name, e.Description, "")
@@ -63,6 +67,14 @@ func TestGenerateAllEntities(t *testing.T) {
 		genEntity(name, name, e.Description, "")
 	})
 
+	packEntityArchive()
+
+	copyFile("entities.mtz", filepath.Join(os.Getenv("HOME"), "entities.mtz"))
+}
+
+func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
+	genEntityArchive()
+	genEntity("Vulnerability", "Vulnerability", "A software vulnerability", "")
 	packEntityArchive()
 }
 

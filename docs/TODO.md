@@ -1,11 +1,17 @@
 # TODOs
 
+fix maltego permissions:
+    
+    sudo chown -R $USER /Library/Java/JavaVirtualMachines
+    sudo chown -R $USER /Applications/Maltego.app
+    sudo chown -R $USER "/Users/$USER/Library/Application Support/maltego"
+
 - ensure using Service and software audit records work also when not all DBs are available
 - generate entity and transform XML ..
 
 <MaltegoEntity id="netcap.DHCPClient" displayName="DHCPClient" displayNamePlural="DHCPClients" description="A DHCP client" category="Netcap" smallIconResource="Technology/WAN" largeIconResource="Technology/WAN" allowedRoot="true" conversionOrder="2147483647" visible="true">
 
-## v0.5 Documentation
+## v0.5 Documentantion
 
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana

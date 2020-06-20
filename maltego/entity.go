@@ -161,6 +161,11 @@ func newStringField(name string) PropertyField {
 
 func genEntity(entName string, imgName string, description string, parent string, fields ...PropertyField) {
 
+	// not joking, Maltego fails to render images with this name
+	if imgName == "Vulnerability" {
+		imgName = "Vuln"
+	}
+
 	var (
 		name = netcapPrefix + entName
 		ent = newEntity(entName, imgName, description, parent, fields...)
