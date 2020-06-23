@@ -222,16 +222,16 @@ func generateAuditRecordIcon(text string) {
 
 	var pt fixed.Point26_6
 	switch len(t) {
-	case 12,13:
+	case 12, 13:
 		fSize = 11
 		pt = freetype.Pt(3, 48+int(c.PointToFixed(fSize)>>6))
-	case 9,10,11:
+	case 9, 10, 11:
 		fSize = 13
 		pt = freetype.Pt(3, 45+int(c.PointToFixed(fSize)>>6))
 	case 8:
 		fSize = 17
 		pt = freetype.Pt(3, 38+int(c.PointToFixed(fSize)>>6))
-	case 5,6,7:
+	case 5, 6, 7:
 		fSize = 20
 		pt = freetype.Pt(5, 33+int(c.PointToFixed(fSize)>>6))
 	case 4:

@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	ident = "Netcap"
+	ident        = "Netcap"
 	netcapPrefix = "netcap."
-	propsPrefix = "properties."
+	propsPrefix  = "properties."
 )
 
 type XMLEntity struct {
@@ -31,24 +31,24 @@ type XMLEntity struct {
 	SmallIconResource string `xml:"smallIconResource,attr"`
 	LargeIconResource string `xml:"largeIconResource,attr"`
 
-	AllowedRoot     bool             `xml:"allowedRoot,attr"`
-	ConversionOrder string           `xml:"conversionOrder,attr"`
-	Visible         bool             `xml:"visible,attr"`
+	AllowedRoot     bool   `xml:"allowedRoot,attr"`
+	ConversionOrder string `xml:"conversionOrder,attr"`
+	Visible         bool   `xml:"visible,attr"`
 
-	Entities        *BaseEntities `xml:"BaseEntities,omitempty"`
-	Properties      EntityProperties `xml:"Properties"`
+	Entities   *BaseEntities    `xml:"BaseEntities,omitempty"`
+	Properties EntityProperties `xml:"Properties"`
 }
 
 //<BaseEntities>
 //<BaseEntity>netcap.IPAddr</BaseEntity>
 //</BaseEntities>
 type BaseEntities struct {
-	Text  string `xml:",chardata"`
+	Text     string `xml:",chardata"`
 	Entities []BaseEntity
 }
 
 type BaseEntity struct {
-	Text         string   `xml:",chardata"`
+	Text string `xml:",chardata"`
 }
 
 type EntityProperties struct {
@@ -94,7 +94,7 @@ func newEntity(entName string, imgName string, description string, parent string
 
 	var (
 		name = netcapPrefix + entName
-		ent = XMLEntity{
+		ent  = XMLEntity{
 			ID:                name,
 			DisplayName:       entName,
 			DisplayNamePlural: utils.Pluralize(entName),
@@ -168,7 +168,7 @@ func genEntity(entName string, imgName string, description string, parent string
 
 	var (
 		name = netcapPrefix + entName
-		ent = newEntity(entName, imgName, description, parent, fields...)
+		ent  = newEntity(entName, imgName, description, parent, fields...)
 	)
 
 	data, err := xml.MarshalIndent(ent, "", " ")
@@ -176,7 +176,7 @@ func genEntity(entName string, imgName string, description string, parent string
 		log.Fatal(err)
 	}
 
-	f, err := os.Create(filepath.Join("entities", "Entities", name + ".entity"))
+	f, err := os.Create(filepath.Join("entities", "Entities", name+".entity"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -194,20 +194,20 @@ func genEntity(entName string, imgName string, description string, parent string
 	// add icon files
 	os.MkdirAll(filepath.Join("entities", "Icons", ident), 0700)
 	copyFile(
-		filepath.Join("/tmp", "icons", "renamed", imgName + ".xml"),
-		filepath.Join("entities", "Icons", ident, imgName + ".xml"),
+		filepath.Join("/tmp", "icons", "renamed", imgName+".xml"),
+		filepath.Join("entities", "Icons", ident, imgName+".xml"),
 	)
 
 	var (
-		base = filepath.Join("/tmp", "icons", "renamed", imgName)
+		base    = filepath.Join("/tmp", "icons", "renamed", imgName)
 		dstBase = filepath.Join("entities", "Icons", ident, imgName)
 	)
 
-	copyFile(base + "16.png", dstBase + ".png")
-	copyFile(base + "24.png", dstBase + "24.png")
-	copyFile(base + "32.png", dstBase + "32.png")
-	copyFile(base + "48.png", dstBase + "48.png")
-	copyFile(base + "96.png", dstBase + "96.png")
+	copyFile(base+"16.png", dstBase+".png")
+	copyFile(base+"24.png", dstBase+"24.png")
+	copyFile(base+"32.png", dstBase+"32.png")
+	copyFile(base+"48.png", dstBase+"48.png")
+	copyFile(base+"96.png", dstBase+"96.png")
 }
 
 // copyFile the source file contents to destination
@@ -286,12 +286,12 @@ maltego.graph.version=1.2`)
 
 	fCategory.WriteString("<EntityCategory name=\"Netcap\"/>")
 
-	fmt.Println("generated archive")
+	fmt.Println("generated maltego entity archive")
 }
 
 func packEntityArchive() {
 
-	fmt.Println("packing archive")
+	fmt.Println("packing maltego entity archive")
 
 	// zip and rename to: entities.mtz
 	f, err := os.Create("entities.mtz")
@@ -314,7 +314,7 @@ func packEntityArchive() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("packed archive")
+	fmt.Println("packed maltego entity archive")
 }
 
 func addFiles(wr *zip.Writer, basePath, baseInZip string) {

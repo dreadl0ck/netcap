@@ -57,13 +57,13 @@ func TestGenerateAllEntities(t *testing.T) {
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
-		genEntity(e.Name+"AuditRecords", "insert_drive_file", "An archive of " + e.Name + " audit records", "", newStringField("path"))
+		genEntity(e.Name+"AuditRecords", "insert_drive_file", "An archive of "+e.Name+" audit records", "", newStringField("path"))
 		genEntity(e.Name, e.Name, e.Description, "")
 	})
 
 	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
-		name := strings.ReplaceAll(e.Layer.String() ,"/", "")
-		genEntity(name+"AuditRecords", "insert_drive_file", "An archive of " + e.Layer.String() + " audit records", "", newStringField("path"))
+		name := strings.ReplaceAll(e.Layer.String(), "/", "")
+		genEntity(name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path"))
 		genEntity(name, name, e.Description, "")
 	})
 
@@ -111,12 +111,16 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	compareGeneratedXML(data, expected, t)
+}
+
+func compareGeneratedXML(data []byte, expected string, t *testing.T) {
 	fmt.Println("-------------------RESULT--------------------------")
 	fmt.Println(string(data))
 	fmt.Println("------------------------------------------------")
 
 	if string(data) != expected {
-
 
 		fmt.Println("-------------------EXPECTED--------------------------")
 		fmt.Println(expected)
@@ -125,7 +129,7 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
 		resultArr := strings.Split(string(data), "\n")
 		expectedArr := strings.Split(string(expected), "\n")
 
-		fmt.Println("len(resultArr)", len(resultArr), "len(expectedArr)", len(expectedArr))
+		fmt.Println(ansi.Red, "len(resultArr)", len(resultArr), ansi.Blue, "len(expectedArr)", len(expectedArr), ansi.Reset)
 
 		for i, line := range expectedArr {
 			if len(resultArr) <= i {
@@ -142,7 +146,6 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
 		t.Fatal("unexpected output")
 	}
 }
-
 
 func TestGenerateDHCPClientXMLEntity(t *testing.T) {
 	expected := `<MaltegoEntity id="netcap.DHCPClient" displayName="DHCPClient" displayNamePlural="DHCPClients" description="A DHCP client" category="Netcap" smallIconResource="Technology/WAN" largeIconResource="Technology/WAN" allowedRoot="true" conversionOrder="2147483647" visible="true">
@@ -192,9 +195,6 @@ func TestGenerateDHCPClientXMLEntity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(string(data))
 
-	if string(data) != expected {
-		t.Fatal("unexpected output", expected)
-	}
+	compareGeneratedXML(data, expected, t)
 }

@@ -31,7 +31,7 @@ func TestGenerateAuditRecordIconsV2(t *testing.T) {
 	})
 
 	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
-		name := strings.ReplaceAll(e.Layer.String(),"/", "")
+		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		fmt.Println(name)
 		generateAuditRecordIconV2(name)
 	})

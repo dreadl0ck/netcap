@@ -106,8 +106,8 @@ type (
 	LayerEncoder struct {
 
 		// public fields
-		Layer gopacket.LayerType
-		Type  types.Type
+		Layer       gopacket.LayerType
+		Type        types.Type
 		Description string
 
 		Handler LayerEncoderHandler
