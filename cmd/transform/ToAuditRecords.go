@@ -44,10 +44,10 @@ var maltegoBaseConfig = collector.Config{
 	SnapLen:             1514, // TODO: make configurable within Maltego, add as property for pcap?
 	Promisc:             false,
 	EncoderConfig: encoder.Config{
-		Buffer:                  true,
-		MemBufferSize:           netcap.DefaultBufferSize,
-		Compression:             true,
-		CSV:                     false,
+		Buffer:        true,
+		MemBufferSize: netcap.DefaultBufferSize,
+		Compression:   true,
+		CSV:           false,
 		//IncludeEncoders:         strings.Join(auditRecords, ","),
 		ExcludeEncoders:         "",
 		WriteChan:               false,

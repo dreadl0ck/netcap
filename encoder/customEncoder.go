@@ -55,9 +55,9 @@ type (
 	CustomEncoder struct {
 
 		// public fields
-		Name string
+		Name        string
 		Description string
-		Icon string
+		Icon        string
 
 		Type     types.Type
 		Handler  CustomEncoderHandler
