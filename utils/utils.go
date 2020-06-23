@@ -32,14 +32,14 @@ import (
 func Pluralize(name string) string {
 
 	if strings.HasSuffix(name, "e") || strings.HasSuffix(name, "w") {
-		if name != "Software" && name != "Ethernet" { // TODO: excludeList
+		if name != "Software" { // TODO: excludeList
 			name += "s"
 		}
 	}
 	if strings.HasSuffix(name, "y") {
 		name = name[:len(name)-1] + "ies"
 	}
-	if strings.HasSuffix(name, "t") {
+	if strings.HasSuffix(name, "t")  && name != "Ethernet" { // TODO: excludeList
 		name += "s"
 	}
 
