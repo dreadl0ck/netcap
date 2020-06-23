@@ -27,10 +27,13 @@ func Run() {
 		ToAuditRecords()
 	case "ToLiveAuditRecords":
 		ToLiveAuditRecords()
-	case "GetDeviceProfilesWithDPI":
+	case "ToDeviceProfilesWithDPI":
 		ToAuditRecordsWithDPI()
 	case "OpenNetcapFolder":
 		OpenNetcapFolder()
+
+	case "ToFileTypesForIP":
+		ToFileTypesForIP()
 
 	// Exploits
 	case "ToSoftwareExploits":
@@ -66,10 +69,6 @@ func Run() {
 	case "ToLoginInformation":
 		ToLoginInformation()
 
-	// File
-	case "ToFileTypes":
-		ToFileTypes()
-
 	// POP3
 	case "ToFetchedMails":
 		ToFetchedMails()
@@ -98,87 +97,89 @@ func Run() {
 	case "ToDevices":
 		ToDevices()
 
-	case "GetApplicationCategories":
-		GetApplicationCategories()
-	case "GetApplications":
-		GetApplications()
-	case "GetApplicationsForCategory":
-		GetApplicationsForCategory()
+	case "ToHTTPHostnames":
+		ToHTTPHostNames()
+
+	case "ToApplicationCategories":
+		ToApplicationCategories()
+	case "ToApplications":
+		ToApplications()
+	case "ToApplicationsForCategory":
+		ToApplicationsForCategory()
 	case "OpenFile":
 		OpenFile()
-	case "GetCookieValues":
-		GetCookieValues()
-	case "GetCookiesForHTTPHost":
-		GetCookiesForHTTPHost()
-	case "GetDHCP":
-		GetDHCP()
+	case "ToCookieValues":
+		ToCookieValues()
+	case "ToCookiesForHTTPHost":
+		ToCookiesForHTTPHost()
+	case "ToDHCP":
+		ToDHCP()
 	case "OpenFolder":
 		OpenFolder()
-	case "GetDNSQuestions":
-		GetDNSQuestions()
-	case "GetDeviceContacts":
-		GetDeviceContacts()
-	case "GetDeviceIPs":
-		GetDeviceIPs()
-	case "GetHTTPHostsFiltered":
-		GetHTTPHostsFiltered()
-	case "GetDstPorts":
-		GetDstPorts()
-	case "GetIncomingFlowsFiltered":
-		GetIncomingFlowsFiltered()
-	case "GetFileTypes":
-		GetFileTypes()
-	case "GetFiles":
-		GetFiles()
-	case "GetFileType":
-		GetFileType()
-	case "GetFilesForContentType":
-		GetFilesForContentType()
-	case "GetGeolocation":
-		GetGeolocation()
 
-	case "GetParameterValues":
-		GetParameterValues()
-	case "GetParametersForHTTPHost":
-		GetParametersForHTTPHost()
-	case "GetHTTPContentTypes":
-		GetHTTPContentTypes()
-	case "GetHTTPCookies":
-		GetHTTPCookies()
-	case "GetHTTPHosts":
-		GetHTTPHosts()
-	case "GetHTTPParameters":
-		GetHTTPParameters()
-	case "GetHTTPServerNames":
-		GetHTTPServerNames()
-	case "GetHTTPStatusCodes":
-		GetHTTPStatusCodes()
-	case "GetHTTPURLs":
-		GetHTTPURLs()
-	case "GetHTTPUserAgents":
-		GetHTTPUserAgents()
+	case "ToDeviceContacts":
+		ToDeviceContacts()
+	case "ToDeviceIPs":
+		ToDeviceIPs()
+	case "ToHTTPHostsFiltered":
+		ToHTTPHostsFiltered()
+	case "ToDstPorts":
+		ToDstPorts()
+	case "ToIncomingFlowsFiltered":
+		ToIncomingFlowsFiltered()
+	case "ToFileTypes":
+		ToFileTypes()
+	case "ToFiles":
+		ToFiles()
+	case "ToFileType":
+		ToFileType()
+	case "ToFilesForContentType":
+		ToFilesForContentType()
+	case "ToGeolocation":
+		ToGeolocation()
 
-	case "GetMailAuthTokens":
-		GetMailAuthTokens()
-	case "GetMailFrom":
-		GetMailFrom()
-	case "GetMailTo":
-		GetMailTo()
-	case "GetMailUserPassword":
-		GetMailUserPassword()
-	case "GetMailUsers":
-		GetMailUsers()
-	case "GetMails":
-		GetMails()
+	case "ToParameterValues":
+		ToParameterValues()
+	case "ToParametersForHTTPHost":
+		ToParametersForHTTPHost()
+	case "ToHTTPContentTypes":
+		ToHTTPContentTypes()
+	case "ToHTTPCookies":
+		ToHTTPCookies()
+	case "ToHTTPHosts":
+		ToHTTPHosts()
+	case "ToHTTPParameters":
+		ToHTTPParameters()
+	case "ToHTTPServerNames":
+		ToHTTPServerNames()
+	case "ToHTTPStatusCodes":
+		ToHTTPStatusCodes()
+	case "ToHTTPURLs":
+		ToHTTPURLs()
+	case "ToHTTPUserAgents":
+		ToHTTPUserAgents()
 
-	case "GetSNIs":
-		GetSNIs()
-	case "GetSrcPorts":
-		GetSrcPorts()
-	case "GetOutgoingFlowsFiltered":
-		GetOutgoingFlowsFiltered()
-	case "GetURLsForHTTPHost":
-		GetURLsForHTTPHost()
+	case "ToMailAuthTokens":
+		ToMailAuthTokens()
+	case "ToMailFrom":
+		ToMailFrom()
+	case "ToMailTo":
+		ToMailTo()
+	case "ToMailUserPassword":
+		ToMailUserPassword()
+	case "ToMailUsers":
+		ToMailUsers()
+	case "ToMails":
+		ToMails()
+
+	case "ToSNIs":
+		ToSNIs()
+	case "ToSrcPorts":
+		ToSrcPorts()
+	case "ToOutgoingFlowsFiltered":
+		ToOutgoingFlowsFiltered()
+	case "ToURLsForHTTPHost":
+		ToURLsForHTTPHost()
 	default:
 		log.Fatal("unknown transform: ", os.Args[2])
 	}

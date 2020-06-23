@@ -29,8 +29,12 @@ type XMLTransform struct {
 	Properties       XMLTransformProperties `xml:"Properties"`
 	Constraints      InputConstraints       `xml:"InputConstraints"`
 	OutputEntities   string                 `xml:"OutputEntities"`
-	DefaultSets      []Set                  `xml:"defaultSets"`
+	DefaultSets      DefaultSets            `xml:"defaultSets"`
 	StealthLevel     string                 `xml:"StealthLevel"`
+}
+
+type DefaultSets struct {
+	Items []Set `xml:"Set"`
 }
 
 type Set struct {
@@ -340,11 +344,11 @@ func newTransform(id string, description string, input string) XMLTransform {
 			},
 		},
 		OutputEntities: "",
-		DefaultSets:    []Set{
+		DefaultSets:    DefaultSets{Items: []Set{
 			{
 				Name:    "NETCAP",
 			},
-		},
+		}},
 		StealthLevel:   "0",
 	}
 
