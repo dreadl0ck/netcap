@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.LLC" displayName="LLC" displayNamePlural="LLC" description="" category="Netcap" smallIconResource="Netcap/LLC" largeIconResource="Netcap/LLC" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.llc" displayValue="properties.llc">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.llc" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="LLC">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

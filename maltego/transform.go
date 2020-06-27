@@ -378,7 +378,7 @@ func newTransform(id string, description string, input string) XMLTransform {
 	return tr
 }
 
-func genTransform(name string, description string, inputEntity string) {
+func genTransform(outDir string, name string, description string, inputEntity string) {
 
 	var (
 		tr  = newTransform(name, description, inputEntity)
@@ -392,7 +392,7 @@ func genTransform(name string, description string, inputEntity string) {
 		log.Fatal(err)
 	}
 
-	f, err := os.Create(filepath.Join("transforms", "TransformRepositories", "Local", netcapPrefix+name+".transform"))
+	f, err := os.Create(filepath.Join(outDir, "TransformRepositories", "Local", netcapPrefix+name+".transform"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -414,7 +414,7 @@ func genTransform(name string, description string, inputEntity string) {
 		log.Fatal(err)
 	}
 
-	f, err = os.Create(filepath.Join("transforms", "TransformRepositories", "Local", netcapPrefix+name+".transformsettings"))
+	f, err = os.Create(filepath.Join(outDir, "TransformRepositories", "Local", netcapPrefix+name+".transformsettings"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -494,4 +494,32 @@ func packTransformArchive() {
 	}
 
 	fmt.Println("packed maltego transform archive")
+}
+
+func packMaltegoArchive(name string) {
+
+	fmt.Println("packing maltego " + name + " archive")
+
+	// zip and rename to: transforms.mtz
+	f, err := os.Create(name + ".mtz")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	w := zip.NewWriter(f)
+
+	// add files to the archive
+	addFiles(w, name, "")
+
+	err = w.Flush()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = w.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("packed maltego " + name + " archive")
 }

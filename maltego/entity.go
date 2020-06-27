@@ -39,9 +39,6 @@ type XMLEntity struct {
 	Properties EntityProperties `xml:"Properties"`
 }
 
-//<BaseEntities>
-//<BaseEntity>netcap.IPAddr</BaseEntity>
-//</BaseEntities>
 type BaseEntities struct {
 	Text     string `xml:",chardata"`
 	Entities []BaseEntity
@@ -84,7 +81,6 @@ type EntityCoreInfo struct {
 	Description string
 	Parent      string
 	Fields 		[]PropertyField
-	// Fields string TODO: extra fields
 }
 
 func newEntity(entName string, imgName string, description string, parent string, fields ...PropertyField) XMLEntity {
@@ -173,7 +169,7 @@ func newRequiredStringField(name string, description string) PropertyField {
 	}
 }
 
-func genEntity(entName string, imgName string, description string, parent string, fields ...PropertyField) {
+func genEntity(outDir string, entName string, imgName string, description string, parent string, fields ...PropertyField) {
 
 	// not joking, Maltego fails to render images with this name
 	if imgName == "Vulnerability" {
@@ -190,7 +186,7 @@ func genEntity(entName string, imgName string, description string, parent string
 		log.Fatal(err)
 	}
 
-	f, err := os.Create(filepath.Join("entities", "Entities", name+".entity"))
+	f, err := os.Create(filepath.Join(outDir, "Entities", name+".entity"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -206,15 +202,15 @@ func genEntity(entName string, imgName string, description string, parent string
 	}
 
 	// add icon files
-	os.MkdirAll(filepath.Join("entities", "Icons", ident), 0700)
+	os.MkdirAll(filepath.Join(outDir, "Icons", ident), 0700)
 	copyFile(
 		filepath.Join("/tmp", "icons", "renamed", imgName+".xml"),
-		filepath.Join("entities", "Icons", ident, imgName+".xml"),
+		filepath.Join(outDir, "Icons", ident, imgName+".xml"),
 	)
 
 	var (
 		base    = filepath.Join("/tmp", "icons", "renamed", imgName)
-		dstBase = filepath.Join("entities", "Icons", ident, imgName)
+		dstBase = filepath.Join(outDir, "Icons", ident, imgName)
 	)
 
 	copyFile(base+"16.png", dstBase+".png")

@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.ICMPv6RouterSolicitation" displayName="ICMPv6RouterSolicitation" displayNamePlural="ICMPv6RouterSolicitation" description="" category="Netcap" smallIconResource="Netcap/ICMPv6RouterSolicitation" largeIconResource="Netcap/ICMPv6RouterSolicitation" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.icmpv6routersolicitation" displayValue="properties.icmpv6routersolicitation">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.icmpv6routersolicitation" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="ICMPv6RouterSolicitation">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.GRE" displayName="GRE" displayNamePlural="GRE" description="" category="Netcap" smallIconResource="Netcap/GRE" largeIconResource="Netcap/GRE" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.gre" displayValue="properties.gre">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.gre" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="GRE">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

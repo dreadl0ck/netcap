@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.SSHClient" displayName="SSHClient" displayNamePlural="SSHClients" description="A Secure Shell Protocol Client" category="Netcap" smallIconResource="Netcap/call_made" largeIconResource="Netcap/call_made" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.sshclient" displayValue="properties.sshclient">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.sshclient" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="SSHClient">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

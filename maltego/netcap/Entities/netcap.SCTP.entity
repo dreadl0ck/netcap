@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.SCTP" displayName="SCTP" displayNamePlural="SCTP" description="" category="Netcap" smallIconResource="Netcap/SCTP" largeIconResource="Netcap/SCTP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.sctp" displayValue="properties.sctp">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.sctp" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="SCTP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

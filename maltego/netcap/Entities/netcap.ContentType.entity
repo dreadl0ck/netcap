@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.ContentType" displayName="ContentType" displayNamePlural="ContentTypes" description="A MIME type describes different multi-media formats" category="Netcap" smallIconResource="Netcap/category" largeIconResource="Netcap/category" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.contenttype" displayValue="properties.contenttype">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.contenttype" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="ContentType">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

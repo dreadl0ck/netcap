@@ -1,0 +1,13 @@
+<MaltegoEntity id="netcap.ExternalContact" displayName="ExternalContact" displayNamePlural="ExternalContacts" description="An external destination address" category="Netcap" smallIconResource="Netcap/cloud_download" largeIconResource="Netcap/cloud_download" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities>
+  <Entities>netcap.IPAddr</Entities>
+ </BaseEntities>
+ <Properties value="properties.externalcontact" displayValue="properties.externalcontact">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.externalcontact" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="ExternalContact">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

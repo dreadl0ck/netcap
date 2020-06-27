@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -57,18 +56,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		ent := trx.AddEntity("netcap."+name+"AuditRecords", ident)
 		ent.SetType("netcap." + name + "AuditRecords")
 
-		displayName := name
-		if strings.HasSuffix(name, "e") || strings.HasSuffix(name, "w") {
-			if name != "Software" {
-				displayName += "s"
-			}
-		}
-		if strings.HasSuffix(name, "y") {
-			displayName = name[:len(name)-1] + "ies"
-		}
-		if strings.HasSuffix(displayName, "t") {
-			displayName += "s"
-		}
+		displayName := utils.Pluralize(name)
 		ent.SetValue(displayName)
 
 		ent.AddProperty("path", "Path", "strict", ident)

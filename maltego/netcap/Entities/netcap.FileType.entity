@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.FileType" displayName="FileType" displayNamePlural="FileTypes" description="The type of file based on its contents" category="Netcap" smallIconResource="Netcap/insert_chart" largeIconResource="Netcap/insert_chart" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.filetype" displayValue="properties.filetype">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.filetype" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="FileType">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

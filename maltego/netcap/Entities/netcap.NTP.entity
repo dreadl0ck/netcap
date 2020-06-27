@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.NTP" displayName="NTP" displayNamePlural="NTP" description="" category="Netcap" smallIconResource="Netcap/NTP" largeIconResource="Netcap/NTP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.ntp" displayValue="properties.ntp">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.ntp" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="NTP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.Software" displayName="Software" displayNamePlural="Software" description="" category="Netcap" smallIconResource="Netcap/Software" largeIconResource="Netcap/Software" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.software" displayValue="properties.software">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.software" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Software">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

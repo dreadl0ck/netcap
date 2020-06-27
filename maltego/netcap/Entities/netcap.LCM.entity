@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.LCM" displayName="LCM" displayNamePlural="LCM" description="" category="Netcap" smallIconResource="Netcap/LCM" largeIconResource="Netcap/LCM" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.lcm" displayValue="properties.lcm">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.lcm" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="LCM">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

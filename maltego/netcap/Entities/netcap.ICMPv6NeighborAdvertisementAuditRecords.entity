@@ -1,0 +1,13 @@
+<MaltegoEntity id="netcap.ICMPv6NeighborAdvertisementAuditRecords" displayName="ICMPv6NeighborAdvertisementAuditRecords" displayNamePlural="ICMPv6NeighborAdvertisementAuditRecords" description="An archive of ICMPv6NeighborAdvertisement audit records" category="Netcap" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.icmpv6neighboradvertisementauditrecords" displayValue="properties.icmpv6neighboradvertisementauditrecords">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.icmpv6neighboradvertisementauditrecords" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="ICMPv6NeighborAdvertisementAuditRecords">
+    <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Path">
+    <SampleValue></SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

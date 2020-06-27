@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.EAPOLKey" displayName="EAPOLKey" displayNamePlural="EAPOLKeies" description="" category="Netcap" smallIconResource="Netcap/EAPOLKey" largeIconResource="Netcap/EAPOLKey" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.eapolkey" displayValue="properties.eapolkey">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.eapolkey" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="EAPOLKey">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

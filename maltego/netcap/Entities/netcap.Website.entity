@@ -1,0 +1,13 @@
+<MaltegoEntity id="netcap.Website" displayName="Website" displayNamePlural="Websites" description="A HTTP Website" category="Netcap" smallIconResource="Netcap/web" largeIconResource="Netcap/web" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities>
+  <Entities>maltego.Website</Entities>
+ </BaseEntities>
+ <Properties value="properties.website" displayValue="properties.website">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.website" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Website">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

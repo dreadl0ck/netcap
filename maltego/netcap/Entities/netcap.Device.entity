@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.Device" displayName="Device" displayNamePlural="Devices" description="A device seen on the network" category="Netcap" smallIconResource="Netcap/devices" largeIconResource="Netcap/devices" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.device" displayValue="properties.device">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.device" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Device">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

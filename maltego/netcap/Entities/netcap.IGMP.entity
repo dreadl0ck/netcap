@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.IGMP" displayName="IGMP" displayNamePlural="IGMP" description="" category="Netcap" smallIconResource="Netcap/IGMP" largeIconResource="Netcap/IGMP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.igmp" displayValue="properties.igmp">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.igmp" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="IGMP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

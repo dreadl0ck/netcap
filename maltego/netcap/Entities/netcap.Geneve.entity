@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.Geneve" displayName="Geneve" displayNamePlural="Geneves" description="" category="Netcap" smallIconResource="Netcap/Geneve" largeIconResource="Netcap/Geneve" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.geneve" displayValue="properties.geneve">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.geneve" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Geneve">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

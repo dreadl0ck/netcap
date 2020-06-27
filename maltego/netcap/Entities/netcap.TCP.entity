@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.TCP" displayName="TCP" displayNamePlural="TCP" description="" category="Netcap" smallIconResource="Netcap/TCP" largeIconResource="Netcap/TCP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.tcp" displayValue="properties.tcp">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.tcp" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="TCP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

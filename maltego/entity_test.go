@@ -14,13 +14,13 @@ import (
 // additional entities that are not actual NETCAP audit records
 var entities = []EntityCoreInfo{
 	{"CaptureProcess", "remove_red_eye", "An operating system NETCAP process that captures traffic from a network interface", "", nil},
-	{"ContentType", "category", "A MIME type describes different multi-media formats", "netcap.IPAddr", nil},
+	{"ContentType", "category", "A MIME type describes different multi-media formats", "", nil},
 	{"Credentials", "security", "Credentials for accessing services that require user authentication", "netcap.IPAddr", nil},
 	{"Email", "mail_outline", "An email message", "maltego.Email", nil},
-	{"Interface", "router", "A network interface", "", nil},
+	{"Interface", "router", "A network interface", "", []PropertyField{newRequiredStringField("name", "Name of the network interface")}},
 	{"PCAP", "sd_storage", "A packet capture dump file", "", []PropertyField{newRequiredStringField("path", "Absolute path to the PCAP file")}},
 	{"Device", "devices", "A device seen on the network", "", nil},
-	{"FileType", "insert_drive_file", "The type of file based on its contents", "", nil},
+	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},
 	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
 	{"InternalContact", "cloud_upload", "An internal destination address", "netcap.IPAddr", nil},
 	{"InternalDeviceIP", "cloud_upload", "An internal source address", "netcap.IPAddr", nil},
@@ -42,6 +42,7 @@ var entities = []EntityCoreInfo{
 	{"UserAgent", "supervisor_account", "A HTTP User Agent", "", nil},
 	{"Website", "web", "A HTTP Website", "maltego.Website", nil},
 	{"DNSName", "dns", "A DNS Name", "maltego.DNSName", nil},
+	{"File", "insert_drive_file", "A file", "maltego.File", nil},
 }
 
 // generate all entities and pack as archive
@@ -51,20 +52,20 @@ func TestGenerateAllEntities(t *testing.T) {
 
 	// generate additional entities
 	for _, e := range entities {
-		genEntity(e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
+		genEntity("entities", e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
 	}
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
-		genEntity(e.Name+"AuditRecords", "insert_drive_file", "An archive of "+e.Name+" audit records", "", newStringField("path"))
-		genEntity(e.Name, e.Name, e.Description, "")
+		genEntity("entities", e.Name+"AuditRecords", "insert_drive_file", "An archive of "+e.Name+" audit records", "", newStringField("path"))
+		genEntity("entities", e.Name, e.Name, e.Description, "")
 	})
 
 	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		genEntity(name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path"))
-		genEntity(name, name, e.Description, "")
+		genEntity("entities", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path"))
+		genEntity("entities", name, name, e.Description, "")
 	})
 
 	packEntityArchive()
@@ -74,19 +75,19 @@ func TestGenerateAllEntities(t *testing.T) {
 
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
 	genEntityArchive()
-	genEntity("Vulnerability", "Vulnerability", "A software vulnerability", "")
+	genEntity("entities", "Vulnerability", "Vulnerability", "A software vulnerability", "")
 	packEntityArchive()
 }
 
 func TestGenerateAndPackCaptureProcessEntity(t *testing.T) {
 	genEntityArchive()
-	genEntity("CaptureProcess", "remove_red_eye", "A capture process", "")
+	genEntity("entities", "CaptureProcess", "remove_red_eye", "A capture process", "")
 	packEntityArchive()
 }
 
 func TestGenerateAndPackPCAPEntity(t *testing.T) {
 	genEntityArchive()
-	genEntity("PCAP", "sd_storage", "Packet capture file", "", newStringField("path"))
+	genEntity("entities", "PCAP", "sd_storage", "Packet capture file", "", newStringField("path"))
 	packEntityArchive()
 }
 

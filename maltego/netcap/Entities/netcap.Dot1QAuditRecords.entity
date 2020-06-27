@@ -1,0 +1,13 @@
+<MaltegoEntity id="netcap.Dot1QAuditRecords" displayName="Dot1QAuditRecords" displayNamePlural="Dot1QAuditRecords" description="An archive of Dot1Q audit records" category="Netcap" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.dot1qauditrecords" displayValue="properties.dot1qauditrecords">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.dot1qauditrecords" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Dot1QAuditRecords">
+    <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Path">
+    <SampleValue></SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

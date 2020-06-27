@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.Flow" displayName="Flow" displayNamePlural="Flows" description="" category="Netcap" smallIconResource="Netcap/Flow" largeIconResource="Netcap/Flow" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.flow" displayValue="properties.flow">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.flow" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Flow">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

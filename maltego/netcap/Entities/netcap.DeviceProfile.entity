@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.DeviceProfile" displayName="DeviceProfile" displayNamePlural="DeviceProfiles" description="" category="Netcap" smallIconResource="Netcap/DeviceProfile" largeIconResource="Netcap/DeviceProfile" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.deviceprofile" displayValue="properties.deviceprofile">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.deviceprofile" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="DeviceProfile">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.ServerName" displayName="ServerName" displayNamePlural="ServerNames" description="A network server software name" category="Netcap" smallIconResource="Netcap/scanner" largeIconResource="Netcap/scanner" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.servername" displayValue="properties.servername">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.servername" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="ServerName">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

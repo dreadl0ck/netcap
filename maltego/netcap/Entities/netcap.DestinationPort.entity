@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.DestinationPort" displayName="DestinationPort" displayNamePlural="DestinationPorts" description="A TCP / UDP destination port" category="Netcap" smallIconResource="Netcap/local_convenience_store" largeIconResource="Netcap/local_convenience_store" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.destinationport" displayValue="properties.destinationport">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.destinationport" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="DestinationPort">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

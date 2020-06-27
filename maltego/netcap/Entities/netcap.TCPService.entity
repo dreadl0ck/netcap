@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.TCPService" displayName="TCPService" displayNamePlural="TCPServices" description="A TCP network service" category="Netcap" smallIconResource="Netcap/device_hub" largeIconResource="Netcap/device_hub" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.tcpservice" displayValue="properties.tcpservice">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.tcpservice" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="TCPService">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

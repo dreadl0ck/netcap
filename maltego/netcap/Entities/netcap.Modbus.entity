@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.Modbus" displayName="Modbus" displayNamePlural="Modbus" description="" category="Netcap" smallIconResource="Netcap/Modbus" largeIconResource="Netcap/Modbus" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.modbus" displayValue="properties.modbus">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.modbus" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Modbus">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

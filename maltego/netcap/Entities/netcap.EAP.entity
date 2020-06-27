@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.EAP" displayName="EAP" displayNamePlural="EAP" description="" category="Netcap" smallIconResource="Netcap/EAP" largeIconResource="Netcap/EAP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.eap" displayValue="properties.eap">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.eap" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="EAP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

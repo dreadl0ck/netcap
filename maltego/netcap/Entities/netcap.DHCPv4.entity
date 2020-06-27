@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.DHCPv4" displayName="DHCPv4" displayNamePlural="DHCPv4" description="" category="Netcap" smallIconResource="Netcap/DHCPv4" largeIconResource="Netcap/DHCPv4" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.dhcpv4" displayValue="properties.dhcpv4">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.dhcpv4" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="DHCPv4">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>
