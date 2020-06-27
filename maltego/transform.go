@@ -161,6 +161,20 @@ type Server struct {
 	Seeds string `xml:"Seeds"`
 }
 
+type TransformSet struct {
+	XMLName     xml.Name `xml:"TransformSet"`
+	Text        string   `xml:",chardata"`
+	Name        string   `xml:"name,attr"`
+	Description string   `xml:"description,attr"`
+	Transforms  struct {
+		Text      string `xml:",chardata"`
+		Transform []struct {
+			Text string `xml:",chardata"`
+			Name string `xml:"name,attr"`
+		} `xml:"Transform"`
+	} `xml:"Transforms"`
+}
+
 // e.g. "ToAuditRecords" -> "To Audit Records [NETCAP]"
 func toTransformDisplayName(in string) string {
 
