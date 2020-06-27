@@ -280,7 +280,7 @@ func genTransformSet(outDir string) {
 	}
 
 	os.MkdirAll(filepath.Join(outDir, "TransformSets"), 0700)
-	f, err := os.Create(filepath.Join("transforms", "TransformSets", "netcap.set"))
+	f, err := os.Create(filepath.Join(outDir, "TransformSets", "netcap.set"))
 	if err != nil {
 		log.Fatal(err)
 	}
