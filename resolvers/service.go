@@ -1,4 +1,4 @@
-/*
+ /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  *
@@ -47,7 +47,17 @@ type port struct {
 	num     int
 }
 
-var pathReplacer = strings.NewReplacer("/", "-", " ", "-", "]", "", "[", "", ")", "", "(", "")
+var (
+	pathReplacer = strings.NewReplacer("/", "-", " ", "-", "]", "", "[", "", ")", "", "(", "", "---", "-", "-&-", "-")
+	finalReplacer = strings.NewReplacer("---", "-", "-&-", "-")
+)
+
+func getServiceName(in string) string {
+	name := strings.ToLower(in)
+	name = pathReplacer.Replace(name)
+	name = finalReplacer.Replace(name)
+	return filepath.Clean(name)
+}
 
 // InitServiceDB initializes the ports to service names mapping
 func InitServiceDB() {
@@ -105,7 +115,7 @@ func InitServiceDB() {
 			}
 			for i := start; i <= end; i++ {
 				p := port{
-					service: filepath.Clean(pathReplacer.Replace(strings.ToLower(r[3]))),
+					service: getServiceName(r[3]),
 					num:     i,
 				}
 				if r[2] == "tcp" {
@@ -127,7 +137,7 @@ func InitServiceDB() {
 				continue
 			}
 			p := port{
-				service: filepath.Clean(pathReplacer.Replace(strings.ToLower(r[3]))),
+				service: getServiceName(r[3]),
 				num:     num,
 			}
 			if r[2] == "tcp" {

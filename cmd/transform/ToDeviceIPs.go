@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func ToDeviceIPs() {
+func ToSourceIPs() {
 	maltego.DeviceProfileTransform(
 		maltego.CountPacketsDeviceIPs,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {

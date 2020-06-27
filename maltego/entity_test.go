@@ -13,35 +13,35 @@ import (
 
 // additional entities that are not actual NETCAP audit records
 var entities = []EntityCoreInfo{
-	{"CaptureProcess", "remove_red_eye", "An operating system NETCAP process that captures traffic from a network interface", ""},
-	{"ContentType", "category", "A MIME type describes different multi-media formats", "netcap.IPAddr"},
-	{"Credentials", "security", "Credentials for accessing services that require user authentication", "netcap.IPAddr"},
-	{"Email", "mail_outline", "An email message", "maltego.Email"},
-	{"Interface", "router", "A network interface", ""},
-	{"PCAP", "sd_storage", "A packet capture dump file", ""},
-	{"Device", "devices", "A device seen on the network", ""},
-	{"FileType", "insert_drive_file", "The type of file based on its contents", ""},
-	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address"},
-	{"InternalContact", "cloud_upload", "An internal destination address", "netcap.IPAddr"},
-	{"InternalDeviceIP", "cloud_upload", "An internal source address", "netcap.IPAddr"},
-	{"ExternalContact", "cloud_download", "An external destination address", "netcap.IPAddr"},
-	{"ExternalDeviceIP", "cloud_download", "An external source address", "netcap.IPAddr"},
-	{"DHCPClient", "cast_connected", "A DHCP client", ""},
-	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", ""},
-	{"DestinationPort", "local_convenience_store", "A TCP / UDP destination port", ""},
-	{"SourcePort", "local_convenience_store", "A TCP / UDP source port", ""},
-	{"HTTPCookie", "settings_input_svideo", "A HTTP session cookie", ""},
-	{"HTTPParameter", "live_help", "", "A HTTP request parameter name"},
-	{"HTTPParameterValue", "settings_ethernet", "A HTTP request parameter value", ""},
-	{"HTTPStatusCode", "highlight", "A HTTP server response code", ""},
-	{"ServerName", "scanner", "A network server software name", ""},
-	{"SSHClient", "call_made", "A Secure Shell Protocol Client", ""},
-	{"SSHServer", "call_received", "A Secure Shell Protocol Server", ""},
-	{"TCPService", "device_hub", "A TCP network service", ""},
-	{"UDPService", "developer_board", "A UDP network service", ""},
-	{"UserAgent", "supervisor_account", "A HTTP User Agent", ""},
-	{"Website", "web", "A HTTP Website", "maltego.Website"},
-	{"DNSName", "dns", "A DNS Name", "maltego.DNSName"},
+	{"CaptureProcess", "remove_red_eye", "An operating system NETCAP process that captures traffic from a network interface", "", nil},
+	{"ContentType", "category", "A MIME type describes different multi-media formats", "netcap.IPAddr", nil},
+	{"Credentials", "security", "Credentials for accessing services that require user authentication", "netcap.IPAddr", nil},
+	{"Email", "mail_outline", "An email message", "maltego.Email", nil},
+	{"Interface", "router", "A network interface", "", nil},
+	{"PCAP", "sd_storage", "A packet capture dump file", "", []PropertyField{newRequiredStringField("path", "Absolute path to the PCAP file")}},
+	{"Device", "devices", "A device seen on the network", "", nil},
+	{"FileType", "insert_drive_file", "The type of file based on its contents", "", nil},
+	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
+	{"InternalContact", "cloud_upload", "An internal destination address", "netcap.IPAddr", nil},
+	{"InternalDeviceIP", "cloud_upload", "An internal source address", "netcap.IPAddr", nil},
+	{"ExternalContact", "cloud_download", "An external destination address", "netcap.IPAddr", nil},
+	{"ExternalDeviceIP", "cloud_download", "An external source address", "netcap.IPAddr", nil},
+	{"DHCPClient", "cast_connected", "A DHCP client", "", nil},
+	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", "", nil},
+	{"DestinationPort", "local_convenience_store", "A TCP / UDP destination port", "", nil},
+	{"SourcePort", "local_convenience_store", "A TCP / UDP source port", "", nil},
+	{"HTTPCookie", "settings_input_svideo", "A HTTP session cookie", "", nil},
+	{"HTTPParameter", "live_help", "", "A HTTP request parameter name", nil},
+	{"HTTPParameterValue", "settings_ethernet", "A HTTP request parameter value", "", nil},
+	{"HTTPStatusCode", "highlight", "A HTTP server response code", "", nil},
+	{"ServerName", "scanner", "A network server software name", "", nil},
+	{"SSHClient", "call_made", "A Secure Shell Protocol Client", "", nil},
+	{"SSHServer", "call_received", "A Secure Shell Protocol Server", "", nil},
+	{"TCPService", "device_hub", "A TCP network service", "", nil},
+	{"UDPService", "developer_board", "A UDP network service", "", nil},
+	{"UserAgent", "supervisor_account", "A HTTP User Agent", "", nil},
+	{"Website", "web", "A HTTP Website", "maltego.Website", nil},
+	{"DNSName", "dns", "A DNS Name", "maltego.DNSName", nil},
 }
 
 // generate all entities and pack as archive
@@ -51,7 +51,7 @@ func TestGenerateAllEntities(t *testing.T) {
 
 	// generate additional entities
 	for _, e := range entities {
-		genEntity(e.Name, e.Icon, e.Description, e.Parent)
+		genEntity(e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
 	}
 
 	// generate entities for audit records

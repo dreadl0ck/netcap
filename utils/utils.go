@@ -29,18 +29,27 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+// words for which to make an exception when pluralizing nouns
+var noPluralsMap = map[string]struct{}{
+	"Software": {},
+	"Ethernet": {},
+}
+
+// Pluralize builds the plural for a given noun
 func Pluralize(name string) string {
 
 	if strings.HasSuffix(name, "e") || strings.HasSuffix(name, "w") {
-		if name != "Software" { // TODO: excludeList
+		if _, ok := noPluralsMap[name]; !ok {
 			name += "s"
 		}
 	}
 	if strings.HasSuffix(name, "y") {
 		name = name[:len(name)-1] + "ies"
 	}
-	if strings.HasSuffix(name, "t")  && name != "Ethernet" { // TODO: excludeList
-		name += "s"
+	if strings.HasSuffix(name, "t") {
+		if _, ok := noPluralsMap[name]; !ok {
+			name += "s"
+		}
 	}
 
 	return name

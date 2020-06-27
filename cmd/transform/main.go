@@ -1,6 +1,8 @@
 package transform
 
 import (
+	"fmt"
+	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 )
@@ -117,10 +119,10 @@ func Run() {
 	case "OpenFolder":
 		OpenFolder()
 
-	case "ToDeviceContacts":
-		ToDeviceContacts()
-	case "ToDeviceIPs":
-		ToDeviceIPs()
+	case "ToDestinationIPs":
+		ToDestinationIPs()
+	case "ToSourceIPs":
+		ToSourceIPs()
 	case "ToHTTPHostsFiltered":
 		ToHTTPHostsFiltered()
 	case "ToDstPorts":
@@ -154,8 +156,8 @@ func Run() {
 		ToHTTPServerNames()
 	case "ToHTTPStatusCodes":
 		ToHTTPStatusCodes()
-	case "ToHTTPURLs":
-		ToHTTPURLs()
+	case "ToURLsForHost":
+		ToURLsForHost()
 	case "ToHTTPUserAgents":
 		ToHTTPUserAgents()
 
@@ -172,7 +174,7 @@ func Run() {
 	case "ToMails":
 		ToMails()
 
-	case "ToSNIs":
+	case "ToServerNameIndicators":
 		ToSNIs()
 	case "ToSrcPorts":
 		ToSrcPorts()
@@ -181,6 +183,10 @@ func Run() {
 	case "ToURLsForHTTPHost":
 		ToURLsForHTTPHost()
 	default:
-		log.Fatal("unknown transform: ", os.Args[2])
+		trx := maltego.MaltegoTransform{}
+		trx.AddUIMessage("Unknown transform: "+os.Args[2], maltego.UIM_FATAL)
+		fmt.Println(trx.ReturnOutput())
+		//log.Fatal("unknown transform: ", os.Args[2])
+		return
 	}
 }

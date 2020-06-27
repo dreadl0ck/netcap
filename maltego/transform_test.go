@@ -2,6 +2,7 @@ package maltego
 
 import (
 	"encoding/xml"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,8 +18,8 @@ var transforms = []TransformCoreInfo{
 	{"ToCookiesValues", "netcap.HTTPCookie", "Retrieve values for a given cookie identifier"},
 	{"ToDHCP", "netcap.IPAddr", "Fetch DHCP options for host"},
 	{"ToDNSQuestions", "netcap.IPAddr", "Show all captured DNS questions for the selected host"},
-	{"ToDeviceContacts", "netcap.Device", "Get contacts for a device"},
-	{"ToDeviceIPs", "netcap.Device", "Get all IPs that the device has been using"},
+	{"ToDestinationIPs", "netcap.Device", "Get destination hosts seen for the selected device"},
+	{"ToSourceIPs", "netcap.Device", "Get all IPs that the device has been using"},
 	{"ToDeviceProfiles", "netcap.PCAP", "Get profiles for devices from network packet captures"},
 	{"ToDeviceProfilesWithDPI", "netcap.PCAP", "Retrieve device profiles with DPI enabled"},
 	{"ToDstPorts", "netcap.IPAddr", "Retrieve all destination ports seen for the selected host"},
@@ -34,7 +35,7 @@ var transforms = []TransformCoreInfo{
 	{"ToHTTPParameters", "netcap.IPAddr", "Retrieve HTTP parameters"},
 	{"ToHTTPServerNames", "netcap.IPAddr", "Retrieve the server names that have been contacted by the selected host"},
 	{"ToHTTPStatusCodes", "netcap.IPAddr", "Show all HTTP status codes observed for the selected host"},
-	{"ToHTTPURLs", "netcap.IPAddr", "Retrieve all URLs seen for the selected host"},
+	{"ToURLsForHost", "netcap.IPAddr", "Retrieve all URLs seen for the selected host"},
 	{"ToHTTPUserAgents", "netcap.IPAddr", "Retrieve all HTTP user agents seen from the selected host"},
 	{"ToIncomingFlowsFiltered", "netcap.IPAddr", "Show all incoming flows filtered against the configured whitelist"},
 	{"ToMailAuthToken", "netcap.IPAddr", "Retrieve POP3 auth tokens"},
@@ -46,7 +47,7 @@ var transforms = []TransformCoreInfo{
 	{"ToOutgoingFlowsFiltered", "netcap.IPAddr", "Show all outgoing flows filtered against the configured whitelist"},
 	{"ToParameterValues", "netcap.HTTPParameter", "Retrieve all values seen for an HTTP parameter"},
 	{"ToParametersForHTTPHost", "maltego.Website", "Retrieve HTTP params for a host"},
-	{"ToSNIs", "netcap.IPAddr", "Retrieve the TLS Server Name Indicators seen for the selected host"},
+	{"ToServerNameIndicators", "netcap.IPAddr", "Retrieve the TLS Server Name Indicators seen for the selected host"},
 	{"ToSrcPorts", "netcap.IPAddr", "Retrieve all source ports seen for the selected host"},
 	{"ToURLsForHTTPHost", "maltego.Website", "Retrieve all urls for a given host"},
 	{"ToAuditRecords", "netcap.PCAP", "Transform PCAP file into audit records"},
@@ -99,6 +100,33 @@ func TestToTransformDisplayName(t *testing.T) {
 	if res != "To TCP Services [NETCAP]" {
 		t.Fatal("unexpected result", res)
 	}
+
+	res = toTransformDisplayName("ToDHCP")
+	if res != "To DHCP [NETCAP]" {
+		t.Fatal("unexpected result", res)
+	}
+
+	res = toTransformDisplayName("ToServerNameIndicators")
+	if res != "To Server Name Indicators [NETCAP]" {
+		t.Fatal("unexpected result", res)
+	}
+
+	res = toTransformDisplayName("ToURLsForHost")
+	if res != "To URLs For Host [NETCAP]" {
+		t.Fatal("unexpected result", res)
+	}
+
+	res = toTransformDisplayName("ToSourceIPs")
+	if res != "To Source IPs [NETCAP]" {
+		t.Fatal("unexpected result", res)
+	}
+}
+
+func TestGenerateAllTransformNames(t *testing.T) {
+	for _, t := range transforms {
+		fmt.Println(toTransformDisplayName(t.ID))
+	}
+	fmt.Println(len(transforms), "transforms")
 }
 
 func genServerListing() {
