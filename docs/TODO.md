@@ -6,10 +6,11 @@ fix maltego permissions:
     sudo chown -R $USER /Applications/Maltego.app
     sudo chown -R $USER "/Users/$USER/Library/Application Support/maltego"
 
-- ensure using Service and software audit records work also when not all DBs are available
-- generate entity and transform XML ..
+- fix sofware audit record duplication
+- add Viewlets and Machines
+- fix timestamps in maltego XML generation code
 
-<MaltegoEntity id="netcap.DHCPClient" displayName="DHCPClient" displayNamePlural="DHCPClients" description="A DHCP client" category="Netcap" smallIconResource="Technology/WAN" largeIconResource="Technology/WAN" allowedRoot="true" conversionOrder="2147483647" visible="true">
+- ensure using Service and software audit records work also when not all DBs are available
 
 ## v0.5 Documentantion
 

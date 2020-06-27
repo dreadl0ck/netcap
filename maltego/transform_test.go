@@ -90,6 +90,7 @@ func TestGenerateAllTransforms(t *testing.T) {
 	}
 
 	genServerListing()
+	genTransformSet()
 	packTransformArchive()
 
 	copyFile("transforms.mtz", filepath.Join(os.Getenv("HOME"), "transforms.mtz"))
@@ -167,6 +168,44 @@ func genServerListing() {
 	}
 
 	f, err := os.Create(filepath.Join("transforms", "Servers", "Local.tas"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = f.Write(data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = f.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func genTransformSet() {
+
+	set := TransformSet{
+		Name:        "NETCAP",
+		Description: "Transformations on NETCAP audit records",
+	}
+
+	for _, t := range transforms {
+		set.Transforms.Transform = append(set.Transforms.Transform, struct {
+			Text string `xml:",chardata"`
+			Name string `xml:"name,attr"`
+		}{
+			Name: netcapPrefix + t.ID,
+		})
+	}
+
+	data, err := xml.MarshalIndent(set, "", " ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	os.MkdirAll(filepath.Join("transforms", "TransformSets"), 0700)
+	f, err := os.Create(filepath.Join("transforms", "TransformSets", "netcap.set"))
 	if err != nil {
 		log.Fatal(err)
 	}
