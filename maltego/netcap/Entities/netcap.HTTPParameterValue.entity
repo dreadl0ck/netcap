@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.HTTPParameterValue" displayName="HTTPParameterValue" displayNamePlural="HTTPParameterValues" description="A HTTP request parameter value" category="Netcap" smallIconResource="Netcap/settings_ethernet" largeIconResource="Netcap/settings_ethernet" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.httpparametervalue" displayValue="properties.httpparametervalue">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.httpparametervalue" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="HTTPParameterValue">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

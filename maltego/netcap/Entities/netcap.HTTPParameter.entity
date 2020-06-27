@@ -1,0 +1,13 @@
+<MaltegoEntity id="netcap.HTTPParameter" displayName="HTTPParameter" displayNamePlural="HTTPParameter" description="" category="Netcap" smallIconResource="Netcap/live_help" largeIconResource="Netcap/live_help" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities>
+  <Entities>A HTTP request parameter name</Entities>
+ </BaseEntities>
+ <Properties value="properties.httpparameter" displayValue="properties.httpparameter">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.httpparameter" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="HTTPParameter">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

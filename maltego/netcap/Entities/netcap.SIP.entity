@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.SIP" displayName="SIP" displayNamePlural="SIP" description="" category="Netcap" smallIconResource="Netcap/SIP" largeIconResource="Netcap/SIP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.sip" displayValue="properties.sip">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.sip" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="SIP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

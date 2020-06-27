@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.LinkLayerDiscovery" displayName="LinkLayerDiscovery" displayNamePlural="LinkLayerDiscoveries" description="" category="Netcap" smallIconResource="Netcap/LinkLayerDiscovery" largeIconResource="Netcap/LinkLayerDiscovery" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.linklayerdiscovery" displayValue="properties.linklayerdiscovery">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.linklayerdiscovery" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="LinkLayerDiscovery">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

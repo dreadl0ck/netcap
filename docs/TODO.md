@@ -5,7 +5,23 @@ fix maltego permissions:
     sudo chown -R $USER /Library/Java/JavaVirtualMachines
     sudo chown -R $USER /Applications/Maltego.app
     sudo chown -R $USER "/Users/$USER/Library/Application Support/maltego"
+    
+transforms:
+- on netcap.PCAP: Open Netcap Folder In Terminal
+- on netcap.Service: To Hosts 
+on audit record archives:
+- on TLSHellos: To HASSH Fingerprints 
+- on TCP/UDP: To Hosts, To Ports, To Streams
+- on POP3: To Mail Users
+- on IP: To Source IPs, To Destination IPs
+- on Ethernet: To Hardware Addresses
+- on ARP: To Hardware Addresses
+- on Connection: To Connections, To Top Ten Connections, To IANA Services
+- on DHCPv6: To Devices
+- on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
+- on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
 
+- live capture: give proper error when interface name is not present or wrong
 - fix sofware audit record duplication
 - add Viewlets and Machines
 - fix timestamps in maltego XML generation code

@@ -1,0 +1,13 @@
+<MaltegoEntity id="netcap.LLCAuditRecords" displayName="LLCAuditRecords" displayNamePlural="LLCAuditRecords" description="An archive of LLC audit records" category="Netcap" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.llcauditrecords" displayValue="properties.llcauditrecords">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.llcauditrecords" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="LLCAuditRecords">
+    <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Path">
+    <SampleValue></SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

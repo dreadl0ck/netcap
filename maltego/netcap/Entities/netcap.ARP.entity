@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.ARP" displayName="ARP" displayNamePlural="ARP" description="" category="Netcap" smallIconResource="Netcap/ARP" largeIconResource="Netcap/ARP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.arp" displayValue="properties.arp">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.arp" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="ARP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

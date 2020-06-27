@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.ICMPv6RouterAdvertisement" displayName="ICMPv6RouterAdvertisement" displayNamePlural="ICMPv6RouterAdvertisements" description="" category="Netcap" smallIconResource="Netcap/ICMPv6RouterAdvertisement" largeIconResource="Netcap/ICMPv6RouterAdvertisement" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.icmpv6routeradvertisement" displayValue="properties.icmpv6routeradvertisement">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.icmpv6routeradvertisement" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="ICMPv6RouterAdvertisement">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

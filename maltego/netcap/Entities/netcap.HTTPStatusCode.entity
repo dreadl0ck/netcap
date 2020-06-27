@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.HTTPStatusCode" displayName="HTTPStatusCode" displayNamePlural="HTTPStatusCodes" description="A HTTP server response code" category="Netcap" smallIconResource="Netcap/highlight" largeIconResource="Netcap/highlight" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.httpstatuscode" displayValue="properties.httpstatuscode">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.httpstatuscode" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="HTTPStatusCode">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

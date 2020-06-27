@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.Dot11" displayName="Dot11" displayNamePlural="Dot11" description="" category="Netcap" smallIconResource="Netcap/Dot11" largeIconResource="Netcap/Dot11" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.dot11" displayValue="properties.dot11">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.dot11" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Dot11">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

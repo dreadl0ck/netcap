@@ -35,8 +35,8 @@ func ToFilesForContentType() {
 						ent = trx.AddEntity("maltego.Image", escapedName)
 						ent.SetType("maltego.Image")
 					} else {
-						ent = trx.AddEntity("maltego.File", escapedName)
-						ent.SetType("maltego.File")
+						ent = trx.AddEntity("netcap.File", escapedName)
+						ent.SetType("netcap.File")
 					}
 
 					ent.SetValue(escapedName + "\n" + file.ContentType)

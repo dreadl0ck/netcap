@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.UDP" displayName="UDP" displayNamePlural="UDP" description="" category="Netcap" smallIconResource="Netcap/UDP" largeIconResource="Netcap/UDP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.udp" displayValue="properties.udp">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.udp" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="UDP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

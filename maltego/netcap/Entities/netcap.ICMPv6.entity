@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.ICMPv6" displayName="ICMPv6" displayNamePlural="ICMPv6" description="" category="Netcap" smallIconResource="Netcap/ICMPv6" largeIconResource="Netcap/ICMPv6" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.icmpv6" displayValue="properties.icmpv6">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.icmpv6" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="ICMPv6">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

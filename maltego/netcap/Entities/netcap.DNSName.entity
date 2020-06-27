@@ -1,0 +1,13 @@
+<MaltegoEntity id="netcap.DNSName" displayName="DNSName" displayNamePlural="DNSNames" description="A DNS Name" category="Netcap" smallIconResource="Netcap/dns" largeIconResource="Netcap/dns" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <BaseEntities>
+  <Entities>maltego.DNSName</Entities>
+ </BaseEntities>
+ <Properties value="properties.dnsname" displayValue="properties.dnsname">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.dnsname" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="DNSName">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

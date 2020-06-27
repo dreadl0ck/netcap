@@ -1,0 +1,13 @@
+<MaltegoEntity id="netcap.VRRPAuditRecords" displayName="VRRPAuditRecords" displayNamePlural="VRRPAuditRecords" description="An archive of VRRP audit records" category="Netcap" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.vrrpauditrecords" displayValue="properties.vrrpauditrecords">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.vrrpauditrecords" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="VRRPAuditRecords">
+    <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Path">
+    <SampleValue></SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.IPv6HopByHop" displayName="IPv6HopByHop" displayNamePlural="IPv6HopByHop" description="" category="Netcap" smallIconResource="Netcap/IPv6HopByHop" largeIconResource="Netcap/IPv6HopByHop" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.ipv6hopbyhop" displayValue="properties.ipv6hopbyhop">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.ipv6hopbyhop" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="IPv6HopByHop">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

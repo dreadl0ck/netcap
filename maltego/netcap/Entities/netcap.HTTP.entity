@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.HTTP" displayName="HTTP" displayNamePlural="HTTP" description="" category="Netcap" smallIconResource="Netcap/HTTP" largeIconResource="Netcap/HTTP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.http" displayValue="properties.http">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.http" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="HTTP">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

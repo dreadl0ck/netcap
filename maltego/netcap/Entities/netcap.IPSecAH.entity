@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.IPSecAH" displayName="IPSecAH" displayNamePlural="IPSecAH" description="" category="Netcap" smallIconResource="Netcap/IPSecAH" largeIconResource="Netcap/IPSecAH" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.ipsecah" displayValue="properties.ipsecah">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.ipsecah" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="IPSecAH">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

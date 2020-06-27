@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.Diameter" displayName="Diameter" displayNamePlural="Diameter" description="" category="Netcap" smallIconResource="Netcap/Diameter" largeIconResource="Netcap/Diameter" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.diameter" displayValue="properties.diameter">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.diameter" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Diameter">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

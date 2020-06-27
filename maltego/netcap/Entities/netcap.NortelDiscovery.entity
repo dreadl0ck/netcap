@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.NortelDiscovery" displayName="NortelDiscovery" displayNamePlural="NortelDiscoveries" description="" category="Netcap" smallIconResource="Netcap/NortelDiscovery" largeIconResource="Netcap/NortelDiscovery" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.norteldiscovery" displayValue="properties.norteldiscovery">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.norteldiscovery" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="NortelDiscovery">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

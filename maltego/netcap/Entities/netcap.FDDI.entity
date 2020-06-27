@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.FDDI" displayName="FDDI" displayNamePlural="FDDI" description="" category="Netcap" smallIconResource="Netcap/FDDI" largeIconResource="Netcap/FDDI" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.fddi" displayValue="properties.fddi">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.fddi" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="FDDI">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

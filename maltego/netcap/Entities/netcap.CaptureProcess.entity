@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.CaptureProcess" displayName="CaptureProcess" displayNamePlural="CaptureProcess" description="An operating system NETCAP process that captures traffic from a network interface" category="Netcap" smallIconResource="Netcap/remove_red_eye" largeIconResource="Netcap/remove_red_eye" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.captureprocess" displayValue="properties.captureprocess">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.captureprocess" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="CaptureProcess">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

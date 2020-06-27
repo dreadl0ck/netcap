@@ -3,9 +3,11 @@ package maltego
 import (
 	"encoding/xml"
 	"fmt"
+	"github.com/dreadl0ck/netcap/encoder"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -79,18 +81,91 @@ var transforms = []TransformCoreInfo{
 	{"StopCaptureProcess", "netcap.CaptureProcess", "Stop the NETCAP capture process"},
 }
 
+func genFullConfigArchive() {
+
+	// clean
+	os.RemoveAll("netcap")
+
+	// create directories
+	os.MkdirAll("netcap/Servers", 0700)
+	os.MkdirAll("netcap/TransformRepositories/Local", 0700)
+
+	// create directories
+	os.MkdirAll("netcap/Entities", 0700)
+	os.MkdirAll("netcap/EntityCategories", 0700)
+	os.MkdirAll("netcap/Icons", 0700)
+
+	fVersion, err := os.Create("netcap/version.properties")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fVersion.Close()
+
+	fCategory, err := os.Create("netcap/EntityCategories/netcap.category")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fCategory.Close()
+
+	fVersion.WriteString(`#
+#Sat Jun 13 21:48:54 CEST 2020
+maltego.client.version=4.2.11.13104
+maltego.client.subtitle=
+maltego.pandora.version=1.4.2
+maltego.client.name=Maltego Classic Eval
+maltego.mtz.version=1.0
+maltego.graph.version=1.2`)
+
+	fCategory.WriteString("<EntityCategory name=\"Netcap\"/>")
+
+	fmt.Println("bootstrapped netcap configuration archive for Maltego")
+}
+
+// generate all transforms and pack as archive
+func TestGenerateFullMaltegoConfiguration(t *testing.T) {
+
+	genFullConfigArchive()
+
+	// generate additional entities
+	for _, e := range entities {
+		genEntity("netcap", e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
+	}
+
+	// generate entities for audit records
+	// *AuditRecords entity and an entity for the actual audit record instance
+	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
+		genEntity("netcap", e.Name+"AuditRecords", "insert_drive_file", "An archive of "+e.Name+" audit records", "", newStringField("path"))
+		genEntity("netcap", e.Name, e.Name, e.Description, "")
+	})
+
+	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
+		name := strings.ReplaceAll(e.Layer.String(), "/", "")
+		genEntity("netcap", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path"))
+		genEntity("netcap", name, name, e.Description, "")
+	})
+
+	for _, t := range transforms {
+		genTransform("netcap", t.ID, t.Description, t.InputEntity)
+	}
+
+	genServerListing("netcap")
+	genTransformSet("netcap")
+	packMaltegoArchive("netcap")
+
+	copyFile("netcap.mtz", filepath.Join(os.Getenv("HOME"), "netcap.mtz"))
+}
+
 // generate all transforms and pack as archive
 func TestGenerateAllTransforms(t *testing.T) {
 
 	genTransformArchive()
 
-	// generate additional entities
 	for _, t := range transforms {
-		genTransform(t.ID, t.Description, t.InputEntity)
+		genTransform("transforms", t.ID, t.Description, t.InputEntity)
 	}
 
-	genServerListing()
-	genTransformSet()
+	genServerListing("transforms")
+	genTransformSet("transforms")
 	packTransformArchive()
 
 	copyFile("transforms.mtz", filepath.Join(os.Getenv("HOME"), "transforms.mtz"))
@@ -130,7 +205,7 @@ func TestGenerateAllTransformNames(t *testing.T) {
 	fmt.Println(len(transforms), "transforms")
 }
 
-func genServerListing() {
+func genServerListing(outDir string) {
 
 	srv := Server{
 		Name:        "Local",
@@ -167,7 +242,7 @@ func genServerListing() {
 		log.Fatal(err)
 	}
 
-	f, err := os.Create(filepath.Join("transforms", "Servers", "Local.tas"))
+	f, err := os.Create(filepath.Join(outDir, "Servers", "Local.tas"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -183,7 +258,7 @@ func genServerListing() {
 	}
 }
 
-func genTransformSet() {
+func genTransformSet(outDir string) {
 
 	set := TransformSet{
 		Name:        "NETCAP",
@@ -204,7 +279,7 @@ func genTransformSet() {
 		log.Fatal(err)
 	}
 
-	os.MkdirAll(filepath.Join("transforms", "TransformSets"), 0700)
+	os.MkdirAll(filepath.Join(outDir, "TransformSets"), 0700)
 	f, err := os.Create(filepath.Join("transforms", "TransformSets", "netcap.set"))
 	if err != nil {
 		log.Fatal(err)

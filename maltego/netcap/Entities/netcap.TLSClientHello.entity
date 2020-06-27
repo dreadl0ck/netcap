@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.TLSClientHello" displayName="TLSClientHello" displayNamePlural="TLSClientHello" description="" category="Netcap" smallIconResource="Netcap/TLSClientHello" largeIconResource="Netcap/TLSClientHello" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.tlsclienthello" displayValue="properties.tlsclienthello">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.tlsclienthello" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="TLSClientHello">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

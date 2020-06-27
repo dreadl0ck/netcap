@@ -1,0 +1,10 @@
+<MaltegoEntity id="netcap.IPv6Fragment" displayName="IPv6Fragment" displayNamePlural="IPv6Fragments" description="" category="Netcap" smallIconResource="Netcap/IPv6Fragment" largeIconResource="Netcap/IPv6Fragment" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.ipv6fragment" displayValue="properties.ipv6fragment">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.ipv6fragment" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="IPv6Fragment">
+    <SampleValue>-</SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+</MaltegoEntity>

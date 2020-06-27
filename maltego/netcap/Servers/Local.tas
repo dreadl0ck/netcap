@@ -1,0 +1,72 @@
+<MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
+ <LastSync>2020-06-23 20:47:24.433 CEST</LastSync>
+ <Protocol version="0.0"></Protocol>
+ <Authentication type="none"></Authentication>
+ <Transforms>
+  <Transform name="netcap.ToApplicationCategories"></Transform>
+  <Transform name="netcap.ToApplications"></Transform>
+  <Transform name="netcap.ToApplicationsForCategory"></Transform>
+  <Transform name="netcap.ToCookiesForHTTPHost"></Transform>
+  <Transform name="netcap.ToCookiesValues"></Transform>
+  <Transform name="netcap.ToDHCP"></Transform>
+  <Transform name="netcap.ToDNSQuestions"></Transform>
+  <Transform name="netcap.ToDestinationIPs"></Transform>
+  <Transform name="netcap.ToSourceIPs"></Transform>
+  <Transform name="netcap.ToDeviceProfiles"></Transform>
+  <Transform name="netcap.ToDeviceProfilesWithDPI"></Transform>
+  <Transform name="netcap.ToDstPorts"></Transform>
+  <Transform name="netcap.ToFileType"></Transform>
+  <Transform name="netcap.ToFileTypes"></Transform>
+  <Transform name="netcap.ToFiles"></Transform>
+  <Transform name="netcap.ToFilesForContentType"></Transform>
+  <Transform name="netcap.ToGeolocation"></Transform>
+  <Transform name="netcap.ToHTTPContentTypes"></Transform>
+  <Transform name="netcap.ToHTTPCookies"></Transform>
+  <Transform name="netcap.ToHTTPHosts"></Transform>
+  <Transform name="netcap.ToHTTPHostsFiltered"></Transform>
+  <Transform name="netcap.ToHTTPParameters"></Transform>
+  <Transform name="netcap.ToHTTPServerNames"></Transform>
+  <Transform name="netcap.ToHTTPStatusCodes"></Transform>
+  <Transform name="netcap.ToURLsForHost"></Transform>
+  <Transform name="netcap.ToHTTPUserAgents"></Transform>
+  <Transform name="netcap.ToIncomingFlowsFiltered"></Transform>
+  <Transform name="netcap.ToMailAuthToken"></Transform>
+  <Transform name="netcap.ToMailFrom"></Transform>
+  <Transform name="netcap.ToMailTo"></Transform>
+  <Transform name="netcap.ToMailUserPassword"></Transform>
+  <Transform name="netcap.ToMailUsers"></Transform>
+  <Transform name="netcap.ToMails"></Transform>
+  <Transform name="netcap.ToOutgoingFlowsFiltered"></Transform>
+  <Transform name="netcap.ToParameterValues"></Transform>
+  <Transform name="netcap.ToParametersForHTTPHost"></Transform>
+  <Transform name="netcap.ToServerNameIndicators"></Transform>
+  <Transform name="netcap.ToSrcPorts"></Transform>
+  <Transform name="netcap.ToURLsForHTTPHost"></Transform>
+  <Transform name="netcap.ToAuditRecords"></Transform>
+  <Transform name="netcap.ToCaptureProcess"></Transform>
+  <Transform name="netcap.ToDHCPClients"></Transform>
+  <Transform name="netcap.ToDNSQuestions"></Transform>
+  <Transform name="netcap.ToFetchedMails"></Transform>
+  <Transform name="netcap.ToFileTypes"></Transform>
+  <Transform name="netcap.ToHTTPHostnames"></Transform>
+  <Transform name="netcap.ToIANAServices"></Transform>
+  <Transform name="netcap.ToLiveAuditRecords"></Transform>
+  <Transform name="netcap.ToLoginInformation"></Transform>
+  <Transform name="netcap.ToProducts"></Transform>
+  <Transform name="netcap.ToSSHClients"></Transform>
+  <Transform name="netcap.ToSSHServers"></Transform>
+  <Transform name="netcap.ToSoftwareExploits"></Transform>
+  <Transform name="netcap.ToSoftwareVulnerabilities"></Transform>
+  <Transform name="netcap.ToTCPServices"></Transform>
+  <Transform name="netcap.ToUDPServices"></Transform>
+  <Transform name="netcap.ToDevices"></Transform>
+  <Transform name="netcap.OpenExploit"></Transform>
+  <Transform name="netcap.OpenFile"></Transform>
+  <Transform name="netcap.OpenFolder"></Transform>
+  <Transform name="netcap.OpenNetcapFolder"></Transform>
+  <Transform name="netcap.OpenVulnerability"></Transform>
+  <Transform name="netcap.LookupDHCPFingerprint"></Transform>
+  <Transform name="netcap.StopCaptureProcess"></Transform>
+ </Transforms>
+ <Seeds></Seeds>
+</MaltegoServer>
