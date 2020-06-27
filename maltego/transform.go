@@ -171,11 +171,20 @@ func toTransformDisplayName(in string) string {
 		switch {
 		// if current char is upper case, but the previous is lowercase
 		case i > 0 && unicode.IsUpper(c) && unicode.IsLower(rune(in[i-1])):
+
 			b.WriteRune(' ')
 			b.WriteRune(c)
 
 		// if current char is upper case, and the next is Lowercase
 		case unicode.IsUpper(c) && len(in) > i+1 && unicode.IsLower(rune(in[i+1])):
+
+			// if the next char is followed by an uppercase char
+			// or the string ends
+			if len(in) > i+2 && unicode.IsUpper(rune(in[i+2])) || len(in) == i+2 {
+				b.WriteRune(c)
+				continue
+			}
+
 			b.WriteRune(' ')
 			b.WriteRune(c)
 

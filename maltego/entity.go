@@ -83,6 +83,7 @@ type EntityCoreInfo struct {
 	Icon        string
 	Description string
 	Parent      string
+	Fields 		[]PropertyField
 	// Fields string TODO: extra fields
 }
 
@@ -154,6 +155,19 @@ func newStringField(name string) PropertyField {
 		Hidden:      false,
 		Readonly:    false,
 		Description: "",
+		DisplayName: strings.Title(name),
+		SampleValue: "",
+	}
+}
+
+func newRequiredStringField(name string, description string) PropertyField {
+	return PropertyField{
+		Name:        strings.ToLower(name),
+		Type:        "string",
+		Nullable:    false,
+		Hidden:      false,
+		Readonly:    false,
+		Description: description,
 		DisplayName: strings.Title(name),
 		SampleValue: "",
 	}

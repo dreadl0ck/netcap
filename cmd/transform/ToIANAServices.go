@@ -28,9 +28,10 @@ func ToIANAServices() {
 
 			service := resolvers.LookupServiceByPort(i, strings.ToLower(flow.TransportProto))
 			if service != "" {
-				ent := trx.AddEntity("netcap.Service", service)
+				val := maltego.EscapeText(service)
+				ent := trx.AddEntity("netcap.Service", val)
 				ent.SetType("netcap.Service")
-				ent.SetValue(service)
+				ent.SetValue(val)
 
 				ent.SetLinkLabel(humanize.Bytes(uint64(flow.TotalSize)))
 				ent.SetLinkColor("#000000")
