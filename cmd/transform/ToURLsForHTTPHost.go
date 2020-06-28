@@ -17,8 +17,8 @@ func ToURLsForHTTPHost() {
 						bareURL := http.Host + StripQueryString(http.URL)
 						log.Println(bareURL)
 
-						ent := trx.AddEntity("maltego.URL", bareURL)
-						ent.SetType("maltego.URL")
+						ent := trx.AddEntity("netcap.URL", bareURL)
+						ent.SetType("netcap.URL")
 						ent.SetValue(bareURL)
 
 						ent.AddProperty("url", "URL", "strict", bareURL)

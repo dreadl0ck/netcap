@@ -7,9 +7,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 )
+
+// can be used to set the debug mode for all generated maltego transforms
+const transformDebug = false
 
 // Transforms
 
@@ -210,7 +214,7 @@ func toTransformDisplayName(in string) string {
 	return strings.TrimSpace(b.String() + " [NETCAP]")
 }
 
-func newTransformSettings(id string) TransformSettings {
+func newTransformSettings(id string, debug bool) TransformSettings {
 
 	trs := TransformSettings{
 		Enabled:            true,
@@ -242,7 +246,7 @@ func newTransformSettings(id string) TransformSettings {
 					Name:  "transform.local.debug",
 					Type:  "boolean",
 					Popup: false,
-					Text:  "true",
+					Text:  strconv.FormatBool(debug),
 				},
 			},
 		},
@@ -382,7 +386,7 @@ func genTransform(outDir string, name string, description string, inputEntity st
 
 	var (
 		tr  = newTransform(name, description, inputEntity)
-		trs = newTransformSettings(name)
+		trs = newTransformSettings(name, transformDebug)
 	)
 
 	// write Transform

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.InternalContact" displayName="InternalContact" displayNamePlural="InternalContacts" description="An internal destination address" category="Netcap" smallIconResource="Netcap/cloud_upload" largeIconResource="Netcap/cloud_upload" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.InternalContact" displayName="InternalContact" displayNamePlural="InternalContacts" description="An internal destination address" category="Netcap" smallIconResource="Netcap/cloud_download" largeIconResource="Netcap/cloud_download" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <BaseEntities>
   <Entities>netcap.IPAddr</Entities>
  </BaseEntities>
