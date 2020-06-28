@@ -56,6 +56,7 @@ type ServiceProbe struct {
 	RegEx           *regexp.Regexp
 	RegExDotNet     *regexp2.Regexp
 	RegExRaw        string
+	Product         string
 	Vendor          string
 	Version         string
 	Info            string
@@ -134,18 +135,12 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
-				serv.Product = addInfo(serv.Product, serviceProbe.Ident)
-				serv.Vendor = addInfo(serv.Vendor, serviceProbe.Vendor)
-				serv.Hostname = addInfo(serv.Hostname, serviceProbe.Hostname)
-				serv.OS = addInfo(serv.Hostname, serviceProbe.OS)
-				serv.Version = addInfo(serv.Version, serviceProbe.Version)
-
-				// extract groups
-				extractGroup(&serv.Vendor, m)
-				extractGroup(&serv.Version, m)
-				extractGroup(&serv.Hostname, m)
-				extractGroup(&serv.Product, m)
-				extractGroup(&serv.OS, m)
+				serv.Product = addInfo(serv.Product, extractGroup(&serviceProbe.Product, m))
+				// TODO: add info from cpe during service probe parsing
+				//serv.Vendor = addInfo(serv.Vendor, extractGroup(&serviceProbe.Vendor, m))
+				serv.Hostname = addInfo(serv.Hostname, extractGroup(&serviceProbe.Hostname, m))
+				serv.OS = addInfo(serv.OS, extractGroup(&serviceProbe.OS, m))
+				serv.Version = addInfo(serv.Version, extractGroup(&serviceProbe.Version, m))
 
 				if c.Debug {
 					fmt.Println("\n\nMATCH!", ident)
@@ -158,18 +153,12 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 			if m, err := serviceProbe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
-				serv.Product = addInfo(serv.Product, serviceProbe.Ident)
-				serv.Vendor = addInfo(serv.Vendor, serviceProbe.Vendor)
-				serv.Hostname = addInfo(serv.Hostname, serviceProbe.Hostname)
-				serv.OS = addInfo(serv.Hostname, serviceProbe.OS)
-				serv.Version = addInfo(serv.Version, serviceProbe.Version)
-
-				// extract groups
-				extractGroupDotNet(&serv.Vendor, m)
-				extractGroupDotNet(&serv.Version, m)
-				extractGroupDotNet(&serv.Hostname, m)
-				extractGroupDotNet(&serv.Product, m)
-				extractGroupDotNet(&serv.OS, m)
+				serv.Product = addInfo(serv.Product, extractGroupDotNet(&serviceProbe.Product, m))
+				// TODO: add info from cpe during service probe parsing
+				//serv.Vendor = addInfo(serv.Vendor, extractGroupDotNet(&serviceProbe.Vendor, m))
+				serv.Hostname = addInfo(serv.Hostname, extractGroupDotNet(&serviceProbe.Hostname, m))
+				serv.OS = addInfo(serv.OS, extractGroupDotNet(&serviceProbe.OS, m))
+				serv.Version = addInfo(serv.Version, extractGroupDotNet(&serviceProbe.Version, m))
 
 				if c.Debug {
 					fmt.Println("\nMATCH!", ident)
@@ -184,32 +173,34 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 
 var reGroup = regexp.MustCompile("\\$[0-9]+")
 
-func extractGroup(in *string, m []string) {
+func extractGroup(in *string, m []string) string {
 	if strings.Contains(*in, "$") {
 		g := reGroup.FindString(*in)
 		if len(g) == 2 {
 			index, err := strconv.Atoi(string(g[1]))
 			if err == nil {
 				if len(m) > index {
-					*in = strings.Replace(*in, g, m[index], 1)
+					return strings.Replace(*in, g, m[index], 1)
 				}
 			}
 		}
 	}
+	return *in
 }
 
-func extractGroupDotNet(in *string, m *regexp2.Match) {
+func extractGroupDotNet(in *string, m *regexp2.Match) string {
 	if strings.Contains(*in, "$") {
 		g := reGroup.FindString(*in)
 		if len(g) == 2 {
 			index, err := strconv.Atoi(string(g[1]))
 			if err == nil {
 				if len(m.Groups()) > index {
-					*in = strings.Replace(*in, g, m.Groups()[index].Captures[0].String(), 1)
+					return strings.Replace(*in, g, m.Groups()[index].Captures[0].String(), 1)
 				}
 			}
 		}
 	}
+	return *in
 }
 
 // only parse the match directive for now.
@@ -341,7 +332,7 @@ func InitProbes() error {
 					var errParse error
 					switch string(b) {
 					case "p":
-						s.Vendor, errParse = parseVersionInfo(r)
+						s.Product, errParse = parseVersionInfo(r)
 						if errParse != nil {
 							return errParse
 						}
