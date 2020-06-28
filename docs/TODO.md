@@ -10,17 +10,18 @@ transforms:
 - on netcap.PCAP: Open Netcap Folder In Terminal
 - on netcap.Service: To Hosts 
 on audit record archives:
-- on TLSHellos: To HASSH Fingerprints 
+- on TLSHellos: To JA3 Fingerprints
 - on TCP/UDP: To Hosts, To Ports, To Streams
 - on POP3: To Mail Users
 - on IP: To Source IPs, To Destination IPs
 - on Ethernet: To Hardware Addresses
 - on ARP: To Hardware Addresses
-- on Connection: To Connections, To Top Ten Connections, To IANA Services
+- on Connection: To Connections (src <-> dst format=?), To Connections with highest data transfer, To Connections with lowest data transfer, To IANA Services
 - on DHCPv6: To Devices
 - on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
 - on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
 
+- include machines into generated config archive
 - live capture: give proper error when interface name is not present or wrong
 - fix sofware audit record duplication
 - add Viewlets and Machines

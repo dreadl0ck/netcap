@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -36,6 +37,7 @@ var (
 		"sharp-remote":       {},
 		"crossmatchverifier": {},
 		"landesk-rc":         {},
+		"nagios-nsca":        {},
 	}
 
 	// ignored probes for other engine
@@ -104,7 +106,7 @@ func (s *ServiceProbe) String() string {
 	return b.String()
 }
 
-func writeSoftwareFromBanner(serv *Service, ident string) {
+func writeSoftwareFromBanner(serv *Service, ident string, probeIdent string) {
 	writeSoftware([]*Software{
 		{
 			Software: &types.Software{
@@ -112,7 +114,7 @@ func writeSoftwareFromBanner(serv *Service, ident string) {
 				Product:    serv.Product,
 				Vendor:     serv.Vendor,
 				Version:    serv.Version,
-				SourceName: "Service Probe Match",
+				SourceName: "Service Probe Match: " + probeIdent,
 				Service:    serv.Name,
 				Flows:      []string{ident},
 				Notes:      "Protocol: " + serv.Protocol,
@@ -143,11 +145,10 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 
 				if c.Debug {
 					fmt.Println("\n\nMATCH!", ident)
-					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
+					fmt.Println(serviceProbe, "\n\nSERVICE:\n" + proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
-				writeSoftwareFromBanner(serv, ident)
-
+				writeSoftwareFromBanner(serv, ident, serviceProbe.Ident)
 			}
 		} else { // use the .NET compatible regex implementation
 			if m, err := serviceProbe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
@@ -168,10 +169,10 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 
 				if c.Debug {
 					fmt.Println("\nMATCH!", ident)
-					fmt.Println(serviceProbe, "\nBanner:", "\n"+hex.Dump(banner))
+					fmt.Println(serviceProbe, "\n\nSERVICE:\n" + proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
-				writeSoftwareFromBanner(serv, ident)
+				writeSoftwareFromBanner(serv, ident, serviceProbe.Ident)
 			}
 		}
 	}
@@ -247,6 +248,17 @@ func parseVersionInfo(r *bytes.Reader) (string, error) {
 	return string(res), nil
 }
 
+var serviceProbeIdentEnums = make(map[string]int)
+func enumerate(in string) string {
+	if v, ok := serviceProbeIdentEnums[in]; ok {
+		serviceProbeIdentEnums[in]++
+		return in + "-" + strconv.Itoa(v+1)
+	} else {
+		serviceProbeIdentEnums[in] = 1
+		return in + "-1"
+	}
+}
+
 func InitProbes() error {
 	// load nmap service probes
 	data, err := ioutil.ReadFile("/usr/local/etc/netcap/dbs/nmap-service-probes")
@@ -264,6 +276,7 @@ func InitProbes() error {
 		}
 		if strings.HasPrefix(line, "match") {
 
+			// check if rule ident field has been excluded
 			ident := strings.Fields(line)[1]
 			if c.UseRE2 {
 				if _, ok := ignoredProbesRE2[ident]; ok {
@@ -286,7 +299,10 @@ func InitProbes() error {
 				parseMeta bool
 				s         = new(ServiceProbe)
 			)
-			s.Ident = ident
+
+			// enumerate the ident type (e.g: http -> http-1 for the first http banner probe)
+			// useful to see which rule matched exactly, since multiple rules for the same protocol / service are usually present
+			s.Ident = enumerate(ident)
 
 			for {
 				b, err := r.ReadByte()
