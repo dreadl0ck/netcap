@@ -1,11 +1,10 @@
 # TODOs
 
+- make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution 
+
 entities:
-- netcap.Domain
-- netcap.Location
-- netcap.URL
-- netcap.HTTPCookieValue
 - add different colors for Internal and External IPs
+- add different colors for audit record archives?
 transforms:
 - on netcap.PCAP: Open Netcap Folder In Terminal
 - on netcap.Service: To Hosts 

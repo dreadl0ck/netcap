@@ -22,10 +22,13 @@ var entities = []EntityCoreInfo{
 	{"Device", "devices", "A device seen on the network", "", nil},
 	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},
 	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
-	{"InternalContact", "cloud_upload", "An internal destination address", "netcap.IPAddr", nil},
+
+	// TODO: icons
 	{"InternalDeviceIP", "cloud_upload", "An internal source address", "netcap.IPAddr", nil},
+	{"ExternalDeviceIP", "cloud_upload", "An external source address", "netcap.IPAddr", nil},
+	{"InternalContact", "cloud_download", "An internal destination address", "netcap.IPAddr", nil},
 	{"ExternalContact", "cloud_download", "An external destination address", "netcap.IPAddr", nil},
-	{"ExternalDeviceIP", "cloud_download", "An external source address", "netcap.IPAddr", nil},
+
 	{"DHCPClient", "cast_connected", "A DHCP client", "", nil},
 	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", "", nil},
 	{"DestinationPort", "local_convenience_store", "A TCP / UDP destination port", "", nil},
@@ -43,6 +46,10 @@ var entities = []EntityCoreInfo{
 	{"Website", "web", "A HTTP Website", "maltego.Website", nil},
 	{"DNSName", "dns", "A DNS Name", "maltego.DNSName", nil},
 	{"File", "insert_drive_file", "A file", "maltego.File", nil},
+	{"Domain", "domain", "A domain", "maltego.Domain", nil},
+	{"Location", "location_on", "A location", "maltego.Location", nil},
+	{"URL", "open_in_browser", "A Uniform Resource Identifier", "maltego.URL", nil},
+	{"HTTPCookieValue", "info", "A HTTP cookie value", "", nil},
 }
 
 // generate all entities and pack as archive

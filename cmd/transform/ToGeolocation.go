@@ -33,8 +33,8 @@ func ToGeolocation() {
 }
 
 func addGeolocation(trx *maltego.MaltegoTransform, ip *types.IPProfile, min, max uint64) {
-	ent := trx.AddEntity("maltego.Location", ip.Geolocation)
-	ent.SetType("maltego.Location")
+	ent := trx.AddEntity("netcap.Location", ip.Geolocation)
+	ent.SetType("netcap.Location")
 	ent.SetValue(ip.Geolocation)
 
 	// di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"

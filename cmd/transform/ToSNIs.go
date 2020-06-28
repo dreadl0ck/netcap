@@ -14,8 +14,8 @@ func ToSNIs() {
 					if ip.Addr == ipaddr {
 						if len(ip.SNIs) != 0 {
 							for sni, count := range ip.SNIs {
-								ent := trx.AddEntity("maltego.Domain", sni)
-								ent.SetType("maltego.Domain")
+								ent := trx.AddEntity("netcap.Domain", sni)
+								ent.SetType("netcap.Domain")
 								ent.SetValue(sni)
 
 								// di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
@@ -30,8 +30,8 @@ func ToSNIs() {
 					if ip.Addr == ipaddr {
 						if len(ip.SNIs) != 0 {
 							for sni, count := range ip.SNIs {
-								ent := trx.AddEntity("maltego.Domain", sni)
-								ent.SetType("maltego.Domain")
+								ent := trx.AddEntity("netcap.Domain", sni)
+								ent.SetType("netcap.Domain")
 								ent.SetValue(sni)
 
 								// di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
