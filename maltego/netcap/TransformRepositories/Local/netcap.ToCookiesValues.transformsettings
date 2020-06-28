@@ -1,8 +1,0 @@
-<TransformSettings enabled="true" disclaimerAccepted="false" showHelp="true" runWithAll="true" favorite="false">
- <Properties>
-  <Property name="transform.local.command" type="string" popup="false">/usr/local/bin/net</Property>
-  <Property name="transform.local.parameters" type="string" popup="false">transform ToCookiesValues</Property>
-  <Property name="transform.local.working-directory" type="string" popup="false">/usr/local/</Property>
-  <Property name="transform.local.debug" type="boolean" popup="false">true</Property>
- </Properties>
-</TransformSettings>

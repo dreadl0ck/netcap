@@ -7,7 +7,7 @@
   <Transform name="netcap.ToApplications"></Transform>
   <Transform name="netcap.ToApplicationsForCategory"></Transform>
   <Transform name="netcap.ToCookiesForHTTPHost"></Transform>
-  <Transform name="netcap.ToCookiesValues"></Transform>
+  <Transform name="netcap.ToCookieValues"></Transform>
   <Transform name="netcap.ToDHCP"></Transform>
   <Transform name="netcap.ToDNSQuestions"></Transform>
   <Transform name="netcap.ToDestinationIPs"></Transform>

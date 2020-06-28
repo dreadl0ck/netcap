@@ -17,7 +17,7 @@ var transforms = []TransformCoreInfo{
 	{"ToApplications", "netcap.IPAddr", "Show all applications used by the selected host"},
 	{"ToApplicationsForCategory", "maltego.Service", "Retrieve applications seen for a given category"},
 	{"ToCookiesForHTTPHost", "maltego.Website", "Retrieve cookies seen for the given host"},
-	{"ToCookiesValues", "netcap.HTTPCookie", "Retrieve values for a given cookie identifier"},
+	{"ToCookieValues", "netcap.HTTPCookie", "Retrieve values for a given cookie identifier"},
 	{"ToDHCP", "netcap.IPAddr", "Fetch DHCP options for host"},
 	{"ToDNSQuestions", "netcap.IPAddr", "Show all captured DNS questions for the selected host"},
 	{"ToDestinationIPs", "netcap.Device", "Get destination hosts seen for the selected device"},
