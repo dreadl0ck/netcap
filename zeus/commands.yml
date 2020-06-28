@@ -258,3 +258,12 @@ commands:
             wget https://www.computec.ch/projekte/vulscan/download/xforce.csv
             echo "done, downloaded:"
             du -h vulnDBs
+
+    fix-maltego-permissions:
+        description: fix the permissions for Java and Maltego on macOS
+        help: Maltego requires certain paths to be owned by the current user, or the program will not start
+        exec: |
+            echo "changing ownership to the current user $USER, for system paths that are relevant to Maltego."
+            sudo chown -R $USER /Library/Java/JavaVirtualMachines
+            sudo chown -R $USER /Applications/Maltego.app
+            sudo chown -R $USER "/Users/$USER/Library/Application Support/maltego"

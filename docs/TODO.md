@@ -1,11 +1,5 @@
 # TODOs
 
-fix maltego permissions:
-    
-    sudo chown -R $USER /Library/Java/JavaVirtualMachines
-    sudo chown -R $USER /Applications/Maltego.app
-    sudo chown -R $USER "/Users/$USER/Library/Application Support/maltego"
-
 entities:
 - netcap.Domain
 - netcap.Location
@@ -26,6 +20,8 @@ on audit record archives:
 - on DHCPv6: To Devices
 - on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
 - on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
+
+- add service probe vendor infor by parsing cpe if present 
 
 - include machines into generated config archive
 - live capture: give proper error when interface name is not present or wrong
