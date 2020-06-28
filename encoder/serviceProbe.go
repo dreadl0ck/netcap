@@ -21,9 +21,11 @@ import (
 )
 
 var (
+	// all initialized service probes at runtime
 	serviceProbes []*ServiceProbe
 
-	// ignored probes for RE2 engine
+	// ignored probes for RE2 engine (RE2 does not support backtracking
+	// groups in regexes with backtracking will be replaced by wildcard groups)
 	ignoredProbesRE2 = map[string]struct{}{
 		"pc-duo-gw":          {},
 		"ventrilo":           {},
@@ -40,7 +42,7 @@ var (
 		"nagios-nsca":        {},
 	}
 
-	// ignored probes for other engine
+	// ignored probes for .NET compatible engine (supports backtracking)
 	ignoredProbes = map[string]struct{}{
 		"pc-duo-gw": {},
 		"ventrilo":  {},
@@ -48,6 +50,8 @@ var (
 	}
 )
 
+// ServiceProbe is a regex based probe to fingerprint a network service by looking at its banner
+// the term banner refers to the first X bytes of data (usually 512) that have been sent by the server
 type ServiceProbe struct {
 	RegEx           *regexp.Regexp
 	RegExDotNet     *regexp2.Regexp

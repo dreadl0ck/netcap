@@ -5,7 +5,13 @@ fix maltego permissions:
     sudo chown -R $USER /Library/Java/JavaVirtualMachines
     sudo chown -R $USER /Applications/Maltego.app
     sudo chown -R $USER "/Users/$USER/Library/Application Support/maltego"
-    
+
+entities:
+- netcap.Domain
+- netcap.Location
+- netcap.URL
+- netcap.HTTPCookieValue
+- add different colors for Internal and External IPs
 transforms:
 - on netcap.PCAP: Open Netcap Folder In Terminal
 - on netcap.Service: To Hosts 
