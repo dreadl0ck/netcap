@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/umisama/go-cpe"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -136,8 +137,7 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
 				serv.Product = addInfo(serv.Product, extractGroup(&serviceProbe.Product, m))
-				// TODO: add info from cpe during service probe parsing
-				//serv.Vendor = addInfo(serv.Vendor, extractGroup(&serviceProbe.Vendor, m))
+				serv.Vendor = addInfo(serv.Vendor, extractGroup(&serviceProbe.Vendor, m))
 				serv.Hostname = addInfo(serv.Hostname, extractGroup(&serviceProbe.Hostname, m))
 				serv.OS = addInfo(serv.OS, extractGroup(&serviceProbe.OS, m))
 				serv.Version = addInfo(serv.Version, extractGroup(&serviceProbe.Version, m))
@@ -154,8 +154,7 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
 				serv.Product = addInfo(serv.Product, extractGroupDotNet(&serviceProbe.Product, m))
-				// TODO: add info from cpe during service probe parsing
-				//serv.Vendor = addInfo(serv.Vendor, extractGroupDotNet(&serviceProbe.Vendor, m))
+				serv.Vendor = addInfo(serv.Vendor, extractGroupDotNet(&serviceProbe.Vendor, m))
 				serv.Hostname = addInfo(serv.Hostname, extractGroupDotNet(&serviceProbe.Hostname, m))
 				serv.OS = addInfo(serv.OS, extractGroupDotNet(&serviceProbe.OS, m))
 				serv.Version = addInfo(serv.Version, extractGroupDotNet(&serviceProbe.Version, m))
@@ -361,11 +360,28 @@ func InitProbes() error {
 						if errParse != nil {
 							return errParse
 						}
-					// TODO: handle cpe tags
 					case "c":
-						// ignore for now and stop parsing
-						//fmt.Println("got a c, likely cpe tag. ignoring for now.")
-						goto next
+
+						// Common Platform Enumeration Tags
+						var buf bytes.Buffer
+						buf.WriteString("c")
+
+						// read until the EOF of the line
+						for {
+							b, err := r.ReadByte()
+							if err == io.EOF {
+								// TODO: split by fields, might be multiple cpes
+								i, err := cpe.NewItemFromUri(buf.String())
+								if err != nil {
+									utils.DebugLog.Println("error while parsing cpe tag for service probe:", err, "probe:", s.Ident)
+									goto next
+								}
+								// set vendor
+								s.Vendor = i.Vendor().String()
+								goto next
+							}
+							buf.WriteByte(b)
+						}
 					}
 
 					continue

@@ -287,6 +287,8 @@ github.com/tinylib/msgp v1.1.0/go.mod h1:+d+yLhGm8mzTaHzB+wgMYrodPfmZrzkirds8fDW
 github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe h1:aj/vX5epIlQQBEocKoM9nSAiNpakdQzElc8SaRFPu+I=
 github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe/go.mod h1:OBcG9bn7sHtXgarhUEb3OfCnNsgtGnkVf41ilSZ3K3E=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
+github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23 h1:+168JmE638t0OxroPRx7BUbkB91hF3GWS1OkvITgdT0=
+github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23/go.mod h1:Jv/KoYWD3+46wW8r3pEwISwtgv5Q8NTfFto2wFRKvoA=
 github.com/willf/bitset v1.1.10 h1:NotGKqX0KwQ72NUzqrjZq5ipPNDQex9lo3WpaS8L2sc=
 github.com/willf/bitset v1.1.10/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
