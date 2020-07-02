@@ -43,6 +43,7 @@ require (
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe
+	github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
 	golang.org/x/image v0.0.0-20200609002522-3f4726a040e8

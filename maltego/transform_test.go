@@ -72,8 +72,8 @@ var transforms = []TransformCoreInfo{
 	{"ToDevices", "netcap.DeviceProfileAuditRecords", "Show all discovered device audit records"},
 
 	{"OpenExploit", "netcap.Exploit", "Open the exploit source with the default system program for the filetype"},
-	{"OpenFile", "maltego.File", "Opens a file with the default application"},
-	{"OpenFolder", "maltego.File", "Open the folder in which the file resides"},
+	{"OpenFile", "netcap.File", "Opens a file with the default application"},
+	{"OpenFolder", "netcap.File", "Open the folder in which the file resides"},
 	{"OpenNetcapFolder", "netcap.PCAP", "Open the storage folder for the selected PCAP file"},
 	{"OpenVulnerability", "netcap.Vulnerability", "Open link to the vulnerability on NVD homepage"},
 

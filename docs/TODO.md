@@ -1,6 +1,8 @@
 # TODOs
 
-- make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution 
+- add descriptions for Layer and Custom Audit records constructors and print when listing all encoders
+- To HTTP Hostnames: include number of HTTP requests for host as line label  
+- make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 
 entities:
 - add different colors for Internal and External IPs
@@ -20,11 +22,10 @@ on audit record archives:
 - on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
 - on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
 
-- add service probe vendor infor by parsing cpe if present 
+- handle multiple cpes for a single service probe
 
 - include machines into generated config archive
 - live capture: give proper error when interface name is not present or wrong
-- fix sofware audit record duplication
 - add Viewlets and Machines
 - fix timestamps in maltego XML generation code
 
