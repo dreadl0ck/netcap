@@ -20,20 +20,25 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var arpEncoder = CreateLayerEncoder(types.Type_NC_ARP, layers.LayerTypeARP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if arp, ok := layer.(*layers.ARP); ok {
-		return &types.ARP{
-			Timestamp:       timestamp,
-			AddrType:        int32(arp.AddrType),
-			Protocol:        int32(arp.Protocol),
-			HwAddressSize:   int32(arp.HwAddressSize),
-			ProtAddressSize: int32(arp.ProtAddressSize),
-			Operation:       int32(arp.Operation),
-			SrcHwAddress:    arp.SourceHwAddress,
-			SrcProtAddress:  arp.SourceProtAddress,
-			DstHwAddress:    arp.DstHwAddress,
-			DstProtAddress:  arp.DstProtAddress,
+var arpEncoder = CreateLayerEncoder(
+	types.Type_NC_ARP,
+	layers.LayerTypeARP,
+	"The Address Resolution Protocol resolves IP to hardware addresses",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if arp, ok := layer.(*layers.ARP); ok {
+			return &types.ARP{
+				Timestamp:       timestamp,
+				AddrType:        int32(arp.AddrType),
+				Protocol:        int32(arp.Protocol),
+				HwAddressSize:   int32(arp.HwAddressSize),
+				ProtAddressSize: int32(arp.ProtAddressSize),
+				Operation:       int32(arp.Operation),
+				SrcHwAddress:    arp.SourceHwAddress,
+				SrcProtAddress:  arp.SourceProtAddress,
+				DstHwAddress:    arp.DstHwAddress,
+				DstProtAddress:  arp.DstProtAddress,
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

@@ -20,13 +20,18 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var snapEncoder = CreateLayerEncoder(types.Type_NC_SNAP, layers.LayerTypeSNAP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if snap, ok := layer.(*layers.SNAP); ok {
-		return &types.SNAP{
-			Timestamp:          timestamp,
-			OrganizationalCode: snap.OrganizationalCode,
-			Type:               int32(snap.Type),
+var snapEncoder = CreateLayerEncoder(
+	types.Type_NC_SNAP,
+	layers.LayerTypeSNAP,
+	"The Subnetwork Access Protocol (SNAP) is a mechanism for multiplexing, on networks using IEEE 802.2 LLC",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if snap, ok := layer.(*layers.SNAP); ok {
+			return &types.SNAP{
+				Timestamp:          timestamp,
+				OrganizationalCode: snap.OrganizationalCode,
+				Type:               int32(snap.Type),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

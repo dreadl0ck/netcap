@@ -20,17 +20,22 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var nortelDiscoveryEncoder = CreateLayerEncoder(types.Type_NC_NortelDiscovery, layers.LayerTypeNortelDiscovery, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if nortel, ok := layer.(*layers.NortelDiscovery); ok {
-		return &types.NortelDiscovery{
-			Timestamp: timestamp,
-			IPAddress: string(nortel.IPAddress),
-			SegmentID: []byte(nortel.SegmentID),
-			Chassis:   int32(nortel.Chassis),
-			Backplane: int32(nortel.Backplane),
-			State:     int32(nortel.State),
-			NumLinks:  int32(nortel.NumLinks),
+var nortelDiscoveryEncoder = CreateLayerEncoder(
+	types.Type_NC_NortelDiscovery,
+	layers.LayerTypeNortelDiscovery,
+	"The Nortel Discovery Protocol (NDP) is a Data Link Layer (OSI Layer 2) network protocol for discovery of Nortel networking devices and certain products from Avaya and Ciena",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if nortel, ok := layer.(*layers.NortelDiscovery); ok {
+			return &types.NortelDiscovery{
+				Timestamp: timestamp,
+				IPAddress: string(nortel.IPAddress),
+				SegmentID: []byte(nortel.SegmentID),
+				Chassis:   int32(nortel.Chassis),
+				Backplane: int32(nortel.Backplane),
+				State:     int32(nortel.State),
+				NumLinks:  int32(nortel.NumLinks),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

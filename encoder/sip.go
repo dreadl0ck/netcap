@@ -22,21 +22,26 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var sipEncoder = CreateLayerEncoder(types.Type_NC_SIP, layers.LayerTypeSIP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if sip, ok := layer.(*layers.SIP); ok {
-		headers := []string{}
-		for k, v := range sip.Headers {
-			headers = append(headers, k+":"+strings.Join(v, ","))
+var sipEncoder = CreateLayerEncoder(
+	types.Type_NC_SIP,
+	layers.LayerTypeSIP,
+	"The Session Initiation Protocol is a signaling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if sip, ok := layer.(*layers.SIP); ok {
+			headers := []string{}
+			for k, v := range sip.Headers {
+				headers = append(headers, k+":"+strings.Join(v, ","))
+			}
+			return &types.SIP{
+				Timestamp:      timestamp,
+				Version:        int32(sip.Version),
+				Method:         int32(sip.Method),
+				Headers:        headers,
+				IsResponse:     bool(sip.IsResponse),
+				ResponseCode:   int32(sip.ResponseCode),
+				ResponseStatus: string(sip.ResponseStatus),
+			}
 		}
-		return &types.SIP{
-			Timestamp:      timestamp,
-			Version:        int32(sip.Version),
-			Method:         int32(sip.Method),
-			Headers:        headers,
-			IsResponse:     bool(sip.IsResponse),
-			ResponseCode:   int32(sip.ResponseCode),
-			ResponseStatus: string(sip.ResponseStatus),
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

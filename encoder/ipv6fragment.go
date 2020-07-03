@@ -20,17 +20,22 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ip6FragmentEncoder = CreateLayerEncoder(types.Type_NC_IPv6Fragment, layers.LayerTypeIPv6Fragment, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if ip6f, ok := layer.(*layers.IPv6Fragment); ok {
-		return &types.IPv6Fragment{
-			Timestamp:      timestamp,
-			NextHeader:     int32(ip6f.NextHeader),
-			Reserved1:      int32(ip6f.Reserved1),
-			FragmentOffset: int32(ip6f.FragmentOffset),
-			Reserved2:      int32(ip6f.Reserved2),
-			MoreFragments:  bool(ip6f.MoreFragments),
-			Identification: uint32(ip6f.Identification),
+var ip6FragmentEncoder = CreateLayerEncoder(
+	types.Type_NC_IPv6Fragment,
+	layers.LayerTypeIPv6Fragment,
+	"IPv6 fragmented packet",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if ip6f, ok := layer.(*layers.IPv6Fragment); ok {
+			return &types.IPv6Fragment{
+				Timestamp:      timestamp,
+				NextHeader:     int32(ip6f.NextHeader),
+				Reserved1:      int32(ip6f.Reserved1),
+				FragmentOffset: int32(ip6f.FragmentOffset),
+				Reserved2:      int32(ip6f.Reserved2),
+				MoreFragments:  bool(ip6f.MoreFragments),
+				Identification: uint32(ip6f.Identification),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

@@ -20,14 +20,19 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ipSecESPEncoder = CreateLayerEncoder(types.Type_NC_IPSecESP, layers.LayerTypeIPSecESP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if ipsecesp, ok := layer.(*layers.IPSecESP); ok {
-		return &types.IPSecESP{
-			Timestamp:    timestamp,
-			SPI:          int32(ipsecesp.SPI),            // int32
-			Seq:          int32(ipsecesp.Seq),            // int32
-			LenEncrypted: int32(len(ipsecesp.Encrypted)), // int32
+var ipSecESPEncoder = CreateLayerEncoder(
+	types.Type_NC_IPSecESP,
+	layers.LayerTypeIPSecESP,
+	"IPSec Encapsulating Security Payload (ESP)",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if ipsecesp, ok := layer.(*layers.IPSecESP); ok {
+			return &types.IPSecESP{
+				Timestamp:    timestamp,
+				SPI:          int32(ipsecesp.SPI),            // int32
+				Seq:          int32(ipsecesp.Seq),            // int32
+				LenEncrypted: int32(len(ipsecesp.Encrypted)), // int32
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

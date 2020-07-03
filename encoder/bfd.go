@@ -20,32 +20,37 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var bfdEncoder = CreateLayerEncoder(types.Type_NC_BFD, layers.LayerTypeBFD, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if bfd, ok := layer.(*layers.BFD); ok {
-		return &types.BFD{
-			Timestamp:                 timestamp,
-			Version:                   int32(bfd.Version),
-			Diagnostic:                int32(bfd.Diagnostic),
-			State:                     int32(bfd.State),
-			Poll:                      bool(bfd.Poll),
-			Final:                     bool(bfd.Final),
-			ControlPlaneIndependent:   bool(bfd.ControlPlaneIndependent),
-			AuthPresent:               bool(bfd.AuthPresent),
-			Demand:                    bool(bfd.Demand),
-			Multipoint:                bool(bfd.Multipoint),
-			DetectMultiplier:          int32(bfd.DetectMultiplier),
-			MyDiscriminator:           int32(bfd.MyDiscriminator),
-			YourDiscriminator:         int32(bfd.YourDiscriminator),
-			DesiredMinTxInterval:      int32(bfd.DesiredMinTxInterval),
-			RequiredMinRxInterval:     int32(bfd.RequiredMinRxInterval),
-			RequiredMinEchoRxInterval: int32(bfd.RequiredMinEchoRxInterval),
-			AuthHeader: &types.BFDAuthHeader{
-				AuthType:       int32(bfd.AuthHeader.AuthType),
-				KeyID:          int32(bfd.AuthHeader.KeyID),
-				SequenceNumber: int32(bfd.AuthHeader.SequenceNumber),
-				Data:           bfd.AuthHeader.Data,
-			},
+var bfdEncoder = CreateLayerEncoder(
+	types.Type_NC_BFD,
+	layers.LayerTypeBFD,
+	"Bidirectional Forwarding Detection (BFD) is a network protocol that is used to detect faults between two forwarding engines connected by a link",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if bfd, ok := layer.(*layers.BFD); ok {
+			return &types.BFD{
+				Timestamp:                 timestamp,
+				Version:                   int32(bfd.Version),
+				Diagnostic:                int32(bfd.Diagnostic),
+				State:                     int32(bfd.State),
+				Poll:                      bool(bfd.Poll),
+				Final:                     bool(bfd.Final),
+				ControlPlaneIndependent:   bool(bfd.ControlPlaneIndependent),
+				AuthPresent:               bool(bfd.AuthPresent),
+				Demand:                    bool(bfd.Demand),
+				Multipoint:                bool(bfd.Multipoint),
+				DetectMultiplier:          int32(bfd.DetectMultiplier),
+				MyDiscriminator:           int32(bfd.MyDiscriminator),
+				YourDiscriminator:         int32(bfd.YourDiscriminator),
+				DesiredMinTxInterval:      int32(bfd.DesiredMinTxInterval),
+				RequiredMinRxInterval:     int32(bfd.RequiredMinRxInterval),
+				RequiredMinEchoRxInterval: int32(bfd.RequiredMinEchoRxInterval),
+				AuthHeader: &types.BFDAuthHeader{
+					AuthType:       int32(bfd.AuthHeader.AuthType),
+					KeyID:          int32(bfd.AuthHeader.KeyID),
+					SequenceNumber: int32(bfd.AuthHeader.SequenceNumber),
+					Data:           bfd.AuthHeader.Data,
+				},
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

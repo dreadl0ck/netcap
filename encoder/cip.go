@@ -20,28 +20,33 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var cipEncoder = CreateLayerEncoder(types.Type_NC_CIP, layers.LayerTypeCIP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if cip, ok := layer.(*layers.CIP); ok {
-		var payload []byte
-		if c.IncludePayloads {
-			payload = cip.Data
-		}
-		var additional []uint32
-		if cip.Response {
-			for _, v := range cip.AdditionalStatus {
-				additional = append(additional, uint32(v))
+var cipEncoder = CreateLayerEncoder(
+	types.Type_NC_CIP,
+	layers.LayerTypeCIP,
+	"The Common Industrial Protocol (CIP) is an industrial protocol for industrial automation applications",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if cip, ok := layer.(*layers.CIP); ok {
+			var payload []byte
+			if c.IncludePayloads {
+				payload = cip.Data
+			}
+			var additional []uint32
+			if cip.Response {
+				for _, v := range cip.AdditionalStatus {
+					additional = append(additional, uint32(v))
+				}
+			}
+			return &types.CIP{
+				Timestamp:        timestamp,
+				Response:         bool(cip.Response),
+				ServiceID:        int32(cip.ServiceID),
+				ClassID:          uint32(cip.ClassID),
+				InstanceID:       uint32(cip.InstanceID),
+				Status:           int32(cip.Status),
+				AdditionalStatus: additional,
+				Data:             payload,
 			}
 		}
-		return &types.CIP{
-			Timestamp:        timestamp,
-			Response:         bool(cip.Response),
-			ServiceID:        int32(cip.ServiceID),
-			ClassID:          uint32(cip.ClassID),
-			InstanceID:       uint32(cip.InstanceID),
-			Status:           int32(cip.Status),
-			AdditionalStatus: additional,
-			Data:             payload,
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

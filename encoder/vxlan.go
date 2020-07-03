@@ -20,17 +20,22 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var vxlanEncoder = CreateLayerEncoder(types.Type_NC_VXLAN, layers.LayerTypeVXLAN, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if vx, ok := layer.(*layers.VXLAN); ok {
-		return &types.VXLAN{
-			Timestamp:        timestamp,
-			ValidIDFlag:      bool(vx.ValidIDFlag),
-			VNI:              uint32(vx.VNI),
-			GBPExtension:     bool(vx.GBPExtension),
-			GBPDontLearn:     bool(vx.GBPDontLearn),
-			GBPApplied:       bool(vx.GBPApplied),
-			GBPGroupPolicyID: int32(vx.GBPGroupPolicyID),
+var vxlanEncoder = CreateLayerEncoder(
+	types.Type_NC_VXLAN,
+	layers.LayerTypeVXLAN,
+	"Virtual Extensible LAN is a network virtualization technology that attempts to address the scalability problems associated with large cloud computing deployments",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if vx, ok := layer.(*layers.VXLAN); ok {
+			return &types.VXLAN{
+				Timestamp:        timestamp,
+				ValidIDFlag:      bool(vx.ValidIDFlag),
+				VNI:              uint32(vx.VNI),
+				GBPExtension:     bool(vx.GBPExtension),
+				GBPDontLearn:     bool(vx.GBPDontLearn),
+				GBPApplied:       bool(vx.GBPApplied),
+				GBPGroupPolicyID: int32(vx.GBPGroupPolicyID),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

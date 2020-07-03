@@ -20,16 +20,21 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var eapEncoder = CreateLayerEncoder(types.Type_NC_EAP, layers.LayerTypeEAP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if eap, ok := layer.(*layers.EAP); ok {
-		return &types.EAP{
-			Timestamp: timestamp,
-			Code:      int32(eap.Code),
-			Id:        int32(eap.Id),
-			Length:    int32(eap.Length),
-			Type:      int32(eap.Type),
-			TypeData:  []byte(eap.TypeData),
+var eapEncoder = CreateLayerEncoder(
+	types.Type_NC_EAP,
+	layers.LayerTypeEAP,
+	"Extensible Authentication Protocol is an authentication framework frequently used in network and internet connections",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if eap, ok := layer.(*layers.EAP); ok {
+			return &types.EAP{
+				Timestamp: timestamp,
+				Code:      int32(eap.Code),
+				Id:        int32(eap.Id),
+				Length:    int32(eap.Length),
+				Type:      int32(eap.Type),
+				TypeData:  []byte(eap.TypeData),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

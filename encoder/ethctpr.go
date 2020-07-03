@@ -20,14 +20,19 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ethernetCTPReplyEncoder = CreateLayerEncoder(types.Type_NC_EthernetCTPReply, layers.LayerTypeEthernetCTPReply, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if ethctpr, ok := layer.(*layers.EthernetCTPReply); ok {
-		return &types.EthernetCTPReply{
-			Timestamp:     timestamp,
-			Function:      int32(ethctpr.Function),
-			ReceiptNumber: int32(ethctpr.ReceiptNumber),
-			Data:          ethctpr.Data,
+var ethernetCTPReplyEncoder = CreateLayerEncoder(
+	types.Type_NC_EthernetCTPReply,
+	layers.LayerTypeEthernetCTPReply,
+	"Ethernet Configuration Testing Protocol is a diagnostic protocol included in the Xerox Ethernet II specification",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if ethctpr, ok := layer.(*layers.EthernetCTPReply); ok {
+			return &types.EthernetCTPReply{
+				Timestamp:     timestamp,
+				Function:      int32(ethctpr.Function),
+				ReceiptNumber: int32(ethctpr.ReceiptNumber),
+				Data:          ethctpr.Data,
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

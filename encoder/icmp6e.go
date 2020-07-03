@@ -20,13 +20,18 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var icmpv6EchoEncoder = CreateLayerEncoder(types.Type_NC_ICMPv6Echo, layers.LayerTypeICMPv6Echo, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if icmp6e, ok := layer.(*layers.ICMPv6Echo); ok {
-		return &types.ICMPv6Echo{
-			Timestamp:  timestamp,
-			Identifier: int32(icmp6e.Identifier),
-			SeqNumber:  int32(icmp6e.SeqNumber),
+var icmpv6EchoEncoder = CreateLayerEncoder(
+	types.Type_NC_ICMPv6Echo,
+	layers.LayerTypeICMPv6Echo,
+	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if icmp6e, ok := layer.(*layers.ICMPv6Echo); ok {
+			return &types.ICMPv6Echo{
+				Timestamp:  timestamp,
+				Identifier: int32(icmp6e.Identifier),
+				SeqNumber:  int32(icmp6e.SeqNumber),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

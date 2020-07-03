@@ -20,15 +20,20 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var dot1QEncoder = CreateLayerEncoder(types.Type_NC_Dot1Q, layers.LayerTypeDot1Q, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if dot1q, ok := layer.(*layers.Dot1Q); ok {
-		return &types.Dot1Q{
-			Timestamp:      timestamp,
-			Priority:       int32(dot1q.Priority),
-			DropEligible:   dot1q.DropEligible,
-			VLANIdentifier: int32(dot1q.VLANIdentifier),
-			Type:           int32(dot1q.Type),
+var dot1QEncoder = CreateLayerEncoder(
+	types.Type_NC_Dot1Q,
+	layers.LayerTypeDot1Q,
+	"IEEE 802.11 is part of the IEEE 802 set of local area network protocols, and specifies the set of media access control and physical layer protocols for implementing wireless local area network Wi-Fi",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if dot1q, ok := layer.(*layers.Dot1Q); ok {
+			return &types.Dot1Q{
+				Timestamp:      timestamp,
+				Priority:       int32(dot1q.Priority),
+				DropEligible:   dot1q.DropEligible,
+				VLANIdentifier: int32(dot1q.VLANIdentifier),
+				Type:           int32(dot1q.Type),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

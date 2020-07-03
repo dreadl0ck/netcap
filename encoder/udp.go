@@ -96,29 +96,34 @@ func handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
 	}
 }
 
-var udpEncoder = CreateLayerEncoder(types.Type_NC_UDP, layers.LayerTypeUDP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if udp, ok := layer.(*layers.UDP); ok {
-		var payload []byte
-		if c.IncludePayloads {
-			payload = layer.LayerPayload()
+var udpEncoder = CreateLayerEncoder(
+	types.Type_NC_UDP,
+	layers.LayerTypeUDP,
+	"User Datagram Protocol (UDP) is a connectionless communications protocol, that facilitates the exchange of messages between computing devices in a network",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if udp, ok := layer.(*layers.UDP); ok {
+			var payload []byte
+			if c.IncludePayloads {
+				payload = layer.LayerPayload()
+			}
+			var e float64
+			if c.CalculateEntropy {
+				e = Entropy(udp.Payload)
+			}
+			return &types.UDP{
+				Timestamp:      timestamp,
+				SrcPort:        int32(udp.SrcPort),
+				DstPort:        int32(udp.DstPort),
+				Length:         int32(udp.Length),
+				Checksum:       int32(udp.Checksum),
+				PayloadEntropy: e,
+				PayloadSize:    int32(len(udp.Payload)),
+				Payload:        payload,
+			}
 		}
-		var e float64
-		if c.CalculateEntropy {
-			e = Entropy(udp.Payload)
-		}
-		return &types.UDP{
-			Timestamp:      timestamp,
-			SrcPort:        int32(udp.SrcPort),
-			DstPort:        int32(udp.DstPort),
-			Length:         int32(udp.Length),
-			Checksum:       int32(udp.Checksum),
-			PayloadEntropy: e,
-			PayloadSize:    int32(len(udp.Payload)),
-			Payload:        payload,
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)
 
 func saveAllUDPConnections() {
 	udpStreamsMu.Lock()

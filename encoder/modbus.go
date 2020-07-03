@@ -20,22 +20,27 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var modbusEncoder = CreateLayerEncoder(types.Type_NC_Modbus, layers.LayerTypeModbus, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if m, ok := layer.(*layers.Modbus); ok {
-		var payload []byte
-		if c.IncludePayloads {
-			payload = m.ReqResp
+var modbusEncoder = CreateLayerEncoder(
+	types.Type_NC_Modbus,
+	layers.LayerTypeModbus,
+	"Modbus is a data communications protocol originally published by Modicon in 1979 for use with its programmable logic controllers",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if m, ok := layer.(*layers.Modbus); ok {
+			var payload []byte
+			if c.IncludePayloads {
+				payload = m.ReqResp
+			}
+			return &types.Modbus{
+				Timestamp:     timestamp,
+				TransactionID: int32(m.TransactionID),
+				ProtocolID:    int32(m.ProtocolID),
+				Length:        int32(m.Length),
+				UnitID:        int32(m.UnitID),
+				Payload:       payload,
+				Exception:     m.Exception,
+				FunctionCode:  int32(m.FunctionCode),
+			}
 		}
-		return &types.Modbus{
-			Timestamp:     timestamp,
-			TransactionID: int32(m.TransactionID),
-			ProtocolID:    int32(m.ProtocolID),
-			Length:        int32(m.Length),
-			UnitID:        int32(m.UnitID),
-			Payload:       payload,
-			Exception:     m.Exception,
-			FunctionCode:  int32(m.FunctionCode),
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

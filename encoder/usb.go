@@ -20,34 +20,39 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var usbEncoder = CreateLayerEncoder(types.Type_NC_USB, layers.LayerTypeUSB, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if usb, ok := layer.(*layers.USB); ok {
-		var payload []byte
-		if c.IncludePayloads {
-			payload = layer.LayerPayload()
+var usbEncoder = CreateLayerEncoder(
+	types.Type_NC_USB,
+	layers.LayerTypeUSB,
+	"Universal Serial Bus (USB) is an industry standard that establishes specifications for cables and connectors and protocols for connection, communication and power supply (interfacing) between computers, peripherals and other computers",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if usb, ok := layer.(*layers.USB); ok {
+			var payload []byte
+			if c.IncludePayloads {
+				payload = layer.LayerPayload()
+			}
+			return &types.USB{
+				Timestamp:              timestamp,
+				ID:                     uint64(usb.ID),
+				EventType:              int32(usb.EventType),
+				TransferType:           int32(usb.TransferType),
+				Direction:              int32(usb.Direction),
+				EndpointNumber:         int32(usb.EndpointNumber),
+				DeviceAddress:          int32(usb.DeviceAddress),
+				BusID:                  int32(usb.BusID),
+				TimestampSec:           int64(usb.TimestampSec),
+				TimestampUsec:          int32(usb.TimestampUsec),
+				Setup:                  bool(usb.Setup),
+				Data:                   bool(usb.Data),
+				Status:                 int32(usb.Status),
+				UrbLength:              uint32(usb.UrbLength),
+				UrbDataLength:          uint32(usb.UrbDataLength),
+				UrbInterval:            uint32(usb.UrbInterval),
+				UrbStartFrame:          uint32(usb.UrbStartFrame),
+				UrbCopyOfTransferFlags: uint32(usb.UrbCopyOfTransferFlags),
+				IsoNumDesc:             uint32(usb.IsoNumDesc),
+				Payload:                payload,
+			}
 		}
-		return &types.USB{
-			Timestamp:              timestamp,
-			ID:                     uint64(usb.ID),
-			EventType:              int32(usb.EventType),
-			TransferType:           int32(usb.TransferType),
-			Direction:              int32(usb.Direction),
-			EndpointNumber:         int32(usb.EndpointNumber),
-			DeviceAddress:          int32(usb.DeviceAddress),
-			BusID:                  int32(usb.BusID),
-			TimestampSec:           int64(usb.TimestampSec),
-			TimestampUsec:          int32(usb.TimestampUsec),
-			Setup:                  bool(usb.Setup),
-			Data:                   bool(usb.Data),
-			Status:                 int32(usb.Status),
-			UrbLength:              uint32(usb.UrbLength),
-			UrbDataLength:          uint32(usb.UrbDataLength),
-			UrbInterval:            uint32(usb.UrbInterval),
-			UrbStartFrame:          uint32(usb.UrbStartFrame),
-			UrbCopyOfTransferFlags: uint32(usb.UrbCopyOfTransferFlags),
-			IsoNumDesc:             uint32(usb.IsoNumDesc),
-			Payload:                payload,
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)
