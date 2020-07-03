@@ -25,69 +25,76 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var tlsServerHelloEncoder = CreateCustomEncoder(types.Type_NC_TLSServerHello, "TLSServerHello", nil, func(p gopacket.Packet) proto.Message {
+var tlsServerHelloEncoder = CreateCustomEncoder(
+	types.Type_NC_TLSServerHello,
+	"TLSServerHello",
+	"The server hello from a Transport Layer Security handshake",
+	nil,
+	func(p gopacket.Packet) proto.Message {
 
-	hello := tlsx.GetServerHello(p)
-	if hello != nil {
+		hello := tlsx.GetServerHello(p)
+		if hello != nil {
 
-		var (
-			extensions = make([]int32, len(hello.Extensions))
-		)
-		for i, v := range hello.Extensions {
-			extensions[i] = int32(v)
+			var (
+				extensions = make([]int32, len(hello.Extensions))
+			)
+			for i, v := range hello.Extensions {
+				extensions[i] = int32(v)
+			}
+
+			var (
+				srcPort, dstPort int
+				srcMac, dstMac   string
+				srcIP, dstIP     string
+			)
+
+			if ll := p.LinkLayer(); ll != nil {
+				srcMac = ll.LinkFlow().Src().String()
+				dstMac = ll.LinkFlow().Dst().String()
+			}
+
+			if nl := p.NetworkLayer(); nl != nil {
+				srcIP = p.NetworkLayer().NetworkFlow().Src().String()
+				dstIP = p.NetworkLayer().NetworkFlow().Dst().String()
+			}
+
+			if tl := p.TransportLayer(); tl != nil {
+				srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
+				dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Dst().String())
+			}
+
+			return &types.TLSServerHello{
+				Timestamp:                    utils.TimeToString(p.Metadata().Timestamp),
+				Version:                      int32(hello.Vers),
+				Random:                       hello.Random,
+				SessionID:                    hello.SessionID,
+				CipherSuite:                  int32(hello.CipherSuite),
+				CompressionMethod:            int32(hello.CompressionMethod),
+				NextProtoNeg:                 hello.NextProtoNeg,
+				NextProtos:                   hello.NextProtos,
+				OCSPStapling:                 hello.OCSPStapling,
+				TicketSupported:              hello.TicketSupported,
+				SecureRenegotiationSupported: hello.SecureRenegotiationSupported,
+				SecureRenegotiation:          hello.SecureRenegotiation,
+				AlpnProtocol:                 hello.AlpnProtocol,
+				Ems:                          hello.Ems,
+				Scts:                         hello.Scts,
+				SupportedVersion:             int32(hello.SupportedVersion),
+				SelectedIdentityPresent:      hello.SelectedIdentityPresent,
+				SelectedIdentity:             int32(hello.SelectedIdentity),
+				Cookie:                       hello.Cookie,
+				SelectedGroup:                int32(hello.SelectedGroup),
+				Ja3S:                         ja3.DigestHexJa3s(&hello.ServerHelloBasic),
+				SrcIP:                        srcIP,
+				DstIP:                        dstIP,
+				SrcMAC:                       srcMac,
+				DstMAC:                       dstMac,
+				SrcPort:                      int32(srcPort),
+				DstPort:                      int32(dstPort),
+				Extensions:                   extensions,
+			}
 		}
-
-		var (
-			srcPort, dstPort int
-			srcMac, dstMac   string
-			srcIP, dstIP     string
-		)
-
-		if ll := p.LinkLayer(); ll != nil {
-			srcMac = ll.LinkFlow().Src().String()
-			dstMac = ll.LinkFlow().Dst().String()
-		}
-
-		if nl := p.NetworkLayer(); nl != nil {
-			srcIP = p.NetworkLayer().NetworkFlow().Src().String()
-			dstIP = p.NetworkLayer().NetworkFlow().Dst().String()
-		}
-
-		if tl := p.TransportLayer(); tl != nil {
-			srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
-			dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Dst().String())
-		}
-
-		return &types.TLSServerHello{
-			Timestamp:                    utils.TimeToString(p.Metadata().Timestamp),
-			Version:                      int32(hello.Vers),
-			Random:                       hello.Random,
-			SessionID:                    hello.SessionID,
-			CipherSuite:                  int32(hello.CipherSuite),
-			CompressionMethod:            int32(hello.CompressionMethod),
-			NextProtoNeg:                 hello.NextProtoNeg,
-			NextProtos:                   hello.NextProtos,
-			OCSPStapling:                 hello.OCSPStapling,
-			TicketSupported:              hello.TicketSupported,
-			SecureRenegotiationSupported: hello.SecureRenegotiationSupported,
-			SecureRenegotiation:          hello.SecureRenegotiation,
-			AlpnProtocol:                 hello.AlpnProtocol,
-			Ems:                          hello.Ems,
-			Scts:                         hello.Scts,
-			SupportedVersion:             int32(hello.SupportedVersion),
-			SelectedIdentityPresent:      hello.SelectedIdentityPresent,
-			SelectedIdentity:             int32(hello.SelectedIdentity),
-			Cookie:                       hello.Cookie,
-			SelectedGroup:                int32(hello.SelectedGroup),
-			Ja3S:                         ja3.DigestHexJa3s(&hello.ServerHelloBasic),
-			SrcIP:                        srcIP,
-			DstIP:                        dstIP,
-			SrcMAC:                       srcMac,
-			DstMAC:                       dstMac,
-			SrcPort:                      int32(srcPort),
-			DstPort:                      int32(dstPort),
-			Extensions:                   extensions,
-		}
-	}
-	return nil
-}, nil)
+		return nil
+	},
+	nil,
+)

@@ -572,102 +572,109 @@ func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
 	p.Unlock()
 }
 
-var softwareEncoder = CreateCustomEncoder(types.Type_NC_Software, "Software", func(d *CustomEncoder) error {
+var softwareEncoder = CreateCustomEncoder(
+	types.Type_NC_Software,
+	"Software",
+	"A software product that was observed on the network",
+	func(d *CustomEncoder) error {
 
-	if errInitUAParser != nil {
-		return errInitUAParser
-	}
-
-	// Load the JSON database of JA3/JA3S combinations into memory
-	data, err := ioutil.ReadFile("/usr/local/etc/netcap/dbs/ja_3_3s.json")
-	if err != nil {
-		return err
-	}
-
-	// unpack JSON
-	err = json.Unmarshal(data, &ja3db.Servers)
-	if err != nil {
-		return err
-	}
-
-	// Load the JSON database of HASSH signaures
-	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdb.json")
-	if err != nil {
-		return err
-	}
-
-	// unpack JSON
-	err = json.Unmarshal(data, &hasshDB)
-	if err != nil {
-		return err
-	}
-
-	hashDBMap = make(map[string][]SSHSoftware)
-
-	for _, v := range hasshDB {
-		hashDBMap[v.Hash] = v.Softwares
-	}
-
-	utils.DebugLog.Println("loaded", len(hashDBMap), "different HASSH digests")
-
-	data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/cmsdb.json")
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(data, &cmsDB)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range hasshDB {
-		hasshMap[entry.Hash] = entry.Softwares // TODO: note from Giac: Holds redundant info, but couldn't figure a more elegant way to do this
-	}
-
-	// Load vulnerabilities DB index
-	indexName := filepath.Join(resolvers.DataBaseSource, vulnDBPath)
-	vulnerabilitiesIndex, err = bleve.Open(indexName)
-	if err != nil {
-		return err
-	}
-
-	utils.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
-
-	return nil
-}, func(p gopacket.Packet) proto.Message {
-
-	// handle packet
-	AnalyzeSoftware(newPacketInfo(p))
-
-	return nil
-}, func(e *CustomEncoder) error {
-
-	httpStore.Lock()
-	var rows [][]string
-	for ip, ua := range httpStore.UserAgents {
-		rows = append(rows, []string{ip, ua})
-	}
-	tui.Table(utils.DebugLogFileHandle, []string{"IP", "UserAgents"}, rows)
-	rows = [][]string{}
-	for ip, sn := range httpStore.ServerNames {
-		rows = append(rows, []string{ip, sn})
-	}
-	tui.Table(utils.DebugLogFileHandle, []string{"IP", "ServerNames"}, rows)
-	httpStore.Unlock()
-
-	// teardown DPI C libs
-	dpi.Destroy()
-
-	// flush writer
-	if !e.writer.IsChanWriter {
-		for _, c := range SoftwareStore.Items {
-			c.Lock()
-			e.write(c.Software)
-			c.Unlock()
+		if errInitUAParser != nil {
+			return errInitUAParser
 		}
-	}
-	return nil
-})
+
+		// Load the JSON database of JA3/JA3S combinations into memory
+		data, err := ioutil.ReadFile("/usr/local/etc/netcap/dbs/ja_3_3s.json")
+		if err != nil {
+			return err
+		}
+
+		// unpack JSON
+		err = json.Unmarshal(data, &ja3db.Servers)
+		if err != nil {
+			return err
+		}
+
+		// Load the JSON database of HASSH signaures
+		data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdb.json")
+		if err != nil {
+			return err
+		}
+
+		// unpack JSON
+		err = json.Unmarshal(data, &hasshDB)
+		if err != nil {
+			return err
+		}
+
+		hashDBMap = make(map[string][]SSHSoftware)
+
+		for _, v := range hasshDB {
+			hashDBMap[v.Hash] = v.Softwares
+		}
+
+		utils.DebugLog.Println("loaded", len(hashDBMap), "different HASSH digests")
+
+		data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/cmsdb.json")
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(data, &cmsDB)
+		if err != nil {
+			return err
+		}
+
+		for _, entry := range hasshDB {
+			hasshMap[entry.Hash] = entry.Softwares // TODO: note from Giac: Holds redundant info, but couldn't figure a more elegant way to do this
+		}
+
+		// Load vulnerabilities DB index
+		indexName := filepath.Join(resolvers.DataBaseSource, vulnDBPath)
+		vulnerabilitiesIndex, err = bleve.Open(indexName)
+		if err != nil {
+			return err
+		}
+
+		utils.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
+
+		return nil
+	},
+	func(p gopacket.Packet) proto.Message {
+
+		// handle packet
+		AnalyzeSoftware(newPacketInfo(p))
+
+		return nil
+	},
+	func(e *CustomEncoder) error {
+
+		httpStore.Lock()
+		var rows [][]string
+		for ip, ua := range httpStore.UserAgents {
+			rows = append(rows, []string{ip, ua})
+		}
+		tui.Table(utils.DebugLogFileHandle, []string{"IP", "UserAgents"}, rows)
+		rows = [][]string{}
+		for ip, sn := range httpStore.ServerNames {
+			rows = append(rows, []string{ip, sn})
+		}
+		tui.Table(utils.DebugLogFileHandle, []string{"IP", "ServerNames"}, rows)
+		httpStore.Unlock()
+
+		// teardown DPI C libs
+		dpi.Destroy()
+
+		// flush writer
+		if !e.writer.IsChanWriter {
+			for _, c := range SoftwareStore.Items {
+				c.Lock()
+				e.write(c.Software)
+				c.Unlock()
+			}
+		}
+		return nil
+	},
+)
 
 // TODO: move into CustomEncoder and use in other places to remove unnecessary package level encoders
 // writeProfile writes the profile

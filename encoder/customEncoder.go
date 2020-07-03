@@ -204,13 +204,14 @@ func isCustomEncoderLoaded(name string) bool {
 }
 
 // CreateCustomEncoder returns a new CustomEncoder instance
-func CreateCustomEncoder(t types.Type, name string, postinit func(*CustomEncoder) error, handler CustomEncoderHandler, deinit func(*CustomEncoder) error) *CustomEncoder {
+func CreateCustomEncoder(t types.Type, name string, description string, postinit func(*CustomEncoder) error, handler CustomEncoderHandler, deinit func(*CustomEncoder) error) *CustomEncoder {
 	return &CustomEncoder{
 		Name:     name,
 		Handler:  handler,
 		deinit:   deinit,
 		postinit: postinit,
 		Type:     t,
+		Description: description,
 	}
 }
 

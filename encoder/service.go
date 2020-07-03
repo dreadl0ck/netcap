@@ -160,19 +160,26 @@ func NewService(ts string, numBytesServer int, numBytesClient int, ip string) *S
 	}
 }
 
-var serviceEncoder = CreateCustomEncoder(types.Type_NC_Service, "Service", func(d *CustomEncoder) error {
-	return InitProbes()
-}, func(p gopacket.Packet) proto.Message {
-	return nil
-}, func(e *CustomEncoder) error {
+var serviceEncoder = CreateCustomEncoder(
+	types.Type_NC_Service,
+	"Service",
+	"A network service",
+	func(d *CustomEncoder) error {
+		return InitProbes()
+	},
+	func(p gopacket.Packet) proto.Message {
+		return nil
+	},
+	func(e *CustomEncoder) error {
 
-	// flush writer
-	if !e.writer.IsChanWriter {
-		for _, c := range ServiceStore.Items {
-			c.Lock()
-			e.write(c.Service)
-			c.Unlock()
+		// flush writer
+		if !e.writer.IsChanWriter {
+			for _, c := range ServiceStore.Items {
+				c.Lock()
+				e.write(c.Service)
+				c.Unlock()
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

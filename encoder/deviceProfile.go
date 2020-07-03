@@ -170,32 +170,39 @@ func applyDeviceProfileUpdate(p *DeviceProfile, i *packetInfo) {
 	p.Unlock()
 }
 
-var profileEncoder = CreateCustomEncoder(types.Type_NC_DeviceProfile, "DeviceProfile", func(d *CustomEncoder) error {
+var profileEncoder = CreateCustomEncoder(
+	types.Type_NC_DeviceProfile,
+	"DeviceProfile",
+	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
+	func(d *CustomEncoder) error {
 
-	profileEncoderInstance = d
+		profileEncoderInstance = d
 
-	return nil
-}, func(p gopacket.Packet) proto.Message {
+		return nil
+	},
+	func(p gopacket.Packet) proto.Message {
 
-	// handle packet
-	UpdateDeviceProfile(newPacketInfo(p))
+		// handle packet
+		UpdateDeviceProfile(newPacketInfo(p))
 
-	return nil
-}, func(e *CustomEncoder) error {
+		return nil
+	},
+	func(e *CustomEncoder) error {
 
-	// teardown DPI C libs
-	dpi.Destroy()
+		// teardown DPI C libs
+		dpi.Destroy()
 
-	// flush writer
-	if !e.writer.IsChanWriter {
-		for _, c := range Profiles.Items {
-			c.Lock()
-			writeProfile(c.DeviceProfile)
-			c.Unlock()
+		// flush writer
+		if !e.writer.IsChanWriter {
+			for _, c := range Profiles.Items {
+				c.Lock()
+				writeProfile(c.DeviceProfile)
+				c.Unlock()
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)
 
 // writeProfile writes the profile
 func writeProfile(c *types.DeviceProfile) {
