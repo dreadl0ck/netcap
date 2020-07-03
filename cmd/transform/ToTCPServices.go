@@ -41,7 +41,7 @@ func ToTCPServices() {
 				ent.AddProperty("name", "Name", "strict", maltego.EscapeText(service.Name))
 
 				if len(service.Banner) > 0 {
-					ent.SetNote(maltego.EscapeText(string(service.Banner)))
+					ent.AddDisplayInformation("<pre>" + maltego.EscapeText(string(service.Banner))+"</pre>", "Transferred Data")
 				}
 
 				ent.SetLinkColor("#000000")

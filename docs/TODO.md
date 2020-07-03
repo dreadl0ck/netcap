@@ -5,7 +5,7 @@
 - make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 
 entities:
-- add different colors for Internal and External IPs
+- add different colors for Internal and External IPs: or merge them? Also rename device ip to source ip and contact ip to destination ip
 - add different colors for audit record archives?
 transforms:
 - on netcap.PCAP: Open Netcap Folder In Terminal
