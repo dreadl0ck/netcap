@@ -20,15 +20,20 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var fddiEncoder = CreateLayerEncoder(types.Type_NC_FDDI, layers.LayerTypeFDDI, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if fddi, ok := layer.(*layers.FDDI); ok {
-		return &types.FDDI{
-			Timestamp:    timestamp,
-			FrameControl: int32(fddi.FrameControl),
-			Priority:     int32(fddi.Priority),
-			SrcMAC:       string(fddi.SrcMAC),
-			DstMAC:       string(fddi.DstMAC),
+var fddiEncoder = CreateLayerEncoder(
+	types.Type_NC_FDDI,
+	layers.LayerTypeFDDI,
+	"Fiber Distributed Data Interface (FDDI) is a standard for data transmission in a local area network",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if fddi, ok := layer.(*layers.FDDI); ok {
+			return &types.FDDI{
+				Timestamp:    timestamp,
+				FrameControl: int32(fddi.FrameControl),
+				Priority:     int32(fddi.Priority),
+				SrcMAC:       string(fddi.SrcMAC),
+				DstMAC:       string(fddi.DstMAC),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

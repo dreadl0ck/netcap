@@ -20,14 +20,19 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var eapolEncoder = CreateLayerEncoder(types.Type_NC_EAPOL, layers.LayerTypeEAPOL, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if eapol, ok := layer.(*layers.EAPOL); ok {
-		return &types.EAPOL{
-			Timestamp: timestamp,
-			Version:   int32(eapol.Version),
-			Type:      int32(eapol.Type),
-			Length:    int32(eapol.Length),
+var eapolEncoder = CreateLayerEncoder(
+	types.Type_NC_EAPOL,
+	layers.LayerTypeEAPOL,
+	"Extensible Authentication Protocol is an authentication framework frequently used in network and internet connections",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if eapol, ok := layer.(*layers.EAPOL); ok {
+			return &types.EAPOL{
+				Timestamp: timestamp,
+				Version:   int32(eapol.Version),
+				Type:      int32(eapol.Type),
+				Length:    int32(eapol.Length),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

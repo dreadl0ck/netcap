@@ -20,19 +20,24 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var lcmEncoder = CreateLayerEncoder(types.Type_NC_LCM, layers.LayerTypeLCM, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if lcm, ok := layer.(*layers.LCM); ok {
-		return &types.LCM{
-			Timestamp:      timestamp,
-			Magic:          int32(lcm.Magic),
-			SequenceNumber: int32(lcm.SequenceNumber),
-			PayloadSize:    int32(lcm.PayloadSize),
-			FragmentOffset: int32(lcm.FragmentOffset),
-			FragmentNumber: int32(lcm.FragmentNumber),
-			TotalFragments: int32(lcm.TotalFragments),
-			ChannelName:    string(lcm.ChannelName),
-			Fragmented:     bool(lcm.Fragmented),
+var lcmEncoder = CreateLayerEncoder(
+	types.Type_NC_LCM,
+	layers.LayerTypeLCM,
+	"LCM is a set of libraries and tools for message passing and data marshalling, targeted at real-time systems where high-bandwidth and low latency are critical",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if lcm, ok := layer.(*layers.LCM); ok {
+			return &types.LCM{
+				Timestamp:      timestamp,
+				Magic:          int32(lcm.Magic),
+				SequenceNumber: int32(lcm.SequenceNumber),
+				PayloadSize:    int32(lcm.PayloadSize),
+				FragmentOffset: int32(lcm.FragmentOffset),
+				FragmentNumber: int32(lcm.FragmentNumber),
+				TotalFragments: int32(lcm.TotalFragments),
+				ChannelName:    string(lcm.ChannelName),
+				Fragmented:     bool(lcm.Fragmented),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

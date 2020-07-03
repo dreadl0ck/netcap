@@ -23,6 +23,7 @@ import (
 var igmpEncoder = CreateLayerEncoder(
 	types.Type_NC_IGMP,
 	layers.LayerTypeIGMP,
+	"The Internet Group Management Protocol (IGMP) is a communications protocol used by hosts and adjacent routers on IPv4 networks to establish multicast group memberships",
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if igmp, ok := layer.(*layers.IGMP); ok {
 			var addresses []string
@@ -60,4 +61,5 @@ var igmpEncoder = CreateLayerEncoder(
 			}
 		}
 		return nil
-	})
+	},
+)

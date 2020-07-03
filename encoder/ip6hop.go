@@ -23,6 +23,7 @@ import (
 var ipv6HopByHopEncoder = CreateLayerEncoder(
 	types.Type_NC_IPv6HopByHop,
 	layers.LayerTypeIPv6HopByHop,
+	"Internet Protocol version 6 (IPv6) is the most recent version of the Internet Protocol (IP), the communications protocol that provides an identification and location system for computers on networks and routes traffic across the Internet",
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if ip6hop, ok := layer.(*layers.IPv6HopByHop); ok {
 			var options []*types.IPv6HopByHopOption
@@ -48,4 +49,5 @@ var ipv6HopByHopEncoder = CreateLayerEncoder(
 			}
 		}
 		return nil
-	})
+	},
+)

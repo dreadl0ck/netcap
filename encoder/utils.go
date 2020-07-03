@@ -201,36 +201,36 @@ func ShowEncoders() {
 		totalFields, totalAuditRecords int
 	)
 
-	fmt.Println("custom:", len(customEncoderSlice))
+	fmt.Println("Custom Audit Records: Total", len(customEncoderSlice), "Format: EncoderName ( Number of Fields )")
 	for _, e := range customEncoderSlice {
 		totalAuditRecords++
 		f := countFields(e.Type)
 		totalFields += f
-		fmt.Println("+", e.Type.String(), "(", f, ")")
+		fmt.Println(pad("+ " + e.Type.String() + " ( " + strconv.Itoa(f) + " )", 35), e.Description)
 	}
 	fmt.Println("> custom encoder fields: ", totalFields)
 	fmt.Println("> custom encoder audit records:", totalAuditRecords)
 
-	fmt.Println("layer:", len(layerEncoderSlice))
+	fmt.Println("\nLayer Audit Records: Total", len(layerEncoderSlice), "Format: EncoderName ( Number of Fields )")
 	for _, e := range layerEncoderSlice {
 		totalAuditRecords++
 		f := countFields(e.Type)
 		totalFields += f
-		fmt.Println("+", e.Layer.String(), "(", f, ")")
+		fmt.Println(pad("+ " + e.Layer.String() + " ( " + strconv.Itoa(f) + " )", 35), e.Description)
 	}
 
 	var rows [][]string
-	for _, p := range rankByWordCount(typeMap) {
+	for _, p := range rankByWordCount(typeMap)[:10] {
 		rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
 	}
-	fmt.Println("\nTypes:")
+	fmt.Println("\nTypes with highest number of fields (Top Ten):")
 	tui.Table(os.Stdout, []string{"Type", "NumFields"}, rows)
 
 	rows = [][]string{}
-	for _, p := range rankByWordCount(fieldNameMap) {
+	for _, p := range rankByWordCount(fieldNameMap)[:10] {
 		rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
 	}
-	fmt.Println("\nFields:")
+	fmt.Println("\nFields with highest number of occurrences (Top Ten):")
 	tui.Table(os.Stdout, []string{"Name", "Count"}, rows)
 
 	fmt.Println("> total fields: ", totalFields)

@@ -20,25 +20,30 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ntpEncoder = CreateLayerEncoder(types.Type_NC_NTP, layers.LayerTypeNTP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if ntp, ok := layer.(*layers.NTP); ok {
-		return &types.NTP{
-			Timestamp:          timestamp,
-			LeapIndicator:      int32(ntp.LeapIndicator),
-			Version:            int32(ntp.Version),
-			Mode:               int32(ntp.Mode),
-			Stratum:            int32(ntp.Stratum),
-			Poll:               int32(ntp.Poll),
-			Precision:          int32(ntp.Precision),
-			RootDelay:          uint32(ntp.RootDelay),
-			RootDispersion:     uint32(ntp.RootDispersion),
-			ReferenceID:        uint32(ntp.ReferenceID),
-			ReferenceTimestamp: uint64(ntp.ReferenceTimestamp),
-			OriginTimestamp:    uint64(ntp.OriginTimestamp),
-			ReceiveTimestamp:   uint64(ntp.ReceiveTimestamp),
-			TransmitTimestamp:  uint64(ntp.TransmitTimestamp),
-			ExtensionBytes:     ntp.ExtensionBytes,
+var ntpEncoder = CreateLayerEncoder(
+	types.Type_NC_NTP,
+	layers.LayerTypeNTP,
+	"The Network Time Protocol is a networking protocol for clock synchronization between computer systems over packet-switched, variable-latency data networks",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if ntp, ok := layer.(*layers.NTP); ok {
+			return &types.NTP{
+				Timestamp:          timestamp,
+				LeapIndicator:      int32(ntp.LeapIndicator),
+				Version:            int32(ntp.Version),
+				Mode:               int32(ntp.Mode),
+				Stratum:            int32(ntp.Stratum),
+				Poll:               int32(ntp.Poll),
+				Precision:          int32(ntp.Precision),
+				RootDelay:          uint32(ntp.RootDelay),
+				RootDispersion:     uint32(ntp.RootDispersion),
+				ReferenceID:        uint32(ntp.ReferenceID),
+				ReferenceTimestamp: uint64(ntp.ReferenceTimestamp),
+				OriginTimestamp:    uint64(ntp.OriginTimestamp),
+				ReceiveTimestamp:   uint64(ntp.ReceiveTimestamp),
+				TransmitTimestamp:  uint64(ntp.TransmitTimestamp),
+				ExtensionBytes:     ntp.ExtensionBytes,
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

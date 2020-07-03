@@ -20,25 +20,30 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var smtpEncoder = CreateLayerEncoder(types.Type_NC_SMTP, layers.LayerTypeSMTP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if smtp, ok := layer.(*layers.SMTP); ok {
-		var responses []*types.SMTPResponse
-		for _, r := range smtp.ResponseLines {
-			responses = append(responses, &types.SMTPResponse{
-				ResponseCode: int32(r.ResponseCode),
-				Parameter:    r.Parameter,
-			})
+var smtpEncoder = CreateLayerEncoder(
+	types.Type_NC_SMTP,
+	layers.LayerTypeSMTP,
+	"The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if smtp, ok := layer.(*layers.SMTP); ok {
+			var responses []*types.SMTPResponse
+			for _, r := range smtp.ResponseLines {
+				responses = append(responses, &types.SMTPResponse{
+					ResponseCode: int32(r.ResponseCode),
+					Parameter:    r.Parameter,
+				})
+			}
+			return &types.SMTP{
+				Timestamp:     timestamp,
+				IsEncrypted:   smtp.IsEncrypted,
+				IsResponse:    smtp.IsResponse,
+				ResponseLines: responses,
+				Command: &types.SMTPCommand{
+					Command:   int32(smtp.Command.Command),
+					Parameter: smtp.Command.Parameter,
+				},
+			}
 		}
-		return &types.SMTP{
-			Timestamp:     timestamp,
-			IsEncrypted:   smtp.IsEncrypted,
-			IsResponse:    smtp.IsResponse,
-			ResponseLines: responses,
-			Command: &types.SMTPCommand{
-				Command:   int32(smtp.Command.Command),
-				Parameter: smtp.Command.Parameter,
-			},
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

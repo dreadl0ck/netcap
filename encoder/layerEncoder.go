@@ -217,13 +217,12 @@ func InitLayerEncoders(c Config, quiet bool) {
 }
 
 // CreateLayerEncoder returns a new LayerEncoder instance
-//func CreateLayerEncoder(nt types.Type, lt gopacket.LayerType, handler LayerEncoderHandler, description string) *LayerEncoder {
-func CreateLayerEncoder(nt types.Type, lt gopacket.LayerType, handler LayerEncoderHandler) *LayerEncoder {
+func CreateLayerEncoder(nt types.Type, lt gopacket.LayerType, description string, handler LayerEncoderHandler) *LayerEncoder {
 	return &LayerEncoder{
 		Layer:   lt,
 		Handler: handler,
 		Type:    nt,
-		//Description: description,
+		Description: description,
 	}
 }
 

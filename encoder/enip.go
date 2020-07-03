@@ -20,23 +20,28 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ethernetIPEncoder = CreateLayerEncoder(types.Type_NC_ENIP, layers.LayerTypeENIP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if enip, ok := layer.(*layers.ENIP); ok {
-		var cmdSpecificData *types.ENIPCommandSpecificData
-		cmdSpecificData = &types.ENIPCommandSpecificData{
-			Cmd:  uint32(enip.CommandSpecific.Cmd),
-			Data: enip.CommandSpecific.Data,
+var ethernetIPEncoder = CreateLayerEncoder(
+	types.Type_NC_ENIP,
+	layers.LayerTypeENIP,
+	"Industrial network protocol that adapts the Common Industrial Protocol to standard Ethernet",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if enip, ok := layer.(*layers.ENIP); ok {
+			var cmdSpecificData *types.ENIPCommandSpecificData
+			cmdSpecificData = &types.ENIPCommandSpecificData{
+				Cmd:  uint32(enip.CommandSpecific.Cmd),
+				Data: enip.CommandSpecific.Data,
+			}
+			return &types.ENIP{
+				Timestamp:       timestamp,
+				Command:         uint32(enip.Command),
+				Length:          uint32(enip.Length),
+				SessionHandle:   uint32(enip.SessionHandle),
+				Status:          uint32(enip.Status),
+				SenderContext:   []byte(enip.SenderContext),
+				Options:         uint32(enip.Options),
+				CommandSpecific: cmdSpecificData,
+			}
 		}
-		return &types.ENIP{
-			Timestamp:       timestamp,
-			Command:         uint32(enip.Command),
-			Length:          uint32(enip.Length),
-			SessionHandle:   uint32(enip.SessionHandle),
-			Status:          uint32(enip.Status),
-			SenderContext:   []byte(enip.SenderContext),
-			Options:         uint32(enip.Options),
-			CommandSpecific: cmdSpecificData,
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

@@ -20,94 +20,96 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-// IMPORTANT: OSPF has gopacket.LayerType == "OSPF"
-// therefore the audit record file will also be named OSPF.ncap
-// and contain either the v2 or v3 version, as stated in the file header
-var ospfv3Encoder = CreateLayerEncoder(types.Type_NC_OSPFv3, layers.LayerTypeOSPF, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if ospf3, ok := layer.(*layers.OSPFv3); ok {
-		var (
-			hello  *types.HelloPkg
-			dbDesc *types.DbDescPkg
-			lSR    []*types.LSReq
-			lSU    *types.LSUpdate
-			lSAs   []*types.LSAheader
-		)
-		switch v := ospf3.Content.(type) {
-		case layers.HelloPkg:
-			hello = &types.HelloPkg{
-				InterfaceID:              uint32(v.InterfaceID),
-				RtrPriority:              int32(v.RtrPriority),
-				Options:                  uint32(v.Options),
-				HelloInterval:            int32(v.HelloInterval),
-				RouterDeadInterval:       uint32(v.RouterDeadInterval),
-				DesignatedRouterID:       uint32(v.DesignatedRouterID),
-				BackupDesignatedRouterID: uint32(v.BackupDesignatedRouterID),
-				NeighborID:               []uint32(v.NeighborID),
+var ospfv3Encoder = CreateLayerEncoder(
+	types.Type_NC_OSPFv3,
+	layers.LayerTypeOSPF,
+	"Open Shortest Path First (OSPF) v3 is a routing protocol for Internet Protocol (IP) networks with support for IPv6",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if ospf3, ok := layer.(*layers.OSPFv3); ok {
+			var (
+				hello  *types.HelloPkg
+				dbDesc *types.DbDescPkg
+				lSR    []*types.LSReq
+				lSU    *types.LSUpdate
+				lSAs   []*types.LSAheader
+			)
+			switch v := ospf3.Content.(type) {
+			case layers.HelloPkg:
+				hello = &types.HelloPkg{
+					InterfaceID:              uint32(v.InterfaceID),
+					RtrPriority:              int32(v.RtrPriority),
+					Options:                  uint32(v.Options),
+					HelloInterval:            int32(v.HelloInterval),
+					RouterDeadInterval:       uint32(v.RouterDeadInterval),
+					DesignatedRouterID:       uint32(v.DesignatedRouterID),
+					BackupDesignatedRouterID: uint32(v.BackupDesignatedRouterID),
+					NeighborID:               []uint32(v.NeighborID),
+				}
+			case layers.DbDescPkg:
+				var lsas []*types.LSAheader
+				for _, h := range v.LSAinfo {
+					lsas = append(lsas, &types.LSAheader{
+						LSAge:       int32(h.LSAge),
+						LSType:      int32(h.LSType),
+						LinkStateID: uint32(h.LinkStateID),
+						AdvRouter:   uint32(h.AdvRouter),
+						LSSeqNumber: uint32(h.LSSeqNumber),
+						LSChecksum:  int32(h.LSChecksum),
+						Length:      int32(h.Length),
+						LSOptions:   int32(h.LSOptions),
+					})
+				}
+				dbDesc = &types.DbDescPkg{
+					Options:      uint32(v.Options),
+					InterfaceMTU: int32(v.InterfaceMTU),
+					Flags:        int32(v.Flags),
+					DDSeqNumber:  uint32(v.DDSeqNumber),
+					LSAinfo:      lsas, // []*LSAheader
+				}
+			case []layers.LSReq:
+				for _, r := range v {
+					lSR = append(lSR, &types.LSReq{
+						LSType:    int32(r.LSType),
+						LSID:      uint32(r.LSID),
+						AdvRouter: uint32(r.AdvRouter),
+					})
+				}
+			case layers.LSUpdate:
+				lSU = encoderLSUpdate(v)
+			case []layers.LSAheader:
+				for _, r := range v {
+					lSAs = append(lSAs, &types.LSAheader{
+						LSAge:       int32(r.LSAge),
+						LSType:      int32(r.LSType),
+						LinkStateID: uint32(r.LinkStateID),
+						AdvRouter:   uint32(r.AdvRouter),
+						LSSeqNumber: uint32(r.LSSeqNumber),
+						LSChecksum:  int32(r.LSChecksum),
+						Length:      int32(r.Length),
+						LSOptions:   int32(r.LSOptions),
+					})
+				}
 			}
-		case layers.DbDescPkg:
-			var lsas []*types.LSAheader
-			for _, h := range v.LSAinfo {
-				lsas = append(lsas, &types.LSAheader{
-					LSAge:       int32(h.LSAge),
-					LSType:      int32(h.LSType),
-					LinkStateID: uint32(h.LinkStateID),
-					AdvRouter:   uint32(h.AdvRouter),
-					LSSeqNumber: uint32(h.LSSeqNumber),
-					LSChecksum:  int32(h.LSChecksum),
-					Length:      int32(h.Length),
-					LSOptions:   int32(h.LSOptions),
-				})
-			}
-			dbDesc = &types.DbDescPkg{
-				Options:      uint32(v.Options),
-				InterfaceMTU: int32(v.InterfaceMTU),
-				Flags:        int32(v.Flags),
-				DDSeqNumber:  uint32(v.DDSeqNumber),
-				LSAinfo:      lsas, // []*LSAheader
-			}
-		case []layers.LSReq:
-			for _, r := range v {
-				lSR = append(lSR, &types.LSReq{
-					LSType:    int32(r.LSType),
-					LSID:      uint32(r.LSID),
-					AdvRouter: uint32(r.AdvRouter),
-				})
-			}
-		case layers.LSUpdate:
-			lSU = encoderLSUpdate(v)
-		case []layers.LSAheader:
-			for _, r := range v {
-				lSAs = append(lSAs, &types.LSAheader{
-					LSAge:       int32(r.LSAge),
-					LSType:      int32(r.LSType),
-					LinkStateID: uint32(r.LinkStateID),
-					AdvRouter:   uint32(r.AdvRouter),
-					LSSeqNumber: uint32(r.LSSeqNumber),
-					LSChecksum:  int32(r.LSChecksum),
-					Length:      int32(r.Length),
-					LSOptions:   int32(r.LSOptions),
-				})
+			return &types.OSPFv3{
+				Timestamp:    timestamp,
+				Version:      int32(ospf3.Version),
+				Type:         int32(ospf3.Type),
+				PacketLength: int32(ospf3.PacketLength),
+				RouterID:     uint32(ospf3.RouterID),
+				AreaID:       uint32(ospf3.AreaID),
+				Checksum:     int32(ospf3.Checksum),
+				Instance:     int32(ospf3.Instance),
+				Reserved:     int32(ospf3.Reserved),
+				Hello:        hello,  // *HelloPkg
+				DbDesc:       dbDesc, // *DbDescPkg
+				LSR:          lSR,    // []*LSReq
+				LSU:          lSU,    // *LSUpdate
+				LSAs:         lSAs,   // []*LSAheader
 			}
 		}
-		return &types.OSPFv3{
-			Timestamp:    timestamp,
-			Version:      int32(ospf3.Version),
-			Type:         int32(ospf3.Type),
-			PacketLength: int32(ospf3.PacketLength),
-			RouterID:     uint32(ospf3.RouterID),
-			AreaID:       uint32(ospf3.AreaID),
-			Checksum:     int32(ospf3.Checksum),
-			Instance:     int32(ospf3.Instance),
-			Reserved:     int32(ospf3.Reserved),
-			Hello:        hello,  // *HelloPkg
-			DbDesc:       dbDesc, // *DbDescPkg
-			LSR:          lSR,    // []*LSReq
-			LSU:          lSU,    // *LSUpdate
-			LSAs:         lSAs,   // []*LSAheader
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)
 
 func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 	var lsas []*types.LSA

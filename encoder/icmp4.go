@@ -20,15 +20,20 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var icmpv4Encoder = CreateLayerEncoder(types.Type_NC_ICMPv4, layers.LayerTypeICMPv4, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if icmp4, ok := layer.(*layers.ICMPv4); ok {
-		return &types.ICMPv4{
-			Timestamp: timestamp,
-			TypeCode:  int32(icmp4.TypeCode),
-			Checksum:  int32(icmp4.Checksum),
-			Id:        int32(icmp4.Id),
-			Seq:       int32(icmp4.Seq),
+var icmpv4Encoder = CreateLayerEncoder(
+	types.Type_NC_ICMPv4,
+	layers.LayerTypeICMPv4,
+	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if icmp4, ok := layer.(*layers.ICMPv4); ok {
+			return &types.ICMPv4{
+				Timestamp: timestamp,
+				TypeCode:  int32(icmp4.TypeCode),
+				Checksum:  int32(icmp4.Checksum),
+				Id:        int32(icmp4.Id),
+				Seq:       int32(icmp4.Seq),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

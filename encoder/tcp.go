@@ -20,51 +20,56 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var tcpEncoder = CreateLayerEncoder(types.Type_NC_TCP, layers.LayerTypeTCP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if tcp, ok := layer.(*layers.TCP); ok {
-		var (
-			opts    []*types.TCPOption
-			payload []byte
-		)
-		if c.IncludePayloads {
-			payload = layer.LayerPayload()
+var tcpEncoder = CreateLayerEncoder(
+	types.Type_NC_TCP,
+	layers.LayerTypeTCP,
+	"The Transmission Control Protocol (TCP) is a connection-oriented communications protocol, that facilitates the exchange of messages between computing devices in a network",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if tcp, ok := layer.(*layers.TCP); ok {
+			var (
+				opts    []*types.TCPOption
+				payload []byte
+			)
+			if c.IncludePayloads {
+				payload = layer.LayerPayload()
+			}
+			var e float64
+			if c.CalculateEntropy {
+				e = Entropy(tcp.Payload)
+			}
+			for _, o := range tcp.Options {
+				opts = append(opts, &types.TCPOption{
+					OptionData:   o.OptionData,
+					OptionLength: int32(o.OptionLength),
+					OptionType:   int32(o.OptionType),
+				})
+			}
+			return &types.TCP{
+				Timestamp:      timestamp,
+				SrcPort:        int32(tcp.SrcPort),
+				DstPort:        int32(tcp.DstPort),
+				SeqNum:         uint32(tcp.Seq),
+				AckNum:         uint32(tcp.Ack),
+				DataOffset:     int32(tcp.DataOffset),
+				FIN:            bool(tcp.FIN),
+				SYN:            bool(tcp.SYN),
+				RST:            bool(tcp.RST),
+				PSH:            bool(tcp.PSH),
+				ACK:            bool(tcp.ACK),
+				URG:            bool(tcp.URG),
+				ECE:            bool(tcp.ECE),
+				CWR:            bool(tcp.CWR),
+				NS:             bool(tcp.NS),
+				Window:         int32(tcp.Window),
+				Checksum:       int32(tcp.Checksum),
+				Urgent:         int32(tcp.Urgent),
+				Padding:        tcp.Padding,
+				Options:        opts,
+				PayloadEntropy: e,
+				PayloadSize:    int32(len(tcp.Payload)),
+				Payload:        payload,
+			}
 		}
-		var e float64
-		if c.CalculateEntropy {
-			e = Entropy(tcp.Payload)
-		}
-		for _, o := range tcp.Options {
-			opts = append(opts, &types.TCPOption{
-				OptionData:   o.OptionData,
-				OptionLength: int32(o.OptionLength),
-				OptionType:   int32(o.OptionType),
-			})
-		}
-		return &types.TCP{
-			Timestamp:      timestamp,
-			SrcPort:        int32(tcp.SrcPort),
-			DstPort:        int32(tcp.DstPort),
-			SeqNum:         uint32(tcp.Seq),
-			AckNum:         uint32(tcp.Ack),
-			DataOffset:     int32(tcp.DataOffset),
-			FIN:            bool(tcp.FIN),
-			SYN:            bool(tcp.SYN),
-			RST:            bool(tcp.RST),
-			PSH:            bool(tcp.PSH),
-			ACK:            bool(tcp.ACK),
-			URG:            bool(tcp.URG),
-			ECE:            bool(tcp.ECE),
-			CWR:            bool(tcp.CWR),
-			NS:             bool(tcp.NS),
-			Window:         int32(tcp.Window),
-			Checksum:       int32(tcp.Checksum),
-			Urgent:         int32(tcp.Urgent),
-			Padding:        tcp.Padding,
-			Options:        opts,
-			PayloadEntropy: e,
-			PayloadSize:    int32(len(tcp.Payload)),
-			Payload:        payload,
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

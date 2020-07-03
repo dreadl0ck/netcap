@@ -20,37 +20,42 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var diameterEncoder = CreateLayerEncoder(types.Type_NC_Diameter, layers.LayerTypeDiameter, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if d, ok := layer.(*layers.Diameter); ok {
-		var avps []*types.AVP
-		for _, a := range d.AVPs {
-			avps = append(avps, &types.AVP{
-				AttributeCode:   a.AttributeCode,
-				AttributeName:   a.AttributeName,
-				AttributeFormat: a.AttributeFormat,
-				Flags:           uint32(a.Flags),
-				HeaderLen:       uint32(a.HeaderLen),
-				Len:             a.Len,
-				VendorCode:      a.VendorCode,
-				VendorName:      a.VendorName,
-				VendorID:        a.VendorID,
-				DecodedValue:    a.DecodedValue,
-				Padding:         a.Padding,
-				Value:           a.Value,
-				ValueLen:        a.ValueLen,
-			})
+var diameterEncoder = CreateLayerEncoder(
+	types.Type_NC_Diameter,
+	layers.LayerTypeDiameter,
+	"Diameter is an authentication, authorization, and accounting protocol for computer networks, it evolved from the earlier RADIUS protocol",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if d, ok := layer.(*layers.Diameter); ok {
+			var avps []*types.AVP
+			for _, a := range d.AVPs {
+				avps = append(avps, &types.AVP{
+					AttributeCode:   a.AttributeCode,
+					AttributeName:   a.AttributeName,
+					AttributeFormat: a.AttributeFormat,
+					Flags:           uint32(a.Flags),
+					HeaderLen:       uint32(a.HeaderLen),
+					Len:             a.Len,
+					VendorCode:      a.VendorCode,
+					VendorName:      a.VendorName,
+					VendorID:        a.VendorID,
+					DecodedValue:    a.DecodedValue,
+					Padding:         a.Padding,
+					Value:           a.Value,
+					ValueLen:        a.ValueLen,
+				})
+			}
+			return &types.Diameter{
+				Timestamp:     timestamp,
+				Version:       uint32(d.Version),
+				Flags:         uint32(d.Flags),
+				MessageLen:    d.MessageLen,
+				CommandCode:   d.CommandCode,
+				ApplicationID: d.ApplicationID,
+				HopByHopID:    d.HopByHopID,
+				EndToEndID:    d.EndToEndID,
+				AVPs:          avps,
+			}
 		}
-		return &types.Diameter{
-			Timestamp:     timestamp,
-			Version:       uint32(d.Version),
-			Flags:         uint32(d.Flags),
-			MessageLen:    d.MessageLen,
-			CommandCode:   d.CommandCode,
-			ApplicationID: d.ApplicationID,
-			HopByHopID:    d.HopByHopID,
-			EndToEndID:    d.EndToEndID,
-			AVPs:          avps,
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

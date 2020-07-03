@@ -23,6 +23,7 @@ import (
 var llcEncoder = CreateLayerEncoder(
 	types.Type_NC_LLC,
 	layers.LayerTypeLLC,
+	"The LLC sublayer acts as an interface between the media access control sublayer and the network layer",
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if llc, ok := layer.(*layers.LLC); ok {
 			return &types.LLC{
@@ -35,4 +36,5 @@ var llcEncoder = CreateLayerEncoder(
 			}
 		}
 		return nil
-	})
+	},
+)

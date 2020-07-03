@@ -20,15 +20,20 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var mplsEncoder = CreateLayerEncoder(types.Type_NC_MPLS, layers.LayerTypeMPLS, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if mpls, ok := layer.(*layers.MPLS); ok {
-		return &types.MPLS{
-			Timestamp:    timestamp,
-			Label:        int32(mpls.Label),
-			TrafficClass: int32(mpls.TrafficClass),
-			StackBottom:  bool(mpls.StackBottom),
-			TTL:          int32(mpls.TTL),
+var mplsEncoder = CreateLayerEncoder(
+	types.Type_NC_MPLS,
+	layers.LayerTypeMPLS,
+	"Multiprotocol Label Switching is a routing technique in telecommunications networks that directs data from one node to the next based on short path labels rather than long network addresses, thus avoiding complex lookups in a routing table and speeding traffic flows",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if mpls, ok := layer.(*layers.MPLS); ok {
+			return &types.MPLS{
+				Timestamp:    timestamp,
+				Label:        int32(mpls.Label),
+				TrafficClass: int32(mpls.TrafficClass),
+				StackBottom:  bool(mpls.StackBottom),
+				TTL:          int32(mpls.TTL),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

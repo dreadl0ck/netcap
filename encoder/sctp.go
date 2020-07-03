@@ -20,15 +20,20 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var sctpEncoder = CreateLayerEncoder(types.Type_NC_SCTP, layers.LayerTypeSCTP, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if sctp, ok := layer.(*layers.SCTP); ok {
-		return &types.SCTP{
-			Timestamp:       timestamp,
-			Checksum:        sctp.Checksum,
-			DstPort:         uint32(sctp.DstPort),
-			SrcPort:         uint32(sctp.SrcPort),
-			VerificationTag: sctp.VerificationTag,
+var sctpEncoder = CreateLayerEncoder(
+	types.Type_NC_SCTP,
+	layers.LayerTypeSCTP,
+	"The Stream Control Transmission Protocol (SCTP) is a computer networking communications protocol which operates at the transport layer and serves a role similar to the popular protocols TCP and UDP",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if sctp, ok := layer.(*layers.SCTP); ok {
+			return &types.SCTP{
+				Timestamp:       timestamp,
+				Checksum:        sctp.Checksum,
+				DstPort:         uint32(sctp.DstPort),
+				SrcPort:         uint32(sctp.SrcPort),
+				VerificationTag: sctp.VerificationTag,
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

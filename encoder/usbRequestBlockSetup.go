@@ -20,16 +20,21 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var usbRequestBlockSetupEncoder = CreateLayerEncoder(types.Type_NC_USBRequestBlockSetup, layers.LayerTypeUSBRequestBlockSetup, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if usbR, ok := layer.(*layers.USBRequestBlockSetup); ok {
-		return &types.USBRequestBlockSetup{
-			Timestamp:   timestamp,
-			RequestType: int32(usbR.RequestType),
-			Request:     int32(usbR.Request),
-			Value:       int32(usbR.Value),
-			Index:       int32(usbR.Index),
-			Length:      int32(usbR.Length),
+var usbRequestBlockSetupEncoder = CreateLayerEncoder(
+	types.Type_NC_USBRequestBlockSetup,
+	layers.LayerTypeUSBRequestBlockSetup,
+	"Universal Serial Bus (USB) is an industry standard that establishes specifications for cables and connectors and protocols for connection, communication and power supply (interfacing) between computers, peripherals and other computers",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if usbR, ok := layer.(*layers.USBRequestBlockSetup); ok {
+			return &types.USBRequestBlockSetup{
+				Timestamp:   timestamp,
+				RequestType: int32(usbR.RequestType),
+				Request:     int32(usbR.Request),
+				Value:       int32(usbR.Value),
+				Index:       int32(usbR.Index),
+				Length:      int32(usbR.Length),
+			}
 		}
-	}
-	return nil
-})
+		return nil
+	},
+)

@@ -20,21 +20,26 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var icmpv6NeighborAdvertisementEncoder = CreateLayerEncoder(types.Type_NC_ICMPv6NeighborAdvertisement, layers.LayerTypeICMPv6NeighborAdvertisement, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if icmp6na, ok := layer.(*layers.ICMPv6NeighborAdvertisement); ok {
-		var opts []*types.ICMPv6Option
-		for _, o := range icmp6na.Options {
-			opts = append(opts, &types.ICMPv6Option{
-				Data: o.Data,
-				Type: int32(o.Type),
-			})
+var icmpv6NeighborAdvertisementEncoder = CreateLayerEncoder(
+	types.Type_NC_ICMPv6NeighborAdvertisement,
+	layers.LayerTypeICMPv6NeighborAdvertisement,
+	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if icmp6na, ok := layer.(*layers.ICMPv6NeighborAdvertisement); ok {
+			var opts []*types.ICMPv6Option
+			for _, o := range icmp6na.Options {
+				opts = append(opts, &types.ICMPv6Option{
+					Data: o.Data,
+					Type: int32(o.Type),
+				})
+			}
+			return &types.ICMPv6NeighborAdvertisement{
+				Timestamp:     timestamp,
+				Flags:         int32(icmp6na.Flags),
+				TargetAddress: icmp6na.TargetAddress.String(),
+				Options:       opts,
+			}
 		}
-		return &types.ICMPv6NeighborAdvertisement{
-			Timestamp:     timestamp,
-			Flags:         int32(icmp6na.Flags),
-			TargetAddress: icmp6na.TargetAddress.String(),
-			Options:       opts,
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

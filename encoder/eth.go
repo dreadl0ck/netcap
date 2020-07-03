@@ -20,20 +20,25 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ethernetEncoder = CreateLayerEncoder(types.Type_NC_Ethernet, layers.LayerTypeEthernet, func(layer gopacket.Layer, timestamp string) proto.Message {
-	if eth, ok := layer.(*layers.Ethernet); ok {
-		var e float64
-		if c.CalculateEntropy {
-			e = Entropy(eth.Payload)
+var ethernetEncoder = CreateLayerEncoder(
+	types.Type_NC_Ethernet,
+	layers.LayerTypeEthernet,
+	"Ethernet is a family of computer networking technologies commonly used in local area networks, metropolitan area networks and wide area networks",
+	func(layer gopacket.Layer, timestamp string) proto.Message {
+		if eth, ok := layer.(*layers.Ethernet); ok {
+			var e float64
+			if c.CalculateEntropy {
+				e = Entropy(eth.Payload)
+			}
+			return &types.Ethernet{
+				Timestamp:      timestamp,
+				SrcMAC:         eth.SrcMAC.String(),
+				DstMAC:         eth.DstMAC.String(),
+				EthernetType:   int32(eth.EthernetType),
+				PayloadEntropy: e,
+				PayloadSize:    int32(len(eth.Payload)),
+			}
 		}
-		return &types.Ethernet{
-			Timestamp:      timestamp,
-			SrcMAC:         eth.SrcMAC.String(),
-			DstMAC:         eth.DstMAC.String(),
-			EthernetType:   int32(eth.EthernetType),
-			PayloadEntropy: e,
-			PayloadSize:    int32(len(eth.Payload)),
-		}
-	}
-	return nil
-})
+		return nil
+	},
+)

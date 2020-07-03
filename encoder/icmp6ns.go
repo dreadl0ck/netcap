@@ -23,6 +23,7 @@ import (
 var icmpv6NeighborSolicitationEncoder = CreateLayerEncoder(
 	types.Type_NC_ICMPv6NeighborSolicitation,
 	layers.LayerTypeICMPv6NeighborSolicitation,
+	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if icmp6ns, ok := layer.(*layers.ICMPv6NeighborSolicitation); ok {
 			var opts []*types.ICMPv6Option
@@ -39,4 +40,5 @@ var icmpv6NeighborSolicitationEncoder = CreateLayerEncoder(
 			}
 		}
 		return nil
-	})
+	},
+)
