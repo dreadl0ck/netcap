@@ -356,35 +356,42 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
-var credentialsEncoder = CreateCustomEncoder(types.Type_NC_Credentials, "Credentials", func(d *CustomEncoder) error {
+var credentialsEncoder = CreateCustomEncoder(
+	types.Type_NC_Credentials,
+	"Credentials",
+	"Credentials represent a user and password combination to authenticate to a service",
+	func(d *CustomEncoder) error {
 
-	if c.CustomRegex != "" {
-		r, err := regexp.Compile(c.CustomRegex)
-		if err != nil {
-			return err
+		if c.CustomRegex != "" {
+			r, err := regexp.Compile(c.CustomRegex)
+			if err != nil {
+				return err
+			}
+
+			tcpConnectionHarvesters = append(tcpConnectionHarvesters, func(data []byte, ident string, ts time.Time) *types.Credentials {
+				matches := r.FindSubmatch(data)
+				if len(matches) > 1 {
+					notes := ""
+					for _, m := range matches {
+						notes += " " + string(m) + " "
+					}
+					return &types.Credentials{
+						Notes: notes,
+					}
+				}
+				return nil
+			})
 		}
 
-		tcpConnectionHarvesters = append(tcpConnectionHarvesters, func(data []byte, ident string, ts time.Time) *types.Credentials {
-			matches := r.FindSubmatch(data)
-			if len(matches) > 1 {
-				notes := ""
-				for _, m := range matches {
-					notes += " " + string(m) + " "
-				}
-				return &types.Credentials{
-					Notes: notes,
-				}
-			}
-			return nil
-		})
-	}
-
-	return nil
-}, func(p gopacket.Packet) proto.Message {
-	return nil
-}, func(e *CustomEncoder) error {
-	return nil
-})
+		return nil
+	},
+	func(p gopacket.Packet) proto.Message {
+		return nil
+	},
+	func(e *CustomEncoder) error {
+		return nil
+	},
+)
 
 // harvester for the FTP protocol
 func findVersions(data []byte, ident string, ts time.Time) *types.Software {

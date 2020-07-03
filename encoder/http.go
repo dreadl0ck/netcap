@@ -26,14 +26,21 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var httpEncoder = CreateCustomEncoder(types.Type_NC_HTTP, "HTTP", func(d *CustomEncoder) error {
-	streamFactory.decodeHTTP = true
-	return nil
-}, func(packet gopacket.Packet) proto.Message {
-	return nil
-}, func(e *CustomEncoder) error {
-	return nil
-})
+var httpEncoder = CreateCustomEncoder(
+	types.Type_NC_HTTP,
+	"HTTP",
+	"The Hypertext Transfer Protocol is powering the world wide web",
+	func(d *CustomEncoder) error {
+		streamFactory.decodeHTTP = true
+		return nil
+	},
+	func(packet gopacket.Packet) proto.Message {
+		return nil
+	},
+	func(e *CustomEncoder) error {
+		return nil
+	},
+)
 
 /*
  *	Utils

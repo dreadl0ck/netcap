@@ -19,11 +19,18 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var sshEncoder = CreateCustomEncoder(types.Type_NC_SSH, "SSH", func(d *CustomEncoder) error {
-	streamFactory.decodeSSH = true
-	return nil
-}, func(p gopacket.Packet) proto.Message {
-	return nil
-}, func(e *CustomEncoder) error {
-	return nil
-})
+var sshEncoder = CreateCustomEncoder(
+	types.Type_NC_SSH,
+	"SSH",
+	"The Secure Shell Protocol allows controlling remote machines over an encrypted connection",
+	func(d *CustomEncoder) error {
+		streamFactory.decodeSSH = true
+		return nil
+	},
+	func(p gopacket.Packet) proto.Message {
+		return nil
+	},
+	func(e *CustomEncoder) error {
+		return nil
+	},
+)

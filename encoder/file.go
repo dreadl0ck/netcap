@@ -26,14 +26,21 @@ var (
 	fileEncoderInstance *CustomEncoder
 )
 
-var fileEncoder = CreateCustomEncoder(types.Type_NC_File, "File", func(d *CustomEncoder) error {
-	fileEncoderInstance = d
-	return nil
-}, func(p gopacket.Packet) proto.Message {
-	return nil
-}, func(e *CustomEncoder) error {
-	return nil
-})
+var fileEncoder = CreateCustomEncoder(
+	types.Type_NC_File,
+	"File",
+	"A file that was transferred over the network",
+	func(d *CustomEncoder) error {
+		fileEncoderInstance = d
+		return nil
+	},
+	func(p gopacket.Packet) proto.Message {
+		return nil
+	},
+	func(e *CustomEncoder) error {
+		return nil
+	},
+)
 
 // writeProfile writes the profile
 func writeFile(c *types.File) {
