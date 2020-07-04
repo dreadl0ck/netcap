@@ -19,11 +19,11 @@ func ToSourceIPs() {
 
 					var ent *maltego.MaltegoEntityObj
 					if resolvers.IsPrivateIP(net.ParseIP(ip.Addr)) {
-						ent = trx.AddEntity("netcap.InternalDeviceIP", ip.Addr)
-						ent.SetType("netcap.InternalDeviceIP")
+						ent = trx.AddEntity("netcap.InternalSourceIP", ip.Addr)
+						ent.SetType("netcap.InternalSourceIP")
 					} else {
-						ent = trx.AddEntity("netcap.ExternalDeviceIP", ip.Addr)
-						ent.SetType("netcap.ExternalDeviceIP")
+						ent = trx.AddEntity("netcap.ExternalSourceIP", ip.Addr)
+						ent.SetType("netcap.ExternalSourceIP")
 					}
 					dnsNames := strings.Join(ip.DNSNames, "\n")
 					ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + dnsNames)
