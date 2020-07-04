@@ -180,8 +180,8 @@ func Run() {
 		ToSrcPorts()
 	case "ToOutgoingFlowsFiltered":
 		ToOutgoingFlowsFiltered()
-	case "ToURLsForHTTPHost":
-		ToURLsForHTTPHost()
+	case "ToURLsForWebsite":
+		ToURLsForWebsite()
 	default:
 		trx := maltego.MaltegoTransform{}
 		trx.AddUIMessage("Unknown transform: "+os.Args[2], maltego.UIM_FATAL)

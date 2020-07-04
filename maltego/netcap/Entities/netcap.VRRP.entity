@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.VRRP" displayName="VRRP" displayNamePlural="VRRP" description="" category="Netcap" smallIconResource="Netcap/VRRP" largeIconResource="Netcap/VRRP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.VRRP" displayName="VRRP" displayNamePlural="VRRP" description="The Virtual Router Redundancy Protocol is a computer networking protocol that provides for automatic assignment of available Internet Protocol routers to participating hosts" category="Netcap" smallIconResource="Netcap/VRRP" largeIconResource="Netcap/VRRP" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.vrrp" displayValue="properties.vrrp">
   <Groups></Groups>
   <Fields>

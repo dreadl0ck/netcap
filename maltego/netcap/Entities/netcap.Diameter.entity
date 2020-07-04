@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Diameter" displayName="Diameter" displayNamePlural="Diameter" description="" category="Netcap" smallIconResource="Netcap/Diameter" largeIconResource="Netcap/Diameter" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Diameter" displayName="Diameter" displayNamePlural="Diameter" description="Diameter is an authentication, authorization, and accounting protocol for computer networks, it evolved from the earlier RADIUS protocol" category="Netcap" smallIconResource="Netcap/Diameter" largeIconResource="Netcap/Diameter" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.diameter" displayValue="properties.diameter">
   <Groups></Groups>
   <Fields>

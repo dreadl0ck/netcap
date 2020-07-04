@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.GRE" displayName="GRE" displayNamePlural="GRE" description="" category="Netcap" smallIconResource="Netcap/GRE" largeIconResource="Netcap/GRE" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.GRE" displayName="GRE" displayNamePlural="GRE" description="Generic Routing Encapsulation is a tunneling protocol developed by Cisco Systems that can encapsulate a wide variety of network layer protocols inside virtual point-to-point links or point-to-multipoint links over an Internet Protocol network" category="Netcap" smallIconResource="Netcap/GRE" largeIconResource="Netcap/GRE" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.gre" displayValue="properties.gre">
   <Groups></Groups>
   <Fields>

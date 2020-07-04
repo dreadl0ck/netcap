@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.POP3" displayName="POP3" displayNamePlural="POP3" description="" category="Netcap" smallIconResource="Netcap/POP3" largeIconResource="Netcap/POP3" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.POP3" displayName="POP3" displayNamePlural="POP3" description="The POP3 protocol is used to fetch emails from a mail server" category="Netcap" smallIconResource="Netcap/POP3" largeIconResource="Netcap/POP3" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.pop3" displayValue="properties.pop3">
   <Groups></Groups>
   <Fields>

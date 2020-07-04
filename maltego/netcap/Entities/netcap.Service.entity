@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Service" displayName="Service" displayNamePlural="Services" description="" category="Netcap" smallIconResource="Netcap/Service" largeIconResource="Netcap/Service" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Service" displayName="Service" displayNamePlural="Services" description="A network service" category="Netcap" smallIconResource="Netcap/Service" largeIconResource="Netcap/Service" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.service" displayValue="properties.service">
   <Groups></Groups>
   <Fields>

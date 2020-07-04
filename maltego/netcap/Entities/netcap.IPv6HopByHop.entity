@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.IPv6HopByHop" displayName="IPv6HopByHop" displayNamePlural="IPv6HopByHop" description="" category="Netcap" smallIconResource="Netcap/IPv6HopByHop" largeIconResource="Netcap/IPv6HopByHop" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.IPv6HopByHop" displayName="IPv6HopByHop" displayNamePlural="IPv6HopByHop" description="Internet Protocol version 6 (IPv6) is the most recent version of the Internet Protocol (IP), the communications protocol that provides an identification and location system for computers on networks and routes traffic across the Internet" category="Netcap" smallIconResource="Netcap/IPv6HopByHop" largeIconResource="Netcap/IPv6HopByHop" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ipv6hopbyhop" displayValue="properties.ipv6hopbyhop">
   <Groups></Groups>
   <Fields>

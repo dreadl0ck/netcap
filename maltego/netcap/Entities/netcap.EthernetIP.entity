@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.EthernetIP" displayName="EthernetIP" displayNamePlural="EthernetIP" description="" category="Netcap" smallIconResource="Netcap/EthernetIP" largeIconResource="Netcap/EthernetIP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.EthernetIP" displayName="EthernetIP" displayNamePlural="EthernetIP" description="Industrial network protocol that adapts the Common Industrial Protocol to standard Ethernet" category="Netcap" smallIconResource="Netcap/EthernetIP" largeIconResource="Netcap/EthernetIP" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ethernetip" displayValue="properties.ethernetip">
   <Groups></Groups>
   <Fields>
