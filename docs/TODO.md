@@ -1,6 +1,5 @@
 # TODOs
 
-- To HTTP Hostnames: include number of HTTP requests for host as line label  
 - make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 
 entities:

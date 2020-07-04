@@ -3,9 +3,13 @@ package transform
 import (
 	maltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
+	"strconv"
 )
 
 func ToHTTPHostNames() {
+
+	var hostStats = make(map[string]int)
+
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
@@ -19,6 +23,9 @@ func ToHTTPHostNames() {
 
 				//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
 				ent.SetLinkColor("#000000")
+
+				hostStats[http.Host]++
+				ent.SetLinkLabel(strconv.Itoa(hostStats[http.Host]))
 				//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 
 				ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)

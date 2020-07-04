@@ -9,11 +9,12 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
+
 	//"strconv"
 	"strings"
 )
 
-// TODO: implement maltego.DNSTransform
 func ToDNSQuestions() {
 
 	lt := maltego.ParseLocalArguments(os.Args)
@@ -89,7 +90,7 @@ func ToDNSQuestions() {
 
 				ent.AddProperty("srcIP", "SourceIP", "strict", dns.Context.SrcIP)
 
-				//ent.SetLinkLabel(strconv.FormatInt(dns.NumPackets, 10) + " pkts")
+				ent.SetLinkLabel(strconv.Itoa(results[string(q.Name)]))
 				ent.SetLinkColor("#000000")
 				//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 			}
