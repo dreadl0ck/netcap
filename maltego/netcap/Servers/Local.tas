@@ -64,7 +64,10 @@
   <Transform name="netcap.OpenFile"></Transform>
   <Transform name="netcap.OpenFolder"></Transform>
   <Transform name="netcap.OpenNetcapFolder"></Transform>
+  <Transform name="netcap.OpenNetcapFolderInTerminal"></Transform>
   <Transform name="netcap.OpenVulnerability"></Transform>
+  <Transform name="netcap.OpenFilesFolder"></Transform>
+  <Transform name="netcap.OpenContentTypeFolder"></Transform>
   <Transform name="netcap.LookupDHCPFingerprint"></Transform>
   <Transform name="netcap.StopCaptureProcess"></Transform>
  </Transforms>
