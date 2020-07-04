@@ -5,28 +5,34 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"net/url"
+	"strconv"
 )
 
 func ToURLsForHost() {
+
+	var urlStats = make(map[string]int)
+
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
 				if http.URL != "" {
 
-					bareURL := http.Host + StripQueryString(http.URL)
+					bareURL := maltego.EscapeText(http.Host + StripQueryString(http.URL))
 					log.Println(bareURL)
 
 					ent := trx.AddEntity("netcap.URL", bareURL)
 					ent.SetType("netcap.URL")
 					ent.SetValue(bareURL)
 
-					ent.AddProperty("url", "URL", "strict", bareURL)
+					// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
+					ent.AddProperty("properties.url", "URL", "strict", bareURL)
 
 					// di := "<h3>URL</h3><p>Timestamp: " + http.Timestamp + "</p>"
 					// ent.AddDisplayInformation(di, "Netcap Info")
 
-					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
+					urlStats[bareURL]++
+					ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]))
 					ent.SetLinkColor("#000000")
 					//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 				}

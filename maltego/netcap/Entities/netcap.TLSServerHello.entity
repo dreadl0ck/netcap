@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.TLSServerHello" displayName="TLSServerHello" displayNamePlural="TLSServerHello" description="" category="Netcap" smallIconResource="Netcap/TLSServerHello" largeIconResource="Netcap/TLSServerHello" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.TLSServerHello" displayName="TLSServerHello" displayNamePlural="TLSServerHello" description="The server hello from a Transport Layer Security handshake" category="Netcap" smallIconResource="Netcap/TLSServerHello" largeIconResource="Netcap/TLSServerHello" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.tlsserverhello" displayValue="properties.tlsserverhello">
   <Groups></Groups>
   <Fields>

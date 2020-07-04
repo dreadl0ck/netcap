@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.ARP" displayName="ARP" displayNamePlural="ARP" description="" category="Netcap" smallIconResource="Netcap/ARP" largeIconResource="Netcap/ARP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.ARP" displayName="ARP" displayNamePlural="ARP" description="The Address Resolution Protocol resolves IP to hardware addresses" category="Netcap" smallIconResource="Netcap/ARP" largeIconResource="Netcap/ARP" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.arp" displayValue="properties.arp">
   <Groups></Groups>
   <Fields>

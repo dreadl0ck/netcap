@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.IPSecAH" displayName="IPSecAH" displayNamePlural="IPSecAH" description="" category="Netcap" smallIconResource="Netcap/IPSecAH" largeIconResource="Netcap/IPSecAH" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.IPSecAH" displayName="IPSecAH" displayNamePlural="IPSecAH" description="IPSec Authentication Header (AH)" category="Netcap" smallIconResource="Netcap/IPSecAH" largeIconResource="Netcap/IPSecAH" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ipsecah" displayValue="properties.ipsecah">
   <Groups></Groups>
   <Fields>

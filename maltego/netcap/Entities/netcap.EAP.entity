@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.EAP" displayName="EAP" displayNamePlural="EAP" description="" category="Netcap" smallIconResource="Netcap/EAP" largeIconResource="Netcap/EAP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.EAP" displayName="EAP" displayNamePlural="EAP" description="Extensible Authentication Protocol is an authentication framework frequently used in network and internet connections" category="Netcap" smallIconResource="Netcap/EAP" largeIconResource="Netcap/EAP" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.eap" displayValue="properties.eap">
   <Groups></Groups>
   <Fields>

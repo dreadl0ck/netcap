@@ -7,6 +7,7 @@ import (
 	"testing"
 )
 
+// deprecated, use V2
 func TestGenerateAuditRecordIcons(t *testing.T) {
 
 	generateIcons()

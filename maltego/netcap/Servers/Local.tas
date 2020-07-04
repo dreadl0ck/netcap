@@ -27,7 +27,6 @@
   <Transform name="netcap.ToHTTPParameters"></Transform>
   <Transform name="netcap.ToHTTPServerNames"></Transform>
   <Transform name="netcap.ToHTTPStatusCodes"></Transform>
-  <Transform name="netcap.ToURLsForHost"></Transform>
   <Transform name="netcap.ToHTTPUserAgents"></Transform>
   <Transform name="netcap.ToIncomingFlowsFiltered"></Transform>
   <Transform name="netcap.ToMailAuthToken"></Transform>
@@ -41,7 +40,8 @@
   <Transform name="netcap.ToParametersForHTTPHost"></Transform>
   <Transform name="netcap.ToServerNameIndicators"></Transform>
   <Transform name="netcap.ToSrcPorts"></Transform>
-  <Transform name="netcap.ToURLsForHTTPHost"></Transform>
+  <Transform name="netcap.ToURLsForHost"></Transform>
+  <Transform name="netcap.ToURLsForWebsite"></Transform>
   <Transform name="netcap.ToAuditRecords"></Transform>
   <Transform name="netcap.ToCaptureProcess"></Transform>
   <Transform name="netcap.ToDHCPClients"></Transform>

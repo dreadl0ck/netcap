@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.UDP" displayName="UDP" displayNamePlural="UDP" description="" category="Netcap" smallIconResource="Netcap/UDP" largeIconResource="Netcap/UDP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.UDP" displayName="UDP" displayNamePlural="UDP" description="User Datagram Protocol (UDP) is a connectionless communications protocol, that facilitates the exchange of messages between computing devices in a network" category="Netcap" smallIconResource="Netcap/UDP" largeIconResource="Netcap/UDP" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.udp" displayValue="properties.udp">
   <Groups></Groups>
   <Fields>

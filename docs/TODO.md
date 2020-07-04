@@ -2,11 +2,15 @@
 
 - make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 
+- ContentType: Open Folder for Content Type
+- Files: Open Folder for Files
+- on netcap.PCAP: Open Netcap Folder In Terminal
+- improve content type detection for application/gzip
+
 entities:
 - add different colors for Internal and External IPs: or merge them? Also rename device ip to source ip and contact ip to destination ip
 - add different colors for audit record archives?
 transforms:
-- on netcap.PCAP: Open Netcap Folder In Terminal
 - on netcap.Service: To Hosts 
 on audit record archives:
 - on TLSHellos: To JA3 Fingerprints
@@ -29,7 +33,7 @@ on audit record archives:
 
 - ensure using Service and software audit records work also when not all DBs are available
 
-## v0.5 Documentantion
+## v0.5 Documentation
 
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana

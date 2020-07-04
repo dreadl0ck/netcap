@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Flow" displayName="Flow" displayNamePlural="Flows" description="" category="Netcap" smallIconResource="Netcap/Flow" largeIconResource="Netcap/Flow" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Flow" displayName="Flow" displayNamePlural="Flows" description="A flow represents uni-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers" category="Netcap" smallIconResource="Netcap/Flow" largeIconResource="Netcap/Flow" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.flow" displayValue="properties.flow">
   <Groups></Groups>
   <Fields>

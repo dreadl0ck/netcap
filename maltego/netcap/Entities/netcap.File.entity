@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.File" displayName="File" displayNamePlural="Files" description="" category="Netcap" smallIconResource="Netcap/File" largeIconResource="Netcap/File" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.File" displayName="File" displayNamePlural="Files" description="A file that was transferred over the network" category="Netcap" smallIconResource="Netcap/File" largeIconResource="Netcap/File" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.file" displayValue="properties.file">
   <Groups></Groups>
   <Fields>

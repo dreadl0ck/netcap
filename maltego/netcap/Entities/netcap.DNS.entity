@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DNS" displayName="DNS" displayNamePlural="DNS" description="" category="Netcap" smallIconResource="Netcap/DNS" largeIconResource="Netcap/DNS" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DNS" displayName="DNS" displayNamePlural="DNS" description="The Domain Name System is a hierarchical and decentralized naming system for computers, services, or other resources connected to the Internet or a private network" category="Netcap" smallIconResource="Netcap/DNS" largeIconResource="Netcap/DNS" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dns" displayValue="properties.dns">
   <Groups></Groups>
   <Fields>

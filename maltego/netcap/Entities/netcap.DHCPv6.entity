@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DHCPv6" displayName="DHCPv6" displayNamePlural="DHCPv6" description="" category="Netcap" smallIconResource="Netcap/DHCPv6" largeIconResource="Netcap/DHCPv6" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DHCPv6" displayName="DHCPv6" displayNamePlural="DHCPv6" description="The Dynamic Host Configuration Protocol (DHCP) is a network management protocol used on Internet Protocol networks whereby a DHCP server dynamically assigns an IP address and other network configuration parameters to each device on a network so they can communicate with other IP networks" category="Netcap" smallIconResource="Netcap/DHCPv6" largeIconResource="Netcap/DHCPv6" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dhcpv6" displayValue="properties.dhcpv6">
   <Groups></Groups>
   <Fields>
