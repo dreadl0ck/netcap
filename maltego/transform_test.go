@@ -75,7 +75,10 @@ var transforms = []TransformCoreInfo{
 	{"OpenFile", "netcap.File", "Opens a file with the default application"},
 	{"OpenFolder", "netcap.File", "Open the folder in which the file resides"},
 	{"OpenNetcapFolder", "netcap.PCAP", "Open the storage folder for the selected PCAP file"},
+	{"OpenNetcapFolderInTerminal", "netcap.PCAP", "Open the storage folder for the selected PCAP file in the terminal"},
 	{"OpenVulnerability", "netcap.Vulnerability", "Open link to the vulnerability on NVD homepage"},
+	{"OpenFilesFolder", "netcap.FileAuditRecords", "Open the storage folder for the extracted files"},
+	{"OpenContentTypeFolder", "netcap.ContentType", "Open the storage folder for the selected content type"},
 
 	{"LookupDHCPFingerprint", "netcap.DHCPClient", "Resolve the clients DHCP fingerprint via the fingerbank API"},
 	{"StopCaptureProcess", "netcap.CaptureProcess", "Stop the NETCAP capture process"},

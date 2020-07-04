@@ -2,9 +2,8 @@
 
 - make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 
-- ContentType: Open Folder for Content Type
-- Files: Open Folder for Files
-- on netcap.PCAP: Open Netcap Folder In Terminal
+- add option to do a reverse DNS lookup for *IP hosts
+- add a transform to open executable for analysis, set tool via env var
 - improve content type detection for application/gzip
 
 entities:

@@ -13,7 +13,7 @@ import (
 )
 
 // can be used to set the debug mode for all generated maltego transforms
-const transformDebug = true
+const transformDebug = false
 
 // Transforms
 

@@ -182,6 +182,13 @@ func Run() {
 		ToOutgoingFlowsFiltered()
 	case "ToURLsForWebsite":
 		ToURLsForWebsite()
+	case "OpenNetcapFolderInTerminal":
+		OpenNetcapFolderInTerminal()
+	case "OpenFilesFolder":
+		OpenFilesFolder()
+	case "OpenContentTypeFolder":
+		OpenContentTypeFolder()
+
 	default:
 		trx := maltego.MaltegoTransform{}
 		trx.AddUIMessage("Unknown transform: "+os.Args[2], maltego.UIM_FATAL)
