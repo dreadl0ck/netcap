@@ -24,10 +24,10 @@ var entities = []EntityCoreInfo{
 	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
 
 	// TODO: icons
-	{"InternalDeviceIP", "cloud_upload", "An internal source address", "netcap.IPAddr", nil},
-	{"ExternalDeviceIP", "cloud_upload", "An external source address", "netcap.IPAddr", nil},
-	{"InternalContact", "cloud_download", "An internal destination address", "netcap.IPAddr", nil},
-	{"ExternalContact", "cloud_download", "An external destination address", "netcap.IPAddr", nil},
+	{"InternalSourceIP", "cloud_upload", "An internal source address", "netcap.IPAddr", nil},
+	{"ExternalSourceIP", "cloud_upload", "An external source address", "netcap.IPAddr", nil},
+	{"InternalDestinationIP", "cloud_download", "An internal destination address", "netcap.IPAddr", nil},
+	{"ExternalDestinationIP", "cloud_download", "An external destination address", "netcap.IPAddr", nil},
 
 	{"DHCPClient", "cast_connected", "A DHCP client", "", nil},
 	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", "", nil},

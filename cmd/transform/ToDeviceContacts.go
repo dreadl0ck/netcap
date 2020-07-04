@@ -23,13 +23,11 @@ func ToDestinationIPs() {
 					var ent *maltego.MaltegoEntityObj
 					//var contactType string
 					if resolvers.IsPrivateIP(net.ParseIP(ip.Addr)) {
-						ent = trx.AddEntity("netcap.InternalContact", ip.Addr)
-						ent.SetType("netcap.InternalContact")
-						//contactType = "InternalContact"
+						ent = trx.AddEntity("netcap.InternalDestinationIP", ip.Addr)
+						ent.SetType("netcap.InternalDestinationIP")
 					} else {
-						ent = trx.AddEntity("netcap.ExternalContact", ip.Addr)
-						ent.SetType("netcap.ExternalContact")
-						//contactType = "ExternalContact"
+						ent = trx.AddEntity("netcap.ExternalDestinationIP", ip.Addr)
+						ent.SetType("netcap.ExternalDestinationIP")
 					}
 
 					dnsNames := strings.Join(ip.DNSNames, "\n")
