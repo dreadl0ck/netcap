@@ -12,7 +12,7 @@ func ToFilesForContentType() {
 	maltego.FilesTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
-			if file.Context.SrcIP == ipaddr || file.Context.DstIP == ipaddr {
+			if ipaddr == "" || file.Context.SrcIP == ipaddr || file.Context.DstIP == ipaddr {
 
 				var (
 					ct  = lt.Values["properties.contenttype"]
