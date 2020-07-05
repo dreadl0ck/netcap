@@ -42,7 +42,6 @@ func ToSrcPorts() {
 func addSourcePort(trx *maltego.MaltegoTransform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile) {
 
 	ent := trx.AddEntity("netcap.SourcePort", portStr)
-	ent.SetType("netcap.SourcePort")
 	np, err := strconv.Atoi(portStr)
 	if err != nil {
 		fmt.Println(err)
@@ -56,15 +55,12 @@ func addSourcePort(trx *maltego.MaltegoTransform, portStr string, port *types.Po
 		typ = "UDP"
 	}
 	serviceName := resolvers.LookupServiceByPort(np, typ)
-	ent.SetValue(portStr)
 
 	di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 
-	escapedName := maltego.EscapeText(portStr + "\n" + serviceName)
-	ent.AddProperty("label", "Label", "strict", escapedName)
+	ent.AddProperty("label", "Label", "strict", portStr + "\n" + serviceName)
 
 	ent.SetLinkLabel(strconv.FormatInt(int64(port.NumTotal), 10) + " pkts")
-	ent.SetLinkColor("#000000")
 	ent.SetLinkThickness(maltego.GetThickness(port.NumTotal, min, max))
 }

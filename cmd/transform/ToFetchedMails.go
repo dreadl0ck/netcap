@@ -25,8 +25,6 @@ func ToFetchedMails() {
 				}
 
 				ent := trx.AddEntity("netcap.Email", buf.String())
-				ent.SetType("netcap.Email")
-				ent.SetValue(buf.String())
 
 				var attachments string
 				for _, p := range m.Body {
@@ -57,9 +55,6 @@ func ToFetchedMails() {
 
 				di := "<h3>EMail: " + m.Subject + "</h3><p>Timestamp First: " + pop3.Timestamp + "</p><p>From: " + m.From + "</p><p>To: " + m.To + "</p><p>Text: " + buf.String() + "</p><p>Additional parts: " + attachments + "</p>"
 				ent.AddDisplayInformation(di, "Netcap Info")
-
-				ent.SetLinkColor("#000000")
-				//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 			}
 		},
 	)

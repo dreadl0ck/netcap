@@ -1,7 +1,14 @@
 # TODOs
 
+maltego cleanups:
+- maltego: AddEntity wrapper that always adds path property field?
+- maltego: add transform debug toggle via env var? dump input lt.Values for transform 
+- maltego: add constants for netcap types for AddEntity()
+- add constants for ent.SetLinkDirection("output-to-input")
+- add constants for hex colors: ent.SetLinkColor("#000000")
+- remove setting path attribute on entities to the path of the DeviceProfiles for all types + document
+
 - improve and test content type and executable detection (fix application/gzip)
-- fix timestamps in maltego XML generation code
 - include machines into generated config archive
 - live capture: give proper error when interface name is not present or wrong
 - ensure using Service and software audit records work also when not all DBs are available
@@ -10,9 +17,7 @@
         - add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
 - update reassembly unit tests
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
-- make snaplen configurable: add as propery to netcap.PCAP, default 1514
-- HTTP parameters: mark if source was GET or POST
-- HTTP: show GET VS POST? count in GetHTTP\* via map?
+- make snaplen configurable: add as property to netcap.PCAP, default 1514
 - addGetHTTPHeaders
 - GetFilesForHTTPHost
 - Cookies + Params: add counters to indicate flow volume
@@ -21,9 +26,8 @@
 - TLS fingerprints: GetJa3? for IPAddr entities
 - MIME type: check if executables are properly detected
 
-transforms:
-- netcap.File -> GetMD5
-- on netcap.Service: To Hosts 
+wireshark pcap downloads: wget -r -np -l 1 -A pcap https://www.wireshark.org/download/automated/captures/
+
 on audit record archives:
 - on TLSHellos: To JA3 Fingerprints
 - on TCP/UDP: To Hosts, To Ports, To Streams
@@ -35,6 +39,7 @@ on audit record archives:
 - on DHCPv6: To Devices
 - on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
 - on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
+- on Connections: GetLongRunningSessions
 
 ## v0.5 Documentation
 
@@ -55,7 +60,7 @@ on audit record archives:
         - http content type does not match content
 
 - integrate scanning against YARA / suricata rules and add Malware Custom Audit Records
-- add a transform to open executable for analysis, set tool via env var
+- add a transform to open executable files for analysis, set tool via env var
 - make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 
 - add transform to do a reverse DNS lookup for *IP hosts instead of the local lookup
@@ -63,12 +68,10 @@ on audit record archives:
 entities:
 - add different colors for Internal and External IPs: or merge them? Also rename device ip to source ip and contact ip to destination ip
 - add different colors for audit record archives?
-- handle multiple cpes for a single service probe
+- handle multiple cpe identifiers for a single service probe
 
 - add file extraction for POP3 emails and attachments
-- GetLongRunningSessions
 
-- text file types: add GetLinks and GetEmails, GetPhonenumbers etc
 - GetNotWWW (no www.local reverse DNS name?)
 - GetUnknownFlows(Filtered) (no http, pop3 flows)
 - GetHostsForGeolocation

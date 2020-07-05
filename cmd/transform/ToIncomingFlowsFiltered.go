@@ -51,19 +51,12 @@ func isInTop12(val int32, sizes *[]int) bool {
 
 func addInFlow(trx *maltego.MaltegoTransform, flow *types.Flow, min, max uint64, name string) {
 
-	ent := trx.AddEntity("netcap.Flow", flow.UID)
-	ent.SetType("netcap.Flow")
-	ent.SetValue(flow.UID + "\n" + name)
+	ent := trx.AddEntity("netcap.Flow", flow.UID + "\n" + name)
 
 	di := "<h3>Incoming Flow: " + flow.SrcIP + ":" + flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.TimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.TimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 
-	//escapedName := maltego.EscapeText()
-	//ent.AddProperty("label", "Label", "strict", escapedName)
-
 	ent.SetLinkDirection("output-to-input")
-
 	ent.SetLinkLabel(humanize.Bytes(uint64(flow.TotalSize)))
-	ent.SetLinkColor("#000000")
 	ent.SetLinkThickness(maltego.GetThickness(uint64(flow.TotalSize), min, max))
 }

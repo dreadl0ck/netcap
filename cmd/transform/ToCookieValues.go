@@ -27,16 +27,7 @@ func ToCookieValues() {
 	)
 }
 
+// TODO: set timestamp as property
 func addCookieValue(trx *maltego.MaltegoTransform, c *types.HTTPCookie, timestamp string) {
-	escapedName := maltego.EscapeText(c.Value)
-	ent := trx.AddEntity("netcap.HTTPCookieValue", escapedName)
-	ent.SetType("netcap.HTTPCookieValue")
-	ent.SetValue(escapedName)
-
-	// di := "<h3>HTTP Cookie</h3><p>Timestamp: " + timestamp + "</p>"
-	// ent.AddDisplayInformation(di, "Netcap Info")
-
-	//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
-	ent.SetLinkColor("#000000")
-	//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
+	trx.AddEntity("netcap.HTTPCookieValue", c.Value)
 }

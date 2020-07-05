@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
+	"fmt"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"io"
 	"io/ioutil"
@@ -737,8 +738,12 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		return err
 	}
 
-	// explicitely declare io.Reader interface
-	var r io.Reader
+	var (
+		// explicitly declare io.Reader interface
+		r io.Reader
+		length int
+		hash string
+	)
 
 	// now assign a new buffer
 	r = bytes.NewBuffer(body)
@@ -759,14 +764,36 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 		} else {
 			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, w)
 		}
+
+		// TODO: refactor to avoid reading the file contents into memory again
+		data, err := ioutil.ReadFile(target)
+		if err == nil {
+			// set hash to value for decompressed content and update size
+			hash = hex.EncodeToString(cryptoutils.MD5Data(data))
+			length = len(data)
+			ctype = http.DetectContentType(data)
+		}
+
+		// switch the file extension
+		ext := filepath.Ext(target)
+		newTarget := strings.TrimSuffix(target, ext) + fileExtensionForContentType(ctype)
+		err = os.Rename(target, newTarget)
+		if err == nil {
+			target = newTarget
+		} else {
+			fmt.Println("failed to rename file after decompression", err)
+		}
+	} else {
+		hash = hex.EncodeToString(cryptoutils.MD5Data(body))
+		length = len(body)
 	}
 
 	// write file to disk
 	writeFile(&types.File{
 		Timestamp:           h.parent.firstPacket.String(),
 		Name:                fileName,
-		Length:              int64(len(body)),
-		Hash:                hex.EncodeToString(cryptoutils.MD5Data(body)),
+		Length:              int64(length),
+		Hash:                hash,
 		Location:            target,
 		Ident:               h.parent.ident,
 		Source:              source,

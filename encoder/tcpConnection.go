@@ -384,7 +384,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 				t.server.SetClient(true)
 
 				t.Lock()
-				t.ident = reverseIdent(t.ident)
+				t.ident = utils.ReverseIdent(t.ident)
 				//fmt.Println("flip! new", ansi.Red + t.ident + ansi.Reset)
 
 				t.client, t.server = t.server, t.client

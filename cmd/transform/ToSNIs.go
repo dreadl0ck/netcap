@@ -15,12 +15,6 @@ func ToSNIs() {
 						if len(ip.SNIs) != 0 {
 							for sni, count := range ip.SNIs {
 								ent := trx.AddEntity("netcap.Domain", sni)
-								ent.SetType("netcap.Domain")
-								ent.SetValue(sni)
-
-								// di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
-								// ent.AddDisplayInformation(di, "Netcap Info")
-								ent.SetLinkColor("#000000")
 								ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 							}
 						}
@@ -31,12 +25,6 @@ func ToSNIs() {
 						if len(ip.SNIs) != 0 {
 							for sni, count := range ip.SNIs {
 								ent := trx.AddEntity("netcap.Domain", sni)
-								ent.SetType("netcap.Domain")
-								ent.SetValue(sni)
-
-								// di := "<h3>SNI</h3><p>Timestamp First: " + ip.TimestampFirst + "</p>"
-								// ent.AddDisplayInformation(di, "Netcap Info")
-								ent.SetLinkColor("#000000")
 								ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 							}
 						}

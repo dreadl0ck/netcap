@@ -7,32 +7,40 @@ import (
 	"github.com/dustin/go-humanize"
 	"net"
 	"strconv"
+
+	//"strconv"
 	"strings"
 )
 
-func ToSourceIPs() {
+func ToDestinationIPs() {
 	maltego.DeviceProfileTransform(
-		maltego.CountPacketsDeviceIPs,
+		maltego.CountPacketsContactIPs,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
 			if profile.MacAddr == mac {
-				for _, ip := range profile.DeviceIPs {
 
-					var ent *maltego.MaltegoEntityObj
-					if resolvers.IsPrivateIP(net.ParseIP(ip.Addr)) {
-						ent = trx.AddEntity("netcap.InternalSourceIP", ip.Addr)
-						ent.SetType("netcap.InternalSourceIP")
-					} else {
-						ent = trx.AddEntity("netcap.ExternalSourceIP", ip.Addr)
-						ent.SetType("netcap.ExternalSourceIP")
+				for _, ip := range profile.Contacts {
+
+					var (
+						ent *maltego.MaltegoEntityObj
+						dnsNames = strings.Join(ip.DNSNames, "\n")
+						val = ip.Addr
+					)
+					if len(ip.Geolocation) > 0 {
+						val += "\n" + ip.Geolocation
 					}
-					dnsNames := strings.Join(ip.DNSNames, "\n")
-					ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + dnsNames)
+					if len(dnsNames) > 0 {
+						val += "\n" + dnsNames
+					}
 
-					// di := "<h3>Device IP</h3><p>Timestamp: " + profile.Timestamp + "</p>"
-					// ent.AddDisplayInformation(di, "Netcap Info")
+					if resolvers.IsPrivateIP(net.ParseIP(ip.Addr)) {
+						ent = trx.AddEntity("netcap.InternalDestinationIP", val)
+					} else {
+						ent = trx.AddEntity("netcap.ExternalDestinationIP", val)
+					}
 
 					ent.AddProperty("geolocation", "Geolocation", "strict", ip.Geolocation)
 					ent.AddProperty("dnsNames", "DNS Names", "strict", dnsNames)
+					ent.AddProperty("timestamp", "Timestamp", "strict", profile.Timestamp)
 
 					ent.AddProperty("mac", "MacAddress", "strict", mac)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
@@ -40,7 +48,6 @@ func ToSourceIPs() {
 					ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(profile.NumPackets, 10))
 
 					ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts\n" + humanize.Bytes(ip.Bytes))
-					ent.SetLinkColor("#000000")
 					ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), min, max))
 				}
 			}

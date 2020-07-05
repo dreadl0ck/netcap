@@ -14,6 +14,7 @@ require (
 	github.com/dreadl0ck/gopacket v1.1.16-0.20200429191613-83e6b1414564
 	github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b
 	github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b
+	github.com/dsoprea/go-exif/v2 v2.0.0-20200703145530-5a15f40e7850
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evilsocket/islazy v1.10.6
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
@@ -31,6 +32,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/mcnijman/go-emailaddress v1.1.0
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/namsral/flag v1.7.4-pre
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
@@ -48,10 +50,11 @@ require (
 	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
 	golang.org/x/image v0.0.0-20200609002522-3f4726a040e8
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
+	golang.org/x/net v0.0.0-20200513185701-a91f0712d120
 	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
 	golang.org/x/tools v0.0.0-20200426102838-f3a5411a4c3b // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
+	mvdan.cc/xurls/v2 v2.2.0
 )

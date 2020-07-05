@@ -28,18 +28,14 @@ func ToFilesForContentType() {
 				if typ == ct {
 
 					var (
-						escapedName = maltego.EscapeText(file.Name)
-						ent         *maltego.MaltegoEntityObj
+						ent *maltego.MaltegoEntityObj
+						val = file.Name + "\n" + file.ContentType
 					)
 					if strings.HasPrefix(ct, "image/") {
-						ent = trx.AddEntity("maltego.Image", escapedName)
-						ent.SetType("maltego.Image")
+						ent = trx.AddEntity("maltego.Image", val)
 					} else {
-						ent = trx.AddEntity("netcap.File", escapedName)
-						ent.SetType("netcap.File")
+						ent = trx.AddEntity("netcap.File", val)
 					}
-
-					ent.SetValue(escapedName + "\n" + file.ContentType)
 
 					di := "<h3>File</h3><p>Timestamp: " + file.Timestamp + "</p><p>Source: " + file.Source + "</p><p>MD5: " + file.Hash + "</p><p>ContentType: " + file.ContentType + "</p><p>ContentTypeDetected: " + file.ContentTypeDetected + "</p><p>Host: " + file.Host + "</p><p>Length: " + strconv.Itoa(int(file.Length)) + "</p><p>Ident: " + file.Ident + "</p><p>SrcIP: " + file.Context.SrcIP + "</p><p>DstIP: " + file.Context.DstIP + "</p><p>SrcPort: " + file.Context.SrcPort + "</p><p>DstPort: " + file.Context.DstPort + "</p><p>Location: " + file.Location + "</p>"
 					ent.AddDisplayInformation(di, "Netcap Info")
@@ -50,12 +46,9 @@ func ToFilesForContentType() {
 						ent.SetIconURL("file://" + filepath.Join(filepath.Join(filepath.Dir(profilesFile), ".."), file.Location))
 					}
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-					ent.AddProperty("path", "Path", "strict", file.Location)
+					ent.AddProperty("path", "Path", "strict", profilesFile)
 					ent.AddProperty("location", "Location", "strict", file.Location)
-
-					//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
-					ent.SetLinkColor("#000000")
-					//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
+					ent.AddProperty("name", "Name", "strict", file.Name)
 				}
 			}
 		},

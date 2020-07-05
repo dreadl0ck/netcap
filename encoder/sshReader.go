@@ -19,6 +19,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"regexp"
 	"strings"
@@ -181,7 +182,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				sshEncoder.write(&types.SSH{
 					Timestamp:  h.parent.client.FirstPacket().String(),
 					HASSH:      hash,
-					Flow:       reverseIdent(h.parent.ident),
+					Flow:       utils.ReverseIdent(h.parent.ident),
 					Ident:      h.serverIdent,
 					Algorithms: raw,
 					IsClient:   false,

@@ -50,6 +50,9 @@ var entities = []EntityCoreInfo{
 	{"Location", "location_on", "A location", "maltego.Location", nil},
 	{"URL", "open_in_browser", "A Uniform Resource Identifier", "maltego.URL", nil},
 	{"HTTPCookieValue", "info", "A HTTP cookie value", "", nil},
+	{"ExifEntry", "info", "An Exif entry for an image file", "", nil},
+	{"MD5Hash", "info", "An MD5 hash entry for an extracted file", "maltego.Hash", nil},
+	{"PhoneNumber", "contact_phone", "A phone number", "maltego.PhoneNumber", nil},
 }
 
 // generate all entities and pack as archive

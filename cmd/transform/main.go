@@ -59,12 +59,6 @@ func Run() {
 	case "ToProducts":
 		ToProducts()
 
-	// Service
-	case "ToUDPServices":
-		ToUDPServices()
-	case "ToTCPServices":
-		ToTCPServices()
-
 	// Credentials
 	case "ToCredentialsByService":
 		ToCredentialsByService()
@@ -188,6 +182,25 @@ func Run() {
 		OpenFilesFolder()
 	case "OpenContentTypeFolder":
 		OpenContentTypeFolder()
+
+	case "ToMD5HashesForFile":
+		ToMD5HashesForFile()
+
+	case "ToLinksFromFile":
+		ToLinksFromFile()
+	case "ToEmailsFromFile":
+		ToEmailsFromFile()
+	case "ToPhoneNumbersFromFile":
+		ToPhoneNumbersFromFile()
+	case "ToMD5HashesForImage":
+		ToMD5HashesForImage()
+
+	case "ToExifDataForImage":
+		ToExifDataForImage()
+	case "ToHostsForService":
+		ToHostsForService()
+	case "ToServices":
+		ToServices()
 
 	default:
 		trx := maltego.MaltegoTransform{}

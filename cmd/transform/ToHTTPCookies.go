@@ -11,10 +11,10 @@ func ToHTTPCookies() {
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
 				for _, c := range http.ReqCookies {
-					addCookie(trx, c, http.Timestamp, ipaddr, profilesFile)
+					addCookie(trx, c, http.Timestamp, ipaddr, profilesFile, http.Method)
 				}
 				for _, c := range http.ResCookies {
-					addCookie(trx, c, http.Timestamp, ipaddr, profilesFile)
+					addCookie(trx, c, http.Timestamp, ipaddr, profilesFile, http.Method)
 				}
 			}
 		},

@@ -121,19 +121,12 @@ func LookupDHCPFingerprint() {
 
 		//log.Println("got result", res.DeviceName, "for", messageToFingerprint.ClientHWAddr)
 
-		val := maltego.EscapeText(strings.ReplaceAll(res.DeviceName, "/", "\n") + "\n" + ip)
+		val := strings.ReplaceAll(res.DeviceName, "/", "\n") + "\n" + ip
 		ent := mtrx.AddEntity("netcap.DHCPResult", val)
-		ent.SetType("netcap.DHCPResult")
-		ent.SetValue(val)
 
-		ent.AddProperty("timestamp", "Timestamp", "strict", maltego.EscapeText(messageToFingerprint.Timestamp))
-		ent.AddProperty("clientIP", "ClientIP", "strict", maltego.EscapeText(messageToFingerprint.ClientIP))
-		ent.AddProperty("serverIP", "ServerIP", "strict", maltego.EscapeText(messageToFingerprint.NextServerIP))
-
-		// di := "<h3>DHCP Option</h3><p>Timestamp First: " + dhcp.Timestamp + "</p>"
-		// ent.AddDisplayInformation(di, "Netcap Info")
-		ent.SetLinkColor("#000000")
-		//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
+		ent.AddProperty("timestamp", "Timestamp", "strict", messageToFingerprint.Timestamp)
+		ent.AddProperty("clientIP", "ClientIP", "strict", messageToFingerprint.ClientIP)
+		ent.AddProperty("serverIP", "ServerIP", "strict", messageToFingerprint.NextServerIP)
 	}
 
 	mtrx.AddUIMessage("completed!", "Inform")

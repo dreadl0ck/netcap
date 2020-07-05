@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-06-23 20:47:24.433 CEST</LastSync>
+ <LastSync>2020-07-05 21:57:57.367 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -57,8 +57,7 @@
   <Transform name="netcap.ToSSHServers"></Transform>
   <Transform name="netcap.ToSoftwareExploits"></Transform>
   <Transform name="netcap.ToSoftwareVulnerabilities"></Transform>
-  <Transform name="netcap.ToTCPServices"></Transform>
-  <Transform name="netcap.ToUDPServices"></Transform>
+  <Transform name="netcap.ToServices"></Transform>
   <Transform name="netcap.ToDevices"></Transform>
   <Transform name="netcap.OpenExploit"></Transform>
   <Transform name="netcap.OpenFile"></Transform>
@@ -68,6 +67,13 @@
   <Transform name="netcap.OpenVulnerability"></Transform>
   <Transform name="netcap.OpenFilesFolder"></Transform>
   <Transform name="netcap.OpenContentTypeFolder"></Transform>
+  <Transform name="netcap.ToHostsForService"></Transform>
+  <Transform name="netcap.ToMD5HashesForFile"></Transform>
+  <Transform name="netcap.ToMD5HashesForImage"></Transform>
+  <Transform name="netcap.ToExifDataForImage"></Transform>
+  <Transform name="netcap.ToLinksFromFile"></Transform>
+  <Transform name="netcap.ToEmailsFromFile"></Transform>
+  <Transform name="netcap.ToPhoneNumbersFromFile"></Transform>
   <Transform name="netcap.LookupDHCPFingerprint"></Transform>
   <Transform name="netcap.StopCaptureProcess"></Transform>
  </Transforms>

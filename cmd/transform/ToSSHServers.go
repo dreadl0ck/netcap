@@ -15,19 +15,12 @@ func ToSSHServers() {
 				if len(ssh.Ident) > 0 {
 					val += "\n" + ssh.Ident
 				}
-				val = maltego.EscapeText(val)
 
 				ent := trx.AddEntity("netcap.SSHServer", val)
-				ent.SetType("netcap.SSHServer")
-				ent.SetValue(val)
-
 				ent.AddProperty("timestamp", "Timestamp", "strict", ssh.Timestamp)
 				ent.AddProperty("ident", "Ident", "strict", ssh.Ident)
 				ent.AddProperty("flow", "Flow", "strict", ssh.Flow)
 				ent.AddProperty("algorithms", "Algorithms", "strict", ssh.Algorithms)
-
-				ent.SetLinkColor("#000000")
-				//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 			}
 		},
 	)

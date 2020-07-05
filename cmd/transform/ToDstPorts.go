@@ -43,7 +43,7 @@ func ToDstPorts() {
 
 func addDestinationPort(trx *maltego.MaltegoTransform, portStr string, port *types.Port, min, max uint64, ip *types.IPProfile) {
 	ent := trx.AddEntity("netcap.DestinationPort", portStr)
-	ent.SetType("netcap.DestinationPort")
+
 	np, err := strconv.Atoi(portStr)
 	if err != nil {
 		fmt.Println(err)
@@ -57,15 +57,10 @@ func addDestinationPort(trx *maltego.MaltegoTransform, portStr string, port *typ
 		typ = "UDP"
 	}
 	serviceName := resolvers.LookupServiceByPort(np, typ)
-	ent.SetValue(portStr)
 
 	di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
-
-	escapedName := maltego.EscapeText(portStr + "\n" + serviceName)
-	ent.AddProperty("label", "Label", "strict", escapedName)
-
+	ent.AddProperty("label", "Label", "strict", portStr + "\n" + serviceName)
 	ent.SetLinkLabel(strconv.FormatInt(int64(port.NumTotal), 10) + " pkts")
-	ent.SetLinkColor("#000000")
 	ent.SetLinkThickness(maltego.GetThickness(port.NumTotal, min, max))
 }
