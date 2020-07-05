@@ -34,13 +34,6 @@ func ToGeolocation() {
 
 func addGeolocation(trx *maltego.MaltegoTransform, ip *types.IPProfile, min, max uint64) {
 	ent := trx.AddEntity("netcap.Location", ip.Geolocation)
-	ent.SetType("netcap.Location")
-	ent.SetValue(ip.Geolocation)
-
-	// di := "<h3>Geolocation</h3><p>Timestamp: " + ip.TimestampFirst + "</p>"
-	// ent.AddDisplayInformation(di, "Netcap Info")
-
 	ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")
-	ent.SetLinkColor("#000000")
 	ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), min, max))
 }

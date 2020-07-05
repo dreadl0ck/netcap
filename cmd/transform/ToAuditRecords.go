@@ -212,17 +212,12 @@ func writeAuditRecords(trx maltego.MaltegoTransform, inputSize int64, outDir str
 		// to avoid opening the file again
 		numRecords := netcap.Count(ident)
 
-		ent := trx.AddEntity("netcap."+name+"AuditRecords", ident)
-		ent.SetType("netcap." + name + "AuditRecords")
-
-		displayName := utils.Pluralize(name)
-		ent.SetValue(displayName)
+		ent := trx.AddEntity("netcap."+name+"AuditRecords", utils.Pluralize(name))
 
 		ent.AddProperty("path", "Path", "strict", ident)
 		ent.AddProperty("description", "Description", "strict", name+".ncap.gz")
 
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
-		ent.SetLinkColor("#000000")
 
 		// add notes for specific audit records here
 		switch name {

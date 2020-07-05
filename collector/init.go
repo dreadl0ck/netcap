@@ -80,6 +80,9 @@ func (c *Collector) Init() (err error) {
 			}
 		}
 
+		// wipe extracted files
+		os.RemoveAll(filepath.Join(c.config.EncoderConfig.Out, "files"))
+
 		// clear streams if present
 		if errStreams == nil || errConns == nil {
 			os.RemoveAll(udpPath)

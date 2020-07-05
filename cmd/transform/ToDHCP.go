@@ -45,14 +45,7 @@ func ToDHCP() {
 							typ = "Domain Name"
 						}
 
-						ent := trx.AddEntity("maltego.Device", typ+": "+buf.String())
-						ent.SetType("netcap.Device")
-						ent.SetValue(typ + ": " + buf.String())
-
-						// di := "<h3>DHCP Option</h3><p>Timestamp First: " + dhcp.Timestamp + "</p>"
-						// ent.AddDisplayInformation(di, "Netcap Info")
-						ent.SetLinkColor("#000000")
-						//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
+						trx.AddEntity("netcap.Device", typ+": "+buf.String())
 					}
 				}
 			}

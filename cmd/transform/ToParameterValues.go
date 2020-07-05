@@ -14,17 +14,7 @@ func ToParameterValues() {
 				param := lt.Values["properties.httpparameter"]
 				for key, val := range http.Parameters {
 					if key == param {
-						escapedName := maltego.EscapeText(val)
-						ent := trx.AddEntity("netcap.HTTPParameterValue", escapedName)
-						ent.SetType("netcap.HTTPParameterValue")
-						ent.SetValue(escapedName)
-
-						// di := "<h3>HTTP Parameter Value</h3><p>Timestamp: " + http.Timestamp + "</p>"
-						// ent.AddDisplayInformation(di, "Netcap Info")
-
-						//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
-						ent.SetLinkColor("#000000")
-						//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
+						trx.AddEntity("netcap.HTTPParameterValue", val)
 					}
 				}
 			}

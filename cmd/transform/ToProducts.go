@@ -15,9 +15,9 @@ func ToProducts() {
 			if len(soft.SourceName) > 0 {
 				if soft.SourceName == "Generic version harvester" {
 					if len(val) == 0 {
-						val = maltego.EscapeText(soft.SourceData)
+						val = soft.SourceData
 					} else {
-						val += "\n" + maltego.EscapeText(soft.SourceData)
+						val += "\n" + soft.SourceData
 					}
 				}
 				val += "\n" + soft.SourceName
@@ -30,23 +30,15 @@ func ToProducts() {
 				val += "\n" + f
 			}
 
-			val = maltego.EscapeText(val)
-
 			ent := trx.AddEntity("netcap.Software", val)
-			ent.SetType("netcap.Software")
-			ent.SetValue(val)
-
 			ent.AddProperty("timestamp", "Timestamp", "strict", soft.Timestamp)
-			ent.AddProperty("vendor", "Vendor", "strict", maltego.EscapeText(soft.Vendor))
-			ent.AddProperty("product", "Product", "strict", maltego.EscapeText(soft.Product))
-			ent.AddProperty("version", "Version", "strict", maltego.EscapeText(soft.Version))
+			ent.AddProperty("vendor", "Vendor", "strict", soft.Vendor)
+			ent.AddProperty("product", "Product", "strict", soft.Product)
+			ent.AddProperty("version", "Version", "strict", soft.Version)
 			ent.AddProperty("flows", "Flows", "strict", strings.Join(soft.Flows, " | "))
 			ent.AddProperty("sourcename", "SourceName", "strict", soft.SourceName)
-			ent.AddProperty("sourcedata", "SourceData", "strict", maltego.EscapeText(soft.SourceData))
-			ent.AddProperty("notes", "Notes", "strict", maltego.EscapeText(soft.Notes))
-
-			ent.SetLinkColor("#000000")
-			//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
+			ent.AddProperty("sourcedata", "SourceData", "strict", soft.SourceData)
+			ent.AddProperty("notes", "Notes", "strict", soft.Notes)
 		},
 	)
 }

@@ -46,14 +46,10 @@ func returnCaptureProcessEntity(pid int, path string, iface string) {
 
 	name := "Capture Process" + "\nPID: " + pidStr
 	ent := trx.AddEntity("netcap.CaptureProcess", name)
-	ent.SetType("netcap.CaptureProcess")
-	ent.SetValue(name)
 
 	ent.AddProperty("pid", "PID", "strict", pidStr)
 	ent.AddProperty("path", "Path", "strict", path)
 	ent.AddProperty("iface", "Interface", "strict", iface)
-
-	ent.SetLinkColor("#000000")
 
 	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())

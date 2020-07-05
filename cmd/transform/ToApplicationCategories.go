@@ -19,18 +19,12 @@ func ToApplicationCategories() {
 						for _, proto := range ip.Protocols {
 							if proto.Category != "" {
 								ent := trx.AddEntity("maltego.Service", proto.Category)
-								ent.SetType("maltego.Service")
-								ent.SetValue(proto.Category)
-
-								// di := "<h3>Traffic Category</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
-								// ent.AddDisplayInformation(di, "Netcap Info")
 
 								ent.AddProperty("mac", "MacAddress", "strict", mac)
 								ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
 								ent.AddProperty("path", "Path", "strict", profilesFile)
 
 								ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
-								ent.SetLinkColor("#000000")
 							}
 						}
 
@@ -44,18 +38,12 @@ func ToApplicationCategories() {
 						for _, proto := range ip.Protocols {
 							if proto.Category != "" {
 								ent := trx.AddEntity("maltego.Service", proto.Category)
-								ent.SetType("maltego.Service")
-								ent.SetValue(proto.Category)
-
-								// di := "<h3>Traffic Category</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
-								// ent.AddDisplayInformation(di, "Netcap Info")
 
 								ent.AddProperty("mac", "MacAddress", "strict", mac)
 								ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
 								ent.AddProperty("path", "Path", "strict", profilesFile)
 
 								ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
-								ent.SetLinkColor("#000000")
 							}
 						}
 

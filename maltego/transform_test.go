@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // additional transforms
@@ -67,8 +68,7 @@ var transforms = []TransformCoreInfo{
 	{"ToSSHServers", "netcap.SSHAuditRecords", "Show all SSH server software"},
 	{"ToSoftwareExploits", "netcap.ExploitAuditRecords", "Show potential exploits "},
 	{"ToSoftwareVulnerabilities", "netcap.VulnerabilityAuditRecords", "Show all discovered vulnerable software"},
-	{"ToTCPServices", "netcap.ServiceAuditRecords", "Show detected TCP services"},
-	{"ToUDPServices", "netcap.ServiceAuditRecords", "Show detected UDP services"},
+	{"ToServices", "netcap.ServiceAuditRecords", "Show detected network services"},
 	{"ToDevices", "netcap.DeviceProfileAuditRecords", "Show all discovered device audit records"},
 
 	{"OpenExploit", "netcap.Exploit", "Open the exploit source with the default system program for the filetype"},
@@ -79,6 +79,14 @@ var transforms = []TransformCoreInfo{
 	{"OpenVulnerability", "netcap.Vulnerability", "Open link to the vulnerability on NVD homepage"},
 	{"OpenFilesFolder", "netcap.FileAuditRecords", "Open the storage folder for the extracted files"},
 	{"OpenContentTypeFolder", "netcap.ContentType", "Open the storage folder for the selected content type"},
+
+	{"ToHostsForService", "netcap.Service", "Show all hosts that have been contacting the service"},
+	{"ToMD5HashesForFile", "netcap.File", "Get the MD5 hashes for all files seen with the provided file name"},
+	{"ToMD5HashesForImage", "maltego.Image", "Get the MD5 hashes associated with the image file"},
+	{"ToExifDataForImage", "maltego.Image", "Get the exif data from the image file"},
+	{"ToLinksFromFile", "netcap.File", "Extract all hyperlinks from the file"},
+	{"ToEmailsFromFile", "netcap.File", "Extract all email addresses from the file"},
+	{"ToPhoneNumbersFromFile", "netcap.File", "Extract all phone numbers from the file"},
 
 	{"LookupDHCPFingerprint", "netcap.DHCPClient", "Resolve the clients DHCP fingerprint via the fingerbank API"},
 	{"StopCaptureProcess", "netcap.CaptureProcess", "Stop the NETCAP capture process"},
@@ -110,8 +118,9 @@ func genFullConfigArchive() {
 	}
 	defer fCategory.Close()
 
+	// Sat Jun 13 21:48:54 CEST 2020
 	fVersion.WriteString(`#
-#Sat Jun 13 21:48:54 CEST 2020
+#` + time.Now().Format(time.UnixDate) + `
 maltego.client.version=4.2.11.13104
 maltego.client.subtitle=
 maltego.pandora.version=1.4.2
@@ -215,7 +224,7 @@ func genServerListing(outDir string) {
 		Enabled:     true,
 		Description: "Local transforms hosted on this machine",
 		URL:         "http://localhost",
-		LastSync:    "2020-06-23 20:47:24.433 CEST", // TODO
+		LastSync:    time.Now().Format("2006-01-02 15:04:05.000 MST"), // example: 2020-06-23 20:47:24.433 CEST"
 		Protocol: struct {
 			Text    string `xml:",chardata"`
 			Version string `xml:"version,attr"`

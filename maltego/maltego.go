@@ -127,8 +127,7 @@ type MaltegoTransform struct {
 }
 
 func (m *MaltegoTransform) AddEntity(enType, enValue string) *MaltegoEntityObj {
-	//me := MaltegoEntity(enType, enValue) //Not too sure why this doesn't work
-	me := &MaltegoEntityObj{entityType: enType, value: enValue, weight: 100}
+	me := &MaltegoEntityObj{entityType: enType, value: EscapeText(enValue), weight: 100}
 	m.entities = append(m.entities, me)
 	return me
 }
@@ -194,7 +193,7 @@ func (m *MaltegoEntityObj) SetIconURL(iU string) {
 }
 
 func (m *MaltegoEntityObj) AddProperty(fieldName, displayName, matchingRule, value string) {
-	prop := []string{fieldName, displayName, matchingRule, value}
+	prop := []string{fieldName, displayName, matchingRule, EscapeText(value)}
 	m.AdditionalFields = append(m.AdditionalFields, prop)
 }
 

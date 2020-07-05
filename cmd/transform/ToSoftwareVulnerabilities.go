@@ -32,19 +32,12 @@ func ToSoftwareVulnerabilities() {
 				val += "\n" + f
 			}
 
-			val = maltego.EscapeText(val)
 			ent := trx.AddEntity("netcap.Vulnerability", val)
-			ent.SetType("netcap.Vulnerability")
-			ent.SetValue(val)
-
 			ent.AddProperty("timestamp", "Timestamp", "strict", vuln.Timestamp)
 			ent.AddProperty("id", "ID", "strict", vuln.ID)
-			ent.AddProperty("notes", "Notes", "strict", maltego.EscapeText(vuln.Notes))
-			ent.AddProperty("flows", "flows", "strict", maltego.EscapeText(strings.Join(vuln.Software.Flows, ",")))
-			ent.AddProperty("software", "Software", "strict", maltego.EscapeText(vuln.Software.Product+" "+vuln.Software.Version))
-
-			ent.SetLinkColor("#000000")
-			//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
+			ent.AddProperty("notes", "Notes", "strict", vuln.Notes)
+			ent.AddProperty("flows", "flows", "strict", strings.Join(vuln.Software.Flows, ","))
+			ent.AddProperty("software", "Software", "strict", vuln.Software.Product+" "+vuln.Software.Version)
 		},
 	)
 }

@@ -47,6 +47,36 @@ func StringToTimeFieldsFunc(val string) time.Time {
 	return time.Time{}
 }
 
+func TestChopTransportIdent(t *testing.T) {
+	res := ChopTransportIdent("192.168.1.47->165.227.109.154-53032->80")
+	if res != "53032->80" {
+		t.Fatal("got", res, "expected: 53032->80")
+	}
+}
+
+func TestReverseIdent(t *testing.T) {
+	res := ReverseIdent("192.168.1.47->165.227.109.154-53032->80")
+	if res != "165.227.109.154->192.168.1.47-80->53032" {
+		t.Fatal("got", res, "expected: 165.227.109.154->192.168.1.47-80->53032")
+	}
+}
+
+func TestParseIdent(t *testing.T) {
+	srcIP, srcPort, dstIP, dstPort := ParseIdent("192.168.1.47->165.227.109.154-53032->80")
+	if srcIP != "192.168.1.47" {
+		t.Fatal("got srcIP", srcIP, "expected: 192.168.1.47")
+	}
+	if srcPort != "53032" {
+		t.Fatal("got srcPort", srcPort, "expected: 53032")
+	}
+	if dstIP != "165.227.109.154" {
+		t.Fatal("got dstIP", dstIP, "expected: 165.227.109.154")
+	}
+	if dstPort != "80" {
+		t.Fatal("got dstPort", dstPort, "expected: 80")
+	}
+}
+
 func TestTimeToString(t *testing.T) {
 	if TimeToString(ti) != TimeToStringOld(ti) {
 		t.Fatal("not the same: TimeToString(ti) != TimeToStringOld(ti)", TimeToString(ti), " != ", TimeToStringOld(ti))

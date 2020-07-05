@@ -33,32 +33,24 @@ func ToDHCPClients() {
 
 			//log.Println("ident", ident, dhcp.Fingerprint)
 
-			val := maltego.EscapeText(ident)
-			ent := trx.AddEntity("netcap.DHCPClient", val)
-			ent.SetType("netcap.DHCPClient")
-			ent.SetValue(val)
+			ent := trx.AddEntity("netcap.DHCPClient", ident)
 
-			ent.AddProperty("timestamp", "Timestamp", "strict", maltego.EscapeText(dhcp.Timestamp))
-			ent.AddProperty("clientIP", "ClientIP", "strict", maltego.EscapeText(dhcp.ClientIP))
-			ent.AddProperty("serverIP", "ServerIP", "strict", maltego.EscapeText(dhcp.NextServerIP))
-			ent.AddProperty("fp", "Fingerprint", "strict", maltego.EscapeText(dhcp.Fingerprint))
-			ent.AddProperty("clientMac", "ClientHWAddr", "strict", maltego.EscapeText(dhcp.ClientHWAddr))
+			ent.AddProperty("timestamp", "Timestamp", "strict", dhcp.Timestamp)
+			ent.AddProperty("clientIP", "ClientIP", "strict", dhcp.ClientIP)
+			ent.AddProperty("serverIP", "ServerIP", "strict", dhcp.NextServerIP)
+			ent.AddProperty("fp", "Fingerprint", "strict", dhcp.Fingerprint)
+			ent.AddProperty("clientMac", "ClientHWAddr", "strict", dhcp.ClientHWAddr)
 			ent.AddProperty("path", "Path", "strict", lt.Values["path"])
-
-			// di := "<h3>DHCP Option</h3><p>Timestamp First: " + dhcp.Timestamp + "</p>"
-			// ent.AddDisplayInformation(di, "Netcap Info")
-			ent.SetLinkColor("#000000")
-			//ent.SetLinkThickness(maltego.GetThickness(uint64(count), min, max))
 
 			for _, o := range dhcp.Options {
 				if utils.IsAscii(o.Data) && len(o.Data) > 1 {
 					switch o.Type {
 					case 60:
-						ent.AddProperty("vendor", "Vendor", "strict", maltego.EscapeText(string(o.Data)))
+						ent.AddProperty("vendor", "Vendor", "strict", string(o.Data))
 					case 12:
-						ent.AddProperty("host", "Hostname", "strict", maltego.EscapeText(string(o.Data)))
+						ent.AddProperty("host", "Hostname", "strict", string(o.Data))
 					case 15:
-						ent.AddProperty("domain", "Domain", "strict", maltego.EscapeText(string(o.Data)))
+						ent.AddProperty("domain", "Domain", "strict", string(o.Data))
 					}
 				}
 			}

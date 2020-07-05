@@ -7,36 +7,35 @@ import (
 	"github.com/dustin/go-humanize"
 	"net"
 	"strconv"
-
-	//"strconv"
 	"strings"
 )
 
-func ToDestinationIPs() {
+func ToSourceIPs() {
 	maltego.DeviceProfileTransform(
-		maltego.CountPacketsContactIPs,
+		maltego.CountPacketsDeviceIPs,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
 			if profile.MacAddr == mac {
+				for _, ip := range profile.DeviceIPs {
 
-				for _, ip := range profile.Contacts {
-
-					var ent *maltego.MaltegoEntityObj
-					//var contactType string
-					if resolvers.IsPrivateIP(net.ParseIP(ip.Addr)) {
-						ent = trx.AddEntity("netcap.InternalDestinationIP", ip.Addr)
-						ent.SetType("netcap.InternalDestinationIP")
-					} else {
-						ent = trx.AddEntity("netcap.ExternalDestinationIP", ip.Addr)
-						ent.SetType("netcap.ExternalDestinationIP")
+					var (
+						ent *maltego.MaltegoEntityObj
+						dnsNames = strings.Join(ip.DNSNames, "\n")
+						val = ip.Addr
+					)
+					if len(ip.Geolocation) > 0 {
+						val += "\n" + ip.Geolocation
 					}
-
-					dnsNames := strings.Join(ip.DNSNames, "\n")
-					ent.SetValue(ip.Addr + "\n" + ip.Geolocation + "\n" + dnsNames)
-					// ent.AddDisplayInformation("<h3>" + contactType + "</h3><p>" + ip.Addr + "</p><p>" + ip.Geolocation + "</p><p>" + dnsNames + "</p><p>Timestamp: " + profile.Timestamp + "</p>", "Netcap Info")
+					if len(dnsNames) > 0 {
+						val += "\n" + dnsNames
+					}
+					if resolvers.IsPrivateIP(net.ParseIP(ip.Addr)) {
+						ent = trx.AddEntity("netcap.InternalSourceIP", val)
+					} else {
+						ent = trx.AddEntity("netcap.ExternalSourceIP", val)
+					}
 
 					ent.AddProperty("geolocation", "Geolocation", "strict", ip.Geolocation)
 					ent.AddProperty("dnsNames", "DNS Names", "strict", dnsNames)
-					ent.AddProperty("timestamp", "Timestamp", "strict", profile.Timestamp)
 
 					ent.AddProperty("mac", "MacAddress", "strict", mac)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)
@@ -44,7 +43,6 @@ func ToDestinationIPs() {
 					ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(profile.NumPackets, 10))
 
 					ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts\n" + humanize.Bytes(ip.Bytes))
-					ent.SetLinkColor("#000000")
 					ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), min, max))
 				}
 			}

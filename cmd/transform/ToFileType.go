@@ -21,11 +21,6 @@ func ToFileType() {
 		log.Fatal(err)
 	}
 
-	name := maltego.EscapeText(string(out))
-	ent := trx.AddEntity("netcap.FileType", name)
-	ent.SetType("netcap.FileType")
-	ent.SetValue(name)
-	ent.SetLinkColor("#000000")
-
+	trx.AddEntity("netcap.FileType", string(out))
 	fmt.Println(trx.ReturnOutput())
 }

@@ -13,10 +13,10 @@ func ToCookiesForHTTPHost() {
 				host := lt.Value
 				if http.Host == host {
 					for _, c := range http.ReqCookies {
-						addCookie(trx, c, http.Timestamp, ipaddr, profilesFile)
+						addCookie(trx, c, http.Timestamp, ipaddr, profilesFile, http.Method)
 					}
 					for _, c := range http.ResCookies {
-						addCookie(trx, c, http.Timestamp, ipaddr, profilesFile)
+						addCookie(trx, c, http.Timestamp, ipaddr, profilesFile, http.Method)
 					}
 				}
 			}
@@ -25,18 +25,10 @@ func ToCookiesForHTTPHost() {
 	)
 }
 
-func addCookie(trx *maltego.MaltegoTransform, c *types.HTTPCookie, timestamp string, ipaddr string, profilesFile string) {
+func addCookie(trx *maltego.MaltegoTransform, c *types.HTTPCookie, timestamp string, ipaddr string, profilesFile string, method string) {
 	ent := trx.AddEntity("netcap.HTTPCookie", c.Name)
-	ent.SetType("netcap.HTTPCookie")
-	ent.SetValue(c.Name)
-
-	// di := "<h3>HTTP Cookie</h3><p>Timestamp: " + timestamp + "</p>"
-	// ent.AddDisplayInformation(di, "Netcap Info")
-
 	ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
 	ent.AddProperty("path", "Path", "strict", profilesFile)
-
-	//ent.SetLinkLabel(strconv.FormatInt(dns..NumPackets, 10) + " pkts")
-	ent.SetLinkColor("#000000")
-	//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
+	ent.AddProperty("timestamp", "Timestamp", "strict", timestamp)
+	ent.SetLinkLabel(method)
 }
