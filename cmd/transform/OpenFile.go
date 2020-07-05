@@ -37,14 +37,16 @@ func OpenFile() {
 	// the open tool uses the file extension to decide which program to pass the file to
 	// if there is an extension for known executable formats - abort
 	ext := filepath.Ext(lt.Values["path"])
-	if ext == "exe" || ext == "bin" {
+	log.Println("file extension", ext)
+	if ext == ".exe" || ext == ".bin" {
 		log.Println("detected known executable file extension - aborting to prevent accidental execution!")
 		trx.AddUIMessage("completed!", "Inform")
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
 	// if there is no extension, use content type detection to determine if its an executable
-	if ext == "" {
+	// TODO: improve and test content type check and executable file detection
+	//if ext == "" {
 		log.Println("open path:", lt.Values["path"])
 		f, err := os.OpenFile(lt.Values["path"], os.O_RDONLY, outDirPermission)
 		if err != nil {
@@ -67,7 +69,7 @@ func OpenFile() {
 			fmt.Println(trx.ReturnOutput())
 			return
 		}
-	}
+	//}
 
 	args = append(args, lt.Values["path"])
 	log.Println("command for opening files:", openCommandName, args)
