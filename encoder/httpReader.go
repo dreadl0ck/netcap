@@ -667,6 +667,19 @@ func trimEncoding(ctype string) string {
 	return ctype
 }
 
+// keep track which paths for content types of extracted files have already been created
+var contentTypeMap = make(map[string]struct{})
+func createContentTypePathIfRequired(path string) {
+	if _, ok := contentTypeMap[path]; !ok {
+		contentTypeMap[path] = struct{}{}
+		err := os.MkdirAll(path, directoryPermission)
+		if err != nil {
+			logReassemblyError("HTTP-create-path", "Cannot create folder %s: %s\n", path, err)
+		}
+	}
+}
+
+// TODO: write unit tests and cleanup
 func (h *httpReader) saveFile(host, source, name string, err error, body []byte, encoding []string, contentType string) error {
 
 	// prevent saving zero bytes
@@ -703,7 +716,9 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 	}
 
 	// make sure root path exists
-	os.MkdirAll(root, directoryPermission)
+	createContentTypePathIfRequired(root)
+
+	// add base
 	base = path.Join(root, base)
 	if len(base) > 250 {
 		base = base[:250] + "..."
@@ -771,18 +786,30 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 			// set hash to value for decompressed content and update size
 			hash = hex.EncodeToString(cryptoutils.MD5Data(data))
 			length = len(data)
-			ctype = http.DetectContentType(data)
+
+			// save previous content type
+			ctypeOld := ctype
+
+			// update content type
+			ctype = trimEncoding(http.DetectContentType(data))
+
+			// make sure root path exists
+			createContentTypePathIfRequired(path.Join(c.FileStorage, ctype))
+
+			// switch the file extension and the path for the updated content type
+			ext := filepath.Ext(target)
+
+			// create new target: trim extension from old one and replace
+			// and replace the old content type in the path
+			newTarget := strings.Replace(strings.TrimSuffix(target, ext), ctypeOld, ctype, 1) + fileExtensionForContentType(ctype)
+			err = os.Rename(target, newTarget)
+			if err == nil {
+				target = newTarget
+			} else {
+				fmt.Println("failed to rename file after decompression", err)
+			}
 		}
 
-		// switch the file extension
-		ext := filepath.Ext(target)
-		newTarget := strings.TrimSuffix(target, ext) + fileExtensionForContentType(ctype)
-		err = os.Rename(target, newTarget)
-		if err == nil {
-			target = newTarget
-		} else {
-			fmt.Println("failed to rename file after decompression", err)
-		}
 	} else {
 		hash = hex.EncodeToString(cryptoutils.MD5Data(body))
 		length = len(body)

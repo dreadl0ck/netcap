@@ -9,18 +9,26 @@ import (
 
 func ToMD5HashesForFile() {
 
-	var ident string
+	var (
+		name string
+		length int64
+	)
 
 	maltego.FilesTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
 
-			if len(ident) == 0 {
-				ident = lt.Values["name"]
+			if len(name) == 0 {
+				name = lt.Values["name"]
+				var errLength error
+				length, errLength = strconv.ParseInt(lt.Values["length"], 10, 64)
+				if errLength != nil {
+					log.Fatal("invalid length value: ", lt.Values["length"])
+				}
 				log.Println(lt.Values)
 			}
 
-			if file.Name == ident {
+			if file.Name == name && file.Length == length {
 
 				var (
 					ent = trx.AddEntity("netcap.MD5Hash", file.Hash)

@@ -27,9 +27,10 @@ func ToFilesForContentType() {
 
 				if typ == ct {
 
+					// TODO: make a single file constructor and reuse it in ToFiles!
 					var (
 						ent *maltego.MaltegoEntityObj
-						val = file.Name + "\n" + file.ContentType
+						val = file.Name + "\n" + strconv.FormatInt(file.Length, 10) + " bytes"
 					)
 					if strings.HasPrefix(ct, "image/") {
 						ent = trx.AddEntity("maltego.Image", val)
@@ -49,6 +50,7 @@ func ToFilesForContentType() {
 					ent.AddProperty("path", "Path", "strict", profilesFile)
 					ent.AddProperty("location", "Location", "strict", file.Location)
 					ent.AddProperty("name", "Name", "strict", file.Name)
+					ent.AddProperty("length", "Length", "strict", strconv.FormatInt(file.Length, 10))
 				}
 			}
 		},
