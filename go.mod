@@ -36,6 +36,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/namsral/flag v1.7.4-pre
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/nyaruka/phonenumbers v1.0.56
 	github.com/oschwald/maxminddb-golang v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.5.1

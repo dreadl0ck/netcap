@@ -1,5 +1,8 @@
 # TODOs
 
+- add Open Image
+- mark if files extracted from HTTP are a Server Reply or client data sent via GET / POST 
+
 maltego cleanups:
 - maltego: AddEntity wrapper that always adds path property field?
 - maltego: add transform debug toggle via env var? dump input lt.Values for transform 

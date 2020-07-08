@@ -3,6 +3,7 @@ package transform
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/nyaruka/phonenumbers"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -49,9 +50,12 @@ func ToPhoneNumbersFromFile() {
 	log.Println("results",len(results), results)
 
 	for _, r := range results {
-		if len(r) > 5 {
-			ent := trx.AddEntity("netcap.PhoneNumber", r)
-			ent.AddProperty("properties.phonenumber", "Phone Number", "strict", r)
+		p, err := phonenumbers.Parse(r, "US")
+		if err == nil {
+			if phonenumbers.IsValidNumber(p) {
+				ent := trx.AddEntity("netcap.PhoneNumber", r)
+				ent.AddProperty("properties.phonenumber", "Phone Number", "strict", r)
+			}
 		}
 	}
 
