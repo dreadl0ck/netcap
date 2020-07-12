@@ -25,9 +25,9 @@ func TestReader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	header := r.ReadHeader()
-	if header == nil {
-		t.Fatal("header is nil")
+	header, errHeader := r.ReadHeader()
+	if errHeader != nil {
+		t.Fatal("failed to read header")
 	}
 
 	if header.Type != types.Type_NC_TCP {
