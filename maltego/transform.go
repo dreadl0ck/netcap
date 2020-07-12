@@ -143,7 +143,7 @@ type Server struct {
 	XMLName     xml.Name `xml:"MaltegoServer"`
 	Text        string   `xml:",chardata"`
 	Name        string   `xml:"name,attr"`
-	Enabled     bool   `xml:"enabled,attr"`
+	Enabled     bool     `xml:"enabled,attr"`
 	Description string   `xml:"description,attr"`
 	URL         string   `xml:"url,attr"`
 	LastSync    string   `xml:"LastSync"`
@@ -371,12 +371,12 @@ func newTransform(id string, description string, input string) XMLTransform {
 			},
 		},
 		OutputEntities: "",
-		DefaultSets:    DefaultSets{Items: []Set{
+		DefaultSets: DefaultSets{Items: []Set{
 			{
-				Name:    "NETCAP",
+				Name: "NETCAP",
 			},
 		}},
-		StealthLevel:   "0",
+		StealthLevel: "0",
 	}
 
 	return tr

@@ -112,7 +112,7 @@ func Run() {
 				AddContext:           *flagContext,
 				MemBufferSize:        *flagMemBufferSize,
 				FlushEvery:           *flagFlushevery,
-				NoDefrag:             *flagNodefrag,
+				DefragIPv4:           *flagDefragIPv4,
 				Checksum:             *flagChecksum,
 				NoOptCheck:           *flagNooptcheck,
 				IgnoreFSMerr:         *flagIgnorefsmerr,

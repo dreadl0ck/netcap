@@ -1,6 +1,7 @@
 package encoder
 
 import (
+	"bytes"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"time"
@@ -52,6 +53,14 @@ type StreamData struct {
 
 // StreamDataSlice implements sort.Interface to sort data fragments based on their timestamps
 type StreamDataSlice []*StreamData
+
+func (d StreamDataSlice) Bytes() []byte {
+	var b bytes.Buffer
+	for _, data := range d {
+		b.Write(data.raw)
+	}
+	return b.Bytes()
+}
 
 func (d StreamDataSlice) Len() int {
 	return len(d)

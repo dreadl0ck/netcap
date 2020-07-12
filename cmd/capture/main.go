@@ -15,7 +15,10 @@ package capture
 
 import (
 	"fmt"
+	"github.com/felixge/fgprof"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime/pprof"
 	"strings"
@@ -81,6 +84,12 @@ func Run() {
 				}
 			}
 			return func() {}
+		}()
+
+		// fgprof allows to analyze On-CPU as well as Off-CPU (e.g. I/O) time
+		http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
+		go func() {
+			log.Println(http.ListenAndServe(":6060", nil))
 		}()
 	}
 
@@ -152,7 +161,7 @@ func Run() {
 			Export:                  false,
 			AddContext:              *flagContext,
 			FlushEvery:              *flagFlushevery,
-			NoDefrag:                *flagNodefrag,
+			DefragIPv4:              *flagDefragIPv4,
 			Checksum:                *flagChecksum,
 			NoOptCheck:              *flagNooptcheck,
 			IgnoreFSMerr:            *flagIgnorefsmerr,

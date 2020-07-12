@@ -121,12 +121,15 @@ func Dump(c DumpConfig) {
 	}
 
 	var (
-		header = r.ReadHeader()
-		record = InitRecord(header.Type)
+		header, errFileHeader = r.ReadHeader()
+		record                = InitRecord(header.Type)
 		// rows for table print
 		rows     [][]string
 		colorMap map[string]string
 	)
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 
 	types.Select(record, c.Selection)
 	types.UTC = c.UTC
@@ -312,6 +315,7 @@ func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 	r, err := Open(name, DefaultBufferSize)
 	if err != nil {
 
+		// TODO: cleanup
 		// suppress errors for OSPF because the file handle will be closed twice
 		// since both v2 and v3 have the same gopacket.LayerType == "OSPF"
 		if !strings.HasPrefix(name, "OSPF") {
@@ -322,9 +326,12 @@ func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 	defer r.Close()
 
 	var (
-		header = r.ReadHeader()
-		record = InitRecord(header.Type)
+		header, errFileHeader = r.ReadHeader()
+		record                = InitRecord(header.Type)
 	)
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 
 	err = r.Next(record)
 	if err != nil {

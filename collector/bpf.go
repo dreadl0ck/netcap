@@ -49,6 +49,7 @@ func (c *Collector) CollectBPF(path string, bpf string) error {
 			return errors.Wrap(err, "Error reading packet data")
 		}
 
+		// TODO: use new progress reporting mechanism
 		c.printProgress()
 
 		c.handlePacket(&packet{

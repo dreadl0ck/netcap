@@ -34,7 +34,7 @@ func OpenFile() {
 		}
 	}
 
-	loc:= lt.Values["location"]
+	loc := lt.Values["location"]
 
 	// the open tool uses the file extension to decide which program to pass the file to
 	// if there is an extension for known executable formats - abort

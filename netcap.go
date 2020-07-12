@@ -15,6 +15,7 @@ package netcap
 
 import (
 	"io"
+	"log"
 
 	"github.com/dreadl0ck/netcap/types"
 	proto "github.com/gogo/protobuf/proto"
@@ -181,9 +182,12 @@ func Count(filename string) (count int64) {
 	defer r.Close()
 
 	var (
-		header = r.ReadHeader()
-		rec    = InitRecord(header.Type)
+		header, errFileHeader = r.ReadHeader()
+		rec                   = InitRecord(header.Type)
 	)
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	for {
 		// read next record
 		err := r.Next(rec)

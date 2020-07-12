@@ -65,7 +65,7 @@ var DefaultConfig = Config{
 	Export:                  false,
 	AddContext:              true,
 	FlushEvery:              100,
-	NoDefrag:                false,
+	DefragIPv4:              false,
 	Checksum:                false,
 	NoOptCheck:              false,
 	IgnoreFSMerr:            false,
@@ -89,6 +89,7 @@ var DefaultConfig = Config{
 	HarvesterBannerSize:     512,
 	BannerSize:              512,
 	StopAfterHarvesterMatch: true,
+	IgnoreEncoderInitErrors: true,
 }
 
 // Config contains configuration parameters
@@ -134,8 +135,8 @@ type Config struct {
 	// Interval to apply connection flushes
 	FlushEvery int
 
-	// Do not use IPv4 defragger
-	NoDefrag bool
+	// Defragment IPv4 packets
+	DefragIPv4 bool
 
 	// Dont verify the packet checksums
 	Checksum bool
@@ -212,4 +213,10 @@ type Config struct {
 
 	// CustomRegex to use for credentials harvester
 	CustomRegex string
+
+	// IgnoreEncoderInitErrors allows to control whether to crash on Custom Encoder initialization errors (usually caused by missing database files)
+	// and enables users to use the encoders even if the files are not present, while just logging an error to stdout.
+	// If the init error does not allow the encoder to function at least partially,
+	// fatal should be invoked in the init function to crash and indicate failure.
+	IgnoreEncoderInitErrors bool
 }

@@ -504,12 +504,10 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	dataBytes += int64(len(data))
 	statsMutex.Unlock()
 
-	// defrag the IPv4 packet if required
-	if !c.NoDefrag {
-		ip4Layer := packet.Layer(layers.LayerTypeIPv4)
-		if ip4Layer == nil {
-			return
-		}
+	// defrag the IPv4 packet if desired
+	// TODO: implement defragmentation for IPv6
+	ip4Layer := packet.Layer(layers.LayerTypeIPv4)
+	if ip4Layer != nil && c.DefragIPv4 {
 
 		var (
 			ip4         = ip4Layer.(*layers.IPv4)
@@ -549,7 +547,6 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 
 	// for debugging:
 	//AssembleWithContextTimeout(packet, assembler, tcp)
-
 	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
@@ -558,6 +555,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	doFlush := count%c.FlushEvery == 0
 	statsMutex.Unlock()
 
+	// TODO: refactor and use a ticker model in a goroutine, similar to progress reporting
 	// flush connections in interval
 	if doFlush {
 		ref := packet.Metadata().CaptureInfo.Timestamp
@@ -676,7 +674,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			{"IgnoreFsmErr", strconv.FormatBool(c.IgnoreFSMerr)},
 			{"NoOptCheck", strconv.FormatBool(c.NoOptCheck)},
 			{"Checksum", strconv.FormatBool(c.Checksum)},
-			{"NoDefrag", strconv.FormatBool(c.NoDefrag)},
+			{"DefragIPv4", strconv.FormatBool(c.DefragIPv4)},
 			{"WriteIncomplete", strconv.FormatBool(c.WriteIncomplete)},
 		})
 
@@ -684,8 +682,8 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
 		statsMutex.Lock()
 		rows := [][]string{}
-		if !c.NoDefrag {
-			rows = append(rows, []string{"IPdefrag", strconv.FormatInt(reassemblyStats.ipdefrag, 10)})
+		if c.DefragIPv4 {
+			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(reassemblyStats.ipdefrag, 10)})
 		}
 		rows = append(rows, []string{"missed bytes", strconv.FormatInt(reassemblyStats.missedBytes, 10)})
 		rows = append(rows, []string{"total packets", strconv.FormatInt(reassemblyStats.pkt, 10)})

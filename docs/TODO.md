@@ -1,23 +1,35 @@
 # TODOs
 
+- chart pkts/sec by time or pkt offset in pcap
+- check source todos
+- error handling iteration: improve error messages and reduce panic() usage
+ 
+maltego additions:
+
 - add Open Image
-- mark if files extracted from HTTP are a Server Reply or client data sent via GET / POST 
+- mark if files extracted from HTTP are a Server Reply or client data sent via GET / POST
+- on netcap.URL: To Visitors
+- To Emails From File: handle common email obfuscation ala: user [at] mail [dot] com
+- add a Machine for Live Capture that periodically refreshes the audit records
+- add transform to scan and analyze a website
+- add machine to watch and analyze a website (maybe useful for CTFs or during security assessment?)
 
 maltego cleanups:
+
 - maltego: AddEntity wrapper that always adds path property field?
-- maltego: add transform debug toggle via env var? dump input lt.Values for transform 
+- maltego: add transform debug toggle via env var? dump input lt.Values for transform
 - maltego: add constants for netcap types for AddEntity()
 - add constants for ent.SetLinkDirection("output-to-input")
 - add constants for hex colors: ent.SetLinkColor("#000000")
 - remove setting path attribute on entities to the path of the DeviceProfiles for all types + document
 
-- improve and test content type and executable detection (fix application/gzip)
+- improve and test content type and executable detection (fix application/gzip) stdlib has exec format header parsers in debug pkg
 - include machines into generated config archive
 - live capture: give proper error when interface name is not present or wrong
 - ensure using Service and software audit records work also when not all DBs are available
 - add Show All Services transform: show both TCP and UDP
-    - add different types for internal or external services
-        - add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
+  - add different types for internal or external services
+    - add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
 - update reassembly unit tests
 - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - make snaplen configurable: add as property to netcap.PCAP, default 1514
@@ -32,6 +44,7 @@ maltego cleanups:
 wireshark pcap downloads: wget -r -np -l 1 -A pcap https://www.wireshark.org/download/automated/captures/
 
 on audit record archives:
+
 - on TLSHellos: To JA3 Fingerprints
 - on TCP/UDP: To Hosts, To Ports, To Streams
 - on POP3: To Mail Users
@@ -56,19 +69,21 @@ on audit record archives:
 ## Maltego Plugin
 
 - Viewlets:
-    - Suspicious events:
-        - dial to IP directly
-        - shell commands in http parameters
-        - masquerated protocol (by using well known ports for example)
-        - http content type does not match content
+
+  - Suspicious events:
+    - dial to IP directly
+    - shell commands in http parameters
+    - masquerated protocol (by using well known ports for example)
+    - http content type does not match content
 
 - integrate scanning against YARA / suricata rules and add Malware Custom Audit Records
 - add a transform to open executable files for analysis, set tool via env var
 - make general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 
-- add transform to do a reverse DNS lookup for *IP hosts instead of the local lookup
+- add transform to do a reverse DNS lookup for \*IP hosts instead of the local lookup
 
 entities:
+
 - add different colors for Internal and External IPs: or merge them? Also rename device ip to source ip and contact ip to destination ip
 - add different colors for audit record archives?
 - handle multiple cpe identifiers for a single service probe
@@ -89,10 +104,10 @@ entities:
 
 ## General
 
-- net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode? 
+- net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode?
 - capture: add test flag, to emit output for automated tests: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
-    - collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log 
-    - collect decoding errors from all test pcaps and deduplicate!
+  - collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log
+  - collect decoding errors from all test pcaps and deduplicate!
 - add database update command
 - add full stream SMTP parsing
 - extract TLS certificates! alert if selfsigned
@@ -103,7 +118,7 @@ entities:
 - use JSON encoder from new protobuf release, when gogo integrated the new protobuf V2 API: https://pkg.go.dev/google.golang.org/protobuf/encoding/protojson?tab=doc
 - monitor repo with LGTM
 - implement the connection history string in the same manner as zeek
-- official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt 
+- official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt
 - net split tool: add support to split pcaps into connections, like: $ mkdir all_split && dreadbook:test alien$ PcapSplitter -o all_split -f all.pcap -m connection
 - ICS pcaps: failed to collect audit records from pcapng file: Unknown magic 73726576
 - add net grep tool, similar to ngrep
@@ -134,7 +149,7 @@ entities:
 - add tests for http audit records and compare results with output from urlsnarf
 
 ## Reassembly
- 
+
 2 Options:
 
 1. One assembler per worker + 1 shared connection pool (currently implemented)
@@ -154,11 +169,11 @@ entities:
 
 - label tool: display a warning when nothing is there for mapping
 - add YARA support for labels
-- docs: describe custom labeling 
+- docs: describe custom labeling
 
 - Visualize CIC datasets
 - implement reading NC files in rust
-- proxy: add support for link layer? 
+- proxy: add support for link layer?
 
 - capture payloads for HTTP?
 - add payload data for Flows and Connection if desired
@@ -216,4 +231,4 @@ When switching sync.Mutex variables with the deadlock.Mutex variant for debuggin
 the following can be used to fix the imports after applying the global find and replace:
 
     directories=$(go list -f {{.Dir}} ./...)
-    test -z "`for dir in $directories; do goimports -w $dir/*.go | tee /dev/stderr; done`" 
+    test -z "`for dir in $directories; do goimports -w $dir/*.go | tee /dev/stderr; done`"

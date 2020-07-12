@@ -51,12 +51,15 @@ func checkFields() {
 	}
 
 	var (
-		h                 = r.ReadHeader()
+		h, errFileHeader  = r.ReadHeader()
 		record            = netcap.InitRecord(h.Type)
 		numExpectedFields int
 		checkFieldNames   = true
 		allFieldNames     []string
 	)
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if p, ok := record.(types.AuditRecord); ok {
 		numExpectedFields = len(p.CSVHeader())
 		allFieldNames = p.CSVHeader()

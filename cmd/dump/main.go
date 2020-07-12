@@ -15,6 +15,7 @@ package dump
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -68,8 +69,10 @@ func Run() {
 		}
 
 		// get header
-		// this will panic if the header is corrupted
-		h := r.ReadHeader()
+		h, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
 
 		// print result as table
 		tui.Table(os.Stdout, []string{"Field", "Value"}, [][]string{

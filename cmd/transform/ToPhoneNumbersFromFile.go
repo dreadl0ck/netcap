@@ -15,10 +15,10 @@ import (
 func ToPhoneNumbersFromFile() {
 
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.MaltegoTransform{}
+		lt   = maltego.ParseLocalArguments(os.Args)
+		trx  = &maltego.MaltegoTransform{}
 		path = lt.Values["location"]
-		err error
+		err  error
 	)
 	log.Println(lt.Values)
 
@@ -47,7 +47,7 @@ func ToPhoneNumbersFromFile() {
 		os.Exit(0)
 	}
 
-	log.Println("results",len(results), results)
+	log.Println("results", len(results), results)
 
 	for _, r := range results {
 		p, err := phonenumbers.Parse(r, "US")

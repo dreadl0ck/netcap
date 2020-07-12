@@ -60,7 +60,10 @@ func ServiceTransform(count ServiceCountFunc, transform ServiceTransformationFun
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_Service {
 		panic("file does not contain Service records: " + header.Type.String())
 	}

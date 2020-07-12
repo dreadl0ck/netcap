@@ -59,7 +59,10 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_DHCPv4 {
 		panic("file does not contain DHCPv4 records: " + header.Type.String())
 	}

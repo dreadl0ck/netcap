@@ -959,6 +959,9 @@ message HTTP {
     map<string, string> RequestHeader  = 26;
     map<string, string> ResponseHeader = 27;
     map<string, string> Parameters     = 28;
+
+    bytes RequestBody                  = 29;
+    bytes ResponseBody                 = 30;
 }
 
 message HTTPCookie {

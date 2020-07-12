@@ -60,7 +60,10 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_HTTP {
 		panic("file does not contain HTTP records: " + header.Type.String())
 	}

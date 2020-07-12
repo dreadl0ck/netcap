@@ -21,9 +21,9 @@ func ToDestinationIPs() {
 				for _, ip := range profile.Contacts {
 
 					var (
-						ent *maltego.MaltegoEntityObj
+						ent      *maltego.MaltegoEntityObj
 						dnsNames = strings.Join(ip.DNSNames, "\n")
-						val = ip.Addr
+						val      = ip.Addr
 					)
 					if len(ip.Geolocation) > 0 {
 						val += "\n" + ip.Geolocation

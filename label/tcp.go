@@ -45,7 +45,10 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 		}
 
 		// read netcap header
-		header := r.ReadHeader()
+		header, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
 		if header.Type != types.Type_NC_TCP {
 			panic("file does not contain TCP records: " + header.Type.String())
 		}

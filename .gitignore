@@ -28,3 +28,4 @@ pub.key
 dist/
 vulnDBs
 udpConnections/
+FlameGraph

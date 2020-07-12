@@ -200,7 +200,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 			continue
 		}
 
-		writeHTTP(ht, h.parent.ident)
+		writeHTTP(ht, h.parent)
 	}
 
 	// iterate over unanswered requests
@@ -217,7 +217,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 			atomic.AddInt64(&httpEncoder.numRequests, 1)
 			atomic.AddInt64(&httpEncoder.numUnansweredRequests, 1)
 
-			writeHTTP(ht, h.parent.ident)
+			writeHTTP(ht, h.parent)
 		} else {
 			atomic.AddInt64(&httpEncoder.numNilRequests, 1)
 		}
@@ -270,7 +270,7 @@ func searchForLoginParams(req *http.Request, h *httpReader) {
 	}
 }
 
-func writeHTTP(h *types.HTTP, ident string) {
+func writeHTTP(h *types.HTTP, parent *tcpConnection) {
 
 	httpStore.Lock()
 
@@ -323,9 +323,12 @@ func writeHTTP(h *types.HTTP, ident string) {
 
 	// If HTTP instructions are sent to set a cookie used by CMSs (of other apps), add the key and possible value to the httpStore
 	if toSet, ok := h.ResponseHeader["Set-Cookie"]; ok {
-		parsedCookie := strings.Split(toSet, "=")
-		cookieKey := parsedCookie[0]
-		var cookieValue string
+
+		var (
+			parsedCookie = strings.Split(toSet, "=")
+			cookieKey    = parsedCookie[0]
+			cookieValue  string
+		)
 		if len(parsedCookie) > 1 {
 			cookieValue = parsedCookie[1]
 		}
@@ -361,6 +364,11 @@ func writeHTTP(h *types.HTTP, ident string) {
 	// 	}
 	// }
 
+	if c.IncludePayloads {
+		h.RequestBody = parent.client.DataSlice().Bytes()
+		h.ResponseBody = parent.server.DataSlice().Bytes()
+	}
+
 	// export metrics if configured
 	if httpEncoder.export {
 		h.Inc()
@@ -373,7 +381,7 @@ func writeHTTP(h *types.HTTP, ident string) {
 		errorMap.Inc(err.Error())
 	}
 
-	software := whatSoftwareHTTP(nil, ident, h)
+	software := whatSoftwareHTTP(nil, parent.ident, h)
 
 	if len(software) == 0 {
 		return
@@ -668,10 +676,18 @@ func trimEncoding(ctype string) string {
 }
 
 // keep track which paths for content types of extracted files have already been created
-var contentTypeMap = make(map[string]struct{})
+var (
+	contentTypeMap   = make(map[string]struct{})
+	contentTypeMapMu sync.Mutex
+)
+
 func createContentTypePathIfRequired(path string) {
+
+	contentTypeMapMu.Lock()
 	if _, ok := contentTypeMap[path]; !ok {
 		contentTypeMap[path] = struct{}{}
+		contentTypeMapMu.Unlock()
+
 		err := os.MkdirAll(path, directoryPermission)
 		if err != nil {
 			logReassemblyError("HTTP-create-path", "Cannot create folder %s: %s\n", path, err)
@@ -755,9 +771,9 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 
 	var (
 		// explicitly declare io.Reader interface
-		r io.Reader
+		r      io.Reader
 		length int
-		hash string
+		hash   string
 	)
 
 	// now assign a new buffer
@@ -770,12 +786,19 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 	}
 	if err == nil {
 		w, err := io.Copy(f, r)
-		if _, ok := r.(*gzip.Reader); ok {
-			r.(*gzip.Reader).Close()
-		}
-		f.Close()
 		if err != nil {
-			logReassemblyError("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, err)
+			logReassemblyError("HTTP-save", "%s: failed to copy %s (l:%d): %s\n", h.parent.ident, target, w, err)
+		}
+
+		if _, ok := r.(*gzip.Reader); ok {
+			err = r.(*gzip.Reader).Close()
+			if err != nil {
+				logReassemblyError("HTTP-save", "%s: failed to close gzip reader %s (l:%d): %s\n", h.parent.ident, target, w, err)
+			}
+		}
+		err = f.Close()
+		if err != nil {
+			logReassemblyError("HTTP-save", "%s: failed to close %s (l:%d): %s\n", h.parent.ident, target, w, err)
 		} else {
 			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, w)
 		}

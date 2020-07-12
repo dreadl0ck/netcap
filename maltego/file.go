@@ -60,9 +60,13 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
+
 	if header.Type != types.Type_NC_File {
-		panic("file does not contain File records: " + header.Type.String())
+		log.Fatal("file does not contain File records: " + header.Type.String())
 	}
 
 	var (

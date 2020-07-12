@@ -90,9 +90,14 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
+	c.printStdOut("initializing encoders... ")
+
 	// initialize encoders
 	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)
 	encoder.InitCustomEncoders(c.config.EncoderConfig, c.config.Quiet)
+
+	c.buildProgressString()
+	c.printlnStdOut("done")
 
 	// set pointer of collectors atomic counter map in encoder pkg
 	encoder.SetErrorMap(c.errorMap)

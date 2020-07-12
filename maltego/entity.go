@@ -80,7 +80,7 @@ type EntityCoreInfo struct {
 	Icon        string
 	Description string
 	Parent      string
-	Fields 		[]PropertyField
+	Fields      []PropertyField
 }
 
 func newEntity(entName string, imgName string, description string, parent string, fields ...PropertyField) XMLEntity {

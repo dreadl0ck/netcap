@@ -193,7 +193,10 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_Flow {
 		panic("file does not contain Flow records: " + header.Type.String())
 	}

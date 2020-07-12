@@ -60,7 +60,10 @@ func CredentialsTransform(count CredentialsCountFunc, transform CredentialsTrans
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_Credentials {
 		panic("file does not contain Credentials records: " + header.Type.String())
 	}

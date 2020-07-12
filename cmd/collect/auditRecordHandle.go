@@ -59,8 +59,11 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 		// create buffered writer that writes into the file handle
 		bWriter = bufio.NewWriter(f)
 		// create gzip writer that writes into the buffered writer
-		gWriter = gzip.NewWriter(bWriter)
+		gWriter, errGzipWriter = gzip.NewWriterLevel(bWriter, netcap.DefaultCompressionLevel)
 	)
+	if errGzipWriter != nil {
+		panic(errGzipWriter)
+	}
 
 	// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
 	// You should at least have a block size of 100k and at least a number of blocks that match the number of cores

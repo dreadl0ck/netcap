@@ -49,7 +49,10 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 		}
 
 		// read netcap header
-		header := r.ReadHeader()
+		header, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
 
 		// create outfile handle
 		f, err := os.Create(outFileName)
