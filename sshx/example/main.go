@@ -4,6 +4,7 @@ import (
 	//"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/sshx"
 	"log"
 	"os"
@@ -59,7 +60,9 @@ func main() {
 		clientHello := sshx.GetClientHello(packet)
 		if clientHello != nil {
 			destination := "[" + packet.NetworkLayer().NetworkFlow().Dst().String() + ":" + packet.TransportLayer().TransportFlow().Dst().String() + "]"
-			log.Printf("%s Client hello from port %s to %s", destination, tcp.SrcPort, tcp.DstPort)
+			if tcp, ok := packet.TransportLayer().(*layers.TCP); ok {
+				log.Printf("%s Client hello from port %s to %s", destination, tcp.SrcPort, tcp.DstPort)
+			}
 		}
 	}
 }
