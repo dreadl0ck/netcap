@@ -166,6 +166,10 @@ commands:
         description: run the golangci-lint static source code analyzer
         exec: golangci-lint run
 
+    gosec-analyze:
+        description: run the gosec static source code analyzer
+        exec: gosec ./...
+
     delete-tag:
         description: delete tag locally and remotely
         arguments:
