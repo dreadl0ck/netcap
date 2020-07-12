@@ -67,8 +67,8 @@ github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557 h1:m/rxJiRUg
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7 h1:yBEizTC9Sj3v7e5q1zqc/L5P0h+wRfsx9eZqtWcBN2g=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200429191613-83e6b1414564 h1:iYBT4g8mn8wEviCvY2pKyKN3m5WUWC+uZ7+yyXioAu0=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200429191613-83e6b1414564/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200712212013-8705eeb9f5fa h1:7XqrkN+nKXTFxsenFcSjI0RjLBByqamjDXPc0LVWWns=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200712212013-8705eeb9f5fa/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
 github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b h1:Ar1YyCBF4cYVhgFzEroRp/JZwEOPZxfBr3YapV9PYZs=
 github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b/go.mod h1:uPPZgPwk6eZmKsZwnZmrezIquSQbAv9d9ARnRKs4RNg=
 github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b h1:pe6QmegBSU8XHCMF9PI2P+hEhuQYCodbTQluExHmKW4=
@@ -284,8 +284,10 @@ github.com/sirupsen/logrus v1.5.0 h1:1N5EYkVAPEywqZRJd7cwnRtCb6xJx7NH3T3WUTF980Q
 github.com/sirupsen/logrus v1.5.0/go.mod h1:+F7Ogzej0PZc/94MaYx/nvG9jOFMD2osvC3s+Squfpo=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
 github.com/spf13/cast v1.3.0/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
+github.com/spf13/cobra v0.0.5 h1:f0B+LkLX6DtmRH1isoNA9VTtNUK9K8xYd28JNNfOv/s=
 github.com/spf13/cobra v0.0.5/go.mod h1:3K3wKZymM7VvHMDS9+Akkh4K60UwM26emMESw8tLCHU=
 github.com/spf13/jwalterweatherman v1.0.0/go.mod h1:cQK4TGJAtQXfYWX+Ddv3mKDzgVb68N+wFjFa4jdeBTo=
+github.com/spf13/pflag v1.0.3 h1:zPAT6CGy6wXeQ7NtTnaTerfKOsV6V6F8agHXFiazDkg=
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/viper v1.3.2/go.mod h1:ZiWeW+zYFKm7srdB9IoDzzZXaJaI5eL9QjNiN/DMA2s=
 github.com/steveyen/gtreap v0.1.0 h1:CjhzTa274PyJLJuMZwIzCO1PfC00oRa8d1Kc78bFXJM=
