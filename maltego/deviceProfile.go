@@ -99,7 +99,10 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_DeviceProfile {
 		panic("file does not contain DeviceProfile records: " + header.Type.String())
 	}

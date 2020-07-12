@@ -41,7 +41,10 @@ func ToDNSQuestions() {
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_DNS {
 		panic("file does not contain DNS records: " + header.Type.String())
 	}

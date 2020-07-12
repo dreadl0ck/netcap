@@ -19,24 +19,6 @@ import (
 	"time"
 )
 
-//var auditRecords = []string{
-//	"DeviceProfile",
-//	"SSH",
-//	"Credentials",
-//	"Service",
-//	"Software",
-//	"File",
-//	"HTTP",
-//	"DNS",
-//	"POP3",
-//	"SMTP",
-//	"DHCPv4",
-//	"DHCPv6",
-//	"Flow",
-//	"Vulnerability",
-//	"Exploit",
-//}
-
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets: false,
 	Workers:             runtime.NumCPU(),
@@ -55,7 +37,7 @@ var maltegoBaseConfig = collector.Config{
 		Export:                  false,
 		AddContext:              true,
 		FlushEvery:              100,
-		NoDefrag:                netcap.DefaultNoDefrag,
+		DefragIPv4:              netcap.DefaultDefragIPv4,
 		Checksum:                netcap.DefaultChecksum,
 		NoOptCheck:              netcap.DefaultNoOptCheck,
 		IgnoreFSMerr:            netcap.DefaultIgnoreFSMErr,

@@ -15,6 +15,7 @@ package label
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -45,7 +46,10 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 		}
 
 		// read netcap header
-		header := r.ReadHeader()
+		header, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
 		if header.Type != types.Type_NC_Flow {
 			panic("file does not contain Flow records: " + header.Type.String())
 		}

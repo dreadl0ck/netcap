@@ -182,7 +182,7 @@ func ShowEncoders() {
 		totalAuditRecords++
 		f := countFields(e.Type)
 		totalFields += f
-		fmt.Println(pad("+ " + e.Type.String() + " ( " + strconv.Itoa(f) + " )", 35), e.Description)
+		fmt.Println(pad("+ "+e.Type.String()+" ( "+strconv.Itoa(f)+" )", 35), e.Description)
 	}
 	fmt.Println("> custom encoder fields: ", totalFields)
 	fmt.Println("> custom encoder audit records:", totalAuditRecords)
@@ -192,7 +192,7 @@ func ShowEncoders() {
 		totalAuditRecords++
 		f := countFields(e.Type)
 		totalFields += f
-		fmt.Println(pad("+ " + e.Layer.String() + " ( " + strconv.Itoa(f) + " )", 35), e.Description)
+		fmt.Println(pad("+ "+e.Layer.String()+" ( "+strconv.Itoa(f)+" )", 35), e.Description)
 	}
 
 	var rows [][]string

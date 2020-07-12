@@ -15,6 +15,7 @@ package label
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,7 +45,10 @@ func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 		}
 
 		// read netcap header
-		header := r.ReadHeader()
+		header, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
 		if header.Type != types.Type_NC_IPv6 {
 			panic("file does not contain IPv6 records: " + header.Type.String())
 		}

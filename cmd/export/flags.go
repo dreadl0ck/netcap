@@ -68,7 +68,7 @@ var (
 	flagGeolocationDB        = fs.Bool("geoDB", false, "use geolocation for device profiling")
 	flagDPI                  = fs.Bool("dpi", false, "use DPI for device profiling")
 	flagFlushevery           = fs.Int("flushevery", netcap.DefaultFlushEvery, "flush assembler every N packets")
-	flagNodefrag             = fs.Bool("nodefrag", netcap.DefaultNoDefrag, "if true, do not do IPv4 defrag")
+	flagDefragIPv4           = fs.Bool("ip4defrag", netcap.DefaultDefragIPv4, "Defragment IPv4 packets")
 	flagChecksum             = fs.Bool("checksum", netcap.DefaultChecksum, "check TCP checksum")
 	flagNooptcheck           = fs.Bool("nooptcheck", netcap.DefaultNoOptCheck, "do not check TCP options (useful to ignore MSS on captures with TSO)")
 	flagIgnorefsmerr         = fs.Bool("ignorefsmerr", netcap.DefaultIgnoreFSMErr, "ignore TCP FSM errors")

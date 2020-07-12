@@ -60,7 +60,10 @@ func SoftwareTransform(count SoftwareCountFunc, transform SoftwareTransformation
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_Software {
 		panic("file does not contain Software records: " + header.Type.String())
 	}

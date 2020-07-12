@@ -173,11 +173,14 @@ func firstTimestamp(path string) time.Time {
 
 	var (
 		// read netcap file header
-		header = r.ReadHeader()
+		header, errFileHeader = r.ReadHeader()
 
 		// initalize a record instance for the type from the header
 		record = netcap.InitRecord(header.Type)
 	)
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 
 	for {
 		// read next record
@@ -211,13 +214,16 @@ func exportFile(path string) {
 
 	var (
 		// read netcap file header
-		header = r.ReadHeader()
+		header, errFileHeader = r.ReadHeader()
 
 		// initalize a record instance for the type from the header
 		record = netcap.InitRecord(header.Type)
 
 		firstTimestamp time.Time
 	)
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 
 	for {
 		// read next record

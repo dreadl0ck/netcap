@@ -11,7 +11,7 @@ func ToCredentialsByService() {
 		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, cred *types.Credentials, min, max uint64, profilesFile string, mac string, ipaddr string) {
 
 			// TODO: only output the service names in first stage
-			ent := trx.AddEntity("netcap.Credentials", cred.User + "\n" + cred.Password)
+			ent := trx.AddEntity("netcap.Credentials", cred.User+"\n"+cred.Password)
 
 			ent.AddProperty("timestamp", "Timestamp", "strict", cred.Timestamp)
 			ent.AddProperty("service", "Service", "strict", cred.Service)

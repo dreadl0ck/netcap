@@ -82,7 +82,7 @@ func (r *Reader) Next(msg proto.Message) error {
 }
 
 // ReadHeader reads the file header
-func (r *Reader) ReadHeader() *types.Header {
+func (r *Reader) ReadHeader() (*types.Header, error) {
 	// read netcap header
 	var (
 		header = new(types.Header)
@@ -91,5 +91,5 @@ func (r *Reader) ReadHeader() *types.Header {
 	if err != nil {
 		panic("invalid netcap header in file: " + r.file.Name() + ", error: " + err.Error())
 	}
-	return header
+	return header, err
 }

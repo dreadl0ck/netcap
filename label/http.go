@@ -2,6 +2,7 @@ package label
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +32,11 @@ func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 		}
 
 		// read netcap header
-		header := r.ReadHeader()
+		header, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
+
 		if header.Type != types.Type_NC_HTTP {
 			panic("file does not contain HTTP records: " + header.Type.String())
 		}

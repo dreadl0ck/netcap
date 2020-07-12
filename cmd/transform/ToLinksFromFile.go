@@ -14,10 +14,10 @@ import (
 func ToLinksFromFile() {
 
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.MaltegoTransform{}
+		lt   = maltego.ParseLocalArguments(os.Args)
+		trx  = &maltego.MaltegoTransform{}
 		path = lt.Values["location"]
-		err error
+		err  error
 	)
 	log.Println(lt.Values)
 
@@ -41,10 +41,10 @@ func ToLinksFromFile() {
 	results := rxStrict.FindAllString(string(data), -1)
 
 	if len(results) == 0 {
-			log.Println("No links found")
-			trx.AddUIMessage("completed!", "Inform")
-			fmt.Println(trx.ReturnOutput())
-			os.Exit(0)
+		log.Println("No links found")
+		trx.AddUIMessage("completed!", "Inform")
+		fmt.Println(trx.ReturnOutput())
+		os.Exit(0)
 	}
 
 	log.Println("results", results)

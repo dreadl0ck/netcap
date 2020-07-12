@@ -1,4 +1,4 @@
- /*
+/*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  *
@@ -48,7 +48,7 @@ type port struct {
 }
 
 var (
-	pathReplacer = strings.NewReplacer("/", "-", " ", "-", "]", "", "[", "", ")", "", "(", "", "---", "-", "-&-", "-")
+	pathReplacer  = strings.NewReplacer("/", "-", " ", "-", "]", "", "[", "", ")", "", "(", "", "---", "-", "-&-", "-")
 	finalReplacer = strings.NewReplacer("---", "-", "-&-", "-")
 )
 

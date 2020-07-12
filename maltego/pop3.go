@@ -60,7 +60,10 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_POP3 {
 		panic("file does not contain POP3 records: " + header.Type.String())
 	}

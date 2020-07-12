@@ -267,3 +267,20 @@ commands:
             sudo chown -R $USER /Library/Java/JavaVirtualMachines
             sudo chown -R $USER /Applications/Maltego.app
             sudo chown -R $USER "/Users/$USER/Library/Application Support/maltego"
+
+    profile-io:
+        exec: |
+            if [[ ! -d FlameGraph ]]; then
+                git clone https://github.com/brendangregg/FlameGraph
+            fi
+            cd FlameGraph && curl -s 'localhost:6060/debug/fgprof?seconds=3&format=folded' > fgprof.folded
+            ./flamegraph.pl fgprof.folded > fgprof.svg
+            open fgprof.svg
+
+    profile-io-fprof:
+        exec: |
+            go tool pprof --http=:6061 http://localhost:6060/debug/fgprof?seconds=3 > fgprof.folded
+
+    profile-io-pprof:
+        exec: |
+            go tool pprof --http=:6061 http://localhost:6060/debug/pprof?seconds=3 > fgprof.folded

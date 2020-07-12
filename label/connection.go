@@ -15,6 +15,7 @@ package label
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -46,7 +47,10 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 		}
 
 		// read netcap header
-		header := r.ReadHeader()
+		header, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
 		if header.Type != types.Type_NC_Connection {
 			panic("file does not contain Connection records: " + header.Type.String())
 		}

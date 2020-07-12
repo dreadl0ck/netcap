@@ -368,7 +368,9 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 	}
 
 	// Try to detect apps
+	httpStore.Lock()
 	if receivedHeaders, ok := httpStore.CMSHeaders[h.DstIP]; ok {
+		httpStore.Unlock()
 		for k, v := range cmsDB {
 			if headers, ok := v.(map[string]interface{}); ok {
 				if hdrs, ok := headers["headers"]; ok {
@@ -396,6 +398,8 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 				}
 			}
 		}
+	} else {
+		httpStore.Unlock()
 	}
 
 	return s

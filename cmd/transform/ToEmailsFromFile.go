@@ -14,10 +14,10 @@ import (
 func ToEmailsFromFile() {
 
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.MaltegoTransform{}
+		lt   = maltego.ParseLocalArguments(os.Args)
+		trx  = &maltego.MaltegoTransform{}
 		path = lt.Values["location"]
-		err error
+		err  error
 	)
 	log.Println(lt.Values)
 
@@ -39,10 +39,10 @@ func ToEmailsFromFile() {
 
 	results := emailaddress.Find(data, false)
 	if len(results) == 0 {
-			log.Println("No emails found")
-			trx.AddUIMessage("completed!", "Inform")
-			fmt.Println(trx.ReturnOutput())
-			os.Exit(0)
+		log.Println("No emails found")
+		trx.AddUIMessage("completed!", "Inform")
+		fmt.Println(trx.ReturnOutput())
+		os.Exit(0)
 	}
 
 	log.Println("results", results)

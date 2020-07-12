@@ -248,7 +248,10 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 		}
 
 		// read netcap header
-		header := r.ReadHeader()
+		header, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
 
 		// create outfile handle
 		f, err := os.Create(outFileName)
@@ -299,7 +302,7 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 
 			var label string
 
-			// check if flow has a source or destination adress matching an alert
+			// check if flow has a source or destination address matching an alert
 			// if not label it as normal
 			for _, l := range labels {
 

@@ -15,6 +15,7 @@ package label
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,7 +45,10 @@ func IPv4(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 		}
 
 		// read netcap header
-		header := r.ReadHeader()
+		header, errFileHeader := r.ReadHeader()
+		if errFileHeader != nil {
+			log.Fatal(errFileHeader)
+		}
 		if header.Type != types.Type_NC_IPv4 {
 			panic("file does not contain IPv4 records: " + header.Type.String())
 		}

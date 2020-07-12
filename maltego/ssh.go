@@ -60,7 +60,10 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	}
 
 	// read netcap header
-	header := r.ReadHeader()
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		log.Fatal(errFileHeader)
+	}
 	if header.Type != types.Type_NC_SSH {
 		panic("file does not contain SSH records: " + header.Type.String())
 	}

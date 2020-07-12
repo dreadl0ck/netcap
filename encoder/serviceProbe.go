@@ -144,7 +144,7 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 
 				if c.Debug {
 					fmt.Println("\n\nMATCH!", ident)
-					fmt.Println(serviceProbe, "\n\nSERVICE:\n" + proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+					fmt.Println(serviceProbe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
 				writeSoftwareFromBanner(serv, ident, serviceProbe.Ident)
@@ -161,7 +161,7 @@ func matchServiceProbes(serv *Service, banner []byte, ident string) {
 
 				if c.Debug {
 					fmt.Println("\nMATCH!", ident)
-					fmt.Println(serviceProbe, "\n\nSERVICE:\n" + proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+					fmt.Println(serviceProbe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
 				writeSoftwareFromBanner(serv, ident, serviceProbe.Ident)
@@ -243,6 +243,7 @@ func parseVersionInfo(r *bytes.Reader) (string, error) {
 }
 
 var serviceProbeIdentEnums = make(map[string]int)
+
 func enumerate(in string) string {
 	if v, ok := serviceProbeIdentEnums[in]; ok {
 		serviceProbeIdentEnums[in]++

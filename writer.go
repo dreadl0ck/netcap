@@ -91,14 +91,22 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 			w.bWriter = bufio.NewWriterSize(w.file, memBufferSize)
 
 			if compress {
-				w.gWriter = gzip.NewWriter(w.bWriter)
+				var errGzipWriter error
+				w.gWriter, errGzipWriter = gzip.NewWriterLevel(w.bWriter, DefaultCompressionLevel)
+				if errGzipWriter != nil {
+					panic(errGzipWriter)
+				}
 				w.csvWriter = io.NewCSVWriter(w.gWriter)
 			} else {
 				w.csvWriter = io.NewCSVWriter(w.bWriter)
 			}
 		} else {
 			if compress {
-				w.gWriter = gzip.NewWriter(w.file)
+				var errGzipWriter error
+				w.gWriter, errGzipWriter = gzip.NewWriterLevel(w.file, DefaultCompressionLevel)
+				if errGzipWriter != nil {
+					panic(errGzipWriter)
+				}
 				w.csvWriter = io.NewCSVWriter(w.gWriter)
 			} else {
 				w.csvWriter = io.NewCSVWriter(w.file)
@@ -135,16 +143,28 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 	// buffer data?
 	if buffer {
 
-		w.bWriter = bufio.NewWriterSize(w.file, DefaultBufferSize)
 		if compress {
-			w.gWriter = gzip.NewWriter(w.bWriter)
-			w.dWriter = delimited.NewWriter(w.gWriter)
+			// experiment: pgzip -> file
+			var errGzipWriter error
+			w.gWriter, errGzipWriter = gzip.NewWriterLevel(w.file, DefaultCompressionLevel)
+			if errGzipWriter != nil {
+				panic(errGzipWriter)
+			}
+			// experiment: buffer -> pgzip
+			w.bWriter = bufio.NewWriterSize(w.gWriter, DefaultBufferSize)
+			// experiment: delimited -> buffer
+			w.dWriter = delimited.NewWriter(w.bWriter)
 		} else {
+			w.bWriter = bufio.NewWriterSize(w.file, DefaultBufferSize)
 			w.dWriter = delimited.NewWriter(w.bWriter)
 		}
 	} else {
 		if compress {
-			w.gWriter = gzip.NewWriter(w.file)
+			var errGzipWriter error
+			w.gWriter, errGzipWriter = gzip.NewWriterLevel(w.file, DefaultCompressionLevel)
+			if errGzipWriter != nil {
+				panic(errGzipWriter)
+			}
 			w.dWriter = delimited.NewWriter(w.gWriter)
 		} else {
 			if writeChan {
@@ -267,11 +287,12 @@ func (w *Writer) Close() (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.compress {
-		CloseGzipWriters(w.gWriter)
-	}
+	// TODO: due to buffering experiment, flush the buffers first, then the compressor
 	if w.buffer {
 		FlushWriters(w.bWriter)
+	}
+	if w.compress {
+		CloseGzipWriters(w.gWriter)
 	}
 	return CloseFile(w.out, w.file, w.Name)
 }

@@ -346,7 +346,7 @@ func TestGenerateTransformServerListing(t *testing.T) {
 				Name string `xml:"name,attr"`
 			} `xml:"Transform"`
 		}{
-			Text:      "",
+			Text: "",
 			Transform: []struct {
 				Text string `xml:",chardata"`
 				Name string `xml:"name,attr"`
