@@ -57,7 +57,7 @@ func (c *tcpStreamProcessor) handleStream(s StreamReader) {
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
-func (c *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader {
+func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader {
 
 	// init channel to receive input packets
 	chanInput := make(chan StreamReader, 10)
@@ -90,11 +90,14 @@ func (c *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader 
 				}
 			}
 
-			c.Lock()
-			c.numDone++
-			clearLine()
-			fmt.Print("processing remaining open TCP streams... ", "(", c.numDone, "/", c.numTotal, ")")
-			c.Unlock()
+			tsp.Lock()
+			tsp.numDone++
+
+			if !Quiet {
+				clearLine()
+				fmt.Print("processing remaining open TCP streams... ", "(", tsp.numDone, "/", tsp.numTotal, ")")
+			}
+			tsp.Unlock()
 
 			wg.Done()
 			continue
