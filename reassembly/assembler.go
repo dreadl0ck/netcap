@@ -6,6 +6,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -69,7 +70,7 @@ type AssemblerOptions struct {
 // NOTE:  If you can guarantee that packets going to a set of Assemblers will
 // contain information on different connections per Assembler (for example,
 // they're already hashed by PF_RING hashing or some other hashing mechanism),
-// then we recommend you use a seperate StreamPool per Assembler, thus
+// then we recommend you use a separate StreamPool per Assembler, thus
 // avoiding all lock contention.  Only when different Assemblers could receive
 // packets for the same Stream should a StreamPool be shared between them.
 //
@@ -108,6 +109,7 @@ type Assembler struct {
 	cacheLP  livePacket
 	cacheSG  reassemblyObject
 	start    bool
+	sync.Mutex
 }
 
 // NewAssembler creates a new assembler.  Pass in the StreamPool
@@ -182,7 +184,10 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		timestamp = ci.Timestamp
 	)
 
+	// RACE
+	a.Lock()
 	a.ret = a.ret[:0]
+	a.Unlock()
 
 	conn, half, rev = a.connPool.getConnection(key, false, timestamp, t, ac)
 	if conn == nil {
@@ -746,13 +751,16 @@ func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
 	if Debug {
 		log.Printf("skipFlush %v\n", half.nextSeq)
 	}
-	// Well, it's embarassing it there is still something in half.saved
+	// Well, it's embarrassing it there is still something in half.saved
 	// FIXME: change API to give back saved + new/no packets
 	if half.first == nil {
 		a.closeHalfConnection(conn, half)
 		return
 	}
+	a.Lock()
 	a.ret = a.ret[:0]
+	a.Unlock()
+
 	a.addNextFromConn(half)
 
 	// default: use context of first elem

@@ -7,15 +7,14 @@ import (
 	"time"
 )
 
-/* Bi-directionnal connection */
-
+/* Bi-directional connection */
 type connection struct {
-	key      key // client->server
+	key      *key // client->server
 	c2s, s2c halfconnection
 	mu       sync.Mutex
 }
 
-func (c *connection) reset(k key, s Stream, ts time.Time) {
+func (c *connection) reset(k *key, s Stream, ts time.Time) {
 	c.mu.Lock()
 	c.key = k
 	base := halfconnection{
