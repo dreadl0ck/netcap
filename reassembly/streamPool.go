@@ -78,8 +78,8 @@ func (p *StreamPool) DumpString() string {
 
 func (p *StreamPool) remove(conn *connection) {
 	p.mu.Lock()
-	if _, ok := p.conns[conn.key]; ok {
-		delete(p.conns, conn.key)
+	if _, ok := p.conns[*conn.key]; ok {
+		delete(p.conns, *conn.key)
 		p.free = append(p.free, conn)
 	}
 	p.mu.Unlock()
@@ -106,7 +106,7 @@ func (p *StreamPool) connections() []*connection {
 	return conns
 }
 
-func (p *StreamPool) newConnection(k key, s Stream, ts time.Time) (c *connection, h *halfconnection, r *halfconnection) {
+func (p *StreamPool) newConnection(k *key, s Stream, ts time.Time) (c *connection, h *halfconnection, r *halfconnection) {
 	if Debug {
 		p.newConnectionCount++
 		if p.newConnectionCount&0x7FFF == 0 {
@@ -151,11 +151,11 @@ func (p *StreamPool) getConnection(k key, end bool, ts time.Time, tcp *layers.TC
 
 	s := p.factory.New(k[0], k[1], tcp, ac)
 
-	conn, half, rev = p.newConnection(k, s, ts)
+	conn, half, rev = p.newConnection(&k, s, ts)
 
 	conn2, half2, rev2 := p.getHalf(k)
 	if conn2 != nil {
-		if conn2.key != k {
+		if *conn2.key != k {
 			fmt.Println(conn.key, conn.c2s)
 			panic("FIXME: other dir added in the meantime...")
 		}
