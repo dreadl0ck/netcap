@@ -1,13 +1,12 @@
 linters-settings:
-  # TODO: is there a central logging package that should be used already?
-  depguard:
-    list-type: blacklist
-    packages:
+  #depguard:
+    #list-type: blacklist
+    #packages:
       # logging is allowed only by logutils.Log, logrus
       # is allowed to use only in logutils package
       #- github.com/sirupsen/logrus
-    packages-with-error-message:
-      - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
+    #packages-with-error-message:
+    #  - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
   dupl:
     threshold: 100
   exhaustive:
@@ -67,55 +66,55 @@ linters:
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
   enable:
-    # - bodyclose
-    # - deadcode
-    # - depguard
-    # - dogsled
-    # - dupl
-    # - errcheck
-    # #- exhaustive
-    # - funlen
-    # - gochecknoinits
-    # - goconst
-    # - gocritic
-    # - gocyclo
-    # - gofmt
-    # - goimports
-    # - golint
-    # - gomnd
-    # - goprintffuncname
-    # - gosec
-    # - gosimple
-    # - govet
-    # - ineffassign
-    # - interfacer
-    # - lll
-    # - misspell
-    # - nakedret
-    # #- noctx
-    # - nolintlint
-    # - rowserrcheck
-    # - scopelint
-    # - staticcheck
-    # - structcheck
-    # - stylecheck
-    # - typecheck
-    # - unconvert
-    # - unparam
-    # - unused
-    # - varcheck
-    # - whitespace
-    # - asciicheck
-    # - gochecknoglobals
-    # - gocognit
-    # - godot
-    # - godox
-    # - goerr113
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    #- exhaustive
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - lll
+    - misspell
+    - nakedret
+    #- noctx
+    - nolintlint
+    - rowserrcheck
+    - scopelint
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+    - asciicheck
+    - gochecknoglobals
+    - gocognit
+    - godot
+    - godox
+    - goerr113
     - maligned
-    # - nestif
-    # - prealloc
-    # - testpackage
-    # - wsl
+    - nestif
+    - prealloc
+    - testpackage
+    - wsl
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
