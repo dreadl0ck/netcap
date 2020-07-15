@@ -188,7 +188,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	}
 
 	// make sure root path exists
-	os.MkdirAll(root, directoryPermission)
+	os.MkdirAll(root, defaultDirectoryPermission)
 	base = path.Join(root, base)
 	if len(base) > 250 {
 		base = base[:250] + "..."

@@ -185,7 +185,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	)
 
 	// make sure root path exists
-	os.MkdirAll(root, directoryPermission)
+	os.MkdirAll(root, defaultDirectoryPermission)
 	base = path.Join(root, base)
 
 	utils.ReassemblyLog.Println("saveConnection", base)

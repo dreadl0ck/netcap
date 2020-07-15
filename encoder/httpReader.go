@@ -688,7 +688,7 @@ func createContentTypePathIfRequired(path string) {
 		contentTypeMap[path] = struct{}{}
 		contentTypeMapMu.Unlock()
 
-		err := os.MkdirAll(path, directoryPermission)
+		err := os.MkdirAll(path, defaultDirectoryPermission)
 		if err != nil {
 			logReassemblyError("HTTP-create-path", "Cannot create folder %s: %s\n", path, err)
 		}
@@ -900,7 +900,10 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	}
 
 	// parse form values
-	req.ParseForm()
+	err = req.ParseForm()
+	if err != nil {
+		logReassemblyError("HTTP-request", "HTTP/%s failed to parse form values: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+	}
 
 	// increase counter
 	statsMutex.Lock()

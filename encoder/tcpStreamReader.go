@@ -182,8 +182,8 @@ func (h *tcpStreamReader) Saved() bool {
 }
 
 func (h *tcpStreamReader) NumBytes() int {
-	h.Lock()
-	defer h.Unlock()
+	h.parent.Lock()
+	defer h.parent.Unlock()
 	return h.numBytes
 }
 

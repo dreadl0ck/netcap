@@ -219,7 +219,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 	)
 
 	// make sure root path exists
-	os.MkdirAll(root, directoryPermission)
+	os.MkdirAll(root, defaultDirectoryPermission)
 	base = path.Join(root, base)
 
 	utils.ReassemblyLog.Println("saveConnection", base)
@@ -229,7 +229,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 	statsMutex.Unlock()
 
 	// append to files
-	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, 0700)
+	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaultFilesPermission)
 	if err != nil {
 		logReassemblyError("UDP conn create", "Cannot create %s: %s\n", base, err)
 		return err
