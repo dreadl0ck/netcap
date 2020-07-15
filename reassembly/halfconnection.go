@@ -6,25 +6,29 @@ import (
 	"time"
 )
 
-/* one-way connection, i.e. halfconnection */
+// one-way connection, i.e. halfconnection
+// this structure has an optimized field order to avoid excessive padding
 type halfconnection struct {
-	dir                          TCPFlowDirection
-	pages                        int      // Number of pages used (both in first/last and saved)
-	saved                        *page    // Doubly-linked list of in-order pages (seq < nextSeq) already given to Stream who told us to keep
-	first, last                  *page    // Doubly-linked list of out-of-order pages (seq > nextSeq)
-	nextSeq                      Sequence // sequence number of in-order received bytes
-	ackSeq                       Sequence
-	created, lastSeen, firstSeen time.Time
-	stream                       Stream
-	closed                       bool
-
 	flow gopacket.Flow
 
+	created, lastSeen, firstSeen time.Time
+	stream                       Stream
+	overlapPackets               int
+
+	ackSeq      Sequence
+	nextSeq     Sequence // sequence number of in-order received bytes
+	first, last *page    // Doubly-linked list of out-of-order pages (seq > nextSeq)
+	saved       *page    // Doubly-linked list of in-order pages (seq < nextSeq) already given to Stream who told us to keep
+
+	overlapBytes int
+	pages        int // Number of pages used (both in first/last and saved)
+
 	// for stats
-	queuedBytes    int
-	queuedPackets  int
-	overlapBytes   int
-	overlapPackets int
+	queuedBytes   int
+	queuedPackets int
+	closed        bool
+
+	dir TCPFlowDirection
 }
 
 func (half *halfconnection) String() string {

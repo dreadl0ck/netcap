@@ -55,10 +55,14 @@ var DefaultConfigDPI = Config{
 
 // Config contains configuration parameters
 // for the Collector instance.
+// this structure has an optimized field order to avoid excessive padding
 type Config struct {
 
-	// Controls whether packets that had an unknown layer will get written into a separate file
-	WriteUnknownPackets bool
+	// Encoder configuration
+	EncoderConfig encoder.Config
+
+	// Baselayer to start decoding from
+	BaseLayer gopacket.LayerType
 
 	// Number of workers to use
 	Workers int
@@ -69,14 +73,20 @@ type Config struct {
 	// Ethernet frame snaplength for live capture
 	SnapLen int
 
+	// Can be used to periodically free OS memory
+	FreeOSMem int
+
+	// Permissions for output directory
+	OutDirPermission os.FileMode
+
 	// Attach in promiscous mode for live capture
 	Promisc bool
 
-	// Encoder configuration
-	EncoderConfig encoder.Config
+	// Controls whether packets that had an unknown layer will get written into a separate file
+	WriteUnknownPackets bool
 
-	// Baselayer to start decoding from
-	BaseLayer gopacket.LayerType
+	// Resolver configuration
+	ResolverConfig resolvers.Config
 
 	// Decoding options for gopacket
 	DecodeOptions gopacket.DecodeOptions
@@ -86,15 +96,6 @@ type Config struct {
 
 	// Enable deep packet inspection
 	DPI bool
-
-	// Resolver configuration
-	ResolverConfig resolvers.Config
-
-	// Permissions for output directory
-	OutDirPermission os.FileMode
-
-	// Can be used to periodically free OS memory
-	FreeOSMem int
 
 	// Use TCP reassembly
 	ReassembleConnections bool

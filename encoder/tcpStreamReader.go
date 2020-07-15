@@ -25,22 +25,19 @@ import (
 	"time"
 )
 
+// internal structure that is used to read TCP data streams
+// this structure has an optimized field order to avoid excessive padding
 type tcpStreamReader struct {
-	parent *tcpConnection
-
-	isClient bool
-	dataChan chan *StreamData
-	data     []*StreamData
-	hexdump  bool
-
 	serviceBanner      bytes.Buffer
-	serviceBannerBytes int
+	data               []*StreamData
+	ident              string
+	parent             *tcpConnection
 	numBytes           int
-
-	saved bool
-
-	ident string
-
+	dataChan           chan *StreamData
+	serviceBannerBytes int
+	hexdump            bool
+	isClient           bool
+	saved              bool
 	sync.Mutex
 }
 

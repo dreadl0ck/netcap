@@ -103,16 +103,15 @@ type (
 	LayerEncoderHandler = func(layer gopacket.Layer, timestamp string) proto.Message
 
 	// LayerEncoder represents an encoder for the gopacket.Layer type
+	// this structure has an optimized field order to avoid excessive padding
 	LayerEncoder struct {
-
-		// public fields
-		Layer       gopacket.LayerType
-		Type        types.Type
 		Description string
+		Layer       gopacket.LayerType
+		Handler     LayerEncoderHandler
 
-		Handler LayerEncoderHandler
-		writer  *netcap.Writer
-		export  bool
+		writer *netcap.Writer
+		Type   types.Type
+		export bool
 	}
 )
 

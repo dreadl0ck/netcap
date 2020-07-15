@@ -53,6 +53,7 @@ type (
 	CustomEncoderHandler = func(p gopacket.Packet) proto.Message
 
 	// CustomEncoder implements custom logic to decode data from a gopacket.Packet
+	// this structure has an optimized field order to avoid excessive padding
 	CustomEncoder struct {
 
 		// public fields
@@ -60,25 +61,28 @@ type (
 		Description string
 		Icon        string
 
-		Type     types.Type
-		Handler  CustomEncoderHandler
+		numResponses int64 // HTTP
+
+		Handler CustomEncoderHandler
+
 		postinit func(*CustomEncoder) error
 		deinit   func(*CustomEncoder) error
 
 		// used to keep track of the number of generated audit records
 		numRecords int64
 
-		// HTTP specific stats
-		numRequests             int64
-		numResponses            int64
-		numUnmatchedResp        int64
-		numNilRequests          int64
-		numFoundRequests        int64
-		numRemovedRequests      int64
-		numUnansweredRequests   int64
-		numClientStreamNotFound int64
+		numRequests int64 // HTTP
 
 		writer *netcap.Writer
+
+		numUnmatchedResp        int64 // HTTP
+		numNilRequests          int64 // HTTP
+		numFoundRequests        int64 // HTTP
+		numRemovedRequests      int64 // HTTP
+		numUnansweredRequests   int64 // HTTP
+		numClientStreamNotFound int64 // HTTP
+
+		Type   types.Type
 		export bool
 	}
 )

@@ -15,7 +15,7 @@ package netcap
 
 import (
 	"bufio"
-	gzip "github.com/klauspost/pgzip"
+	"github.com/klauspost/pgzip"
 	"sync"
 
 	"log"
@@ -35,27 +35,23 @@ import (
 
 // Writer is a structure that supports writing audit records to disk
 type Writer struct {
-
-	// Name of the associated audit record type
+	out  string
 	Name string
 
-	// private fields
+	bWriter *bufio.Writer
+	gWriter *pgzip.Writer
+	dWriter *delimited.Writer
+	aWriter *io.AtomicDelimitedWriter
+	cWriter *io.ChanWriter
+
 	file      *os.File
-	bWriter   *bufio.Writer
-	gWriter   *gzip.Writer
-	dWriter   *delimited.Writer
-	aWriter   *io.AtomicDelimitedWriter
-	cWriter   *io.ChanWriter
 	csvWriter *io.CSVWriter
+	csv       bool
+	mu        sync.Mutex
 
-	// configuration
-	compress     bool
-	buffer       bool
-	csv          bool
-	out          string
 	IsChanWriter bool
-
-	mu sync.Mutex
+	buffer       bool
+	compress     bool
 }
 
 /*
@@ -92,7 +88,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 
 			if compress {
 				var errGzipWriter error
-				w.gWriter, errGzipWriter = gzip.NewWriterLevel(w.bWriter, DefaultCompressionLevel)
+				w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.bWriter, DefaultCompressionLevel)
 				if errGzipWriter != nil {
 					panic(errGzipWriter)
 				}
@@ -103,7 +99,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 		} else {
 			if compress {
 				var errGzipWriter error
-				w.gWriter, errGzipWriter = gzip.NewWriterLevel(w.file, DefaultCompressionLevel)
+				w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, DefaultCompressionLevel)
 				if errGzipWriter != nil {
 					panic(errGzipWriter)
 				}
@@ -146,7 +142,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 		if compress {
 			// experiment: pgzip -> file
 			var errGzipWriter error
-			w.gWriter, errGzipWriter = gzip.NewWriterLevel(w.file, DefaultCompressionLevel)
+			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, DefaultCompressionLevel)
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
@@ -161,7 +157,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 	} else {
 		if compress {
 			var errGzipWriter error
-			w.gWriter, errGzipWriter = gzip.NewWriterLevel(w.file, DefaultCompressionLevel)
+			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, DefaultCompressionLevel)
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
@@ -269,7 +265,7 @@ func FlushWriters(writers ...flushableWriter) {
 	}
 }
 
-func CloseGzipWriters(writers ...*gzip.Writer) {
+func CloseGzipWriters(writers ...*pgzip.Writer) {
 	for _, w := range writers {
 		err := w.Flush()
 		if err != nil {
