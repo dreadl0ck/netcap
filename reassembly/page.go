@@ -16,15 +16,16 @@ const pageBytes = 1900
 // packets).  Unused pages are stored in and returned from a pageCache, which
 // avoids memory allocation.  Used pages are stored in a doubly-linked list in
 // a connection.
+// this structure has an optimized field order to avoid excessive padding
 type page struct {
+	buf        [pageBytes]byte
 	bytes      []byte
+	seen       time.Time
+	ac         AssemblerContext // only set for the first page of a packet
 	seq        Sequence
 	prev, next *page
-	buf        [pageBytes]byte
-	ac         AssemblerContext // only set for the first page of a packet
-	seen       time.Time
-	start, end bool
 	sync.Mutex
+	start, end bool
 }
 
 func (p *page) getBytes() []byte {

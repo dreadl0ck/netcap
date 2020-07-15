@@ -123,36 +123,34 @@ func NumSavedUDPConns() int64 {
 // internal structure that describes a bi-directional TCP connection
 // It implements the reassembly.Stream interface to handle the incoming data
 // and manage the stream lifecycle
+// this structure has an optimized field order to avoid excessive padding
 type tcpConnection struct {
-	tcpstate   *reassembly.TCPSimpleFSM
-	optchecker reassembly.TCPOptionCheck
-
 	net, transport gopacket.Flow
 
-	fsmerr bool
+	optchecker          reassembly.TCPOptionCheck
+	conversationRaw     bytes.Buffer
+	conversationColored bytes.Buffer
+
+	merged      StreamDataSlice
+	firstPacket time.Time
+
+	client StreamReader
+	server StreamReader
+
+	ident    string
+	decoder  StreamDecoder
+	tcpstate *reassembly.TCPSimpleFSM
+
+	isSSH bool
+
+	// if set, indicates that either client or server stream reader was closed already
+	last bool
+	sync.Mutex
 
 	isHTTP  bool
 	isHTTPS bool
 	isPOP3  bool
-	isSSH   bool
-
-	ident string
-
-	decoder StreamDecoder
-	client  StreamReader
-	server  StreamReader
-
-	firstPacket time.Time
-
-	conversationRaw     bytes.Buffer
-	conversationColored bytes.Buffer
-
-	// if set, indicates that either client or server stream reader was closed already
-	last bool
-
-	merged StreamDataSlice
-
-	sync.Mutex
+	fsmerr  bool
 }
 
 // Accept decides whether the TCP packet should be accepted

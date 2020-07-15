@@ -46,58 +46,44 @@ import (
 )
 
 // Collector provides an interface to collect data from PCAP or a network interface.
+// this structure has an optimized field order to avoid excessive padding
 type Collector struct {
+	wg sync.WaitGroup
 
-	// input channels for the worker pool
-	workers []chan *packet
+	workers        []chan *packet
+	start          time.Time
+	assemblers     []*reassembly.Assembler
+	progressString string
+	next              int
 
-	// synchronization
-	statMutex sync.Mutex
-	wg        sync.WaitGroup
-	next      int
-	current   int64
-
-	// unknown protocol pcap writer
-	unkownPcapWriterBuffered *bufio.Writer
 	unkownPcapWriterAtomic   *AtomicPcapGoWriter
 	unknownPcapFile          *os.File
-
-	// error pcap writer
 	errorsPcapWriterBuffered *bufio.Writer
 	errorsPcapWriterAtomic   *AtomicPcapGoWriter
-	errorsPcapFile           *os.File
 
-	// error log file handle
-	errorLogFile *os.File
+	errorsPcapFile *os.File
+	errorLogFile   *os.File
 
-	// protocol maps
 	unknownProtosAtomic *encoder.AtomicCounterMap
 	allProtosAtomic     *encoder.AtomicCounterMap
+	current        int64
 
-	// processing errors
-	errorMap *encoder.AtomicCounterMap
-
-	// stats
-	start             time.Time
-	numPackets        int64
+	numWorkers        int
+	numPacketsLast    int64
 	totalBytesWritten int64
-	files             map[string]string
-	inputSize         int64
 
-	progressString string
+	files                    map[string]string
+	inputSize                int64
+	unkownPcapWriterBuffered *bufio.Writer
+	numPackets               int64
+	config                   *Config
+	errorMap                 *encoder.AtomicCounterMap
 
-	// the number of processed packets from the previous progress report
-	numPacketsLast int64
+	mu        sync.Mutex
+	statMutex sync.Mutex
 
-	// configuration
-	config *Config
-
-	isLive     bool
-	shutdown   bool
-	mu         sync.Mutex
-	numWorkers int
-
-	assemblers []*reassembly.Assembler
+	shutdown bool
+	isLive   bool
 }
 
 // New returns a new Collector instance.

@@ -94,19 +94,20 @@ var DefaultConfig = Config{
 
 // Config contains configuration parameters
 // for the encoders
+// this structure has an optimized field order to avoid excessive padding
 type Config struct {
 
-	// Buffer data before writing it to disk
-	Buffer bool
+	// Output path
+	Out string
 
-	// Size of buffer used for writing audit records to disk
-	MemBufferSize int
+	// Source of the audit records (pcap, live etc)
+	Source string
 
-	// Compress data before writing it to disk with gzip
-	Compression bool
+	// CustomRegex to use for credentials harvester
+	CustomRegex string
 
-	// Generate CSV instead of audit records
-	CSV bool
+	// Will create a memory dump at the specified path for debugging and profiling
+	MemProfile string
 
 	// Comma separated list of encoders to include
 	IncludeEncoders string
@@ -114,77 +115,78 @@ type Config struct {
 	// Comma separated list of encoders to exclude
 	ExcludeEncoders string
 
-	// Output path
-	Out string
-
-	// Write into channel (used for distributed collection)
-	WriteChan bool
-
-	// Source of the audit records (pcap, live etc)
-	Source string
-
-	// Add payload data to supported audit records
-	IncludePayloads bool
-
-	// Export metrics
-	Export bool
-
-	// Add context to supported audit records
-	AddContext bool
-
-	// Interval to apply connection flushes
-	FlushEvery int
-
-	// Defragment IPv4 packets
-	DefragIPv4 bool
-
-	// Dont verify the packet checksums
-	Checksum bool
-
-	// Dont check TCP options
-	NoOptCheck bool
-
-	// Ignore TCP state machine errors
-	IgnoreFSMerr bool
-
-	// TCP state machine allow missing init in three way handshake
-	AllowMissingInit bool
-
-	// Toggle debug mode
-	Debug bool
-
-	// Dump packet contents as hex for debugging
-	HexDump bool
-
-	// Wait until all connections finished processing when receiving shutdown signal
-	WaitForConnections bool
-
-	// Write incomplete HTTP responses to disk when extracting files
-	WriteIncomplete bool
-
-	// Will create a memory dump at the specified path for debugging and profiling
-	MemProfile string
+	// If a path is set files will be extracted and written to the specified path
+	FileStorage string
 
 	// Number of packets to arrive until the connections are checked for timeouts
 	ConnFlushInterval int
 
-	// Used to flush connections to disk whose last timestamp is connTimeOut older than current packet
-	ConnTimeOut time.Duration
-
-	// Number of packets to arrive until the flows are checked for timeouts
-	FlowFlushInterval int
+	// Size of buffer used for writing audit records to disk
+	MemBufferSize int
 
 	// Used to flush flows to disk whose last timestamp is flowTimeOut older than current packet
 	FlowTimeOut time.Duration
 
+	// size of the channel used to pass reassembled stream data to a stream decoder
+	StreamDecoderBufSize int
+
 	// Close inactive connections after
 	CloseInactiveTimeOut time.Duration
+
+	// Interval to apply connection flushes
+	FlushEvery int
+
+	// Maximum number of bytes of the client and server conversation to be used for the harvesters
+	HarvesterBannerSize int
+
+	// Maximum number of bytes stored as service banner
+	BannerSize int
 
 	// Close connections with pending bytes after
 	ClosePendingTimeOut time.Duration
 
-	// If a path is set files will be extracted and written to the specified path
-	FileStorage string
+	// Number of packets to arrive until the flows are checked for timeouts
+	FlowFlushInterval int
+
+	// Used to flush connections to disk whose last timestamp is connTimeOut older than current packet
+	ConnTimeOut time.Duration
+
+	// Use the RE2 engine from the go standard library
+	// if this is set to false an alternative regex engine that is compatible to the .NET syntax will be used for service banner detection
+	UseRE2 bool
+
+	// stop processing the conversation when the first harvester returns a result
+	StopAfterHarvesterMatch bool
+
+	// Buffer data before writing it to disk
+	Buffer bool
+
+	// Write incomplete HTTP responses to disk when extracting files
+	WriteIncomplete bool
+
+	// Write into channel (used for distributed collection)
+	WriteChan bool
+
+	// Generate CSV instead of audit records
+	CSV bool
+
+	// Add context to supported audit records
+	AddContext bool
+
+	// Wait until all connections finished processing when receiving shutdown signal
+	WaitForConnections bool
+
+	// Dump packet contents as hex for debugging
+	HexDump bool
+
+	// Toggle debug mode
+	Debug bool
+
+	// TCP state machine allow missing init in three way handshake
+	AllowMissingInit bool
+
+	// Ignore TCP state machine errors
+	IgnoreFSMerr bool
 
 	// Calculate entropy for payloads in Ethernet and IP audit records
 	CalculateEntropy bool
@@ -195,24 +197,23 @@ type Config struct {
 	// Enable verbose TCP debug log messages in debug.log
 	TCPDebug bool
 
-	// Use the RE2 engine from the go standard library
-	// if this is set to false an alternative regex engine that is compatible to the .NET syntax will be used for service banner detection
-	UseRE2 bool
+	// Dont check TCP options
+	NoOptCheck bool
 
-	// Maximum number of bytes stored as service banner
-	BannerSize int
+	// Dont verify the packet checksums
+	Checksum bool
 
-	// Maximum number of bytes of the client and server conversation to be used for the harvesters
-	HarvesterBannerSize int
+	// Defragment IPv4 packets
+	DefragIPv4 bool
 
-	// size of the channel used to pass reassembled stream data to a stream decoder
-	StreamDecoderBufSize int
+	// Export metrics
+	Export bool
 
-	// stop processing the conversation when the first harvester returns a result
-	StopAfterHarvesterMatch bool
+	// Add payload data to supported audit records
+	IncludePayloads bool
 
-	// CustomRegex to use for credentials harvester
-	CustomRegex string
+	// Compress data before writing it to disk with gzip
+	Compression bool
 
 	// IgnoreEncoderInitErrors allows to control whether to crash on Custom Encoder initialization errors (usually caused by missing database files)
 	// and enables users to use the encoders even if the files are not present, while just logging an error to stdout.

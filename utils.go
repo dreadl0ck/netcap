@@ -87,17 +87,18 @@ func FPrintBuildInfo(w io.Writer) {
 }
 
 // DumpConfig contains all possible settings for dumping an audit records
+// this structure has an optimized field order to avoid excessive padding
 type DumpConfig struct {
 	Path          string
 	Separator     string
-	TabSeparated  bool
-	Structured    bool
-	Table         bool
 	Selection     string
+	MemBufferSize int
+	JSON          bool
+	Table         bool
 	UTC           bool
 	Fields        bool
-	JSON          bool
-	MemBufferSize int
+	TabSeparated  bool
+	Structured    bool
 	CSV           bool
 	ForceColors   bool
 }

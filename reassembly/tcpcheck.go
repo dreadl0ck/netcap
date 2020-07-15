@@ -117,8 +117,8 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TC
 // - no check on sequence number is performed
 // - no RST
 type TCPSimpleFSM struct {
-	dir     TCPFlowDirection
 	state   int
+	dir     TCPFlowDirection
 	options TCPSimpleFSMOptions
 }
 
