@@ -96,7 +96,7 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 			var finalLabel string
 
 			// Unidirectional Flows
-			// check if flow has a source or destination adress matching an alert
+			// check if flow has a source or destination address matching an alert
 			// also checks ports and transport proto
 			// if not label it as normal
 			for _, a := range alerts {

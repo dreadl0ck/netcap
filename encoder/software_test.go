@@ -27,7 +27,7 @@ var softwareTests = []regexTest{
 	},
 	{
 		name:     "Apache Test",
-		input:    "Hello dears,\nfor our hosting we will use Apache 2.4.29\nThere are other options,howver,\nlike Lighttp 2.3.4",
+		input:    "Hello,\nfor our hosting we will use Apache version 2.4.29.\nThere are other options,\nlike Lighttp 2.3.4",
 		expected: "for our hosting we will use Apache 2.4.29-like Lighttp 2.3.4",
 	},
 	{

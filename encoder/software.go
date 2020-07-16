@@ -118,12 +118,14 @@ type Ja3CombinationsDB struct {
 
 type SSHSoftware struct {
 	Version    string `json:"name"`
-	Likelyhood string `json:"likelyhood"`
+	// nolint
+	Likelihood string `json:"likelyhood"` // dont remove this typo, or the hasshdb.json cannot be read!
 }
 
 type SSHHash struct {
 	Hash      string        `json:"hash"`
-	Softwares []SSHSoftware `json:"softwares"`
+	// nolint
+	Software []SSHSoftware `json:"softwares"` // dont remove this typo, or the hasshdb.json cannot be read!
 }
 
 // process a raw user agent string and returned a structured instance
@@ -613,7 +615,7 @@ var softwareEncoder = CreateCustomEncoder(
 		hashDBMap = make(map[string][]SSHSoftware)
 
 		for _, v := range hasshDB {
-			hashDBMap[v.Hash] = v.Softwares
+			hashDBMap[v.Hash] = v.Software
 		}
 
 		utils.DebugLog.Println("loaded", len(hashDBMap), "different HASSH digests")
@@ -629,7 +631,7 @@ var softwareEncoder = CreateCustomEncoder(
 		}
 
 		for _, entry := range hasshDB {
-			hasshMap[entry.Hash] = entry.Softwares // TODO: note from Giac: Holds redundant info, but couldn't figure a more elegant way to do this
+			hasshMap[entry.Hash] = entry.Software // TODO: note from Giac: Holds redundant info, but couldn't figure a more elegant way to do this
 		}
 
 		// Load vulnerabilities DB index

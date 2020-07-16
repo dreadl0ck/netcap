@@ -219,7 +219,7 @@ func extractGroupDotNet(in *string, m *regexp2.Match) string {
 // parseVersionInfo uses the next read byte as a delimiter
 // and reads everything into a buffer until the delimiter appears again
 // it returns the final buffer and an error and advances the passed in *bytes.Reader to the
-func parseVersionInfo(r *bytes.Reader) (string, error) {
+func parseVersionInfo(r io.ByteReader) (string, error) {
 
 	var res []byte
 	d, err := r.ReadByte()

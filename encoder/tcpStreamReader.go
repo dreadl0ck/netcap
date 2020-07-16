@@ -53,12 +53,7 @@ func newTCPStreamReader(parent *tcpConnection, ident string, client bool) *tcpSt
 
 func (h *tcpStreamReader) Read(p []byte) (int, error) {
 
-	var (
-		ok   = true
-		data *StreamData
-	)
-
-	data, ok = <-h.dataChan
+	data, ok := <-h.dataChan
 	if data == nil || !ok {
 		return 0, io.EOF
 	}
@@ -268,7 +263,7 @@ func (h *tcpStreamReader) Run(f *tcpConnectionFactory) {
 	}
 }
 
-func (h *tcpStreamReader) readStream(b *bufio.Reader) error {
+func (h *tcpStreamReader) readStream(b io.ByteReader) error {
 
 	var err error
 	for {

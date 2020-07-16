@@ -118,6 +118,7 @@ func indexData(in string) {
 	)
 
 	switch in {
+	// nolint
 	case "mitre-cve":
 		indexPath = filepath.Join(resolvers.DataBaseSource, "mitre-cve.bleve")
 		fmt.Println("index path", indexPath)

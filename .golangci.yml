@@ -72,7 +72,6 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    #- exhaustive
     - funlen
     - gochecknoinits
     - goconst
@@ -91,7 +90,6 @@ linters:
     - lll
     - misspell
     - nakedret
-    #- noctx
     - nolintlint
     - rowserrcheck
     - scopelint

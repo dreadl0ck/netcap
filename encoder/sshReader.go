@@ -204,7 +204,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 					Service:    "SSH",
 					//DPIResults:     protos,
 					Flows: []string{h.parent.ident},
-					Notes: "Likelyhood: " + soft.Likelyhood + " Possible OS: " + os + "SSH Version: " + sshVersion,
+					Notes: "Likelihood: " + soft.Likelihood + " Possible OS: " + os + "SSH Version: " + sshVersion,
 				})
 			}
 			break

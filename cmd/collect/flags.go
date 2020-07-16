@@ -32,7 +32,7 @@ var (
 	flagConfig         = fs.String("config", "", "read configuration from file at path")
 	flagGenKeypair     = fs.Bool("gen-keypair", false, "generate keypair")
 	flagPrivKey        = fs.String("privkey", "", "path to the hex encoded server private key")
-	flagAddr           = fs.String("addr", "127.0.0.1:1335", "specify an adress and port to listen for incoming traffic")
+	flagAddr           = fs.String("addr", "127.0.0.1:1335", "specify an address and port to listen for incoming traffic")
 	flagVersion        = fs.Bool("version", false, "print netcap package version and exit")
 	files              = make(map[string]*AuditRecordHandle)
 	flagMemBufferSize  = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")

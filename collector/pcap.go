@@ -43,7 +43,7 @@ func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	return r, f, nil
 }
 
-// IsPcap checks wheter a file is a PCAP file
+// IsPcap checks whether a file is a PCAP file
 func IsPcap(file string) (bool, error) {
 	// get file handle
 	f, err := os.Open(file)

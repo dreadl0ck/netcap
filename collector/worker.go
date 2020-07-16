@@ -150,7 +150,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				}
 
 				// Check for errors after decoding all layers
-				// if an error has occured while decoding the packet
+				// if an error has occurred while decoding the packet
 				// it will be logged and written into the errors.pcap file
 				if errLayer := p.ErrorLayer(); errLayer != nil {
 					if err := c.logPacketError(p, errLayer.Error().Error()); err != nil {

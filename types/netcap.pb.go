@@ -7736,9 +7736,9 @@ func (m *USBRequestBlockSetup) GetLength() int32 {
 	return 0
 }
 
-// LCM (Lightweight Communications and Marshalling) is a set of libraries and tools for message passing and data marshalling,
+// LCM (Lightweight Communications and Marshalling) is a set of libraries and tools for message passing and data marshaling,
 // targeted at real-time systems where high-bandwidth and low latency are critical.
-// It provides a publish/subscribe message passing model and automatic marshalling/unmarshalling
+// It provides a publish/subscribe message passing model and automatic marshaling/unmarshalling
 // code generation with bindings for applications in a variety of programming languages.
 // References
 // https://lcm-proj.github.io/
