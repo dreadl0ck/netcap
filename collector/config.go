@@ -79,7 +79,7 @@ type Config struct {
 	// Permissions for output directory
 	OutDirPermission os.FileMode
 
-	// Attach in promiscous mode for live capture
+	// Attach in promiscuous mode for live capture
 	Promisc bool
 
 	// Controls whether packets that had an unknown layer will get written into a separate file

@@ -250,7 +250,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 
 	select {
 	case <-ctx.Done():
-		fmt.Println("cancelled")
+		fmt.Println("canceled")
 		err = ctx.Err()
 	case err = <-doneChan:
 		if err != nil {

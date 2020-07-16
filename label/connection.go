@@ -96,7 +96,7 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 
 			var finalLabel string
 
-			// check if flow has a source or destination adress matching an alert
+			// check if flow has a source or destination address matching an alert
 			// if not label it as normal
 			for _, a := range alerts {
 

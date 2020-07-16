@@ -23,7 +23,7 @@ import (
 var lcmEncoder = CreateLayerEncoder(
 	types.Type_NC_LCM,
 	layers.LayerTypeLCM,
-	"LCM is a set of libraries and tools for message passing and data marshalling, targeted at real-time systems where high-bandwidth and low latency are critical",
+	"LCM is a set of libraries and tools for message passing and data marshaling, targeted at real-time systems where high-bandwidth and low latency are critical",
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if lcm, ok := layer.(*layers.LCM); ok {
 			return &types.LCM{

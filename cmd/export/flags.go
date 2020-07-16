@@ -40,7 +40,7 @@ var (
 	flagWorkers              = fs.Int("workers", runtime.NumCPU(), "number of workers")
 	flagPacketBuffer         = fs.Int("pbuf", netcap.DefaultPacketBuffer, "set packet buffer size, for channels that feed data to workers")
 	flagIngoreUnknown        = fs.Bool("ignore-unknown", false, "disable writing unknown packets into a pcap file")
-	flagPromiscMode          = fs.Bool("promisc", true, "toggle promiscous mode for live capture")
+	flagPromiscMode          = fs.Bool("promisc", true, "toggle promiscuous mode for live capture")
 	flagLogErrors            = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
 	flagFileStorage          = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
 	flagCalcEntropy          = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")

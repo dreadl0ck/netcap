@@ -30,7 +30,7 @@ import (
 func (c *Collector) CollectLive(i string, bpf string) error {
 	// open interface in live mode
 	// timeout is set to 0
-	// snaplen and promiscous mode can be configured over the collector instance
+	// snaplen and promiscuous mode can be configured over the collector instance
 	handle, err := pcap.OpenLive(i, int32(c.config.SnapLen), c.config.Promisc, 0)
 	if err != nil {
 		return err

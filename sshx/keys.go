@@ -208,7 +208,7 @@ func ParseAuthorizedKey(in []byte) (out PublicKey, comment string, options []str
 			return out, comment, options, rest, nil
 		}
 
-		// No key type recognised. Maybe there's an options field at
+		// No key type recognized. Maybe there's an options field at
 		// the beginning.
 		var b byte
 		inQuote := false

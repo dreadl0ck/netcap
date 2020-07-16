@@ -52,7 +52,7 @@ var (
 	flagCPUProfile    = fs.Bool("cpuprof", false, "create cpu profile")
 	flagMemProfile    = fs.Bool("memprof", false, "create memory profile")
 	flagIgnoreUnknown = fs.Bool("ignore-unknown", true, "disable writing unknown packets into a pcap file")
-	flagPromiscMode   = fs.Bool("promisc", true, "toggle promiscous mode for live capture")
+	flagPromiscMode   = fs.Bool("promisc", true, "toggle promiscuous mode for live capture")
 	flagSnapLen       = fs.Int("snaplen", netcap.DefaultSnapLen, "configure snaplen for live capture from interface")
 
 	flagTime    = fs.Bool("time", false, "print processing time even in quiet mode")

@@ -175,7 +175,7 @@ func firstTimestamp(path string) time.Time {
 		// read netcap file header
 		header, errFileHeader = r.ReadHeader()
 
-		// initalize a record instance for the type from the header
+		// initialize a record instance for the type from the header
 		record = netcap.InitRecord(header.Type)
 	)
 	if errFileHeader != nil {
@@ -216,7 +216,7 @@ func exportFile(path string) {
 		// read netcap file header
 		header, errFileHeader = r.ReadHeader()
 
-		// initalize a record instance for the type from the header
+		// initialize a record instance for the type from the header
 		record = netcap.InitRecord(header.Type)
 
 		firstTimestamp time.Time
