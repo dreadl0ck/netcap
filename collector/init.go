@@ -104,10 +104,10 @@ func (c *Collector) Init() (err error) {
 
 	// create pcap files for packets
 	// with unknown protocols or errors while decoding
-	if err := c.createUnknownPcap(); err != nil {
+	if err = c.createUnknownPcap(); err != nil {
 		log.Fatal("failed to create pcap file for unknown packets: ", err)
 	}
-	if err := c.createErrorsPcap(); err != nil {
+	if err = c.createErrorsPcap(); err != nil {
 		log.Fatal("failed to create pcap decoding errors file: ", err)
 	}
 

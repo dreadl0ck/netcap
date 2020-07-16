@@ -30,7 +30,7 @@ var (
 
 const (
 	defaultDirectoryPermission = 0600
-	defaultFilesPermission = 0600
+	defaultFilesPermission     = 0600
 )
 
 // SetConfig can be used to set a configuration for the package

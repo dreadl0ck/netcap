@@ -14,6 +14,7 @@
 package maltego
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -88,8 +89,8 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	if count != nil {
 
 		for {
-			err := r.Next(http)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(http)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)
@@ -113,8 +114,8 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	r.ReadHeader()
 
 	for {
-		err := r.Next(http)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(http)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

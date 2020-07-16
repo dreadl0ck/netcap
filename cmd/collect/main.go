@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -45,7 +46,10 @@ func Run() {
 
 	// parse commandline flags
 	fs.Usage = printUsage
-	fs.Parse(os.Args[2:])
+	err := fs.Parse(os.Args[2:])
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "collect")
@@ -126,15 +130,16 @@ func udpServer(ctx context.Context, address string) (err error) {
 	defer pc.Close()
 
 	var (
-		doneChan = make(chan error, 1)
-		buffer   = make([]byte, maxBufferSize)
+		doneChan        = make(chan error, 1)
+		buffer          = make([]byte, maxBufferSize)
+		privKeyContents []byte
 	)
 
 	// run cleanup on signals
 	handleSignals()
 
 	// read private key file contents
-	privKeyContents, err := ioutil.ReadFile(*flagPrivKey)
+	privKeyContents, err = ioutil.ReadFile(*flagPrivKey)
 	if err != nil {
 		log.Fatal("failed to read private key file: ", err)
 	}
@@ -160,9 +165,10 @@ func udpServer(ctx context.Context, address string) (err error) {
 			// note.: `buffer` is not being reset between runs.
 			//	  It's expected that only `n` reads are read from it whenever
 			//	  inspecting its contents.
-			n, addr, err := pc.ReadFrom(buffer)
-			if err != nil {
-				doneChan <- err
+			// IMPORTANT: do not use the err variable in this closure! Don't shadow it, don't capture it!
+			n, addr, errRead := pc.ReadFrom(buffer)
+			if errRead != nil {
+				doneChan <- errRead
 				return
 			}
 
@@ -194,40 +200,42 @@ func udpServer(ctx context.Context, address string) (err error) {
 				var decryptedBuf = bytes.NewBuffer(decrypted)
 
 				// create a new gzipped reader
-				gr, err := gzip.NewReader(decryptedBuf)
-				if err != nil {
+				// IMPORTANT: do not shadow or use the err variable from outside the closure!
+				gr, errProcess := gzip.NewReader(decryptedBuf)
+				if errProcess != nil {
 					fmt.Println(hex.Dump(decryptedBuf.Bytes()))
-					fmt.Println("gzip error", err)
+					fmt.Println("gzip error", errProcess)
 					return
 				}
 
 				// read data
-				c, err := ioutil.ReadAll(gr)
-				if err == io.EOF || err == io.ErrUnexpectedEOF {
-					fmt.Println("failed to decompress batch", err)
+				var c []byte
+				c, errProcess = ioutil.ReadAll(gr)
+				if errors.Is(errProcess, io.EOF) || errors.Is(errProcess, io.ErrUnexpectedEOF) {
+					fmt.Println("failed to decompress batch", errProcess)
 					return
-				} else if err != nil {
+				} else if errProcess != nil {
 					fmt.Println(hex.Dump(buf.Bytes()))
-					fmt.Println("gzip error", err)
+					fmt.Println("gzip error", errProcess)
 					return
 				}
 
 				// close reader
-				err = gr.Close()
-				if err != nil {
-					panic(err)
+				errProcess = gr.Close()
+				if errProcess != nil {
+					panic(errProcess)
 				}
 
 				// init new batch
 				b := new(types.Batch)
 
 				// unmarshal batch data
-				err = proto.Unmarshal(c, b)
-				if err == io.EOF || err == io.ErrUnexpectedEOF {
-					fmt.Println("failed to unmarshal batch", err)
+				errProcess = proto.Unmarshal(c, b)
+				if errors.Is(errProcess, io.EOF) || errors.Is(errProcess, io.ErrUnexpectedEOF) {
+					fmt.Println("failed to unmarshal batch", errProcess)
 					return
-				} else if err != nil {
-					panic(err)
+				} else if errProcess != nil {
+					panic(errProcess)
 				}
 
 				fmt.Println("decoded batch", b.MessageType, "from client", b.ClientID)
@@ -237,9 +245,9 @@ func udpServer(ctx context.Context, address string) (err error) {
 					path     = filepath.Join(b.ClientID, protocol+".ncap.gz")
 				)
 				if a, ok := files[path]; ok {
-					_, err := a.gWriter.Write(b.Data)
-					if err != nil {
-						panic(err)
+					_, errProcess = a.gWriter.Write(b.Data)
+					if errProcess != nil {
+						panic(errProcess)
 					}
 				} else {
 					files[path] = NewAuditRecordHandle(b, path)

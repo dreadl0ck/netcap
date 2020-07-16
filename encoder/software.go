@@ -118,13 +118,11 @@ type Ja3CombinationsDB struct {
 
 type SSHSoftware struct {
 	Version    string `json:"name"`
-	// nolint
 	Likelihood string `json:"likelyhood"` // dont remove this typo, or the hasshdb.json cannot be read!
 }
 
 type SSHHash struct {
-	Hash      string        `json:"hash"`
-	// nolint
+	Hash     string        `json:"hash"`
 	Software []SSHSoftware `json:"softwares"` // dont remove this typo, or the hasshdb.json cannot be read!
 }
 

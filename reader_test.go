@@ -14,6 +14,7 @@
 package netcap
 
 import (
+	"errors"
 	"github.com/dreadl0ck/netcap/types"
 	"io"
 	"testing"
@@ -41,7 +42,7 @@ func TestReader(t *testing.T) {
 
 	for {
 		err = r.Next(tcp)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			t.Fatal(err)

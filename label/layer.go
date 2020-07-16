@@ -14,6 +14,7 @@
 package label
 
 import (
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -81,8 +82,8 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 		}
 
 		for {
-			err := r.Next(record)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(record)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)

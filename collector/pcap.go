@@ -76,7 +76,7 @@ func countPackets(path string) (count int64, err error) {
 		// loop over packets and discard all data
 		_, _, err := r.ReadPacketData()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			log.Fatal("Error reading packet data: ", err)
@@ -159,7 +159,7 @@ func (c *Collector) CollectPcap(path string) error {
 		// for pcap, currently ZeroCopyReadPacketData() is not supported
 		data, ci, err := r.ReadPacketData()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return errors.Wrap(err, "Error reading packet data: ")

@@ -1,6 +1,7 @@
 package label
 
 import (
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -69,8 +70,8 @@ func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 
 	read:
 		for {
-			err := r.Next(http)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(http)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)

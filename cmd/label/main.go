@@ -26,7 +26,10 @@ func Run() {
 
 	// parse commandline flags
 	fs.Usage = printUsage
-	fs.Parse(os.Args[2:])
+	err := fs.Parse(os.Args[2:])
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "label")
@@ -56,7 +59,6 @@ func Run() {
 	label.SetExcluded(*flagExcludeLabels)
 
 	// lets go
-	var err error
 	if *flagCustom != "" {
 		err = label.CustomLabels(*flagCustom, *flagOutDir, *flagDescription, *flagSeparator, "")
 	} else {

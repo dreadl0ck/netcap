@@ -301,7 +301,7 @@ func InitProbes() error {
 
 			for {
 				b, err := r.ReadByte()
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					break
 				} else if err != nil {
 					return err
@@ -369,10 +369,11 @@ func InitProbes() error {
 
 						// read until the EOF of the line
 						for {
-							b, err := r.ReadByte()
-							if err == io.EOF {
+							b, err = r.ReadByte()
+							if errors.Is(err, io.EOF) {
 								// TODO: split by fields, might be multiple cpes
-								i, err := cpe.NewItemFromUri(buf.String())
+								var i *cpe.Item
+								i, err = cpe.NewItemFromUri(buf.String())
 								if err != nil {
 									utils.DebugLog.Println("error while parsing cpe tag for service probe:", err, "probe:", s.Ident)
 									goto next
@@ -428,7 +429,7 @@ func InitProbes() error {
 
 					// read delimiter
 					b, err = r.ReadByte()
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						break
 					} else if err != nil {
 						return err
@@ -543,7 +544,7 @@ func clean(in string) string {
 	for {
 		b, err := r.ReadByte()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			} else {
 				break

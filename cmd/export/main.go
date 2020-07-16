@@ -34,7 +34,10 @@ func Run() {
 
 	// parse commandline flags
 	fs.Usage = printUsage
-	fs.Parse(os.Args[2:])
+	err := fs.Parse(os.Args[2:])
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "export")

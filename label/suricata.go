@@ -85,7 +85,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 		// does not exist
 		// make sure suricata log dir exists
 		if os.IsNotExist(err) {
-			if err := os.Mkdir(logDir, directoryPermission); err != nil {
+			if err = os.Mkdir(logDir, directoryPermission); err != nil {
 				return err
 			}
 		} else {

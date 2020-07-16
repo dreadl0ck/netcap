@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"io"
@@ -253,7 +254,7 @@ func searchForLoginParams(req *http.Request, h *httpReader) {
 
 			arr, ok = req.Form["pass"]
 			if !ok {
-				arr, ok = req.Form["password"]
+				arr, _ = req.Form["password"]
 			}
 			if len(arr) > 0 {
 				pass = strings.Join(arr, "; ")
@@ -398,7 +399,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 
 	// try to read HTTP response from the buffered reader
 	res, err := http.ReadResponse(b, nil)
-	if err == io.EOF || err == io.ErrUnexpectedEOF {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
 		logReassemblyError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
@@ -682,18 +683,25 @@ var (
 	contentTypeMapMu sync.Mutex
 )
 
-func createContentTypePathIfRequired(path string) {
+// createContentTypePathIfRequired will create the passed in filesystem path once
+// it is safe for concurrent access and will block until the path has been created on disk
+func createContentTypePathIfRequired(fsPath string) {
 
 	contentTypeMapMu.Lock()
-	if _, ok := contentTypeMap[path]; !ok {
-		contentTypeMap[path] = struct{}{}
-		contentTypeMapMu.Unlock()
+	if _, ok := contentTypeMap[fsPath]; !ok {
 
-		err := os.MkdirAll(path, defaultDirectoryPermission)
+		// the path has not been created yet
+		// add to map
+		contentTypeMap[fsPath] = struct{}{}
+
+		// create path
+		err := os.MkdirAll(fsPath, defaultDirectoryPermission)
 		if err != nil {
-			logReassemblyError("HTTP-create-path", "Cannot create folder %s: %s\n", path, err)
+			logReassemblyError("HTTP-create-path", "Cannot create folder %s: %s\n", fsPath, err)
 		}
 	}
+	// free lock again
+	contentTypeMapMu.Unlock()
 }
 
 // TODO: write unit tests and cleanup
@@ -865,7 +873,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 
 func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	req, err := http.ReadRequest(b)
-	if err == io.EOF || err == io.ErrUnexpectedEOF {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
 		logReassemblyError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)

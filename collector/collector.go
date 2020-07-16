@@ -54,7 +54,7 @@ type Collector struct {
 	start          time.Time
 	assemblers     []*reassembly.Assembler
 	progressString string
-	next              int
+	next           int
 
 	unkownPcapWriterAtomic   *AtomicPcapGoWriter
 	unknownPcapFile          *os.File
@@ -66,7 +66,7 @@ type Collector struct {
 
 	unknownProtosAtomic *encoder.AtomicCounterMap
 	allProtosAtomic     *encoder.AtomicCounterMap
-	current        int64
+	current             int64
 
 	numWorkers        int
 	numPacketsLast    int64
@@ -491,7 +491,7 @@ func (c *Collector) InitLogging() error {
 	if len(c.config.EncoderConfig.Out) != 0 {
 		if stat, err := os.Stat(c.config.EncoderConfig.Out); err != nil {
 			os.MkdirAll(c.config.EncoderConfig.Out, os.FileMode(outDirPermissionDefault))
-			stat, err = os.Stat(c.config.EncoderConfig.Out)
+			_, err = os.Stat(c.config.EncoderConfig.Out)
 			if err != nil {
 				return err
 			}

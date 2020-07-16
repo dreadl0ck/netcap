@@ -14,6 +14,7 @@
 package label
 
 import (
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -83,8 +84,8 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 
 	read:
 		for {
-			err := r.Next(conn)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(conn)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)

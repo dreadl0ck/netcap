@@ -15,7 +15,7 @@ type StreamReader interface {
 	Run(f *tcpConnectionFactory)
 	DataChan() chan *StreamData
 	DataSlice() StreamDataSlice
-	Cleanup(f *tcpConnectionFactory, s2c Stream, c2s Stream)
+	Cleanup(f *tcpConnectionFactory)
 
 	ClientStream() []byte
 	ServerStream() []byte

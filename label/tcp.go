@@ -14,6 +14,7 @@
 package label
 
 import (
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -81,8 +82,8 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 
 	read:
 		for {
-			err := r.Next(tcp)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(tcp)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)

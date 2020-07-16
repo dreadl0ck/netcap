@@ -40,7 +40,10 @@ func Run() {
 
 	// parse commandline flags
 	fs.Usage = printUsage
-	fs.Parse(os.Args[2:])
+	err := fs.Parse(os.Args[2:])
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "capture")
@@ -68,18 +71,18 @@ func Run() {
 	if *flagCPUProfile {
 		defer func() func() {
 			if *flagCPUProfile {
-				f, err := os.Create("netcap-" + netcap.Version + ".cpu.profile")
-				if err != nil {
-					log.Fatalf("could not open cpu profile file %q", "netcap.cpu.profile")
+				f, errCPUProfile := os.Create("netcap-" + netcap.Version + ".cpu.profile")
+				if errCPUProfile != nil {
+					log.Fatalf("could not open cpu profile file %q, error: %s\n", "netcap.cpu.profile", errCPUProfile)
 				}
-				if err := pprof.StartCPUProfile(f); err != nil {
-					log.Fatal("failed to start CPU profiling")
+				if errCPUProfile = pprof.StartCPUProfile(f); errCPUProfile != nil {
+					log.Fatalf("failed to start CPU profiling, error: %s\n", errCPUProfile)
 				}
 				return func() {
 					pprof.StopCPUProfile()
-					err := f.Close()
+					errCPUProfile = f.Close()
 					if err != nil {
-						panic("failed to write CPU profile: " + err.Error())
+						panic("failed to write CPU profile: " + errCPUProfile.Error())
 					}
 				}
 			}
@@ -202,7 +205,7 @@ func Run() {
 
 	// collect traffic live from named interface
 	if live {
-		err := c.CollectLive(*flagInterface, *flagBPF)
+		err = c.CollectLive(*flagInterface, *flagBPF)
 		if err != nil {
 			log.Fatal("failed to collect live packets: ", err)
 		}
@@ -215,7 +218,7 @@ func Run() {
 	// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
 	// setting BPF filters is not yet supported by the pcapgo package
 	if *flagBPF != "" {
-		if err := c.CollectBPF(*flagInput, *flagBPF); err != nil {
+		if err = c.CollectBPF(*flagInput, *flagBPF); err != nil {
 			log.Fatal("failed to set BPF: ", err)
 		}
 		return

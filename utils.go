@@ -16,6 +16,7 @@ package netcap
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/mgutz/ansi"
 	"github.com/namsral/flag"
@@ -150,8 +151,8 @@ func Dump(c DumpConfig) {
 	}
 
 	for {
-		err := r.Next(record)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(record)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)
@@ -267,7 +268,8 @@ func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 
 		var r *bufio.Reader
 		if strings.HasSuffix(name, ".csv.gz") {
-			gr, err := gzip.NewReader(f)
+			var gr *gzip.Reader
+			gr, err = gzip.NewReader(f)
 			if err != nil {
 				panic(err)
 			}
@@ -278,8 +280,8 @@ func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 
 		count := 0
 		for {
-			_, _, err := r.ReadLine()
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			_, _, err = r.ReadLine()
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)

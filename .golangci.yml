@@ -51,7 +51,7 @@ linters-settings:
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
   lll:
-    line-length: 140
+    line-length: 250
   maligned:
     suggest-new: true
   misspell:
@@ -67,12 +67,9 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
-    - dupl
     - errcheck
-    - funlen
     - gochecknoinits
     - goconst
     - gocritic
@@ -80,14 +77,12 @@ linters:
     - gofmt
     - goimports
     - golint
-    - gomnd
     - goprintffuncname
     - gosec
     - gosimple
     - govet
     - ineffassign
     - interfacer
-    - lll
     - misspell
     - nakedret
     - nolintlint
@@ -99,20 +94,25 @@ linters:
     - typecheck
     - unconvert
     - unparam
-    - unused
     - varcheck
-    - whitespace
     - asciicheck
-    - gochecknoglobals
-    - gocognit
     - godot
     - godox
     - goerr113
     - maligned
-    - nestif
     - prealloc
-    - testpackage
     - wsl
+    #- gochecknoglobals
+    #- funlen
+    #- gomnd
+    #- lll
+    #- deadcode
+    #- unused
+    #- testpackage
+    #- nestif
+    #- whitespace
+    #- gocognit
+    #- dupl
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
@@ -125,6 +125,9 @@ issues:
       text: "unnecessaryDefer:"
 run:
   skip-dirs:
+    - sshx # TODO
+    - maltego # TODO
+    - label # TODO
     - test/testdata_etc
     - internal/cache
     - internal/renameio

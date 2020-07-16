@@ -54,7 +54,7 @@ func countPacketsNG(path string) (count int64, err error) {
 		// loop over packets and discard all data
 		_, _, err := r.ZeroCopyReadPacketData()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return count, errors.Wrap(err, "Error reading packet data: ")
@@ -109,7 +109,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 		// fetch the next packetdata and packetheader
 		data, ci, err := r.ReadPacketData()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return errors.Wrap(err, "Error reading packet data")

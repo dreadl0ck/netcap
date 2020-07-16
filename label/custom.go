@@ -15,6 +15,7 @@ package label
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -120,16 +121,16 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 			// append to collected alerts
 			labels = append(labels, custom)
 
-			startTsString := strconv.FormatInt(custom.Start.Unix(), 10)
+			startTSString := strconv.FormatInt(custom.Start.Unix(), 10)
 
 			// add to label map
-			if _, ok := labelMap[startTsString]; ok {
+			if _, ok := labelMap[startTSString]; ok {
 				// an alert for this timestamp already exists
 				// if configured the execution will stop
 				// for now the first seen alert for a timestamp will be kept
 				duplicates = append(duplicates, custom)
 			} else {
-				labelMap[startTsString] = custom
+				labelMap[startTSString] = custom
 			}
 		}
 	}
@@ -289,8 +290,8 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 		}
 
 		for {
-			err := r.Next(record)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(record)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)

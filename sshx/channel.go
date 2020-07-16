@@ -359,7 +359,7 @@ func (c *channel) ReadExtended(data []byte, extended uint32) (n int, err error) 
 		// peer has closed the connection, however we want to
 		// defer forwarding io.EOF to the caller of Read until
 		// the buffer has been drained.
-		if n > 0 && err == io.EOF {
+		if n > 0 && errors.Is(err, io.EOF) {
 			err = nil
 		}
 	}
