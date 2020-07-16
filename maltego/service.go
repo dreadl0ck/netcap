@@ -14,6 +14,7 @@
 package maltego
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -88,8 +89,8 @@ func ServiceTransform(count ServiceCountFunc, transform ServiceTransformationFun
 	if count != nil {
 
 		for {
-			err := r.Next(service)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(service)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)
@@ -113,8 +114,8 @@ func ServiceTransform(count ServiceCountFunc, transform ServiceTransformationFun
 	r.ReadHeader()
 
 	for {
-		err := r.Next(service)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(service)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

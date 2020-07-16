@@ -14,6 +14,7 @@
 package maltego
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -87,8 +88,8 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	if count != nil {
 
 		for {
-			err := r.Next(dhcp)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(dhcp)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)
@@ -112,8 +113,8 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	r.ReadHeader()
 
 	for {
-		err := r.Next(dhcp)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(dhcp)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

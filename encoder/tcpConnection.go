@@ -143,8 +143,6 @@ type tcpConnection struct {
 
 	isSSH bool
 
-	// if set, indicates that either client or server stream reader was closed already
-	last bool
 	sync.Mutex
 
 	isHTTP  bool

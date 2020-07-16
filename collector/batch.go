@@ -42,7 +42,7 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 
 	// set BPF if requested
 	if bpf != "" {
-		err := handle.SetBPFFilter(bpf)
+		err = handle.SetBPFFilter(bpf)
 		if err != nil {
 			return chans, nil, err
 		}

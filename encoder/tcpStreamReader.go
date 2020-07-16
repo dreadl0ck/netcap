@@ -16,6 +16,7 @@ package encoder
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/utils"
@@ -73,35 +74,7 @@ func (h *tcpStreamReader) DataChan() chan *StreamData {
 	return h.dataChan
 }
 
-func (h *tcpStreamReader) Cleanup(f *tcpConnectionFactory, s2c Stream, c2s Stream) {
-
-	// determine if one side of the stream has already been closed
-	h.parent.Lock()
-	if !h.parent.last {
-
-		// signal wait group
-		f.wg.Done()
-		f.Lock()
-		f.numActive--
-		f.Unlock()
-
-		// indicate close on the parent tcpConnection
-		h.parent.last = true
-
-		// free lock
-		h.parent.Unlock()
-
-		return
-	}
-	h.parent.Unlock()
-
-	// cleanup() is called twice - once for each direction of the stream
-	// this check ensures the audit record collection is executed only if one side has been closed already
-	// to ensure all necessary requests and responses are present
-	if h.parent.last {
-		//TODO:
-	}
-
+func (h *tcpStreamReader) Cleanup(f *tcpConnectionFactory) {
 	// signal wait group
 	f.wg.Done()
 	f.Lock()
@@ -228,18 +201,8 @@ func (h *tcpStreamReader) ServiceBanner() []byte {
 // run starts reading TCP traffic in a single direction
 func (h *tcpStreamReader) Run(f *tcpConnectionFactory) {
 
-	h.parent.Lock()
-	// create streams
-	var (
-		// client to server
-		c2s = Stream{h.parent.net, h.parent.transport}
-		// server to client
-		s2c = Stream{h.parent.net.Reverse(), h.parent.transport.Reverse()}
-	)
-	h.parent.Unlock()
-
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.Cleanup(f, s2c, c2s)
+	defer h.Cleanup(f)
 
 	var (
 		err error
@@ -250,7 +213,7 @@ func (h *tcpStreamReader) Run(f *tcpConnectionFactory) {
 		if err != nil {
 
 			// exit on EOF
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				return
 			}
 
@@ -268,7 +231,7 @@ func (h *tcpStreamReader) readStream(b io.ByteReader) error {
 	var err error
 	for {
 		_, err = b.ReadByte()
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return err
 		} else if err != nil {
 			logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)

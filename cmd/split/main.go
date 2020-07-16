@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
@@ -53,7 +54,7 @@ func main() {
 		// for pcap, currently ZeroCopyReadPacketData() is not supported
 		data, ci, err := r.ReadPacketData()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			log.Fatal("reading pcaps failed: ", err)

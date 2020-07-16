@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	maltego "github.com/dreadl0ck/netcap/maltego"
@@ -64,8 +65,8 @@ func ToDNSQuestions() {
 	var results = make(map[string]int)
 
 	for {
-		err := r.Next(dns)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(dns)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

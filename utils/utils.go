@@ -37,7 +37,6 @@ var noPluralsMap = map[string]struct{}{
 
 // Pluralize builds the plural for a given noun
 func Pluralize(name string) string {
-
 	if strings.HasSuffix(name, "e") || strings.HasSuffix(name, "w") {
 		if _, ok := noPluralsMap[name]; !ok {
 			name += "s"
@@ -56,7 +55,7 @@ func Pluralize(name string) string {
 }
 
 // checks if input consists of ascii characters
-func IsAscii(d []byte) bool {
+func IsASCII(d []byte) bool {
 	if len(d) == 0 {
 		return false
 	}
@@ -148,14 +147,14 @@ func Progress(current, total int64) string {
 }
 
 // GetPercentage returns the value in percent as a string
-func GetPercentage(current int64, total int64) string {
-	if total == 0 {
-		return strconv.FormatInt(current, 10)
-	}
-	var b []byte
-	b = strconv.AppendInt(b, int64((float64(current)/float64(total))*100), 10)
-	return string(b)
-}
+//func GetPercentage(current, total int64) string {
+//	if total == 0 {
+//		return strconv.FormatInt(current, 10)
+//	}
+//	var b []byte
+//	b = strconv.AppendInt(b, int64((float64(current)/float64(total))*100), 10)
+//	return string(b)
+//}
 
 // TrimFileExtension returns the netcap file name without file extension
 func TrimFileExtension(file string) string {
@@ -191,7 +190,6 @@ func TimeToUTC(val string) string {
 
 // StringToTime converts a seconds.micro string to a time.Time
 func StringToTime(val string) time.Time {
-
 	if slice := strings.Split(val, "."); len(slice) == 2 {
 		// seconds
 		seconds, err := strconv.ParseInt(slice[0], 10, 64)

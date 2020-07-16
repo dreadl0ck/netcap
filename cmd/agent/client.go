@@ -46,14 +46,17 @@ func sendUDP(ctx context.Context, address string, reader io.Reader) error {
 	// socket so that it no longer refers to any file.
 	defer conn.Close()
 
-	doneChan := make(chan error, 1)
+	var (
+		doneChan = make(chan error, 1)
+		n        int64
+	)
 
 	go func() {
 		// It is possible that this action blocks, although this
 		// should only occur in very resource-intensive situations:
 		// - when you've filled up the socket buffer and the OS
 		//   can't dequeue the queue fast enough.
-		n, err := io.Copy(conn, reader)
+		n, err = io.Copy(conn, reader)
 		if err != nil {
 			doneChan <- err
 			return

@@ -25,7 +25,7 @@ import (
 
 var (
 	// config for the commandline application
-	c *Config
+	c = new(Config)
 )
 
 // Config represents the proxy configuration
@@ -70,9 +70,6 @@ func ParseConfiguration(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// init config instance
-	var c = new(Config)
 
 	// unmarshal data into instance
 	err = yaml.Unmarshal(b, &c)

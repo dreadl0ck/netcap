@@ -16,6 +16,7 @@ package resolvers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
@@ -66,7 +67,7 @@ func InitMACResolver() {
 
 		var sum MacSummary
 		if err := json.Unmarshal(line, &sum); err != nil {
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			}
 			log.Fatal("failed to unmarshal record:", err)

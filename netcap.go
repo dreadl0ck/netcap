@@ -14,6 +14,7 @@
 package netcap
 
 import (
+	"errors"
 	"io"
 	"log"
 
@@ -190,8 +191,8 @@ func Count(filename string) (count int64) {
 	}
 	for {
 		// read next record
-		err := r.Next(rec)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(rec)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

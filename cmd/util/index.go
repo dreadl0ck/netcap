@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
@@ -140,7 +141,7 @@ func indexData(in string) {
 		var total int
 		for {
 			line, err := tr.ReadLine()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if !strings.HasPrefix(line, "#") {
@@ -163,7 +164,7 @@ func indexData(in string) {
 		var count int
 		for {
 			rec, err := r.Read()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			} else if err != nil {
 				fmt.Println(err, rec)
@@ -202,11 +203,14 @@ func indexData(in string) {
 		}
 
 		// count total number of lines
-		tr := textproto.NewReader(bufio.NewReader(file))
-		var total int
+		var (
+			tr    = textproto.NewReader(bufio.NewReader(file))
+			total int
+			line  string
+		)
 		for {
-			line, err := tr.ReadLine()
-			if err == io.EOF {
+			line, err = tr.ReadLine()
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if !strings.HasPrefix(line, "#") {
@@ -225,11 +229,14 @@ func indexData(in string) {
 		}
 		defer file.Close()
 
-		r := csv.NewReader(file)
-		var count int
+		var (
+			r     = csv.NewReader(file)
+			count int
+			rec   []string
+		)
 		for {
-			rec, err := r.Read()
-			if err == io.EOF {
+			rec, err = r.Read()
+			if errors.Is(err, io.EOF) {
 				break
 			} else if err != nil {
 				fmt.Println(err, rec)
@@ -269,7 +276,6 @@ func indexData(in string) {
 		defer index.Close()
 
 		var (
-			start = time.Now()
 			years = []string{
 				"2002",
 				"2003",

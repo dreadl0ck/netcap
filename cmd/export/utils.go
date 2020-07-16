@@ -14,6 +14,7 @@
 package export
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -184,8 +185,8 @@ func firstTimestamp(path string) time.Time {
 
 	for {
 		// read next record
-		err := r.Next(record)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(record)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			// bail out on end of file
 			break
 		} else if err != nil {
@@ -227,8 +228,8 @@ func exportFile(path string) {
 
 	for {
 		// read next record
-		err := r.Next(record)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(record)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			// bail out on end of file
 			break
 		} else if err != nil {

@@ -16,6 +16,7 @@ package resolvers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
@@ -122,7 +123,7 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 	)
 
 	if err := json.Unmarshal(data, &userAgents); err != nil {
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return
 		}
 		log.Fatal("failed to unmarshal record:", err)
@@ -157,7 +158,7 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 	)
 
 	if err := json.Unmarshal(data, &summaries); err != nil {
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return
 		}
 		log.Fatal("failed to unmarshal record:", err)
@@ -192,7 +193,7 @@ func parseSummaries(data []byte, f os.FileInfo) {
 
 		var sum Ja3Summary
 		if err := json.Unmarshal(line, &sum); err != nil {
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			}
 			log.Fatal("failed to unmarshal record:", err)

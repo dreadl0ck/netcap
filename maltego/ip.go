@@ -14,6 +14,7 @@
 package maltego
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -85,8 +86,8 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 	if count != nil {
 
 		for {
-			err := r.Next(profile)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(profile)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)
@@ -110,8 +111,8 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 	r.ReadHeader()
 
 	for {
-		err := r.Next(profile)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(profile)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

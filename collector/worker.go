@@ -108,11 +108,11 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 						for _, e := range encoders {
 							err := e.Encode(ctx, p, layer)
 							if err != nil {
-								if err := c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
-									fmt.Println("failed to log packet error:", err)
-								}
 								if c.config.EncoderConfig.Export {
 									decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
+								}
+								if err = c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
+									fmt.Println("failed to log packet error:", err)
 								}
 								goto done
 							}
@@ -139,11 +139,11 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				for _, e := range encoder.CustomEncoders {
 					err := e.Encode(p)
 					if err != nil {
-						if err := c.logPacketError(p, "CustomEncoder Error: "+e.Name+": "+err.Error()); err != nil {
-							fmt.Println("failed to log packet error:", err)
-						}
 						if c.config.EncoderConfig.Export {
 							decodingErrorsTotal.WithLabelValues(e.Name, err.Error()).Inc()
+						}
+						if err = c.logPacketError(p, "CustomEncoder Error: "+e.Name+": "+err.Error()); err != nil {
+							fmt.Println("failed to log packet error:", err)
 						}
 						continue
 					}

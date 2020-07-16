@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 	"io"
@@ -280,7 +281,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
 
 	// Parse the first line of the response.
 	line, err := tp.ReadLine()
-	if err == io.EOF || err == io.ErrUnexpectedEOF {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
 		utils.DebugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
@@ -311,7 +312,7 @@ func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Stream) error {
 
 	// Parse the first line of the response.
 	line, err := tp.ReadLine()
-	if err == io.EOF || err == io.ErrUnexpectedEOF {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
 		logReassemblyError("POP3-response", "POP3/%s Response error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
@@ -412,13 +413,14 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 			return h.pop3Requests[h.reqIndex]
 		}
 		mailBuf string
+		r       *types.POP3Request
 	)
 
 	for {
 		if h.reqIndex == len(h.pop3Requests) {
 			return
 		}
-		r := next()
+		r = next()
 		h.reqIndex++
 		//fmt.Println("CMD", r.Command, r.Argument, "h.resIndex", h.resIndex)
 
@@ -504,7 +506,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				if reply.Command == "+OK" {
 					state = StateAuthenticated
 					if len(h.pop3Requests) < h.reqIndex {
-						r := h.pop3Requests[h.reqIndex]
+						r = h.pop3Requests[h.reqIndex]
 						if r != nil {
 							token = r.Command
 						}
@@ -639,7 +641,7 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 	for {
 		line, err := tr.ReadLine()
 		if err != nil {
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else {
 				mailDebug("failed to read line: ", err)

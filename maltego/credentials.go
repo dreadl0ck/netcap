@@ -14,6 +14,7 @@
 package maltego
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -88,8 +89,8 @@ func CredentialsTransform(count CredentialsCountFunc, transform CredentialsTrans
 	if count != nil {
 
 		for {
-			err := r.Next(credentials)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(credentials)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)
@@ -113,8 +114,8 @@ func CredentialsTransform(count CredentialsCountFunc, transform CredentialsTrans
 	r.ReadHeader()
 
 	for {
-		err := r.Next(credentials)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(credentials)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

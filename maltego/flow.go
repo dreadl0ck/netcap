@@ -14,6 +14,7 @@
 package maltego
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/resolvers"
@@ -222,8 +223,8 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 	if count != nil {
 
 		for {
-			err := r.Next(flow)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(flow)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)
@@ -255,8 +256,8 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 	log.Println("==> top12", top12)
 
 	for {
-		err := r.Next(flow)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(flow)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

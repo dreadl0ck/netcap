@@ -123,7 +123,7 @@ func InitServiceDB() {
 				} else if r[2] == "udp" {
 					udpPortMap[i] = p
 				} else {
-					//fmt.Println("ignoring:", r)
+					utils.DebugLog.Println("ignoring service probe:", r)
 				}
 			}
 		} else {
@@ -145,7 +145,7 @@ func InitServiceDB() {
 			} else if r[2] == "udp" {
 				udpPortMap[num] = p
 			} else {
-				//fmt.Println("ignoring:", r)
+				utils.DebugLog.Println("ignoring service probe:", r)
 			}
 		}
 	}

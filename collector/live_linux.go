@@ -55,7 +55,7 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 		// read next packet
 		data, ci, err := handle.ReadPacketData()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return errors.Wrap(err, "Error reading packet data")

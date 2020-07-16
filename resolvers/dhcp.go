@@ -170,6 +170,7 @@ func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCP
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	// read response body
 	data, err := ioutil.ReadAll(resp.Body)

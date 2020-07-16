@@ -14,6 +14,7 @@
 package label
 
 import (
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -82,8 +83,8 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 
 	read:
 		for {
-			err := r.Next(flow)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(flow)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)

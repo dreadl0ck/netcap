@@ -43,7 +43,7 @@ func ToDHCPClients() {
 			ent.AddProperty("path", "Path", "strict", lt.Values["path"])
 
 			for _, o := range dhcp.Options {
-				if utils.IsAscii(o.Data) && len(o.Data) > 1 {
+				if utils.IsASCII(o.Data) && len(o.Data) > 1 {
 					switch o.Type {
 					case 60:
 						ent.AddProperty("vendor", "Vendor", "strict", string(o.Data))

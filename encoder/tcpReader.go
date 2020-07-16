@@ -57,7 +57,7 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 	}
 
 	// still no clue? lets check if its ascii
-	if utils.IsAscii(data) {
+	if utils.IsASCII(data) {
 		return "ascii"
 	}
 

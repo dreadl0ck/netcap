@@ -14,6 +14,7 @@
 package maltego
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -89,8 +90,8 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	if count != nil {
 
 		for {
-			err := r.Next(file)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err = r.Next(file)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
 				panic(err)
@@ -114,8 +115,8 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	r.ReadHeader()
 
 	for {
-		err := r.Next(file)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = r.Next(file)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)

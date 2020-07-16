@@ -18,9 +18,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"io/ioutil"
+	"log"
 	"os"
+
+	"github.com/dreadl0ck/netcap/resolvers"
 
 	"compress/gzip"
 
@@ -37,7 +39,10 @@ func Run() {
 
 	// parse commandline flags
 	fs.Usage = printUsage
-	fs.Parse(os.Args[2:])
+	err := fs.Parse(os.Args[2:])
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "agent")

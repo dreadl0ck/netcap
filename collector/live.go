@@ -40,14 +40,14 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 
 	// set BPF if requested
 	if bpf != "" {
-		err := handle.SetBPFFilter(bpf)
+		err = handle.SetBPFFilter(bpf)
 		if err != nil {
 			return err
 		}
 	}
 
 	// initialize collector
-	if err := c.Init(); err != nil {
+	if err = c.Init(); err != nil {
 		return err
 	}
 
@@ -62,7 +62,7 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 		// read next packet
 		data, ci, err := handle.ZeroCopyReadPacketData()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return errors.Wrap(err, "Error reading packet data")
