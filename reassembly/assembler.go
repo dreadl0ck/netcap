@@ -139,6 +139,7 @@ func (a *Assembler) Dump() string {
 // AssemblerContext provides method to get metadata
 type AssemblerContext interface {
 	GetCaptureInfo() gopacket.CaptureInfo
+	SetTimestamp(time.Time)
 }
 
 // Implements AssemblerContext for Assemble()
@@ -146,6 +147,10 @@ type assemblerSimpleContext gopacket.CaptureInfo
 
 func (asc *assemblerSimpleContext) GetCaptureInfo() gopacket.CaptureInfo {
 	return gopacket.CaptureInfo(*asc)
+}
+
+func (asc *assemblerSimpleContext) SetTimestamp(t time.Time) {
+	asc.Timestamp = t
 }
 
 // Assemble calls AssembleWithContext with the current timestamp, useful for
@@ -179,9 +184,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		conn      *connection
 		half      *halfconnection
 		rev       *halfconnection
-		key       = key{netFlow, t.TransportFlow()}
-		ci        = ac.GetCaptureInfo()
-		timestamp = ci.Timestamp
+		key       = &key{netFlow, t.TransportFlow()}
 	)
 
 	// RACE
@@ -189,7 +192,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	a.ret = a.ret[:0]
 	a.Unlock()
 
-	conn, half, rev = a.connPool.getConnection(key, false, timestamp, t, ac)
+	conn, half, rev = a.connPool.getConnection(key, false, ac.GetCaptureInfo().Timestamp, t, ac)
 	if conn == nil {
 		if Debug {
 			log.Printf("%v got empty packet on otherwise empty connection", key)
@@ -199,13 +202,19 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 
-	if half.lastSeen.Before(timestamp) {
-		half.lastSeen = timestamp
+	if half.lastSeen.Before(ac.GetCaptureInfo().Timestamp) {
+		half.lastSeen = ac.GetCaptureInfo().Timestamp
 	}
-	if half.firstSeen.After(timestamp) {
-		half.firstSeen = timestamp
+	if half.firstSeen.After(ac.GetCaptureInfo().Timestamp) {
+		half.firstSeen = ac.GetCaptureInfo().Timestamp
 		half.flow = netFlow
 	}
+
+	// always set the assembler context timestamp to the oldest packet that was seen
+	// this is necessary to return fragments with the correct timestamp when running with high concurrency
+	ac.SetTimestamp(half.lastSeen)
+	//fmt.Println(netFlow, ansi.Yellow, ac.GetCaptureInfo().Timestamp, ansi.Green, half.firstSeen, ansi.Red, half.lastSeen, ansi.Reset)
+
 	a.start = half.nextSeq == invalidSequence && t.SYN
 	if Debug {
 		if half.nextSeq < rev.ackSeq {
@@ -213,7 +222,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 	}
 
-	if !half.stream.Accept(t, ci, half.dir, half.nextSeq, &a.start, ac) {
+	if !half.stream.Accept(t, ac.GetCaptureInfo(), half.dir, half.nextSeq, &a.start, ac) {
 		if Debug {
 			log.Printf("Ignoring packet")
 		}
@@ -270,7 +279,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 	}
 
-	action = a.handleBytes(bytes, seq, half, ci, t.SYN, t.RST || t.FIN, action, ac)
+	action = a.handleBytes(bytes, seq, half, ac.GetCaptureInfo(), t.SYN, t.RST || t.FIN, action, ac)
 	if len(a.ret) > 0 {
 		action.nextSeq = a.sendToConnection(conn, half, ac)
 	}
@@ -572,9 +581,9 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 
 	// TODO: make configurable? appending continuous bytes will obscure the conversation flow when using multiple assemblers concurrently...
 	// Append continuous bytes
-	//nextSeq := a.addContiguous(half, last)
+	nextSeq := a.addContiguous(half, last)
+	//nextSeq := last
 
-	nextSeq := last
 	a.cacheSG.all = a.ret
 	a.cacheSG.Direction = half.dir
 	a.cacheSG.Skip = skip
@@ -763,23 +772,13 @@ func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
 
 	a.addNextFromConn(half)
 
-	// default: use context of first elem
-	var ctx AssemblerContext
-	ctx = a.ret[0].assemblerContext()
+	// use context of first elem to allow reordering stream fragments
+	ctx := a.ret[0].assemblerContext()
 
-	// overwrite the context with the first context of non empty data!
-	// this is needed to preserve the correct order when reconstructing conversations
-	// consider the following byteContainers being returned:
-	//2020/05/13 19:37:32  * a.ret
-	//2020/05/13 19:37:32 	0: {2016-05-02 02:55:59.9922 +0000 UTC 0 0 0 []} b:     <- empty!
-	//2020/05/13 19:37:32 	1: {2016-05-02 02:55:59.9942 +0000 UTC 70 70 0 []} b:   <- use the context from this one instead
-	//00000000  64 69 72 0a                                       |data.|
-	for _, data := range a.ret {
-		if data.length() != 0 {
-			ctx = data.assemblerContext()
-			break
-		}
-	}
+	// for debugging
+	//for _, b := range a.ret {
+	//	fmt.Println(ansi.Yellow, conn.key.String(), ansi.Blue, b.length(), ansi.Reset, b.assemblerContext().GetCaptureInfo().Timestamp)
+	//}
 
 	nextSeq := a.sendToConnection(conn, half, ctx)
 	if nextSeq != invalidSequence {
@@ -902,10 +901,10 @@ func (a *Assembler) FlushCloseOlderThan(t time.Time) (flushed, closed int) {
 }
 
 func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Time, tc time.Time) (bool, bool) {
-	flushed, closed := false, false
 	if half.closed {
-		return flushed, closed
+		return false, false
 	}
+	flushed, closed := false, false
 	for half.first != nil && half.first.seen.Before(t) {
 		flushed = true
 		a.skipFlush(conn, half)
