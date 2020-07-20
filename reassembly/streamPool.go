@@ -122,8 +122,8 @@ func (p *StreamPool) newConnection(k *key, s Stream, ts time.Time) (c *connectio
 	return c, &c.c2s, &c.s2c
 }
 
-func (p *StreamPool) getHalf(k key) (*connection, *halfconnection, *halfconnection) {
-	conn := p.conns[k]
+func (p *StreamPool) getHalf(k *key) (*connection, *halfconnection, *halfconnection) {
+	conn := p.conns[*k]
 	if conn != nil {
 		return conn, &conn.c2s, &conn.s2c
 	}
@@ -138,7 +138,7 @@ func (p *StreamPool) getHalf(k key) (*connection, *halfconnection, *halfconnecti
 // getConnection returns a connection.  If end is true and a connection
 // does not already exist, returns nil.  This allows us to check for a
 // connection without actually creating one if it doesn't already exist.
-func (p *StreamPool) getConnection(k key, end bool, ts time.Time, tcp *layers.TCP, ac AssemblerContext) (*connection, *halfconnection, *halfconnection) {
+func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, tcp *layers.TCP, ac AssemblerContext) (*connection, *halfconnection, *halfconnection) {
 
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -151,17 +151,17 @@ func (p *StreamPool) getConnection(k key, end bool, ts time.Time, tcp *layers.TC
 
 	s := p.factory.New(k[0], k[1], tcp, ac)
 
-	conn, half, rev = p.newConnection(&k, s, ts)
+	conn, half, rev = p.newConnection(k, s, ts)
 
 	conn2, half2, rev2 := p.getHalf(k)
 	if conn2 != nil {
-		if *conn2.key != k {
+		if conn2.key != k {
 			fmt.Println(conn.key, conn.c2s)
 			panic("FIXME: other dir added in the meantime...")
 		}
 		// FIXME: delete s ?
 		return conn2, half2, rev2
 	}
-	p.conns[k] = conn
+	p.conns[*k] = conn
 	return conn, half, rev
 }
