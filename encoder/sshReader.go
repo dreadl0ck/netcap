@@ -18,8 +18,10 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap/utils"
+	"io"
 	"io/ioutil"
 	"regexp"
 	"strings"
@@ -121,39 +123,61 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		fmt.Println(err)
 		return
 	}
+	//fmt.Println(dir, len(data), "\n", hex.Dump(data))
 
 	if len(data) == 0 {
 		return
 	}
 
+	// length of the ident if it was found
+	var offset = 0
+
 	if h.clientIdent == "" || h.serverIdent == "" {
 
-		if dir == reassembly.TCPDirClientToServer {
-			h.clientIdent = string(data)
-			h.processSSHIdent(h.clientIdent, "client")
-		} else {
-			h.serverIdent = string(data)
-			h.processSSHIdent(h.serverIdent, "server")
+		// read the SSH ident from the buffer
+		var (
+			b = bytes.NewReader(data)
+			ident []byte
+			lastByte byte
+		)
+		for {
+			b, err := b.ReadByte()
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if lastByte == 0x0d && b == 0x0a {
+				offset = len(ident)+1
+				break
+			}
+			lastByte = b
+			ident = append(ident, b)
 		}
 
-		return
+		if dir == reassembly.TCPDirClientToServer {
+			h.clientIdent = strings.TrimSpace(string(ident))
+			h.processSSHIdent(h.clientIdent, "client")
+		} else {
+			h.serverIdent = strings.TrimSpace(string(ident))
+			h.processSSHIdent(h.serverIdent, "server")
+		}
 	}
 
+	// search the entire data fragment for the KexInit
 	for i, b := range data {
 
-		if b == 0x14 { // Marks the beginning of the KexInitMsg // TODO: stop checking after X bytes, and after we already have server and client hashes
+		// TODO: stop checking after X bytes, and after we already have server and client hashes
+		// 0x14 marks the beginning of the SSH KexInitMsg
+		if b == 0x14 {
 
 			if i == 0 {
+				//fmt.Println("break: i == 0")
 				break
 			}
 
-			if len(data[:i-1]) != 4 {
-				break
-			}
-
-			length := int(binary.BigEndian.Uint32(data[:i-1]))
+			length := int(binary.BigEndian.Uint32(data[offset:i-1]))
 			padding := int(data[i-1])
 			if len(data) < i+length-padding-1 {
+				//fmt.Println("break: len(data) < i+length-padding-1")
 				break
 			}
 
