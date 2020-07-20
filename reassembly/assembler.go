@@ -12,6 +12,8 @@ import (
 
 const assemblerReturnValueInitialSize = 16
 
+const tf = "2006-02-01 15:04:05.000000"
+
 /*
  * Assembler
  */
@@ -139,7 +141,6 @@ func (a *Assembler) Dump() string {
 // AssemblerContext provides method to get metadata
 type AssemblerContext interface {
 	GetCaptureInfo() gopacket.CaptureInfo
-	SetTimestamp(time.Time)
 }
 
 // Implements AssemblerContext for Assemble()
@@ -147,10 +148,6 @@ type assemblerSimpleContext gopacket.CaptureInfo
 
 func (asc *assemblerSimpleContext) GetCaptureInfo() gopacket.CaptureInfo {
 	return gopacket.CaptureInfo(*asc)
-}
-
-func (asc *assemblerSimpleContext) SetTimestamp(t time.Time) {
-	asc.Timestamp = t
 }
 
 // Assemble calls AssembleWithContext with the current timestamp, useful for
@@ -181,10 +178,10 @@ type assemblerAction struct {
 func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac AssemblerContext) {
 
 	var (
-		conn      *connection
-		half      *halfconnection
-		rev       *halfconnection
-		key       = &key{netFlow, t.TransportFlow()}
+		conn *connection
+		half *halfconnection
+		rev  *halfconnection
+		key  = &key{netFlow, t.TransportFlow()}
 	)
 
 	// RACE
@@ -199,6 +196,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 		return
 	}
+
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 
@@ -210,10 +208,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		half.flow = netFlow
 	}
 
-	// always set the assembler context timestamp to the oldest packet that was seen
-	// this is necessary to return fragments with the correct timestamp when running with high concurrency
-	ac.SetTimestamp(half.lastSeen)
-	//fmt.Println(netFlow, ansi.Yellow, ac.GetCaptureInfo().Timestamp, ansi.Green, half.firstSeen, ansi.Red, half.lastSeen, ansi.Reset)
+	//fmt.Println(netFlow, len(t.Payload), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format(tf), ansi.Green, half.firstSeen.Format(tf), ansi.Blue, half.lastSeen.Format(tf), ansi.Reset)
 
 	a.start = half.nextSeq == invalidSequence && t.SYN
 	if Debug {
@@ -525,6 +520,7 @@ func (a *Assembler) overlapExisting(half *halfconnection, start, end Sequence, b
 // Prepare send or queue
 func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection, ci gopacket.CaptureInfo, start bool, end bool, action assemblerAction, ac AssemblerContext) assemblerAction {
 
+	// TODO: remove for production?
 	a.cacheLP.bytes = bytes
 	a.cacheLP.start = start
 	a.cacheLP.end = end
@@ -680,6 +676,20 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection, ac 
 	}
 
 	end, nextSeq := a.buildSG(half)
+
+	// for debugging
+	//for _, b := range a.ret {
+	//	fmt.Println(ansi.Yellow, conn.key.String(), ansi.Blue, b.length(), ansi.Reset, b.assemblerContext().GetCaptureInfo().Timestamp.Format(tf))
+	//}
+
+	// use the context from the first non empty bytecontainer
+	for _, data := range a.ret {
+		if data.length() != 0 {
+			ac = data.assemblerContext()
+			break
+		}
+	}
+
 	half.stream.ReassembledSG(&a.cacheSG, ac)
 	a.cleanSG(half, ac)
 
@@ -766,19 +776,15 @@ func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
 		a.closeHalfConnection(conn, half)
 		return
 	}
+
+	// use context of first elem to allow reordering stream fragments
+	ctx := a.ret[0].assemblerContext()
+
 	a.Lock()
 	a.ret = a.ret[:0]
 	a.Unlock()
 
 	a.addNextFromConn(half)
-
-	// use context of first elem to allow reordering stream fragments
-	ctx := a.ret[0].assemblerContext()
-
-	// for debugging
-	//for _, b := range a.ret {
-	//	fmt.Println(ansi.Yellow, conn.key.String(), ansi.Blue, b.length(), ansi.Reset, b.assemblerContext().GetCaptureInfo().Timestamp)
-	//}
 
 	nextSeq := a.sendToConnection(conn, half, ctx)
 	if nextSeq != invalidSequence {

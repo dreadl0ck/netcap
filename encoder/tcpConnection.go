@@ -245,7 +245,8 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
 
-	//fmt.Println(t.ident, "feedData", dir, len(data), ac.GetCaptureInfo().Timestamp)
+	//fmt.Println(t.ident, "feedData", ansi.White, dir, ansi.Cyan, len(data), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset)
+	//fmt.Println(hex.Dump(data))
 
 	// Copy the data before passing it to the handler
 	// Because the passed in buffer can be reused as soon as the ReassembledSG function returned
@@ -384,7 +385,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 
 				t.Lock()
 				t.ident = utils.ReverseIdent(t.ident)
-				//fmt.Println("flip! new", ansi.Red + t.ident + ansi.Reset, t.firstPacket)
+				//fmt.Println("flip! new", ansi.Red+t.ident+ansi.Reset, t.firstPacket)
 
 				t.client, t.server = t.server, t.client
 				t.transport, t.net = t.transport.Reverse(), t.net.Reverse()
@@ -495,12 +496,10 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		return
 	}
 
-	data := packet.Data()
-
 	// lock to sync with read on destroy
 	statsMutex.Lock()
 	count++
-	dataBytes += int64(len(data))
+	dataBytes += int64(len(packet.Data()))
 	statsMutex.Unlock()
 
 	// defrag the IPv4 packet if desired
@@ -749,7 +748,7 @@ func (t *tcpConnection) sortAndMergeFragments() {
 	// create the buffer with the entire conversation
 	for _, d := range t.merged {
 
-		//fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp, ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
+		//fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
 
 		t.conversationRaw.Write(d.raw)
 		if d.dir == reassembly.TCPDirClientToServer {
