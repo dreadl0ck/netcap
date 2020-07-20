@@ -276,7 +276,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 
 	action = a.handleBytes(bytes, seq, half, ac.GetCaptureInfo(), t.SYN, t.RST || t.FIN, action, ac)
 	if len(a.ret) > 0 {
-		action.nextSeq = a.sendToConnection(conn, half, ac)
+		action.nextSeq = a.sendToConnection(conn, half)
 	}
 	if action.nextSeq != invalidSequence {
 		half.nextSeq = action.nextSeq
@@ -669,7 +669,7 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 
 // sendToConnection sends the current values in a.ret to the connection, closing
 // the connection if the last thing sent had End set.
-func (a *Assembler) sendToConnection(conn *connection, half *halfconnection, ac AssemblerContext) Sequence {
+func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Sequence {
 
 	if Debug {
 		fmt.Printf("sendToConnection\n")
@@ -682,6 +682,7 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection, ac 
 	//	fmt.Println(ansi.Yellow, conn.key.String(), ansi.Blue, b.length(), ansi.Reset, b.assemblerContext().GetCaptureInfo().Timestamp.Format(tf))
 	//}
 
+	var ac AssemblerContext
 	// use the context from the first non empty bytecontainer
 	for _, data := range a.ret {
 		if data.length() != 0 {
@@ -777,16 +778,13 @@ func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
 		return
 	}
 
-	// use context of first elem to allow reordering stream fragments
-	ctx := a.ret[0].assemblerContext()
-
 	a.Lock()
 	a.ret = a.ret[:0]
 	a.Unlock()
 
 	a.addNextFromConn(half)
 
-	nextSeq := a.sendToConnection(conn, half, ctx)
+	nextSeq := a.sendToConnection(conn, half)
 	if nextSeq != invalidSequence {
 		half.nextSeq = nextSeq
 	}
