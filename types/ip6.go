@@ -35,11 +35,11 @@ var fieldsIPv6 = []string{
 	"HopByHop",       // *IPv6HopByHop
 }
 
-func (i IPv6) CSVHeader() []string {
+func (i *IPv6) CSVHeader() []string {
 	return filter(fieldsIPv6)
 }
 
-func (i IPv6) CSVRecord() []string {
+func (i *IPv6) CSVRecord() []string {
 	var hop string
 	if i.HopByHop != nil {
 		hop = i.HopByHop.ToString()
@@ -60,7 +60,7 @@ func (i IPv6) CSVRecord() []string {
 	})
 }
 
-func (i IPv6) Time() string {
+func (i *IPv6) Time() string {
 	return i.Timestamp
 }
 
@@ -72,8 +72,8 @@ func (h IPv6HopByHop) ToString() string {
 	return h.Timestamp + Separator + join(opts...)
 }
 
-func (a IPv6) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *IPv6) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var (
@@ -114,7 +114,7 @@ var fieldsIPv6Metrics = []string{
 	"DstIP",        // string
 }
 
-func (i IPv6) metricValues() []string {
+func (i *IPv6) metricValues() []string {
 	return []string{
 		formatInt32(i.Version),      // int32
 		formatInt32(i.TrafficClass), // int32
@@ -132,26 +132,26 @@ func init() {
 	prometheus.MustRegister(ip6PayloadSize)
 }
 
-func (a IPv6) Inc() {
-	ip6Metric.WithLabelValues(a.metricValues()...).Inc()
-	ip6PayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
-	ip6PayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
+func (i *IPv6) Inc() {
+	ip6Metric.WithLabelValues(i.metricValues()...).Inc()
+	ip6PayloadEntropy.WithLabelValues().Observe(i.PayloadEntropy)
+	ip6PayloadSize.WithLabelValues().Observe(float64(i.PayloadSize))
 }
 
-func (a *IPv6) SetPacketContext(ctx *PacketContext) {
+func (i *IPv6) SetPacketContext(ctx *PacketContext) {
 
 	// create new context and only add information that is
 	// not yet present on the audit record type
-	a.Context = &PacketContext{
+	i.Context = &PacketContext{
 		SrcPort: ctx.SrcPort,
 		DstPort: ctx.DstPort,
 	}
 }
 
-func (a IPv6) Src() string {
-	return a.SrcIP
+func (i *IPv6) Src() string {
+	return i.SrcIP
 }
 
-func (a IPv6) Dst() string {
-	return a.DstIP
+func (i *IPv6) Dst() string {
+	return i.DstIP
 }

@@ -41,11 +41,11 @@ var fieldsHTTP = []string{
 	"ServerName",
 }
 
-func (h HTTP) CSVHeader() []string {
+func (h *HTTP) CSVHeader() []string {
 	return filter(fieldsHTTP)
 }
 
-func (h HTTP) CSVRecord() []string {
+func (h *HTTP) CSVRecord() []string {
 	var reqCookies []string
 	for _, c := range h.ReqCookies {
 		reqCookies = append(reqCookies, c.ToString())
@@ -102,12 +102,12 @@ func (c *HTTPCookie) ToString() string {
 	return b.String()
 }
 
-func (f HTTP) Time() string {
-	return f.Timestamp
+func (h *HTTP) Time() string {
+	return h.Timestamp
 }
 
-func (a HTTP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (h *HTTP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(h)
 }
 
 var httpMetric = prometheus.NewCounterVec(
@@ -122,16 +122,16 @@ func init() {
 	prometheus.MustRegister(httpMetric)
 }
 
-func (a HTTP) Inc() {
-	httpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (h *HTTP) Inc() {
+	httpMetric.WithLabelValues(h.CSVRecord()[1:]...).Inc()
 }
 
 func (a *HTTP) SetPacketContext(ctx *PacketContext) {}
 
-func (a HTTP) Src() string {
-	return a.SrcIP
+func (h *HTTP) Src() string {
+	return h.SrcIP
 }
 
-func (a HTTP) Dst() string {
-	return a.DstIP
+func (h *HTTP) Dst() string {
+	return h.DstIP
 }

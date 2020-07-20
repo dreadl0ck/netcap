@@ -25,11 +25,11 @@ var fieldsDeviceProfile = []string{
 	"Bytes",
 }
 
-func (d DeviceProfile) CSVHeader() []string {
+func (d *DeviceProfile) CSVHeader() []string {
 	return filter(fieldsDeviceProfile)
 }
 
-func (d DeviceProfile) CSVRecord() []string {
+func (d *DeviceProfile) CSVRecord() []string {
 	return filter([]string{
 		d.Timestamp,
 		d.MacAddr,
@@ -41,22 +41,22 @@ func (d DeviceProfile) CSVRecord() []string {
 	})
 }
 
-func (d DeviceProfile) Time() string {
+func (d *DeviceProfile) Time() string {
 	return ""
 }
 
-func (d DeviceProfile) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&d)
+func (d *DeviceProfile) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(d)
 }
 
-func (d DeviceProfile) Inc() {}
+func (d *DeviceProfile) Inc() {}
 
-func (d DeviceProfile) SetPacketContext(ctx *PacketContext) {}
+func (d *DeviceProfile) SetPacketContext(ctx *PacketContext) {}
 
-func (d DeviceProfile) Src() string {
+func (d *DeviceProfile) Src() string {
 	return ""
 }
 
-func (d DeviceProfile) Dst() string {
+func (d *DeviceProfile) Dst() string {
 	return ""
 }

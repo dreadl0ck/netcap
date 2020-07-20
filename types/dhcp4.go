@@ -43,11 +43,11 @@ var fieldsDHCPv4 = []string{
 	"DstPort",
 }
 
-func (d DHCPv4) CSVHeader() []string {
+func (d *DHCPv4) CSVHeader() []string {
 	return filter(fieldsDHCPv4)
 }
 
-func (d DHCPv4) CSVRecord() []string {
+func (d *DHCPv4) CSVRecord() []string {
 	var opts []string
 	for _, o := range d.Options {
 		opts = append(opts, o.ToString())
@@ -80,7 +80,7 @@ func (d DHCPv4) CSVRecord() []string {
 	})
 }
 
-func (d DHCPv4) Time() string {
+func (d *DHCPv4) Time() string {
 	return d.Timestamp
 }
 
@@ -96,8 +96,8 @@ func (d DHCPOption) ToString() string {
 	return b.String()
 }
 
-func (a DHCPv4) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (d *DHCPv4) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(d)
 }
 
 var dhcp4Metric = prometheus.NewCounterVec(
@@ -112,24 +112,24 @@ func init() {
 	prometheus.MustRegister(dhcp4Metric)
 }
 
-func (a DHCPv4) Inc() {
-	dhcp4Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (d *DHCPv4) Inc() {
+	dhcp4Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
-func (a *DHCPv4) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (d *DHCPv4) SetPacketContext(ctx *PacketContext) {
+	d.Context = ctx
 }
 
-func (a DHCPv4) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (d *DHCPv4) Src() string {
+	if d.Context != nil {
+		return d.Context.SrcIP
 	}
 	return ""
 }
 
-func (a DHCPv4) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (d *DHCPv4) Dst() string {
+	if d.Context != nil {
+		return d.Context.DstIP
 	}
 	return ""
 }

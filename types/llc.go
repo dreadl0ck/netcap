@@ -29,11 +29,11 @@ var fieldsLLC = []string{
 	"Control",   // int32
 }
 
-func (l LLC) CSVHeader() []string {
+func (l *LLC) CSVHeader() []string {
 	return filter(fieldsLLC)
 }
 
-func (l LLC) CSVRecord() []string {
+func (l *LLC) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(l.Timestamp),
 		formatInt32(l.DSAP),      // int32
@@ -44,12 +44,12 @@ func (l LLC) CSVRecord() []string {
 	})
 }
 
-func (l LLC) Time() string {
+func (l *LLC) Time() string {
 	return l.Timestamp
 }
 
-func (a LLC) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (l *LLC) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(l)
 }
 
 var llcMetric = prometheus.NewCounterVec(
@@ -64,17 +64,17 @@ func init() {
 	prometheus.MustRegister(llcMetric)
 }
 
-func (a LLC) Inc() {
-	llcMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (l *LLC) Inc() {
+	llcMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()
 }
 
-func (a *LLC) SetPacketContext(ctx *PacketContext) {}
+func (l *LLC) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a LLC) Src() string {
+func (l *LLC) Src() string {
 	return ""
 }
 
-func (a LLC) Dst() string {
+func (l *LLC) Dst() string {
 	return ""
 }

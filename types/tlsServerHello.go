@@ -51,11 +51,11 @@ var fieldsTLSServerHello = []string{
 	"Ja3S",
 }
 
-func (t TLSServerHello) CSVHeader() []string {
+func (t *TLSServerHello) CSVHeader() []string {
 	return filter(fieldsTLSServerHello)
 }
 
-func (t TLSServerHello) CSVRecord() []string {
+func (t *TLSServerHello) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(t.Timestamp),
 		formatInt32(t.Version),
@@ -87,12 +87,12 @@ func (t TLSServerHello) CSVRecord() []string {
 	})
 }
 
-func (f TLSServerHello) Time() string {
-	return f.Timestamp
+func (t *TLSServerHello) Time() string {
+	return t.Timestamp
 }
 
-func (u TLSServerHello) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (t *TLSServerHello) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(t)
 }
 
 var tlsServerMetric = prometheus.NewCounterVec(
@@ -107,17 +107,17 @@ func init() {
 	prometheus.MustRegister(tlsServerMetric)
 }
 
-func (a TLSServerHello) Inc() {
-	tlsServerMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (t *TLSServerHello) Inc() {
+	tlsServerMetric.WithLabelValues(t.CSVRecord()[1:]...).Inc()
 }
 
-func (a *TLSServerHello) SetPacketContext(ctx *PacketContext) {
+func (t *TLSServerHello) SetPacketContext(ctx *PacketContext) {
 }
 
-func (a TLSServerHello) Src() string {
-	return a.SrcIP
+func (t *TLSServerHello) Src() string {
+	return t.SrcIP
 }
 
-func (a TLSServerHello) Dst() string {
-	return a.DstIP
+func (t *TLSServerHello) Dst() string {
+	return t.DstIP
 }

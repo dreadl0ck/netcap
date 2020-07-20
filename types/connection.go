@@ -39,11 +39,11 @@ var fieldsConnection = []string{
 	"TimestampLast",
 }
 
-func (c Connection) CSVHeader() []string {
+func (c *Connection) CSVHeader() []string {
 	return filter(fieldsConnection)
 }
 
-func (c Connection) CSVRecord() []string {
+func (c *Connection) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(c.TimestampFirst),
 		c.LinkProto,
@@ -65,12 +65,12 @@ func (c Connection) CSVRecord() []string {
 	})
 }
 
-func (c Connection) Time() string {
+func (c *Connection) Time() string {
 	return c.TimestampFirst
 }
 
-func (a Connection) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (c *Connection) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(c)
 }
 
 var (
@@ -128,18 +128,18 @@ var fieldsConnectionMetrics = []string{
 	"DstPort",
 }
 
-func (f Connection) metricValues() []string {
+func (c *Connection) metricValues() []string {
 	return []string{
-		f.LinkProto,
-		f.NetworkProto,
-		f.TransportProto,
-		f.ApplicationProto,
-		f.SrcMAC,
-		f.DstMAC,
-		f.SrcIP,
-		f.SrcPort,
-		f.DstIP,
-		f.DstPort,
+		c.LinkProto,
+		c.NetworkProto,
+		c.TransportProto,
+		c.ApplicationProto,
+		c.SrcMAC,
+		c.DstMAC,
+		c.SrcIP,
+		c.SrcPort,
+		c.DstIP,
+		c.DstPort,
 	}
 }
 
@@ -151,20 +151,20 @@ func init() {
 	prometheus.MustRegister(connDuration)
 }
 
-func (a Connection) Inc() {
-	connectionsMetric.WithLabelValues(a.metricValues()...).Inc()
-	connTotalSize.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.TotalSize))
-	connAppPayloadSize.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.AppPayloadSize))
-	connNumPackets.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.NumPackets))
-	connDuration.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.Duration))
+func (c *Connection) Inc() {
+	connectionsMetric.WithLabelValues(c.metricValues()...).Inc()
+	connTotalSize.WithLabelValues(c.SrcMAC, c.DstMAC).Observe(float64(c.TotalSize))
+	connAppPayloadSize.WithLabelValues(c.SrcMAC, c.DstMAC).Observe(float64(c.AppPayloadSize))
+	connNumPackets.WithLabelValues(c.SrcMAC, c.DstMAC).Observe(float64(c.NumPackets))
+	connDuration.WithLabelValues(c.SrcMAC, c.DstMAC).Observe(float64(c.Duration))
 }
 
-func (a Connection) SetPacketContext(ctx *PacketContext) {}
+func (c *Connection) SetPacketContext(ctx *PacketContext) {}
 
-func (a Connection) Src() string {
-	return a.SrcIP
+func (c *Connection) Src() string {
+	return c.SrcIP
 }
 
-func (a Connection) Dst() string {
-	return a.DstIP
+func (c *Connection) Dst() string {
+	return c.DstIP
 }

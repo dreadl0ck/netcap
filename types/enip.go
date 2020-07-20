@@ -35,10 +35,10 @@ var fieldsENIP = []string{
 	"DstPort",
 }
 
-func (e ENIP) CSVHeader() []string {
+func (e *ENIP) CSVHeader() []string {
 	return filter(fieldsENIP)
 }
-func (e ENIP) CSVRecord() []string {
+func (e *ENIP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if e.Context == nil {
 		e.Context = &PacketContext{}
@@ -59,12 +59,12 @@ func (e ENIP) CSVRecord() []string {
 	})
 }
 
-func (e ENIP) Time() string {
+func (e *ENIP) Time() string {
 	return e.Timestamp
 }
 
-func (a ENIP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (e *ENIP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(e)
 }
 
 var (
@@ -81,24 +81,24 @@ func init() {
 	prometheus.MustRegister(enipMetric)
 }
 
-func (a ENIP) Inc() {
-	enipMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (e *ENIP) Inc() {
+	enipMetric.WithLabelValues(e.CSVRecord()[1:]...).Inc()
 }
 
 func (a *ENIP) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a ENIP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (e *ENIP) Src() string {
+	if e.Context != nil {
+		return e.Context.SrcIP
 	}
 	return ""
 }
 
-func (a ENIP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (e *ENIP) Dst() string {
+	if e.Context != nil {
+		return e.Context.DstIP
 	}
 	return ""
 }

@@ -36,43 +36,43 @@ var fieldsCIP = []string{
 	"DstPort",
 }
 
-func (a CIP) CSVHeader() []string {
+func (c *CIP) CSVHeader() []string {
 	return filter(fieldsCIP)
 }
 
-func (a CIP) CSVRecord() []string {
-	var additional = make([]string, len(a.AdditionalStatus))
-	if a.Response {
-		for _, v := range a.AdditionalStatus {
+func (c *CIP) CSVRecord() []string {
+	var additional = make([]string, len(c.AdditionalStatus))
+	if c.Response {
+		for _, v := range c.AdditionalStatus {
 			additional = append(additional, formatUint32(v))
 		}
 	}
 	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
+	if c.Context == nil {
+		c.Context = &PacketContext{}
 	}
 	return filter([]string{
-		formatTimestamp(a.Timestamp),
-		strconv.FormatBool(a.Response), // bool
-		formatInt32(a.ServiceID),       // int32
-		formatUint32(a.ClassID),        // uint32
-		formatUint32(a.InstanceID),     // uint32
-		formatInt32(a.Status),          // int32
+		formatTimestamp(c.Timestamp),
+		strconv.FormatBool(c.Response), // bool
+		formatInt32(c.ServiceID),       // int32
+		formatUint32(c.ClassID),        // uint32
+		formatUint32(c.InstanceID),     // uint32
+		formatInt32(c.Status),          // int32
 		strings.Join(additional, ""),   // []uint32
-		hex.EncodeToString(a.Data),     // []byte
-		a.Context.SrcIP,
-		a.Context.DstIP,
-		a.Context.SrcPort,
-		a.Context.DstPort,
+		hex.EncodeToString(c.Data),     // []byte
+		c.Context.SrcIP,
+		c.Context.DstIP,
+		c.Context.SrcPort,
+		c.Context.DstPort,
 	})
 }
 
-func (a CIP) Time() string {
-	return a.Timestamp
+func (c *CIP) Time() string {
+	return c.Timestamp
 }
 
-func (a CIP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (c *CIP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(c)
 }
 
 var cipMetric = prometheus.NewCounterVec(
@@ -87,24 +87,24 @@ func init() {
 	prometheus.MustRegister(cipMetric)
 }
 
-func (a CIP) Inc() {
-	cipMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (c *CIP) Inc() {
+	cipMetric.WithLabelValues(c.CSVRecord()[1:]...).Inc()
 }
 
-func (a *CIP) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (c *CIP) SetPacketContext(ctx *PacketContext) {
+	c.Context = ctx
 }
 
-func (a CIP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (c *CIP) Src() string {
+	if c.Context != nil {
+		return c.Context.SrcIP
 	}
 	return ""
 }
 
-func (a CIP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (c *CIP) Dst() string {
+	if c.Context != nil {
+		return c.Context.DstIP
 	}
 	return ""
 }

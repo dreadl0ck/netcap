@@ -27,11 +27,11 @@ var fieldsICMPv6 = []string{
 	"DstIP",
 }
 
-func (i ICMPv6) CSVHeader() []string {
+func (i *ICMPv6) CSVHeader() []string {
 	return filter(fieldsICMPv6)
 }
 
-func (i ICMPv6) CSVRecord() []string {
+func (i *ICMPv6) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if i.Context == nil {
 		i.Context = &PacketContext{}
@@ -45,12 +45,12 @@ func (i ICMPv6) CSVRecord() []string {
 	})
 }
 
-func (i ICMPv6) Time() string {
+func (i *ICMPv6) Time() string {
 	return i.Timestamp
 }
 
-func (a ICMPv6) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *ICMPv6) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var icmp6Metric = prometheus.NewCounterVec(
@@ -65,24 +65,24 @@ func init() {
 	prometheus.MustRegister(icmp6Metric)
 }
 
-func (a ICMPv6) Inc() {
-	icmp6Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (i *ICMPv6) Inc() {
+	icmp6Metric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
-func (a *ICMPv6) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (i *ICMPv6) SetPacketContext(ctx *PacketContext) {
+	i.Context = ctx
 }
 
-func (a ICMPv6) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (i *ICMPv6) Src() string {
+	if i.Context != nil {
+		return i.Context.SrcIP
 	}
 	return ""
 }
 
-func (a ICMPv6) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (i *ICMPv6) Dst() string {
+	if i.Context != nil {
+		return i.Context.DstIP
 	}
 	return ""
 }

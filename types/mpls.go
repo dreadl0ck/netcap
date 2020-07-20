@@ -30,11 +30,11 @@ var fieldsMPLS = []string{
 	"DstIP",
 }
 
-func (a MPLS) CSVHeader() []string {
+func (a *MPLS) CSVHeader() []string {
 	return filter(fieldsMPLS)
 }
 
-func (a MPLS) CSVRecord() []string {
+func (a *MPLS) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -50,12 +50,12 @@ func (a MPLS) CSVRecord() []string {
 	})
 }
 
-func (a MPLS) Time() string {
+func (a *MPLS) Time() string {
 	return a.Timestamp
 }
 
-func (a MPLS) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *MPLS) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var mplsMetric = prometheus.NewCounterVec(
@@ -70,7 +70,7 @@ func init() {
 	prometheus.MustRegister(mplsMetric)
 }
 
-func (a MPLS) Inc() {
+func (a *MPLS) Inc() {
 	mplsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -78,14 +78,14 @@ func (a *MPLS) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a MPLS) Src() string {
+func (a *MPLS) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a MPLS) Dst() string {
+func (a *MPLS) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

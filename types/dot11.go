@@ -37,11 +37,11 @@ var fieldsDot11 = []string{
 	"HTControl",      // *Dot11HTControl
 }
 
-func (d Dot11) CSVHeader() []string {
+func (d *Dot11) CSVHeader() []string {
 	return filter(fieldsDot11)
 }
 
-func (d Dot11) CSVRecord() []string {
+func (d *Dot11) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(d.Timestamp),
 		formatInt32(d.Type),           // int32
@@ -60,7 +60,7 @@ func (d Dot11) CSVRecord() []string {
 	})
 }
 
-func (d Dot11) Time() string {
+func (d *Dot11) Time() string {
 	return d.Timestamp
 }
 
@@ -178,8 +178,8 @@ func (d *Dot11ASEL) ToString() string {
 	return b.String()
 }
 
-func (a Dot11) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (d *Dot11) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(d)
 }
 
 var dot11Metric = prometheus.NewCounterVec(
@@ -194,17 +194,17 @@ func init() {
 	prometheus.MustRegister(dot11Metric)
 }
 
-func (a Dot11) Inc() {
-	dot11Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (d *Dot11) Inc() {
+	dot11Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
-func (a *Dot11) SetPacketContext(ctx *PacketContext) {}
+func (d *Dot11) SetPacketContext(ctx *PacketContext) {}
 
 // TODO: return Mac addr
-func (a Dot11) Src() string {
+func (d *Dot11) Src() string {
 	return ""
 }
 
-func (a Dot11) Dst() string {
+func (d *Dot11) Dst() string {
 	return ""
 }

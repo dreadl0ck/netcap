@@ -24,23 +24,23 @@ var fieldsEthernetCTP = []string{
 	"SkipCount", // int32
 }
 
-func (i EthernetCTP) CSVHeader() []string {
+func (i *EthernetCTP) CSVHeader() []string {
 	return filter(fieldsEthernetCTP)
 }
 
-func (i EthernetCTP) CSVRecord() []string {
+func (i *EthernetCTP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.SkipCount),
 	})
 }
 
-func (i EthernetCTP) Time() string {
+func (i *EthernetCTP) Time() string {
 	return i.Timestamp
 }
 
-func (a EthernetCTP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *EthernetCTP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var ethernetCTPMetric = prometheus.NewCounterVec(
@@ -55,17 +55,17 @@ func init() {
 	prometheus.MustRegister(ethernetCTPMetric)
 }
 
-func (a EthernetCTP) Inc() {
-	ethernetCTPMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (i *EthernetCTP) Inc() {
+	ethernetCTPMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
 func (a *EthernetCTP) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a EthernetCTP) Src() string {
+func (i *EthernetCTP) Src() string {
 	return ""
 }
 
-func (a EthernetCTP) Dst() string {
+func (i *EthernetCTP) Dst() string {
 	return ""
 }

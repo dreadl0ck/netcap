@@ -27,11 +27,11 @@ var fieldsIPv6HopByHop = []string{
 	"DstIP", // string
 }
 
-func (l IPv6HopByHop) CSVHeader() []string {
+func (l *IPv6HopByHop) CSVHeader() []string {
 	return filter(fieldsIPv6HopByHop)
 }
 
-func (l IPv6HopByHop) CSVRecord() []string {
+func (l *IPv6HopByHop) CSVRecord() []string {
 	opts := make([]string, len(l.Options))
 	for i, v := range l.Options {
 		opts[i] = v.ToString()
@@ -48,11 +48,11 @@ func (l IPv6HopByHop) CSVRecord() []string {
 	})
 }
 
-func (l IPv6HopByHop) Time() string {
+func (l *IPv6HopByHop) Time() string {
 	return l.Timestamp
 }
 
-func (o IPv6HopByHopOption) ToString() string {
+func (o *IPv6HopByHopOption) ToString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(o.OptionType))        // int32
@@ -64,12 +64,12 @@ func (o IPv6HopByHopOption) ToString() string {
 	return b.String()
 }
 
-func (a IPv6HopByHopOptionAlignment) ToString() string {
+func (a *IPv6HopByHopOptionAlignment) ToString() string {
 	return join(formatInt32(a.One), formatInt32(a.Two))
 }
 
-func (a IPv6HopByHop) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (l *IPv6HopByHop) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(l)
 }
 
 var ip6hopMetric = prometheus.NewCounterVec(
@@ -84,24 +84,24 @@ func init() {
 	prometheus.MustRegister(ip6hopMetric)
 }
 
-func (a IPv6HopByHop) Inc() {
-	ip6hopMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (l *IPv6HopByHop) Inc() {
+	ip6hopMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()
 }
 
-func (a *IPv6HopByHop) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (l *IPv6HopByHop) SetPacketContext(ctx *PacketContext) {
+	l.Context = ctx
 }
 
-func (a IPv6HopByHop) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (l *IPv6HopByHop) Src() string {
+	if l.Context != nil {
+		return l.Context.SrcIP
 	}
 	return ""
 }
 
-func (a IPv6HopByHop) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (l *IPv6HopByHop) Dst() string {
+	if l.Context != nil {
+		return l.Context.DstIP
 	}
 	return ""
 }

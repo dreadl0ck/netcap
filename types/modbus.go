@@ -36,11 +36,11 @@ var fieldsModbus = []string{
 	"DstPort",
 }
 
-func (a Modbus) CSVHeader() []string {
+func (a *Modbus) CSVHeader() []string {
 	return filter(fieldsModbus)
 }
 
-func (a Modbus) CSVRecord() []string {
+func (a *Modbus) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -61,12 +61,12 @@ func (a Modbus) CSVRecord() []string {
 	})
 }
 
-func (a Modbus) Time() string {
+func (a *Modbus) Time() string {
 	return a.Timestamp
 }
 
-func (a Modbus) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *Modbus) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var modbusTcpMetric = prometheus.NewCounterVec(
@@ -81,7 +81,7 @@ func init() {
 	prometheus.MustRegister(modbusTcpMetric)
 }
 
-func (a Modbus) Inc() {
+func (a *Modbus) Inc() {
 	modbusTcpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -89,14 +89,14 @@ func (a *Modbus) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a Modbus) Src() string {
+func (a *Modbus) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a Modbus) Dst() string {
+func (a *Modbus) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

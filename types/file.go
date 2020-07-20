@@ -34,11 +34,11 @@ var fieldsFile = []string{
 	"DstPort",
 }
 
-func (a File) CSVHeader() []string {
+func (a *File) CSVHeader() []string {
 	return filter(fieldsFile)
 }
 
-func (a File) CSVRecord() []string {
+func (a *File) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -59,12 +59,12 @@ func (a File) CSVRecord() []string {
 	})
 }
 
-func (a File) Time() string {
+func (a *File) Time() string {
 	return a.Timestamp
 }
 
-func (a File) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *File) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var fileMetric = prometheus.NewCounterVec(
@@ -79,13 +79,13 @@ func init() {
 	prometheus.MustRegister(fileMetric)
 }
 
-func (a File) Inc() {
+func (a *File) Inc() {
 	fileMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *File) SetPacketContext(ctx *PacketContext) {}
 
-func (a File) Src() string {
+func (a *File) Src() string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -93,7 +93,7 @@ func (a File) Src() string {
 	return a.Context.SrcIP
 }
 
-func (a File) Dst() string {
+func (a *File) Dst() string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}

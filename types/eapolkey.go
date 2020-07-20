@@ -46,11 +46,11 @@ var fieldsEAPOLKey = []string{
 	"EncryptedKeyData",     // []byte
 }
 
-func (a EAPOLKey) CSVHeader() []string {
+func (a *EAPOLKey) CSVHeader() []string {
 	return filter(fieldsEAPOLKey)
 }
 
-func (a EAPOLKey) CSVRecord() []string {
+func (a *EAPOLKey) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.KeyDescriptorType),          // int32
@@ -77,12 +77,12 @@ func (a EAPOLKey) CSVRecord() []string {
 	})
 }
 
-func (a EAPOLKey) Time() string {
+func (a *EAPOLKey) Time() string {
 	return a.Timestamp
 }
 
-func (a EAPOLKey) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *EAPOLKey) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var eapPolKeyMetric = prometheus.NewCounterVec(
@@ -97,17 +97,17 @@ func init() {
 	prometheus.MustRegister(eapPolKeyMetric)
 }
 
-func (a EAPOLKey) Inc() {
+func (a *EAPOLKey) Inc() {
 	eapPolKeyMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *EAPOLKey) SetPacketContext(ctx *PacketContext) {}
 
 // TODO: return Mac addr
-func (a EAPOLKey) Src() string {
+func (a *EAPOLKey) Src() string {
 	return ""
 }
 
-func (a EAPOLKey) Dst() string {
+func (a *EAPOLKey) Dst() string {
 	return ""
 }

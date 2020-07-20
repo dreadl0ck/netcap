@@ -26,11 +26,11 @@ var fieldsSNAP = []string{
 	"Type",
 }
 
-func (s SNAP) CSVHeader() []string {
+func (s *SNAP) CSVHeader() []string {
 	return filter(fieldsSNAP)
 }
 
-func (s SNAP) CSVRecord() []string {
+func (s *SNAP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(s.Timestamp),
 		hex.EncodeToString(s.OrganizationalCode),
@@ -38,7 +38,7 @@ func (s SNAP) CSVRecord() []string {
 	})
 }
 
-func (s SNAP) Time() string {
+func (s *SNAP) Time() string {
 	return s.Timestamp
 }
 
@@ -58,17 +58,17 @@ func init() {
 	prometheus.MustRegister(snapMetric)
 }
 
-func (a SNAP) Inc() {
-	snapMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (s *SNAP) Inc() {
+	snapMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()
 }
 
-func (a *SNAP) SetPacketContext(ctx *PacketContext) {}
+func (s *SNAP) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a SNAP) Src() string {
+func (s *SNAP) Src() string {
 	return ""
 }
 
-func (a SNAP) Dst() string {
+func (s *SNAP) Dst() string {
 	return ""
 }

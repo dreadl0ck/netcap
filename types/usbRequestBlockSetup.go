@@ -28,11 +28,11 @@ var fieldsUSBRequestBlockSetup = []string{
 	"Length",      // int32
 }
 
-func (a USBRequestBlockSetup) CSVHeader() []string {
+func (a *USBRequestBlockSetup) CSVHeader() []string {
 	return filter(fieldsUSBRequestBlockSetup)
 }
 
-func (a USBRequestBlockSetup) CSVRecord() []string {
+func (a *USBRequestBlockSetup) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.RequestType), // int32
@@ -43,12 +43,12 @@ func (a USBRequestBlockSetup) CSVRecord() []string {
 	})
 }
 
-func (a USBRequestBlockSetup) Time() string {
+func (a *USBRequestBlockSetup) Time() string {
 	return a.Timestamp
 }
 
-func (a USBRequestBlockSetup) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *USBRequestBlockSetup) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var usbRequestBlockSetupMetric = prometheus.NewCounterVec(
@@ -63,18 +63,18 @@ func init() {
 	prometheus.MustRegister(usbRequestBlockSetupMetric)
 }
 
-func (a USBRequestBlockSetup) Inc() {
+func (a *USBRequestBlockSetup) Inc() {
 	usbRequestBlockSetupMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *USBRequestBlockSetup) SetPacketContext(ctx *PacketContext) {}
 
 // TODO return source DeviceAddress?
-func (a USBRequestBlockSetup) Src() string {
+func (a *USBRequestBlockSetup) Src() string {
 	return ""
 }
 
 // TODO return destination DeviceAddress?
-func (a USBRequestBlockSetup) Dst() string {
+func (a *USBRequestBlockSetup) Dst() string {
 	return ""
 }

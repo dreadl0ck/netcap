@@ -23,22 +23,22 @@ var fieldsCredentials = []string{
 	"Timestamp",
 }
 
-func (a Credentials) CSVHeader() []string {
+func (c *Credentials) CSVHeader() []string {
 	return filter(fieldsCredentials)
 }
 
-func (a Credentials) CSVRecord() []string {
+func (c *Credentials) CSVRecord() []string {
 	return filter([]string{
-		formatTimestamp(a.Timestamp),
+		formatTimestamp(c.Timestamp),
 	})
 }
 
-func (a Credentials) Time() string {
-	return a.Timestamp
+func (c *Credentials) Time() string {
+	return c.Timestamp
 }
 
-func (a Credentials) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (c *Credentials) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(c)
 }
 
 var credentialsMetric = prometheus.NewCounterVec(
@@ -53,18 +53,18 @@ func init() {
 	prometheus.MustRegister(credentialsMetric)
 }
 
-func (a Credentials) Inc() {
-	credentialsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (c *Credentials) Inc() {
+	credentialsMetric.WithLabelValues(c.CSVRecord()[1:]...).Inc()
 }
 
 func (a *Credentials) SetPacketContext(ctx *PacketContext) {}
 
 // TODO: preserve source and destination mac adresses for Credentials and return them here
-func (a Credentials) Src() string {
+func (c *Credentials) Src() string {
 	return ""
 }
 
 // TODO: preserve source and destination mac adresses for Credentials and return them here
-func (a Credentials) Dst() string {
+func (c *Credentials) Dst() string {
 	return ""
 }

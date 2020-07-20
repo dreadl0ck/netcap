@@ -32,11 +32,11 @@ var fieldsVXLAN = []string{
 	"DstIP",
 }
 
-func (a VXLAN) CSVHeader() []string {
+func (a *VXLAN) CSVHeader() []string {
 	return filter(fieldsVXLAN)
 }
 
-func (a VXLAN) CSVRecord() []string {
+func (a *VXLAN) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -54,12 +54,12 @@ func (a VXLAN) CSVRecord() []string {
 	})
 }
 
-func (a VXLAN) Time() string {
+func (a *VXLAN) Time() string {
 	return a.Timestamp
 }
 
-func (a VXLAN) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *VXLAN) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var vxlanMetric = prometheus.NewCounterVec(
@@ -74,7 +74,7 @@ func init() {
 	prometheus.MustRegister(vxlanMetric)
 }
 
-func (a VXLAN) Inc() {
+func (a *VXLAN) Inc() {
 	vxlanMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -82,14 +82,14 @@ func (a *VXLAN) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a VXLAN) Src() string {
+func (a *VXLAN) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a VXLAN) Dst() string {
+func (a *VXLAN) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

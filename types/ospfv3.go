@@ -38,11 +38,11 @@ var fieldsOSPFv3 = []string{
 	"DstIP",
 }
 
-func (a OSPFv3) CSVHeader() []string {
+func (a *OSPFv3) CSVHeader() []string {
 	return filter(fieldsOSPFv3)
 }
 
-func (a OSPFv3) CSVRecord() []string {
+func (a *OSPFv3) CSVRecord() []string {
 	var (
 		lsas   []string
 		lsreqs []string
@@ -77,7 +77,7 @@ func (a OSPFv3) CSVRecord() []string {
 	})
 }
 
-func (a OSPFv3) Time() string {
+func (a *OSPFv3) Time() string {
 	return a.Timestamp
 }
 
@@ -122,26 +122,26 @@ func init() {
 	prometheus.MustRegister(ospf3Metric)
 }
 
-func (a OSPFv3) Inc() {
+func (a *OSPFv3) Inc() {
 	ospf3Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a OSPFv3) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *OSPFv3) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 func (a *OSPFv3) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a OSPFv3) Src() string {
+func (a *OSPFv3) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a OSPFv3) Dst() string {
+func (a *OSPFv3) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

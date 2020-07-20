@@ -23,22 +23,22 @@ var fieldsService = []string{
 	"Timestamp",
 }
 
-func (a Service) CSVHeader() []string {
+func (a *Service) CSVHeader() []string {
 	return filter(fieldsService)
 }
 
-func (a Service) CSVRecord() []string {
+func (a *Service) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 	})
 }
 
-func (a Service) Time() string {
+func (a *Service) Time() string {
 	return a.Timestamp
 }
 
-func (a Service) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *Service) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var serviceMetric = prometheus.NewCounterVec(
@@ -53,16 +53,16 @@ func init() {
 	prometheus.MustRegister(serviceMetric)
 }
 
-func (a Service) Inc() {
+func (a *Service) Inc() {
 	serviceMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *Service) SetPacketContext(ctx *PacketContext) {}
 
-func (a Service) Src() string {
+func (a *Service) Src() string {
 	return ""
 }
 
-func (a Service) Dst() string {
+func (a *Service) Dst() string {
 	return ""
 }

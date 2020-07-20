@@ -32,11 +32,11 @@ var fieldsLLDI = []string{
 	"Unknown",
 }
 
-func (l LinkLayerDiscoveryInfo) CSVHeader() []string {
+func (l *LinkLayerDiscoveryInfo) CSVHeader() []string {
 	return filter(fieldsLLDI)
 }
 
-func (l LinkLayerDiscoveryInfo) CSVRecord() []string {
+func (l *LinkLayerDiscoveryInfo) CSVRecord() []string {
 	var (
 		tlvs   = make([]string, len(l.OrgTLVs))
 		values = make([]string, len(l.Unknown))
@@ -59,7 +59,7 @@ func (l LinkLayerDiscoveryInfo) CSVRecord() []string {
 	})
 }
 
-func (l LinkLayerDiscoveryInfo) Time() string {
+func (l *LinkLayerDiscoveryInfo) Time() string {
 	return l.Timestamp
 }
 
@@ -135,8 +135,8 @@ func (c *LLDPCapabilities) ToString() string {
 	return b.String()
 }
 
-func (a LinkLayerDiscoveryInfo) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (l *LinkLayerDiscoveryInfo) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(l)
 }
 
 var lldiMetric = prometheus.NewCounterVec(
@@ -151,17 +151,17 @@ func init() {
 	prometheus.MustRegister(lldiMetric)
 }
 
-func (a LinkLayerDiscoveryInfo) Inc() {
-	lldiMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (l *LinkLayerDiscoveryInfo) Inc() {
+	lldiMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()
 }
 
-func (a *LinkLayerDiscoveryInfo) SetPacketContext(ctx *PacketContext) {}
+func (l *LinkLayerDiscoveryInfo) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a LinkLayerDiscoveryInfo) Src() string {
+func (l *LinkLayerDiscoveryInfo) Src() string {
 	return ""
 }
 
-func (a LinkLayerDiscoveryInfo) Dst() string {
+func (l *LinkLayerDiscoveryInfo) Dst() string {
 	return ""
 }

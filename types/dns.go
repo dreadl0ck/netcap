@@ -46,11 +46,11 @@ var fieldsDNS = []string{
 	"DstPort",
 }
 
-func (d DNS) CSVHeader() []string {
+func (d *DNS) CSVHeader() []string {
 	return filter(fieldsDNS)
 }
 
-func (d DNS) CSVRecord() []string {
+func (d *DNS) CSVRecord() []string {
 	var (
 		questions   = make([]string, len(d.Questions))
 		answers     = make([]string, len(d.Answers))
@@ -99,11 +99,11 @@ func (d DNS) CSVRecord() []string {
 	})
 }
 
-func (d DNS) Time() string {
+func (d *DNS) Time() string {
 	return d.Timestamp
 }
 
-func (q DNSQuestion) ToString() string {
+func (q *DNSQuestion) ToString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(string(q.Name))
@@ -115,7 +115,7 @@ func (q DNSQuestion) ToString() string {
 	return b.String()
 }
 
-func (q DNSResourceRecord) ToString() string {
+func (q *DNSResourceRecord) ToString() string {
 	var txts []string
 	for _, t := range q.TXTs {
 		txts = append(txts, string(t))
@@ -197,8 +197,8 @@ func (q *DNSMX) ToString() string {
 	return b.String()
 }
 
-func (a DNS) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (d *DNS) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(d)
 }
 
 var dnsMetric = prometheus.NewCounterVec(
@@ -213,24 +213,24 @@ func init() {
 	prometheus.MustRegister(dnsMetric)
 }
 
-func (a DNS) Inc() {
-	dnsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (d *DNS) Inc() {
+	dnsMetric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
-func (a *DNS) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (d *DNS) SetPacketContext(ctx *PacketContext) {
+	d.Context = ctx
 }
 
-func (a DNS) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (d *DNS) Src() string {
+	if d.Context != nil {
+		return d.Context.SrcIP
 	}
 	return ""
 }
 
-func (a DNS) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (d *DNS) Dst() string {
+	if d.Context != nil {
+		return d.Context.DstIP
 	}
 	return ""
 }

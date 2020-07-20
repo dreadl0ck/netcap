@@ -43,11 +43,11 @@ var fieldsNTP = []string{
 	"DstPort",
 }
 
-func (n NTP) CSVHeader() []string {
+func (n *NTP) CSVHeader() []string {
 	return filter(fieldsNTP)
 }
 
-func (n NTP) CSVRecord() []string {
+func (n *NTP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if n.Context == nil {
 		n.Context = &PacketContext{}
@@ -75,12 +75,12 @@ func (n NTP) CSVRecord() []string {
 	})
 }
 
-func (n NTP) Time() string {
+func (n *NTP) Time() string {
 	return n.Timestamp
 }
 
-func (u NTP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (n *NTP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(n)
 }
 
 var ntpMetric = prometheus.NewCounterVec(
@@ -95,24 +95,24 @@ func init() {
 	prometheus.MustRegister(ntpMetric)
 }
 
-func (a NTP) Inc() {
-	ntpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (n *NTP) Inc() {
+	ntpMetric.WithLabelValues(n.CSVRecord()[1:]...).Inc()
 }
 
-func (a *NTP) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (n *NTP) SetPacketContext(ctx *PacketContext) {
+	n.Context = ctx
 }
 
-func (a NTP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (n *NTP) Src() string {
+	if n.Context != nil {
+		return n.Context.SrcIP
 	}
 	return ""
 }
 
-func (a NTP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (n *NTP) Dst() string {
+	if n.Context != nil {
+		return n.Context.DstIP
 	}
 	return ""
 }

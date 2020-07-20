@@ -34,11 +34,11 @@ var fieldsSIP = []string{
 	"DstPort",
 }
 
-func (s SIP) CSVHeader() []string {
+func (s *SIP) CSVHeader() []string {
 	return filter(fieldsSIP)
 }
 
-func (s SIP) CSVRecord() []string {
+func (s *SIP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if s.Context == nil {
 		s.Context = &PacketContext{}
@@ -58,12 +58,12 @@ func (s SIP) CSVRecord() []string {
 	})
 }
 
-func (s SIP) Time() string {
+func (s *SIP) Time() string {
 	return s.Timestamp
 }
 
-func (u SIP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (u *SIP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(u)
 }
 
 var sipMetric = prometheus.NewCounterVec(
@@ -78,24 +78,24 @@ func init() {
 	prometheus.MustRegister(sipMetric)
 }
 
-func (a SIP) Inc() {
-	sipMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (s *SIP) Inc() {
+	sipMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()
 }
 
-func (a *SIP) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (s *SIP) SetPacketContext(ctx *PacketContext) {
+	s.Context = ctx
 }
 
-func (a SIP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (s *SIP) Src() string {
+	if s.Context != nil {
+		return s.Context.SrcIP
 	}
 	return ""
 }
 
-func (a SIP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (s *SIP) Dst() string {
+	if s.Context != nil {
+		return s.Context.DstIP
 	}
 	return ""
 }

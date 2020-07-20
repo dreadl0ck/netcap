@@ -39,11 +39,11 @@ var fieldsOSPFv2 = []string{
 	"DstIP",
 }
 
-func (a OSPFv2) CSVHeader() []string {
+func (a *OSPFv2) CSVHeader() []string {
 	return filter(fieldsOSPFv2)
 }
 
-func (a OSPFv2) CSVRecord() []string {
+func (a *OSPFv2) CSVRecord() []string {
 	var (
 		lsas   []string
 		lsreqs []string
@@ -78,7 +78,7 @@ func (a OSPFv2) CSVRecord() []string {
 	})
 }
 
-func (a OSPFv2) Time() string {
+func (a *OSPFv2) Time() string {
 	return a.Timestamp
 }
 
@@ -96,7 +96,7 @@ func (l LSReq) ToString() string {
 	return b.String()
 }
 
-func (r RouterLSAV2) ToString() string {
+func (r *RouterLSAV2) ToString() string {
 
 	var routers []string
 	for _, e := range r.Routers {
@@ -116,7 +116,7 @@ func (r RouterLSAV2) ToString() string {
 	return b.String()
 }
 
-func (r ASExternalLSAV2) ToString() string {
+func (r *ASExternalLSAV2) ToString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -134,7 +134,7 @@ func (r ASExternalLSAV2) ToString() string {
 	return b.String()
 }
 
-func (r RouterLSA) ToString() string {
+func (r *RouterLSA) ToString() string {
 
 	var routers []string
 	for _, e := range r.Routers {
@@ -154,7 +154,7 @@ func (r RouterLSA) ToString() string {
 	return b.String()
 }
 
-func (r NetworkLSA) ToString() string {
+func (r *NetworkLSA) ToString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -166,7 +166,7 @@ func (r NetworkLSA) ToString() string {
 	return b.String()
 }
 
-func (r InterAreaPrefixLSA) ToString() string {
+func (r *InterAreaPrefixLSA) ToString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -182,7 +182,7 @@ func (r InterAreaPrefixLSA) ToString() string {
 	return b.String()
 }
 
-func (r InterAreaRouterLSA) ToString() string {
+func (r *InterAreaRouterLSA) ToString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -196,7 +196,7 @@ func (r InterAreaRouterLSA) ToString() string {
 	return b.String()
 }
 
-func (r ASExternalLSA) ToString() string {
+func (r *ASExternalLSA) ToString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -222,7 +222,7 @@ func (r ASExternalLSA) ToString() string {
 	return b.String()
 }
 
-func (r LinkLSA) ToString() string {
+func (r *LinkLSA) ToString() string {
 
 	var prefixes []string
 	for _, p := range r.Prefixes {
@@ -246,7 +246,7 @@ func (r LinkLSA) ToString() string {
 	return b.String()
 }
 
-func (r IntraAreaPrefixLSA) ToString() string {
+func (r *IntraAreaPrefixLSA) ToString() string {
 
 	var prefixes []string
 	for _, p := range r.Prefixes {
@@ -270,7 +270,7 @@ func (r IntraAreaPrefixLSA) ToString() string {
 	return b.String()
 }
 
-func (r Router) ToString() string {
+func (r *Router) ToString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -290,7 +290,7 @@ func (r Router) ToString() string {
 	return b.String()
 }
 
-func (r RouterV2) ToString() string {
+func (r *RouterV2) ToString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -306,7 +306,7 @@ func (r RouterV2) ToString() string {
 	return b.String()
 }
 
-func (l LSA) ToString() string {
+func (l *LSA) ToString() string {
 
 	var b strings.Builder
 
@@ -447,8 +447,8 @@ func (l LSAheader) ToString() string {
 	return b.String()
 }
 
-func (u LSAheader) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (l *LSAheader) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(l)
 }
 
 var ospf2Metric = prometheus.NewCounterVec(
@@ -463,26 +463,26 @@ func init() {
 	prometheus.MustRegister(ospf2Metric)
 }
 
-func (a OSPFv2) Inc() {
+func (a *OSPFv2) Inc() {
 	ospf2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a OSPFv2) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *OSPFv2) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 func (a *OSPFv2) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a OSPFv2) Src() string {
+func (a *OSPFv2) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a OSPFv2) Dst() string {
+func (a *OSPFv2) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

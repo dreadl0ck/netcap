@@ -28,11 +28,11 @@ var fieldsIPSecESP = []string{
 	"DstIP", // string
 }
 
-func (a IPSecESP) CSVHeader() []string {
+func (a *IPSecESP) CSVHeader() []string {
 	return filter(fieldsIPSecESP)
 }
 
-func (a IPSecESP) CSVRecord() []string {
+func (a *IPSecESP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -47,12 +47,12 @@ func (a IPSecESP) CSVRecord() []string {
 	})
 }
 
-func (a IPSecESP) Time() string {
+func (a *IPSecESP) Time() string {
 	return a.Timestamp
 }
 
-func (a IPSecESP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *IPSecESP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var ipSecEspMetric = prometheus.NewCounterVec(
@@ -67,7 +67,7 @@ func init() {
 	prometheus.MustRegister(ipSecEspMetric)
 }
 
-func (a IPSecESP) Inc() {
+func (a *IPSecESP) Inc() {
 	ipSecEspMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -75,14 +75,14 @@ func (a *IPSecESP) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a IPSecESP) Src() string {
+func (a *IPSecESP) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a IPSecESP) Dst() string {
+func (a *IPSecESP) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

@@ -33,11 +33,11 @@ var fieldsARP = []string{
 	"DstProtAddress",  // []byte
 }
 
-func (a ARP) CSVHeader() []string {
+func (a *ARP) CSVHeader() []string {
 	return filter(fieldsARP)
 }
 
-func (a ARP) CSVRecord() []string {
+func (a *ARP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.AddrType),              // int32
@@ -52,12 +52,12 @@ func (a ARP) CSVRecord() []string {
 	})
 }
 
-func (a ARP) Time() string {
+func (a *ARP) Time() string {
 	return a.Timestamp
 }
 
-func (a ARP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *ARP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var arpMetric = prometheus.NewCounterVec(
@@ -72,18 +72,18 @@ func init() {
 	prometheus.MustRegister(arpMetric)
 }
 
-func (a ARP) Inc() {
+func (a *ARP) Inc() {
 	arpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *ARP) SetPacketContext(ctx *PacketContext) {}
 
 // TODO: preserve source and destination mac adresses for ARP and return them here
-func (a ARP) Src() string {
+func (a *ARP) Src() string {
 	return ""
 }
 
 // TODO: preserve source and destination mac adresses for ARP and return them here
-func (a ARP) Dst() string {
+func (a *ARP) Dst() string {
 	return ""
 }
