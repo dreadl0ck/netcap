@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
@@ -38,8 +39,8 @@ func (c *Collector) cleanup(force bool) {
 	select {
 	case <-waitForCollector():
 		c.printlnStdOut(" done!")
-	case <-time.After(c.config.EncoderConfig.ClosePendingTimeOut):
-		c.printStdOut(" timeout after ", c.config.EncoderConfig.ClosePendingTimeOut)
+	case <-time.After(netcap.DefaultReassemblyTimeout):
+		c.printStdOut(" timeout after ", netcap.DefaultReassemblyTimeout)
 	}
 
 	if c.config.ReassembleConnections {
