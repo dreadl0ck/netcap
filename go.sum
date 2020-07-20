@@ -5,6 +5,8 @@ github.com/RoaringBitmap/roaring v0.4.21 h1:WJ/zIlNX4wQZ9x8Ey33O1UaD9TCTakYsdLFS
 github.com/RoaringBitmap/roaring v0.4.21/go.mod h1:D0gp8kJQgE1A4LQ5wFLggQEyvDi06Mq5mKs52e1TwOo=
 github.com/RoaringBitmap/roaring v0.4.23 h1:gpyfd12QohbqhFO4NVDUdoPOCXsyahYRQhINmlHxKeo=
 github.com/RoaringBitmap/roaring v0.4.23/go.mod h1:D0gp8kJQgE1A4LQ5wFLggQEyvDi06Mq5mKs52e1TwOo=
+github.com/RoaringBitmap/roaring v0.5.0 h1:0psZZWU0J2AUl29BAylpHAsuBEEhCEfTKl2v5yHtXIg=
+github.com/RoaringBitmap/roaring v0.5.0/go.mod h1:D0gp8kJQgE1A4LQ5wFLggQEyvDi06Mq5mKs52e1TwOo=
 github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7 h1:uSoVVbwJiQipAclBbw+8quDsfcvFjOpI5iCf4p/cqCs=
 github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7/go.mod h1:6zEj6s6u/ghQa61ZWa/C2Aw3RkjiTBOix7dkqa1VLIs=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -78,6 +80,10 @@ github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7 h1:yBEizTC9S
 github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200720212604-07d4be8f255e h1:P6GRA7CKugWvSrjkis813JJJEJXsFdIC4OeUOfFY9qY=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200720212604-07d4be8f255e/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200720213532-e35e1b91f2f7 h1:PTiIjfiUbehSV+TLgFbLZHxrL5oK//Lx3arWesDkrjI=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200720213532-e35e1b91f2f7/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200720213952-a34b63701790 h1:JpFpvuMSw2uPrb4kRgq8QZeBJXPBpgLo8Qm4G+JeI4Y=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200720213952-a34b63701790/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
 github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b h1:Ar1YyCBF4cYVhgFzEroRp/JZwEOPZxfBr3YapV9PYZs=
 github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b/go.mod h1:uPPZgPwk6eZmKsZwnZmrezIquSQbAv9d9ARnRKs4RNg=
 github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b h1:pe6QmegBSU8XHCMF9PI2P+hEhuQYCodbTQluExHmKW4=
@@ -85,6 +91,8 @@ github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b/go.mod h1:sBTlLV54B
 github.com/dsoprea/go-exif/v2 v2.0.0-20200321225314-640175a69fe4/go.mod h1:Lm2lMM2zx8p4a34ZemkaUV95AnMl4ZvLbCUbwOvLC2E=
 github.com/dsoprea/go-exif/v2 v2.0.0-20200711182015-0758712be348 h1:QRIs9an+oFvcpJOUq4CJdYUOMrZJtAz0M32YHIbwkDc=
 github.com/dsoprea/go-exif/v2 v2.0.0-20200711182015-0758712be348/go.mod h1:oKrjk2kb3rAR5NbtSTLUMvMSbc+k8ZosI3MaVH47noc=
+github.com/dsoprea/go-exif/v2 v2.0.0-20200717071058-9393e7afd446 h1:ruDG+2wFz+k/mDNy8x1UqWEItWNLXpvGlLv05+TlZt4=
+github.com/dsoprea/go-exif/v2 v2.0.0-20200717071058-9393e7afd446/go.mod h1:oKrjk2kb3rAR5NbtSTLUMvMSbc+k8ZosI3MaVH47noc=
 github.com/dsoprea/go-logging v0.0.0-20190624164917-c4f10aab7696/go.mod h1:Nm/x2ZUNRW6Fe5C3LxdY1PyZY5wmDv/s5dkPJ/VB3iA=
 github.com/dsoprea/go-logging v0.0.0-20200517223158-a10564966e9d h1:F/7L5wr/fP/SKeO5HuMlNEX9Ipyx2MbH2rV9G4zJRpk=
 github.com/dsoprea/go-logging v0.0.0-20200517223158-a10564966e9d/go.mod h1:7I+3Pe2o/YSU88W0hWlm9S22W7XI1JFNJ86U0zPKMf8=
@@ -109,6 +117,8 @@ github.com/fatih/color v1.9.0 h1:8xPHl4/q1VyqGIPif1F+1V3Y3lSmrq01EabUW3CoW5s=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/felixge/fgprof v0.9.0 h1:1Unx04fyC3gn3RMH/GuwUF1UdlulLMpJV13jr9SOHvs=
 github.com/felixge/fgprof v0.9.0/go.mod h1:7/HK6JFtFaARhIljgP2IV8rJLIoHDoOYoUphsnGvqxE=
+github.com/felixge/fgprof v0.9.1 h1:E6FUJ2Mlv043ipLOCFqo8+cHo9MhQ203E2cdEK/isEs=
+github.com/felixge/fgprof v0.9.1/go.mod h1:7/HK6JFtFaARhIljgP2IV8rJLIoHDoOYoUphsnGvqxE=
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 h1:BHsljHzVlRcyQhjrss6TZTdY2VfCqZPbv5k3iBFa2ZQ=
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:xEzjJPgXI435gkrCt3MPfRiAkVrwSbHsst4LCFVfpJc=
 github.com/fogleman/gg v1.3.0 h1:/7zJX8F6AaYQc57WQCyN9cAIz+4bCJGO9B+dyW29am8=
@@ -190,6 +200,8 @@ github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpO
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/imdario/mergo v0.3.9 h1:UauaLniWCFHWd+Jp9oCEkTBj8VO/9DKg3PV3VCNMDIg=
 github.com/imdario/mergo v0.3.9/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
+github.com/imdario/mergo v0.3.10 h1:6q5mVkdH/vYmqngx7kZQTjJ5HRsx+ImorDIEQ+beJgc=
+github.com/imdario/mergo v0.3.10/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
@@ -442,6 +454,8 @@ golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae h1:Ih9Yo4hSPImZOpfGuA4bR/ORKTAbhZo2AbWNRCnevdo=
 golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200720211630-cb9d2d5c5666 h1:gVCS+QOncANNPlmlO1AhlU3oxs4V9z+gTtPwIk3p2N8=
+golang.org/x/sys v0.0.0-20200720211630-cb9d2d5c5666/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.2 h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=
