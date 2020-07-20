@@ -34,11 +34,11 @@ var fieldsVRRPv2 = []string{
 	"DstIP",
 }
 
-func (a VRRPv2) CSVHeader() []string {
+func (a *VRRPv2) CSVHeader() []string {
 	return filter(fieldsVRRPv2)
 }
 
-func (a VRRPv2) CSVRecord() []string {
+func (a *VRRPv2) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -59,12 +59,12 @@ func (a VRRPv2) CSVRecord() []string {
 	})
 }
 
-func (a VRRPv2) Time() string {
+func (a *VRRPv2) Time() string {
 	return a.Timestamp
 }
 
-func (a VRRPv2) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *VRRPv2) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var vrrp2Metric = prometheus.NewCounterVec(
@@ -79,7 +79,7 @@ func init() {
 	prometheus.MustRegister(vrrp2Metric)
 }
 
-func (a VRRPv2) Inc() {
+func (a *VRRPv2) Inc() {
 	vrrp2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -87,14 +87,14 @@ func (a *VRRPv2) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a VRRPv2) Src() string {
+func (a *VRRPv2) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a VRRPv2) Dst() string {
+func (a *VRRPv2) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

@@ -41,11 +41,11 @@ var fieldsIPv4 = []string{
 	"PayloadSize",    // int32
 }
 
-func (i IPv4) CSVHeader() []string {
+func (i *IPv4) CSVHeader() []string {
 	return filter(fieldsIPv4)
 }
 
-func (i IPv4) CSVRecord() []string {
+func (i *IPv4) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
 		opts = append(opts, o.ToString())
@@ -71,7 +71,7 @@ func (i IPv4) CSVRecord() []string {
 	})
 }
 
-func (i IPv4) Time() string {
+func (i *IPv4) Time() string {
 	return i.Timestamp
 }
 
@@ -89,8 +89,8 @@ func (i IPv4Option) ToString() string {
 	return b.String()
 }
 
-func (a IPv4) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *IPv4) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var (
@@ -135,7 +135,7 @@ var fieldsIPv4Metrics = []string{
 	"DstIP",      // string
 }
 
-func (i IPv4) metricValues() []string {
+func (i *IPv4) metricValues() []string {
 	return []string{
 		formatInt32(i.Version), // int32
 		formatInt32(i.IHL),     // int32
@@ -157,26 +157,26 @@ func init() {
 	prometheus.MustRegister(ip4PayloadSize)
 }
 
-func (a IPv4) Inc() {
-	ip4Metric.WithLabelValues(a.metricValues()...).Inc()
-	ip4PayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
-	ip4PayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
+func (i *IPv4) Inc() {
+	ip4Metric.WithLabelValues(i.metricValues()...).Inc()
+	ip4PayloadEntropy.WithLabelValues().Observe(i.PayloadEntropy)
+	ip4PayloadSize.WithLabelValues().Observe(float64(i.PayloadSize))
 }
 
-func (a *IPv4) SetPacketContext(ctx *PacketContext) {
+func (i *IPv4) SetPacketContext(ctx *PacketContext) {
 
 	// create new context and only add information that is
 	// not yet present on the audit record type
-	a.Context = &PacketContext{
+	i.Context = &PacketContext{
 		SrcPort: ctx.SrcPort,
 		DstPort: ctx.DstPort,
 	}
 }
 
-func (a IPv4) Src() string {
-	return a.SrcIP
+func (i *IPv4) Src() string {
+	return i.SrcIP
 }
 
-func (a IPv4) Dst() string {
-	return a.DstIP
+func (i *IPv4) Dst() string {
+	return i.DstIP
 }

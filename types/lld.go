@@ -28,11 +28,11 @@ var fieldsLLD = []string{
 	"Values",    // []*LinkLayerDiscoveryValue
 }
 
-func (l LinkLayerDiscovery) CSVHeader() []string {
+func (l *LinkLayerDiscovery) CSVHeader() []string {
 	return filter(fieldsLLD)
 }
 
-func (l LinkLayerDiscovery) CSVRecord() []string {
+func (l *LinkLayerDiscovery) CSVRecord() []string {
 	values := make([]string, len(l.Values))
 	for i, v := range l.Values {
 		values[i] = v.ToString()
@@ -46,7 +46,7 @@ func (l LinkLayerDiscovery) CSVRecord() []string {
 	})
 }
 
-func (l LinkLayerDiscovery) Time() string {
+func (l *LinkLayerDiscovery) Time() string {
 	return l.Timestamp
 }
 
@@ -58,8 +58,8 @@ func (l LLDPPortID) ToString() string {
 	return join(formatInt32(l.Subtype), hex.EncodeToString(l.ID))
 }
 
-func (a LinkLayerDiscovery) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (l *LinkLayerDiscovery) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(l)
 }
 
 var lldMetric = prometheus.NewCounterVec(
@@ -74,17 +74,17 @@ func init() {
 	prometheus.MustRegister(lldMetric)
 }
 
-func (a LinkLayerDiscovery) Inc() {
-	lldMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (l *LinkLayerDiscovery) Inc() {
+	lldMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()
 }
 
-func (a *LinkLayerDiscovery) SetPacketContext(ctx *PacketContext) {}
+func (l *LinkLayerDiscovery) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a LinkLayerDiscovery) Src() string {
+func (l *LinkLayerDiscovery) Src() string {
 	return ""
 }
 
-func (a LinkLayerDiscovery) Dst() string {
+func (l *LinkLayerDiscovery) Dst() string {
 	return ""
 }

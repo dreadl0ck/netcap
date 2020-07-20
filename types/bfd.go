@@ -45,60 +45,60 @@ var fieldsBFD = []string{
 	"DstPort",
 }
 
-func (a BFD) CSVHeader() []string {
+func (b *BFD) CSVHeader() []string {
 	return filter(fieldsBFD)
 }
 
-func (a BFD) CSVRecord() []string {
+func (b *BFD) CSVRecord() []string {
 	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
+	if b.Context == nil {
+		b.Context = &PacketContext{}
 	}
 	return filter([]string{
-		formatTimestamp(a.Timestamp),
-		formatInt32(a.Version),                        // int32
-		formatInt32(a.Diagnostic),                     // int32
-		formatInt32(a.State),                          // int32
-		strconv.FormatBool(a.Poll),                    // bool
-		strconv.FormatBool(a.Final),                   // bool
-		strconv.FormatBool(a.ControlPlaneIndependent), // bool
-		strconv.FormatBool(a.AuthPresent),             // bool
-		strconv.FormatBool(a.Demand),                  // bool
-		strconv.FormatBool(a.Multipoint),              // bool
-		formatInt32(a.DetectMultiplier),               // int32
-		formatInt32(a.MyDiscriminator),                // int32
-		formatInt32(a.YourDiscriminator),              // int32
-		formatInt32(a.DesiredMinTxInterval),           // int32
-		formatInt32(a.RequiredMinRxInterval),          // int32
-		formatInt32(a.RequiredMinEchoRxInterval),      // int32
-		a.AuthHeader.GetString(),                      // *BFDAuthHeader
-		a.Context.SrcIP,
-		a.Context.DstIP,
-		a.Context.SrcPort,
-		a.Context.DstPort,
+		formatTimestamp(b.Timestamp),
+		formatInt32(b.Version),                        // int32
+		formatInt32(b.Diagnostic),                     // int32
+		formatInt32(b.State),                          // int32
+		strconv.FormatBool(b.Poll),                    // bool
+		strconv.FormatBool(b.Final),                   // bool
+		strconv.FormatBool(b.ControlPlaneIndependent), // bool
+		strconv.FormatBool(b.AuthPresent),             // bool
+		strconv.FormatBool(b.Demand),                  // bool
+		strconv.FormatBool(b.Multipoint),              // bool
+		formatInt32(b.DetectMultiplier),               // int32
+		formatInt32(b.MyDiscriminator),                // int32
+		formatInt32(b.YourDiscriminator),              // int32
+		formatInt32(b.DesiredMinTxInterval),           // int32
+		formatInt32(b.RequiredMinRxInterval),          // int32
+		formatInt32(b.RequiredMinEchoRxInterval),      // int32
+		b.AuthHeader.GetString(),                      // *BFDAuthHeader
+		b.Context.SrcIP,
+		b.Context.DstIP,
+		b.Context.SrcPort,
+		b.Context.DstPort,
 	})
 }
 
-func (a BFD) Time() string {
-	return a.Timestamp
+func (b *BFD) Time() string {
+	return b.Timestamp
 }
 
-func (a BFDAuthHeader) GetString() string {
+func (bah BFDAuthHeader) GetString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
-	b.WriteString(formatInt32(int32(a.AuthType)))
+	b.WriteString(formatInt32(int32(bah.AuthType)))
 	b.WriteString(Separator)
-	b.WriteString(formatInt32(int32(a.KeyID)))
+	b.WriteString(formatInt32(int32(bah.KeyID)))
 	b.WriteString(Separator)
-	b.WriteString(formatInt32(int32(a.SequenceNumber)))
+	b.WriteString(formatInt32(int32(bah.SequenceNumber)))
 	b.WriteString(Separator)
-	b.WriteString(hex.EncodeToString(a.Data))
+	b.WriteString(hex.EncodeToString(bah.Data))
 	b.WriteString(End)
 	return b.String()
 }
 
-func (a BFD) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (b *BFD) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(b)
 }
 
 var bfdMetric = prometheus.NewCounterVec(
@@ -113,24 +113,24 @@ func init() {
 	prometheus.MustRegister(bfdMetric)
 }
 
-func (a BFD) Inc() {
-	bfdMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (b *BFD) Inc() {
+	bfdMetric.WithLabelValues(b.CSVRecord()[1:]...).Inc()
 }
 
-func (a *BFD) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (b *BFD) SetPacketContext(ctx *PacketContext) {
+	b.Context = ctx
 }
 
-func (a BFD) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (b *BFD) Src() string {
+	if b.Context != nil {
+		return b.Context.SrcIP
 	}
 	return ""
 }
 
-func (a BFD) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (b *BFD) Dst() string {
+	if b.Context != nil {
+		return b.Context.DstIP
 	}
 	return ""
 }

@@ -29,11 +29,11 @@ var fieldsEAP = []string{
 	"TypeData", // []byte
 }
 
-func (a EAP) CSVHeader() []string {
+func (a *EAP) CSVHeader() []string {
 	return filter(fieldsEAP)
 }
 
-func (a EAP) CSVRecord() []string {
+func (a *EAP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.Code),            // int32
@@ -44,12 +44,12 @@ func (a EAP) CSVRecord() []string {
 	})
 }
 
-func (a EAP) Time() string {
+func (a *EAP) Time() string {
 	return a.Timestamp
 }
 
-func (a EAP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *EAP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var eapMetric = prometheus.NewCounterVec(
@@ -64,17 +64,17 @@ func init() {
 	prometheus.MustRegister(eapMetric)
 }
 
-func (a EAP) Inc() {
+func (a *EAP) Inc() {
 	eapMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *EAP) SetPacketContext(ctx *PacketContext) {}
 
 // TODO: return Mac addr
-func (a EAP) Src() string {
+func (a *EAP) Src() string {
 	return ""
 }
 
-func (a EAP) Dst() string {
+func (a *EAP) Dst() string {
 	return ""
 }

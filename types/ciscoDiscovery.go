@@ -28,26 +28,26 @@ var fieldsCiscoDiscovery = []string{
 	"Values",   // []*CiscoDiscoveryValue
 }
 
-func (a CiscoDiscovery) CSVHeader() []string {
+func (cd *CiscoDiscovery) CSVHeader() []string {
 	return filter(fieldsCiscoDiscovery)
 }
 
-func (a CiscoDiscovery) CSVRecord() []string {
+func (cd *CiscoDiscovery) CSVRecord() []string {
 	var vals []string
-	for _, v := range a.Values {
+	for _, v := range cd.Values {
 		vals = append(vals, v.ToString())
 	}
 	return filter([]string{
-		formatTimestamp(a.Timestamp),
-		formatInt32(a.Version),  // int32
-		formatInt32(a.TTL),      // int32
-		formatInt32(a.Checksum), // int32
-		join(vals...),           // []*CiscoDiscoveryValue
+		formatTimestamp(cd.Timestamp),
+		formatInt32(cd.Version),  // int32
+		formatInt32(cd.TTL),      // int32
+		formatInt32(cd.Checksum), // int32
+		join(vals...),            // []*CiscoDiscoveryValue
 	})
 }
 
-func (a CiscoDiscovery) Time() string {
-	return a.Timestamp
+func (cd *CiscoDiscovery) Time() string {
+	return cd.Timestamp
 }
 
 func (v CiscoDiscoveryValue) ToString() string {
@@ -63,8 +63,8 @@ func (v CiscoDiscoveryValue) ToString() string {
 	return b.String()
 }
 
-func (a CiscoDiscovery) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (cd *CiscoDiscovery) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(cd)
 }
 
 var ciscoDiscoveryMetric = prometheus.NewCounterVec(
@@ -79,17 +79,17 @@ func init() {
 	prometheus.MustRegister(ciscoDiscoveryMetric)
 }
 
-func (a CiscoDiscovery) Inc() {
-	ciscoDiscoveryMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (cd *CiscoDiscovery) Inc() {
+	ciscoDiscoveryMetric.WithLabelValues(cd.CSVRecord()[1:]...).Inc()
 }
 
 func (a *CiscoDiscovery) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a CiscoDiscovery) Src() string {
+func (cd *CiscoDiscovery) Src() string {
 	return ""
 }
 
-func (a CiscoDiscovery) Dst() string {
+func (cd *CiscoDiscovery) Dst() string {
 	return ""
 }

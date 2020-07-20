@@ -26,22 +26,22 @@ var fieldsSSH = []string{
 	"Notes",
 }
 
-func (a SSH) CSVHeader() []string {
+func (a *SSH) CSVHeader() []string {
 	return filter(fieldsSSH)
 }
 
-func (a SSH) CSVRecord() []string {
+func (a *SSH) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 	})
 }
 
-func (a SSH) Time() string {
+func (a *SSH) Time() string {
 	return a.Timestamp
 }
 
-func (a SSH) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *SSH) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var sshMetric = prometheus.NewCounterVec(
@@ -56,18 +56,18 @@ func init() {
 	prometheus.MustRegister(sshMetric)
 }
 
-func (a SSH) Inc() {
+func (a *SSH) Inc() {
 	sshMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *SSH) SetPacketContext(ctx *PacketContext) {}
 
 // TODO: preserve source and destination mac adresses for SSH and return them here
-func (a SSH) Src() string {
+func (a *SSH) Src() string {
 	return ""
 }
 
 // TODO: preserve source and destination mac adresses for SSH and return them here
-func (a SSH) Dst() string {
+func (a *SSH) Dst() string {
 	return ""
 }

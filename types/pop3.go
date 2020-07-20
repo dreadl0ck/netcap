@@ -30,11 +30,11 @@ var fieldsPOP3 = []string{
 	"NumMails",  // []*Mail
 }
 
-func (a POP3) CSVHeader() []string {
+func (a *POP3) CSVHeader() []string {
 	return filter(fieldsPOP3)
 }
 
-func (a POP3) CSVRecord() []string {
+func (a *POP3) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		a.ClientIP,                 // string
@@ -46,12 +46,12 @@ func (a POP3) CSVRecord() []string {
 	})
 }
 
-func (a POP3) Time() string {
+func (a *POP3) Time() string {
 	return a.Timestamp
 }
 
-func (a POP3) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *POP3) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var pop3Metric = prometheus.NewCounterVec(
@@ -66,16 +66,16 @@ func init() {
 	prometheus.MustRegister(pop3Metric)
 }
 
-func (a POP3) Inc() {
+func (a *POP3) Inc() {
 	pop3Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *POP3) SetPacketContext(ctx *PacketContext) {}
 
-func (a POP3) Src() string {
+func (a *POP3) Src() string {
 	return a.ClientIP
 }
 
-func (a POP3) Dst() string {
+func (a *POP3) Dst() string {
 	return a.ServerIP
 }

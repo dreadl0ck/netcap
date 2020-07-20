@@ -36,11 +36,11 @@ var fieldsGeneve = []string{
 	"DstPort",
 }
 
-func (i Geneve) CSVHeader() []string {
+func (i *Geneve) CSVHeader() []string {
 	return filter(fieldsGeneve)
 }
 
-func (i Geneve) CSVRecord() []string {
+func (i *Geneve) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
 		opts = append(opts, o.ToString())
@@ -65,7 +65,7 @@ func (i Geneve) CSVRecord() []string {
 	})
 }
 
-func (i Geneve) Time() string {
+func (i *Geneve) Time() string {
 	return i.Timestamp
 }
 
@@ -87,8 +87,8 @@ func (i GeneveOption) ToString() string {
 	return b.String()
 }
 
-func (a Geneve) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *Geneve) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var geneveMetric = prometheus.NewCounterVec(
@@ -103,24 +103,24 @@ func init() {
 	prometheus.MustRegister(geneveMetric)
 }
 
-func (a Geneve) Inc() {
-	geneveMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (i *Geneve) Inc() {
+	geneveMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
-func (a *Geneve) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (i *Geneve) SetPacketContext(ctx *PacketContext) {
+	i.Context = ctx
 }
 
-func (a Geneve) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (i *Geneve) Src() string {
+	if i.Context != nil {
+		return i.Context.SrcIP
 	}
 	return ""
 }
 
-func (a Geneve) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (i *Geneve) Dst() string {
+	if i.Context != nil {
+		return i.Context.DstIP
 	}
 	return ""
 }

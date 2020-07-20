@@ -36,11 +36,11 @@ var fieldsLCM = []string{
 	"DstPort",
 }
 
-func (a LCM) CSVHeader() []string {
+func (a *LCM) CSVHeader() []string {
 	return filter(fieldsLCM)
 }
 
-func (a LCM) CSVRecord() []string {
+func (a *LCM) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -62,12 +62,12 @@ func (a LCM) CSVRecord() []string {
 	})
 }
 
-func (a LCM) Time() string {
+func (a *LCM) Time() string {
 	return a.Timestamp
 }
 
-func (a LCM) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *LCM) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var lcmMetric = prometheus.NewCounterVec(
@@ -82,7 +82,7 @@ func init() {
 	prometheus.MustRegister(lcmMetric)
 }
 
-func (a LCM) Inc() {
+func (a *LCM) Inc() {
 	lcmMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -90,14 +90,14 @@ func (a *LCM) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a LCM) Src() string {
+func (a *LCM) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a LCM) Dst() string {
+func (a *LCM) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

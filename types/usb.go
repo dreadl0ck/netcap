@@ -44,11 +44,11 @@ var fieldsUSB = []string{
 	"Payload",
 }
 
-func (u USB) CSVHeader() []string {
+func (u *USB) CSVHeader() []string {
 	return filter(fieldsUSB)
 }
 
-func (u USB) CSVRecord() []string {
+func (u *USB) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(u.Timestamp), // string
 		formatUint64(u.ID),
@@ -73,12 +73,12 @@ func (u USB) CSVRecord() []string {
 	})
 }
 
-func (f USB) Time() string {
-	return f.Timestamp
+func (u *USB) Time() string {
+	return u.Timestamp
 }
 
-func (f USB) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&f)
+func (u *USB) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(u)
 }
 
 var usbMetric = prometheus.NewCounterVec(
@@ -93,18 +93,18 @@ func init() {
 	prometheus.MustRegister(usbMetric)
 }
 
-func (a USB) Inc() {
-	usbMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (u *USB) Inc() {
+	usbMetric.WithLabelValues(u.CSVRecord()[1:]...).Inc()
 }
 
-func (a *USB) SetPacketContext(ctx *PacketContext) {}
+func (u *USB) SetPacketContext(ctx *PacketContext) {}
 
 // TODO return source DeviceAddress?
-func (a USB) Src() string {
+func (u *USB) Src() string {
 	return ""
 }
 
 // TODO return destination DeviceAddress?
-func (a USB) Dst() string {
+func (u *USB) Dst() string {
 	return ""
 }

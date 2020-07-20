@@ -34,11 +34,11 @@ var fieldsDHCPv6 = []string{
 	"DstPort",
 }
 
-func (d DHCPv6) CSVHeader() []string {
+func (d *DHCPv6) CSVHeader() []string {
 	return filter(fieldsDHCPv6)
 }
 
-func (d DHCPv6) CSVRecord() []string {
+func (d *DHCPv6) CSVRecord() []string {
 	var opts []string
 	for _, o := range d.Options {
 		opts = append(opts, o.ToString())
@@ -62,7 +62,7 @@ func (d DHCPv6) CSVRecord() []string {
 	})
 }
 
-func (d DHCPv6) Time() string {
+func (d *DHCPv6) Time() string {
 	return d.Timestamp
 }
 
@@ -78,8 +78,8 @@ func (d DHCPv6Option) ToString() string {
 	return b.String()
 }
 
-func (a DHCPv6) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (d *DHCPv6) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(d)
 }
 
 var dhcp6Metric = prometheus.NewCounterVec(
@@ -94,24 +94,24 @@ func init() {
 	prometheus.MustRegister(dhcp6Metric)
 }
 
-func (a DHCPv6) Inc() {
-	dhcp6Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (d *DHCPv6) Inc() {
+	dhcp6Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
-func (a *DHCPv6) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (d *DHCPv6) SetPacketContext(ctx *PacketContext) {
+	d.Context = ctx
 }
 
-func (a DHCPv6) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (d *DHCPv6) Src() string {
+	if d.Context != nil {
+		return d.Context.SrcIP
 	}
 	return ""
 }
 
-func (a DHCPv6) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (d *DHCPv6) Dst() string {
+	if d.Context != nil {
+		return d.Context.DstIP
 	}
 	return ""
 }

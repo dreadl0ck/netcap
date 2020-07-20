@@ -39,11 +39,11 @@ var fieldsFlow = []string{
 	"TimestampLast",
 }
 
-func (f Flow) CSVHeader() []string {
+func (f *Flow) CSVHeader() []string {
 	return filter(fieldsFlow)
 }
 
-func (f Flow) CSVRecord() []string {
+func (f *Flow) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(f.TimestampFirst),
 		f.LinkProto,
@@ -65,12 +65,12 @@ func (f Flow) CSVRecord() []string {
 	})
 }
 
-func (f Flow) Time() string {
+func (f *Flow) Time() string {
 	return f.TimestampFirst
 }
 
-func (a Flow) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (f *Flow) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(f)
 }
 
 var (
@@ -128,7 +128,7 @@ var fieldsFlowMetrics = []string{
 	"DstPort",
 }
 
-func (f Flow) metricValues() []string {
+func (f *Flow) metricValues() []string {
 	return []string{
 		f.LinkProto,
 		f.NetworkProto,
@@ -151,20 +151,20 @@ func init() {
 	prometheus.MustRegister(flowDuration)
 }
 
-func (a Flow) Inc() {
-	flowMetric.WithLabelValues(a.metricValues()...).Inc()
-	flowTotalSize.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.TotalSize))
-	flowAppPayloadSize.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.AppPayloadSize))
-	flowNumPackets.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.NumPackets))
-	flowDuration.WithLabelValues(a.SrcMAC, a.DstMAC).Observe(float64(a.Duration))
+func (f *Flow) Inc() {
+	flowMetric.WithLabelValues(f.metricValues()...).Inc()
+	flowTotalSize.WithLabelValues(f.SrcMAC, f.DstMAC).Observe(float64(f.TotalSize))
+	flowAppPayloadSize.WithLabelValues(f.SrcMAC, f.DstMAC).Observe(float64(f.AppPayloadSize))
+	flowNumPackets.WithLabelValues(f.SrcMAC, f.DstMAC).Observe(float64(f.NumPackets))
+	flowDuration.WithLabelValues(f.SrcMAC, f.DstMAC).Observe(float64(f.Duration))
 }
 
-func (a Flow) SetPacketContext(ctx *PacketContext) {}
+func (f *Flow) SetPacketContext(ctx *PacketContext) {}
 
-func (a Flow) Src() string {
-	return a.SrcIP
+func (f *Flow) Src() string {
+	return f.SrcIP
 }
 
-func (a Flow) Dst() string {
-	return a.DstIP
+func (f *Flow) Dst() string {
+	return f.DstIP
 }

@@ -27,11 +27,11 @@ var fieldsFDDI = []string{
 	"DstMAC",       //  string
 }
 
-func (a FDDI) CSVHeader() []string {
+func (a *FDDI) CSVHeader() []string {
 	return filter(fieldsFDDI)
 }
 
-func (a FDDI) CSVRecord() []string {
+func (a *FDDI) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.FrameControl), //  int32
@@ -41,12 +41,12 @@ func (a FDDI) CSVRecord() []string {
 	})
 }
 
-func (a FDDI) Time() string {
+func (a *FDDI) Time() string {
 	return a.Timestamp
 }
 
-func (a FDDI) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *FDDI) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var fddiMetric = prometheus.NewCounterVec(
@@ -61,16 +61,16 @@ func init() {
 	prometheus.MustRegister(fddiMetric)
 }
 
-func (a FDDI) Inc() {
+func (a *FDDI) Inc() {
 	fddiMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *FDDI) SetPacketContext(ctx *PacketContext) {}
 
-func (a FDDI) Src() string {
+func (a *FDDI) Src() string {
 	return a.SrcMAC
 }
 
-func (a FDDI) Dst() string {
+func (a *FDDI) Dst() string {
 	return a.DstMAC
 }

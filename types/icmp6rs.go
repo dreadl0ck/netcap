@@ -27,11 +27,11 @@ var fieldsICMPv6RouterSolicitation = []string{
 	"DstIP",
 }
 
-func (i ICMPv6RouterSolicitation) CSVHeader() []string {
+func (i *ICMPv6RouterSolicitation) CSVHeader() []string {
 	return filter(fieldsICMPv6RouterSolicitation)
 }
 
-func (i ICMPv6RouterSolicitation) CSVRecord() []string {
+func (i *ICMPv6RouterSolicitation) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
 		opts = append(opts, o.ToString())
@@ -48,7 +48,7 @@ func (i ICMPv6RouterSolicitation) CSVRecord() []string {
 	})
 }
 
-func (i ICMPv6RouterSolicitation) Time() string {
+func (i *ICMPv6RouterSolicitation) Time() string {
 	return i.Timestamp
 }
 
@@ -64,8 +64,8 @@ func (o ICMPv6Option) ToString() string {
 	return b.String()
 }
 
-func (a ICMPv6RouterSolicitation) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *ICMPv6RouterSolicitation) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var icmp6rsMetric = prometheus.NewCounterVec(
@@ -80,24 +80,24 @@ func init() {
 	prometheus.MustRegister(icmp6rsMetric)
 }
 
-func (a ICMPv6RouterSolicitation) Inc() {
-	icmp6rsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (i *ICMPv6RouterSolicitation) Inc() {
+	icmp6rsMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
-func (a *ICMPv6RouterSolicitation) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (i *ICMPv6RouterSolicitation) SetPacketContext(ctx *PacketContext) {
+	i.Context = ctx
 }
 
-func (a ICMPv6RouterSolicitation) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (i *ICMPv6RouterSolicitation) Src() string {
+	if i.Context != nil {
+		return i.Context.SrcIP
 	}
 	return ""
 }
 
-func (a ICMPv6RouterSolicitation) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (i *ICMPv6RouterSolicitation) Dst() string {
+	if i.Context != nil {
+		return i.Context.DstIP
 	}
 	return ""
 }

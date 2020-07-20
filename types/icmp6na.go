@@ -28,11 +28,11 @@ var fieldsICMPv6NeighborAdvertisement = []string{
 	"DstIP",
 }
 
-func (i ICMPv6NeighborAdvertisement) CSVHeader() []string {
+func (i *ICMPv6NeighborAdvertisement) CSVHeader() []string {
 	return filter(fieldsICMPv6NeighborAdvertisement)
 }
 
-func (i ICMPv6NeighborAdvertisement) CSVRecord() []string {
+func (i *ICMPv6NeighborAdvertisement) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
 		opts = append(opts, o.ToString())
@@ -51,12 +51,12 @@ func (i ICMPv6NeighborAdvertisement) CSVRecord() []string {
 	})
 }
 
-func (i ICMPv6NeighborAdvertisement) Time() string {
+func (i *ICMPv6NeighborAdvertisement) Time() string {
 	return i.Timestamp
 }
 
-func (a ICMPv6NeighborAdvertisement) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *ICMPv6NeighborAdvertisement) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var icmp6naMetric = prometheus.NewCounterVec(
@@ -71,24 +71,24 @@ func init() {
 	prometheus.MustRegister(icmp6naMetric)
 }
 
-func (a ICMPv6NeighborAdvertisement) Inc() {
-	icmp6naMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (i *ICMPv6NeighborAdvertisement) Inc() {
+	icmp6naMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
-func (a *ICMPv6NeighborAdvertisement) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (i *ICMPv6NeighborAdvertisement) SetPacketContext(ctx *PacketContext) {
+	i.Context = ctx
 }
 
-func (a ICMPv6NeighborAdvertisement) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (i *ICMPv6NeighborAdvertisement) Src() string {
+	if i.Context != nil {
+		return i.Context.SrcIP
 	}
 	return ""
 }
 
-func (a ICMPv6NeighborAdvertisement) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (i *ICMPv6NeighborAdvertisement) Dst() string {
+	if i.Context != nil {
+		return i.Context.DstIP
 	}
 	return ""
 }

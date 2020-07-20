@@ -49,11 +49,11 @@ var fieldsTCP = []string{
 	"DstIP",
 }
 
-func (t TCP) CSVHeader() []string {
+func (t *TCP) CSVHeader() []string {
 	return filter(fieldsTCP)
 }
 
-func (t TCP) CSVRecord() []string {
+func (t *TCP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if t.Context == nil {
 		t.Context = &PacketContext{}
@@ -87,7 +87,7 @@ func (t TCP) CSVRecord() []string {
 	})
 }
 
-func (t TCP) GetOptionString() string {
+func (t *TCP) GetOptionString() string {
 	var b strings.Builder
 	for _, o := range t.Options {
 		b.WriteString(Begin)
@@ -101,12 +101,12 @@ func (t TCP) GetOptionString() string {
 	return b.String()
 }
 
-func (f TCP) Time() string {
-	return f.Timestamp
+func (t *TCP) Time() string {
+	return t.Timestamp
 }
 
-func (u TCP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (t *TCP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(t)
 }
 
 var (
@@ -158,7 +158,7 @@ var fieldsTCPMetrics = []string{
 	// "Options",
 }
 
-func (t TCP) metricValues() []string {
+func (t *TCP) metricValues() []string {
 	return []string{
 		formatInt32(t.SrcPort), // int32
 		formatInt32(t.DstPort), // int32
@@ -187,32 +187,32 @@ func init() {
 	prometheus.MustRegister(tcpPayloadSize)
 }
 
-func (a TCP) Inc() {
-	tcpMetric.WithLabelValues(a.metricValues()...).Inc()
-	tcpPayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
-	tcpPayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
+func (t *TCP) Inc() {
+	tcpMetric.WithLabelValues(t.metricValues()...).Inc()
+	tcpPayloadEntropy.WithLabelValues().Observe(t.PayloadEntropy)
+	tcpPayloadSize.WithLabelValues().Observe(float64(t.PayloadSize))
 }
 
-func (a *TCP) SetPacketContext(ctx *PacketContext) {
+func (t *TCP) SetPacketContext(ctx *PacketContext) {
 
 	// create new context and only add information that is
 	// not yet present on the audit record type
-	a.Context = &PacketContext{
+	t.Context = &PacketContext{
 		SrcIP: ctx.SrcIP,
 		DstIP: ctx.DstIP,
 	}
 }
 
-func (a TCP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (t *TCP) Src() string {
+	if t.Context != nil {
+		return t.Context.SrcIP
 	}
 	return ""
 }
 
-func (a TCP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (t *TCP) Dst() string {
+	if t.Context != nil {
+		return t.Context.DstIP
 	}
 	return ""
 }

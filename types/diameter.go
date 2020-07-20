@@ -35,42 +35,42 @@ var fieldsDiameter = []string{
 	"DstPort",
 }
 
-func (a Diameter) CSVHeader() []string {
+func (d *Diameter) CSVHeader() []string {
 	return filter(fieldsDiameter)
 }
 
-func (a Diameter) CSVRecord() []string {
+func (d *Diameter) CSVRecord() []string {
 	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
+	if d.Context == nil {
+		d.Context = &PacketContext{}
 	}
 	var avps []string
-	for _, a := range a.AVPs {
+	for _, a := range d.AVPs {
 		avps = append(avps, a.String())
 	}
 	return filter([]string{
-		formatTimestamp(a.Timestamp),
-		formatUint32(a.Version),       //       uint32
-		formatUint32(a.Flags),         //         uint32
-		formatUint32(a.MessageLen),    //    uint32
-		formatUint32(a.CommandCode),   //   uint32
-		formatUint32(a.ApplicationID), // uint32
-		formatUint32(a.HopByHopID),    //    uint32
-		formatUint32(a.EndToEndID),    //    uint32
+		formatTimestamp(d.Timestamp),
+		formatUint32(d.Version),       //       uint32
+		formatUint32(d.Flags),         //         uint32
+		formatUint32(d.MessageLen),    //    uint32
+		formatUint32(d.CommandCode),   //   uint32
+		formatUint32(d.ApplicationID), // uint32
+		formatUint32(d.HopByHopID),    //    uint32
+		formatUint32(d.EndToEndID),    //    uint32
 		join(avps...),                 //     []*AVP
-		a.Context.SrcIP,
-		a.Context.DstIP,
-		a.Context.SrcPort,
-		a.Context.DstPort,
+		d.Context.SrcIP,
+		d.Context.DstIP,
+		d.Context.SrcPort,
+		d.Context.DstPort,
 	})
 }
 
-func (a Diameter) Time() string {
-	return a.Timestamp
+func (d *Diameter) Time() string {
+	return d.Timestamp
 }
 
-func (a Diameter) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (d *Diameter) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(d)
 }
 
 var diameterMetric = prometheus.NewCounterVec(
@@ -85,24 +85,24 @@ func init() {
 	prometheus.MustRegister(diameterMetric)
 }
 
-func (a Diameter) Inc() {
-	diameterMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (d *Diameter) Inc() {
+	diameterMetric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
-func (a *Diameter) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (d *Diameter) SetPacketContext(ctx *PacketContext) {
+	d.Context = ctx
 }
 
-func (a Diameter) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (d *Diameter) Src() string {
+	if d.Context != nil {
+		return d.Context.SrcIP
 	}
 	return ""
 }
 
-func (a Diameter) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (d *Diameter) Dst() string {
+	if d.Context != nil {
+		return d.Context.DstIP
 	}
 	return ""
 }

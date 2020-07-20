@@ -32,11 +32,11 @@ var fieldsSMTP = []string{
 	"DstPort",
 }
 
-func (a SMTP) CSVHeader() []string {
+func (a *SMTP) CSVHeader() []string {
 	return filter(fieldsSMTP)
 }
 
-func (a SMTP) CSVRecord() []string {
+func (a *SMTP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -58,7 +58,7 @@ func (a SMTP) CSVRecord() []string {
 	})
 }
 
-func (a SMTP) Time() string {
+func (a *SMTP) Time() string {
 	return a.Timestamp
 }
 
@@ -82,8 +82,8 @@ func (a SMTPResponse) GetString() string {
 	return b.String()
 }
 
-func (a SMTP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *SMTP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var smtpMetric = prometheus.NewCounterVec(
@@ -98,7 +98,7 @@ func init() {
 	prometheus.MustRegister(smtpMetric)
 }
 
-func (a SMTP) Inc() {
+func (a *SMTP) Inc() {
 	smtpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -106,14 +106,14 @@ func (a *SMTP) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a SMTP) Src() string {
+func (a *SMTP) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a SMTP) Dst() string {
+func (a *SMTP) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

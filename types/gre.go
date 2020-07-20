@@ -45,11 +45,11 @@ var fieldsGRE = []string{
 	"DstPort",
 }
 
-func (a GRE) CSVHeader() []string {
+func (a *GRE) CSVHeader() []string {
 	return filter(fieldsGRE)
 }
 
-func (a GRE) CSVRecord() []string {
+func (a *GRE) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -79,7 +79,7 @@ func (a GRE) CSVRecord() []string {
 	})
 }
 
-func (a GRE) Time() string {
+func (a *GRE) Time() string {
 	return a.Timestamp
 }
 
@@ -106,8 +106,8 @@ func (r *GRERouting) GetString() string {
 	return b.String()
 }
 
-func (a GRE) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *GRE) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var greMetric = prometheus.NewCounterVec(
@@ -122,7 +122,7 @@ func init() {
 	prometheus.MustRegister(greMetric)
 }
 
-func (a GRE) Inc() {
+func (a *GRE) Inc() {
 	greMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -130,14 +130,14 @@ func (a *GRE) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a GRE) Src() string {
+func (a *GRE) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a GRE) Dst() string {
+func (a *GRE) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

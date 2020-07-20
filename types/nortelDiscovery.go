@@ -30,11 +30,11 @@ var fieldsNortelDiscovery = []string{
 	"NumLinks",  // int32
 }
 
-func (a NortelDiscovery) CSVHeader() []string {
+func (a *NortelDiscovery) CSVHeader() []string {
 	return filter(fieldsNortelDiscovery)
 }
 
-func (a NortelDiscovery) CSVRecord() []string {
+func (a *NortelDiscovery) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		a.IPAddress,                     // string
@@ -46,12 +46,12 @@ func (a NortelDiscovery) CSVRecord() []string {
 	})
 }
 
-func (a NortelDiscovery) Time() string {
+func (a *NortelDiscovery) Time() string {
 	return a.Timestamp
 }
 
-func (a NortelDiscovery) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *NortelDiscovery) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var nortelDiscoveryMetric = prometheus.NewCounterVec(
@@ -66,17 +66,17 @@ func init() {
 	prometheus.MustRegister(nortelDiscoveryMetric)
 }
 
-func (a NortelDiscovery) Inc() {
+func (a *NortelDiscovery) Inc() {
 	nortelDiscoveryMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *NortelDiscovery) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a NortelDiscovery) Src() string {
+func (a *NortelDiscovery) Src() string {
 	return ""
 }
 
-func (a NortelDiscovery) Dst() string {
+func (a *NortelDiscovery) Dst() string {
 	return ""
 }

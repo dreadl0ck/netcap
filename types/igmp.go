@@ -39,11 +39,11 @@ var fieldsIGMP = []string{
 	"DstIP",
 }
 
-func (i IGMP) CSVHeader() []string {
+func (i *IGMP) CSVHeader() []string {
 	return filter(fieldsIGMP)
 }
 
-func (i IGMP) CSVRecord() []string {
+func (i *IGMP) CSVRecord() []string {
 	var records []string
 	for _, r := range i.GroupRecords {
 		records = append(records, r.ToString())
@@ -71,7 +71,7 @@ func (i IGMP) CSVRecord() []string {
 	})
 }
 
-func (i IGMP) Time() string {
+func (i *IGMP) Time() string {
 	return i.Timestamp
 }
 
@@ -93,8 +93,8 @@ func (i IGMPv3GroupRecord) ToString() string {
 	return b.String()
 }
 
-func (a IGMP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *IGMP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var igmpMetric = prometheus.NewCounterVec(
@@ -109,24 +109,24 @@ func init() {
 	prometheus.MustRegister(igmpMetric)
 }
 
-func (a IGMP) Inc() {
-	igmpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (i *IGMP) Inc() {
+	igmpMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
-func (a *IGMP) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (i *IGMP) SetPacketContext(ctx *PacketContext) {
+	i.Context = ctx
 }
 
-func (a IGMP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (i *IGMP) Src() string {
+	if i.Context != nil {
+		return i.Context.SrcIP
 	}
 	return ""
 }
 
-func (a IGMP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (i *IGMP) Dst() string {
+	if i.Context != nil {
+		return i.Context.DstIP
 	}
 	return ""
 }

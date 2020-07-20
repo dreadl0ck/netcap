@@ -26,11 +26,11 @@ var fieldsEAPOL = []string{
 	"Length",  //  int32
 }
 
-func (a EAPOL) CSVHeader() []string {
+func (a *EAPOL) CSVHeader() []string {
 	return filter(fieldsEAPOL)
 }
 
-func (a EAPOL) CSVRecord() []string {
+func (a *EAPOL) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.Version), //  int32
@@ -39,12 +39,12 @@ func (a EAPOL) CSVRecord() []string {
 	})
 }
 
-func (a EAPOL) Time() string {
+func (a *EAPOL) Time() string {
 	return a.Timestamp
 }
 
-func (a EAPOL) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *EAPOL) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var eapPolMetric = prometheus.NewCounterVec(
@@ -59,17 +59,17 @@ func init() {
 	prometheus.MustRegister(eapPolMetric)
 }
 
-func (a EAPOL) Inc() {
+func (a *EAPOL) Inc() {
 	eapPolMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *EAPOL) SetPacketContext(ctx *PacketContext) {}
 
 // TODO: return Mac addr
-func (a EAPOL) Src() string {
+func (a *EAPOL) Src() string {
 	return ""
 }
 
-func (a EAPOL) Dst() string {
+func (a *EAPOL) Dst() string {
 	return ""
 }

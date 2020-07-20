@@ -27,11 +27,11 @@ var fieldsEthernetCTPReply = []string{
 	"Data",          // bytes
 }
 
-func (i EthernetCTPReply) CSVHeader() []string {
+func (i *EthernetCTPReply) CSVHeader() []string {
 	return filter(fieldsEthernetCTPReply)
 }
 
-func (i EthernetCTPReply) CSVRecord() []string {
+func (i *EthernetCTPReply) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Function),
@@ -40,12 +40,12 @@ func (i EthernetCTPReply) CSVRecord() []string {
 	})
 }
 
-func (i EthernetCTPReply) Time() string {
+func (i *EthernetCTPReply) Time() string {
 	return i.Timestamp
 }
 
-func (a EthernetCTPReply) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (i *EthernetCTPReply) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(i)
 }
 
 var ethernetCTPReplyMetric = prometheus.NewCounterVec(
@@ -60,17 +60,17 @@ func init() {
 	prometheus.MustRegister(ethernetCTPReplyMetric)
 }
 
-func (a EthernetCTPReply) Inc() {
-	ethernetCTPReplyMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (i *EthernetCTPReply) Inc() {
+	ethernetCTPReplyMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
 func (a *EthernetCTPReply) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a EthernetCTPReply) Src() string {
+func (i *EthernetCTPReply) Src() string {
 	return ""
 }
 
-func (a EthernetCTPReply) Dst() string {
+func (i *EthernetCTPReply) Dst() string {
 	return ""
 }

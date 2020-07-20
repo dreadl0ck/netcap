@@ -28,10 +28,10 @@ var fieldsEthernet = []string{
 	"PayloadSize",    // int32
 }
 
-func (e Ethernet) CSVHeader() []string {
+func (e *Ethernet) CSVHeader() []string {
 	return filter(fieldsEthernet)
 }
-func (e Ethernet) CSVRecord() []string {
+func (e *Ethernet) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(e.Timestamp),
 		e.SrcMAC,                        // string
@@ -42,12 +42,12 @@ func (e Ethernet) CSVRecord() []string {
 	})
 }
 
-func (e Ethernet) Time() string {
+func (e *Ethernet) Time() string {
 	return e.Timestamp
 }
 
-func (a Ethernet) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (e *Ethernet) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(e)
 }
 
 var (
@@ -84,7 +84,7 @@ var fieldsEthernetMetrics = []string{
 	"EthernetType", // int32
 }
 
-func (e Ethernet) metricValues() []string {
+func (e *Ethernet) metricValues() []string {
 	return []string{
 		e.SrcMAC,                    // string
 		e.DstMAC,                    // string
@@ -98,18 +98,18 @@ func init() {
 	prometheus.MustRegister(ethernetPayloadSize)
 }
 
-func (a Ethernet) Inc() {
-	ethernetMetric.WithLabelValues(a.metricValues()...).Inc()
-	ethernetPayloadEntropy.WithLabelValues().Observe(a.PayloadEntropy)
-	ethernetPayloadSize.WithLabelValues().Observe(float64(a.PayloadSize))
+func (e *Ethernet) Inc() {
+	ethernetMetric.WithLabelValues(e.metricValues()...).Inc()
+	ethernetPayloadEntropy.WithLabelValues().Observe(e.PayloadEntropy)
+	ethernetPayloadSize.WithLabelValues().Observe(float64(e.PayloadSize))
 }
 
 func (a *Ethernet) SetPacketContext(ctx *PacketContext) {}
 
-func (a Ethernet) Src() string {
-	return a.SrcMAC
+func (e *Ethernet) Src() string {
+	return e.SrcMAC
 }
 
-func (a Ethernet) Dst() string {
-	return a.DstMAC
+func (e *Ethernet) Dst() string {
+	return e.DstMAC
 }

@@ -34,11 +34,11 @@ var fieldsUDP = []string{
 	"DstIP",
 }
 
-func (u UDP) CSVHeader() []string {
+func (u *UDP) CSVHeader() []string {
 	return filter(fieldsUDP)
 }
 
-func (u UDP) CSVRecord() []string {
+func (u *UDP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if u.Context == nil {
 		u.Context = &PacketContext{}
@@ -57,12 +57,12 @@ func (u UDP) CSVRecord() []string {
 	})
 }
 
-func (u UDP) Time() string {
+func (u *UDP) Time() string {
 	return u.Timestamp
 }
 
-func (u UDP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (u *UDP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(u)
 }
 
 var (
@@ -98,7 +98,7 @@ var fieldsUDPMetrics = []string{
 	"DstPort",
 }
 
-func (u UDP) metricValues() []string {
+func (u *UDP) metricValues() []string {
 	return []string{
 		formatInt32(u.SrcPort), // int32
 		formatInt32(u.DstPort), // int32
@@ -111,32 +111,32 @@ func init() {
 	prometheus.MustRegister(udpPayloadSize)
 }
 
-func (u UDP) Inc() {
+func (u *UDP) Inc() {
 	udpMetric.WithLabelValues(u.metricValues()...).Inc()
 	udpPayloadEntropy.WithLabelValues().Observe(u.PayloadEntropy)
 	udpPayloadSize.WithLabelValues().Observe(float64(u.PayloadSize))
 }
 
-func (a *UDP) SetPacketContext(ctx *PacketContext) {
+func (u *UDP) SetPacketContext(ctx *PacketContext) {
 
 	// create new context and only add information that is
 	// not yet present on the audit record type
-	a.Context = &PacketContext{
+	u.Context = &PacketContext{
 		SrcIP: ctx.SrcIP,
 		DstIP: ctx.DstIP,
 	}
 }
 
-func (a UDP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (u *UDP) Src() string {
+	if u.Context != nil {
+		return u.Context.SrcIP
 	}
 	return ""
 }
 
-func (a UDP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (u *UDP) Dst() string {
+	if u.Context != nil {
+		return u.Context.DstIP
 	}
 	return ""
 }

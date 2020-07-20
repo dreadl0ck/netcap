@@ -23,22 +23,22 @@ var fieldsSoftware = []string{
 	"Timestamp",
 }
 
-func (a Software) CSVHeader() []string {
+func (a *Software) CSVHeader() []string {
 	return filter(fieldsSoftware)
 }
 
-func (a Software) CSVRecord() []string {
+func (a *Software) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 	})
 }
 
-func (a Software) Time() string {
+func (a *Software) Time() string {
 	return a.Timestamp
 }
 
-func (a Software) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *Software) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var softwareMetric = prometheus.NewCounterVec(
@@ -53,16 +53,16 @@ func init() {
 	prometheus.MustRegister(softwareMetric)
 }
 
-func (a Software) Inc() {
+func (a *Software) Inc() {
 	softwareMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *Software) SetPacketContext(ctx *PacketContext) {}
 
-func (a Software) Src() string {
+func (a *Software) Src() string {
 	return ""
 }
 
-func (a Software) Dst() string {
+func (a *Software) Dst() string {
 	return ""
 }

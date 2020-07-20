@@ -51,11 +51,11 @@ var fieldsCiscoDiscoveryInfo = []string{
 	"Unknown",          // []*CiscoDiscoveryValue
 }
 
-func (a CiscoDiscoveryInfo) CSVHeader() []string {
+func (a *CiscoDiscoveryInfo) CSVHeader() []string {
 	return filter(fieldsCiscoDiscoveryInfo)
 }
 
-func (a CiscoDiscoveryInfo) CSVRecord() []string {
+func (a *CiscoDiscoveryInfo) CSVRecord() []string {
 	var (
 		ipNets []string
 		vals   []string
@@ -97,11 +97,11 @@ func (a CiscoDiscoveryInfo) CSVRecord() []string {
 	})
 }
 
-func (a CiscoDiscoveryInfo) Time() string {
+func (a *CiscoDiscoveryInfo) Time() string {
 	return a.Timestamp
 }
 
-func (c CDPHello) ToString() string {
+func (c *CDPHello) ToString() string {
 
 	var b strings.Builder
 
@@ -134,7 +134,7 @@ func (c CDPHello) ToString() string {
 	return b.String()
 }
 
-func (c CDPCapabilities) ToString() string {
+func (c *CDPCapabilities) ToString() string {
 
 	var b strings.Builder
 
@@ -162,7 +162,7 @@ func (c CDPCapabilities) ToString() string {
 	return b.String()
 }
 
-func (i IPNet) ToString() string {
+func (i *IPNet) ToString() string {
 
 	var b strings.Builder
 
@@ -175,7 +175,7 @@ func (i IPNet) ToString() string {
 	return b.String()
 }
 
-func (c CDPVLANDialogue) ToString() string {
+func (c *CDPVLANDialogue) ToString() string {
 
 	var b strings.Builder
 
@@ -188,7 +188,7 @@ func (c CDPVLANDialogue) ToString() string {
 	return b.String()
 }
 
-func (c CDPPowerDialogue) ToString() string {
+func (c *CDPPowerDialogue) ToString() string {
 
 	var vals []string
 	for _, v := range c.Values {
@@ -207,7 +207,7 @@ func (c CDPPowerDialogue) ToString() string {
 	return b.String()
 }
 
-func (c CDPSparePairPoE) ToString() string {
+func (c *CDPSparePairPoE) ToString() string {
 
 	var b strings.Builder
 
@@ -224,7 +224,7 @@ func (c CDPSparePairPoE) ToString() string {
 	return b.String()
 }
 
-func (c CDPEnergyWise) ToString() string {
+func (c *CDPEnergyWise) ToString() string {
 
 	var b strings.Builder
 
@@ -265,7 +265,7 @@ func (c CDPEnergyWise) ToString() string {
 	return b.String()
 }
 
-func (c CDPLocation) ToString() string {
+func (c *CDPLocation) ToString() string {
 
 	var b strings.Builder
 
@@ -278,8 +278,8 @@ func (c CDPLocation) ToString() string {
 	return b.String()
 }
 
-func (a CiscoDiscoveryInfo) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *CiscoDiscoveryInfo) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var ciscoDiscoveryInfoMetric = prometheus.NewCounterVec(
@@ -294,17 +294,17 @@ func init() {
 	prometheus.MustRegister(ciscoDiscoveryInfoMetric)
 }
 
-func (a CiscoDiscoveryInfo) Inc() {
+func (a *CiscoDiscoveryInfo) Inc() {
 	ciscoDiscoveryInfoMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *CiscoDiscoveryInfo) SetPacketContext(ctx *PacketContext) {}
 
 // TODO
-func (a CiscoDiscoveryInfo) Src() string {
+func (a *CiscoDiscoveryInfo) Src() string {
 	return ""
 }
 
-func (a CiscoDiscoveryInfo) Dst() string {
+func (a *CiscoDiscoveryInfo) Dst() string {
 	return ""
 }

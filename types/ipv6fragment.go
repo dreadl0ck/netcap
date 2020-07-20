@@ -32,11 +32,11 @@ var fieldsIPv6Fragment = []string{
 	"DstIP",
 }
 
-func (a IPv6Fragment) CSVHeader() []string {
+func (a *IPv6Fragment) CSVHeader() []string {
 	return filter(fieldsIPv6Fragment)
 }
 
-func (a IPv6Fragment) CSVRecord() []string {
+func (a *IPv6Fragment) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
 		a.Context = &PacketContext{}
@@ -54,12 +54,12 @@ func (a IPv6Fragment) CSVRecord() []string {
 	})
 }
 
-func (a IPv6Fragment) Time() string {
+func (a *IPv6Fragment) Time() string {
 	return a.Timestamp
 }
 
-func (a IPv6Fragment) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&a)
+func (a *IPv6Fragment) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(a)
 }
 
 var ipv6fragMetric = prometheus.NewCounterVec(
@@ -74,7 +74,7 @@ func init() {
 	prometheus.MustRegister(ipv6fragMetric)
 }
 
-func (a IPv6Fragment) Inc() {
+func (a *IPv6Fragment) Inc() {
 	ipv6fragMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
@@ -82,14 +82,14 @@ func (a *IPv6Fragment) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
-func (a IPv6Fragment) Src() string {
+func (a *IPv6Fragment) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
 	}
 	return ""
 }
 
-func (a IPv6Fragment) Dst() string {
+func (a *IPv6Fragment) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP
 	}

@@ -51,11 +51,11 @@ var fieldsTLSClientHello = []string{
 	"DstPort",
 }
 
-func (t TLSClientHello) CSVHeader() []string {
+func (t *TLSClientHello) CSVHeader() []string {
 	return filter(fieldsTLSClientHello)
 }
 
-func (t TLSClientHello) CSVRecord() []string {
+func (t *TLSClientHello) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(t.Timestamp),
 		formatInt32(t.Type),
@@ -87,12 +87,12 @@ func (t TLSClientHello) CSVRecord() []string {
 	})
 }
 
-func (f TLSClientHello) Time() string {
-	return f.Timestamp
+func (t *TLSClientHello) Time() string {
+	return t.Timestamp
 }
 
-func (u TLSClientHello) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (t *TLSClientHello) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(t)
 }
 
 var tlsClientMetric = prometheus.NewCounterVec(
@@ -107,17 +107,17 @@ func init() {
 	prometheus.MustRegister(tlsClientMetric)
 }
 
-func (a TLSClientHello) Inc() {
-	tlsClientMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (t *TLSClientHello) Inc() {
+	tlsClientMetric.WithLabelValues(t.CSVRecord()[1:]...).Inc()
 }
 
-func (a *TLSClientHello) SetPacketContext(ctx *PacketContext) {
+func (t *TLSClientHello) SetPacketContext(ctx *PacketContext) {
 }
 
-func (a TLSClientHello) Src() string {
-	return a.SrcIP
+func (t *TLSClientHello) Src() string {
+	return t.SrcIP
 }
 
-func (a TLSClientHello) Dst() string {
-	return a.DstIP
+func (t *TLSClientHello) Dst() string {
+	return t.DstIP
 }

@@ -30,11 +30,11 @@ var fieldsSCTP = []string{
 	"DstIP",
 }
 
-func (s SCTP) CSVHeader() []string {
+func (s *SCTP) CSVHeader() []string {
 	return filter(fieldsSCTP)
 }
 
-func (s SCTP) CSVRecord() []string {
+func (s *SCTP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if s.Context == nil {
 		s.Context = &PacketContext{}
@@ -50,7 +50,7 @@ func (s SCTP) CSVRecord() []string {
 	})
 }
 
-func (s SCTP) Time() string {
+func (s *SCTP) Time() string {
 	return s.Timestamp
 }
 
@@ -70,30 +70,30 @@ func init() {
 	prometheus.MustRegister(sctpMetric)
 }
 
-func (a SCTP) Inc() {
-	sctpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+func (s *SCTP) Inc() {
+	sctpMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()
 }
 
-func (a *SCTP) SetPacketContext(ctx *PacketContext) {
+func (s *SCTP) SetPacketContext(ctx *PacketContext) {
 
 	// create new context and only add information that is
 	// not yet present on the audit record type
-	a.Context = &PacketContext{
+	s.Context = &PacketContext{
 		SrcPort: ctx.SrcPort,
 		DstPort: ctx.DstPort,
 	}
 }
 
-func (a SCTP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
+func (s *SCTP) Src() string {
+	if s.Context != nil {
+		return s.Context.SrcIP
 	}
 	return ""
 }
 
-func (a SCTP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
+func (s *SCTP) Dst() string {
+	if s.Context != nil {
+		return s.Context.DstIP
 	}
 	return ""
 }
