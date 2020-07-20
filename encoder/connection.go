@@ -172,7 +172,7 @@ var connectionEncoder = CreateCustomEncoder(
 			conns++
 
 			// flush
-			if conns%int64(c.ConnFlushInterval) == 0 {
+			if c.ConnFlushInterval != 0 && conns%int64(c.ConnFlushInterval) == 0 {
 
 				var selectConns []*types.Connection
 				for id, entry := range Connections.Items {

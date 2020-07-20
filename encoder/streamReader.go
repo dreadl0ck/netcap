@@ -36,6 +36,10 @@ type StreamReader interface {
 	// util functions that provide access to the entire stream via parent
 	ConversationRaw() []byte
 	ConversationColored() []byte
+
+	// sort all stream fragments based on their timestamp
+	// and generate the conversation buffers
+	SortAndMergeFragments()
 }
 
 // StreamDecoder is the interface for processing a bi-directional network connection

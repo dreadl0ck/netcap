@@ -164,7 +164,7 @@ var flowEncoder = CreateCustomEncoder(
 
 			// continuously flush flows
 			flows++
-			if flows%int64(c.FlowFlushInterval) == 0 {
+			if c.FlowFlushInterval != 0 && flows%int64(c.FlowFlushInterval) == 0 {
 
 				var selectFlows []*types.Flow
 				for id, f := range Flows.Items {

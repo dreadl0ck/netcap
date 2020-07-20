@@ -497,7 +497,7 @@ func AnalyzeSoftware(i *packetInfo) {
 
 func writeSoftware(software []*Software, update func(s *Software)) {
 
-	var new []*types.Software
+	var newSoftware []*types.Software
 
 	// add new audit records or update existing
 	SoftwareStore.Lock()
@@ -511,6 +511,12 @@ func writeSoftware(software []*Software, update func(s *Software)) {
 			continue
 		}
 		ident := s.Product + "/" + s.Version
+
+		// trim version field if its too long
+		// likely a regex matched too much text
+		if len(s.Version) > 10 {
+			s.Version = s.Version[:10] + "..."
+		}
 		s.Unlock()
 		if item, ok := SoftwareStore.Items[ident]; ok {
 			if update != nil {
@@ -524,15 +530,15 @@ func writeSoftware(software []*Software, update func(s *Software)) {
 			reassemblyStats.numSoftware++
 			statsMutex.Unlock()
 
-			new = append(new, s.Software)
+			newSoftware = append(newSoftware, s.Software)
 		}
 	}
 	SoftwareStore.Unlock()
 
-	if len(new) > 0 {
+	if len(newSoftware) > 0 {
 		// lookup known issues with identified software in the background
 		go func() {
-			for _, s := range new {
+			for _, s := range newSoftware {
 				vulnerabilitiesLookup(s)
 				exploitsLookup(s)
 			}
