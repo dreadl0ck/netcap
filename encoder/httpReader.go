@@ -442,7 +442,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	h.parent.Lock()
 	h.responses = append(h.responses, &httpResponse{
 		response:  res,
-		timestamp: h.parent.firstPacket.String(),
+		timestamp: h.parent.firstPacket.String(), // TODO: inaccurate
 		clientIP:  h.parent.net.Src().String(),
 		serverIP:  h.parent.net.Dst().String(),
 	})

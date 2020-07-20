@@ -29,8 +29,8 @@ var (
 )
 
 const (
-	defaultDirectoryPermission = 0600
-	defaultFilesPermission     = 0600
+	defaultDirectoryPermission = 0700
+	defaultFilesPermission     = 0700
 )
 
 // SetConfig can be used to set a configuration for the package
@@ -131,7 +131,7 @@ type Config struct {
 	// size of the channel used to pass reassembled stream data to a stream decoder
 	StreamDecoderBufSize int
 
-	// Close inactive connections after
+	// Close inactive streams after
 	CloseInactiveTimeOut time.Duration
 
 	// Interval to apply connection flushes
@@ -143,7 +143,7 @@ type Config struct {
 	// Maximum number of bytes stored as service banner
 	BannerSize int
 
-	// Close connections with pending bytes after
+	// Close streams with pending bytes after
 	ClosePendingTimeOut time.Duration
 
 	// Number of packets to arrive until the flows are checked for timeouts

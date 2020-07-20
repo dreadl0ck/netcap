@@ -85,6 +85,8 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReade
 						fmt.Println("failed to save connection", err)
 					}
 				} else {
+					s.SortAndMergeFragments()
+
 					// save the service banner
 					saveTCPServiceBanner(s)
 				}

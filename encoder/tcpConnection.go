@@ -49,12 +49,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/mgutz/ansi"
+	"sort"
 	"sync"
 
 	"log"
 	"os"
 	"runtime/pprof"
-	"sort"
 	"strconv"
 	"time"
 
@@ -245,6 +245,8 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
 
+	//fmt.Println(t.ident, "feedData", dir, len(data), ac.GetCaptureInfo().Timestamp)
+
 	// Copy the data before passing it to the handler
 	// Because the passed in buffer can be reused as soon as the ReassembledSG function returned
 	dataCpy := make([]byte, len(data))
@@ -361,6 +363,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow gopacket.Flow) bool {
 
 	//fmt.Println(t.ident, "t.firstPacket:", t.firstPacket, "ac.Timestamp", ac.GetCaptureInfo().Timestamp)
+	//fmt.Println(t.ident, !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp), "&&", t.firstPacket.After(ac.GetCaptureInfo().Timestamp))
 
 	// is this packet older than the oldest packet we saw for this connection?
 	// if yes, if check the direction of the client is correct
@@ -381,7 +384,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 
 				t.Lock()
 				t.ident = utils.ReverseIdent(t.ident)
-				//fmt.Println("flip! new", ansi.Red + t.ident + ansi.Reset)
+				//fmt.Println("flip! new", ansi.Red + t.ident + ansi.Reset, t.firstPacket)
 
 				t.client, t.server = t.server, t.client
 				t.transport, t.net = t.transport.Reverse(), t.net.Reverse()
@@ -547,16 +550,18 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
 
-	statsMutex.Lock()
-	doFlush := count%c.FlushEvery == 0
-	statsMutex.Unlock()
-
 	// TODO: refactor and use a ticker model in a goroutine, similar to progress reporting
-	// flush connections in interval
-	if doFlush {
-		ref := packet.Metadata().CaptureInfo.Timestamp
-		flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-c.ClosePendingTimeOut), TC: ref.Add(-c.CloseInactiveTimeOut)})
-		utils.DebugLog.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref)
+	if c.FlushEvery > 0 {
+		statsMutex.Lock()
+		doFlush := count%c.FlushEvery == 0
+		statsMutex.Unlock()
+
+		// flush connections in interval
+		if doFlush {
+			ref := packet.Metadata().CaptureInfo.Timestamp
+			flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-c.ClosePendingTimeOut), TC: ref.Add(-c.CloseInactiveTimeOut)})
+			utils.DebugLog.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref)
+		}
 	}
 }
 
@@ -598,6 +603,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		}
 
 		// wait for remaining connections to finish processing
+		// will wait forever if there are streams that are never shutdown via FIN/RST
 		select {
 		case <-waitForConns():
 			if !Quiet {
@@ -722,6 +728,8 @@ func waitForConns() chan struct{} {
 	out := make(chan struct{})
 
 	go func() {
+		// WaitGoRoutines waits until the goroutines launched to process TCP streams are done
+		// this will block forever if there are streams that are never shutdown (via RST or FIN flags)
 		streamFactory.WaitGoRoutines()
 		out <- struct{}{}
 	}()
@@ -729,55 +737,60 @@ func waitForConns() chan struct{} {
 	return out
 }
 
-func (h *tcpConnection) ConversationRaw() []byte {
+// sort the conversation fragments and fill the conversation buffers
+func (t *tcpConnection) sortAndMergeFragments() {
 
-	h.Lock()
-	defer h.Unlock()
+	// concatenate both client and server data fragments
+	t.merged = append(t.client.DataSlice(), t.server.DataSlice()...)
 
-	// do this only once, this method will be called once for each side of a connection
-	if len(h.conversationRaw.Bytes()) == 0 {
+	// sort based on their timestamps
+	sort.Sort(t.merged)
 
-		// concatenate both client and server data fragments
-		h.merged = append(h.client.DataSlice(), h.server.DataSlice()...)
+	// create the buffer with the entire conversation
+	for _, d := range t.merged {
 
-		// sort based on their timestamps
-		sort.Sort(h.merged)
+		//fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp, ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
 
-		// create the buffer with the entire conversation
-		for _, d := range h.merged {
-
-			//fmt.Println(h.ident, d.ac.GetCaptureInfo().Timestamp, d.ac.GetCaptureInfo().Length)
-
-			h.conversationRaw.Write(d.raw)
-			if d.dir == reassembly.TCPDirClientToServer {
-				if c.Debug {
-					var ts string
-					if d.ac != nil {
-						ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
-					}
-					h.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + ts)
-				} else {
-					h.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
+		t.conversationRaw.Write(d.raw)
+		if d.dir == reassembly.TCPDirClientToServer {
+			if c.Debug {
+				var ts string
+				if d.ac != nil {
+					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
 				}
+				t.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + ts)
 			} else {
-				if c.Debug {
-					var ts string
-					if d.ac != nil {
-						ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
-					}
-					h.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + ts)
-				} else {
-					h.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
+				t.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
+			}
+		} else {
+			if c.Debug {
+				var ts string
+				if d.ac != nil {
+					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
 				}
+				t.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + ts)
+			} else {
+				t.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
 			}
 		}
 	}
-
-	return h.conversationRaw.Bytes()
 }
 
-func (h *tcpConnection) ConversationColored() []byte {
-	h.Lock()
-	defer h.Unlock()
-	return h.conversationColored.Bytes()
+func (t *tcpConnection) ConversationRaw() []byte {
+
+	t.Lock()
+	defer t.Unlock()
+
+	// do this only once, this method will be called once for each side of a connection
+	if len(t.conversationRaw.Bytes()) == 0 {
+		t.sortAndMergeFragments()
+	}
+
+	return t.conversationRaw.Bytes()
+}
+
+func (t *tcpConnection) ConversationColored() []byte {
+	t.Lock()
+	defer t.Unlock()
+	return t.conversationColored.Bytes()
 }

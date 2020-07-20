@@ -142,7 +142,7 @@ func saveTCPServiceBanner(s StreamReader) {
 	statsMutex.Unlock()
 }
 
-// NewDeviceProfile creates a new device specific profile
+// NewDeviceProfile creates a new network service
 func NewService(ts string, numBytesServer int, numBytesClient int, ip string) *Service {
 	var host string
 	if resolvers.CurrentConfig.ReverseDNS {

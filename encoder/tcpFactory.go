@@ -19,6 +19,7 @@ import (
 	"github.com/dreadl0ck/gopacket/ip4defrag"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/reassembly"
+	"time"
 
 	"path/filepath"
 	"sync"
@@ -172,4 +173,9 @@ type Context struct {
 // GetCaptureInfo returns the gopacket.CaptureInfo from the context
 func (c *Context) GetCaptureInfo() gopacket.CaptureInfo {
 	return c.CaptureInfo
+}
+
+// GetCaptureInfo returns the gopacket.CaptureInfo from the context
+func (c *Context) SetTimestamp(t time.Time) {
+	c.CaptureInfo.Timestamp = t
 }

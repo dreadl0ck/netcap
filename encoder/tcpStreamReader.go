@@ -52,9 +52,9 @@ func newTCPStreamReader(parent *tcpConnection, ident string, client bool) *tcpSt
 	}
 }
 
-func (h *tcpStreamReader) Read(p []byte) (int, error) {
+func (t *tcpStreamReader) Read(p []byte) (int, error) {
 
-	data, ok := <-h.dataChan
+	data, ok := <-t.dataChan
 	if data == nil || !ok {
 		return 0, io.EOF
 	}
@@ -62,19 +62,19 @@ func (h *tcpStreamReader) Read(p []byte) (int, error) {
 	// copy received data into the passed in buffer
 	l := copy(p, data.raw)
 
-	h.parent.Lock()
-	h.data = append(h.data, data)
-	h.numBytes += l
-	h.parent.Unlock()
+	t.parent.Lock()
+	t.data = append(t.data, data)
+	t.numBytes += l
+	t.parent.Unlock()
 
 	return l, nil
 }
 
-func (h *tcpStreamReader) DataChan() chan *StreamData {
-	return h.dataChan
+func (t *tcpStreamReader) DataChan() chan *StreamData {
+	return t.dataChan
 }
 
-func (h *tcpStreamReader) Cleanup(f *tcpConnectionFactory) {
+func (t *tcpStreamReader) Cleanup(f *tcpConnectionFactory) {
 	// signal wait group
 	f.wg.Done()
 	f.Lock()
@@ -82,18 +82,18 @@ func (h *tcpStreamReader) Cleanup(f *tcpConnectionFactory) {
 	f.Unlock()
 }
 
-func (h *tcpStreamReader) DataSlice() StreamDataSlice {
-	return h.data
+func (t *tcpStreamReader) DataSlice() StreamDataSlice {
+	return t.data
 }
 
-func (h *tcpStreamReader) ClientStream() []byte {
+func (t *tcpStreamReader) ClientStream() []byte {
 	var buf bytes.Buffer
 
-	h.parent.Lock()
-	defer h.parent.Unlock()
+	t.parent.Lock()
+	defer t.parent.Unlock()
 
 	// stores c.BannerSize number of bytes of the server side stream
-	for _, d := range h.parent.client.DataSlice() {
+	for _, d := range t.parent.client.DataSlice() {
 		for _, b := range d.raw {
 			buf.WriteByte(b)
 		}
@@ -102,15 +102,15 @@ func (h *tcpStreamReader) ClientStream() []byte {
 	return buf.Bytes()
 }
 
-func (h *tcpStreamReader) ServerStream() []byte {
+func (t *tcpStreamReader) ServerStream() []byte {
 	var buf bytes.Buffer
 
-	h.parent.Lock()
-	defer h.parent.Unlock()
+	t.parent.Lock()
+	defer t.parent.Unlock()
 
 	// save server stream for banner identification
 	// stores c.BannerSize number of bytes of the server side stream
-	for _, d := range h.parent.server.DataSlice() {
+	for _, d := range t.parent.server.DataSlice() {
 		for _, b := range d.raw {
 			buf.WriteByte(b)
 		}
@@ -119,97 +119,101 @@ func (h *tcpStreamReader) ServerStream() []byte {
 	return buf.Bytes()
 }
 
-func (h *tcpStreamReader) ConversationRaw() []byte {
-	return h.parent.ConversationRaw()
+func (t *tcpStreamReader) ConversationRaw() []byte {
+	return t.parent.ConversationRaw()
 }
 
-func (h *tcpStreamReader) ConversationColored() []byte {
-	return h.parent.ConversationColored()
+func (t *tcpStreamReader) ConversationColored() []byte {
+	return t.parent.ConversationColored()
 }
 
-func (h *tcpStreamReader) IsClient() bool {
-	return h.isClient
+func (t *tcpStreamReader) IsClient() bool {
+	return t.isClient
 }
 
-func (h *tcpStreamReader) Ident() string {
-	return h.parent.ident
-}
-func (h *tcpStreamReader) Network() gopacket.Flow {
-	return h.parent.net
-}
-func (h *tcpStreamReader) Transport() gopacket.Flow {
-	return h.parent.transport
-}
-func (h *tcpStreamReader) FirstPacket() time.Time {
-	return h.parent.firstPacket
-}
-func (h *tcpStreamReader) Saved() bool {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return h.saved
+func (t *tcpStreamReader) SortAndMergeFragments() {
+	t.parent.sortAndMergeFragments()
 }
 
-func (h *tcpStreamReader) NumBytes() int {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return h.numBytes
+func (t *tcpStreamReader) Ident() string {
+	return t.parent.ident
+}
+func (t *tcpStreamReader) Network() gopacket.Flow {
+	return t.parent.net
+}
+func (t *tcpStreamReader) Transport() gopacket.Flow {
+	return t.parent.transport
+}
+func (t *tcpStreamReader) FirstPacket() time.Time {
+	return t.parent.firstPacket
+}
+func (t *tcpStreamReader) Saved() bool {
+	t.parent.Lock()
+	defer t.parent.Unlock()
+	return t.saved
 }
 
-func (h *tcpStreamReader) Client() StreamReader {
-	return h.parent.client
+func (t *tcpStreamReader) NumBytes() int {
+	t.parent.Lock()
+	defer t.parent.Unlock()
+	return t.numBytes
 }
 
-func (h *tcpStreamReader) SetClient(v bool) {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	h.isClient = v
+func (t *tcpStreamReader) Client() StreamReader {
+	return t.parent.client
 }
 
-func (h *tcpStreamReader) MarkSaved() {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	h.saved = true
+func (t *tcpStreamReader) SetClient(v bool) {
+	t.parent.Lock()
+	defer t.parent.Unlock()
+	t.isClient = v
 }
 
-func (h *tcpStreamReader) ServiceIdent() string {
-	h.parent.Lock()
-	defer h.parent.Unlock()
-	return filepath.Clean(fmt.Sprintf("%s->%s", h.parent.server.Network().Dst(), h.parent.server.Transport().Dst()))
+func (t *tcpStreamReader) MarkSaved() {
+	t.parent.Lock()
+	defer t.parent.Unlock()
+	t.saved = true
 }
 
-func (h *tcpStreamReader) ServiceBanner() []byte {
-	h.parent.Lock()
-	defer h.parent.Unlock()
+func (t *tcpStreamReader) ServiceIdent() string {
+	t.parent.Lock()
+	defer t.parent.Unlock()
+	return filepath.Clean(fmt.Sprintf("%s->%s", t.parent.server.Network().Dst(), t.parent.server.Transport().Dst()))
+}
 
-	if h.serviceBanner.Len() == 0 {
+func (t *tcpStreamReader) ServiceBanner() []byte {
+	t.parent.Lock()
+	defer t.parent.Unlock()
+
+	if t.serviceBanner.Len() == 0 {
 		// save server stream for banner identification
 		// stores c.BannerSize number of bytes of the server side stream
-		for _, d := range h.parent.server.DataSlice() {
+		for _, d := range t.parent.server.DataSlice() {
 			for _, b := range d.raw {
-				h.serviceBanner.WriteByte(b)
-				h.serviceBannerBytes++
-				if h.serviceBannerBytes == c.BannerSize {
+				t.serviceBanner.WriteByte(b)
+				t.serviceBannerBytes++
+				if t.serviceBannerBytes == c.BannerSize {
 					break
 				}
 			}
 		}
 	}
 
-	return h.serviceBanner.Bytes()
+	return t.serviceBanner.Bytes()
 }
 
 // run starts reading TCP traffic in a single direction
-func (h *tcpStreamReader) Run(f *tcpConnectionFactory) {
+func (t *tcpStreamReader) Run(f *tcpConnectionFactory) {
 
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
-	defer h.Cleanup(f)
+	defer t.Cleanup(f)
 
 	var (
 		err error
-		b   = bufio.NewReader(h)
+		b   = bufio.NewReader(t)
 	)
 	for {
-		err = h.readStream(b)
+		err = t.readStream(b)
 		if err != nil {
 
 			// exit on EOF
@@ -217,8 +221,8 @@ func (h *tcpStreamReader) Run(f *tcpConnectionFactory) {
 				return
 			}
 
-			utils.ReassemblyLog.Println("TCP stream encountered an error", h.parent.ident, err)
-			fmt.Println("TCP stream encountered an error", h.parent.ident, err)
+			utils.ReassemblyLog.Println("TCP stream encountered an error", t.parent.ident, err)
+			fmt.Println("TCP stream encountered an error", t.parent.ident, err)
 
 			// stop processing the stream and trigger cleanup
 			return
@@ -226,7 +230,7 @@ func (h *tcpStreamReader) Run(f *tcpConnectionFactory) {
 	}
 }
 
-func (h *tcpStreamReader) readStream(b io.ByteReader) error {
+func (t *tcpStreamReader) readStream(b io.ByteReader) error {
 
 	var err error
 	for {
@@ -234,7 +238,7 @@ func (h *tcpStreamReader) readStream(b io.ByteReader) error {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return err
 		} else if err != nil {
-			logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", h.ident, err)
+			logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", t.ident, err)
 			return err
 		}
 	}
