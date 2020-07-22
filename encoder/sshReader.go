@@ -47,29 +47,27 @@ type sshReader struct {
 
 func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 
-	// parse conversation
 	var (
-		buf         bytes.Buffer
-		previousDir reassembly.TCPFlowDirection
+		serverBuf         bytes.Buffer
+		clientBuf         bytes.Buffer
 	)
-	if len(h.parent.merged) > 0 {
-		previousDir = h.parent.merged[0].dir
-	}
 
 	for _, d := range h.parent.merged {
-
-		if d.dir == previousDir {
-			buf.Write(d.raw)
+		if d.dir == reassembly.TCPDirClientToServer {
+			// 2255k bytes should be enough to capture ident (max 255 bytes) + kexInit (usually ~1200-1700 bytes)
+			if clientBuf.Len() < 2255 {
+				clientBuf.Write(d.raw)
+			}
 		} else {
-			h.searchKexInit(bufio.NewReader(&buf), previousDir)
-			buf.Reset()
-
-			previousDir = d.dir
-			buf.Write(d.raw)
-			continue
+			// 2255k bytes should be enough to capture ident (max 255 bytes) + kexInit (usually ~1200-1700 bytes)
+			if serverBuf.Len() < 2255 {
+				serverBuf.Write(d.raw)
+			}
 		}
 	}
-	h.searchKexInit(bufio.NewReader(&buf), previousDir)
+	h.searchKexInit(bufio.NewReader(&clientBuf), reassembly.TCPDirClientToServer)
+	h.searchKexInit(bufio.NewReader(&serverBuf), reassembly.TCPDirServerToClient)
+
 	if len(h.software) == 0 {
 		return
 	}
@@ -165,12 +163,19 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 	// search the entire data fragment for the KexInit
 	for i, b := range data {
 
-		// TODO: stop checking after X bytes, and after we already have server and client hashes
 		// 0x14 marks the beginning of the SSH KexInitMsg
 		if b == 0x14 {
 
-			if i == 0 {
-				//fmt.Println("break: i == 0")
+			//fmt.Println(dir, offset, len(data), i-1, "data[",offset,":",i-1,"]")
+			//fmt.Println(hex.Dump(data))
+
+			// check if length would have correct length
+			if (i-1)-offset != 4 {
+				break
+			}
+
+			// check if array access is safe
+			if offset > i-1 || len(data) <= i-1 {
 				break
 			}
 
