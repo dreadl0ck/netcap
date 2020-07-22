@@ -17,6 +17,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"regexp"
 	"strings"
@@ -289,11 +290,11 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(matchesPlainSeparate) > 1 {
 		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
 		if err != nil {
-			fmt.Println("Captured IMAP credentials, but could not decode them")
+			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesPlainSeparate[1]))
 		}
 		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[2]))
 		if err != nil {
-			fmt.Println("Captured IMAP credentials, but could not decode them")
+			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesPlainSeparate[2]))
 		}
 		username = string(usernameBin)
 		password = string(passwordBin)
@@ -303,7 +304,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(matchesLogin) > 1 {
 		data, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
 		if err != nil {
-			fmt.Println("Captured IMAP credentials, but could not decode them")
+			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesLogin[1]))
 		}
 		var (
 			newDataAuthCID  []byte
@@ -333,12 +334,12 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(matchesCramMd5) > 1 {
 		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[1]))
 		if err != nil {
-			fmt.Println("Captured IMAP credentials, but could not decode them")
+			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesCramMd5[1]))
 		}
 		username = string(usernameBin) // This is really the challenge
 		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[2]))
 		if err != nil {
-			fmt.Println("Captured IMAP credentials, but could not decode them")
+			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesCramMd5[2]))
 		}
 		password = string(passwordBin) // And this is the hash
 		service = "IMAP CRAM-MD5"
