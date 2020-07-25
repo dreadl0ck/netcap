@@ -39,6 +39,7 @@ import (
 )
 
 // CMSHeaders is the list of identifying headers for CMSs, frontend frameworks, ...
+// nolint
 var CMSHeadersList = []string{"powered", "X-CDN-Forward", "X-Pardot-Rsp", "Expires", "Weglot-Translated", "X-Powered-By", "X-Drupal-Cache", "X-AH-Environment", "X-Pardot-Route", "Derak-Umbrage", "MicrosoftSharePointTeamServices", "x-platform-processor", "X-Jenkins", "X-Wix-Request-Id", "X-Drectory-Script", "X-B3-Flags", "IBM-Web2-Location", "X-Generated-By", "azure-version", "DNNOutputCache", "x-shopify-stage", "content-disposition", "x-vercel-cache", "X-Powered-PublicCMS", "X-JIVE-USER-ID", "X-Foswikiuri", "cf-ray", "section-io-id", "X-Ghost-Cache-Status", "Access-Control-Allow-Headers", "x-fw-serve", "X-Swiftlet-Cache", "X-EC-Debug", "X-Varnish-Action", "azure-slotname", "X-Pardot-LB", "X-Mod-Pagespeed", "Cookie", "CMS-Version", "x-via-fastly", "X-SharePointHealthScore", "SPRequestGuid", "X-GitHub-Request-Id", "sw-context-token", "X-Akamai-Transformed", "X-Umbraco-Version", "X-Rocket-Nginx-Bypass", "x-fw-server", "x-platform-router", "X-Compressed-By", "Link", "Arastta", "Vary", "X-Protected-By", "WebDevSrc", "x-bubble-capacity-limit", "Fastly-Debug-Digest", "X-Akaunting", "server", "X-Fastcgi-Cache", "x-litespeed-cache", "x-platform-cluster", "X-Firefox-Spdy", "X-GoCache-CacheStatus", "X-B3-ParentSpanId", "X-Includable-Version", "host-header", "cf-cache-status", "x-bubble-capacity-used", "X-Confluence-Request-Time", "section-io-origin-status", "Server", "X-KoobooCMS-Version", "X-Wix-Server-Artifact-Id", "Servlet-engine", "X-Generator", "X-CF2", "X-Page-Speed", "X-CDN", "x-bubble-perf", "x-jive-chrome-wrapped", "X-Backdrop-Cache", "X-Jimdo-Instance", "X-Scholica-Version", "X-Shopery", "X-Supplied-By", "X-Jimdo-Wid", "X-Varnish-Age", "X-DataDome-CID", "X-Powered-By-Plesk", "x-shopid", "x-zendesk-user-id", "azure-sitename", "X-DataDome", "x-fw-static", "X-Foswikiaction", "X-StatusPage-Version", "X-AspNet-Version", "x-vercel-id", "x-pantheon-styx-hostname", "sw-version-id", "X-Dotclear-Static-Cache", "sw-language-id", "Link", "X-Arastta", "sw-invalidation-states", "X-Powered-CMS", "X-Advertising-By", "X-Hacker", "x-now-trace", "X-B3-TraceId", "X-NF-Request-ID", "Composed-By", "solodev_session", "X-Wix-Renderer-Server", "X-CF1", "x-oracle-dms-ecid", "X-Unbounce-PageId", "X-Elcodi", "OracleCommerceCloud-Version", "COMMERCE-SERVER-SOFTWARE", "x-platform-server", "X-WPE-Loopback-Upstream-Addr", "kbn-name", "X-Backside-Transport", "X-Amz-Cf-Id", "X-ATG-Version", "X-Flex-Lang", "X-Jive-Flow-Id", "X-Flow-Powered", "X-Fastly-Request-ID", "X-B3-Sampled", "SharePointHealthScore", "X-ServedBy", "kbn-version", "X-Varnish", "WP-Super-Cache", "Via", "X-Jive-Request-Id", "X-Rack-Cache", "X-dynaTrace-JS-Agent", "X-Streams-Distribution", "X-Lift-Version", "X-Spip-Cache", "section-io-origin-time-seconds", "X-B3-SpanId", "X-StatusPage-Skip-Logging", "X-epages-RequestId", "Itx-Generated-Timestamp", "X-XRDS-Location", "X-MCF-ID", "x-lw-cache", "x-fw-type", "X-JSL", "x-fw-hash", "x-sucuri-id", "X-Varnish-Hostname", "x-kinsta-cache", "X-Content-Encoded-By", "wpe-backend", "x-powered-by", "X-Varnish-Cache", "azure-regionname", "x-envoy-upstream-service-time", "Liferay-Portal", "Powered-By", "X-Pass-Why", "AR-PoweredBy", "X-Global-Transaction-ID", "x-sucuri-cache", "X-Tumblr-User"}
 
 // CSMCookies is the list of identifying cookies for CMSs, frontend frameworks, ...
@@ -184,8 +185,8 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 		if res.response.Request != nil {
 
 			if isCustomEncoderLoaded("Credentials") {
-				searchForLoginParams(res.response.Request, h)
-				searchForBasicAuth(res.response.Request, h)
+				h.searchForLoginParams(res.response.Request)
+				h.searchForBasicAuth(res.response.Request)
 			}
 
 			atomic.AddInt64(&httpEncoder.numRequests, 1)
@@ -202,7 +203,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 			continue
 		}
 
-		writeHTTP(ht, h.parent)
+		h.parent.writeHTTP(ht)
 	}
 
 	// iterate over unanswered requests
@@ -212,14 +213,14 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 			setRequest(ht, req)
 
 			if isCustomEncoderLoaded("Credentials") {
-				searchForLoginParams(req.request, h)
-				searchForBasicAuth(req.request, h)
+				h.searchForLoginParams(req.request)
+				h.searchForBasicAuth(req.request)
 			}
 
 			atomic.AddInt64(&httpEncoder.numRequests, 1)
 			atomic.AddInt64(&httpEncoder.numUnansweredRequests, 1)
 
-			writeHTTP(ht, h.parent)
+			h.parent.writeHTTP(ht)
 		} else {
 			atomic.AddInt64(&httpEncoder.numNilRequests, 1)
 		}
@@ -227,7 +228,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 }
 
 // search request header field for HTTP basic auth
-func searchForBasicAuth(req *http.Request, h *httpReader) {
+func (h *httpReader) searchForBasicAuth(req *http.Request) {
 	if u, p, ok := req.BasicAuth(); ok {
 		if u != "" || p != "" {
 			writeCredentials(&types.Credentials{
@@ -242,7 +243,7 @@ func searchForBasicAuth(req *http.Request, h *httpReader) {
 }
 
 // search for user name and password in http url params and body params
-func searchForLoginParams(req *http.Request, h *httpReader) {
+func (h *httpReader) searchForLoginParams(req *http.Request) {
 	for name, values := range req.Form {
 		if name == "user" || name == "username" {
 
@@ -272,7 +273,7 @@ func searchForLoginParams(req *http.Request, h *httpReader) {
 	}
 }
 
-func writeHTTP(h *types.HTTP, parent *tcpConnection) {
+func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 
 	httpStore.Lock()
 
@@ -367,8 +368,8 @@ func writeHTTP(h *types.HTTP, parent *tcpConnection) {
 	// }
 
 	if c.IncludePayloads {
-		h.RequestBody = parent.client.DataSlice().Bytes()
-		h.ResponseBody = parent.server.DataSlice().Bytes()
+		h.RequestBody = t.client.DataSlice().Bytes()
+		h.ResponseBody = t.server.DataSlice().Bytes()
 	}
 
 	// export metrics if configured
@@ -383,7 +384,7 @@ func writeHTTP(h *types.HTTP, parent *tcpConnection) {
 		errorMap.Inc(err.Error())
 	}
 
-	software := whatSoftwareHTTP(nil, parent.ident, h)
+	software := whatSoftwareHTTP(nil, t.ident, h)
 
 	if len(software) == 0 {
 		return
