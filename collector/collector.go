@@ -39,7 +39,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/utils"
 
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
@@ -64,8 +64,8 @@ type Collector struct {
 	errorsPcapFile *os.File
 	errorLogFile   *os.File
 
-	unknownProtosAtomic *encoder.AtomicCounterMap
-	allProtosAtomic     *encoder.AtomicCounterMap
+	unknownProtosAtomic *decoder.AtomicCounterMap
+	allProtosAtomic     *decoder.AtomicCounterMap
 	current             int64
 
 	numWorkers        int
@@ -77,7 +77,7 @@ type Collector struct {
 	unkownPcapWriterBuffered *bufio.Writer
 	numPackets               int64
 	config                   *Config
-	errorMap                 *encoder.AtomicCounterMap
+	errorMap                 *decoder.AtomicCounterMap
 
 	mu        sync.Mutex
 	statMutex sync.Mutex
@@ -95,9 +95,9 @@ func New(config Config) *Collector {
 
 	return &Collector{
 		next:                1,
-		unknownProtosAtomic: encoder.NewAtomicCounterMap(),
-		allProtosAtomic:     encoder.NewAtomicCounterMap(),
-		errorMap:            encoder.NewAtomicCounterMap(),
+		unknownProtosAtomic: decoder.NewAtomicCounterMap(),
+		allProtosAtomic:     decoder.NewAtomicCounterMap(),
+		errorMap:            decoder.NewAtomicCounterMap(),
 		files:               map[string]string{},
 		config:              &config,
 		start:               time.Now(),
@@ -278,12 +278,12 @@ func (c *Collector) Stats() {
 		}
 	}
 
-	if len(encoder.CustomEncoders) > 0 {
+	if len(decoder.CustomDecoders) > 0 {
 		rows = [][]string{}
-		for _, e := range encoder.CustomEncoders {
+		for _, e := range decoder.CustomDecoders {
 			rows = append(rows, []string{e.Name, strconv.FormatInt(e.NumRecords(), 10), share(e.NumRecords(), c.numPackets)})
 		}
-		tui.Table(target, []string{"CustomEncoder", "NumRecords", "Share"}, rows)
+		tui.Table(target, []string{"CustomDecoder", "NumRecords", "Share"}, rows)
 	}
 
 	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
@@ -297,9 +297,9 @@ func (c *Collector) Stats() {
 
 	fmt.Fprintln(target, res)
 
-	if c.config.EncoderConfig.SaveConns {
-		fmt.Fprintln(target, "saved TCP connections:", encoder.NumSavedTCPConns())
-		fmt.Fprintln(target, "saved UDP connections:", encoder.NumSavedUDPConns())
+	if c.config.DecoderConfig.SaveConns {
+		fmt.Fprintln(target, "saved TCP connections:", decoder.NumSavedTCPConns())
+		fmt.Fprintln(target, "saved UDP connections:", decoder.NumSavedUDPConns())
 	}
 }
 
@@ -328,17 +328,17 @@ func (c *Collector) printProgress() {
 			// using a strings.Builder for assembling string for performance
 			// TODO: could be refactored to use a byte slice with a fixed length instead
 			// TODO: add Builder to collector and flush it every cycle to reduce allocations
-			// also only print flows and collections when the corresponding encoders are active
+			// also only print flows and collections when the corresponding decoders are active
 			var b strings.Builder
 			b.Grow(65)
 			b.WriteString("decoding packets... (")
 			b.WriteString(utils.Progress(c.current, c.numPackets))
 			b.WriteString(") flows: ")
-			b.WriteString(strconv.Itoa(encoder.Flows.Size()))
+			b.WriteString(strconv.Itoa(decoder.Flows.Size()))
 			b.WriteString(" connections: ")
-			b.WriteString(strconv.Itoa(encoder.Connections.Size()))
+			b.WriteString(strconv.Itoa(decoder.Connections.Size()))
 			b.WriteString(" profiles: ")
-			b.WriteString(strconv.Itoa(encoder.Profiles.Size()))
+			b.WriteString(strconv.Itoa(decoder.Profiles.Size()))
 			b.WriteString(" packets: ")
 			b.WriteString(strconv.Itoa(int(c.current)))
 
@@ -390,10 +390,10 @@ func (c *Collector) printProgressInterval() chan struct{} {
 					fmt.Fprintf(os.Stdout,
 						c.progressString,
 						utils.Progress(curr, num),
-						encoder.Flows.Size(),
-						encoder.Connections.Size(),
-						encoder.Profiles.Size(),
-						encoder.ServiceStore.Size(),
+						decoder.Flows.Size(),
+						decoder.Connections.Size(),
+						decoder.Profiles.Size(),
+						decoder.ServiceStore.Size(),
 						int(curr),
 						pps,
 					)
@@ -450,7 +450,7 @@ func (c *Collector) PrintConfiguration() {
 
 	netcap.FPrintLogo(target)
 
-	if c.config.EncoderConfig.Debug {
+	if c.config.DecoderConfig.Debug {
 		// in debug mode: dump config to stdout
 		target = io.MultiWriter(os.Stdout, logFileHandle)
 	} else {
@@ -467,13 +467,13 @@ func (c *Collector) PrintConfiguration() {
 	// print configuration as table
 	tui.Table(target, []string{"Setting", "Value"}, [][]string{
 		{"Workers", strconv.Itoa(c.config.Workers)},
-		{"MemBuffer", strconv.FormatBool(c.config.EncoderConfig.Buffer)},
-		{"MemBufferSize", strconv.Itoa(c.config.EncoderConfig.MemBufferSize) + " bytes"},
-		{"Compression", strconv.FormatBool(c.config.EncoderConfig.Compression)},
+		{"MemBuffer", strconv.FormatBool(c.config.DecoderConfig.Buffer)},
+		{"MemBufferSize", strconv.Itoa(c.config.DecoderConfig.MemBufferSize) + " bytes"},
+		{"Compression", strconv.FormatBool(c.config.DecoderConfig.Compression)},
 		{"PacketBuffer", strconv.Itoa(c.config.PacketBufferSize) + " packets"},
-		{"PacketContext", strconv.FormatBool(c.config.EncoderConfig.AddContext)},
-		{"Payloads", strconv.FormatBool(c.config.EncoderConfig.IncludePayloads)},
-		{"FileStorage", c.config.EncoderConfig.FileStorage},
+		{"PacketContext", strconv.FormatBool(c.config.DecoderConfig.AddContext)},
+		{"Payloads", strconv.FormatBool(c.config.DecoderConfig.IncludePayloads)},
+		{"FileStorage", c.config.DecoderConfig.FileStorage},
 	})
 	fmt.Fprintln(target) // add a newline
 }
@@ -488,10 +488,10 @@ func (c *Collector) InitLogging() error {
 		return nil
 	}
 
-	if len(c.config.EncoderConfig.Out) != 0 {
-		if stat, err := os.Stat(c.config.EncoderConfig.Out); err != nil {
-			os.MkdirAll(c.config.EncoderConfig.Out, os.FileMode(outDirPermissionDefault))
-			_, err = os.Stat(c.config.EncoderConfig.Out)
+	if len(c.config.DecoderConfig.Out) != 0 {
+		if stat, err := os.Stat(c.config.DecoderConfig.Out); err != nil {
+			os.MkdirAll(c.config.DecoderConfig.Out, os.FileMode(outDirPermissionDefault))
+			_, err = os.Stat(c.config.DecoderConfig.Out)
 			if err != nil {
 				return err
 			}
@@ -503,7 +503,7 @@ func (c *Collector) InitLogging() error {
 	}
 
 	var err error
-	logFileHandle, err = os.OpenFile(filepath.Join(c.config.EncoderConfig.Out, "netcap.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, c.config.OutDirPermission)
+	logFileHandle, err = os.OpenFile(filepath.Join(c.config.DecoderConfig.Out, "netcap.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, c.config.OutDirPermission)
 	if err != nil {
 		return err
 	}

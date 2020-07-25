@@ -29,7 +29,7 @@ import (
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
@@ -76,8 +76,8 @@ func Run() {
 		panic(err)
 	}
 
-	if *flagEncoders {
-		encoder.ShowEncoders()
+	if *flagDecoders {
+		decoder.ShowDecoders()
 		return
 	}
 
@@ -100,13 +100,13 @@ func Run() {
 		Promisc:             *flagPromiscMode,
 		SnapLen:             *flagSnapLen,
 		LogErrors:           *flagLogErrors,
-		EncoderConfig: encoder.Config{
+		DecoderConfig: decoder.Config{
 			// needs to be disabled for batch mode
 			Buffer:          false,
 			Compression:     false,
 			CSV:             false,
-			IncludeEncoders: *flagInclude,
-			ExcludeEncoders: *flagExclude,
+			IncludeDecoders: *flagInclude,
+			ExcludeDecoders: *flagExclude,
 			Out:             "",
 			Source:          *flagInterface,
 

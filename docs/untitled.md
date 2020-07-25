@@ -10,7 +10,7 @@ Packets are fetched from an input source \(offline dump file or live from an int
 
 ## Encoders
 
-Encoders take care of converting decoded packet data into protocol buffers for the audit records. Two types of encoders exist: the [Layer Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/layerEncoder.go), which operates on _gopacket_ layer types, and the [Custom Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/customEncoder.go), for which any desired logic can be implemented, including decoding application layer protocols that are not yet supported by gopacket or protocols that require stream reassembly.
+Encoders take care of converting decoded packet data into protocol buffers for the audit records. Two types of decoders exist: the [Layer Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/layerEncoder.go), which operates on _gopacket_ layer types, and the [Custom Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/customEncoder.go), for which any desired logic can be implemented, including decoding application layer protocols that are not yet supported by gopacket or protocols that require stream reassembly.
 
 ## Unknown Protocols
 
@@ -37,12 +37,12 @@ At the end of the error log, a summary of all errors and the number of their occ
 
 ## Inclusion and Exclusion of Encoders
 
-The _-encoders_ flag can be used to list all available encoders. In case not all of them are desired, selective inclusion and exclusion is possible, by using the _-include_ and _-exclude_ flags.
+The _-encoders_ flag can be used to list all available decoders. In case not all of them are desired, selective inclusion and exclusion is possible, by using the _-include_ and _-exclude_ flags.
 
-List all encoders:
+List all decoders:
 
 ```text
-$ net capture -encoders
+$ net capture -decoders
 custom: 11
 + TLSClientHello
 + TLSServerHello
@@ -114,13 +114,13 @@ layer: 55
 ...
 ```
 
-Include specific encoders \(only those named will be used\):
+Include specific decoders \(only those named will be used\):
 
 ```text
 $ net capture -read traffic.pcap -include Ethernet,Dot1Q,IPv4,IPv6,TCP,UDP,DNS
 ```
 
-Exclude encoders \(this will prevent decoding of layers encapsulated by the excluded ones\):
+Exclude decoders \(this will prevent decoding of layers encapsulated by the excluded ones\):
 
 ```text
 $ net capture -read traffic.pcap -exclude TCP,UDP

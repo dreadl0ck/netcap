@@ -29,7 +29,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 
 	// generate maltego transform
 	trx := maltego.MaltegoTransform{}
-	for _, name := range allEncoders {
+	for _, name := range allDecoders {
 
 		ident := filepath.Join(outDir, name+".ncap")
 
@@ -73,7 +73,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 	fmt.Println(trx.ReturnOutput())
 }
 
-var allEncoders = []string{
+var allDecoders = []string{
 	"TLSClientHello",
 	"TLSServerHello",
 	"HTTP",

@@ -19,7 +19,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 )
 
 // worker spawns a new worker goroutine
@@ -50,12 +50,12 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 				// pass packet to reassembly
 				if c.config.ReassembleConnections {
-					encoder.ReassemblePacket(p, assembler)
+					decoder.ReassemblePacket(p, assembler)
 				}
 
 				// create context for packet
 				var ctx = &types.PacketContext{}
-				if encoder.AddContext {
+				if decoder.AddContext {
 					var (
 						netLayer       = p.NetworkLayer()
 						transportLayer = p.TransportLayer()
@@ -76,7 +76,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					// increment counter for layer type
 					c.allProtosAtomic.Inc(layer.LayerType().String())
 
-					if c.config.EncoderConfig.Export {
+					if c.config.DecoderConfig.Export {
 						allProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
 					}
 
@@ -86,7 +86,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 						// increase counter
 						c.unknownProtosAtomic.Inc(layer.LayerType().String())
-						if c.config.EncoderConfig.Export {
+						if c.config.DecoderConfig.Export {
 							unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
 						}
 
@@ -102,16 +102,16 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 						goto done
 					}
 
-					// pick encoders from the encoderMap by looking up the layer type
-					if encoders, ok := encoder.LayerEncoders[layer.LayerType()]; ok {
+					// pick decoders from the encoderMap by looking up the layer type
+					if decoders, ok := decoder.GoPacketDecoders[layer.LayerType()]; ok {
 
-						for _, e := range encoders {
+						for _, e := range decoders {
 							err := e.Encode(ctx, p, layer)
 							if err != nil {
-								if c.config.EncoderConfig.Export {
+								if c.config.DecoderConfig.Export {
 									decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
 								}
-								if err = c.logPacketError(p, "Layer Encoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
+								if err = c.logPacketError(p, "GoPacketDecoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
 									fmt.Println("failed to log packet error:", err)
 								}
 								goto done
@@ -121,7 +121,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 						// increment unknown layer type counter
 						c.unknownProtosAtomic.Inc(layer.LayerType().String())
-						if c.config.EncoderConfig.Export {
+						if c.config.DecoderConfig.Export {
 							unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
 						}
 
@@ -135,14 +135,14 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				} // END packet.Layers()
 
 			done:
-				// call custom encoders
-				for _, e := range encoder.CustomEncoders {
+				// call custom decoders
+				for _, e := range decoder.CustomDecoders {
 					err := e.Encode(p)
 					if err != nil {
-						if c.config.EncoderConfig.Export {
+						if c.config.DecoderConfig.Export {
 							decodingErrorsTotal.WithLabelValues(e.Name, err.Error()).Inc()
 						}
-						if err = c.logPacketError(p, "CustomEncoder Error: "+e.Name+": "+err.Error()); err != nil {
+						if err = c.logPacketError(p, "CustomDecoder Error: "+e.Name+": "+err.Error()); err != nil {
 							fmt.Println("failed to log packet error:", err)
 						}
 						continue
@@ -156,7 +156,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					if err := c.logPacketError(p, errLayer.Error().Error()); err != nil {
 						fmt.Println("failed to log packet error:", err)
 					}
-					if c.config.EncoderConfig.Export {
+					if c.config.DecoderConfig.Export {
 						decodingErrorsTotal.WithLabelValues(errLayer.LayerType().String(), errLayer.Error().Error()).Inc()
 					}
 				}
@@ -176,7 +176,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 func (c *Collector) initWorkers() []chan *packet {
 	workers := make([]chan *packet, c.config.Workers)
 	for i := range workers {
-		a := reassembly.NewAssembler(encoder.GetStreamPool())
+		a := reassembly.NewAssembler(decoder.GetStreamPool())
 		c.assemblers = append(c.assemblers, a)
 		workers[i] = c.worker(a)
 	}

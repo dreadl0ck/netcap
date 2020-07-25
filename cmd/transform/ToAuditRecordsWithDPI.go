@@ -51,9 +51,9 @@ func ToAuditRecordsWithDPI() {
 	// error explicitly ignored, files will be overwritten if there are any
 	os.MkdirAll(outDir, outDirPermission)
 
-	maltegoBaseConfig.EncoderConfig.Out = outDir
-	maltegoBaseConfig.EncoderConfig.Source = inputFile
-	maltegoBaseConfig.EncoderConfig.FileStorage = filepath.Join(outDir, "files")
+	maltegoBaseConfig.DecoderConfig.Out = outDir
+	maltegoBaseConfig.DecoderConfig.Source = inputFile
+	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, "files")
 	maltegoBaseConfig.DPI = true
 
 	// init collector

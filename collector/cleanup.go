@@ -2,7 +2,7 @@ package collector
 
 import (
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
@@ -45,12 +45,12 @@ func (c *Collector) cleanup(force bool) {
 
 	if c.config.ReassembleConnections {
 		// teardown the TCP stream reassembly and print stats
-		encoder.CleanupReassembly(!force, c.assemblers)
+		decoder.CleanupReassembly(!force, c.assemblers)
 	}
 
-	// flush all layer encoders
-	for _, encoders := range encoder.LayerEncoders {
-		for _, e := range encoders {
+	// flush all gopacket decoders
+	for _, decoders := range decoder.GoPacketDecoders {
+		for _, e := range decoders {
 			name, size := e.Destroy()
 			if size != 0 {
 				c.totalBytesWritten += size
@@ -59,8 +59,8 @@ func (c *Collector) cleanup(force bool) {
 		}
 	}
 
-	// flush all custom encoders
-	for _, e := range encoder.CustomEncoders {
+	// flush all custom decoders
+	for _, e := range decoder.CustomDecoders {
 		name, size := e.Destroy()
 		if size != 0 {
 			c.totalBytesWritten += size
@@ -93,7 +93,7 @@ func (c *Collector) cleanup(force bool) {
 	// encoder.DumpTop5NetworkFlows()
 	// encoder.DumpTop5TransportFlows()
 
-	if c.config.EncoderConfig.Debug {
+	if c.config.DecoderConfig.Debug {
 		c.printErrors()
 	}
 

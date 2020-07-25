@@ -46,7 +46,7 @@ The types package contains types.AuditRecord interface implementations for each 
 
 [https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/e](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)ncoder
 
-The encoder package implements conversion of decoded network protocols to protocol buffers. This has to be defined for each supported protocol. Two types of encoders exist: The LayerEncoder and the CustomEncoder.
+The encoder package implements conversion of decoded network protocols to protocol buffers. This has to be defined for each supported protocol. Two types of decoders exist: The LayerEncoder and the CustomEncoder.
 
 #### Layer Encoder
 

@@ -16,7 +16,7 @@ package export
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/metrics"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
@@ -102,12 +102,12 @@ func Run() {
 			SnapLen:             *flagSnapLen,
 			Promisc:             *flagPromiscMode,
 			LogErrors:           *flagLogErrors,
-			EncoderConfig: encoder.Config{
+			DecoderConfig: decoder.Config{
 				Buffer:               *flagBuffer,
 				Compression:          *flagCompress,
 				CSV:                  *flagCSV,
-				IncludeEncoders:      *flagInclude,
-				ExcludeEncoders:      *flagExclude,
+				IncludeDecoders:      *flagInclude,
+				ExcludeDecoders:      *flagExclude,
 				Out:                  *flagOutDir,
 				Source:               source,
 				IncludePayloads:      *flagPayload,

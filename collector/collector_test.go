@@ -3,7 +3,7 @@ package collector
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"os"
@@ -23,12 +23,12 @@ func TestCaptureLive(t *testing.T) {
 		PacketBufferSize:    100,
 		SnapLen:             1514,
 		Promisc:             false,
-		EncoderConfig: encoder.Config{
+		DecoderConfig: decoder.Config{
 			Buffer:               true,
 			Compression:          true,
 			CSV:                  false,
-			IncludeEncoders:      "",
-			ExcludeEncoders:      "",
+			IncludeDecoders:      "",
+			ExcludeDecoders:      "",
 			Out:                  "../tests/collector-test-live",
 			Source:               "unit tests live capture",
 			IncludePayloads:      false,
@@ -103,12 +103,12 @@ func TestCapturePCAP(t *testing.T) {
 		PacketBufferSize:    100,
 		SnapLen:             1514,
 		Promisc:             false,
-		EncoderConfig: encoder.Config{
+		DecoderConfig: decoder.Config{
 			Buffer:               true,
 			Compression:          true,
 			CSV:                  false,
-			IncludeEncoders:      "",
-			ExcludeEncoders:      "",
+			IncludeDecoders:      "",
+			ExcludeDecoders:      "",
 			Out:                  "../tests/collector-test",
 			Source:               "unit tests",
 			IncludePayloads:      false,

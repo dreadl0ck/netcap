@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"log"
@@ -19,15 +19,15 @@ import (
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
 
-	encoder.SetConfig(c.config.EncoderConfig)
+	decoder.SetConfig(c.config.DecoderConfig)
 
 	// start workers
 	c.workers = c.initWorkers()
 	utils.DebugLog.Println("spawned", c.config.Workers, "workers")
 
 	// create full output directory path if set
-	if c.config.EncoderConfig.Out != "" {
-		err = os.MkdirAll(c.config.EncoderConfig.Out, c.config.OutDirPermission)
+	if c.config.DecoderConfig.Out != "" {
+		err = os.MkdirAll(c.config.DecoderConfig.Out, c.config.OutDirPermission)
 		if err != nil {
 			return err
 		}
@@ -42,11 +42,11 @@ func (c *Collector) Init() (err error) {
 	resolvers.Init(c.config.ResolverConfig, c.config.Quiet)
 
 	if c.config.ResolverConfig.LocalDNS {
-		encoder.LocalDNS = true
+		decoder.LocalDNS = true
 	}
 
 	// set quiet mode for other subpackages
-	encoder.Quiet = c.config.Quiet
+	decoder.Quiet = c.config.Quiet
 
 	// init logfile if necessary
 	if logFileHandle == nil && c.config.Quiet {
@@ -58,13 +58,13 @@ func (c *Collector) Init() (err error) {
 
 	// check for files from previous run in the output directory
 	// and ask the user if they can be overwritten
-	files, _ := filepath.Glob(filepath.Join(c.config.EncoderConfig.Out, "*.ncap.gz"))
-	filesBare, _ := filepath.Glob(filepath.Join(c.config.EncoderConfig.Out, "*.ncap"))
+	files, _ := filepath.Glob(filepath.Join(c.config.DecoderConfig.Out, "*.ncap.gz"))
+	filesBare, _ := filepath.Glob(filepath.Join(c.config.DecoderConfig.Out, "*.ncap"))
 
 	files = append(files, filesBare...)
 
-	udpPath := filepath.Join(c.config.EncoderConfig.Out, "udpConnections")
-	tcpPath := filepath.Join(c.config.EncoderConfig.Out, "tcpConnections")
+	udpPath := filepath.Join(c.config.DecoderConfig.Out, "udpConnections")
+	tcpPath := filepath.Join(c.config.DecoderConfig.Out, "tcpConnections")
 	_, errStreams := os.Stat(udpPath)
 	_, errConns := os.Stat(tcpPath)
 	if len(files) > 0 || errStreams == nil || errConns == nil {
@@ -81,7 +81,7 @@ func (c *Collector) Init() (err error) {
 		}
 
 		// wipe extracted files
-		os.RemoveAll(filepath.Join(c.config.EncoderConfig.Out, "files"))
+		os.RemoveAll(filepath.Join(c.config.DecoderConfig.Out, "files"))
 
 		// clear streams if present
 		if errStreams == nil || errConns == nil {
@@ -90,17 +90,17 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
-	c.printStdOut("initializing encoders... ")
+	c.printStdOut("initializing decoders... ")
 
-	// initialize encoders
-	encoder.InitLayerEncoders(c.config.EncoderConfig, c.config.Quiet)
-	encoder.InitCustomEncoders(c.config.EncoderConfig, c.config.Quiet)
+	// initialize decoders
+	decoder.InitGoPacketDecoders(c.config.DecoderConfig, c.config.Quiet)
+	decoder.InitCustomDecoders(c.config.DecoderConfig, c.config.Quiet)
 
 	c.buildProgressString()
 	c.printlnStdOut("done")
 
 	// set pointer of collectors atomic counter map in encoder pkg
-	encoder.SetErrorMap(c.errorMap)
+	decoder.SetErrorMap(c.errorMap)
 
 	// create pcap files for packets
 	// with unknown protocols or errors while decoding
@@ -121,7 +121,7 @@ func (c *Collector) Init() (err error) {
 
 	// create log file
 	c.mu.Lock()
-	c.errorLogFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.log"))
+	c.errorLogFile, err = os.Create(filepath.Join(c.config.DecoderConfig.Out, "errors.log"))
 	c.mu.Unlock()
 
 	return

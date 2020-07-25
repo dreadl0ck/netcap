@@ -60,8 +60,8 @@ Start the agent:
       -context=true: add packet flow context to selected audit records
       -debug=false: display debug information
       -dpi=false: use DPI for device profiling
-      -encoders=false: show all available encoders
-      -exclude="": exclude specific encoders
+      -decoders=false: show all available decoders
+      -exclude="": exclude specific decoders
       -flow-flush-interval=2000: flushes flows every X flows
       -flow-timeout=10s: closes flows older than flowTimeout
       -flushevery=100: flush assembler every N packets
@@ -70,7 +70,7 @@ Start the agent:
       -hexdump=false: dump packets used in stream reassembly as hex to the reassembly.log file
       -iface="en0": interface
       -ignorefsmerr=false: ignore TCP FSM errors
-      -include="": include specific encoders
+      -include="": include specific decoders
       -interfaces=false: list all visible network interfaces
       -ja3DB=false: use ja3 database for device profiling
       -local-dns=false: resolve DNS locally via hosts file in the database dir

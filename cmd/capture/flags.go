@@ -37,11 +37,11 @@ var (
 
 	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 
-	flagInclude = fs.String("include", "", "include specific encoders")
-	flagExclude = fs.String("exclude", "", "exclude specific encoders")
+	flagInclude = fs.String("include", "", "include specific decoders")
+	flagExclude = fs.String("exclude", "", "exclude specific decoders")
 
-	flagEncoders              = fs.Bool("encoders", false, "show all available encoders")
-	flagPrintProtocolOverview = fs.Bool("overview", false, "print a list of all available encoders and fields")
+	flagDecoders              = fs.Bool("decoders", false, "show all available decoders")
+	flagPrintProtocolOverview = fs.Bool("overview", false, "print a list of all available decoders and fields")
 
 	flagInterface    = fs.String("iface", "", "attach to network interface and capture in live mode")
 	flagCompress     = fs.Bool("comp", true, "compress output with gzip")

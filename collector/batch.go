@@ -18,7 +18,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/pcap"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -72,9 +72,9 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 		}
 	}()
 
-	// get channels for all layer encoders
-	for _, encoders := range encoder.LayerEncoders {
-		for _, e := range encoders {
+	// get channels for all gopacket decoders
+	for _, decoders := range decoder.GoPacketDecoders {
+		for _, e := range decoders {
 			chans = append(chans, BatchInfo{
 				Type: e.Type,
 				Chan: e.GetChan(),
@@ -82,8 +82,8 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 		}
 	}
 
-	// get channels for all custom encoders
-	for _, e := range encoder.CustomEncoders {
+	// get channels for all custom decoders
+	for _, e := range decoder.CustomDecoders {
 		chans = append(chans, BatchInfo{
 			Type: e.Type,
 			Chan: e.GetChan(),

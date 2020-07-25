@@ -37,9 +37,9 @@ var (
 	flagCalcEntropy    = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
 	flagFileStorage    = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
 	flagBPF            = fs.String("bpf", "", "supply a BPF filter to use for netcap collection")
-	flagInclude        = fs.String("include", "", "include specific encoders")
-	flagExclude        = fs.String("exclude", "", "exclude specific encoders")
-	flagEncoders       = fs.Bool("encoders", false, "show all available encoders")
+	flagInclude        = fs.String("include", "", "include specific decoders")
+	flagExclude        = fs.String("exclude", "", "exclude specific decoders")
+	flagDecoders       = fs.Bool("decoders", false, "show all available decoders")
 
 	flagWorkers      = fs.Int("workers", runtime.NumCPU(), "number of workers")
 	flagPacketBuffer = fs.Int("pbuf", 0, "set packet buffer size")

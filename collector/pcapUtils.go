@@ -99,7 +99,7 @@ func (c *Collector) createUnknownPcap() error {
 	var err error
 
 	// Open output pcap file and write header
-	c.unknownPcapFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "unknown.pcap"))
+	c.unknownPcapFile, err = os.Create(filepath.Join(c.config.DecoderConfig.Out, "unknown.pcap"))
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (c *Collector) createErrorsPcap() error {
 	var err error
 
 	// Open output pcap file and write header
-	c.errorsPcapFile, err = os.Create(filepath.Join(c.config.EncoderConfig.Out, "errors.pcap"))
+	c.errorsPcapFile, err = os.Create(filepath.Join(c.config.DecoderConfig.Out, "errors.pcap"))
 	if err != nil {
 		return err
 	}
