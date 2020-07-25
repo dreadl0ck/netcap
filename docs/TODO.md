@@ -1,10 +1,17 @@
 # TODOs
 
+- integrate: https://github.com/fwmark/registry/blob/main/README.md
+- check handling of out of order packets in tcpFactory
+- only show if there are unknown protos: * protocol supported by gopacket, but not implemented in netcap
+- implement tls decryption: https://wiki.wireshark.org/TLS
+- add comments based on wireshark info field to records
 - add verbose per packet logs via flag (+include packet number)
 - chart pkts/sec by time or pkt offset in pcap
 - check source todos
 - error handling iteration: improve error messages and reduce panic() usage
- 
+- reduce global state iteration
+- comment exported symbols iteration
+
 maltego additions:
 
 - add Open Image

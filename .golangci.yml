@@ -126,8 +126,7 @@ issues:
 run:
   skip-dirs:
     - sshx # TODO
-    - maltego # TODO
-    - label # TODO
+    - tls # TODO
     - test/testdata_etc
     - internal/cache
     - internal/renameio
