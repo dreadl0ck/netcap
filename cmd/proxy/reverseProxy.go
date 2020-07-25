@@ -103,6 +103,7 @@ func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
 			TLSHandshakeTimeout:   time.Duration(*flagTLSHandshakeTimeout) * time.Second,
 			ExpectContinueTimeout: 5 * time.Second,
 
+			/* #nosec */
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: *flagSkipTLSVerify,
 			},

@@ -46,6 +46,7 @@ const (
 	serviceSSH    = "SSH"
 	servicePOP3   = "POP3"
 	serviceTelnet = "Telnet"
+	serviceFTP    = "FTP"
 )
 
 type Software struct {

@@ -18,7 +18,7 @@ import (
 	"github.com/felixge/fgprof"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 	"os"
 	"runtime/pprof"
 	"strings"
