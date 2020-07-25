@@ -80,6 +80,12 @@ var (
 	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)`)
 	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)(?:AUTHENTICATE PLAIN|authenticate plain)\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)`)
 	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)`)
+
+	// credStore is used to deduplicate the credentials written to disk
+	// it maps an identifier in the format: c.Service + c.User + c.Password
+	// to the flow ident where the data was observed
+	credStore   = make(map[string]string)
+	credStoreMu sync.Mutex
 )
 
 func harvesterDebug(ident string, data []byte, args ...interface{}) {
@@ -89,13 +95,13 @@ func harvesterDebug(ident string, data []byte, args ...interface{}) {
 // harvester for the FTP protocol
 func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
-	//harvesterDebug(ident, data, "FTP")
+	//harvesterDebug(ident, data, serviceFTP)
 
 	matches := reFTP.FindSubmatch(data)
 	if len(matches) > 1 {
 		return &types.Credentials{
 			Timestamp: ts.String(),
-			Service:   "FTP",
+			Service:   serviceFTP,
 			Flow:      ident,
 			User:      string(matches[1]),
 			Password:  string(matches[2]),
@@ -371,31 +377,23 @@ var credentialsDecoder = CreateCustomDecoder(
 )
 
 // harvester for the FTP protocol
-func findVersions(data []byte, ident string, ts time.Time) *types.Software {
-
-	//harvesterDebug(ident, data, "FTP")
-
-	matches := reGenericVersion.FindSubmatch(data)
-	if len(matches) > 1 {
-		return &types.Software{
-			Timestamp: ts.String(),
-			Product:   string(matches[1]),
-			Version:   string(matches[2]) + "." + string(matches[3]) + "." + string(matches[4]),
-			Flows:     []string{ident},
-			Notes:     "Found by matching possible version format",
-		}
-	}
-
-	return nil
-}
-
-var (
-	// credStore is used to deduplicate the credentials written to disk
-	// it maps an identifier in the format: c.Service + c.User + c.Password
-	// to the flow ident where the data was observed
-	credStore   = make(map[string]string)
-	credStoreMu sync.Mutex
-)
+//func findVersions(data []byte, ident string, ts time.Time) *types.Software {
+//
+//	//harvesterDebug(ident, data, serviceFTP)
+//
+//	matches := reGenericVersion.FindSubmatch(data)
+//	if len(matches) > 1 {
+//		return &types.Software{
+//			Timestamp: ts.String(),
+//			Product:   string(matches[1]),
+//			Version:   string(matches[2]) + "." + string(matches[3]) + "." + string(matches[4]),
+//			Flows:     []string{ident},
+//			Notes:     "Found by matching possible version format",
+//		}
+//	}
+//
+//	return nil
+//}
 
 // writeCredentials is a util that should be used to write credential audit to disk
 // it will deduplicate the audit records to avoid repeating information on disk

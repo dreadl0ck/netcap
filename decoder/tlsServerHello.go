@@ -14,8 +14,8 @@
 package decoder
 
 import (
+	"encoding/binary"
 	"github.com/dreadl0ck/ja3"
-	"strconv"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -59,8 +59,8 @@ var tlsServerHelloDecoder = CreateCustomDecoder(
 			}
 
 			if tl := p.TransportLayer(); tl != nil {
-				srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
-				dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Dst().String())
+				srcPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Src().Raw()))
+				dstPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Dst().Raw()))
 			}
 
 			return &types.TLSServerHello{

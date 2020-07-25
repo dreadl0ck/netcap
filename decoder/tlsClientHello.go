@@ -14,8 +14,7 @@
 package decoder
 
 import (
-	"strconv"
-
+	"encoding/binary"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -79,8 +78,8 @@ var tlsClientHelloDecoder = CreateCustomDecoder(
 			}
 
 			if tl := p.TransportLayer(); tl != nil {
-				srcPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Src().String())
-				dstPort, _ = strconv.Atoi(p.TransportLayer().TransportFlow().Dst().String())
+				srcPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Src().Raw()))
+				dstPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Dst().Raw()))
 			}
 
 			return &types.TLSClientHello{
@@ -89,10 +88,10 @@ var tlsClientHelloDecoder = CreateCustomDecoder(
 				Version:          int32(hello.Version),
 				MessageLen:       int32(hello.MessageLen),
 				HandshakeType:    int32(hello.HandshakeType),
-				HandshakeLen:     uint32(hello.HandshakeLen),
+				HandshakeLen:     hello.HandshakeLen,
 				HandshakeVersion: int32(hello.HandshakeVersion),
 				Random:           hello.Random,
-				SessionIDLen:     uint32(hello.SessionIDLen),
+				SessionIDLen:     hello.SessionIDLen,
 				SessionID:        hello.SessionID,
 				CipherSuiteLen:   int32(hello.CipherSuiteLen),
 				ExtensionLen:     int32(hello.ExtensionLen),
