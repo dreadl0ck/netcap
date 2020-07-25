@@ -236,6 +236,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 	}
 
 	// Only do JA3 fingerprinting when both ja3 and ja3s are present, aka when the server Hello is captured
+	// TODO: improve this loops efficiency
 	if len(JA3) > 0 && len(JA3s) > 0 {
 		for _, server := range ja3db.Servers {
 			serverName := server.Server

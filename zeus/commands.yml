@@ -288,3 +288,9 @@ commands:
     profile-io-pprof:
         exec: |
             go tool pprof --http=:6061 http://localhost:6060/debug/pprof?seconds=3 > fgprof.folded
+
+    lint:
+        exec: golangci-lint run ./...
+
+    gosec:
+        exec: gosec ./...
