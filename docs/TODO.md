@@ -18,6 +18,8 @@
 
 maltego additions:
 
+- add proper display data for all entities possible (show images and add links etc)
+- add tcp and UDP colored streams as display data
 - add Open Image
 - mark if files extracted from HTTP are a Server Reply or client data sent via GET / POST
 - on netcap.URL: To Visitors

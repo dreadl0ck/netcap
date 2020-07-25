@@ -48,8 +48,8 @@ type sshReader struct {
 func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 
 	var (
-		serverBuf         bytes.Buffer
-		clientBuf         bytes.Buffer
+		serverBuf bytes.Buffer
+		clientBuf bytes.Buffer
 	)
 
 	for _, d := range h.parent.merged {
@@ -134,8 +134,8 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		// read the SSH ident from the buffer
 		var (
-			b = bytes.NewReader(data)
-			ident []byte
+			b        = bytes.NewReader(data)
+			ident    []byte
 			lastByte byte
 		)
 		for {
@@ -144,7 +144,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				break
 			}
 			if lastByte == 0x0d && b == 0x0a {
-				offset = len(ident)+1
+				offset = len(ident) + 1
 				break
 			}
 			lastByte = b
@@ -179,7 +179,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				break
 			}
 
-			length := int(binary.BigEndian.Uint32(data[offset:i-1]))
+			length := int(binary.BigEndian.Uint32(data[offset : i-1]))
 			padding := int(data[i-1])
 			if len(data) < i+length-padding-1 {
 				//fmt.Println("break: len(data) < i+length-padding-1")
