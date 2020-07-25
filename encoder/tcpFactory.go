@@ -81,9 +81,9 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 	serverIdent := filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
 
 	// do not write encrypted HTTP streams to disk for now
-	if stream.isHTTPS {
-		return stream
-	}
+	//if stream.isHTTPS {
+	//	return stream
+	//}
 
 	switch {
 	case stream.isHTTP:
