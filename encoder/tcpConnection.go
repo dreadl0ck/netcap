@@ -141,13 +141,9 @@ type tcpConnection struct {
 	decoder  StreamDecoder
 	tcpstate *reassembly.TCPSimpleFSM
 
-	isSSH bool
-
 	sync.Mutex
 
-	isHTTP  bool
 	isHTTPS bool
-	isPOP3  bool
 	fsmerr  bool
 }
 
@@ -328,17 +324,6 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 
 	data := sg.Fetch(length)
 
-	// dont process stream if protocol is disabled
-	if t.isSSH && !streamFactory.decodeSSH {
-		return
-	}
-	if t.isHTTP && !streamFactory.decodeHTTP {
-		return
-	}
-	if t.isPOP3 && !streamFactory.decodePOP3 {
-		return
-	}
-
 	// do not process encrypted HTTP streams for now
 	//if t.isHTTPS {
 	//	return
@@ -451,9 +436,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 		)
 
 		// try to determine what type of raw tcp stream and update decoder
-		// a first selection has been made based on the ports
-		// now lets peek into the data stream to make a guess
-		// TODO: always identify the decoder at this point, and treat everything as a raw TCP conn first?
+		// TODO: move this functionality into a dedicated package and create a voting model
 		if _, ok := t.decoder.(*tcpReader); ok {
 			switch {
 			case bytes.Contains(t.server.ServiceBanner(), []byte("HTTP")):

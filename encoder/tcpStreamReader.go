@@ -42,12 +42,12 @@ type tcpStreamReader struct {
 	sync.Mutex
 }
 
-func newTCPStreamReader(parent *tcpConnection, ident string, client bool) *tcpStreamReader {
+func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 	return &tcpStreamReader{
 		dataChan: make(chan *StreamData, c.StreamDecoderBufSize),
-		ident:    ident,
+		ident:    t.ident,
 		hexdump:  c.HexDump,
-		parent:   parent,
+		parent:   t,
 		isClient: client,
 	}
 }
