@@ -21,7 +21,7 @@ import (
 
 var sshDecoder = CreateCustomDecoder(
 	types.Type_NC_SSH,
-	"SSH",
+	serviceSSH,
 	"The Secure Shell Protocol allows controlling remote machines over an encrypted connection",
 	func(d *CustomDecoder) error {
 		streamFactory.decodeSSH = true

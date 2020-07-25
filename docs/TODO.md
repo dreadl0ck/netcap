@@ -3,7 +3,7 @@
 - service: add reverse dns lookup and cache all results offline in a boltdb?
 - add a config option to only write the first X bytes of an TLS encrypted connection to disk
 - integrate to resolvers: https://github.com/fwmark/registry/blob/main/README.md
-- check handling of out of order packets in tcpFactory
+
 - implement tls decryption: https://wiki.wireshark.org/TLS
 - add comments based on wireshark info field to records
 - add verbose per packet logs via flag (+include packet number)

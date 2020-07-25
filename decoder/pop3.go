@@ -21,7 +21,7 @@ import (
 
 var pop3Decoder = CreateCustomDecoder(
 	types.Type_NC_POP3,
-	"POP3",
+	servicePOP3,
 	"The POP3 protocol is used to fetch emails from a mail server",
 	func(d *CustomDecoder) error {
 		streamFactory.decodePOP3 = true

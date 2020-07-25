@@ -113,7 +113,7 @@ func (h *pop3Reader) Decode(c2s, s2c Stream) {
 	//	fmt.Println(err)
 	//}
 
-	//fmt.Println("POP3", h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
+	//fmt.Println(servicePOP3, h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
 
 	mails, user, pass, token := h.parseMails()
 	pop3Msg := &types.POP3{
@@ -129,7 +129,7 @@ func (h *pop3Reader) Decode(c2s, s2c Stream) {
 	if user != "" || pass != "" {
 		writeCredentials(&types.Credentials{
 			Timestamp: h.parent.firstPacket.String(),
-			Service:   "POP3",
+			Service:   servicePOP3,
 			Flow:      h.parent.ident,
 			User:      user,
 			Password:  pass,

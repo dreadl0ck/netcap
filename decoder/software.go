@@ -40,6 +40,13 @@ import (
 	"github.com/ua-parser/uap-go/uaparser"
 )
 
+const (
+	protoTCP    = "TCP"
+	serviceHTTP = "HTTP"
+	serviceSSH  = "SSH"
+	servicePOP3 = "POP3"
+)
+
 type Software struct {
 	*types.Software
 	sync.Mutex
@@ -324,7 +331,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 				//DeviceProfiles: []string{dpIdent},
 				SourceName: "UserAgent",
 				SourceData: h.UserAgent,
-				Service:    "HTTP",
+				Service:    serviceHTTP,
 				Flows:      []string{flowIdent},
 				Notes:      userInfo.full,
 			},
@@ -343,7 +350,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 				//DeviceProfiles: []string{dpIdent},
 				SourceName: "ServerName",
 				SourceData: h.ServerName,
-				Service:    "HTTP",
+				Service:    serviceHTTP,
 				Flows:      []string{flowIdent},
 			},
 		})
@@ -361,7 +368,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 					//DeviceProfiles: []string{dpIdent},
 					SourceName: "X-Powered-By",
 					SourceData: poweredBy,
-					Service:    "HTTP",
+					Service:    serviceHTTP,
 					Flows:      []string{flowIdent},
 				},
 			})
@@ -369,6 +376,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 	}
 
 	// Try to detect apps
+	// TODO: optimize this loops performance
 	httpStore.Lock()
 	if receivedHeaders, ok := httpStore.CMSHeaders[h.DstIP]; ok {
 		httpStore.Unlock()
@@ -388,7 +396,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 											Product:    k,
 											Version:    "",
 											SourceName: key,
-											Service:    "HTTP",
+											Service:    serviceHTTP,
 											Flows:      []string{flowIdent},
 										},
 									})

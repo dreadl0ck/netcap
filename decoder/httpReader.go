@@ -263,7 +263,7 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 
 			writeCredentials(&types.Credentials{
 				Timestamp: h.parent.firstPacket.String(),
-				Service:   "HTTP",
+				Service:   serviceHTTP,
 				Flow:      h.parent.ident,
 				User:      strings.Join(values, "; "),
 				Password:  pass,

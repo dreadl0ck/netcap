@@ -103,7 +103,7 @@ var serviceBanners = []bannerTest{
 	// POP3
 	{
 		banner:  "+OK POP server ready H migmx027 0M8Bvu-1XYRm80CF0-00vllf\\r\\n+OK Capability list follows\\r\\n",
-		product: "POP3",
+		product: servicePOP3,
 		//reg: "^\\+OK POP server ready",
 	},
 }
