@@ -137,9 +137,9 @@ func saveTCPServiceBanner(s StreamReader) {
 	ServiceStore.Items[s.ServiceIdent()] = serv
 	ServiceStore.Unlock()
 
-	statsMutex.Lock()
-	reassemblyStats.numServices++
-	statsMutex.Unlock()
+	stats.Lock()
+	stats.numServices++
+	stats.Unlock()
 }
 
 // NewDeviceProfile creates a new network service

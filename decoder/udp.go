@@ -224,9 +224,9 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 
 	utils.ReassemblyLog.Println("saveConnection", base)
 
-	statsMutex.Lock()
-	reassemblyStats.savedUDPConnections++
-	statsMutex.Unlock()
+	stats.Lock()
+	stats.savedUDPConnections++
+	stats.Unlock()
 
 	// append to files
 	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaultFilesPermission)
@@ -305,7 +305,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	ServiceStore.Items[serviceIdent] = serv
 	ServiceStore.Unlock()
 
-	statsMutex.Lock()
-	reassemblyStats.numServices++
-	statsMutex.Unlock()
+	stats.Lock()
+	stats.numServices++
+	stats.Unlock()
 }

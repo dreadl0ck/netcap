@@ -68,21 +68,12 @@ import (
 )
 
 var (
-	numErrors uint
-
-	requests  = 0
-	responses = 0
-	// synchronizes access to stats
-	statsMutex sync.Mutex
-
-	count          = 0
-	dataBytes      = int64(0)
 	start          = time.Now()
 	errorsMap      = make(map[string]uint)
 	errorsMapMutex sync.Mutex
 )
 
-var reassemblyStats struct {
+var stats struct {
 	ipdefrag            int64
 	missedBytes         int64
 	pkt                 int64
@@ -102,18 +93,26 @@ var reassemblyStats struct {
 	savedUDPConnections int64
 	numSoftware         int64
 	numServices         int64
+
+	requests  int64
+	responses int64
+	count     int64
+	numErrors uint
+	dataBytes int64
+
+	sync.Mutex
 }
 
 func NumSavedTCPConns() int64 {
-	statsMutex.Lock()
-	defer statsMutex.Unlock()
-	return reassemblyStats.savedTCPConnections
+	stats.Lock()
+	defer stats.Unlock()
+	return stats.savedTCPConnections
 }
 
 func NumSavedUDPConns() int64 {
-	statsMutex.Lock()
-	defer statsMutex.Unlock()
-	return reassemblyStats.savedUDPConnections
+	stats.Lock()
+	defer stats.Unlock()
+	return stats.savedUDPConnections
 }
 
 /*
@@ -154,13 +153,13 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 	// Finite State Machine
 	if !t.tcpstate.CheckState(tcp, dir) {
 		logReassemblyError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
-		statsMutex.Lock()
-		reassemblyStats.rejectFsm++
+		stats.Lock()
+		stats.rejectFsm++
 		if !t.fsmerr {
 			t.fsmerr = true
-			reassemblyStats.rejectConnFsm++
+			stats.rejectConnFsm++
 		}
-		statsMutex.Unlock()
+		stats.Unlock()
 		if !c.IgnoreFSMerr {
 			return false
 		}
@@ -170,9 +169,9 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 	err := t.optchecker.Accept(tcp, ci, dir, nextSeq, start)
 	if err != nil {
 		logReassemblyError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
-		statsMutex.Lock()
-		reassemblyStats.rejectOpt++
-		statsMutex.Unlock()
+		stats.Lock()
+		stats.rejectOpt++
+		stats.Unlock()
 		if !c.NoOptCheck {
 			return false
 		}
@@ -193,9 +192,9 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 
 	// stats
 	if !accept {
-		statsMutex.Lock()
-		reassemblyStats.rejectOpt++
-		statsMutex.Unlock()
+		stats.Lock()
+		stats.rejectOpt++
+		stats.Unlock()
 	}
 	return accept
 }
@@ -204,30 +203,30 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 
 	sgStats := sg.Stats()
 
-	statsMutex.Lock()
+	stats.Lock()
 	if skip > 0 {
-		reassemblyStats.missedBytes += int64(skip)
+		stats.missedBytes += int64(skip)
 	}
 
-	reassemblyStats.sz += int64(length - saved)
-	reassemblyStats.pkt += int64(sgStats.Packets)
+	stats.sz += int64(length - saved)
+	stats.pkt += int64(sgStats.Packets)
 	if sgStats.Chunks > 1 {
-		reassemblyStats.reassembled++
+		stats.reassembled++
 	}
-	reassemblyStats.outOfOrderPackets += int64(sgStats.QueuedPackets)
-	reassemblyStats.outOfOrderBytes += int64(sgStats.QueuedBytes)
-	if int64(length) > reassemblyStats.biggestChunkBytes {
-		reassemblyStats.biggestChunkBytes = int64(length)
+	stats.outOfOrderPackets += int64(sgStats.QueuedPackets)
+	stats.outOfOrderBytes += int64(sgStats.QueuedBytes)
+	if int64(length) > stats.biggestChunkBytes {
+		stats.biggestChunkBytes = int64(length)
 	}
-	if int64(sgStats.Packets) > reassemblyStats.biggestChunkPackets {
-		reassemblyStats.biggestChunkPackets = int64(sgStats.Packets)
+	if int64(sgStats.Packets) > stats.biggestChunkPackets {
+		stats.biggestChunkPackets = int64(sgStats.Packets)
 	}
 	if sgStats.OverlapBytes != 0 && sgStats.OverlapPackets == 0 {
 		utils.ReassemblyLog.Println("ReassembledSG: invalid overlap, bytes:", sgStats.OverlapBytes, "packets:", sgStats.OverlapPackets)
 	}
-	reassemblyStats.overlapBytes += int64(sgStats.OverlapBytes)
-	reassemblyStats.overlapPackets += int64(sgStats.OverlapPackets)
-	statsMutex.Unlock()
+	stats.overlapBytes += int64(sgStats.OverlapBytes)
+	stats.overlapPackets += int64(sgStats.OverlapPackets)
+	stats.Unlock()
 
 	var ident string
 	if dir == reassembly.TCPDirClientToServer {
@@ -479,10 +478,10 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	}
 
 	// lock to sync with read on destroy
-	statsMutex.Lock()
-	count++
-	dataBytes += int64(len(packet.Data()))
-	statsMutex.Unlock()
+	stats.Lock()
+	stats.count++
+	stats.dataBytes += int64(len(packet.Data()))
+	stats.Unlock()
 
 	// defrag the IPv4 packet if desired
 	// TODO: implement defragmentation for IPv6
@@ -501,7 +500,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 			return
 		}
 		if newip4.Length != l {
-			reassemblyStats.ipdefrag++
+			stats.ipdefrag++
 			logReassemblyDebug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
 			pb, ok := packet.(gopacket.PacketBuilder)
 			if !ok {
@@ -521,9 +520,9 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 			log.Fatalf("Failed to set network layer for checksum: %s\n", err)
 		}
 	}
-	statsMutex.Lock()
-	reassemblyStats.totalsz += int64(len(tcp.Payload))
-	statsMutex.Unlock()
+	stats.Lock()
+	stats.totalsz += int64(len(tcp.Payload))
+	stats.Unlock()
 
 	// for debugging:
 	//AssembleWithContextTimeout(packet, assembler, tcp)
@@ -533,9 +532,9 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 
 	// TODO: refactor and use a ticker model in a goroutine, similar to progress reporting
 	if c.FlushEvery > 0 {
-		statsMutex.Lock()
-		doFlush := count%c.FlushEvery == 0
-		statsMutex.Unlock()
+		stats.Lock()
+		doFlush := stats.count%int64(c.FlushEvery) == 0
+		stats.Unlock()
 
 		// flush connections in interval
 		if doFlush {
@@ -644,7 +643,9 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	// print stats if not quiet
 	if !Quiet {
 		errorsMapMutex.Lock()
-		utils.ReassemblyLog.Printf("HTTPDecoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, dataBytes, time.Since(start), numErrors, len(errorsMap))
+		stats.Lock()
+		utils.ReassemblyLog.Printf("HTTPDecoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", stats.count, stats.dataBytes, time.Since(start), stats.numErrors, len(errorsMap))
+		stats.Unlock()
 		errorsMapMutex.Unlock()
 
 		// print configuration
@@ -663,44 +664,44 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
 		printProgress(1, 1)
 
-		statsMutex.Lock()
+		stats.Lock()
 		rows := [][]string{}
 		if c.DefragIPv4 {
-			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(reassemblyStats.ipdefrag, 10)})
+			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(stats.ipdefrag, 10)})
 		}
-		rows = append(rows, []string{"missed bytes", strconv.FormatInt(reassemblyStats.missedBytes, 10)})
-		rows = append(rows, []string{"total packets", strconv.FormatInt(reassemblyStats.pkt, 10)})
-		rows = append(rows, []string{"rejected FSM", strconv.FormatInt(reassemblyStats.rejectFsm, 10)})
-		rows = append(rows, []string{"rejected Options", strconv.FormatInt(reassemblyStats.rejectOpt, 10)})
-		rows = append(rows, []string{"reassembled bytes", strconv.FormatInt(reassemblyStats.sz, 10)})
-		rows = append(rows, []string{"total TCP bytes", strconv.FormatInt(reassemblyStats.totalsz, 10)})
-		rows = append(rows, []string{"conn rejected FSM", strconv.FormatInt(reassemblyStats.rejectConnFsm, 10)})
-		rows = append(rows, []string{"reassembled chunks", strconv.FormatInt(reassemblyStats.reassembled, 10)})
-		rows = append(rows, []string{"out-of-order packets", strconv.FormatInt(reassemblyStats.outOfOrderPackets, 10)})
-		rows = append(rows, []string{"out-of-order bytes", strconv.FormatInt(reassemblyStats.outOfOrderBytes, 10)})
-		rows = append(rows, []string{"biggest-chunk packets", strconv.FormatInt(reassemblyStats.biggestChunkPackets, 10)})
-		rows = append(rows, []string{"biggest-chunk bytes", strconv.FormatInt(reassemblyStats.biggestChunkBytes, 10)})
-		rows = append(rows, []string{"overlap packets", strconv.FormatInt(reassemblyStats.overlapPackets, 10)})
-		rows = append(rows, []string{"overlap bytes", strconv.FormatInt(reassemblyStats.overlapBytes, 10)})
-		rows = append(rows, []string{"saved TCP connections", strconv.FormatInt(reassemblyStats.savedTCPConnections, 10)})
-		rows = append(rows, []string{"saved UDP connections", strconv.FormatInt(reassemblyStats.savedUDPConnections, 10)})
-		rows = append(rows, []string{"numSoftware", strconv.FormatInt(reassemblyStats.numSoftware, 10)})
-		rows = append(rows, []string{"numServices", strconv.FormatInt(reassemblyStats.numServices, 10)})
-		statsMutex.Unlock()
+		rows = append(rows, []string{"missed bytes", strconv.FormatInt(stats.missedBytes, 10)})
+		rows = append(rows, []string{"total packets", strconv.FormatInt(stats.pkt, 10)})
+		rows = append(rows, []string{"rejected FSM", strconv.FormatInt(stats.rejectFsm, 10)})
+		rows = append(rows, []string{"rejected Options", strconv.FormatInt(stats.rejectOpt, 10)})
+		rows = append(rows, []string{"reassembled bytes", strconv.FormatInt(stats.sz, 10)})
+		rows = append(rows, []string{"total TCP bytes", strconv.FormatInt(stats.totalsz, 10)})
+		rows = append(rows, []string{"conn rejected FSM", strconv.FormatInt(stats.rejectConnFsm, 10)})
+		rows = append(rows, []string{"reassembled chunks", strconv.FormatInt(stats.reassembled, 10)})
+		rows = append(rows, []string{"out-of-order packets", strconv.FormatInt(stats.outOfOrderPackets, 10)})
+		rows = append(rows, []string{"out-of-order bytes", strconv.FormatInt(stats.outOfOrderBytes, 10)})
+		rows = append(rows, []string{"biggest-chunk packets", strconv.FormatInt(stats.biggestChunkPackets, 10)})
+		rows = append(rows, []string{"biggest-chunk bytes", strconv.FormatInt(stats.biggestChunkBytes, 10)})
+		rows = append(rows, []string{"overlap packets", strconv.FormatInt(stats.overlapPackets, 10)})
+		rows = append(rows, []string{"overlap bytes", strconv.FormatInt(stats.overlapBytes, 10)})
+		rows = append(rows, []string{"saved TCP connections", strconv.FormatInt(stats.savedTCPConnections, 10)})
+		rows = append(rows, []string{"saved UDP connections", strconv.FormatInt(stats.savedUDPConnections, 10)})
+		rows = append(rows, []string{"numSoftware", strconv.FormatInt(stats.numSoftware, 10)})
+		rows = append(rows, []string{"numServices", strconv.FormatInt(stats.numServices, 10)})
+		stats.Unlock()
 
 		tui.Table(utils.ReassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
 
 		errorsMapMutex.Lock()
-		statsMutex.Lock()
-		if numErrors != 0 {
+		stats.Lock()
+		if stats.numErrors != 0 {
 			rows = [][]string{}
 			for e := range errorsMap {
 				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
 			}
 			tui.Table(utils.ReassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
 		}
-		utils.ReassemblyLog.Println("\nencountered", numErrors, "errors during processing.", "HTTP requests", requests, " responses", responses)
-		statsMutex.Unlock()
+		utils.ReassemblyLog.Println("\nencountered", stats.numErrors, "errors during processing.", "HTTP requests", stats.requests, " responses", stats.responses)
+		stats.Unlock()
 		errorsMapMutex.Unlock()
 	}
 }

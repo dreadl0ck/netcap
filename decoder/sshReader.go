@@ -82,9 +82,9 @@ func (h *sshReader) Decode(s2c Stream, c2s Stream) {
 				s,
 				sync.Mutex{},
 			}
-			statsMutex.Lock()
-			reassemblyStats.numSoftware++
-			statsMutex.Unlock()
+			stats.Lock()
+			stats.numSoftware++
+			stats.Unlock()
 		}
 	}
 	SoftwareStore.Unlock()

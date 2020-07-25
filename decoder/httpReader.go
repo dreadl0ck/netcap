@@ -444,9 +444,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	logReassemblyInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.parent.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 
 	// increment counter
-	statsMutex.Lock()
-	responses++
-	statsMutex.Unlock()
+	stats.Lock()
+	stats.responses++
+	stats.Unlock()
 
 	h.parent.Lock()
 	h.responses = append(h.responses, &httpResponse{
@@ -924,9 +924,9 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	}
 
 	// increase counter
-	statsMutex.Lock()
-	requests++
-	statsMutex.Unlock()
+	stats.Lock()
+	stats.requests++
+	stats.Unlock()
 
 	h.parent.Lock()
 	h.requests = append(h.requests, request)

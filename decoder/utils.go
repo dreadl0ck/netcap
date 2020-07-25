@@ -235,8 +235,12 @@ func pad(in interface{}, length int) string {
 }
 
 func logReassemblyError(t string, s string, a ...interface{}) {
+
+	stats.Lock()
+	stats.numErrors++
+	stats.Unlock()
+
 	errorsMapMutex.Lock()
-	numErrors++
 	nb := errorsMap[t]
 	errorsMap[t] = nb + 1
 	errorsMapMutex.Unlock()
