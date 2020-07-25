@@ -1,5 +1,6 @@
 # TODOs
 
+- service: add reverse dns lookup and cache all results offline in a boltdb?
 - add a config option to only write the first X bytes of an TLS encrypted connection to disk
 - integrate: https://github.com/fwmark/registry/blob/main/README.md
 - check handling of out of order packets in tcpFactory
