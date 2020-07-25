@@ -69,7 +69,7 @@ Read and export *Netcap* dump files in the current directory:
       -dir="": path to directory with netcap audit records
       -dpi=false: use DPI for device profiling
       -dumpJson=false: dump as JSON
-      -exclude="LinkFlow,TransportFlow,NetworkFlow": exclude specific encoders
+      -exclude="LinkFlow,TransportFlow,NetworkFlow": exclude specific decoders
       -flow-flush-interval=2000: flushes flows every X flows
       -flow-timeout=10s: closes flows older than flowTimeout
       -flushevery=100: flush assembler every N packets
@@ -79,7 +79,7 @@ Read and export *Netcap* dump files in the current directory:
       -iface="": attach to network interface and capture in live mode
       -ignore-unknown=false: disable writing unknown packets into a pcap file
       -ignorefsmerr=false: ignore TCP FSM errors
-      -include="": include specific encoders
+      -include="": include specific decoders
       -interfaces=false: list all visible network interfaces
       -ja3DB=false: use ja3 database for device profiling
       -local-dns=false: resolve DNS locally via hosts file in the database dir

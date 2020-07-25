@@ -5,7 +5,7 @@ import (
 	"github.com/dreadl0ck/gopacket/pcap"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	maltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
@@ -25,13 +25,13 @@ var maltegoBaseConfig = collector.Config{
 	PacketBufferSize:    netcap.DefaultPacketBuffer,
 	SnapLen:             1514, // TODO: make configurable within Maltego, add as property for pcap?
 	Promisc:             false,
-	EncoderConfig: encoder.Config{
+	DecoderConfig: decoder.Config{
 		Buffer:        true,
 		MemBufferSize: netcap.DefaultBufferSize,
 		Compression:   true,
 		CSV:           false,
-		//IncludeEncoders:         strings.Join(auditRecords, ","),
-		ExcludeEncoders:         "",
+		//IncludeDecoders:         strings.Join(auditRecords, ","),
+		ExcludeDecoders:         "",
 		WriteChan:               false,
 		IncludePayloads:         false,
 		Export:                  false,
@@ -121,9 +121,9 @@ func ToAuditRecords() {
 
 	os.MkdirAll(outDir, outDirPermission)
 
-	maltegoBaseConfig.EncoderConfig.Out = outDir
-	maltegoBaseConfig.EncoderConfig.Source = inputFile
-	maltegoBaseConfig.EncoderConfig.FileStorage = filepath.Join(outDir, "files")
+	maltegoBaseConfig.DecoderConfig.Out = outDir
+	maltegoBaseConfig.DecoderConfig.Source = inputFile
+	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, "files")
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)

@@ -4,7 +4,7 @@
 
 ## Description
 
-Traffic can be captured and written to disk with various options, and encoders used to create the audit records can be included or excluded from the generated output.
+Traffic can be captured and written to disk with various options, and decoders used to create the audit records can be included or excluded from the generated output.
 
 Read more about this tool in the documentation: https://docs.netcap.io
 
@@ -54,8 +54,8 @@ Capture from interface:
       -csv=false: output data as CSV instead of audit records
       -debug=false: display debug information
       -dpi=false: use DPI for device profiling
-      -encoders=false: show all available encoders
-      -exclude="LinkFlow,NetworkFlow,TransportFlow": exclude specific encoders
+      -decoders=false: show all available decoders
+      -exclude="LinkFlow,NetworkFlow,TransportFlow": exclude specific decoders
       -fileStorage="": path to created extracted files (currently only for HTTP)
       -flow-flush-interval=2000: flushes flows every X flows
       -flow-timeout=10s: closes flows older than flowTimeout
@@ -67,7 +67,7 @@ Capture from interface:
       -iface="": attach to network interface and capture in live mode
       -ignore-unknown=true: disable writing unknown packets into a pcap file
       -ignorefsmerr=false: ignore TCP FSM errors
-      -include="": include specific encoders
+      -include="": include specific decoders
       -interfaces=false: list all visible network interfaces
       -ja3DB=false: use ja3 database for device profiling
       -local-dns=false: resolve DNS locally via hosts file in the database dir
@@ -79,7 +79,7 @@ Capture from interface:
       -nooptcheck=false: do not check TCP options (useful to ignore MSS on captures with TSO)
       -opts="datagrams": select decoding options
       -out="": specify output directory, will be created if it does not exist
-      -overview=false: print a list of all available encoders and fields
+      -overview=false: print a list of all available decoders and fields
       -payload=false: capture payload for supported layers
       -pbuf=100: set packet buffer size, for channels that feed data to workers
       -promisc=true: toggle promiscous mode for live capture

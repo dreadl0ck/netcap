@@ -23,7 +23,7 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/delimited"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -50,7 +50,7 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 	}
 	fmt.Println("new audit record handle", path)
 
-	conf := encoder.DefaultConfig
+	conf := decoder.DefaultConfig
 	conf.Source = b.ClientID
 	conf.IncludePayloads = b.ContainsPayloads
 	conf.MemBufferSize = *flagMemBufferSize

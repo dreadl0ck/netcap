@@ -34,7 +34,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 
@@ -306,7 +306,7 @@ func indexData(in string) {
 				log.Fatal("Could not open file " + filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
 			}
 
-			var items = new(encoder.NVDVulnerabilityItems)
+			var items = new(decoder.NVDVulnerabilityItems)
 			err = json.Unmarshal(data, items)
 			total += len(items.CVEItems)
 			length := len(items.CVEItems)

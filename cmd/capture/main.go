@@ -32,7 +32,7 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -56,9 +56,9 @@ func Run() {
 		os.Exit(0)
 	}
 
-	// print a markdown overview of all available encoders and fields
+	// print a markdown overview of all available decoders and fields
 	if *flagPrintProtocolOverview {
-		encoder.MarkdownOverview()
+		decoder.MarkdownOverview()
 		return
 	}
 
@@ -96,9 +96,9 @@ func Run() {
 		}()
 	}
 
-	// print encoders and exit
-	if *flagEncoders {
-		encoder.ShowEncoders()
+	// print decoders and exit
+	if *flagDecoders {
+		decoder.ShowDecoders()
 		return
 	}
 
@@ -150,13 +150,13 @@ func Run() {
 		ReassembleConnections: *flagReassembleConnections,
 		FreeOSMem:             *flagFreeOSMemory,
 		LogErrors:             *flagLogErrors,
-		EncoderConfig: encoder.Config{
+		DecoderConfig: decoder.Config{
 			Buffer:                  *flagBuffer,
 			MemBufferSize:           *flagMemBufferSize,
 			Compression:             *flagCompress,
 			CSV:                     *flagCSV,
-			IncludeEncoders:         *flagInclude,
-			ExcludeEncoders:         *flagExclude,
+			IncludeDecoders:         *flagInclude,
+			ExcludeDecoders:         *flagExclude,
 			Out:                     *flagOutDir,
 			WriteChan:               false,
 			Source:                  source,

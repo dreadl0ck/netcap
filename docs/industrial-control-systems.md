@@ -12,7 +12,7 @@ Netcap offers audit records for the following protocols seen in industrial contr
 * CIP - Common Industrial Protocol
 * Modbus / ModbusTCP
 
-The encoders are enabled by default.
+The decoders are enabled by default.
 
 ## Modbus
 

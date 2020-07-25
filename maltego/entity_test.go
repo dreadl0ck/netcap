@@ -3,7 +3,7 @@ package maltego
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/mgutz/ansi"
 	"os"
 	"path/filepath"
@@ -67,12 +67,12 @@ func TestGenerateAllEntities(t *testing.T) {
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	encoder.ApplyActionToCustomEncoders(func(e *encoder.CustomEncoder) {
+	decoder.ApplyActionToCustomDecoders(func(e *decoder.CustomDecoder) {
 		genEntity("entities", e.Name+"AuditRecords", "insert_drive_file", "An archive of "+e.Name+" audit records", "", newStringField("path"))
 		genEntity("entities", e.Name, e.Name, e.Description, "")
 	})
 
-	encoder.ApplyActionToLayerEncoders(func(e *encoder.LayerEncoder) {
+	decoder.ApplyActionToLayerDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		genEntity("entities", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path"))
 		genEntity("entities", name, name, e.Description, "")
