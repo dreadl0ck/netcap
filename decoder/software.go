@@ -538,9 +538,9 @@ func writeSoftware(software []*Software, update func(s *Software)) {
 			//fmt.Println(SoftwareStore.Items, s.Product, s.Version)
 			SoftwareStore.Items[ident] = s
 
-			statsMutex.Lock()
-			reassemblyStats.numSoftware++
-			statsMutex.Unlock()
+			stats.Lock()
+			stats.numSoftware++
+			stats.Unlock()
 
 			newSoftware = append(newSoftware, s.Software)
 		}
