@@ -203,7 +203,7 @@ func parseUserAgent(ua string) *userAgent {
 func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (software []*Software) {
 
 	var (
-		s []*Software
+		s       []*Software
 		matches = reGenericVersion.FindAll(data, -1)
 	)
 

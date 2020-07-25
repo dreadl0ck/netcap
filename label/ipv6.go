@@ -32,12 +32,15 @@ import (
 // IPv6 labels type NC_IPv6.
 func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
-		fname       = filepath.Join(outDir, "IPv6.ncap.gz")
-		total       = netcap.Count(fname)
-		labelsTotal = 0
-		progress    = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
-		outFileName = filepath.Join(outDir, "IPv6_labeled.csv")
+		fname           = filepath.Join(outDir, "IPv6.ncap.gz")
+		total, errCount = netcap.Count(fname)
+		labelsTotal     = 0
+		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
+		outFileName     = filepath.Join(outDir, "IPv6_labeled.csv")
 	)
+	if errCount != nil {
+		log.Fatal("failed to count audit records:", errCount)
+	}
 
 	go func() {
 		r, err := netcap.Open(fname, netcap.DefaultBufferSize)

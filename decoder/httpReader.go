@@ -39,11 +39,11 @@ import (
 )
 
 const (
-	headerContentType = "Content-Type"
+	headerContentType     = "Content-Type"
 	headerContentEncoding = "Content-Encoding"
 
 	methodPost = "POST"
-	methodGet = "GET"
+	methodGet  = "GET"
 
 	credentialsDecoderName = "Credentials"
 )

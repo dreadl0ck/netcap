@@ -47,7 +47,11 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		// TODO: return structure from collect invocation
 		// that contains the number of records per type
 		// to avoid opening the file again
-		numRecords := netcap.Count(ident)
+		numRecords, errCount := netcap.Count(ident)
+		if errCount != nil {
+			utils.DebugLog.Println("failed to count audit records:", errCount)
+			continue
+		}
 
 		if numRecords == 0 {
 			continue
@@ -65,7 +69,11 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		case "DeviceProfile":
 			di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 			ent.AddDisplayInformation(di, "Netcap Info")
-			ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nInterface: " + iface + "\nStart Time: " + start.String())
+			num, errCount := netcap.Count(ident)
+			if errCount != nil {
+				utils.DebugLog.Println("failed to count audit records:", errCount)
+			}
+			ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(num, 10) + "\nInterface: " + iface + "\nStart Time: " + start.String())
 		}
 	}
 
