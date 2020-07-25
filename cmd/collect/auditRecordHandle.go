@@ -22,8 +22,8 @@ import (
 	"runtime"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
 

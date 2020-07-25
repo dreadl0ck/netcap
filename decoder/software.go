@@ -41,10 +41,11 @@ import (
 )
 
 const (
-	protoTCP    = "TCP"
-	serviceHTTP = "HTTP"
-	serviceSSH  = "SSH"
-	servicePOP3 = "POP3"
+	protoTCP      = "TCP"
+	serviceHTTP   = "HTTP"
+	serviceSSH    = "SSH"
+	servicePOP3   = "POP3"
+	serviceTelnet = "Telnet"
 )
 
 type Software struct {
@@ -200,9 +201,10 @@ func parseUserAgent(ua string) *userAgent {
 // generic version harvester, scans the payload using a regular expression
 func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (software []*Software) {
 
-	var s []*Software
-
-	matches := reGenericVersion.FindAll(data, -1)
+	var (
+		s []*Software
+		matches = reGenericVersion.FindAll(data, -1)
+	)
 
 	if len(matches) > 0 {
 		for _, v := range matches {

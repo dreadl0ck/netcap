@@ -31,6 +31,12 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+const (
+	smtpAuthPlain = "SMTP Auth Plain"
+	smtpAuthLogin = "SMTP Auth Login"
+	smtpAuthCramMd5 = "SMTP Auth CRAM-MD5"
+)
+
 // CredentialHarvester is a function that takes the data of a bi-directional network stream over TCP
 // as well as meta information and searches for credentials in the data
 // on success a pointer to a types.Credential is returned, nil otherwise
@@ -87,18 +93,12 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	matches := reFTP.FindSubmatch(data)
 	if len(matches) > 1 {
-		//fmt.Println("FTP matches", len(matches))
-		//for _, m := range matches {
-		//	fmt.Println("-" ,string(m))
-		//}
-		username := string(matches[1])
-		password := string(matches[2])
 		return &types.Credentials{
 			Timestamp: ts.String(),
 			Service:   "FTP",
 			Flow:      ident,
-			User:      username,
-			Password:  password,
+			User:      string(matches[1]),
+			Password:  string(matches[2]),
 		}
 	}
 
@@ -142,8 +142,48 @@ func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
+func decodeSMTPAuthPlain(in string) (user, pass string) {
+	data, err := base64.StdEncoding.DecodeString(in)
+	if err != nil {
+		utils.DebugLog.Println("Captured SMTP Auth Plain credentials, but could not decode them")
+	}
+	var (
+		newDataUsername []byte
+		newDataPassword []byte
+		nulled          bool
+	)
+	for _, b := range data {
+		if b == byte(0) {
+			nulled = true
+		} else {
+			if nulled {
+				newDataPassword = append(newDataPassword, b)
+			} else {
+				newDataUsername = append(newDataUsername, b)
+			}
+		}
+	}
+
+	return string(newDataUsername), string(newDataPassword)
+}
+
+func decodeSMTPLogin(in [][]byte, typ string) (user, pass string) {
+	usernameBin, err := base64.StdEncoding.DecodeString(string(in[1]))
+	if err != nil {
+		utils.DebugLog.Println("Captured " + typ + " credentials, but could not decode them: ", string(in[1]))
+	}
+
+	passwordBin, err := base64.StdEncoding.DecodeString(string(in[2]))
+	if err != nil {
+		utils.DebugLog.Println("Captured " + typ + " credentials, but could not decode them: ", string(in[2]))
+	}
+
+	return string(usernameBin), string(passwordBin)
+}
+
 // harvester for the SMTP protocol
 func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+
 	var (
 		username             string
 		password             string
@@ -154,87 +194,25 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		matchesCramMd5       = reSMTPCramMd5.FindSubmatch(data)
 	)
 
-	if len(matchesPlainSeparate) > 1 {
-		data, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
-		if err != nil {
-			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
-		}
-		var (
-			newDataUsername []byte
-			newDataPassword []byte
-			nulled          bool
-		)
-		for _, b := range data {
-			if b == byte(0) {
-				nulled = true
-			} else {
-				if nulled {
-					newDataPassword = append(newDataPassword, b)
-				} else {
-					newDataUsername = append(newDataUsername, b)
-				}
-			}
-		}
-		username = string(newDataUsername)
-		password = string(newDataPassword)
-		service = "SMTP Auth Plain"
+	switch {
+	case len(matchesPlainSeparate) > 1:
+		username, password = decodeSMTPAuthPlain(string(matchesPlainSeparate[1]))
+		service = smtpAuthPlain
+
+	case len(matchesPlainSingle) > 1:
+		username, password = decodeSMTPAuthPlain(string(matchesPlainSingle[1]))
+		service = smtpAuthPlain
+
+	case len(matchesLogin) > 1:
+		username, password = decodeSMTPLogin(matchesLogin, smtpAuthLogin)
+		service = smtpAuthLogin
+
+	case len(matchesCramMd5) > 1:
+		username, password = decodeSMTPLogin(matchesCramMd5, smtpAuthCramMd5)
+		service = smtpAuthCramMd5
 	}
 
-	if len(matchesPlainSingle) > 1 {
-		data, err := base64.StdEncoding.DecodeString(string(matchesPlainSingle[1]))
-		if err != nil {
-			fmt.Println("Captured SMTP Auth Plain credentials, but could not decode them")
-		}
-		var (
-			newDataUsername []byte
-			newDataPassword []byte
-			nulled          bool
-		)
-		for _, b := range data {
-			if b == byte(0) {
-				nulled = true
-			} else {
-				if nulled {
-					newDataPassword = append(newDataPassword, b)
-				} else {
-					newDataUsername = append(newDataUsername, b)
-				}
-			}
-		}
-		username = string(newDataUsername)
-		password = string(newDataPassword)
-		service = "SMTP Auth Plain"
-	}
-
-	if len(matchesLogin) > 1 {
-		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
-		if err != nil {
-			fmt.Println("Captured SMTP Auth Login credentials, but could not decode them")
-		}
-		username = string(usernameBin)
-		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesLogin[2]))
-		if err != nil {
-			fmt.Println("Captured SMTP Auth Login credentials, but could not decode them")
-		}
-		password = string(passwordBin)
-		service = "SMTP Auth Login"
-	}
-
-	if len(matchesCramMd5) > 1 {
-		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[1]))
-		if err != nil {
-			fmt.Println("Captured SMTP CARM-MD5 credentials, but could not decode them")
-		}
-		username = string(usernameBin) // This is really the challenge
-		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[2]))
-		if err != nil {
-			fmt.Println("Captured SMTP CARM-MD5 credentials, but could not decode them")
-		}
-		password = string(passwordBin) // And this is the hash
-		service = "SMTP Auth CRAM-MD5"
-	}
-
-	if len(username) > 0 {
+	if len(username) > 0 || len(password) > 0 {
 		return &types.Credentials{
 			Timestamp: ts.String(),
 			Service:   service,
@@ -250,20 +228,18 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	matches := reTelnet.FindSubmatch(data)
 	if len(matches) > 1 {
-		userWrong := string(matches[1])
 		var username string
-		for i, letter := range userWrong {
+		for i, letter := range string(matches[1]) {
 			if i%2 == 0 {
 				username = username + string(letter)
 			}
 		}
-		password := string(matches[2])
 		return &types.Credentials{
 			Timestamp: ts.String(),
-			Service:   "Telnet",
+			Service:   serviceTelnet,
 			Flow:      ident,
 			User:      username,
-			Password:  password,
+			Password:  string(matches[2]),
 		}
 	}
 	return nil
