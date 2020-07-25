@@ -8,6 +8,7 @@
 - add comments based on wireshark info field to records
 - add verbose per packet logs via flag (+include packet number)
 - chart pkts/sec by time or pkt offset in pcap
+
 - check source todos
 - error handling iteration: improve error messages and reduce panic() usage
 - reduce global state iteration
