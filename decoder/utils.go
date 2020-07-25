@@ -31,6 +31,15 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+const (
+	binaryFileExtension = ".bin"
+)
+
+var (
+	typeMap      = make(map[string]int)
+	fieldNameMap = make(map[string]int)
+)
+
 // MarkdownOverview dumps a Markdown summary of all available decoders and their fields
 func MarkdownOverview() {
 	fmt.Println("# NETCAP Overview " + netcap.Version)
@@ -89,9 +98,6 @@ func calcMd5(s string) string {
 
 	return hex.EncodeToString(out)
 }
-
-var typeMap = make(map[string]int)
-var fieldNameMap = make(map[string]int)
 
 func countFields(t types.Type) int {
 	recordFields := 0

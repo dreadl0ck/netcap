@@ -215,7 +215,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 		root = filepath.Join(c.Out, "udpConnections", typ)
 
 		// file basename
-		base = filepath.Clean(path.Base(ident)) + ".bin"
+		base = filepath.Clean(path.Base(ident)) + binaryFileExtension
 	)
 
 	// make sure root path exists

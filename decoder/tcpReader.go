@@ -184,7 +184,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		root = filepath.Join(c.Out, "tcpConnections", typ)
 
 		// file basename
-		base = filepath.Clean(path.Base(ident)) + ".bin"
+		base = filepath.Clean(path.Base(ident)) + binaryFileExtension
 	)
 
 	// make sure root path exists
@@ -198,7 +198,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	stats.Unlock()
 
 	// append to files
-	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, 0700)
+	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaultFilesPermission)
 	if err != nil {
 		logReassemblyError("TCP conn create", "Cannot create %s: %s\n", base, err)
 		return err
