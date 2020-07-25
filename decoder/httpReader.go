@@ -44,6 +44,8 @@ const (
 
 	methodPost = "POST"
 	methodGet = "GET"
+
+	credentialsDecoderName = "Credentials"
 )
 
 // CMSHeaders is the list of identifying headers for CMSs, frontend frameworks, ...
@@ -192,7 +194,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 		// now add request information
 		if res.response.Request != nil {
 
-			if isCustomDecoderLoaded("Credentials") {
+			if isCustomDecoderLoaded(credentialsDecoderName) {
 				h.searchForLoginParams(res.response.Request)
 				h.searchForBasicAuth(res.response.Request)
 			}
@@ -220,7 +222,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 			ht := &types.HTTP{}
 			setRequest(ht, req)
 
-			if isCustomDecoderLoaded("Credentials") {
+			if isCustomDecoderLoaded(credentialsDecoderName) {
 				h.searchForLoginParams(req.request)
 				h.searchForBasicAuth(req.request)
 			}
