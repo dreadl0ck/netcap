@@ -55,8 +55,8 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.Method = req.request.Method
 	h.Host = req.request.Host
 	h.ReqContentLength = int32(req.request.ContentLength)
-	h.ReqContentEncoding = req.request.Header.Get("Content-Encoding")
-	h.ContentType = req.request.Header.Get("Content-Type")
+	h.ReqContentEncoding = req.request.Header.Get(headerContentEncoding)
+	h.ContentType = req.request.Header.Get(headerContentType)
 	h.RequestHeader = readHeader(req.request.Header)
 
 	body, err := ioutil.ReadAll(req.request.Body)
@@ -130,7 +130,7 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		}
 
 		// decompress payload if required
-		if res.Header.Get("Content-Encoding") == "gzip" {
+		if res.Header.Get(headerContentEncoding) == "gzip" {
 			r, err := gzip.NewReader(bytes.NewReader(body))
 			if err == nil {
 				body, err = ioutil.ReadAll(r)
@@ -145,10 +145,10 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 
 	return &types.HTTP{
 		ResContentLength:       contentLength,
-		ResContentType:         res.Header.Get("Content-Type"),
+		ResContentType:         res.Header.Get(headerContentType),
 		StatusCode:             int32(res.StatusCode),
 		ServerName:             res.Header.Get("Server"),
-		ResContentEncoding:     res.Header.Get("Content-Encoding"),
+		ResContentEncoding:     res.Header.Get(headerContentEncoding),
 		ResContentTypeDetected: detected,
 		ResCookies:             readCookies(res.Cookies()),
 		ResponseHeader:         readHeader(res.Header),
