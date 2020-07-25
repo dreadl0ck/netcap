@@ -56,87 +56,24 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 	stream := &tcpConnection{
 		net:         net,
 		transport:   transport,
-		isHTTP:      tcp.SrcPort == 80 || tcp.DstPort == 80,
-		isPOP3:      tcp.SrcPort == 110 || tcp.DstPort == 110,
-		isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
-		isSSH:       tcp.SrcPort == 22 || tcp.DstPort == 22,
+		//isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
 		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),
 		firstPacket: ac.GetCaptureInfo().Timestamp,
 	}
 
-	// dont process stream if protocol is disabled
-	if stream.isSSH && !streamFactory.decodeSSH {
-		return stream
-	}
-	if stream.isHTTP && !streamFactory.decodeHTTP {
-		return stream
-	}
-	if stream.isPOP3 && !streamFactory.decodePOP3 {
-		return stream
-	}
-
-	clientIdent := filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
-	serverIdent := filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
-
 	// do not write encrypted HTTP streams to disk for now
 	//if stream.isHTTPS {
 	//	return stream
 	//}
 
-	switch {
-	case stream.isHTTP:
-
-		// handle out of order packets
-		if tcp.DstPort != 80 {
-			clientIdent = filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse()))
-			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
-		}
-
-		stream.decoder = &httpReader{
-			parent: stream,
-		}
-		stream.client = newTCPStreamReader(stream, clientIdent, true)
-		stream.server = newTCPStreamReader(stream, serverIdent, false)
-
-	case stream.isSSH:
-
-		// handle out of order packets
-		if tcp.DstPort != 22 {
-			clientIdent = filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse()))
-			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
-		}
-
-		stream.decoder = &sshReader{
-			parent: stream,
-		}
-		stream.client = newTCPStreamReader(stream, clientIdent, true)
-		stream.server = newTCPStreamReader(stream, serverIdent, false)
-
-	case stream.isPOP3:
-
-		// handle out of order packets
-		if tcp.DstPort != 110 {
-			clientIdent = filepath.Clean(fmt.Sprintf("%s-%s", net.Reverse(), transport.Reverse()))
-			serverIdent = filepath.Clean(fmt.Sprintf("%s-%s", net, transport))
-		}
-
-		stream.decoder = &pop3Reader{
-			parent: stream,
-		}
-		stream.client = newTCPStreamReader(stream, clientIdent, true)
-		stream.server = newTCPStreamReader(stream, serverIdent, false)
-
-	default: // process unknown TCP stream
-		stream.decoder = &tcpReader{
-			parent: stream,
-		}
-		stream.client = newTCPStreamReader(stream, clientIdent, true)
-		stream.server = newTCPStreamReader(stream, serverIdent, false)
+	stream.decoder = &tcpReader{
+		parent: stream,
 	}
+	stream.client = stream.newTCPStreamReader(true)
+	stream.server = stream.newTCPStreamReader(false)
 
-	// kickoff reader
 	factory.wg.Add(2)
 
 	factory.Lock()
@@ -144,6 +81,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 	factory.streamReaders = append(factory.streamReaders, stream.client)
 	factory.numActive += 2
 	factory.Unlock()
+
+	// launch stream readers
 	go stream.client.Run(factory)
 	go stream.server.Run(factory)
 
