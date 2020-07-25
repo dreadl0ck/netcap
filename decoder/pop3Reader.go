@@ -612,7 +612,7 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 		InReplyTo:       header["In-Reply-To"],
 		ContentLanguage: header["Content-Language"],
 		XOriginatingIP:  header["x-originating-ip"],
-		ContentType:     header["Content-Type"],
+		ContentType:     header[headerContentType],
 		EnvelopeTo:      header["Envelope-To"],
 		Body:            h.parseParts(body),
 	}

@@ -38,6 +38,14 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+const (
+	headerContentType = "Content-Type"
+	headerContentEncoding = "Content-Encoding"
+
+	methodPost = "POST"
+	methodGet = "GET"
+)
+
 // CMSHeaders is the list of identifying headers for CMSs, frontend frameworks, ...
 // nolint
 var CMSHeadersList = []string{"powered", "X-CDN-Forward", "X-Pardot-Rsp", "Expires", "Weglot-Translated", "X-Powered-By", "X-Drupal-Cache", "X-AH-Environment", "X-Pardot-Route", "Derak-Umbrage", "MicrosoftSharePointTeamServices", "x-platform-processor", "X-Jenkins", "X-Wix-Request-Id", "X-Drectory-Script", "X-B3-Flags", "IBM-Web2-Location", "X-Generated-By", "azure-version", "DNNOutputCache", "x-shopify-stage", "content-disposition", "x-vercel-cache", "X-Powered-PublicCMS", "X-JIVE-USER-ID", "X-Foswikiuri", "cf-ray", "section-io-id", "X-Ghost-Cache-Status", "Access-Control-Allow-Headers", "x-fw-serve", "X-Swiftlet-Cache", "X-EC-Debug", "X-Varnish-Action", "azure-slotname", "X-Pardot-LB", "X-Mod-Pagespeed", "Cookie", "CMS-Version", "x-via-fastly", "X-SharePointHealthScore", "SPRequestGuid", "X-GitHub-Request-Id", "sw-context-token", "X-Akamai-Transformed", "X-Umbraco-Version", "X-Rocket-Nginx-Bypass", "x-fw-server", "x-platform-router", "X-Compressed-By", "Link", "Arastta", "Vary", "X-Protected-By", "WebDevSrc", "x-bubble-capacity-limit", "Fastly-Debug-Digest", "X-Akaunting", "server", "X-Fastcgi-Cache", "x-litespeed-cache", "x-platform-cluster", "X-Firefox-Spdy", "X-GoCache-CacheStatus", "X-B3-ParentSpanId", "X-Includable-Version", "host-header", "cf-cache-status", "x-bubble-capacity-used", "X-Confluence-Request-Time", "section-io-origin-status", "Server", "X-KoobooCMS-Version", "X-Wix-Server-Artifact-Id", "Servlet-engine", "X-Generator", "X-CF2", "X-Page-Speed", "X-CDN", "x-bubble-perf", "x-jive-chrome-wrapped", "X-Backdrop-Cache", "X-Jimdo-Instance", "X-Scholica-Version", "X-Shopery", "X-Supplied-By", "X-Jimdo-Wid", "X-Varnish-Age", "X-DataDome-CID", "X-Powered-By-Plesk", "x-shopid", "x-zendesk-user-id", "azure-sitename", "X-DataDome", "x-fw-static", "X-Foswikiaction", "X-StatusPage-Version", "X-AspNet-Version", "x-vercel-id", "x-pantheon-styx-hostname", "sw-version-id", "X-Dotclear-Static-Cache", "sw-language-id", "Link", "X-Arastta", "sw-invalidation-states", "X-Powered-CMS", "X-Advertising-By", "X-Hacker", "x-now-trace", "X-B3-TraceId", "X-NF-Request-ID", "Composed-By", "solodev_session", "X-Wix-Renderer-Server", "X-CF1", "x-oracle-dms-ecid", "X-Unbounce-PageId", "X-Elcodi", "OracleCommerceCloud-Version", "COMMERCE-SERVER-SOFTWARE", "x-platform-server", "X-WPE-Loopback-Upstream-Addr", "kbn-name", "X-Backside-Transport", "X-Amz-Cf-Id", "X-ATG-Version", "X-Flex-Lang", "X-Jive-Flow-Id", "X-Flow-Powered", "X-Fastly-Request-ID", "X-B3-Sampled", "SharePointHealthScore", "X-ServedBy", "kbn-version", "X-Varnish", "WP-Super-Cache", "Via", "X-Jive-Request-Id", "X-Rack-Cache", "X-dynaTrace-JS-Agent", "X-Streams-Distribution", "X-Lift-Version", "X-Spip-Cache", "section-io-origin-time-seconds", "X-B3-SpanId", "X-StatusPage-Skip-Logging", "X-epages-RequestId", "Itx-Generated-Timestamp", "X-XRDS-Location", "X-MCF-ID", "x-lw-cache", "x-fw-type", "X-JSL", "x-fw-hash", "x-sucuri-id", "X-Varnish-Hostname", "x-kinsta-cache", "X-Content-Encoded-By", "wpe-backend", "x-powered-by", "X-Varnish-Cache", "azure-regionname", "x-envoy-upstream-service-time", "Liferay-Portal", "Powered-By", "X-Pass-Why", "AR-PoweredBy", "X-Global-Transaction-ID", "x-sucuri-cache", "X-Tumblr-User"}
@@ -427,12 +435,12 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 	}
 
 	// determine content type for debug log
-	contentType, ok := res.Header["Content-Type"]
+	contentType, ok := res.Header[headerContentType]
 	if !ok {
 		contentType = []string{http.DetectContentType(body)}
 	}
 
-	encoding := res.Header["Content-Encoding"]
+	encoding := res.Header[headerContentEncoding]
 	logReassemblyInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.parent.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 
 	// increment counter
@@ -474,7 +482,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 				name = path.Base(req.request.URL.Path)
 				source += " from " + req.request.URL.Path
 				host = req.request.Host
-				ctype = strings.Join(req.request.Header["Content-Type"], " ")
+				ctype = strings.Join(req.request.Header[headerContentType], " ")
 			}
 		}
 
@@ -924,7 +932,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	h.requests = append(h.requests, request)
 	h.parent.Unlock()
 
-	if req.Method == "POST" {
+	if req.Method == methodPost {
 		// write request payload to disk if configured
 		if (err == nil || c.WriteIncomplete) && c.FileStorage != "" {
 			return h.saveFile(
@@ -933,8 +941,8 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 				path.Base(req.URL.Path),
 				err,
 				body,
-				req.Header["Content-Encoding"],
-				strings.Join(req.Header["Content-Type"], " "),
+				req.Header[headerContentEncoding],
+				strings.Join(req.Header[headerContentType], " "),
 			)
 		}
 	}
