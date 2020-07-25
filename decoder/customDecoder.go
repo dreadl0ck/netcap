@@ -197,7 +197,7 @@ func InitCustomDecoders(c Config, quiet bool) {
 		CustomDecoders = append(CustomDecoders, e)
 	}
 
-	if isCustomDecoderLoaded("Credentials") {
+	if isCustomDecoderLoaded(credentialsDecoderName) {
 		useHarvesters = true
 	}
 
