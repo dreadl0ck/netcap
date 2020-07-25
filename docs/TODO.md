@@ -2,7 +2,6 @@
 
 - integrate: https://github.com/fwmark/registry/blob/main/README.md
 - check handling of out of order packets in tcpFactory
-- only show if there are unknown protos: * protocol supported by gopacket, but not implemented in netcap
 - implement tls decryption: https://wiki.wireshark.org/TLS
 - add comments based on wireshark info field to records
 - add verbose per packet logs via flag (+include packet number)

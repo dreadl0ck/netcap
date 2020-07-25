@@ -266,7 +266,7 @@ func (c *Collector) Stats() {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
 		}
 	}
-	numUnknown := len(c.allProtosAtomic.Items)
+	numUnknown := len(c.unknownProtosAtomic.Items)
 	c.unknownProtosAtomic.Unlock()
 	tui.Table(target, []string{"Layer", "NumRecords", "Share"}, rows)
 
