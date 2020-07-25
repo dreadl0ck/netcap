@@ -70,7 +70,7 @@ ok  	github.com/dreadl0ck/netcap/collector	3.242s
 PASS
 ok  	github.com/dreadl0ck/netcap/delimited	0.526s
 ?   	github.com/dreadl0ck/netcap/dpi	[no test files]
-?   	github.com/dreadl0ck/netcap/encoder	[no test files]
+?   	github.com/dreadl0ck/netcap/decoder	[no test files]
 ?   	github.com/dreadl0ck/netcap/io	[no test files]
 ?   	github.com/dreadl0ck/netcap/label	[no test files]
 ?   	github.com/dreadl0ck/netcap/maltego	[no test files]

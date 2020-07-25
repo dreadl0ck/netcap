@@ -10,7 +10,7 @@ Which device on the network uses which IP address? Which addresses / devices did
 
 How are devices related to each other, how does communication flow?
 
-Identifying devices within a network is a good starting point for any investigation and helps to understand complex situations and relations quickly. The **DeviceProfile** custom encoder implements exactly this, and is enabled from v0.5 on by default.
+Identifying devices within a network is a good starting point for any investigation and helps to understand complex situations and relations quickly. The **DeviceProfile** custom decoder implements exactly this, and is enabled from v0.5 on by default.
 
 > Note: DeviceProfile currently get written when processing all traffic is done - that means when using live capture, the profiles will be available when processing stopped. Future versions will implement a flushing mechanism similar  to the one for Flows / Connections.
 

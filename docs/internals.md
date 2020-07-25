@@ -42,29 +42,29 @@ In the next iteration, the gathered alerts are mapped onto the collected data. F
 
 The types package contains types.AuditRecord interface implementations for each supported protocol, to enable converting data to the CSV format. For this purpose, each protocol must provide a CSVRecord\(\) \[\]string and a CSVHeader\(\) \[\]string function. Additionally, a NetcapTimestamp\(\) string function that returns the Netcap timestamp must be implemented.
 
-### encoder
+### decoder
 
 [https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/e](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)ncoder
 
-The encoder package implements conversion of decoded network protocols to protocol buffers. This has to be defined for each supported protocol. Two types of decoders exist: The LayerEncoder and the CustomEncoder.
+The decoder package implements conversion of decoded network protocols to protocol buffers. This has to be defined for each supported protocol. Two types of decoders exist: The LayerEncoder and the CustomEncoder.
 
-#### Layer Encoder
+#### GoPacket Decoder
 
-A LayerEncoder operates on a gopacket.Layer and has to provide the gopacket.LayerType constant, as well a handler function to receive the layer and the timestamp and convert it into a protocol buffer.
+A GoPacketDecoder operates on a gopacket.Layer and has to provide the gopacket.LayerType constant, as well a handler function to receive the layer and the timestamp and convert it into a protocol buffer.
 
-#### Custom Encoder
+#### Custom Decoder
 
-A CustomEncoder operates on a gopacket.Packet and is used to decode traffic into abstrac- tions such as Flows or Connections. To create it a name has to be supplied among three different handler functions to control initialization, decoding and deinitialization. Its handler function receives a gopacket.Packet interface type and returns a proto.Message. The postinit function is called after the initial initialization has taken place, the deinit function is used to teardown any additionally created structures for a clean exit. Both functions are optional and can be omitted by supplying nil as value.
+A CustomDecoder operates on a gopacket.Packet and is used to decode traffic into abstractions such as Flows or Connections. To create it a name has to be supplied among three different handler functions to control initialization, decoding and deinitialization. Its handler function receives a gopacket.Packet interface type and returns a proto.Message. The postinit function is called after the initial initialization has taken place, the deinit function is used to teardown any additionally created structures for a clean exit. Both functions are optional and can be omitted by supplying nil as value.
 
 ### resolvers
 
-[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/r](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)esolvers
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/resolvers](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/resolvers)
 
 Resolvers for lookup of various external information, such as geolocation, domain names, hardware addresses, port numbers etc
 
 ### dpi
 
-[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/d](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)pi
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/dpi](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/dpi)
 
 Deep Packet Inspection integration, using a fork of **mushorg/go-dpi** that was extended to identify the full range of protocols offered by **nDPI** and **libprotoident**. Both libraries are loaded dynamically at runtime and is invoked via C bindings.
 
@@ -74,13 +74,13 @@ The fork can be found here:
 
 ### delimited
 
-[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/d](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)elimited
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/delimited](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/delimited)
 
 Primitives for reading and writing length delimited binary data
 
 ### utils
 
-[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/u](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)tils
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/utils](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/utils)
 
 The utils package contains shared utility functions used by several other packages.
 
@@ -96,7 +96,7 @@ Warning: Do not use multiple instances of a collector in parallel! This is not s
 
 ### io
 
-[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/io](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)
+[https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/io](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/io)
 
 Primitives for atomic maps and write operations
 

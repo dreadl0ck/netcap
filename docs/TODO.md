@@ -1,5 +1,7 @@
 # TODOs
 
+- https://github.com/glycerine/offheap
+
 - service: add reverse dns lookup and cache all results offline in a boltdb?
 - add a config option to only write the first X bytes of an TLS encrypted connection to disk
 - integrate to resolvers: https://github.com/fwmark/registry/blob/main/README.md
@@ -74,7 +76,7 @@ on audit record archives:
 - Blog: Framework Introduction and Setup
 - index generation
 - live capture with maltego
-- refactored encoder constructors
+- refactored decoder constructors
 
 ## Maltego Plugin
 
@@ -125,7 +127,7 @@ entities:
 - integrate CPE database?
 - parse cpes, for example with https://github.com/knqyf263/go-cpe
 - passive DNS: create hosts mapping ala tshark -z hosts -r traffic.pcap
-- use JSON encoder from new protobuf release, when gogo integrated the new protobuf V2 API: https://pkg.go.dev/google.golang.org/protobuf/encoding/protojson?tab=doc
+- use JSON decoder from new protobuf release, when gogo integrated the new protobuf V2 API: https://pkg.go.dev/google.golang.org/protobuf/encoding/protojson?tab=doc
 - monitor repo with LGTM
 - implement the connection history string in the same manner as zeek
 - official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt
@@ -135,7 +137,7 @@ entities:
 - check TODOs in source
 - add support for RMCP protocol
 - implement alerting / rule mechanism with separate tool
-- remove global state in encoder and collector pkgs?
+- remove global state in decoder and collector pkgs?
 - transform: add a text based commandline interface for the transformations
 - capture unknown L7 protocol TCP streams and write to disk
 - new tool: net split, to split pcap or audit record files by days or hours
