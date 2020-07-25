@@ -550,7 +550,7 @@ func fileExtensionForContentType(typ string) string {
 	case "application/vnd.amazon.ebook":
 		return ".azw"
 	case "application/octet-stream":
-		return ".bin"
+		return binaryFileExtension
 	case "image/bmp":
 		return ".bmp"
 	case "application/x-bzip":
