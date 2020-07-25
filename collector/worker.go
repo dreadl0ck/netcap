@@ -176,7 +176,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 func (c *Collector) initWorkers() []chan *packet {
 	workers := make([]chan *packet, c.config.Workers)
 	for i := range workers {
-		a := reassembly.NewAssembler(encoder.StreamPool)
+		a := reassembly.NewAssembler(encoder.GetStreamPool())
 		c.assemblers = append(c.assemblers, a)
 		workers[i] = c.worker(a)
 	}

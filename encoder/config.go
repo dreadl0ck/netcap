@@ -40,7 +40,7 @@ func SetConfig(cfg Config) {
 	c = cfg
 	cMu.Unlock()
 
-	fsmOptions = reassembly.TCPSimpleFSMOptions{
+	streamFactory.fsmOptions = reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: c.AllowMissingInit,
 	}
 

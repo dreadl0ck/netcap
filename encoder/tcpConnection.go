@@ -492,7 +492,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		var (
 			ip4         = ip4Layer.(*layers.IPv4)
 			l           = ip4.Length
-			newip4, err = defragger.DefragIPv4(ip4)
+			newip4, err = streamFactory.defragger.DefragIPv4(ip4)
 		)
 		if err != nil {
 			log.Fatalln("Error while de-fragmenting", err)
@@ -573,7 +573,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	cMu.Lock()
 	if c.Debug {
 		utils.ReassemblyLog.Println("StreamPool:")
-		utils.ReassemblyLog.Println(StreamPool.DumpString())
+		utils.ReassemblyLog.Println(streamFactory.StreamPool.DumpString())
 	}
 	cMu.Unlock()
 

@@ -23,12 +23,20 @@ import (
 	"sync"
 )
 
-var (
-	defragger     = ip4defrag.NewIPv4Defragmenter()
-	streamFactory = &tcpConnectionFactory{}
-	StreamPool    = reassembly.NewStreamPool(streamFactory)
-	fsmOptions    = reassembly.TCPSimpleFSMOptions{}
-)
+var streamFactory = newStreamFactory()
+
+func newStreamFactory() *tcpConnectionFactory {
+	f := &tcpConnectionFactory{
+		defragger:  ip4defrag.NewIPv4Defragmenter(),
+		fsmOptions: reassembly.TCPSimpleFSMOptions{},
+	}
+	f.StreamPool = reassembly.NewStreamPool(f)
+	return f
+}
+
+func GetStreamPool() *reassembly.StreamPool {
+	return streamFactory.StreamPool
+}
 
 /*
  * The TCP factory: returns a new Connection
@@ -43,6 +51,11 @@ type tcpConnectionFactory struct {
 	decodeSSH     bool
 	numActive     int64
 	streamReaders []StreamReader
+
+	defragger  *ip4defrag.IPv4Defragmenter
+	StreamPool *reassembly.StreamPool
+	fsmOptions reassembly.TCPSimpleFSMOptions
+
 	sync.Mutex
 }
 
@@ -54,10 +67,10 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
 
 	stream := &tcpConnection{
-		net:         net,
-		transport:   transport,
+		net:       net,
+		transport: transport,
 		//isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
-		tcpstate:    reassembly.NewTCPSimpleFSM(fsmOptions),
+		tcpstate:    reassembly.NewTCPSimpleFSM(factory.fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),
 		firstPacket: ac.GetCaptureInfo().Timestamp,
