@@ -257,3 +257,38 @@ func logReassemblyDebug(s string, a ...interface{}) {
 		utils.ReassemblyLog.Printf("DEBUG: "+s, a...)
 	}
 }
+
+// TODO: add to general utils? or make a cryptoutils sub pkg?
+//func loadRsaPrivKey(path string, rsaPrivateKeyPassword string) *rsa.PrivateKey {
+//
+//	priv, err := ioutil.ReadFile(path)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	privPem, _ := pem.Decode(priv)
+//
+//	var privPemBytes []byte
+//	if privPem.Type != "RSA PRIVATE KEY" {
+//		fmt.Println("RSA private key is of the wrong type", privPem.Type)
+//	}
+//
+//	if rsaPrivateKeyPassword != "" {
+//		privPemBytes, err = x509.DecryptPEMBlock(privPem, []byte(rsaPrivateKeyPassword))
+//	} else {
+//		privPemBytes = privPem.Bytes
+//	}
+//
+//	var parsedKey interface{}
+//	if parsedKey, err = x509.ParsePKCS1PrivateKey(privPemBytes); err != nil {
+//		if parsedKey, err = x509.ParsePKCS8PrivateKey(privPemBytes); err != nil {
+//			log.Fatal(err)
+//		}
+//	}
+//
+//	privateKey, ok := parsedKey.(*rsa.PrivateKey)
+//	if !ok {
+//		log.Fatal("not an rsa private key")
+//	}
+//	return privateKey
+//}

@@ -33,9 +33,9 @@ type tcpStreamProcessor struct {
 
 // to process the streams in parallel
 // they are passed to several worker goroutines in round robin style.
-func (c *tcpStreamProcessor) handleStream(s StreamReader) {
+func (tsp *tcpStreamProcessor) handleStream(s StreamReader) {
 
-	c.wg.Add(1)
+	tsp.wg.Add(1)
 
 	// make it work for 1 worker only, can be used for debugging
 	//if c.numWorkers == 1 {
@@ -44,14 +44,14 @@ func (c *tcpStreamProcessor) handleStream(s StreamReader) {
 	//}
 
 	// send the packetInfo to the encoder routine
-	c.workers[c.next] <- s
+	tsp.workers[tsp.next] <- s
 
 	// increment or reset next
-	if c.numWorkers == c.next+1 {
+	if tsp.numWorkers == tsp.next+1 {
 		// reset
-		c.next = 0
+		tsp.next = 0
 	} else {
-		c.next++
+		tsp.next++
 	}
 }
 
@@ -111,10 +111,10 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReade
 }
 
 // spawn the configured number of workers
-func (c *tcpStreamProcessor) initWorkers() {
-	c.workers = make([]chan StreamReader, runtime.NumCPU())
-	for i := range c.workers {
-		c.workers[i] = c.streamWorker(&c.wg)
+func (tsp *tcpStreamProcessor) initWorkers() {
+	tsp.workers = make([]chan StreamReader, runtime.NumCPU())
+	for i := range tsp.workers {
+		tsp.workers[i] = tsp.streamWorker(&tsp.wg)
 	}
-	c.numWorkers = len(c.workers)
+	tsp.numWorkers = len(tsp.workers)
 }

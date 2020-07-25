@@ -36,7 +36,10 @@ type tcpReader struct {
 }
 
 func (h *tcpReader) Decode(c2s, s2c Stream) {
-
+	//fmt.Println("Decode", c2s, s2c)
+	//for _, f := range h.parent.merged {
+	//	fmt.Println(f.dir, f.ac.GetCaptureInfo().Timestamp, len(f.raw))
+	//}
 }
 
 func getServiceName(data []byte, flow gopacket.Flow) string {

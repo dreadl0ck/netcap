@@ -340,9 +340,9 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	}
 
 	// do not process encrypted HTTP streams for now
-	if t.isHTTPS {
-		return
-	}
+	//if t.isHTTPS {
+	//	return
+	//}
 
 	//fmt.Println("got raw data:", len(data), ac.GetCaptureInfo().Timestamp, "\n", hex.Dump(data))
 
@@ -403,7 +403,6 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 	}
 
 	utils.DebugLog.Println("ReassemblyComplete", t.ident)
-	//fmt.Println("ReassemblyComplete", t.ident)
 
 	// save data for the current stream
 	if t.client != nil {
