@@ -34,12 +34,15 @@ var CollectLabels bool
 // Layer labels packets of a given gopacket.LayerType string.
 func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
-		fname       = filepath.Join(outDir, file)
-		total       = netcap.Count(fname)
-		labelsTotal = 0
-		outFileName = filepath.Join(outDir, typ+"_labeled.csv")
-		progress    = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
+		fname           = filepath.Join(outDir, file)
+		total, errCount = netcap.Count(fname)
+		labelsTotal     = 0
+		outFileName     = filepath.Join(outDir, typ+"_labeled.csv")
+		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
 	)
+	if errCount != nil {
+		log.Fatal("failed to count audit records:", errCount)
+	}
 
 	go func() {
 

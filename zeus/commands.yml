@@ -294,3 +294,6 @@ commands:
 
     gosec:
         exec: gosec ./...
+
+    test:
+        exec: go test ./...

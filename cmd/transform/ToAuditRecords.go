@@ -193,7 +193,10 @@ func writeAuditRecords(trx maltego.MaltegoTransform, inputSize int64, outDir str
 		// TODO: return structure from collect invocation
 		// that contains the number of records per type
 		// to avoid opening the file again
-		numRecords := netcap.Count(ident)
+		numRecords, errCount := netcap.Count(ident)
+		if errCount != nil {
+			log.Fatal("failed to count audit records:", err)
+		}
 
 		ent := trx.AddEntity("netcap."+name+"AuditRecords", utils.Pluralize(name))
 

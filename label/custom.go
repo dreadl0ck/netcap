@@ -233,12 +233,15 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*AttackInfo, labels []*AttackInfo, outDir, separator, selection string) *pb.ProgressBar {
 
 	var (
-		fname       = filepath.Join(outDir, file)
-		total       = netcap.Count(fname)
-		labelsTotal = 0
-		outFileName = filepath.Join(outDir, typ+"_labeled.csv.gz")
-		progress    = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
+		fname           = filepath.Join(outDir, file)
+		total, errCount = netcap.Count(fname)
+		labelsTotal     = 0
+		outFileName     = filepath.Join(outDir, typ+"_labeled.csv.gz")
+		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
 	)
+	if errCount != nil {
+		log.Fatal("failed to count audit records:", errCount)
+	}
 
 	go func() {
 

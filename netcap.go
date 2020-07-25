@@ -15,11 +15,10 @@ package netcap
 
 import (
 	"errors"
-	"io"
-	"log"
-
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	proto "github.com/gogo/protobuf/proto"
+	"io"
 )
 
 // InitRecord initializes a new record of the given type
@@ -173,21 +172,26 @@ func InitRecord(typ types.Type) (record proto.Message) {
 }
 
 // Count returns the total number of records found in an audit record file
-func Count(filename string) (count int64) {
+func Count(filename string) (count int64, err error) {
 
 	// open audit record file
 	r, err := Open(filename, DefaultBufferSize)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
-	defer r.Close()
+	defer func() {
+		errClose := r.Close()
+		if errClose != nil {
+			utils.DebugLog.Println("failed to close file:", errClose)
+		}
+	}()
 
 	var (
 		header, errFileHeader = r.ReadHeader()
 		rec                   = InitRecord(header.Type)
 	)
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		return 0, errFileHeader
 	}
 	for {
 		// read next record
@@ -195,7 +199,7 @@ func Count(filename string) (count int64) {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
-			panic(err)
+			return count, err
 		}
 		count++
 	}

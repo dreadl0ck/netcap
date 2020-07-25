@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	smtpAuthPlain = "SMTP Auth Plain"
-	smtpAuthLogin = "SMTP Auth Login"
+	smtpAuthPlain   = "SMTP Auth Plain"
+	smtpAuthLogin   = "SMTP Auth Login"
 	smtpAuthCramMd5 = "SMTP Auth CRAM-MD5"
 )
 
@@ -176,12 +176,12 @@ func decodeSMTPAuthPlain(in string) (user, pass string) {
 func decodeSMTPLogin(in [][]byte, typ string) (user, pass string) {
 	usernameBin, err := base64.StdEncoding.DecodeString(string(in[1]))
 	if err != nil {
-		utils.DebugLog.Println("Captured " + typ + " credentials, but could not decode them: ", string(in[1]))
+		utils.DebugLog.Println("Captured "+typ+" credentials, but could not decode them: ", string(in[1]))
 	}
 
 	passwordBin, err := base64.StdEncoding.DecodeString(string(in[2]))
 	if err != nil {
-		utils.DebugLog.Println("Captured " + typ + " credentials, but could not decode them: ", string(in[2]))
+		utils.DebugLog.Println("Captured "+typ+" credentials, but could not decode them: ", string(in[2]))
 	}
 
 	return string(usernameBin), string(passwordBin)

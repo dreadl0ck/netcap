@@ -32,12 +32,15 @@ import (
 // IPv4 labels type NC_IPv4.
 func IPv4(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
-		fname       = filepath.Join(outDir, "IPv4.ncap.gz")
-		total       = netcap.Count(fname)
-		labelsTotal = 0
-		progress    = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
-		outFileName = filepath.Join(outDir, "IPv4_labeled.csv")
+		fname           = filepath.Join(outDir, "IPv4.ncap.gz")
+		total, errCount = netcap.Count(fname)
+		labelsTotal     = 0
+		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
+		outFileName     = filepath.Join(outDir, "IPv4_labeled.csv")
 	)
+	if errCount != nil {
+		log.Fatal("failed to count audit records:", errCount)
+	}
 
 	go func() {
 		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
