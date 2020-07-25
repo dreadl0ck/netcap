@@ -10,7 +10,7 @@ Packets are fetched from an input source \(offline dump file or live from an int
 
 ## Encoders
 
-Encoders take care of converting decoded packet data into protocol buffers for the audit records. Two types of decoders exist: the [Layer Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/layerEncoder.go), which operates on _gopacket_ layer types, and the [Custom Encoder](https://github.com/dreadl0ck/netcap/blob/master/encoder/customEncoder.go), for which any desired logic can be implemented, including decoding application layer protocols that are not yet supported by gopacket or protocols that require stream reassembly.
+Encoders take care of converting decoded packet data into protocol buffers for the audit records. Two types of decoders exist: the [Layer Encoder](https://github.com/dreadl0ck/netcap/blob/master/decoder/layerEncoder.go), which operates on _gopacket_ layer types, and the [Custom Decoder](https://github.com/dreadl0ck/netcap/blob/master/decoder/customEncoder.go), for which any desired logic can be implemented, including decoding application layer protocols that are not yet supported by gopacket or protocols that require stream reassembly.
 
 ## Unknown Protocols
 
@@ -37,7 +37,7 @@ At the end of the error log, a summary of all errors and the number of their occ
 
 ## Inclusion and Exclusion of Encoders
 
-The _-encoders_ flag can be used to list all available decoders. In case not all of them are desired, selective inclusion and exclusion is possible, by using the _-include_ and _-exclude_ flags.
+The _-decoders_ flag can be used to list all available decoders. In case not all of them are desired, selective inclusion and exclusion is possible, by using the _-include_ and _-exclude_ flags.
 
 List all decoders:
 

@@ -20,7 +20,7 @@ Another option would be using a dedicated assembler for each worker for each L7 
 
 ## Configuration
 
-The following fields of the **encoder.Config** affect the TCP stream reassembly:
+The following fields of the **decoder.Config** affect the TCP stream reassembly:
 
 ```go
 // Interval to apply connection flushes

@@ -28,7 +28,7 @@ Furthermore **nDPI** \(v3.0\) can be used to identify 244 applications, they are
 
 The results from all heuristic engines \(lPI, nDPI and go heuristics\) get dedpulicated automatically. Future versions could create a certainity score based on the number of votes from different heuristics.
 
-DPI is currently used to indicate which applications have been seen for which **IPProfile**, when using the **DeviceProfile** encoder.
+DPI is currently used to indicate which applications have been seen for which **IPProfile**, when using the **DeviceProfile** decoder.
 
 Read more about DeviceProfiles here:
 
