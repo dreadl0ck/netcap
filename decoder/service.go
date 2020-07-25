@@ -126,7 +126,7 @@ func saveTCPServiceBanner(s StreamReader) {
 
 	dst, err := strconv.Atoi(s.Transport().Dst().String())
 	if err == nil {
-		serv.Protocol = "TCP"
+		serv.Protocol = protoTCP
 		serv.Name = resolvers.LookupServiceByPort(dst, "tcp")
 	}
 

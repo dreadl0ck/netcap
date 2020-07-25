@@ -439,11 +439,11 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 		// TODO: move this functionality into a dedicated package and create a voting model
 		if _, ok := t.decoder.(*tcpReader); ok {
 			switch {
-			case bytes.Contains(t.server.ServiceBanner(), []byte("HTTP")):
+			case bytes.Contains(t.server.ServiceBanner(), []byte(serviceHTTP)):
 				t.decoder = &httpReader{
 					parent: t.client.(*tcpStreamReader).parent,
 				}
-			case bytes.Contains(t.server.ServiceBanner(), []byte("SSH")):
+			case bytes.Contains(t.server.ServiceBanner(), []byte(serviceSSH)):
 				t.decoder = &sshReader{
 					parent: t.client.(*tcpStreamReader).parent,
 				}

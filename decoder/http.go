@@ -28,7 +28,7 @@ import (
 
 var httpDecoder = CreateCustomDecoder(
 	types.Type_NC_HTTP,
-	"HTTP",
+	serviceHTTP,
 	"The Hypertext Transfer Protocol is powering the world wide web",
 	func(d *CustomDecoder) error {
 		streamFactory.decodeHTTP = true
