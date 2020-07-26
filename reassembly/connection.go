@@ -2,6 +2,7 @@ package reassembly
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/gopacket"
 	"sync"
 
 	"time"
@@ -11,6 +12,10 @@ import (
 type connection struct {
 	key      *key // client->server
 	c2s, s2c halfconnection
+
+	ac   assemblerSimpleContext
+	firstFlow gopacket.Flow
+
 	mu       sync.Mutex
 }
 

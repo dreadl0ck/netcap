@@ -345,7 +345,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 // It should return true if the connection should be removed from the pool
 // It can return false if it want to see subsequent packets with Accept(), e.g. to
 // see FIN-ACK, for deeper state-machine analysis.
-func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow gopacket.Flow) bool {
+func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) bool {
 
 	//fmt.Println(t.ident, "t.firstPacket:", t.firstPacket, "ac.Timestamp", ac.GetCaptureInfo().Timestamp)
 	//fmt.Println(t.ident, !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp), "&&", t.firstPacket.After(ac.GetCaptureInfo().Timestamp))
@@ -360,8 +360,8 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, flow 
 		t.Unlock()
 
 		if t.client != nil && t.server != nil {
-			// check if flow is identical or needs to be flipped
-			if !(t.client.Network() == flow) {
+			// check if firstFlow is identical or needs to be flipped
+			if !(t.client.Network() == firstFlow) {
 
 				// flip
 				t.client.SetClient(false)

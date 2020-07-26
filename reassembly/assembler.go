@@ -575,10 +575,8 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	// Prepend saved bytes
 	saved := a.addPending(half, a.ret[0].getSeq())
 
-	// TODO: make configurable? appending continuous bytes will obscure the conversation flow when using multiple assemblers concurrently...
 	// Append continuous bytes
 	nextSeq := a.addContiguous(half, last)
-	//nextSeq := last
 
 	a.cacheSG.all = a.ret
 	a.cacheSG.Direction = half.dir
@@ -806,19 +804,15 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) 
 	if conn.s2c.closed && conn.c2s.closed {
 
 		// pass context with timestamp of the first packet seen
-		var (
-			ac   assemblerSimpleContext
-			flow gopacket.Flow
-		)
 		if conn.c2s.firstSeen.Before(conn.s2c.firstSeen) {
-			ac.Timestamp = conn.c2s.firstSeen
-			flow = conn.c2s.flow
+			conn.ac.Timestamp = conn.c2s.firstSeen
+			conn.firstFlow = conn.c2s.flow
 		} else {
-			ac.Timestamp = conn.s2c.firstSeen
-			flow = conn.s2c.flow
+			conn.ac.Timestamp = conn.s2c.firstSeen
+			conn.firstFlow  = conn.s2c.flow
 		}
 
-		if half.stream.ReassemblyComplete(&ac, flow) {
+		if half.stream.ReassemblyComplete(&conn.ac, conn.firstFlow) {
 			a.connPool.remove(conn)
 		}
 	}
