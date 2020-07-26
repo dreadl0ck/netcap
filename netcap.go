@@ -172,6 +172,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 }
 
 // Count returns the total number of records found in an audit record file
+// it does not return an error in case of a regular EOF
+// but will return an error in case of an unexpected EOF
 func Count(filename string) (count int64, err error) {
 
 	// open audit record file
@@ -196,12 +198,12 @@ func Count(filename string) (count int64, err error) {
 	for {
 		// read next record
 		err = r.Next(rec)
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return count, err
 		}
 		count++
 	}
-	return
+	return count, nil
 }

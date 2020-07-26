@@ -21,7 +21,7 @@ import (
 )
 
 func TestReader(t *testing.T) {
-	r, err := Open("tests/TCP.ncap.gz", DefaultBufferSize)
+	r, err := Open("tests/testdata/TCP.ncap.gz", DefaultBufferSize)
 	if err != nil {
 		t.Fatal(err)
 	}
