@@ -225,19 +225,22 @@ func (c *Collector) closeErrorLogFile() {
 
 	_, err := c.errorLogFile.WriteString(stats)
 	if err != nil {
-		panic(err)
+		utils.DebugLog.Println("failed to write stats into error log:", err)
+		return
 	}
 
 	// sync
 	err = c.errorLogFile.Sync()
 	if err != nil {
-		panic(err)
+		utils.DebugLog.Println("failed to sync error log:", err)
+		return
 	}
 
 	// close file handle
 	err = c.errorLogFile.Close()
 	if err != nil {
-		panic(err)
+		utils.DebugLog.Println("failed to close error log:", err)
+		return
 	}
 
 	c.mu.Unlock()
@@ -287,12 +290,16 @@ func (c *Collector) Stats() {
 	}
 
 	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
-	if c.unkownPcapWriterAtomic.count > 0 {
-		res += "-> " + share(c.unkownPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.unkownPcapWriterAtomic.count, 10) + ") written to unknown.pcap\n"
+	if c.unkownPcapWriterAtomic != nil {
+		if c.unkownPcapWriterAtomic.count > 0 {
+			res += "-> " + share(c.unkownPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.unkownPcapWriterAtomic.count, 10) + ") written to unknown.pcap\n"
+		}
 	}
 
-	if c.errorsPcapWriterAtomic.count > 0 {
-		res += "-> " + share(c.errorsPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.errorsPcapWriterAtomic.count, 10) + ") written to errors.pcap\n"
+	if c.errorsPcapWriterAtomic != nil {
+		if c.errorsPcapWriterAtomic.count > 0 {
+			res += "-> " + share(c.errorsPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.errorsPcapWriterAtomic.count, 10) + ") written to errors.pcap\n"
+		}
 	}
 
 	fmt.Fprintln(target, res)
