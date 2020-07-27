@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const generateMaltegoConfig = false
+
 // additional transforms
 var transforms = []TransformCoreInfo{
 	{"ToApplicationCategories", "netcap.IPAddr", "Retrieve categories of classified applications"},
@@ -136,6 +138,10 @@ maltego.graph.version=1.2`)
 // generate all transforms and pack as archive
 func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
+	if !generateMaltegoConfig {
+		return
+	}
+
 	genFullConfigArchive()
 
 	// generate additional entities
@@ -169,6 +175,10 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 // generate all transforms and pack as archive
 func TestGenerateAllTransforms(t *testing.T) {
+
+	if !generateMaltegoConfig {
+		return
+	}
 
 	genTransformArchive()
 
@@ -210,12 +220,12 @@ func TestToTransformDisplayName(t *testing.T) {
 	}
 }
 
-func TestGenerateAllTransformNames(t *testing.T) {
-	for _, t := range transforms {
-		fmt.Println(toTransformDisplayName(t.ID))
-	}
-	fmt.Println(len(transforms), "transforms")
-}
+//func TestGenerateAllTransformNames(t *testing.T) {
+//	for _, t := range transforms {
+//		fmt.Println(toTransformDisplayName(t.ID))
+//	}
+//	fmt.Println(len(transforms), "transforms")
+//}
 
 func genServerListing(outDir string) {
 
@@ -310,6 +320,10 @@ func genTransformSet(outDir string) {
 
 func TestGenerateTransformServerListing(t *testing.T) {
 
+	if !generateMaltegoConfig {
+		return
+	}
+
 	// File: Servers/Local.tas
 	expected := `<MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
  <LastSync>2020-06-23 20:47:24.433 CEST</LastSync>
@@ -369,6 +383,10 @@ func TestGenerateTransformServerListing(t *testing.T) {
 
 func TestGenerateTransformSettings(t *testing.T) {
 
+	if !generateMaltegoConfig {
+		return
+	}
+
 	// File: TransformRepositories/Local/netcap.ToAuditRecords.transformsettings
 	expected := `<TransformSettings enabled="true" disclaimerAccepted="false" showHelp="true" runWithAll="true" favorite="false">
  <Properties>
@@ -422,6 +440,10 @@ func TestGenerateTransformSettings(t *testing.T) {
 	compareGeneratedXML(data, expected, t)
 }
 func TestGenerateTransform(t *testing.T) {
+
+	if !generateMaltegoConfig {
+		return
+	}
 
 	// File: TransformRepositories/Local/netcap.ToAuditRecords.transform
 	expected := `<MaltegoTransform name="netcap.ToAuditRecords" displayName="To Audit Records [NETCAP]" abstract="false" template="false" visibility="public" description="Transform PCAP file into audit records" author="Philipp Mieden" requireDisplayInfo="false">

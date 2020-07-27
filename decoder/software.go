@@ -207,6 +207,11 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 		matches = reGenericVersion.FindAll(data, -1)
 	)
 
+	//fmt.Println("got", len(matches), "matches")
+	//for _, m := range matches {
+	//	fmt.Println(string(m))
+	//}
+
 	if len(matches) > 0 {
 		for _, v := range matches {
 			s = append(s, &Software{
@@ -214,10 +219,11 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 					Timestamp:      ts.String(),
 					DeviceProfiles: []string{dpIdent},
 					SourceName:     "Generic version harvester",
-					SourceData:     string(v),
+					SourceData:     string(data),
 					Service:        service,
 					DPIResults:     protos,
 					Flows:          []string{flowIdent},
+					Notes:          string(v),
 				},
 			})
 		}

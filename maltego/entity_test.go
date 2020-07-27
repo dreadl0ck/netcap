@@ -58,6 +58,10 @@ var entities = []EntityCoreInfo{
 // generate all entities and pack as archive
 func TestGenerateAllEntities(t *testing.T) {
 
+	if !generateMaltegoConfig {
+		return
+	}
+
 	genEntityArchive()
 
 	// generate additional entities
@@ -84,24 +88,44 @@ func TestGenerateAllEntities(t *testing.T) {
 }
 
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
+
+	if !generateMaltegoConfig {
+		return
+	}
+
 	genEntityArchive()
 	genEntity("entities", "Vulnerability", "Vulnerability", "A software vulnerability", "")
 	packEntityArchive()
 }
 
 func TestGenerateAndPackCaptureProcessEntity(t *testing.T) {
+
+	if !generateMaltegoConfig {
+		return
+	}
+
 	genEntityArchive()
 	genEntity("entities", "CaptureProcess", "remove_red_eye", "A capture process", "")
 	packEntityArchive()
 }
 
 func TestGenerateAndPackPCAPEntity(t *testing.T) {
+
+	if !generateMaltegoConfig {
+		return
+	}
+
 	genEntityArchive()
 	genEntity("entities", "PCAP", "sd_storage", "Packet capture file", "", newStringField("path"))
 	packEntityArchive()
 }
 
 func TestGeneratePCAPXMLEntity(t *testing.T) {
+
+	if !generateMaltegoConfig {
+		return
+	}
+
 	expected := `<MaltegoEntity id="netcap.PCAP" displayName="PCAP" displayNamePlural="PCAPs" description="Packet capture file" category="Netcap" smallIconResource="General/SharkAttack" largeIconResource="General/SharkAttack" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.filename" displayValue="properties.filename">
   <Groups/>
@@ -159,6 +183,11 @@ func compareGeneratedXML(data []byte, expected string, t *testing.T) {
 }
 
 func TestGenerateDHCPClientXMLEntity(t *testing.T) {
+
+	if !generateMaltegoConfig {
+		return
+	}
+
 	expected := `<MaltegoEntity id="netcap.DHCPClient" displayName="DHCPClient" displayNamePlural="DHCPClients" description="A DHCP client" category="Netcap" smallIconResource="Technology/WAN" largeIconResource="Technology/WAN" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dhcpclient" displayValue="properties.dhcpclient">
   <Fields>

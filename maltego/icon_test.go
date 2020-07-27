@@ -8,21 +8,25 @@ import (
 )
 
 // deprecated, use V2
-func TestGenerateAuditRecordIcons(t *testing.T) {
-
-	generateIcons()
-
-	decoder.ApplyActionToCustomDecoders(func(e *decoder.CustomDecoder) {
-		generateAuditRecordIcon(e.Name)
-	})
-
-	decoder.ApplyActionToLayerDecoders(func(e *decoder.GoPacketDecoder) {
-		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		generateAuditRecordIcon(name)
-	})
-}
+//func TestGenerateAuditRecordIcons(t *testing.T) {
+//
+//	generateIcons()
+//
+//	decoder.ApplyActionToCustomDecoders(func(e *decoder.CustomDecoder) {
+//		generateAuditRecordIcon(e.Name)
+//	})
+//
+//	decoder.ApplyActionToLayerDecoders(func(e *decoder.GoPacketDecoder) {
+//		name := strings.ReplaceAll(e.Layer.String(), "/", "")
+//		generateAuditRecordIcon(name)
+//	})
+//}
 
 func TestGenerateAuditRecordIconsV2(t *testing.T) {
+
+	if !generateMaltegoConfig {
+		return
+	}
 
 	generateIcons()
 
