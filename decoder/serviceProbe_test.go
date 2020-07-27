@@ -49,13 +49,13 @@ func TestExtractGroupIdent(t *testing.T) {
 
 func TestExtractGroups(t *testing.T) {
 	in := "$1"
-	extractGroup(&in, []string{"", "first", "second", "third", "fourth"})
+	in = extractGroup(&in, []string{"", "first", "second", "third", "fourth"})
 	if in != "first" {
 		t.Fatal("expected first, got", in)
 	}
 
 	in = "$4"
-	extractGroup(&in, []string{"", "first", "second", "third", "fourth"})
+	in = extractGroup(&in, []string{"", "first", "second", "third", "fourth"})
 	if in != "fourth" {
 		t.Fatal("expected fourth, got", in)
 	}
@@ -111,18 +111,20 @@ var serviceBanners = []bannerTest{
 func TestClassifyBanners(t *testing.T) {
 
 	// Load vulnerabilities DB index
-	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
+	indexName := filepath.Join(resolvers.DataBaseSource, "nvd-v2.bleve")
 	var err error
 	vulnerabilitiesIndex, err = bleve.Open(indexName)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer vulnerabilitiesIndex.Close()
 
 	indexName = filepath.Join(resolvers.DataBaseSource, "exploit-db.bleve")
 	exploitsIndex, err = bleve.Open(indexName)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer exploitsIndex.Close()
 
 	c.Debug = true
 	// important: needs to be set prior to loading probes
