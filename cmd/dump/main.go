@@ -95,7 +95,8 @@ func Run() {
 
 	// read ncap file and print to stdout
 	if filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz" {
-		netcap.Dump(
+		err := netcap.Dump(
+			os.Stdout,
 			netcap.DumpConfig{
 				Path:         *flagInput,
 				Separator:    *flagSeparator,
@@ -110,6 +111,9 @@ func Run() {
 				ForceColors:  *flagForceColors,
 			},
 		)
+		if err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 }
