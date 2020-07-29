@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -105,16 +106,16 @@ type DumpConfig struct {
 }
 
 // Dump reads the specified netcap file
-// and dumps the output according to the configuration to stdout
-func Dump(c DumpConfig) {
+// and dumps the output according to the configuration to the specified *io.File
+func Dump(w *os.File, c DumpConfig) error {
 
 	var (
-		isTTY  = terminal.IsTerminal(int(os.Stdout.Fd())) || c.ForceColors
+		isTTY  = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
 		count  = 0
 		r, err = Open(c.Path, c.MemBufferSize)
 	)
 	if err != nil {
-		log.Fatal("failed to open audit record file: ", err)
+		return fmt.Errorf("failed to open audit record file: %s", err)
 	}
 	defer r.Close()
 
@@ -130,7 +131,7 @@ func Dump(c DumpConfig) {
 		colorMap map[string]string
 	)
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		return errFileHeader
 	}
 
 	types.Select(record, c.Selection)
@@ -139,10 +140,9 @@ func Dump(c DumpConfig) {
 	if !c.Structured && !c.Table && !c.JSON {
 
 		if p, ok := record.(types.AuditRecord); ok {
-			fmt.Println(strings.Join(p.CSVHeader(), c.Separator))
+			w.WriteString(strings.Join(p.CSVHeader(), c.Separator))
 		} else {
-			fmt.Printf("type: %#v\n", record)
-			log.Fatal("type does not implement the types.AuditRecord interface")
+			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)
 		}
 
 		if c.Fields {
@@ -155,7 +155,7 @@ func Dump(c DumpConfig) {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
-			panic(err)
+			return fmt.Errorf("failed to read next audit record: %s", err)
 		}
 		count++
 
@@ -165,10 +165,10 @@ func Dump(c DumpConfig) {
 			if c.JSON {
 				marshaled, err := json.Marshal(p)
 				if err != nil {
-					log.Fatal("failed to marshal json:", err)
+					return fmt.Errorf("failed to marshal json: %s", err)
 				}
-				os.Stdout.WriteString(string(marshaled))
-				os.Stdout.WriteString("\n")
+				w.WriteString(string(marshaled))
+				w.WriteString("\n")
 				continue
 			}
 
@@ -177,7 +177,7 @@ func Dump(c DumpConfig) {
 				rows = append(rows, p.CSVRecord())
 
 				if count%100 == 0 {
-					tui.Table(os.Stdout, p.CSVHeader(), rows)
+					tui.Table(w, p.CSVHeader(), rows)
 					rows = [][]string{}
 				}
 				continue
@@ -185,45 +185,45 @@ func Dump(c DumpConfig) {
 
 			// CSV
 			if c.CSV {
-				os.Stdout.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
+				w.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
 				continue
 			}
 
-			// default: structured
+			// default: if TTY, dump structured with colors
 			if isTTY {
-				os.Stdout.WriteString(ansi.White)
-				os.Stdout.WriteString(header.Type.String())
-				os.Stdout.WriteString(ansi.Reset)
-				os.Stdout.WriteString("\n")
-				os.Stdout.WriteString(colorizeProto(proto.MarshalTextString(record), colorMap))
-			} else {
-				os.Stdout.WriteString(header.Type.String())
-				os.Stdout.WriteString("\n")
-				os.Stdout.WriteString(proto.MarshalTextString(record))
+				w.WriteString(ansi.White)
+				w.WriteString(header.Type.String())
+				w.WriteString(ansi.Reset)
+				w.WriteString("\n")
+				w.WriteString(colorizeProto(proto.MarshalTextString(record), colorMap))
+			} else { // structured without colors
+				w.WriteString(header.Type.String())
+				w.WriteString("\n")
+				w.WriteString(proto.MarshalTextString(record))
 			}
 
-			os.Stdout.WriteString("\n")
+			w.WriteString("\n")
 		} else {
-			fmt.Printf("type: %#v\n", record)
-			log.Fatal("type does not implement the types.AuditRecord interface")
+			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)
 		}
 	}
 
 	// in table mode: dump remaining
 	if c.Table {
 		if p, ok := record.(types.AuditRecord); ok {
-			tui.Table(os.Stdout, p.CSVHeader(), rows)
+			tui.Table(w, p.CSVHeader(), rows)
 			fmt.Println()
 		} else {
-			fmt.Printf("type: %#v\n", record)
-			log.Fatal("type does not implement the types.AuditRecord interface")
+			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)
 		}
 	}
 
 	// avoid breaking JSON parsers by appending number of records
 	if !c.JSON {
-		fmt.Println(count, "records.")
+		w.WriteString(strconv.Itoa(count) + " records.")
 	}
+
+	return nil
 }
 
 // CloseFile closes the netcap file handle
