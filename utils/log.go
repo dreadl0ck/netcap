@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -36,15 +35,22 @@ func InitLoggers(outpath string) {
 }
 
 // CloseLogFiles closes the logfile handles
-func CloseLogFiles() {
+func CloseLogFiles() []error {
+
+	var errs []error
+
 	if ReassemblyLogFileHandle != nil {
-		if err := ReassemblyLogFileHandle.Close(); err != nil {
-			fmt.Println("failed to close reassembly log file handle:", err)
+		err := ReassemblyLogFileHandle.Close()
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 	if DebugLogFileHandle != nil {
-		if err := DebugLogFileHandle.Close(); err != nil {
-			fmt.Println("failed to close debug log file handle:", err)
+		err := DebugLogFileHandle.Close()
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
+
+	return errs
 }
