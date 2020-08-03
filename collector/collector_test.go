@@ -23,7 +23,7 @@ func TestCaptureLive(t *testing.T) {
 		PacketBufferSize:    100,
 		SnapLen:             1514,
 		Promisc:             false,
-		DecoderConfig: decoder.Config{
+		DecoderConfig: &decoder.Config{
 			Buffer:               true,
 			Compression:          true,
 			CSV:                  false,
@@ -103,7 +103,7 @@ func TestCapturePCAP(t *testing.T) {
 		PacketBufferSize:    100,
 		SnapLen:             1514,
 		Promisc:             false,
-		DecoderConfig: decoder.Config{
+		DecoderConfig: &decoder.Config{
 			Buffer:               true,
 			Compression:          true,
 			CSV:                  false,

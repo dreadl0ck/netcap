@@ -102,7 +102,7 @@ func Run() {
 			SnapLen:             *flagSnapLen,
 			Promisc:             *flagPromiscMode,
 			LogErrors:           *flagLogErrors,
-			DecoderConfig: decoder.Config{
+			DecoderConfig: &decoder.Config{
 				Buffer:               *flagBuffer,
 				Compression:          *flagCompress,
 				CSV:                  *flagCSV,

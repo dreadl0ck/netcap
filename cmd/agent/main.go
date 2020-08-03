@@ -100,7 +100,7 @@ func Run() {
 		Promisc:             *flagPromiscMode,
 		SnapLen:             *flagSnapLen,
 		LogErrors:           *flagLogErrors,
-		DecoderConfig: decoder.Config{
+		DecoderConfig: &decoder.Config{
 			// needs to be disabled for batch mode
 			Buffer:          false,
 			Compression:     false,

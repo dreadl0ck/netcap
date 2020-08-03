@@ -24,8 +24,7 @@ import (
 )
 
 var (
-	c   Config
-	cMu sync.Mutex
+	c   *Config
 )
 
 const (
@@ -34,11 +33,9 @@ const (
 )
 
 // SetConfig can be used to set a configuration for the package
-func SetConfig(cfg Config) {
+func SetConfig(cfg *Config) {
 
-	cMu.Lock()
 	c = cfg
-	cMu.Unlock()
 
 	streamFactory.fsmOptions = reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: c.AllowMissingInit,
@@ -52,7 +49,7 @@ func SetConfig(cfg Config) {
 }
 
 // DefaultConfig is a sane example configuration for the encoder package
-var DefaultConfig = Config{
+var DefaultConfig = &Config{
 	Buffer:                  true,
 	MemBufferSize:           netcap.DefaultBufferSize,
 	Compression:             true,
@@ -224,4 +221,6 @@ type Config struct {
 
 	// Quiet disables logging to stdout
 	Quiet bool
+
+	sync.Mutex
 }

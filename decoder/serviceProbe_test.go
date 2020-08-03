@@ -130,7 +130,7 @@ var serviceBanners = []bannerTest{
 //	c.UseRE2 = true
 //
 //	// load nmap service probes
-//	err = InitProbes()
+//	err = InitServiceProbes()
 //	if err != nil {
 //		t.Fatal(err)
 //	}

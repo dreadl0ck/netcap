@@ -48,7 +48,6 @@ var (
 		Items: make(map[string]*Flow),
 	}
 	flowDecoderInstance *CustomDecoder
-	flows               int64
 )
 
 var flowDecoder = NewCustomDecoder(
@@ -162,8 +161,9 @@ var flowDecoder = NewCustomDecoder(
 				Flow: f,
 			}
 
+			flows := atomic.AddInt64(&stats.numFlows, 1)
+
 			// continuously flush flows
-			flows++
 			if c.FlowFlushInterval != 0 && flows%int64(c.FlowFlushInterval) == 0 {
 
 				var selectFlows []*types.Flow

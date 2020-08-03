@@ -99,6 +99,8 @@ var stats struct {
 	count     int64
 	numErrors uint
 	dataBytes int64
+	numConns  int64
+	numFlows  int64
 
 	sync.Mutex
 }
@@ -569,12 +571,12 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 
 func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
-	cMu.Lock()
+	c.Lock()
 	if c.Debug {
 		utils.ReassemblyLog.Println("StreamPool:")
 		utils.ReassemblyLog.Println(streamFactory.StreamPool.DumpString())
 	}
-	cMu.Unlock()
+	c.Unlock()
 
 	// wait for stream reassembly to finish
 	if c.WaitForConnections || wait {
@@ -594,6 +596,10 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			if !c.Quiet {
 				fmt.Println(" timeout after", netcap.DefaultReassemblyTimeout)
 			}
+		}
+
+		if !c.Quiet {
+			fmt.Println("flushing assemblers...")
 		}
 
 		// flush assemblers
