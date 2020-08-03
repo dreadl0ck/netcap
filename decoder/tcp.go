@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var tcpDecoder = CreateLayerDecoder(
+var tcpDecoder = NewGoPacketDecoder(
 	types.Type_NC_TCP,
 	layers.LayerTypeTCP,
 	"The Transmission Control Protocol (TCP) is a connection-oriented communications protocol, that facilitates the exchange of messages between computing devices in a network",

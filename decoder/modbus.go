@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var modbusDecoder = CreateLayerDecoder(
+var modbusDecoder = NewGoPacketDecoder(
 	types.Type_NC_Modbus,
 	layers.LayerTypeModbus,
 	"Modbus is a data communications protocol originally published by Modicon in 1979 for use with its programmable logic controllers",

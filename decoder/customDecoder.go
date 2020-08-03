@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/mgutz/ansi"
+	"github.com/pkg/errors"
 	"log"
 	"strings"
 	"sync/atomic"
@@ -28,9 +29,9 @@ import (
 )
 
 var (
-	// CustomDecoders slice contains initialized decoders at runtime
-	// for usage from other packages
-	CustomDecoders, customDecoderSlice = []*CustomDecoder{}, []*CustomDecoder{
+	ErrInvalidDecoder = errors.New("invalid decoder")
+
+	defaultCustomDecoders = []*CustomDecoder{
 		tlsClientHelloDecoder,
 		tlsServerHelloDecoder,
 		httpDecoder,
@@ -91,20 +92,17 @@ type (
 // package level init
 func init() {
 	// collect all names for custom decoders on startup
-	for _, e := range customDecoderSlice {
+	for _, e := range defaultCustomDecoders {
 		allDecoderNames[e.Name] = struct{}{}
 	}
 	// collect all names for custom decoders on startup
-	for _, e := range goPacketDecoderSlice {
+	for _, e := range defaultGoPacketDecoders {
 		allDecoderNames[e.Layer.String()] = struct{}{}
 	}
 }
 
 // InitCustomDecoders initializes all custom decoders
-func InitCustomDecoders(c Config, quiet bool) {
-
-	// Flush custom decoders in case they have been initialized before
-	CustomDecoders = []*CustomDecoder{}
+func InitCustomDecoders(c Config) (decoders []*CustomDecoder, err error) {
 
 	var (
 		// values from command-line flags
@@ -127,7 +125,7 @@ func InitCustomDecoders(c Config, quiet bool) {
 
 				// check if proto exists
 				if _, ok := allDecoderNames[name]; !ok {
-					invalidDecoder(name)
+					return nil, errors.Wrap(ErrInvalidDecoder, name)
 				}
 
 				// add to include map
@@ -136,14 +134,14 @@ func InitCustomDecoders(c Config, quiet bool) {
 		}
 
 		// iterate over custom decoders and collect those that are named in the includeMap
-		for _, e := range customDecoderSlice {
+		for _, e := range defaultCustomDecoders {
 			if _, ok := inMap[e.Name]; ok {
 				selection = append(selection, e)
 			}
 		}
 
 		// update custom decoders to new selection
-		customDecoderSlice = selection
+		defaultCustomDecoders = selection
 	}
 
 	// iterate over excluded decoders
@@ -152,14 +150,14 @@ func InitCustomDecoders(c Config, quiet bool) {
 
 			// check if proto exists
 			if _, ok := allDecoderNames[name]; !ok {
-				invalidDecoder(name)
+				return nil, errors.Wrap(ErrInvalidDecoder, name)
 			}
 
-			// remove named encoder from customDecoderSlice
-			for i, e := range customDecoderSlice {
+			// remove named encoder from defaultCustomDecoders
+			for i, e := range defaultCustomDecoders {
 				if name == e.Name {
 					// remove encoder
-					customDecoderSlice = append(customDecoderSlice[:i], customDecoderSlice[i+1:]...)
+					defaultCustomDecoders = append(defaultCustomDecoders[:i], defaultCustomDecoders[i+1:]...)
 					break
 				}
 			}
@@ -167,7 +165,7 @@ func InitCustomDecoders(c Config, quiet bool) {
 	}
 
 	// initialize decoders
-	for _, e := range customDecoderSlice {
+	for _, e := range defaultCustomDecoders {
 
 		// fmt.Println("init custom encoder", e.name)
 		e.writer = netcap.NewWriter(e.Name, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
@@ -179,7 +177,7 @@ func InitCustomDecoders(c Config, quiet bool) {
 				if c.IgnoreDecoderInitErrors {
 					fmt.Println(ansi.Red, err, ansi.Reset)
 				} else {
-					log.Fatal(err)
+					return nil, errors.Wrap(err, "postinit failed")
 				}
 			}
 		}
@@ -190,22 +188,24 @@ func InitCustomDecoders(c Config, quiet bool) {
 		// write header
 		err := e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
 		if err != nil {
-			log.Fatal("failed to write header for audit record: ", e.Name)
+			return nil, errors.Wrap(err, "failed to write header for audit record " + e.Name)
 		}
 
 		// append to custom decoders slice
-		CustomDecoders = append(CustomDecoders, e)
+		decoders = append(decoders, e)
 	}
 
 	if isCustomDecoderLoaded(credentialsDecoderName) {
 		useHarvesters = true
 	}
 
-	utils.DebugLog.Println("initialized", len(CustomDecoders), "custom decoders")
+	utils.DebugLog.Println("initialized", len(decoders), "custom decoders")
+
+	return decoders, nil
 }
 
 func isCustomDecoderLoaded(name string) bool {
-	for _, e := range customDecoderSlice {
+	for _, e := range defaultCustomDecoders {
 		if e.Name == name {
 			return true
 		}
@@ -213,8 +213,8 @@ func isCustomDecoderLoaded(name string) bool {
 	return false
 }
 
-// CreateCustomDecoder returns a new CustomDecoder instance
-func CreateCustomDecoder(t types.Type, name string, description string, postinit func(*CustomDecoder) error, handler CustomDecoderHandler, deinit func(*CustomDecoder) error) *CustomDecoder {
+// NewCustomDecoder returns a new CustomDecoder instance
+func NewCustomDecoder(t types.Type, name string, description string, postinit func(*CustomDecoder) error, handler CustomDecoderHandler, deinit func(*CustomDecoder) error) *CustomDecoder {
 	return &CustomDecoder{
 		Name:        name,
 		Handler:     handler,
@@ -225,10 +225,10 @@ func CreateCustomDecoder(t types.Type, name string, description string, postinit
 	}
 }
 
-// Encode is called for each layer
+// Decode is called for each layer
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
-func (e *CustomDecoder) Encode(p gopacket.Packet) error {
+func (e *CustomDecoder) Decode(p gopacket.Packet) error {
 
 	// call the Handler function of the encoder
 	record := e.Handler(p)

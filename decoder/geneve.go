@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var geneveDecoder = CreateLayerDecoder(
+var geneveDecoder = NewGoPacketDecoder(
 	types.Type_NC_Geneve,
 	layers.LayerTypeGeneve,
 	"Geneve is a network virtualization overlay encapsulation protocol designed to establish tunnels between network virtualization end points (NVE) over an existing IP network",

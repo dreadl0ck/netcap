@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var smtpDecoder = CreateLayerDecoder(
+var smtpDecoder = NewGoPacketDecoder(
 	types.Type_NC_SMTP,
 	layers.LayerTypeSMTP,
 	"The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission",

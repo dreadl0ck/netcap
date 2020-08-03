@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ipSecESPDecoder = CreateLayerDecoder(
+var ipSecESPDecoder = NewGoPacketDecoder(
 	types.Type_NC_IPSecESP,
 	layers.LayerTypeIPSecESP,
 	"IPSec Encapsulating Security Payload (ESP)",

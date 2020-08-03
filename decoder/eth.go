@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ethernetDecoder = CreateLayerDecoder(
+var ethernetDecoder = NewGoPacketDecoder(
 	types.Type_NC_Ethernet,
 	layers.LayerTypeEthernet,
 	"Ethernet is a family of computer networking technologies commonly used in local area networks, metropolitan area networks and wide area networks",

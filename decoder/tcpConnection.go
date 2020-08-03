@@ -578,7 +578,8 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
 	// wait for stream reassembly to finish
 	if c.WaitForConnections || wait {
-		if !Quiet {
+
+		if !c.Quiet {
 			fmt.Print("\nwaiting for last streams to finish processing...")
 		}
 
@@ -586,11 +587,11 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		// will wait forever if there are streams that are never shutdown via FIN/RST
 		select {
 		case <-waitForConns():
-			if !Quiet {
+			if !c.Quiet {
 				fmt.Println(" done!")
 			}
 		case <-time.After(netcap.DefaultReassemblyTimeout):
-			if !Quiet {
+			if !c.Quiet {
 				fmt.Println(" timeout after", netcap.DefaultReassemblyTimeout)
 			}
 		}
@@ -615,7 +616,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				sp.handleStream(s)
 			}
 		}
-		if !Quiet {
+		if !c.Quiet {
 			fmt.Println()
 		}
 		sp.wg.Wait()
@@ -641,7 +642,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	}
 
 	// print stats if not quiet
-	if !Quiet {
+	if !c.Quiet {
 		errorsMapMutex.Lock()
 		stats.Lock()
 		utils.ReassemblyLog.Printf("HTTPDecoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", stats.count, stats.dataBytes, time.Since(start), stats.numErrors, len(errorsMap))

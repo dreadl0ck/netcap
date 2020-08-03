@@ -77,7 +77,7 @@ func Run() {
 	}
 
 	if *flagDecoders {
-		decoder.ShowDecoders()
+		decoder.ShowDecoders(true)
 		return
 	}
 
@@ -149,7 +149,7 @@ func Run() {
 	})
 
 	// initialize batching
-	chans, handle, err := c.InitBatching(*flagMaxSize, *flagBPF, *flagInterface)
+	chans, handle, err := c.InitBatching(*flagBPF, *flagInterface)
 	if err != nil {
 		panic(err)
 	}

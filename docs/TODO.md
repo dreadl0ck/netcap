@@ -1,5 +1,6 @@
 # TODOs
 
+- add a die(msg string) function and use instead of panic(err) 
 - https://github.com/glycerine/offheap
 
 - service: add reverse dns lookup and cache all results offline in a boltdb?

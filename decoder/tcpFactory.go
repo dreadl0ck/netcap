@@ -106,7 +106,7 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 // this will block forever if there are streams that are never shutdown (via RST or FIN flags)
 func (factory *tcpConnectionFactory) WaitGoRoutines() {
 
-	if !Quiet {
+	if !c.Quiet {
 		factory.Lock()
 		fmt.Println("\nwaiting for", factory.numActive, "flows")
 		factory.Unlock()

@@ -156,7 +156,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 		genEntity("netcap", e.Name, e.Name, e.Description, "")
 	})
 
-	decoder.ApplyActionToLayerDecoders(func(e *decoder.GoPacketDecoder) {
+	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		genEntity("netcap", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path"))
 		genEntity("netcap", name, name, e.Description, "")

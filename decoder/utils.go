@@ -48,7 +48,7 @@ func MarkdownOverview() {
 
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
-	for _, e := range goPacketDecoderSlice {
+	for _, e := range defaultGoPacketDecoders {
 		if csv, ok := netcap.InitRecord(e.Type).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(e.Layer.String(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
@@ -58,7 +58,7 @@ func MarkdownOverview() {
 
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
-	for _, e := range customDecoderSlice {
+	for _, e := range defaultCustomDecoders {
 		if csv, ok := netcap.InitRecord(e.Type).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(e.Name, 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
@@ -166,25 +166,25 @@ func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 func ApplyActionToCustomDecoders(action func(e *CustomDecoder)) {
-	for _, e := range customDecoderSlice {
+	for _, e := range defaultCustomDecoders {
 		action(e)
 	}
 }
 
-func ApplyActionToLayerDecoders(action func(e *GoPacketDecoder)) {
-	for _, e := range goPacketDecoderSlice {
+func ApplyActionToGoPacketDecoders(action func(e *GoPacketDecoder)) {
+	for _, e := range defaultGoPacketDecoders {
 		action(e)
 	}
 }
 
-func ShowDecoders() {
+func ShowDecoders(verbose bool) {
 
 	var (
 		totalFields, totalAuditRecords int
 	)
 
-	fmt.Println("Custom Audit Records: Total", len(customDecoderSlice), "Format: DecoderName ( Number of Fields )")
-	for _, e := range customDecoderSlice {
+	fmt.Println("Custom Audit Records: Total", len(defaultCustomDecoders), "Format: DecoderName ( Number of Fields )")
+	for _, e := range defaultCustomDecoders {
 		totalAuditRecords++
 		f := countFields(e.Type)
 		totalFields += f
@@ -193,31 +193,33 @@ func ShowDecoders() {
 	fmt.Println("> custom encoder fields: ", totalFields)
 	fmt.Println("> custom encoder audit records:", totalAuditRecords)
 
-	fmt.Println("\nLayer Audit Records: Total", len(goPacketDecoderSlice), "Format: DecoderName ( Number of Fields )")
-	for _, e := range goPacketDecoderSlice {
+	fmt.Println("\nLayer Audit Records: Total", len(defaultGoPacketDecoders), "Format: DecoderName ( Number of Fields )")
+	for _, e := range defaultGoPacketDecoders {
 		totalAuditRecords++
 		f := countFields(e.Type)
 		totalFields += f
 		fmt.Println(pad("+ "+e.Layer.String()+" ( "+strconv.Itoa(f)+" )", 35), e.Description)
 	}
 
-	var rows [][]string
-	for _, p := range rankByWordCount(typeMap)[:10] {
-		rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
-	}
-	fmt.Println("\nTypes with highest number of fields (Top Ten):")
-	tui.Table(os.Stdout, []string{"Type", "NumFields"}, rows)
+	if verbose {
+		var rows [][]string
+		for _, p := range rankByWordCount(typeMap)[:10] {
+			rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
+		}
+		fmt.Println("\nTypes with highest number of fields (Top Ten):")
+		tui.Table(os.Stdout, []string{"Type", "NumFields"}, rows)
 
-	rows = [][]string{}
-	for _, p := range rankByWordCount(fieldNameMap)[:10] {
-		rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
-	}
-	fmt.Println("\nFields with highest number of occurrences (Top Ten):")
-	tui.Table(os.Stdout, []string{"Name", "Count"}, rows)
+		rows = [][]string{}
+		for _, p := range rankByWordCount(fieldNameMap)[:10] {
+			rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
+		}
+		fmt.Println("\nFields with highest number of occurrences (Top Ten):")
+		tui.Table(os.Stdout, []string{"Name", "Count"}, rows)
 
-	fmt.Println("> total fields: ", totalFields)
-	fmt.Println("> total audit records:", totalAuditRecords)
-	fmt.Println("> number of unique fields:", len(fieldNameMap))
+		fmt.Println("> total fields: ", totalFields)
+		fmt.Println("> total audit records:", totalAuditRecords)
+		fmt.Println("> number of unique fields:", len(fieldNameMap))
+	}
 }
 
 // Entropy returns the shannon entropy value

@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var cipDecoder = CreateLayerDecoder(
+var cipDecoder = NewGoPacketDecoder(
 	types.Type_NC_CIP,
 	layers.LayerTypeCIP,
 	"The Common Industrial Protocol (CIP) is an industrial protocol for industrial automation applications",

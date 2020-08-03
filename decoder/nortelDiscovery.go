@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var nortelDiscoveryDecoder = CreateLayerDecoder(
+var nortelDiscoveryDecoder = NewGoPacketDecoder(
 	types.Type_NC_NortelDiscovery,
 	layers.LayerTypeNortelDiscovery,
 	"The Nortel Discovery Protocol (NDP) is a Data Link Layer (OSI Layer 2) network protocol for discovery of Nortel networking devices and certain products from Avaya and Ciena",

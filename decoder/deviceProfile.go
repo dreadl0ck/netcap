@@ -170,7 +170,7 @@ func applyDeviceProfileUpdate(p *DeviceProfile, i *packetInfo) {
 	p.Unlock()
 }
 
-var profileDecoder = CreateCustomDecoder(
+var profileDecoder = NewCustomDecoder(
 	types.Type_NC_DeviceProfile,
 	"DeviceProfile",
 	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",

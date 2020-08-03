@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ethernetCTPDecoder = CreateLayerDecoder(
+var ethernetCTPDecoder = NewGoPacketDecoder(
 	types.Type_NC_EthernetCTP,
 	layers.LayerTypeEthernetCTP,
 	"Ethernet Configuration Testing Protocol is a diagnostic protocol included in the Xerox Ethernet II specification",

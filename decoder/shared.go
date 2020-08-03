@@ -13,13 +13,6 @@
 
 package decoder
 
-import (
-	"fmt"
-	"os"
-
-	"github.com/mgutz/ansi"
-)
-
 var (
 	allDecoderNames = make(map[string]struct{})
 	errorMap        *AtomicCounterMap
@@ -27,10 +20,4 @@ var (
 
 func SetErrorMap(m *AtomicCounterMap) {
 	errorMap = m
-}
-
-func invalidDecoder(name string) {
-	fmt.Println("invalid encoder: " + ansi.Red + name + ansi.Reset)
-	ShowDecoders()
-	os.Exit(1)
 }

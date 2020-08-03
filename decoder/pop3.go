@@ -19,7 +19,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var pop3Decoder = CreateCustomDecoder(
+var pop3Decoder = NewCustomDecoder(
 	types.Type_NC_POP3,
 	servicePOP3,
 	"The POP3 protocol is used to fetch emails from a mail server",

@@ -55,7 +55,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 				// create context for packet
 				var ctx = &types.PacketContext{}
-				if decoder.AddContext {
+				if c.config.DecoderConfig.AddContext {
 					var (
 						netLayer       = p.NetworkLayer()
 						transportLayer = p.TransportLayer()
@@ -103,10 +103,10 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					}
 
 					// pick decoders from the encoderMap by looking up the layer type
-					if decoders, ok := decoder.GoPacketDecoders[layer.LayerType()]; ok {
+					if decoders, ok := c.goPacketDecoders[layer.LayerType()]; ok {
 
 						for _, e := range decoders {
-							err := e.Encode(ctx, p, layer)
+							err := e.Decode(ctx, p, layer)
 							if err != nil {
 								if c.config.DecoderConfig.Export {
 									decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
@@ -136,8 +136,8 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 			done:
 				// call custom decoders
-				for _, e := range decoder.CustomDecoders {
-					err := e.Encode(p)
+				for _, e := range c.customDecoders {
+					err := e.Decode(p)
 					if err != nil {
 						if c.config.DecoderConfig.Export {
 							decodingErrorsTotal.WithLabelValues(e.Name, err.Error()).Inc()

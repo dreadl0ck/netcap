@@ -96,7 +96,7 @@ func handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
 	}
 }
 
-var udpDecoder = CreateLayerDecoder(
+var udpDecoder = NewGoPacketDecoder(
 	types.Type_NC_UDP,
 	layers.LayerTypeUDP,
 	"User Datagram Protocol (UDP) is a connectionless communications protocol, that facilitates the exchange of messages between computing devices in a network",

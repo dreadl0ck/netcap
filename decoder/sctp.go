@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var sctpDecoder = CreateLayerDecoder(
+var sctpDecoder = NewGoPacketDecoder(
 	types.Type_NC_SCTP,
 	layers.LayerTypeSCTP,
 	"The Stream Control Transmission Protocol (SCTP) is a computer networking communications protocol which operates at the transport layer and serves a role similar to the popular protocols TCP and UDP",

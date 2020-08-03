@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ethernetCTPReplyDecoder = CreateLayerDecoder(
+var ethernetCTPReplyDecoder = NewGoPacketDecoder(
 	types.Type_NC_EthernetCTPReply,
 	layers.LayerTypeEthernetCTPReply,
 	"Ethernet Configuration Testing Protocol is a diagnostic protocol included in the Xerox Ethernet II specification",

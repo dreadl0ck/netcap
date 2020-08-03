@@ -25,7 +25,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var tlsServerHelloDecoder = CreateCustomDecoder(
+var tlsServerHelloDecoder = NewCustomDecoder(
 	types.Type_NC_TLSServerHello,
 	"TLSServerHello",
 	"The server hello from a Transport Layer Security handshake",

@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ipSecAHDecoder = CreateLayerDecoder(
+var ipSecAHDecoder = NewGoPacketDecoder(
 	types.Type_NC_IPSecAH,
 	layers.LayerTypeIPSecAH,
 	"IPSec Authentication Header (AH)",

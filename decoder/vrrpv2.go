@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var vrrpv2Decoder = CreateLayerDecoder(
+var vrrpv2Decoder = NewGoPacketDecoder(
 	types.Type_NC_VRRPv2,
 	layers.LayerTypeVRRP,
 	"The Virtual Router Redundancy Protocol is a computer networking protocol that provides for automatic assignment of available Internet Protocol routers to participating hosts",

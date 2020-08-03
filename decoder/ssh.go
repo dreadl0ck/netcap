@@ -19,7 +19,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var sshDecoder = CreateCustomDecoder(
+var sshDecoder = NewCustomDecoder(
 	types.Type_NC_SSH,
 	serviceSSH,
 	"The Secure Shell Protocol allows controlling remote machines over an encrypted connection",

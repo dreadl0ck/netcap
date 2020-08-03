@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var eapolDecoder = CreateLayerDecoder(
+var eapolDecoder = NewGoPacketDecoder(
 	types.Type_NC_EAPOL,
 	layers.LayerTypeEAPOL,
 	"Extensible Authentication Protocol is an authentication framework frequently used in network and internet connections",

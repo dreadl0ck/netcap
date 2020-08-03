@@ -51,7 +51,7 @@ var (
 	flows               int64
 )
 
-var flowDecoder = CreateCustomDecoder(
+var flowDecoder = NewCustomDecoder(
 	types.Type_NC_Flow,
 	"Flow",
 	"A flow represents uni-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",

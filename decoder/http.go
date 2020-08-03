@@ -26,7 +26,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var httpDecoder = CreateCustomDecoder(
+var httpDecoder = NewCustomDecoder(
 	types.Type_NC_HTTP,
 	serviceHTTP,
 	"The Hypertext Transfer Protocol is powering the world wide web",

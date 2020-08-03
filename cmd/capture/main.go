@@ -98,7 +98,7 @@ func Run() {
 
 	// print decoders and exit
 	if *flagDecoders {
-		decoder.ShowDecoders()
+		decoder.ShowDecoders(true)
 		return
 	}
 

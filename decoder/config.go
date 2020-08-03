@@ -221,4 +221,7 @@ type Config struct {
 	// If the init error does not allow the encoder to function at least partially,
 	// fatal should be invoked in the init function to crash and indicate failure.
 	IgnoreDecoderInitErrors bool
+
+	// Quiet disables logging to stdout
+	Quiet bool
 }
