@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ethernetIPDecoder = CreateLayerDecoder(
+var ethernetIPDecoder = NewGoPacketDecoder(
 	types.Type_NC_ENIP,
 	layers.LayerTypeENIP,
 	"Industrial network protocol that adapts the Common Industrial Protocol to standard Ethernet",

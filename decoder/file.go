@@ -26,7 +26,7 @@ var (
 	fileDecoderInstance *CustomDecoder
 )
 
-var fileDecoder = CreateCustomDecoder(
+var fileDecoder = NewCustomDecoder(
 	types.Type_NC_File,
 	"File",
 	"A file that was transferred over the network",

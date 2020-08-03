@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var fddiDecoder = CreateLayerDecoder(
+var fddiDecoder = NewGoPacketDecoder(
 	types.Type_NC_FDDI,
 	layers.LayerTypeFDDI,
 	"Fiber Distributed Data Interface (FDDI) is a standard for data transmission in a local area network",

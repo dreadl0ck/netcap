@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var linkLayerDiscoveryDecoder = CreateLayerDecoder(
+var linkLayerDiscoveryDecoder = NewGoPacketDecoder(
 	types.Type_NC_LinkLayerDiscovery,
 	layers.LayerTypeLinkLayerDiscovery,
 	"The Link Layer Discovery Protocol is a vendor-neutral link layer protocol used by network devices for advertising their identity, capabilities, and neighbors on a local area network based on IEEE 802 technology, principally wired Ethernet",

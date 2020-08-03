@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ciscoDiscoveryDecoder = CreateLayerDecoder(
+var ciscoDiscoveryDecoder = NewGoPacketDecoder(
 	types.Type_NC_CiscoDiscovery,
 	layers.LayerTypeCiscoDiscovery,
 	"Cisco Discovery Protocol is a proprietary Data Link Layer protocol used to share information about other directly connected Cisco equipment, such as the operating system version and IP address",

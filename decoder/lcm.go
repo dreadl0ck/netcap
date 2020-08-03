@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var lcmDecoder = CreateLayerDecoder(
+var lcmDecoder = NewGoPacketDecoder(
 	types.Type_NC_LCM,
 	layers.LayerTypeLCM,
 	"LCM is a set of libraries and tools for message passing and data marshaling, targeted at real-time systems where high-bandwidth and low latency are critical",

@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ipv4Decoder = CreateLayerDecoder(
+var ipv4Decoder = NewGoPacketDecoder(
 	types.Type_NC_IPv4,
 	layers.LayerTypeIPv4,
 	"Internet Protocol version 4 is the fourth version of the Internet Protocol. It is one of the core protocols of standards-based internetworking methods in the Internet and other packet-switched networks",

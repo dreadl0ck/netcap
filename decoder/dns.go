@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var dnsDecoder = CreateLayerDecoder(
+var dnsDecoder = NewGoPacketDecoder(
 	types.Type_NC_DNS,
 	layers.LayerTypeDNS,
 	"The Domain Name System is a hierarchical and decentralized naming system for computers, services, or other resources connected to the Internet or a private network",

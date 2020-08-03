@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var snapDecoder = CreateLayerDecoder(
+var snapDecoder = NewGoPacketDecoder(
 	types.Type_NC_SNAP,
 	layers.LayerTypeSNAP,
 	"The Subnetwork Access Protocol (SNAP) is a mechanism for multiplexing, on networks using IEEE 802.2 LLC",

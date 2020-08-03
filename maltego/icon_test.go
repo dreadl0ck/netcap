@@ -16,7 +16,7 @@ import (
 //		generateAuditRecordIcon(e.Name)
 //	})
 //
-//	decoder.ApplyActionToLayerDecoders(func(e *decoder.GoPacketDecoder) {
+//	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 //		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 //		generateAuditRecordIcon(name)
 //	})
@@ -35,7 +35,7 @@ func TestGenerateAuditRecordIconsV2(t *testing.T) {
 		generateAuditRecordIconV2(e.Name)
 	})
 
-	decoder.ApplyActionToLayerDecoders(func(e *decoder.GoPacketDecoder) {
+	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		fmt.Println(name)
 		generateAuditRecordIconV2(name)

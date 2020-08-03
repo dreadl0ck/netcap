@@ -84,6 +84,9 @@ type Collector struct {
 
 	shutdown bool
 	isLive   bool
+
+	goPacketDecoders map[gopacket.LayerType][]*decoder.GoPacketDecoder
+	customDecoders []*decoder.CustomDecoder
 }
 
 // New returns a new Collector instance.
@@ -281,9 +284,9 @@ func (c *Collector) Stats() {
 		}
 	}
 
-	if len(decoder.CustomDecoders) > 0 {
+	if len(c.customDecoders) > 0 {
 		rows = [][]string{}
-		for _, e := range decoder.CustomDecoders {
+		for _, e := range c.customDecoders {
 			rows = append(rows, []string{e.Name, strconv.FormatInt(e.NumRecords(), 10), share(e.NumRecords(), c.numPackets)})
 		}
 		tui.Table(target, []string{"CustomDecoder", "NumRecords", "Share"}, rows)

@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var llcDecoder = CreateLayerDecoder(
+var llcDecoder = NewGoPacketDecoder(
 	types.Type_NC_LLC,
 	layers.LayerTypeLLC,
 	"The LLC sublayer acts as an interface between the media access control sublayer and the network layer",

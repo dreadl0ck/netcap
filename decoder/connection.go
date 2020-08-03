@@ -66,7 +66,7 @@ func (c ConnectionID) String() string {
 	return strconv.FormatUint(c.LinkFlowID, 10) + strconv.FormatUint(c.NetworkFlowID, 10) + strconv.FormatUint(c.TransportFlowID, 10)
 }
 
-var connectionDecoder = CreateCustomDecoder(
+var connectionDecoder = NewCustomDecoder(
 	types.Type_NC_Connection,
 	"Connection",
 	"A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",

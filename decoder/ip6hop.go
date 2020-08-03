@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ipv6HopByHopDecoder = CreateLayerDecoder(
+var ipv6HopByHopDecoder = NewGoPacketDecoder(
 	types.Type_NC_IPv6HopByHop,
 	layers.LayerTypeIPv6HopByHop,
 	"Internet Protocol version 6 (IPv6) is the most recent version of the Internet Protocol (IP), the communications protocol that provides an identification and location system for computers on networks and routes traffic across the Internet",

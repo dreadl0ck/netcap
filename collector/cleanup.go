@@ -50,7 +50,7 @@ func (c *Collector) cleanup(force bool) {
 	}
 
 	// flush all gopacket decoders
-	for _, decoders := range decoder.GoPacketDecoders {
+	for _, decoders := range c.goPacketDecoders {
 		for _, e := range decoders {
 			name, size := e.Destroy()
 			if size != 0 {
@@ -61,7 +61,7 @@ func (c *Collector) cleanup(force bool) {
 	}
 
 	// flush all custom decoders
-	for _, e := range decoder.CustomDecoders {
+	for _, e := range c.customDecoders {
 		name, size := e.Destroy()
 		if size != 0 {
 			c.totalBytesWritten += size

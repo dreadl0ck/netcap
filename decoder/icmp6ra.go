@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var icmpv6RouterAdvertisementDecoder = CreateLayerDecoder(
+var icmpv6RouterAdvertisementDecoder = NewGoPacketDecoder(
 	types.Type_NC_ICMPv6RouterAdvertisement,
 	layers.LayerTypeICMPv6RouterAdvertisement,
 	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",

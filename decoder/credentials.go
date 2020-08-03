@@ -339,7 +339,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
-var credentialsDecoder = CreateCustomDecoder(
+var credentialsDecoder = NewCustomDecoder(
 	types.Type_NC_Credentials,
 	credentialsDecoderName,
 	"Credentials represent a user and password combination to authenticate to a service",

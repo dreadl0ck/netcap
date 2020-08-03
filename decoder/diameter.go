@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var diameterDecoder = CreateLayerDecoder(
+var diameterDecoder = NewGoPacketDecoder(
 	types.Type_NC_Diameter,
 	layers.LayerTypeDiameter,
 	"Diameter is an authentication, authorization, and accounting protocol for computer networks, it evolved from the earlier RADIUS protocol",

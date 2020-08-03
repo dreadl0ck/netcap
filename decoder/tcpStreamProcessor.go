@@ -95,7 +95,7 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReade
 			tsp.Lock()
 			tsp.numDone++
 
-			if !Quiet {
+			if !c.Quiet {
 				clearLine()
 				fmt.Print("processing remaining open TCP streams... ", "(", tsp.numDone, "/", tsp.numTotal, ")")
 			}

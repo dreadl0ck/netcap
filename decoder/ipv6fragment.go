@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ip6FragmentDecoder = CreateLayerDecoder(
+var ip6FragmentDecoder = NewGoPacketDecoder(
 	types.Type_NC_IPv6Fragment,
 	layers.LayerTypeIPv6Fragment,
 	"IPv6 fragmented packet",

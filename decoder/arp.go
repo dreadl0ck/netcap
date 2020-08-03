@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var arpDecoder = CreateLayerDecoder(
+var arpDecoder = NewGoPacketDecoder(
 	types.Type_NC_ARP,
 	layers.LayerTypeARP,
 	"The Address Resolution Protocol resolves IP to hardware addresses",

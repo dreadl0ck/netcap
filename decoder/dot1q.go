@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var dot1QDecoder = CreateLayerDecoder(
+var dot1QDecoder = NewGoPacketDecoder(
 	types.Type_NC_Dot1Q,
 	layers.LayerTypeDot1Q,
 	"IEEE 802.11 is part of the IEEE 802 set of local area network protocols, and specifies the set of media access control and physical layer protocols for implementing wireless local area network Wi-Fi",

@@ -18,7 +18,6 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/pcap"
-	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -30,12 +29,12 @@ type BatchInfo struct {
 
 // InitBatching initializes batching mode and returns an array of Batchinfos and the pcap handle
 // closing the handle must be done by the caller.
-func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInfo, *pcap.Handle, error) {
+func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Handle, error) {
 
 	var chans = []BatchInfo{}
 
 	// open live handle
-	handle, err := pcap.OpenLive(in, 1024, true, 30*time.Minute)
+	handle, err := pcap.OpenLive(in, int32(c.config.SnapLen), true, 30*time.Minute)
 	if err != nil {
 		return chans, nil, err
 	}
@@ -73,7 +72,7 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 	}()
 
 	// get channels for all gopacket decoders
-	for _, decoders := range decoder.GoPacketDecoders {
+	for _, decoders := range c.goPacketDecoders {
 		for _, e := range decoders {
 			chans = append(chans, BatchInfo{
 				Type: e.Type,
@@ -83,7 +82,7 @@ func (c *Collector) InitBatching(maxSize int, bpf string, in string) ([]BatchInf
 	}
 
 	// get channels for all custom decoders
-	for _, e := range decoder.CustomDecoders {
+	for _, e := range c.customDecoders {
 		chans = append(chans, BatchInfo{
 			Type: e.Type,
 			Chan: e.GetChan(),

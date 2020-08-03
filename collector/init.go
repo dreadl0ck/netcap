@@ -8,6 +8,7 @@ import (
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/mgutz/ansi"
 	"log"
 	"os"
 	"path/filepath"
@@ -46,7 +47,9 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// set quiet mode for other subpackages
-	decoder.Quiet = c.config.Quiet
+	if c.config.Quiet {
+		c.config.DecoderConfig.Quiet = true
+	}
 
 	// init logfile if necessary
 	if logFileHandle == nil && c.config.Quiet {
@@ -93,8 +96,11 @@ func (c *Collector) Init() (err error) {
 	c.printStdOut("initializing decoders... ")
 
 	// initialize decoders
-	decoder.InitGoPacketDecoders(c.config.DecoderConfig, c.config.Quiet)
-	decoder.InitCustomDecoders(c.config.DecoderConfig, c.config.Quiet)
+	c.goPacketDecoders, err = decoder.InitGoPacketDecoders(c.config.DecoderConfig)
+	handleDecoderInitError(err, "gopacket")
+
+	c.customDecoders, err = decoder.InitCustomDecoders(c.config.DecoderConfig)
+	handleDecoderInitError(err, "custom")
 
 	c.buildProgressString()
 	c.printlnStdOut("done")
@@ -144,4 +150,18 @@ func confirm(s string) bool {
 	}
 
 	return strings.ToLower(strings.TrimSpace(res))[0] != 'n'
+}
+
+func handleDecoderInitError(err error, target string) {
+	if errors.Is(err, decoder.ErrInvalidDecoder) {
+		invalidDecoder(strings.Split(errors.Unwrap(err).Error(), ":")[0])
+	} else if err != nil {
+		log.Fatal("failed to initialize " + target + " decoders: ", err)
+	}
+}
+
+func invalidDecoder(name string) {
+	fmt.Println("invalid encoder: " + ansi.Red + name + ansi.Reset)
+	decoder.ShowDecoders(false)
+	os.Exit(1)
 }

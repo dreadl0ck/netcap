@@ -160,7 +160,7 @@ func NewService(ts string, numBytesServer int, numBytesClient int, ip string) *S
 	}
 }
 
-var serviceDecoder = CreateCustomDecoder(
+var serviceDecoder = NewCustomDecoder(
 	types.Type_NC_Service,
 	"Service",
 	"A network service",

@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ospfv2Decoder = CreateLayerDecoder(
+var ospfv2Decoder = NewGoPacketDecoder(
 	types.Type_NC_OSPFv2,
 	layers.LayerTypeOSPF,
 	"Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks",

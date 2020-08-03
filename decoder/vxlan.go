@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var vxlanDecoder = CreateLayerDecoder(
+var vxlanDecoder = NewGoPacketDecoder(
 	types.Type_NC_VXLAN,
 	layers.LayerTypeVXLAN,
 	"Virtual Extensible LAN is a network virtualization technology that attempts to address the scalability problems associated with large cloud computing deployments",

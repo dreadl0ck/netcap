@@ -22,7 +22,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var sipDecoder = CreateLayerDecoder(
+var sipDecoder = NewGoPacketDecoder(
 	types.Type_NC_SIP,
 	layers.LayerTypeSIP,
 	"The Session Initiation Protocol is a signaling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications",

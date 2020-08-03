@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var ntpDecoder = CreateLayerDecoder(
+var ntpDecoder = NewGoPacketDecoder(
 	types.Type_NC_NTP,
 	layers.LayerTypeNTP,
 	"The Network Time Protocol is a networking protocol for clock synchronization between computer systems over packet-switched, variable-latency data networks",

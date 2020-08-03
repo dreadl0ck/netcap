@@ -16,6 +16,7 @@ package decoder
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"log"
 	"strings"
 
@@ -27,15 +28,8 @@ import (
 )
 
 var (
-	// Quiet disables logging to stdout
-	Quiet bool
-
-	// GoPacketDecoders map contains initialized decoders at runtime
-	// for usage from other packages
-	GoPacketDecoders = map[gopacket.LayerType][]*GoPacketDecoder{}
-
 	// contains all available gopacket decoders
-	goPacketDecoderSlice = []*GoPacketDecoder{
+	defaultGoPacketDecoders = []*GoPacketDecoder{
 		tcpDecoder,
 		udpDecoder,
 		ipv4Decoder,
@@ -92,10 +86,6 @@ var (
 		smtpDecoder,
 		diameterDecoder,
 	}
-
-	// set via encoder config
-	// used to request a content from being set on the audit records
-	AddContext bool
 )
 
 type (
@@ -116,10 +106,9 @@ type (
 )
 
 // InitGoPacketDecoders initializes all gopacket decoders
-func InitGoPacketDecoders(c Config, quiet bool) {
+func InitGoPacketDecoders(c Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 
-	// Flush gopacket decoders in case they have been initialized before
-	GoPacketDecoders = map[gopacket.LayerType][]*GoPacketDecoder{}
+	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
 
 	var (
 		// values from command-line flags
@@ -133,8 +122,6 @@ func InitGoPacketDecoders(c Config, quiet bool) {
 		selection []*GoPacketDecoder
 	)
 
-	AddContext = c.AddContext
-
 	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" {
 
@@ -144,7 +131,7 @@ func InitGoPacketDecoders(c Config, quiet bool) {
 
 				// check if proto exists
 				if _, ok := allDecoderNames[name]; !ok {
-					invalidDecoder(name)
+					return nil, errors.Wrap(ErrInvalidDecoder, name)
 				}
 
 				// add to include map
@@ -153,14 +140,14 @@ func InitGoPacketDecoders(c Config, quiet bool) {
 		}
 
 		// iterate over gopacket decoders and collect those that are named in the includeMap
-		for _, e := range goPacketDecoderSlice {
+		for _, e := range defaultGoPacketDecoders {
 			if _, ok := inMap[e.Layer.String()]; ok {
 				selection = append(selection, e)
 			}
 		}
 
 		// update gopacket decoders to new selection
-		goPacketDecoderSlice = selection
+		defaultGoPacketDecoders = selection
 	}
 
 	// iterate over excluded decoders
@@ -169,14 +156,14 @@ func InitGoPacketDecoders(c Config, quiet bool) {
 
 			// check if proto exists
 			if _, ok := allDecoderNames[name]; !ok {
-				invalidDecoder(name)
+				return nil, errors.Wrap(ErrInvalidDecoder, name)
 			}
 
-			// remove named encoder from goPacketDecoderSlice
-			for i, e := range goPacketDecoderSlice {
+			// remove named encoder from defaultGoPacketDecoders
+			for i, e := range defaultGoPacketDecoders {
 				if name == e.Layer.String() {
 					// remove encoder
-					goPacketDecoderSlice = append(goPacketDecoderSlice[:i], goPacketDecoderSlice[i+1:]...)
+					defaultGoPacketDecoders = append(defaultGoPacketDecoders[:i], defaultGoPacketDecoders[i+1:]...)
 					break
 				}
 			}
@@ -184,7 +171,7 @@ func InitGoPacketDecoders(c Config, quiet bool) {
 	}
 
 	// initialize decoders
-	for _, e := range goPacketDecoderSlice {
+	for _, e := range defaultGoPacketDecoders {
 
 		//fmt.Println("init", e.Layer)
 		var filename = e.Layer.String()
@@ -198,25 +185,30 @@ func InitGoPacketDecoders(c Config, quiet bool) {
 		case types.Type_NC_ENIP:
 			filename = "ENIP"
 		}
+
+		// hookup writer
 		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
 
+		// write netcap header
 		err := e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
 		if err != nil {
-			log.Fatal("failed to write header for audit record: ", e.Type.String())
+			return nil, errors.Wrap(err, "failed to write header for audit record " + e.Type.String())
 		}
 
 		// export metrics?
 		e.export = c.Export
 
 		// add to gopacket decoders map
-		GoPacketDecoders[e.Layer] = append(GoPacketDecoders[e.Layer], e)
+		decoders[e.Layer] = append(decoders[e.Layer], e)
 	}
 
-	utils.DebugLog.Println("initialized", len(GoPacketDecoders), "gopacket decoders")
+	utils.DebugLog.Println("initialized", len(decoders), "gopacket decoders")
+
+	return decoders, nil
 }
 
-// CreateLayerDecoder returns a new GoPacketDecoder instance
-func CreateLayerDecoder(nt types.Type, lt gopacket.LayerType, description string, handler GoPacketDecoderHandler) *GoPacketDecoder {
+// NewGoPacketDecoder returns a new GoPacketDecoder instance
+func NewGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string, handler GoPacketDecoderHandler) *GoPacketDecoder {
 	return &GoPacketDecoder{
 		Layer:       lt,
 		Handler:     handler,
@@ -225,10 +217,10 @@ func CreateLayerDecoder(nt types.Type, lt gopacket.LayerType, description string
 	}
 }
 
-// Encode is called for each layer
+// Decode is called for each layer
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
-func (e *GoPacketDecoder) Encode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
+func (e *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
 
 	record := e.Handler(l, utils.TimeToString(p.Metadata().Timestamp))
 	if record != nil {

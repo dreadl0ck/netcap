@@ -20,7 +20,7 @@ package decoder
 func init() {
 
 	// collect all names for gopacket decoders on startup
-	for _, e := range goPacketDecoderSlice {
+	for _, e := range defaultGoPacketDecoders {
 		allDecoderNames[e.Layer.String()] = struct{}{}
 	}
 }

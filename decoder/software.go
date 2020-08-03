@@ -600,7 +600,7 @@ func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
 	p.Unlock()
 }
 
-var softwareDecoder = CreateCustomDecoder(
+var softwareDecoder = NewCustomDecoder(
 	types.Type_NC_Software,
 	"Software",
 	"A software product that was observed on the network",
