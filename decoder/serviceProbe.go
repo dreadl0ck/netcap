@@ -254,7 +254,7 @@ func enumerate(in string) string {
 	}
 }
 
-func InitProbes() error {
+func InitServiceProbes() error {
 	// load nmap service probes
 	data, err := ioutil.ReadFile("/usr/local/etc/netcap/dbs/nmap-service-probes")
 	if err != nil {
@@ -513,14 +513,6 @@ func DumpServiceProbes() {
 			fmt.Println(string(data))
 		}
 	}
-}
-
-// an attempt to use a regex to clean a regex from backtracking.
-var regexBacktracking = regexp.MustCompile("\\(\\?.*\\)")
-
-func cleanRegex(in string) string {
-	in = strings.ReplaceAll(in, "\\1", "(.*)")
-	return regexBacktracking.ReplaceAllString(in, "(.*)")
 }
 
 // clean implements a simple state machine to replace all backtracking operations

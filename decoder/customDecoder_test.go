@@ -16,7 +16,7 @@ package decoder
 import "testing"
 
 func TestInitCustomDecoders(t *testing.T) {
-	InitCustomDecoders(Config{
+	c = &Config{
 		Out:                     "",
 		Source:                  "",
 		CustomRegex:             "",
@@ -57,10 +57,14 @@ func TestInitCustomDecoders(t *testing.T) {
 		IncludePayloads:         false,
 		Compression:             false,
 		IgnoreDecoderInitErrors: false,
-	})
+	}
+	decoders, err := InitCustomDecoders(c)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	if len(defaultGoPacketDecoders) == 0 || len(defaultCustomDecoders) == 0 {
-		t.Fatal("no decoders after initialization")
+	if len(decoders) == 0 {
+		t.Fatal("no custom decoders after initialization")
 	}
 }
 

@@ -25,7 +25,7 @@ var maltegoBaseConfig = collector.Config{
 	PacketBufferSize:    netcap.DefaultPacketBuffer,
 	SnapLen:             1514, // TODO: make configurable within Maltego, add as property for pcap?
 	Promisc:             false,
-	DecoderConfig: decoder.Config{
+	DecoderConfig: &decoder.Config{
 		Buffer:        true,
 		MemBufferSize: netcap.DefaultBufferSize,
 		Compression:   true,

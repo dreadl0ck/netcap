@@ -59,7 +59,7 @@ var DefaultConfigDPI = Config{
 type Config struct {
 
 	// Decoder configuration
-	DecoderConfig decoder.Config
+	DecoderConfig *decoder.Config
 
 	// Baselayer to start decoding from
 	BaseLayer gopacket.LayerType

@@ -165,7 +165,7 @@ var serviceDecoder = NewCustomDecoder(
 	"Service",
 	"A network service",
 	func(d *CustomDecoder) error {
-		return InitProbes()
+		return InitServiceProbes()
 	},
 	func(p gopacket.Packet) proto.Message {
 		return nil

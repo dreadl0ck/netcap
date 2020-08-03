@@ -106,7 +106,7 @@ type (
 )
 
 // InitGoPacketDecoders initializes all gopacket decoders
-func InitGoPacketDecoders(c Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
+func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
 

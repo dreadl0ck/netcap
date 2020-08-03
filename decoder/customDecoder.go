@@ -102,7 +102,7 @@ func init() {
 }
 
 // InitCustomDecoders initializes all custom decoders
-func InitCustomDecoders(c Config) (decoders []*CustomDecoder, err error) {
+func InitCustomDecoders(c *Config) (decoders []*CustomDecoder, err error) {
 
 	var (
 		// values from command-line flags

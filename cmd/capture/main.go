@@ -150,7 +150,7 @@ func Run() {
 		ReassembleConnections: *flagReassembleConnections,
 		FreeOSMem:             *flagFreeOSMemory,
 		LogErrors:             *flagLogErrors,
-		DecoderConfig: decoder.Config{
+		DecoderConfig: &decoder.Config{
 			Buffer:                  *flagBuffer,
 			MemBufferSize:           *flagMemBufferSize,
 			Compression:             *flagCompress,

@@ -169,7 +169,7 @@ var connectionDecoder = NewCustomDecoder(
 				Connection: conn,
 			}
 
-			conns++
+			stats.numConns++
 
 			// flush
 			if c.ConnFlushInterval != 0 && conns%int64(c.ConnFlushInterval) == 0 {
