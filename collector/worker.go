@@ -136,13 +136,13 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 			done:
 				// call custom decoders
-				for _, e := range c.customDecoders {
-					err := e.Decode(p)
+				for _, d := range c.customDecoders {
+					err := d.Decode(p)
 					if err != nil {
 						if c.config.DecoderConfig.Export {
-							decodingErrorsTotal.WithLabelValues(e.Name, err.Error()).Inc()
+							decodingErrorsTotal.WithLabelValues(d.GetName(), err.Error()).Inc()
 						}
-						if err = c.logPacketError(p, "CustomDecoder Error: "+e.Name+": "+err.Error()); err != nil {
+						if err = c.logPacketError(p, "CustomDecoder Error: "+d.GetName()+": "+err.Error()); err != nil {
 							fmt.Println("failed to log packet error:", err)
 						}
 						continue

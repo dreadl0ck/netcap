@@ -205,14 +205,14 @@ var profileDecoder = NewCustomDecoder(
 )
 
 // writeProfile writes the profile
-func writeProfile(c *types.DeviceProfile) {
+func writeProfile(d *types.DeviceProfile) {
 
-	if profileDecoderInstance.export {
-		c.Inc()
+	if c.Export {
+		d.Inc()
 	}
 
 	atomic.AddInt64(&profileDecoderInstance.numRecords, 1)
-	err := profileDecoderInstance.writer.Write(c)
+	err := profileDecoderInstance.writer.Write(d)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

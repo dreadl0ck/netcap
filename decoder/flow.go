@@ -203,7 +203,7 @@ var flowDecoder = NewCustomDecoder(
 
 func writeFlow(f *types.Flow) {
 
-	if flowDecoderInstance.export {
+	if c.Export {
 		f.Inc()
 	}
 

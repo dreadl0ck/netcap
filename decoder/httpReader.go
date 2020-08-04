@@ -189,7 +189,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 
 		_ = h.findRequest(res.response, s2c)
 
-		atomic.AddInt64(&httpDecoder.numResponses, 1)
+		atomic.AddInt64(&stats.numResponses, 1)
 
 		// now add request information
 		if res.response.Request != nil {
@@ -199,7 +199,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 				h.searchForBasicAuth(res.response.Request)
 			}
 
-			atomic.AddInt64(&httpDecoder.numRequests, 1)
+			atomic.AddInt64(&stats.numRequests, 1)
 			setRequest(ht, &httpRequest{
 				request:   res.response.Request,
 				timestamp: res.timestamp,
@@ -209,7 +209,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 		} else {
 			// response without matching request
 			// dont add to output for now
-			atomic.AddInt64(&httpDecoder.numUnmatchedResp, 1)
+			atomic.AddInt64(&stats.numUnmatchedResp, 1)
 			continue
 		}
 
@@ -227,12 +227,12 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 				h.searchForBasicAuth(req.request)
 			}
 
-			atomic.AddInt64(&httpDecoder.numRequests, 1)
-			atomic.AddInt64(&httpDecoder.numUnansweredRequests, 1)
+			atomic.AddInt64(&stats.numRequests, 1)
+			atomic.AddInt64(&stats.numUnansweredRequests, 1)
 
 			h.parent.writeHTTP(ht)
 		} else {
-			atomic.AddInt64(&httpDecoder.numNilRequests, 1)
+			atomic.AddInt64(&stats.numNilRequests, 1)
 		}
 	}
 }
@@ -383,7 +383,7 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	}
 
 	// export metrics if configured
-	if httpDecoder.export {
+	if c.Export {
 		h.Inc()
 	}
 
@@ -514,7 +514,7 @@ func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 	// set request instance on response
 	if req != nil {
 		res.Request = req
-		atomic.AddInt64(&httpDecoder.numFoundRequests, 1)
+		atomic.AddInt64(&stats.numFoundRequests, 1)
 	}
 
 	return reqURL

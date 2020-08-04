@@ -137,7 +137,7 @@ func (h *pop3Reader) Decode(c2s, s2c Stream) {
 	}
 
 	// export metrics if configured
-	if pop3Decoder.export {
+	if c.Export {
 		pop3Msg.Inc()
 	}
 
