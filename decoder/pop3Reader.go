@@ -407,7 +407,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 	}
 
 	var (
-		state    POP3State = StateNotAuthenticated
+		state    = StateNotAuthenticated
 		numMails int
 		next     = func() *types.POP3Request {
 			return h.pop3Requests[h.reqIndex]

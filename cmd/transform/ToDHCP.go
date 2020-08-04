@@ -16,7 +16,7 @@ func ToDHCP() {
 
 	maltego.DHCPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
 			if dhcp.ClientIP == ipaddr {
 				for _, o := range dhcp.Options {
 					if utf8.Valid(o.Data) && len(o.Data) != 1 {

@@ -9,7 +9,7 @@ import (
 func ToSoftwareVulnerabilities() {
 	maltego.VulnerabilityTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, vuln *types.Vulnerability, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, vuln *types.Vulnerability, min, max uint64, profilesFile string, mac string, ipaddr string) {
 
 			val := vuln.ID
 			product := vuln.Software.Product + " / " + vuln.Software.Version

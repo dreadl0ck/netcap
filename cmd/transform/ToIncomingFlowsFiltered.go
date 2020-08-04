@@ -21,7 +21,7 @@ func ToIncomingFlowsFiltered() {
 
 	maltego.FlowTransform(
 		maltego.CountIncomingFlowBytesFiltered,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
 			if flow.DstIP == ipaddr {
 				name := resolvers.LookupDNSNameLocal(flow.SrcIP)
 				if name != "" {
@@ -49,7 +49,7 @@ func isInTop12(val int32, sizes *[]int) bool {
 	return false
 }
 
-func addInFlow(trx *maltego.MaltegoTransform, flow *types.Flow, min, max uint64, name string) {
+func addInFlow(trx *maltego.Transform, flow *types.Flow, min, max uint64, name string) {
 
 	ent := trx.AddEntity("netcap.Flow", flow.UID+"\n"+name)
 

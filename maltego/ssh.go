@@ -26,7 +26,7 @@ import (
 )
 
 // SSHTransformationFunc is a transformation over SSH sshs for a selected SSH
-type SSHTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, ssh *types.SSH, min, max uint64, sshsFile string, mac string, ip string)
+type SSHTransformationFunc = func(lt LocalTransform, trx *Transform, ssh *types.SSH, min, max uint64, sshsFile string, mac string, ip string)
 
 // CountFunc is a function that counts something over DeviceProfiles
 type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
@@ -73,7 +73,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		ssh = new(types.SSH)
 		pm  proto.Message
 		ok  bool
-		trx = MaltegoTransform{}
+		trx = Transform{}
 	)
 	pm = ssh
 

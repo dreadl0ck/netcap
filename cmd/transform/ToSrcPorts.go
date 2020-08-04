@@ -18,7 +18,7 @@ func ToSrcPorts() {
 
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
@@ -39,7 +39,7 @@ func ToSrcPorts() {
 	)
 }
 
-func addSourcePort(trx *maltego.MaltegoTransform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile) {
+func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile) {
 
 	ent := trx.AddEntity("netcap.SourcePort", portStr)
 	np, err := strconv.Atoi(portStr)

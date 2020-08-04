@@ -30,7 +30,7 @@ import (
 type HTTPCountFunc = func(http *types.HTTP, min, max *uint64)
 
 // HTTPTransformationFunc is a transformation over HTTP audit records
-type HTTPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
+type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
 
 // HTTPTransform applies a maltego transformation over HTTP audit records
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
@@ -45,7 +45,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	if err != nil {
 		// write an empty reply if the audit record file was not found.
 		log.Println(err)
-		trx := MaltegoTransform{}
+		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
@@ -73,7 +73,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 		http = new(types.HTTP)
 		pm   proto.Message
 		ok   bool
-		trx  = MaltegoTransform{}
+		trx  = Transform{}
 	)
 	pm = http
 

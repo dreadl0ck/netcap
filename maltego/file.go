@@ -30,7 +30,7 @@ import (
 type FilesCountFunc func()
 
 // FilesTransformationFunc is a transformation over File audit records
-type FilesTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ip string)
+type FilesTransformationFunc = func(lt LocalTransform, trx *Transform, file *types.File, min, max uint64, profilesFile string, ip string)
 
 // FilesTransform applies a maltego transformation over File audit records
 func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
@@ -45,7 +45,7 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	if err != nil {
 		// write an empty reply if the audit record file was not found.
 		log.Println(err)
-		trx := MaltegoTransform{}
+		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
@@ -74,7 +74,7 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 		file = new(types.File)
 		pm   proto.Message
 		ok   bool
-		trx  = MaltegoTransform{}
+		trx  = Transform{}
 	)
 	pm = file
 

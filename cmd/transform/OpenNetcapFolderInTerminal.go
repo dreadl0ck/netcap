@@ -13,7 +13,7 @@ func OpenNetcapFolderInTerminal() {
 
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.MaltegoTransform{}
+		trx             = &maltego.Transform{}
 		openCommandName = os.Getenv("NETCAP_MALTEGO_OPEN_TERMINAL_CMD")
 		args            []string
 	)

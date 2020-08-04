@@ -16,7 +16,7 @@ func ToMD5HashesForFile() {
 
 	maltego.FilesTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
 
 			if len(name) == 0 {
 				name = lt.Values["name"]

@@ -30,7 +30,7 @@ import (
 type POP3CountFunc func()
 
 // POP3TransformationFunc is a transformation over POP3 audit records
-type POP3TransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, pop3 *types.POP3, min, max uint64, profilesFile string, ip string)
+type POP3TransformationFunc = func(lt LocalTransform, trx *Transform, pop3 *types.POP3, min, max uint64, profilesFile string, ip string)
 
 // POP3Transform applies a maltego transformation over POP3 audit records
 func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
@@ -45,7 +45,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	if err != nil {
 		// write an empty reply if the audit record file was not found.
 		log.Println(err)
-		trx := MaltegoTransform{}
+		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
@@ -73,7 +73,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		pop3 = new(types.POP3)
 		pm   proto.Message
 		ok   bool
-		trx  = MaltegoTransform{}
+		trx  = Transform{}
 	)
 	pm = pop3
 

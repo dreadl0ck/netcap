@@ -26,7 +26,7 @@ import (
 )
 
 // SoftwareTransformationFunc is a transformation over Software profiles for a selected Software
-type SoftwareTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.Software, min, max uint64, profilesFile string, mac string, ip string)
+type SoftwareTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Software, min, max uint64, profilesFile string, mac string, ip string)
 
 // CountFunc is a function that counts something over DeviceProfiles
 type SoftwareCountFunc = func(software *types.Software, mac string, min, max *uint64)
@@ -73,7 +73,7 @@ func SoftwareTransform(count SoftwareCountFunc, transform SoftwareTransformation
 		software = new(types.Software)
 		pm       proto.Message
 		ok       bool
-		trx      = MaltegoTransform{}
+		trx      = Transform{}
 	)
 	pm = software
 

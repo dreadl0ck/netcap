@@ -30,7 +30,7 @@ import (
 type DHCPCountFunc func()
 
 // DHCPTransformationFunc is a transformation over DHCP audit records
-type DHCPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ip string)
+type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ip string)
 
 // DHCPTransform applies a maltego transformation over DHCP audit records
 func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, continueTransform bool) {
@@ -44,7 +44,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
 		log.Println(err)
-		trx := MaltegoTransform{}
+		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
@@ -72,7 +72,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 		dhcp = new(types.DHCPv4)
 		pm   proto.Message
 		ok   bool
-		trx  = MaltegoTransform{}
+		trx  = Transform{}
 	)
 	pm = dhcp
 

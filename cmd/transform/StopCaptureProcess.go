@@ -33,7 +33,7 @@ func StopCaptureProcess() {
 	}
 
 	// generate maltego transform
-	trx := maltego.MaltegoTransform{}
+	trx := maltego.Transform{}
 	trx.AddUIMessage("completed!", "Inform")
 	fmt.Println(trx.ReturnOutput())
 }

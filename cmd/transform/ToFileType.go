@@ -11,7 +11,7 @@ import (
 func ToFileType() {
 
 	lt := maltego.ParseLocalArguments(os.Args)
-	trx := &maltego.MaltegoTransform{}
+	trx := &maltego.Transform{}
 
 	log.Println("path:", lt.Values["path"])
 

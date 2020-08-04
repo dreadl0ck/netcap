@@ -19,7 +19,7 @@ func ToIANAServices() {
 
 	maltego.FlowTransform(
 		maltego.CountOutgoingFlowBytesFiltered,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
 
 			i, err := strconv.Atoi(flow.DstPort)
 			if err != nil {

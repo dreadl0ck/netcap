@@ -85,7 +85,7 @@ func ToAuditRecords() {
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]
-		trx       = maltego.MaltegoTransform{}
+		trx       = maltego.Transform{}
 	)
 
 	// check if input PCAP path is set
@@ -163,7 +163,7 @@ func ToAuditRecords() {
 	writeAuditRecords(trx, inputStat.Size(), outDir, inputFile, r, start)
 }
 
-func writeAuditRecords(trx maltego.MaltegoTransform, inputSize int64, outDir string, inputFile string, r *pcap.Handle, start time.Time) {
+func writeAuditRecords(trx maltego.Transform, inputSize int64, outDir string, inputFile string, r *pcap.Handle, start time.Time) {
 
 	files, err := ioutil.ReadDir(outDir)
 	if err != nil {

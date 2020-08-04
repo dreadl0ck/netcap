@@ -18,7 +18,7 @@ func ToDstPorts() {
 
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
@@ -41,7 +41,7 @@ func ToDstPorts() {
 	)
 }
 
-func addDestinationPort(trx *maltego.MaltegoTransform, portStr string, port *types.Port, min, max uint64, ip *types.IPProfile) {
+func addDestinationPort(trx *maltego.Transform, portStr string, port *types.Port, min, max uint64, ip *types.IPProfile) {
 	ent := trx.AddEntity("netcap.DestinationPort", portStr)
 
 	np, err := strconv.Atoi(portStr)

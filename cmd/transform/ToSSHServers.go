@@ -8,7 +8,7 @@ import (
 func ToSSHServers() {
 	maltego.SSHTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, ssh *types.SSH, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, ssh *types.SSH, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if !ssh.IsClient {
 
 				val := ssh.HASSH + "\n" + ssh.Flow
