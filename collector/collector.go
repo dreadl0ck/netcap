@@ -86,7 +86,7 @@ type Collector struct {
 	isLive   bool
 
 	goPacketDecoders map[gopacket.LayerType][]*decoder.GoPacketDecoder
-	customDecoders []decoder.CustomDecoderAPI
+	customDecoders   []decoder.CustomDecoderAPI
 }
 
 // New returns a new Collector instance.
@@ -343,8 +343,8 @@ func (c *Collector) printProgress() {
 			b.Grow(65)
 			b.WriteString("decoding packets... (")
 			b.WriteString(utils.Progress(c.current, c.numPackets))
-			b.WriteString(") flows: ")
-			b.WriteString(strconv.Itoa(decoder.Flows.Size()))
+			b.WriteString(")")
+			//b.WriteString(strconv.Itoa(decoder.Flows.Size()))
 			b.WriteString(" connections: ")
 			b.WriteString(strconv.Itoa(decoder.Connections.Size()))
 			b.WriteString(" profiles: ")
@@ -400,8 +400,8 @@ func (c *Collector) printProgressInterval() chan struct{} {
 					fmt.Fprintf(os.Stdout,
 						c.progressString,
 						utils.Progress(curr, num),
-						decoder.Flows.Size(),
-						decoder.Connections.Size(),
+						//decoder.Flows.Size(), // TODO: fetch this info from stats?
+						//decoder.Connections.Size(), // TODO: fetch this info from stats?
 						decoder.Profiles.Size(),
 						decoder.ServiceStore.Size(),
 						int(curr),
@@ -417,7 +417,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 
 // assemble the progress string once, to reduce recurring allocations
 func (c *Collector) buildProgressString() {
-	c.progressString = "decoding packets... (%s) flows: %d connections: %d profiles: %d services: %d total packets: %d pkts/sec %d"
+	c.progressString = "decoding packets... (%s) profiles: %d services: %d total packets: %d pkts/sec %d"
 }
 
 // GetNumPackets returns the current number of processed packets

@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	c   *Config
+	c *Config
 )
 
 const (

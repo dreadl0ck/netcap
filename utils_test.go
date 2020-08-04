@@ -27,11 +27,10 @@ func TestDumpCSV(t *testing.T) {
 	defer f.Close()
 
 	err = Dump(f, DumpConfig{
-		Path:          "tests/testdata/TCP.ncap.gz",
-		Separator:     ",",
-		UTC:           false,
-		CSV:           true,
-
+		Path:      "tests/testdata/TCP.ncap.gz",
+		Separator: ",",
+		UTC:       false,
+		CSV:       true,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -47,9 +46,8 @@ func TestDumpJSON(t *testing.T) {
 	defer f.Close()
 
 	err = Dump(f, DumpConfig{
-		Path:          "tests/testdata/TCP.ncap.gz",
+		Path: "tests/testdata/TCP.ncap.gz",
 		JSON: true,
-
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -65,7 +63,7 @@ func TestDumpStruc(t *testing.T) {
 	defer f.Close()
 
 	err = Dump(f, DumpConfig{
-		Path:          "tests/testdata/TCP.ncap.gz",
+		Path:       "tests/testdata/TCP.ncap.gz",
 		Structured: true,
 	})
 	if err != nil {

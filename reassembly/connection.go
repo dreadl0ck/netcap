@@ -13,10 +13,10 @@ type connection struct {
 	key      *key // client->server
 	c2s, s2c halfconnection
 
-	ac   assemblerSimpleContext
+	ac        assemblerSimpleContext
 	firstFlow gopacket.Flow
 
-	mu       sync.Mutex
+	mu sync.Mutex
 }
 
 func (c *connection) reset(k *key, s Stream, ts time.Time) {
