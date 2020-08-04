@@ -38,7 +38,7 @@ var cipDecoder = NewGoPacketDecoder(
 			}
 			return &types.CIP{
 				Timestamp:        timestamp,
-				Response:         bool(cip.Response),
+				Response:         cip.Response,
 				ServiceID:        int32(cip.ServiceID),
 				ClassID:          uint32(cip.ClassID),
 				InstanceID:       uint32(cip.InstanceID),

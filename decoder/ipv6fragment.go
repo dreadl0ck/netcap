@@ -32,8 +32,8 @@ var ip6FragmentDecoder = NewGoPacketDecoder(
 				Reserved1:      int32(ip6f.Reserved1),
 				FragmentOffset: int32(ip6f.FragmentOffset),
 				Reserved2:      int32(ip6f.Reserved2),
-				MoreFragments:  bool(ip6f.MoreFragments),
-				Identification: uint32(ip6f.Identification),
+				MoreFragments:  ip6f.MoreFragments,
+				Identification: ip6f.Identification,
 			}
 		}
 		return nil

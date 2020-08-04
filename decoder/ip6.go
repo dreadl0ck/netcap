@@ -34,7 +34,7 @@ var ipv6Decoder = NewGoPacketDecoder(
 				Timestamp:      timestamp,
 				Version:        int32(ip6.Version),
 				TrafficClass:   int32(ip6.TrafficClass),
-				FlowLabel:      uint32(ip6.FlowLabel),
+				FlowLabel:      ip6.FlowLabel,
 				Length:         int32(ip6.Length),
 				NextHeader:     int32(ip6.NextHeader),
 				HopLimit:       int32(ip6.HopLimit),

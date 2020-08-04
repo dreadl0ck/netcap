@@ -42,10 +42,10 @@ var geneveDecoder = NewGoPacketDecoder(
 				Timestamp:      timestamp,
 				Version:        int32(geneve.Version),
 				OptionsLength:  int32(geneve.OptionsLength),
-				OAMPacket:      bool(geneve.OAMPacket),
-				CriticalOption: bool(geneve.CriticalOption),
+				OAMPacket:      geneve.OAMPacket,
+				CriticalOption: geneve.CriticalOption,
 				Protocol:       int32(geneve.Protocol),
-				VNI:            uint32(geneve.VNI),
+				VNI:            geneve.VNI,
 				Options:        opts,
 			}
 		}

@@ -34,10 +34,10 @@ var ethernetIPDecoder = NewGoPacketDecoder(
 				Timestamp:       timestamp,
 				Command:         uint32(enip.Command),
 				Length:          uint32(enip.Length),
-				SessionHandle:   uint32(enip.SessionHandle),
-				Status:          uint32(enip.Status),
-				SenderContext:   []byte(enip.SenderContext),
-				Options:         uint32(enip.Options),
+				SessionHandle:   enip.SessionHandle,
+				Status:          enip.Status,
+				SenderContext:   enip.SenderContext,
+				Options:         enip.Options,
 				CommandSpecific: cmdSpecificData,
 			}
 		}

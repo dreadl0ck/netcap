@@ -32,7 +32,7 @@ var eapDecoder = NewGoPacketDecoder(
 				Id:        int32(eap.Id),
 				Length:    int32(eap.Length),
 				Type:      int32(eap.Type),
-				TypeData:  []byte(eap.TypeData),
+				TypeData:  eap.TypeData,
 			}
 		}
 		return nil

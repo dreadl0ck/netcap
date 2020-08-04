@@ -30,7 +30,7 @@ var mplsDecoder = NewGoPacketDecoder(
 				Timestamp:    timestamp,
 				Label:        int32(mpls.Label),
 				TrafficClass: int32(mpls.TrafficClass),
-				StackBottom:  bool(mpls.StackBottom),
+				StackBottom:  mpls.StackBottom,
 				TTL:          int32(mpls.TTL),
 			}
 		}

@@ -292,7 +292,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 			newDataAuthCID  []byte
 			newDataAuthZID  []byte
 			newDataPassword []byte
-			step            int = 0
+			step            = 0
 		)
 		for _, b := range data {
 			if b == byte(0) {

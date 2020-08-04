@@ -177,13 +177,13 @@ makeHTTPRequest:
 		// Request information
 		//ReqCookies:         reqCookies,
 		Proto:              req.Proto,
-		Method:             string(req.Method),
-		Host:               string(req.URL.Host),
-		UserAgent:          string(req.UserAgent()),
-		Referer:            string(req.Referer()),
+		Method:             req.Method,
+		Host:               req.URL.Host,
+		UserAgent:          req.UserAgent(),
+		Referer:            req.Referer(),
 		ReqContentLength:   int32(req.ContentLength),
-		ContentType:        string(req.Header.Get("Content-Type")),
-		URL:                string(req.URL.String()),
+		ContentType:        req.Header.Get("Content-Type"),
+		URL:                req.URL.String(),
 		ReqContentEncoding: req.Header.Get("Content-Encoding"),
 
 		// Response information
@@ -192,7 +192,7 @@ makeHTTPRequest:
 		ResContentEncoding: resp.Header.Get("Content-Encoding"),
 		ServerName:         resp.Header.Get("Server"),
 		//ResCookies:         resCookies,
-		ResContentType: string(resp.Header.Get("Content-Type")),
+		ResContentType: resp.Header.Get("Content-Type"),
 		DoneAfter:      delta.Nanoseconds(),
 
 		// Address information

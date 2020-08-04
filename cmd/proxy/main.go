@@ -63,7 +63,7 @@ func Run() {
 		// setup single proxy instance
 		c = &Config{
 			Proxies: map[string]ReverseProxyConfig{
-				"customproxy": ReverseProxyConfig{
+				"customproxy": {
 					Remote: *flagRemote,
 					Local:  *flagLocal,
 				},

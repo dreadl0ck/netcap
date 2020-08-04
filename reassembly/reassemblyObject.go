@@ -60,7 +60,7 @@ func (rl *reassemblyObject) Info() (TCPFlowDirection, bool, bool, int) {
 }
 
 func (rl *reassemblyObject) Stats() TCPAssemblyStats {
-	packets := int(0)
+	packets := 0
 	for _, r := range rl.all {
 		if r.isPacket() {
 			packets++

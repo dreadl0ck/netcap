@@ -36,14 +36,14 @@ var ospfv3Decoder = NewGoPacketDecoder(
 			switch v := ospf3.Content.(type) {
 			case layers.HelloPkg:
 				hello = &types.HelloPkg{
-					InterfaceID:              uint32(v.InterfaceID),
+					InterfaceID:              v.InterfaceID,
 					RtrPriority:              int32(v.RtrPriority),
-					Options:                  uint32(v.Options),
+					Options:                  v.Options,
 					HelloInterval:            int32(v.HelloInterval),
-					RouterDeadInterval:       uint32(v.RouterDeadInterval),
-					DesignatedRouterID:       uint32(v.DesignatedRouterID),
-					BackupDesignatedRouterID: uint32(v.BackupDesignatedRouterID),
-					NeighborID:               []uint32(v.NeighborID),
+					RouterDeadInterval:       v.RouterDeadInterval,
+					DesignatedRouterID:       v.DesignatedRouterID,
+					BackupDesignatedRouterID: v.BackupDesignatedRouterID,
+					NeighborID:               v.NeighborID,
 				}
 			case layers.DbDescPkg:
 				var lsas []*types.LSAheader
@@ -51,27 +51,27 @@ var ospfv3Decoder = NewGoPacketDecoder(
 					lsas = append(lsas, &types.LSAheader{
 						LSAge:       int32(h.LSAge),
 						LSType:      int32(h.LSType),
-						LinkStateID: uint32(h.LinkStateID),
-						AdvRouter:   uint32(h.AdvRouter),
-						LSSeqNumber: uint32(h.LSSeqNumber),
+						LinkStateID: h.LinkStateID,
+						AdvRouter:   h.AdvRouter,
+						LSSeqNumber: h.LSSeqNumber,
 						LSChecksum:  int32(h.LSChecksum),
 						Length:      int32(h.Length),
 						LSOptions:   int32(h.LSOptions),
 					})
 				}
 				dbDesc = &types.DbDescPkg{
-					Options:      uint32(v.Options),
+					Options:      v.Options,
 					InterfaceMTU: int32(v.InterfaceMTU),
 					Flags:        int32(v.Flags),
-					DDSeqNumber:  uint32(v.DDSeqNumber),
+					DDSeqNumber:  v.DDSeqNumber,
 					LSAinfo:      lsas, // []*LSAheader
 				}
 			case []layers.LSReq:
 				for _, r := range v {
 					lSR = append(lSR, &types.LSReq{
 						LSType:    int32(r.LSType),
-						LSID:      uint32(r.LSID),
-						AdvRouter: uint32(r.AdvRouter),
+						LSID:      r.LSID,
+						AdvRouter: r.AdvRouter,
 					})
 				}
 			case layers.LSUpdate:
@@ -81,9 +81,9 @@ var ospfv3Decoder = NewGoPacketDecoder(
 					lSAs = append(lSAs, &types.LSAheader{
 						LSAge:       int32(r.LSAge),
 						LSType:      int32(r.LSType),
-						LinkStateID: uint32(r.LinkStateID),
-						AdvRouter:   uint32(r.AdvRouter),
-						LSSeqNumber: uint32(r.LSSeqNumber),
+						LinkStateID: r.LinkStateID,
+						AdvRouter:   r.AdvRouter,
+						LSSeqNumber: r.LSSeqNumber,
 						LSChecksum:  int32(r.LSChecksum),
 						Length:      int32(r.Length),
 						LSOptions:   int32(r.LSOptions),
@@ -95,8 +95,8 @@ var ospfv3Decoder = NewGoPacketDecoder(
 				Version:      int32(ospf3.Version),
 				Type:         int32(ospf3.Type),
 				PacketLength: int32(ospf3.PacketLength),
-				RouterID:     uint32(ospf3.RouterID),
-				AreaID:       uint32(ospf3.AreaID),
+				RouterID:     ospf3.RouterID,
+				AreaID:       ospf3.AreaID,
 				Checksum:     int32(ospf3.Checksum),
 				Instance:     int32(ospf3.Instance),
 				Reserved:     int32(ospf3.Reserved),
@@ -131,8 +131,8 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 			for _, r := range v.Routers {
 				routers = append(routers, &types.RouterV2{
 					Type:     int32(r.Type),
-					LinkID:   uint32(r.LinkID),
-					LinkData: uint32(r.LinkData),
+					LinkID:   r.LinkID,
+					LinkData: r.LinkData,
 					Metric:   uint32(r.Metric),
 				})
 			}
@@ -143,11 +143,11 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 			}
 		case layers.ASExternalLSAV2:
 			asExternalLSAV2 = &types.ASExternalLSAV2{
-				NetworkMask:       uint32(v.NetworkMask),
+				NetworkMask:       v.NetworkMask,
 				ExternalBit:       int32(v.ExternalBit),
-				Metric:            uint32(v.Metric),
-				ForwardingAddress: uint32(v.ForwardingAddress),
-				ExternalRouteTag:  uint32(v.ExternalRouteTag),
+				Metric:            v.Metric,
+				ForwardingAddress: v.ForwardingAddress,
+				ExternalRouteTag:  v.ExternalRouteTag,
 			}
 		case layers.RouterLSA:
 			var routers []*types.Router
@@ -155,45 +155,45 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 				routers = append(routers, &types.Router{
 					Type:                int32(r.Type),
 					Metric:              int32(r.Metric),
-					InterfaceID:         uint32(r.InterfaceID),
-					NeighborInterfaceID: uint32(r.NeighborInterfaceID),
-					NeighborRouterID:    uint32(r.NeighborRouterID),
+					InterfaceID:         r.InterfaceID,
+					NeighborInterfaceID: r.NeighborInterfaceID,
+					NeighborRouterID:    r.NeighborRouterID,
 				})
 			}
 			routerLSA = &types.RouterLSA{
 				Flags:   int32(v.Flags),
-				Options: uint32(v.Options),
+				Options: v.Options,
 				Routers: routers, // []*Router
 			}
 		case layers.NetworkLSA:
 			networkLSA = &types.NetworkLSA{
-				Options:        uint32(v.Options),
-				AttachedRouter: []uint32(v.AttachedRouter),
+				Options:        v.Options,
+				AttachedRouter: v.AttachedRouter,
 			}
 		case layers.InterAreaPrefixLSA:
 			interAreaPrefixLSA = &types.InterAreaPrefixLSA{
-				Metric:        uint32(v.Metric),
+				Metric:        v.Metric,
 				PrefixLength:  int32(v.PrefixLength),
 				PrefixOptions: int32(v.PrefixOptions),
-				AddressPrefix: []byte(v.AddressPrefix),
+				AddressPrefix: v.AddressPrefix,
 			}
 		case layers.InterAreaRouterLSA:
 			interAreaRouterLSA = &types.InterAreaRouterLSA{
-				Options:             uint32(v.Options),
-				Metric:              uint32(v.Metric),
-				DestinationRouterID: uint32(v.DestinationRouterID),
+				Options:             v.Options,
+				Metric:              v.Metric,
+				DestinationRouterID: v.DestinationRouterID,
 			}
 		case layers.ASExternalLSA:
 			asExternalLSA = &types.ASExternalLSA{
 				Flags:             int32(v.Flags),
-				Metric:            uint32(v.Metric),
+				Metric:            v.Metric,
 				PrefixLength:      int32(v.PrefixLength),
 				PrefixOptions:     int32(v.PrefixOptions),
 				RefLSType:         int32(v.RefLSType),
-				AddressPrefix:     []byte(v.AddressPrefix),
-				ForwardingAddress: []byte(v.ForwardingAddress),
-				ExternalRouteTag:  uint32(v.ExternalRouteTag),
-				RefLinkStateID:    uint32(v.RefLinkStateID),
+				AddressPrefix:     v.AddressPrefix,
+				ForwardingAddress: v.ForwardingAddress,
+				ExternalRouteTag:  v.ExternalRouteTag,
+				RefLinkStateID:    v.RefLinkStateID,
 			}
 		case layers.LinkLSA:
 			var prefixes []*types.LSAPrefix
@@ -202,14 +202,14 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 					PrefixLength:  int32(r.PrefixLength),
 					PrefixOptions: int32(r.PrefixOptions),
 					Metric:        int32(r.Metric),
-					AddressPrefix: []byte(r.AddressPrefix),
+					AddressPrefix: r.AddressPrefix,
 				})
 			}
 			linkLSA = &types.LinkLSA{
 				RtrPriority:      int32(v.RtrPriority),
-				Options:          uint32(v.Options),
-				LinkLocalAddress: []byte(v.LinkLocalAddress),
-				NumOfPrefixes:    uint32(v.NumOfPrefixes),
+				Options:          v.Options,
+				LinkLocalAddress: v.LinkLocalAddress,
+				NumOfPrefixes:    v.NumOfPrefixes,
 				Prefixes:         prefixes, // []*LSAPrefix
 			}
 		case layers.IntraAreaPrefixLSA:
@@ -219,14 +219,14 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 					PrefixLength:  int32(r.PrefixLength),
 					PrefixOptions: int32(r.PrefixOptions),
 					Metric:        int32(r.Metric),
-					AddressPrefix: []byte(r.AddressPrefix),
+					AddressPrefix: r.AddressPrefix,
 				})
 			}
 			intraAreaPrefixLSA = &types.IntraAreaPrefixLSA{
 				NumOfPrefixes:  int32(v.NumOfPrefixes),
 				RefLSType:      int32(v.RefLSType),
-				RefLinkStateID: uint32(v.RefLinkStateID),
-				RefAdvRouter:   uint32(v.RefAdvRouter),
+				RefLinkStateID: v.RefLinkStateID,
+				RefAdvRouter:   v.RefAdvRouter,
 				Prefixes:       prefixes,
 			}
 		}
@@ -234,9 +234,9 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 			Header: &types.LSAheader{
 				LSAge:       int32(l.LSAge),
 				LSType:      int32(l.LSType),
-				LinkStateID: uint32(l.LinkStateID),
-				AdvRouter:   uint32(l.AdvRouter),
-				LSSeqNumber: uint32(l.LSSeqNumber),
+				LinkStateID: l.LinkStateID,
+				AdvRouter:   l.AdvRouter,
+				LSSeqNumber: l.LSSeqNumber,
 				LSChecksum:  int32(l.LSChecksum),
 				Length:      int32(l.Length),
 				LSOptions:   int32(l.LSOptions),
@@ -253,7 +253,7 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 		})
 	}
 	return &types.LSUpdate{
-		NumOfLSAs: uint32(v.NumOfLSAs),
+		NumOfLSAs: v.NumOfLSAs,
 		LSAs:      lsas, // []*LSA
 	}
 }

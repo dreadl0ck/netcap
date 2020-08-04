@@ -54,20 +54,20 @@ func (n *NTP) CSVRecord() []string {
 	}
 	return filter([]string{
 		formatTimestamp(n.Timestamp),
-		formatInt32(n.LeapIndicator),                         // int32
-		formatInt32(n.Version),                               // int32
-		formatInt32(n.Mode),                                  // int32
-		formatInt32(n.Stratum),                               // int32
-		formatInt32(n.Poll),                                  // int32
-		formatInt32(n.Precision),                             // int32
-		strconv.FormatUint(uint64(n.RootDelay), 10),          // uint32
-		strconv.FormatUint(uint64(n.RootDispersion), 10),     // uint32
-		strconv.FormatUint(uint64(n.ReferenceID), 10),        // uint32
-		strconv.FormatUint(uint64(n.ReferenceTimestamp), 10), // uint64
-		strconv.FormatUint(uint64(n.OriginTimestamp), 10),    // uint64
-		strconv.FormatUint(uint64(n.ReceiveTimestamp), 10),   // uint64
-		strconv.FormatUint(uint64(n.TransmitTimestamp), 10),  // uint64
-		hex.EncodeToString(n.ExtensionBytes),                 // []byte
+		formatInt32(n.LeapIndicator),                     // int32
+		formatInt32(n.Version),                           // int32
+		formatInt32(n.Mode),                              // int32
+		formatInt32(n.Stratum),                           // int32
+		formatInt32(n.Poll),                              // int32
+		formatInt32(n.Precision),                         // int32
+		strconv.FormatUint(uint64(n.RootDelay), 10),      // uint32
+		strconv.FormatUint(uint64(n.RootDispersion), 10), // uint32
+		strconv.FormatUint(uint64(n.ReferenceID), 10),    // uint32
+		strconv.FormatUint(n.ReferenceTimestamp, 10),     // uint64
+		strconv.FormatUint(n.OriginTimestamp, 10),        // uint64
+		strconv.FormatUint(n.ReceiveTimestamp, 10),       // uint64
+		strconv.FormatUint(n.TransmitTimestamp, 10),      // uint64
+		hex.EncodeToString(n.ExtensionBytes),             // []byte
 		n.Context.SrcIP,
 		n.Context.DstIP,
 		n.Context.SrcPort,
