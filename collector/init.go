@@ -156,7 +156,7 @@ func handleDecoderInitError(err error, target string) {
 	if errors.Is(err, decoder.ErrInvalidDecoder) {
 		invalidDecoder(strings.Split(errors.Unwrap(err).Error(), ":")[0])
 	} else if err != nil {
-		log.Fatal("failed to initialize " + target + " decoders: ", err)
+		log.Fatal("failed to initialize "+target+" decoders: ", err)
 	}
 }
 

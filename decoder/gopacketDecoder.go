@@ -192,7 +192,7 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 		// write netcap header
 		err := e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to write header for audit record " + e.Type.String())
+			return nil, errors.Wrap(err, "failed to write header for audit record "+e.Type.String())
 		}
 
 		// export metrics?

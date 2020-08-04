@@ -294,12 +294,12 @@ func (cd *CustomDecoder) Decode(p gopacket.Packet) error {
 
 // Destroy closes and flushes all writers and calls deinit if set
 func (cd *CustomDecoder) Destroy() (name string, size int64) {
-	if cd.deinit != nil {
-		err := cd.deinit(cd)
-		if err != nil {
-			panic(err)
-		}
+
+	err := cd.DeInit()
+	if err != nil {
+		panic(err)
 	}
+
 	return cd.writer.Close()
 }
 

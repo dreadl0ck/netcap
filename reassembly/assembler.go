@@ -809,7 +809,7 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) 
 			conn.firstFlow = conn.c2s.flow
 		} else {
 			conn.ac.Timestamp = conn.s2c.firstSeen
-			conn.firstFlow  = conn.s2c.flow
+			conn.firstFlow = conn.s2c.flow
 		}
 
 		if half.stream.ReassemblyComplete(&conn.ac, conn.firstFlow) {
