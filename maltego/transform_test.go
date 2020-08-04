@@ -151,9 +151,9 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	decoder.ApplyActionToCustomDecoders(func(e *decoder.CustomDecoder) {
-		genEntity("netcap", e.Name+"AuditRecords", "insert_drive_file", "An archive of "+e.Name+" audit records", "", newStringField("path"))
-		genEntity("netcap", e.Name, e.Name, e.Description, "")
+	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+		genEntity("netcap", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path"))
+		genEntity("netcap", d.GetName(), d.GetName(), d.GetDescription(), "")
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {

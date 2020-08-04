@@ -30,9 +30,9 @@ func TestGenerateAuditRecordIconsV2(t *testing.T) {
 
 	generateIcons()
 
-	decoder.ApplyActionToCustomDecoders(func(e *decoder.CustomDecoder) {
-		fmt.Println(e.Name)
-		generateAuditRecordIconV2(e.Name)
+	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+		fmt.Println(d.GetName())
+		generateAuditRecordIconV2(d.GetName())
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
