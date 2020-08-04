@@ -9,7 +9,7 @@ import (
 func ToFileTypesForIP() {
 	maltego.FilesTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
 			if file.Context.SrcIP == ipaddr || file.Context.DstIP == ipaddr {
 
 				typ := file.ContentTypeDetected

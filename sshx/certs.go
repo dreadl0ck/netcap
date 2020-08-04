@@ -496,8 +496,8 @@ func certToPrivAlgo(algo string) string {
 	panic("unknown cert algorithm")
 }
 
-func (cert *Certificate) bytesForSigning() []byte {
-	c2 := *cert
+func (c *Certificate) bytesForSigning() []byte {
+	c2 := *c
 	c2.Signature = nil
 	out := c2.Marshal()
 	// Drop trailing signature length.

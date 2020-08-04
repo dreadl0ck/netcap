@@ -14,7 +14,7 @@ func OpenContentTypeFolder() {
 
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.MaltegoTransform{}
+		trx             = &maltego.Transform{}
 		openCommandName = os.Getenv("NETCAP_MALTEGO_OPEN_FILE_CMD")
 		args            []string
 	)

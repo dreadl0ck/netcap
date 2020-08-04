@@ -105,7 +105,7 @@ func GetThickness(val, min, max uint64) int {
 
 /* First we handle the MaltegoEntity conversion from Python */
 
-type MaltegoEntityObj struct {
+type EntityObj struct {
 	entityType         string
 	value              string
 	iconURL            string
@@ -115,34 +115,34 @@ type MaltegoEntityObj struct {
 }
 
 //Constructor for MaltegoEntityObj
-func MaltegoEntity(eT string, eV string) *MaltegoEntityObj {
-	return &MaltegoEntityObj{entityType: eT, value: eV, weight: 100}
+func NewEntityObj(eT string, eV string) *EntityObj {
+	return &EntityObj{entityType: eT, value: eV, weight: 100}
 }
 
 /*Next we handle the MalteoTransform class from Python*/
-type MaltegoTransform struct {
-	entities   []*MaltegoEntityObj
+type Transform struct {
+	entities   []*EntityObj
 	exceptions [][]string
 	UIMessages [][]string
 }
 
-func (m *MaltegoTransform) AddEntity(enType, enValue string) *MaltegoEntityObj {
-	me := &MaltegoEntityObj{entityType: enType, value: EscapeText(enValue), weight: 100}
+func (m *Transform) AddEntity(enType, enValue string) *EntityObj {
+	me := &EntityObj{entityType: enType, value: EscapeText(enValue), weight: 100}
 	m.entities = append(m.entities, me)
 	return me
 }
 
-func (m *MaltegoTransform) AddUIMessage(message, messageType string) {
+func (m *Transform) AddUIMessage(message, messageType string) {
 	msg := []string{messageType, message}
 	m.UIMessages = append(m.UIMessages, msg)
 }
 
-func (m *MaltegoTransform) AddException(exceptionString, code string) {
+func (m *Transform) AddException(exceptionString, code string) {
 	exc := []string{exceptionString, code}
 	m.exceptions = append(m.exceptions, exc)
 }
 
-func (m *MaltegoTransform) ReturnOutput() string {
+func (m *Transform) ReturnOutput() string {
 	r := "<MaltegoMessage>\n"
 	r += "<MaltegoTransformResponseMessage>\n"
 	r += "<Entities>\n"
@@ -161,7 +161,7 @@ func (m *MaltegoTransform) ReturnOutput() string {
 	return r
 }
 
-func (m *MaltegoTransform) ThrowExceptions() string {
+func (m *Transform) ThrowExceptions() string {
 	r := "<MaltegoMessage>\n"
 	r += "<MaltegoTransformExceptionMessage>\n"
 	r += "<Exceptions>\n"
@@ -176,63 +176,63 @@ func (m *MaltegoTransform) ThrowExceptions() string {
 }
 
 //2. Setter and Getter functions for MaltegoEntityObjs
-func (m *MaltegoEntityObj) SetType(eT string) {
+func (m *EntityObj) SetType(eT string) {
 	m.entityType = eT
 }
 
-func (m *MaltegoEntityObj) SetValue(eV string) {
+func (m *EntityObj) SetValue(eV string) {
 	m.value = eV
 }
 
-func (m *MaltegoEntityObj) SetWeight(w int) {
+func (m *EntityObj) SetWeight(w int) {
 	m.weight = w
 }
 
-func (m *MaltegoEntityObj) SetIconURL(iU string) {
+func (m *EntityObj) SetIconURL(iU string) {
 	m.iconURL = iU
 }
 
-func (m *MaltegoEntityObj) AddProperty(fieldName, displayName, matchingRule, value string) {
+func (m *EntityObj) AddProperty(fieldName, displayName, matchingRule, value string) {
 	prop := []string{fieldName, displayName, matchingRule, EscapeText(value)}
 	m.AdditionalFields = append(m.AdditionalFields, prop)
 }
 
-func (m *MaltegoEntityObj) AddDisplayInformation(di, dl string) {
+func (m *EntityObj) AddDisplayInformation(di, dl string) {
 	info := []string{dl, di}
 	m.displayInformation = append(m.displayInformation, info)
 }
 
-func (m *MaltegoEntityObj) SetLinkColor(color string) {
+func (m *EntityObj) SetLinkColor(color string) {
 	m.AddProperty("link#maltego.link.color", "LinkColor", "", color)
 }
 
-func (m *MaltegoEntityObj) SetLinkStyle(style string) {
+func (m *EntityObj) SetLinkStyle(style string) {
 	m.AddProperty("link#maltego.link.style", "LinkStyle", "", style)
 }
 
-func (m *MaltegoEntityObj) SetLinkThickness(thick int) {
+func (m *EntityObj) SetLinkThickness(thick int) {
 	thickInt := strconv.Itoa(thick)
 	m.AddProperty("link#maltego.link.thickness", "LinkThickness", "", thickInt)
 }
 
-func (m *MaltegoEntityObj) SetLinkLabel(label string) {
+func (m *EntityObj) SetLinkLabel(label string) {
 	m.AddProperty("link#maltego.link.label", "Label", "", label)
 }
 
-func (m *MaltegoEntityObj) SetBookmark(bookmark string) {
+func (m *EntityObj) SetBookmark(bookmark string) {
 	m.AddProperty("bookmark#", "Bookmark", "", bookmark)
 }
 
-func (m *MaltegoEntityObj) SetNote(note string) {
+func (m *EntityObj) SetNote(note string) {
 	m.AddProperty("notes#", "Notes", "", note)
 }
 
-func (m *MaltegoEntityObj) SetLinkDirection(dir string) {
+func (m *EntityObj) SetLinkDirection(dir string) {
 	m.AddProperty("link#maltego.link.direction", "Direction", "loose", dir)
 	//me.addProperty('link#maltego.link.direction','link#maltego.link.direction','loose','output-to-input')
 }
 
-func (m *MaltegoEntityObj) ReturnEntity() string {
+func (m *EntityObj) ReturnEntity() string {
 	r := "<Entity Type=\"" + m.entityType + "\">\n"
 	r += "<Value>" + m.value + "</Value>\n"
 	r += "<Weight>" + strconv.Itoa(m.weight) + "</Weight>\n"
@@ -273,12 +273,12 @@ func (m *MaltegoEntityObj) ReturnEntity() string {
 /* 3. MaltegoMsg Python class implementation */
 
 //Here we have the XML structs to map to
-type MaltegoMessage struct {
+type Message struct {
 	XMLName xml.Name `xml:"MaltegoMessage"`
-	MTRM    MaltegoTransformRequestMessage
+	MTRM    TransformRequestMessage
 }
 
-type MaltegoTransformRequestMessage struct {
+type TransformRequestMessage struct {
 	XMLName  xml.Name `xml:"MaltegoTransformRequestMessage"`
 	Entities Entities `xml:"Entities"`
 	Limits   Limit    `xml:"Limits"`
@@ -316,7 +316,7 @@ type Limit struct {
 //End XML structs mapping
 
 //Code to parse Maltego XML Input
-type MaltegoMsgObj struct {
+type MsgObj struct {
 	Value             string
 	Weight            string
 	Slider            string //Forgot to implement the XML for this
@@ -326,9 +326,9 @@ type MaltegoMsgObj struct {
 }
 
 //Constructor for MaltegoMsg
-func MaltegoMsg(MaltegoXML string) MaltegoMsgObj {
+func Msg(MaltegoXML string) MsgObj {
 
-	v := MaltegoMessage{}
+	v := Message{}
 	err := xml.Unmarshal([]byte(MaltegoXML), &v)
 	if err != nil {
 		panic(err)
@@ -347,15 +347,15 @@ func MaltegoMsg(MaltegoXML string) MaltegoMsgObj {
 		Props[f.FieldName] = f.FieldValue
 	}
 
-	m := MaltegoMsgObj{Value: Value, Weight: Weight, Type: Type, Slider: Slider, Properties: Props}
+	m := MsgObj{Value: Value, Weight: Weight, Type: Type, Slider: Slider, Properties: Props}
 	return m
 }
 
-func (m *MaltegoMsgObj) GetProperty(p string) string {
+func (m *MsgObj) GetProperty(p string) string {
 	return m.Properties[p]
 }
 
-func (m *MaltegoMsgObj) GetTransformSetting(t string) string {
+func (m *MsgObj) GetTransformSetting(t string) string {
 	return m.TransformSettings[t]
 }
 

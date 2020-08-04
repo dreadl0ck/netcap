@@ -8,7 +8,7 @@ import (
 func ToCookieValues() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			cookieName := lt.Values["properties.httpcookie"]
 			if http.SrcIP == ipaddr {
 				for _, c := range http.ReqCookies {
@@ -28,6 +28,6 @@ func ToCookieValues() {
 }
 
 // TODO: set timestamp as property
-func addCookieValue(trx *maltego.MaltegoTransform, c *types.HTTPCookie, timestamp string) {
+func addCookieValue(trx *maltego.Transform, c *types.HTTPCookie, timestamp string) {
 	trx.AddEntity("netcap.HTTPCookieValue", c.Value)
 }

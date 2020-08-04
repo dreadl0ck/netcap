@@ -203,7 +203,7 @@ func Run() {
 		ToServices()
 
 	default:
-		trx := maltego.MaltegoTransform{}
+		trx := maltego.Transform{}
 		trx.AddUIMessage("Unknown transform: "+os.Args[2], maltego.UIM_FATAL)
 		fmt.Println(trx.ReturnOutput())
 		//log.Fatal("unknown transform: ", os.Args[2])

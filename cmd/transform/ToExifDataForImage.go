@@ -15,7 +15,7 @@ func ToExifDataForImage() {
 
 	var (
 		lt   = maltego.ParseLocalArguments(os.Args)
-		trx  = &maltego.MaltegoTransform{}
+		trx  = &maltego.Transform{}
 		path = lt.Values["path"]
 		err  error
 	)

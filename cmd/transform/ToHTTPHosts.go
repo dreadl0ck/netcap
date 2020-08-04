@@ -8,7 +8,7 @@ import (
 func ToHTTPHosts() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
 				if http.Host != "" {
 					ent := trx.AddEntity("netcap.Website", http.Host)

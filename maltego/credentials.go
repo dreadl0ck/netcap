@@ -26,7 +26,7 @@ import (
 )
 
 // CredentialsTransformationFunc is a transformation over Credentials profiles for a selected Credentials
-type CredentialsTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.Credentials, min, max uint64, profilesFile string, mac string, ip string)
+type CredentialsTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Credentials, min, max uint64, profilesFile string, mac string, ip string)
 
 // CountFunc is a function that counts something over DeviceProfiles
 type CredentialsCountFunc = func(credentials *types.Credentials, mac string, min, max *uint64)
@@ -73,7 +73,7 @@ func CredentialsTransform(count CredentialsCountFunc, transform CredentialsTrans
 		credentials = new(types.Credentials)
 		pm          proto.Message
 		ok          bool
-		trx         = MaltegoTransform{}
+		trx         = Transform{}
 	)
 	pm = credentials
 

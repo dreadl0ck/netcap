@@ -42,7 +42,7 @@ func returnCaptureProcessEntity(pid int, path string, iface string) {
 	pidStr := strconv.Itoa(pid)
 
 	// generate maltego transform
-	trx := maltego.MaltegoTransform{}
+	trx := maltego.Transform{}
 
 	name := "Capture Process" + "\nPID: " + pidStr
 	ent := trx.AddEntity("netcap.CaptureProcess", name)

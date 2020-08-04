@@ -26,7 +26,7 @@ import (
 )
 
 // ServiceTransformationFunc is a transformation over Service profiles for a selected Service
-type ServiceTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.Service, min, max uint64, profilesFile string, mac string, ip string)
+type ServiceTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Service, min, max uint64, profilesFile string, mac string, ip string)
 
 // CountFunc is a function that counts something over DeviceProfiles
 type ServiceCountFunc = func(service *types.Service, mac string, min, max *uint64)
@@ -73,7 +73,7 @@ func ServiceTransform(count ServiceCountFunc, transform ServiceTransformationFun
 		service = new(types.Service)
 		pm      proto.Message
 		ok      bool
-		trx     = MaltegoTransform{}
+		trx     = Transform{}
 	)
 	pm = service
 

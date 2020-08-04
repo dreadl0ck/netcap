@@ -14,7 +14,7 @@ func ToDHCPClients() {
 
 	maltego.DHCPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
 
 			// DHCP operations fall into four phases: server discovery, IP lease offer, IP lease request, and IP lease acknowledgement.
 			// to identify the client we are only looking for server discovery messages for now

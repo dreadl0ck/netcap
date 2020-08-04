@@ -28,7 +28,7 @@ func ToLiveAuditRecords() {
 func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 
 	// generate maltego transform
-	trx := maltego.MaltegoTransform{}
+	trx := maltego.Transform{}
 	for _, name := range allDecoders {
 
 		ident := filepath.Join(outDir, name+".ncap")

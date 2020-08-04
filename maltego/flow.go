@@ -159,7 +159,7 @@ var CountOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *u
 }
 
 // FlowTransformationFunc is a transformation over Flow audit records
-type FlowTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ip string, sizes *[]int)
+type FlowTransformationFunc = func(lt LocalTransform, trx *Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ip string, sizes *[]int)
 
 // FlowTransform applies a maltego transformation over Flow audit records
 func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
@@ -206,7 +206,7 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 		flow = new(types.Flow)
 		pm   proto.Message
 		ok   bool
-		trx  = MaltegoTransform{}
+		trx  = Transform{}
 	)
 	pm = flow
 

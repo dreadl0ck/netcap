@@ -79,7 +79,7 @@ func (c *Collector) Init() (err error) {
 				msg = "Data from previous runs found in output path! Overwrite?"
 			}
 			if !confirm(msg) {
-				return errors.New("aborted.")
+				return errors.New("aborted")
 			}
 		}
 

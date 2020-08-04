@@ -211,7 +211,7 @@ func (ch *channel) writePacket(packet []byte) error {
 		ch.writeMu.Unlock()
 		return io.EOF
 	}
-	ch.sentClose = (packet[0] == msgChannelClose)
+	ch.sentClose = packet[0] == msgChannelClose
 	err := ch.mux.conn.writePacket(packet)
 	ch.writeMu.Unlock()
 	return err
@@ -588,7 +588,7 @@ func (ch *channel) SendRequest(name string, wantReply bool, payload []byte) (boo
 	}
 
 	if wantReply {
-		m, ok := (<-ch.msg)
+		m, ok := <-ch.msg
 		if !ok {
 			return false, io.EOF
 		}

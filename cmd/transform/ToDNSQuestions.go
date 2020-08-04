@@ -26,7 +26,7 @@ func ToDNSQuestions() {
 	f, err := os.Open(dnsAuditRecords)
 	if err != nil {
 		log.Println("failed to open", err)
-		trx := maltego.MaltegoTransform{}
+		trx := maltego.Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
@@ -54,7 +54,7 @@ func ToDNSQuestions() {
 		dns = new(types.DNS)
 		pm  proto.Message
 		ok  bool
-		trx = maltego.MaltegoTransform{}
+		trx = maltego.Transform{}
 	)
 	pm = dns
 

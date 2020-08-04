@@ -69,7 +69,7 @@ var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min,
 type CountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64)
 
 // DeviceProfileTransformationFunc is transform over DeviceProfiles
-type DeviceProfileTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
+type DeviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
 
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records
 func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformationFunc) {
@@ -112,7 +112,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 		profile = new(types.DeviceProfile)
 		pm      proto.Message
 		ok      bool
-		trx     = MaltegoTransform{}
+		trx     = Transform{}
 	)
 	pm = profile
 

@@ -8,7 +8,7 @@ import (
 func ToCookiesForHTTPHost() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
 				host := lt.Value
 				if http.Host == host {
@@ -25,7 +25,7 @@ func ToCookiesForHTTPHost() {
 	)
 }
 
-func addCookie(trx *maltego.MaltegoTransform, c *types.HTTPCookie, timestamp string, ipaddr string, profilesFile string, method string) {
+func addCookie(trx *maltego.Transform, c *types.HTTPCookie, timestamp string, ipaddr string, profilesFile string, method string) {
 	ent := trx.AddEntity("netcap.HTTPCookie", c.Name)
 	ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
 	ent.AddProperty("path", "Path", "strict", profilesFile)

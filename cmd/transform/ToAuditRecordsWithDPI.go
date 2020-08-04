@@ -16,7 +16,7 @@ func ToAuditRecordsWithDPI() {
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]
-		trx       = maltego.MaltegoTransform{}
+		trx       = maltego.Transform{}
 	)
 
 	// check if input PCAP path is set

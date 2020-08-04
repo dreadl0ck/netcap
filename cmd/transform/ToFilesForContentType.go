@@ -11,7 +11,7 @@ import (
 func ToFilesForContentType() {
 	maltego.FilesTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
 			if ipaddr == "" || file.Context.SrcIP == ipaddr || file.Context.DstIP == ipaddr {
 
 				var (
@@ -29,7 +29,7 @@ func ToFilesForContentType() {
 
 					// TODO: make a single file constructor and reuse it in ToFiles!
 					var (
-						ent *maltego.MaltegoEntityObj
+						ent *maltego.EntityObj
 						val = file.Name + "\n" + strconv.FormatInt(file.Length, 10) + " bytes"
 					)
 					if strings.HasPrefix(ct, "image/") {

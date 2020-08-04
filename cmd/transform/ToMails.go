@@ -13,7 +13,7 @@ import (
 func ToMails() {
 	maltego.POP3Transform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, pop3 *types.POP3, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, profilesFile string, ipaddr string) {
 			if pop3.ClientIP == ipaddr {
 				for _, m := range pop3.Mails {
 

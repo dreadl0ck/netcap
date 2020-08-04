@@ -20,7 +20,7 @@ func LookupDHCPFingerprint() {
 	var userAgentStore = make(map[string][]string)
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if uas, ok := userAgentStore[http.SrcIP]; ok {
 				for _, u := range uas {
 					if u == http.UserAgent {
@@ -46,13 +46,13 @@ func LookupDHCPFingerprint() {
 		fp, mac string
 		// mapped MAC addresses to IPs
 		addrMapping          = make(map[string]string)
-		mtrx                 *maltego.MaltegoTransform
+		mtrx                 *maltego.Transform
 		messageToFingerprint *types.DHCPv4
 	)
 
 	maltego.DHCPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
 
 			if dhcp.Operation == 2 {
 				if _, ok := addrMapping[dhcp.ClientHWAddr]; !ok {

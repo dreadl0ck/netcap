@@ -15,13 +15,13 @@ import (
 func ToDestinationIPs() {
 	maltego.DeviceProfileTransform(
 		maltego.CountPacketsContactIPs,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
 			if profile.MacAddr == mac {
 
 				for _, ip := range profile.Contacts {
 
 					var (
-						ent      *maltego.MaltegoEntityObj
+						ent      *maltego.EntityObj
 						dnsNames = strings.Join(ip.DNSNames, "\n")
 						val      = ip.Addr
 					)

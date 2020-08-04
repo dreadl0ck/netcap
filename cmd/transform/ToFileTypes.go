@@ -9,7 +9,7 @@ import (
 func ToFileTypes() {
 	maltego.FilesTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
 
 			typ := file.ContentTypeDetected
 			parts := strings.Split(file.ContentTypeDetected, ";")

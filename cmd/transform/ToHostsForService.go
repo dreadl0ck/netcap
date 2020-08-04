@@ -13,7 +13,7 @@ func ToHostsForService() {
 
 	maltego.ServiceTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
 
 			if len(ip) == 0 {
 				ip = lt.Values["ip"]

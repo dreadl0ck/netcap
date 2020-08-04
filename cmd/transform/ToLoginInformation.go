@@ -8,7 +8,7 @@ import (
 func ToLoginInformation() {
 	maltego.CredentialsTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.MaltegoTransform, cred *types.Credentials, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, cred *types.Credentials, min, max uint64, profilesFile string, mac string, ipaddr string) {
 
 			val := cred.User + "\n" + cred.Password + "\n" + cred.Service
 			if len(cred.Notes) > 0 {

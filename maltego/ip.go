@@ -26,7 +26,7 @@ import (
 )
 
 // IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile
-type IPTransformationFunc = func(lt LocalTransform, trx *MaltegoTransform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ip string)
+type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ip string)
 
 // IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile
 func IPTransform(count CountFunc, transform IPTransformationFunc) {
@@ -70,7 +70,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 		profile = new(types.DeviceProfile)
 		pm      proto.Message
 		ok      bool
-		trx     = MaltegoTransform{}
+		trx     = Transform{}
 	)
 	pm = profile
 
