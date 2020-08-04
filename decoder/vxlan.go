@@ -28,11 +28,11 @@ var vxlanDecoder = NewGoPacketDecoder(
 		if vx, ok := layer.(*layers.VXLAN); ok {
 			return &types.VXLAN{
 				Timestamp:        timestamp,
-				ValidIDFlag:      bool(vx.ValidIDFlag),
-				VNI:              uint32(vx.VNI),
-				GBPExtension:     bool(vx.GBPExtension),
-				GBPDontLearn:     bool(vx.GBPDontLearn),
-				GBPApplied:       bool(vx.GBPApplied),
+				ValidIDFlag:      vx.ValidIDFlag,
+				VNI:              vx.VNI,
+				GBPExtension:     vx.GBPExtension,
+				GBPDontLearn:     vx.GBPDontLearn,
+				GBPApplied:       vx.GBPApplied,
 				GBPGroupPolicyID: int32(vx.GBPGroupPolicyID),
 			}
 		}

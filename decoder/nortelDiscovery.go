@@ -29,7 +29,7 @@ var nortelDiscoveryDecoder = NewGoPacketDecoder(
 			return &types.NortelDiscovery{
 				Timestamp: timestamp,
 				IPAddress: string(nortel.IPAddress),
-				SegmentID: []byte(nortel.SegmentID),
+				SegmentID: nortel.SegmentID,
 				Chassis:   int32(nortel.Chassis),
 				Backplane: int32(nortel.Backplane),
 				State:     int32(nortel.State),

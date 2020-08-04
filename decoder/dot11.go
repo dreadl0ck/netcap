@@ -130,7 +130,7 @@ var dot11Decoder = NewGoPacketDecoder(
 				Address4:       dot11.Address4.String(),
 				SequenceNumber: int32(dot11.SequenceNumber),
 				FragmentNumber: int32(dot11.FragmentNumber),
-				Checksum:       uint32(dot11.Checksum),
+				Checksum:       dot11.Checksum,
 				QOS:            qos,
 				HTControl:      htcontrol,
 			}

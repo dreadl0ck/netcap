@@ -264,7 +264,7 @@ func (ch *channel) WriteExtended(data []byte, extendedCode uint32) (n int, err e
 		packet[0] = opCode
 		binary.BigEndian.PutUint32(packet[1:], ch.remoteId)
 		if extendedCode > 0 {
-			binary.BigEndian.PutUint32(packet[5:], uint32(extendedCode))
+			binary.BigEndian.PutUint32(packet[5:], extendedCode)
 		}
 		binary.BigEndian.PutUint32(packet[headerLength-4:], uint32(len(todo)))
 		copy(packet[headerLength:], todo)
@@ -336,10 +336,10 @@ func (c *channel) adjustWindow(n uint32) error {
 	c.windowMu.Lock()
 	// Since myWindow is managed on our side, and can never exceed
 	// the initial window setting, we don't worry about overflow.
-	c.myWindow += uint32(n)
+	c.myWindow += n
 	c.windowMu.Unlock()
 	return c.sendMessage(WindowAdjustMsg{
-		AdditionalBytes: uint32(n),
+		AdditionalBytes: n,
 	})
 }
 

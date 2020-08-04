@@ -34,8 +34,8 @@ var lcmDecoder = NewGoPacketDecoder(
 				FragmentOffset: int32(lcm.FragmentOffset),
 				FragmentNumber: int32(lcm.FragmentNumber),
 				TotalFragments: int32(lcm.TotalFragments),
-				ChannelName:    string(lcm.ChannelName),
-				Fragmented:     bool(lcm.Fragmented),
+				ChannelName:    lcm.ChannelName,
+				Fragmented:     lcm.Fragmented,
 			}
 		}
 		return nil

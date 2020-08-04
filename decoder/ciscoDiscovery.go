@@ -31,7 +31,7 @@ var ciscoDiscoveryDecoder = NewGoPacketDecoder(
 				values = append(values, &types.CiscoDiscoveryValue{
 					Type:   int32(v.Type),
 					Length: int32(v.Length),
-					Value:  []byte(v.Value),
+					Value:  v.Value,
 				})
 			}
 			return &types.CiscoDiscovery{

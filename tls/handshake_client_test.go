@@ -54,11 +54,11 @@ func (i opensslInput) Read(buf []byte) (n int, err error) {
 	for event := range i {
 		switch event {
 		case opensslRenegotiate:
-			return copy(buf, []byte("R\n")), nil
+			return copy(buf, "R\n"), nil
 		case opensslKeyUpdate:
-			return copy(buf, []byte("K\n")), nil
+			return copy(buf, "K\n"), nil
 		case opensslSendSentinel:
-			return copy(buf, []byte(opensslSentinel)), nil
+			return copy(buf, opensslSentinel), nil
 		default:
 			panic("unknown event")
 		}
@@ -223,7 +223,7 @@ func (test *clientTest) connFromCommand() (conn *recordingConn, child *exec.Cmd,
 	}
 
 	cmd := exec.Command(command[0], command[1:]...)
-	stdin = opensslInput(make(chan opensslInputEvent))
+	stdin = make(chan opensslInputEvent)
 	cmd.Stdin = stdin
 	out := newOpensslOutputSink()
 	cmd.Stdout = out

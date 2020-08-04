@@ -811,7 +811,7 @@ func (k *skECDSAPublicKey) Verify(data []byte, sig *Signature) error {
 	h.Write(original)
 	digest := h.Sum(nil)
 
-	if ecdsa.Verify((*ecdsa.PublicKey)(&k.PublicKey), digest, ecSig.R, ecSig.S) {
+	if ecdsa.Verify(&k.PublicKey, digest, ecSig.R, ecSig.S) {
 		return nil
 	}
 	return errors.New("ssh: signature did not verify")
@@ -845,7 +845,7 @@ func parseSKEd25519(in []byte) (out PublicKey, rest []byte, err error) {
 
 	key := new(skEd25519PublicKey)
 	key.application = w.Application
-	key.PublicKey = ed25519.PublicKey(w.KeyBytes)
+	key.PublicKey = w.KeyBytes
 
 	return key, w.Rest, nil
 }

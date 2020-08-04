@@ -40,11 +40,11 @@ func (t *TCPOptionCheck) getOptions(dir TCPFlowDirection) *tcpStreamOptions {
 func NewTCPOptionCheck() TCPOptionCheck {
 	return TCPOptionCheck{
 		options: [2]tcpStreamOptions{
-			tcpStreamOptions{
+			{
 				mss:           0,
 				scale:         -1,
 				receiveWindow: 0,
-			}, tcpStreamOptions{
+			}, {
 				mss:           0,
 				scale:         -1,
 				receiveWindow: 0,

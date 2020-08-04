@@ -52,7 +52,7 @@ var dhcpv6Decoder = NewGoPacketDecoder(
 				HopCount:      int32(dhcp6.HopCount),
 				LinkAddr:      dhcp6.LinkAddr.String(),
 				PeerAddr:      dhcp6.PeerAddr.String(),
-				TransactionID: []byte(dhcp6.TransactionID),
+				TransactionID: dhcp6.TransactionID,
 				Options:       opts,
 				Fingerprint:   fp.String(),
 			}

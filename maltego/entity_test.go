@@ -162,7 +162,7 @@ func compareGeneratedXML(data []byte, expected string, t *testing.T) {
 		fmt.Println("------------------------------------------------")
 
 		resultArr := strings.Split(string(data), "\n")
-		expectedArr := strings.Split(string(expected), "\n")
+		expectedArr := strings.Split(expected, "\n")
 
 		fmt.Println(ansi.Red, "len(resultArr)", len(resultArr), ansi.Blue, "len(expectedArr)", len(expectedArr), ansi.Reset)
 

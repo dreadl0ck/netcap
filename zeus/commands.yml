@@ -90,7 +90,7 @@ commands:
     # count lines of code
     cloc:
         description: count lines of code for the project
-        exec: cloc --exclude-ext pb.go,py,rb,js,cpp,cc,rs,java,swift,c,cs,h cmd metrics label types utils io collector decoder netcap.go reader.go utils.go writer.go maltego resolvers dpi
+        exec: cloc --exclude-ext pb.go,py,rb,js,cpp,cc,rs,java,swift,c,cs,h delimited cmd metrics label types utils io collector decoder netcap.go reader.go utils.go writer.go maltego resolvers dpi
 
     # generate protocol buffers for development
     gen-proto-dev:

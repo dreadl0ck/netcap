@@ -37,9 +37,9 @@ var sipDecoder = NewGoPacketDecoder(
 				Version:        int32(sip.Version),
 				Method:         int32(sip.Method),
 				Headers:        headers,
-				IsResponse:     bool(sip.IsResponse),
+				IsResponse:     sip.IsResponse,
 				ResponseCode:   int32(sip.ResponseCode),
-				ResponseStatus: string(sip.ResponseStatus),
+				ResponseStatus: sip.ResponseStatus,
 			}
 		}
 		return nil

@@ -525,7 +525,7 @@ func marshalStruct(out []byte, msg interface{}) []byte {
 		case reflect.Uint32:
 			out = appendU32(out, uint32(field.Uint()))
 		case reflect.Uint64:
-			out = appendU64(out, uint64(field.Uint()))
+			out = appendU64(out, field.Uint())
 		case reflect.Uint8:
 			out = append(out, uint8(field.Uint()))
 		case reflect.String:

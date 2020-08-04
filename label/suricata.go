@@ -402,14 +402,14 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 
 		for _, a := range duplicates {
 			tui.Table(os.Stdout, []string{"Field", "Value"}, [][]string{
-				[]string{"Timestamp", a.Timestamp},
-				[]string{"Proto", a.Proto},
-				[]string{"SrcIP", a.SrcIP},
-				[]string{"SrcPort", strconv.Itoa(a.SrcPort)},
-				[]string{"DstIP", a.DstIP},
-				[]string{"DstPort", strconv.Itoa(a.DstPort)},
-				[]string{"Classification", a.Classification},
-				[]string{"Description", a.Description},
+				{"Timestamp", a.Timestamp},
+				{"Proto", a.Proto},
+				{"SrcIP", a.SrcIP},
+				{"SrcPort", strconv.Itoa(a.SrcPort)},
+				{"DstIP", a.DstIP},
+				{"DstPort", strconv.Itoa(a.DstPort)},
+				{"Classification", a.Classification},
+				{"Description", a.Description},
 			})
 		}
 
