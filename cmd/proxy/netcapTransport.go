@@ -134,6 +134,7 @@ makeHTTPRequest:
 
 	// collect the cookies for both request and response
 	var (
+		// TODO: include these into created HTTP audit record
 		reqCookies []string
 		resCookies []string
 	)
@@ -191,7 +192,7 @@ makeHTTPRequest:
 		StatusCode:         int32(resp.StatusCode),
 		ResContentEncoding: resp.Header.Get("Content-Encoding"),
 		ServerName:         resp.Header.Get("Server"),
-		//ResCookies:         resCookies,
+
 		ResContentType: resp.Header.Get("Content-Type"),
 		DoneAfter:      delta.Nanoseconds(),
 

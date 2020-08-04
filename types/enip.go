@@ -35,36 +35,36 @@ var fieldsENIP = []string{
 	"DstPort",
 }
 
-func (e *ENIP) CSVHeader() []string {
+func (en *ENIP) CSVHeader() []string {
 	return filter(fieldsENIP)
 }
-func (e *ENIP) CSVRecord() []string {
+func (en *ENIP) CSVRecord() []string {
 	// prevent accessing nil pointer
-	if e.Context == nil {
-		e.Context = &PacketContext{}
+	if en.Context == nil {
+		en.Context = &PacketContext{}
 	}
 	return filter([]string{
-		formatTimestamp(e.Timestamp),
-		formatUint32(e.Command),             // uint32
-		formatUint32(e.Length),              // uint32
-		formatUint32(e.SessionHandle),       // uint32
-		formatUint32(e.Status),              // uint32
-		hex.EncodeToString(e.SenderContext), // []byte
-		formatUint32(e.Options),             // uint32
-		e.CommandSpecific.String(),          // *ENIPCommandSpecificData
-		e.Context.SrcIP,
-		e.Context.DstIP,
-		e.Context.SrcPort,
-		e.Context.DstPort,
+		formatTimestamp(en.Timestamp),
+		formatUint32(en.Command),             // uint32
+		formatUint32(en.Length),              // uint32
+		formatUint32(en.SessionHandle),       // uint32
+		formatUint32(en.Status),              // uint32
+		hex.EncodeToString(en.SenderContext), // []byte
+		formatUint32(en.Options),             // uint32
+		en.CommandSpecific.String(),          // *ENIPCommandSpecificData
+		en.Context.SrcIP,
+		en.Context.DstIP,
+		en.Context.SrcPort,
+		en.Context.DstPort,
 	})
 }
 
-func (e *ENIP) Time() string {
-	return e.Timestamp
+func (en *ENIP) Time() string {
+	return en.Timestamp
 }
 
-func (e *ENIP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(e)
+func (en *ENIP) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(en)
 }
 
 var (
@@ -81,24 +81,24 @@ func init() {
 	prometheus.MustRegister(enipMetric)
 }
 
-func (e *ENIP) Inc() {
-	enipMetric.WithLabelValues(e.CSVRecord()[1:]...).Inc()
+func (en *ENIP) Inc() {
+	enipMetric.WithLabelValues(en.CSVRecord()[1:]...).Inc()
 }
 
-func (a *ENIP) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+func (en *ENIP) SetPacketContext(ctx *PacketContext) {
+	en.Context = ctx
 }
 
-func (e *ENIP) Src() string {
-	if e.Context != nil {
-		return e.Context.SrcIP
+func (en *ENIP) Src() string {
+	if en.Context != nil {
+		return en.Context.SrcIP
 	}
 	return ""
 }
 
-func (e *ENIP) Dst() string {
-	if e.Context != nil {
-		return e.Context.DstIP
+func (en *ENIP) Dst() string {
+	if en.Context != nil {
+		return en.Context.DstIP
 	}
 	return ""
 }
