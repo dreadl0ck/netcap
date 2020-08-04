@@ -58,9 +58,9 @@ func MarkdownOverview() {
 
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
-	for _, e := range defaultCustomDecoders {
-		if csv, ok := netcap.InitRecord(e.Type).(types.AuditRecord); ok {
-			fmt.Println("|"+pad(e.Name, 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
+	for _, d := range defaultCustomDecoders {
+		if csv, ok := netcap.InitRecord(d.GetType()).(types.AuditRecord); ok {
+			fmt.Println("|"+pad(d.GetName(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
 }
@@ -165,13 +165,13 @@ func (p PairList) Len() int           { return len(p) }
 func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-func ApplyActionToCustomDecoders(action func(e *CustomDecoder)) {
-	for _, e := range defaultCustomDecoders {
-		action(e)
+func ApplyActionToCustomDecoders(action func(CustomDecoderAPI)) {
+	for _, d := range defaultCustomDecoders {
+		action(d)
 	}
 }
 
-func ApplyActionToGoPacketDecoders(action func(e *GoPacketDecoder)) {
+func ApplyActionToGoPacketDecoders(action func(*GoPacketDecoder)) {
 	for _, e := range defaultGoPacketDecoders {
 		action(e)
 	}
@@ -184,11 +184,11 @@ func ShowDecoders(verbose bool) {
 	)
 
 	fmt.Println("Custom Audit Records: Total", len(defaultCustomDecoders), "Format: DecoderName ( Number of Fields )")
-	for _, e := range defaultCustomDecoders {
+	for _, d := range defaultCustomDecoders {
 		totalAuditRecords++
-		f := countFields(e.Type)
+		f := countFields(d.GetType())
 		totalFields += f
-		fmt.Println(pad("+ "+e.Type.String()+" ( "+strconv.Itoa(f)+" )", 35), e.Description)
+		fmt.Println(pad("+ "+d.GetType().String()+" ( "+strconv.Itoa(f)+" )", 35), d.GetDescription())
 	}
 	fmt.Println("> custom encoder fields: ", totalFields)
 	fmt.Println("> custom encoder audit records:", totalAuditRecords)

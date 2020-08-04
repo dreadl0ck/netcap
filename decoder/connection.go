@@ -210,14 +210,14 @@ var connectionDecoder = NewCustomDecoder(
 )
 
 // writeConn writes the connection
-func writeConn(c *types.Connection) {
+func writeConn(conn *types.Connection) {
 
-	if connDecoderInstance.export {
-		c.Inc()
+	if c.Export {
+		conn.Inc()
 	}
 
 	atomic.AddInt64(&connDecoderInstance.numRecords, 1)
-	err := connDecoderInstance.writer.Write(c)
+	err := connDecoderInstance.writer.Write(conn)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

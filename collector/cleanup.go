@@ -61,8 +61,8 @@ func (c *Collector) cleanup(force bool) {
 	}
 
 	// flush all custom decoders
-	for _, e := range c.customDecoders {
-		name, size := e.Destroy()
+	for _, d := range c.customDecoders {
+		name, size := d.Destroy()
 		if size != 0 {
 			c.totalBytesWritten += size
 			c.files[name] = humanize.Bytes(uint64(size))

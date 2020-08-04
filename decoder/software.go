@@ -706,14 +706,14 @@ var softwareDecoder = NewCustomDecoder(
 
 // TODO: move into CustomDecoder and use in other places to remove unnecessary package level decoders
 // writeProfile writes the profile
-func (e *CustomDecoder) write(c types.AuditRecord) {
+func (cd *CustomDecoder) write(r types.AuditRecord) {
 
-	if e.export {
-		c.Inc()
+	if c.Export {
+		r.Inc()
 	}
 
-	atomic.AddInt64(&e.numRecords, 1)
-	err := e.writer.Write(c.(proto.Message))
+	atomic.AddInt64(&cd.numRecords, 1)
+	err := cd.writer.Write(r.(proto.Message))
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

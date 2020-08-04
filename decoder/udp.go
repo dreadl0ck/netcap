@@ -33,6 +33,8 @@ import (
 	"time"
 )
 
+var udpStreams = NewUDPStreamPool()
+
 type UDPStream struct {
 	data UDPDataSlice
 	sync.Mutex
@@ -45,31 +47,22 @@ type UDPData struct {
 	transport gopacket.Flow
 }
 
-var (
-	udpStreams   = make(map[uint64]*UDPStream)
-	udpStreamsMu sync.Mutex
-)
-
-// UDPDataSlice implements sort.Interface to sort data fragments based on their timestamps
-type UDPDataSlice []*UDPData
-
-func (d UDPDataSlice) Len() int {
-	return len(d)
+type UDPStreamPool struct {
+	streams map[uint64]*UDPStream
+	sync.Mutex
 }
-func (d UDPDataSlice) Less(i, j int) bool {
-	data1 := d[i]
-	data2 := d[j]
-	return data1.ci.Timestamp.Before(data2.ci.Timestamp)
-}
-func (d UDPDataSlice) Swap(i, j int) {
-	d[i], d[j] = d[j], d[i]
+
+func NewUDPStreamPool() *UDPStreamPool {
+	return &UDPStreamPool{
+		streams: make(map[uint64]*UDPStream),
+	}
 }
 
 // takes a udp packet and tracks the data seen for the conversation
-func handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
-	udpStreamsMu.Lock()
-	if s, ok := udpStreams[packet.TransportLayer().TransportFlow().FastHash()]; ok {
-		udpStreamsMu.Unlock()
+func (u *UDPStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
+	u.Lock()
+	if s, ok := u.streams[packet.TransportLayer().TransportFlow().FastHash()]; ok {
+		u.Unlock()
 
 		// update existing
 		s.Lock()
@@ -82,7 +75,7 @@ func handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
 		s.Unlock()
 	} else {
 		// add new
-		udpStreams[packet.TransportLayer().TransportFlow().FastHash()] = &UDPStream{
+		u.streams[packet.TransportLayer().TransportFlow().FastHash()] = &UDPStream{
 			data: []*UDPData{
 				{
 					raw:       udpLayer.LayerPayload(),
@@ -92,7 +85,7 @@ func handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
 				},
 			},
 		}
-		udpStreamsMu.Unlock()
+		u.Unlock()
 	}
 }
 
@@ -125,9 +118,9 @@ var udpDecoder = NewGoPacketDecoder(
 	},
 )
 
-func saveAllUDPConnections() {
-	udpStreamsMu.Lock()
-	for _, s := range udpStreams {
+func (u *UDPStreamPool) saveAllUDPConnections() {
+	u.Lock()
+	for _, s := range u.streams {
 		s.Lock()
 		sort.Sort(s.data)
 
@@ -188,7 +181,7 @@ func saveAllUDPConnections() {
 		// save service banner
 		saveUDPServiceBanner(serverBanner.Bytes(), ident, clientNetwork.Dst().String()+":"+clientTransport.Dst().String(), firstPacket, serverBytes, clientBytes, clientNetwork, clientTransport)
 	}
-	udpStreamsMu.Unlock()
+	u.Unlock()
 }
 
 // saveUDPConnection saves the contents of a client server conversation via UDP to the filesystem

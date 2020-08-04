@@ -102,6 +102,16 @@ var stats struct {
 	numConns  int64
 	numFlows  int64
 
+	// HTTP
+	numUnmatchedResp        int64
+	numNilRequests          int64
+	numFoundRequests        int64
+	numRemovedRequests      int64
+	numUnansweredRequests   int64
+	numClientStreamNotFound int64
+	numRequests int64
+	numResponses int64 // HTTP
+
 	sync.Mutex
 }
 
@@ -473,7 +483,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 
 		udpLayer := packet.Layer(layers.LayerTypeUDP)
 		if udpLayer != nil {
-			handleUDP(packet, udpLayer)
+			udpStreams.handleUDP(packet, udpLayer)
 		}
 
 		return
@@ -629,7 +639,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
 		// process UDP streams
 		if c.SaveConns {
-			saveAllUDPConnections()
+			udpStreams.saveAllUDPConnections()
 		}
 	}
 

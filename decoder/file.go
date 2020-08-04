@@ -43,14 +43,14 @@ var fileDecoder = NewCustomDecoder(
 )
 
 // writeProfile writes the profile
-func writeFile(c *types.File) {
+func writeFile(f *types.File) {
 
-	if fileDecoderInstance.export {
-		c.Inc()
+	if c.Export {
+		f.Inc()
 	}
 
 	atomic.AddInt64(&fileDecoderInstance.numRecords, 1)
-	err := fileDecoderInstance.writer.Write(c)
+	err := fileDecoderInstance.writer.Write(f)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

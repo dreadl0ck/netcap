@@ -397,9 +397,9 @@ var credentialsDecoder = NewCustomDecoder(
 
 // writeCredentials is a util that should be used to write credential audit to disk
 // it will deduplicate the audit records to avoid repeating information on disk
-func writeCredentials(c *types.Credentials) {
+func writeCredentials(conn *types.Credentials) {
 
-	ident := c.Service + c.User + c.Password
+	ident := conn.Service + conn.User + conn.Password
 
 	// prevent saving duplicate credentials
 	credStoreMu.Lock()
@@ -407,15 +407,15 @@ func writeCredentials(c *types.Credentials) {
 		credStoreMu.Unlock()
 		return
 	}
-	credStore[ident] = c.Flow
+	credStore[ident] = conn.Flow
 	credStoreMu.Unlock()
 
-	if credentialsDecoder.export {
-		c.Inc()
+	if c.Export {
+		conn.Inc()
 	}
 
 	atomic.AddInt64(&credentialsDecoder.numRecords, 1)
-	err := credentialsDecoder.writer.Write(c)
+	err := credentialsDecoder.writer.Write(conn)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

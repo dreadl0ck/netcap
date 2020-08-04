@@ -31,7 +31,7 @@ import (
 var (
 	ErrInvalidDecoder = errors.New("invalid decoder")
 
-	defaultCustomDecoders = []*CustomDecoder{
+	defaultCustomDecoders = []CustomDecoderAPI{
 		tlsClientHelloDecoder,
 		tlsServerHelloDecoder,
 		httpDecoder,
@@ -62,47 +62,78 @@ type (
 		Description string
 		Icon        string
 
-		numResponses int64 // HTTP
-
-		Handler CustomDecoderHandler
-
+		Handler  CustomDecoderHandler
 		postinit func(*CustomDecoder) error
 		deinit   func(*CustomDecoder) error
 
 		// used to keep track of the number of generated audit records
 		numRecords int64
 
-		numRequests int64 // HTTP
-
 		writer *netcap.Writer
 
-		// TODO: refactor this to avoid bloating the structure
-		numUnmatchedResp        int64 // HTTP
-		numNilRequests          int64 // HTTP
-		numFoundRequests        int64 // HTTP
-		numRemovedRequests      int64 // HTTP
-		numUnansweredRequests   int64 // HTTP
-		numClientStreamNotFound int64 // HTTP
+		Type types.Type
+	}
 
-		Type   types.Type
-		export bool
+	// CustomDecoderAPI describes an interface that all custom encoder need to implement
+	// this will allow to supply a custom structure and maintain state for advanced protocol analysis
+	CustomDecoderAPI interface {
+		Decode(p gopacket.Packet) error
+		PostInit() error
+		DeInit() error
+		GetName() string
+		SetWriter(*netcap.Writer)
+		GetType() types.Type
+		GetDescription() string
+		GetChan() <-chan []byte
+		Destroy() (string, int64)
+		NumRecords() int64
 	}
 )
+
+func (cd *CustomDecoder) PostInit() error {
+	if cd.postinit == nil {
+		return nil
+	}
+	return cd.postinit(cd)
+}
+
+func (cd *CustomDecoder) DeInit() error {
+	if cd.deinit == nil {
+		return nil
+	}
+	return cd.deinit(cd)
+}
+
+func (cd *CustomDecoder) GetName() string {
+	return cd.Name
+}
+
+func (cd *CustomDecoder) SetWriter(w *netcap.Writer) {
+	cd.writer = w
+}
+
+func (cd *CustomDecoder) GetType() types.Type {
+	return cd.Type
+}
+
+func (cd *CustomDecoder) GetDescription() string {
+	return cd.Description
+}
 
 // package level init
 func init() {
 	// collect all names for custom decoders on startup
-	for _, e := range defaultCustomDecoders {
-		allDecoderNames[e.Name] = struct{}{}
+	for _, d := range defaultCustomDecoders {
+		allDecoderNames[d.GetName()] = struct{}{}
 	}
 	// collect all names for custom decoders on startup
-	for _, e := range defaultGoPacketDecoders {
-		allDecoderNames[e.Layer.String()] = struct{}{}
+	for _, d := range defaultGoPacketDecoders {
+		allDecoderNames[d.Layer.String()] = struct{}{}
 	}
 }
 
 // InitCustomDecoders initializes all custom decoders
-func InitCustomDecoders(c *Config) (decoders []*CustomDecoder, err error) {
+func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 
 	var (
 		// values from command-line flags
@@ -113,7 +144,7 @@ func InitCustomDecoders(c *Config) (decoders []*CustomDecoder, err error) {
 		inMap = make(map[string]bool)
 
 		// new selection
-		selection []*CustomDecoder
+		selection []CustomDecoderAPI
 	)
 
 	// if there are includes and the first item is not an empty string
@@ -135,7 +166,7 @@ func InitCustomDecoders(c *Config) (decoders []*CustomDecoder, err error) {
 
 		// iterate over custom decoders and collect those that are named in the includeMap
 		for _, e := range defaultCustomDecoders {
-			if _, ok := inMap[e.Name]; ok {
+			if _, ok := inMap[e.GetName()]; ok {
 				selection = append(selection, e)
 			}
 		}
@@ -155,7 +186,7 @@ func InitCustomDecoders(c *Config) (decoders []*CustomDecoder, err error) {
 
 			// remove named encoder from defaultCustomDecoders
 			for i, e := range defaultCustomDecoders {
-				if name == e.Name {
+				if name == e.GetName() {
 					// remove encoder
 					defaultCustomDecoders = append(defaultCustomDecoders[:i], defaultCustomDecoders[i+1:]...)
 					break
@@ -165,34 +196,30 @@ func InitCustomDecoders(c *Config) (decoders []*CustomDecoder, err error) {
 	}
 
 	// initialize decoders
-	for _, e := range defaultCustomDecoders {
+	for _, d := range defaultCustomDecoders {
 
 		// fmt.Println("init custom encoder", e.name)
-		e.writer = netcap.NewWriter(e.Name, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
+		w := netcap.NewWriter(d.GetName(), c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
+		d.SetWriter(w)
 
 		// call postinit func if set
-		if e.postinit != nil {
-			err := e.postinit(e)
-			if err != nil {
-				if c.IgnoreDecoderInitErrors {
-					fmt.Println(ansi.Red, err, ansi.Reset)
-				} else {
-					return nil, errors.Wrap(err, "postinit failed")
-				}
+		err := d.PostInit()
+		if err != nil {
+			if c.IgnoreDecoderInitErrors {
+				fmt.Println(ansi.Red, err, ansi.Reset)
+			} else {
+				return nil, errors.Wrap(err, "postinit failed")
 			}
 		}
 
-		// export metrics?
-		e.export = c.Export
-
 		// write header
-		err := e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
+		err = w.WriteHeader(d.GetType(), c.Source, netcap.Version, c.IncludePayloads)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to write header for audit record " + e.Name)
+			return nil, errors.Wrap(err, "failed to write header for audit record "+d.GetName())
 		}
 
 		// append to custom decoders slice
-		decoders = append(decoders, e)
+		decoders = append(decoders, d)
 	}
 
 	if isCustomDecoderLoaded(credentialsDecoderName) {
@@ -206,7 +233,7 @@ func InitCustomDecoders(c *Config) (decoders []*CustomDecoder, err error) {
 
 func isCustomDecoderLoaded(name string) bool {
 	for _, e := range defaultCustomDecoders {
-		if e.Name == name {
+		if e.GetName() == name {
 			return true
 		}
 	}
@@ -228,30 +255,30 @@ func NewCustomDecoder(t types.Type, name string, description string, postinit fu
 // Decode is called for each layer
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
-func (e *CustomDecoder) Decode(p gopacket.Packet) error {
+func (cd *CustomDecoder) Decode(p gopacket.Packet) error {
 
 	// call the Handler function of the encoder
-	record := e.Handler(p)
+	record := cd.Handler(p)
 	if record != nil {
 
 		// increase counter
-		atomic.AddInt64(&e.numRecords, 1)
+		atomic.AddInt64(&cd.numRecords, 1)
 
-		if e.writer.IsCSV() {
-			_, err := e.writer.WriteCSV(record)
+		if cd.writer.IsCSV() {
+			_, err := cd.writer.WriteCSV(record)
 			if err != nil {
 				return err
 			}
 		} else {
 			// write record
-			err := e.writer.WriteProto(record)
+			err := cd.writer.WriteProto(record)
 			if err != nil {
 				return err
 			}
 		}
 
 		// export metrics if configured
-		if e.export {
+		if c.Export {
 			// assert to audit record
 			if p, ok := record.(types.AuditRecord); ok {
 				// export metrics
@@ -266,22 +293,22 @@ func (e *CustomDecoder) Decode(p gopacket.Packet) error {
 }
 
 // Destroy closes and flushes all writers and calls deinit if set
-func (e *CustomDecoder) Destroy() (name string, size int64) {
-	if e.deinit != nil {
-		err := e.deinit(e)
+func (cd *CustomDecoder) Destroy() (name string, size int64) {
+	if cd.deinit != nil {
+		err := cd.deinit(cd)
 		if err != nil {
 			panic(err)
 		}
 	}
-	return e.writer.Close()
+	return cd.writer.Close()
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder
-func (e *CustomDecoder) GetChan() <-chan []byte {
-	return e.writer.GetChan()
+func (cd *CustomDecoder) GetChan() <-chan []byte {
+	return cd.writer.GetChan()
 }
 
 // NumRecords returns the number of written records
-func (e *CustomDecoder) NumRecords() int64 {
-	return atomic.LoadInt64(&e.numRecords)
+func (cd *CustomDecoder) NumRecords() int64 {
+	return atomic.LoadInt64(&cd.numRecords)
 }

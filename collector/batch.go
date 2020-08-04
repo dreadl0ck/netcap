@@ -82,10 +82,10 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 	}
 
 	// get channels for all custom decoders
-	for _, e := range c.customDecoders {
+	for _, d := range c.customDecoders {
 		chans = append(chans, BatchInfo{
-			Type: e.Type,
-			Chan: e.GetChan(),
+			Type: d.GetType(),
+			Chan: d.GetChan(),
 		})
 	}
 
