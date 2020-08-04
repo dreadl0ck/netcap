@@ -16,7 +16,6 @@ package decoder
 import (
 	"fmt"
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
@@ -59,28 +58,14 @@ var flowDecoder = &FlowDecoder{
 }
 
 func (fd *FlowDecoder) PostInit() error {
-	fd.Handler = fd.handler
+
+	// simply overwrite the handler with our custom one
+	// this way the CustomEncoders default Decode() implementation will be used
+	// (it takes care of applying config options and tracking stats)
+	// but with our custom logic to handle the actual packet
+	fd.Handler = fd.handlePacket
+
 	return nil
-}
-
-func (fd *FlowDecoder) GetName() string {
-	return fd.Name
-}
-
-func (fd *FlowDecoder) SetWriter(w *netcap.Writer) {
-	fd.writer = w
-}
-
-func (fd *FlowDecoder) GetType() types.Type {
-	return fd.Type
-}
-
-func (fd *FlowDecoder) GetDescription() string {
-	return fd.Description
-}
-
-func (fd *FlowDecoder) Decode(p gopacket.Packet) error {
-	return fd.CustomDecoder.Decode(p)
 }
 
 // Destroy closes and flushes all writers and calls deinit if set
@@ -95,7 +80,7 @@ func (fd *FlowDecoder) Destroy() (name string, size int64) {
 	return fd.writer.Close()
 }
 
-func (fd *FlowDecoder) handler(p gopacket.Packet) proto.Message {
+func (fd *FlowDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 	// get identifier
 	var (
