@@ -126,7 +126,7 @@ func (h *HTTP) Inc() {
 	httpMetric.WithLabelValues(h.CSVRecord()[1:]...).Inc()
 }
 
-func (a *HTTP) SetPacketContext(ctx *PacketContext) {}
+func (h *HTTP) SetPacketContext(ctx *PacketContext) {}
 
 func (h *HTTP) Src() string {
 	return h.SrcIP

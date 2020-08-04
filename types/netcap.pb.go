@@ -922,77 +922,77 @@ type Ethernet struct {
 	PayloadSize    int32   `protobuf:"varint,6,opt,name=PayloadSize,proto3" json:"PayloadSize,omitempty"`
 }
 
-func (m *Ethernet) Reset()         { *m = Ethernet{} }
-func (m *Ethernet) String() string { return proto.CompactTextString(m) }
-func (*Ethernet) ProtoMessage()    {}
+func (eth *Ethernet) Reset()         { *eth = Ethernet{} }
+func (eth *Ethernet) String() string { return proto.CompactTextString(eth) }
+func (*Ethernet) ProtoMessage()      {}
 func (*Ethernet) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3068659fd5590671, []int{5}
 }
-func (m *Ethernet) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+func (eth *Ethernet) XXX_Unmarshal(b []byte) error {
+	return eth.Unmarshal(b)
 }
-func (m *Ethernet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (eth *Ethernet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_Ethernet.Marshal(b, m, deterministic)
+		return xxx_messageInfo_Ethernet.Marshal(b, eth, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := eth.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *Ethernet) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Ethernet.Merge(m, src)
+func (eth *Ethernet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Ethernet.Merge(eth, src)
 }
-func (m *Ethernet) XXX_Size() int {
-	return m.Size()
+func (eth *Ethernet) XXX_Size() int {
+	return eth.Size()
 }
-func (m *Ethernet) XXX_DiscardUnknown() {
-	xxx_messageInfo_Ethernet.DiscardUnknown(m)
+func (eth *Ethernet) XXX_DiscardUnknown() {
+	xxx_messageInfo_Ethernet.DiscardUnknown(eth)
 }
 
 var xxx_messageInfo_Ethernet proto.InternalMessageInfo
 
-func (m *Ethernet) GetTimestamp() string {
-	if m != nil {
-		return m.Timestamp
+func (eth *Ethernet) GetTimestamp() string {
+	if eth != nil {
+		return eth.Timestamp
 	}
 	return ""
 }
 
-func (m *Ethernet) GetSrcMAC() string {
-	if m != nil {
-		return m.SrcMAC
+func (eth *Ethernet) GetSrcMAC() string {
+	if eth != nil {
+		return eth.SrcMAC
 	}
 	return ""
 }
 
-func (m *Ethernet) GetDstMAC() string {
-	if m != nil {
-		return m.DstMAC
+func (eth *Ethernet) GetDstMAC() string {
+	if eth != nil {
+		return eth.DstMAC
 	}
 	return ""
 }
 
-func (m *Ethernet) GetEthernetType() int32 {
-	if m != nil {
-		return m.EthernetType
+func (eth *Ethernet) GetEthernetType() int32 {
+	if eth != nil {
+		return eth.EthernetType
 	}
 	return 0
 }
 
-func (m *Ethernet) GetPayloadEntropy() float64 {
-	if m != nil {
-		return m.PayloadEntropy
+func (eth *Ethernet) GetPayloadEntropy() float64 {
+	if eth != nil {
+		return eth.PayloadEntropy
 	}
 	return 0
 }
 
-func (m *Ethernet) GetPayloadSize() int32 {
-	if m != nil {
-		return m.PayloadSize
+func (eth *Ethernet) GetPayloadSize() int32 {
+	if eth != nil {
+		return eth.PayloadSize
 	}
 	return 0
 }
@@ -2187,63 +2187,63 @@ type EthernetCTPReply struct {
 	Data          []byte `protobuf:"bytes,4,opt,name=Data,proto3" json:"Data,omitempty"`
 }
 
-func (m *EthernetCTPReply) Reset()         { *m = EthernetCTPReply{} }
-func (m *EthernetCTPReply) String() string { return proto.CompactTextString(m) }
-func (*EthernetCTPReply) ProtoMessage()    {}
+func (ectpr *EthernetCTPReply) Reset()         { *ectpr = EthernetCTPReply{} }
+func (ectpr *EthernetCTPReply) String() string { return proto.CompactTextString(ectpr) }
+func (*EthernetCTPReply) ProtoMessage()        {}
 func (*EthernetCTPReply) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3068659fd5590671, []int{21}
 }
-func (m *EthernetCTPReply) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+func (ectpr *EthernetCTPReply) XXX_Unmarshal(b []byte) error {
+	return ectpr.Unmarshal(b)
 }
-func (m *EthernetCTPReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (ectpr *EthernetCTPReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_EthernetCTPReply.Marshal(b, m, deterministic)
+		return xxx_messageInfo_EthernetCTPReply.Marshal(b, ectpr, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := ectpr.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *EthernetCTPReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EthernetCTPReply.Merge(m, src)
+func (ectpr *EthernetCTPReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EthernetCTPReply.Merge(ectpr, src)
 }
-func (m *EthernetCTPReply) XXX_Size() int {
-	return m.Size()
+func (ectpr *EthernetCTPReply) XXX_Size() int {
+	return ectpr.Size()
 }
-func (m *EthernetCTPReply) XXX_DiscardUnknown() {
-	xxx_messageInfo_EthernetCTPReply.DiscardUnknown(m)
+func (ectpr *EthernetCTPReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_EthernetCTPReply.DiscardUnknown(ectpr)
 }
 
 var xxx_messageInfo_EthernetCTPReply proto.InternalMessageInfo
 
-func (m *EthernetCTPReply) GetTimestamp() string {
-	if m != nil {
-		return m.Timestamp
+func (ectpr *EthernetCTPReply) GetTimestamp() string {
+	if ectpr != nil {
+		return ectpr.Timestamp
 	}
 	return ""
 }
 
-func (m *EthernetCTPReply) GetFunction() int32 {
-	if m != nil {
-		return m.Function
+func (ectpr *EthernetCTPReply) GetFunction() int32 {
+	if ectpr != nil {
+		return ectpr.Function
 	}
 	return 0
 }
 
-func (m *EthernetCTPReply) GetReceiptNumber() int32 {
-	if m != nil {
-		return m.ReceiptNumber
+func (ectpr *EthernetCTPReply) GetReceiptNumber() int32 {
+	if ectpr != nil {
+		return ectpr.ReceiptNumber
 	}
 	return 0
 }
 
-func (m *EthernetCTPReply) GetData() []byte {
-	if m != nil {
-		return m.Data
+func (ectpr *EthernetCTPReply) GetData() []byte {
+	if ectpr != nil {
+		return ectpr.Data
 	}
 	return nil
 }
@@ -6134,245 +6134,245 @@ type HTTP struct {
 	ResponseBody           []byte            `protobuf:"bytes,30,opt,name=ResponseBody,proto3" json:"ResponseBody,omitempty"`
 }
 
-func (m *HTTP) Reset()         { *m = HTTP{} }
-func (m *HTTP) String() string { return proto.CompactTextString(m) }
+func (h *HTTP) Reset()         { *h = HTTP{} }
+func (h *HTTP) String() string { return proto.CompactTextString(h) }
 func (*HTTP) ProtoMessage()    {}
 func (*HTTP) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3068659fd5590671, []int{62}
 }
-func (m *HTTP) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+func (h *HTTP) XXX_Unmarshal(b []byte) error {
+	return h.Unmarshal(b)
 }
-func (m *HTTP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (h *HTTP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_HTTP.Marshal(b, m, deterministic)
+		return xxx_messageInfo_HTTP.Marshal(b, h, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := h.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *HTTP) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HTTP.Merge(m, src)
+func (h *HTTP) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HTTP.Merge(h, src)
 }
-func (m *HTTP) XXX_Size() int {
-	return m.Size()
+func (h *HTTP) XXX_Size() int {
+	return h.Size()
 }
-func (m *HTTP) XXX_DiscardUnknown() {
-	xxx_messageInfo_HTTP.DiscardUnknown(m)
+func (h *HTTP) XXX_DiscardUnknown() {
+	xxx_messageInfo_HTTP.DiscardUnknown(h)
 }
 
 var xxx_messageInfo_HTTP proto.InternalMessageInfo
 
-func (m *HTTP) GetTimestamp() string {
-	if m != nil {
-		return m.Timestamp
+func (h *HTTP) GetTimestamp() string {
+	if h != nil {
+		return h.Timestamp
 	}
 	return ""
 }
 
-func (m *HTTP) GetProto() string {
-	if m != nil {
-		return m.Proto
+func (h *HTTP) GetProto() string {
+	if h != nil {
+		return h.Proto
 	}
 	return ""
 }
 
-func (m *HTTP) GetMethod() string {
-	if m != nil {
-		return m.Method
+func (h *HTTP) GetMethod() string {
+	if h != nil {
+		return h.Method
 	}
 	return ""
 }
 
-func (m *HTTP) GetHost() string {
-	if m != nil {
-		return m.Host
+func (h *HTTP) GetHost() string {
+	if h != nil {
+		return h.Host
 	}
 	return ""
 }
 
-func (m *HTTP) GetUserAgent() string {
-	if m != nil {
-		return m.UserAgent
+func (h *HTTP) GetUserAgent() string {
+	if h != nil {
+		return h.UserAgent
 	}
 	return ""
 }
 
-func (m *HTTP) GetReferer() string {
-	if m != nil {
-		return m.Referer
+func (h *HTTP) GetReferer() string {
+	if h != nil {
+		return h.Referer
 	}
 	return ""
 }
 
-func (m *HTTP) GetReqCookies() []*HTTPCookie {
-	if m != nil {
-		return m.ReqCookies
+func (h *HTTP) GetReqCookies() []*HTTPCookie {
+	if h != nil {
+		return h.ReqCookies
 	}
 	return nil
 }
 
-func (m *HTTP) GetReqContentLength() int32 {
-	if m != nil {
-		return m.ReqContentLength
+func (h *HTTP) GetReqContentLength() int32 {
+	if h != nil {
+		return h.ReqContentLength
 	}
 	return 0
 }
 
-func (m *HTTP) GetURL() string {
-	if m != nil {
-		return m.URL
+func (h *HTTP) GetURL() string {
+	if h != nil {
+		return h.URL
 	}
 	return ""
 }
 
-func (m *HTTP) GetResContentLength() int32 {
-	if m != nil {
-		return m.ResContentLength
+func (h *HTTP) GetResContentLength() int32 {
+	if h != nil {
+		return h.ResContentLength
 	}
 	return 0
 }
 
-func (m *HTTP) GetContentType() string {
-	if m != nil {
-		return m.ContentType
+func (h *HTTP) GetContentType() string {
+	if h != nil {
+		return h.ContentType
 	}
 	return ""
 }
 
-func (m *HTTP) GetStatusCode() int32 {
-	if m != nil {
-		return m.StatusCode
+func (h *HTTP) GetStatusCode() int32 {
+	if h != nil {
+		return h.StatusCode
 	}
 	return 0
 }
 
-func (m *HTTP) GetSrcIP() string {
-	if m != nil {
-		return m.SrcIP
+func (h *HTTP) GetSrcIP() string {
+	if h != nil {
+		return h.SrcIP
 	}
 	return ""
 }
 
-func (m *HTTP) GetDstIP() string {
-	if m != nil {
-		return m.DstIP
+func (h *HTTP) GetDstIP() string {
+	if h != nil {
+		return h.DstIP
 	}
 	return ""
 }
 
-func (m *HTTP) GetReqContentEncoding() string {
-	if m != nil {
-		return m.ReqContentEncoding
+func (h *HTTP) GetReqContentEncoding() string {
+	if h != nil {
+		return h.ReqContentEncoding
 	}
 	return ""
 }
 
-func (m *HTTP) GetResContentEncoding() string {
-	if m != nil {
-		return m.ResContentEncoding
+func (h *HTTP) GetResContentEncoding() string {
+	if h != nil {
+		return h.ResContentEncoding
 	}
 	return ""
 }
 
-func (m *HTTP) GetServerName() string {
-	if m != nil {
-		return m.ServerName
+func (h *HTTP) GetServerName() string {
+	if h != nil {
+		return h.ServerName
 	}
 	return ""
 }
 
-func (m *HTTP) GetResCookies() []*HTTPCookie {
-	if m != nil {
-		return m.ResCookies
+func (h *HTTP) GetResCookies() []*HTTPCookie {
+	if h != nil {
+		return h.ResCookies
 	}
 	return nil
 }
 
-func (m *HTTP) GetResContentType() string {
-	if m != nil {
-		return m.ResContentType
+func (h *HTTP) GetResContentType() string {
+	if h != nil {
+		return h.ResContentType
 	}
 	return ""
 }
 
-func (m *HTTP) GetDoneAfter() int64 {
-	if m != nil {
-		return m.DoneAfter
+func (h *HTTP) GetDoneAfter() int64 {
+	if h != nil {
+		return h.DoneAfter
 	}
 	return 0
 }
 
-func (m *HTTP) GetDNSDoneAfter() int64 {
-	if m != nil {
-		return m.DNSDoneAfter
+func (h *HTTP) GetDNSDoneAfter() int64 {
+	if h != nil {
+		return h.DNSDoneAfter
 	}
 	return 0
 }
 
-func (m *HTTP) GetFirstByteAfter() int64 {
-	if m != nil {
-		return m.FirstByteAfter
+func (h *HTTP) GetFirstByteAfter() int64 {
+	if h != nil {
+		return h.FirstByteAfter
 	}
 	return 0
 }
 
-func (m *HTTP) GetTLSDoneAfter() int64 {
-	if m != nil {
-		return m.TLSDoneAfter
+func (h *HTTP) GetTLSDoneAfter() int64 {
+	if h != nil {
+		return h.TLSDoneAfter
 	}
 	return 0
 }
 
-func (m *HTTP) GetContentTypeDetected() string {
-	if m != nil {
-		return m.ContentTypeDetected
+func (h *HTTP) GetContentTypeDetected() string {
+	if h != nil {
+		return h.ContentTypeDetected
 	}
 	return ""
 }
 
-func (m *HTTP) GetResContentTypeDetected() string {
-	if m != nil {
-		return m.ResContentTypeDetected
+func (h *HTTP) GetResContentTypeDetected() string {
+	if h != nil {
+		return h.ResContentTypeDetected
 	}
 	return ""
 }
 
-func (m *HTTP) GetRequestHeader() map[string]string {
-	if m != nil {
-		return m.RequestHeader
+func (h *HTTP) GetRequestHeader() map[string]string {
+	if h != nil {
+		return h.RequestHeader
 	}
 	return nil
 }
 
-func (m *HTTP) GetResponseHeader() map[string]string {
-	if m != nil {
-		return m.ResponseHeader
+func (h *HTTP) GetResponseHeader() map[string]string {
+	if h != nil {
+		return h.ResponseHeader
 	}
 	return nil
 }
 
-func (m *HTTP) GetParameters() map[string]string {
-	if m != nil {
-		return m.Parameters
+func (h *HTTP) GetParameters() map[string]string {
+	if h != nil {
+		return h.Parameters
 	}
 	return nil
 }
 
-func (m *HTTP) GetRequestBody() []byte {
-	if m != nil {
-		return m.RequestBody
+func (h *HTTP) GetRequestBody() []byte {
+	if h != nil {
+		return h.RequestBody
 	}
 	return nil
 }
 
-func (m *HTTP) GetResponseBody() []byte {
-	if m != nil {
-		return m.ResponseBody
+func (h *HTTP) GetResponseBody() []byte {
+	if h != nil {
+		return h.ResponseBody
 	}
 	return nil
 }
@@ -12243,98 +12243,98 @@ type ENIP struct {
 	Context         *PacketContext           `protobuf:"bytes,9,opt,name=Context,proto3" json:"Context,omitempty"`
 }
 
-func (m *ENIP) Reset()         { *m = ENIP{} }
-func (m *ENIP) String() string { return proto.CompactTextString(m) }
-func (*ENIP) ProtoMessage()    {}
+func (en *ENIP) Reset()         { *en = ENIP{} }
+func (en *ENIP) String() string { return proto.CompactTextString(en) }
+func (*ENIP) ProtoMessage()     {}
 func (*ENIP) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3068659fd5590671, []int{119}
 }
-func (m *ENIP) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+func (en *ENIP) XXX_Unmarshal(b []byte) error {
+	return en.Unmarshal(b)
 }
-func (m *ENIP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (en *ENIP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ENIP.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ENIP.Marshal(b, en, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
+		n, err := en.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *ENIP) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ENIP.Merge(m, src)
+func (en *ENIP) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ENIP.Merge(en, src)
 }
-func (m *ENIP) XXX_Size() int {
-	return m.Size()
+func (en *ENIP) XXX_Size() int {
+	return en.Size()
 }
-func (m *ENIP) XXX_DiscardUnknown() {
-	xxx_messageInfo_ENIP.DiscardUnknown(m)
+func (en *ENIP) XXX_DiscardUnknown() {
+	xxx_messageInfo_ENIP.DiscardUnknown(en)
 }
 
 var xxx_messageInfo_ENIP proto.InternalMessageInfo
 
-func (m *ENIP) GetTimestamp() string {
-	if m != nil {
-		return m.Timestamp
+func (en *ENIP) GetTimestamp() string {
+	if en != nil {
+		return en.Timestamp
 	}
 	return ""
 }
 
-func (m *ENIP) GetCommand() uint32 {
-	if m != nil {
-		return m.Command
+func (en *ENIP) GetCommand() uint32 {
+	if en != nil {
+		return en.Command
 	}
 	return 0
 }
 
-func (m *ENIP) GetLength() uint32 {
-	if m != nil {
-		return m.Length
+func (en *ENIP) GetLength() uint32 {
+	if en != nil {
+		return en.Length
 	}
 	return 0
 }
 
-func (m *ENIP) GetSessionHandle() uint32 {
-	if m != nil {
-		return m.SessionHandle
+func (en *ENIP) GetSessionHandle() uint32 {
+	if en != nil {
+		return en.SessionHandle
 	}
 	return 0
 }
 
-func (m *ENIP) GetStatus() uint32 {
-	if m != nil {
-		return m.Status
+func (en *ENIP) GetStatus() uint32 {
+	if en != nil {
+		return en.Status
 	}
 	return 0
 }
 
-func (m *ENIP) GetSenderContext() []byte {
-	if m != nil {
-		return m.SenderContext
+func (en *ENIP) GetSenderContext() []byte {
+	if en != nil {
+		return en.SenderContext
 	}
 	return nil
 }
 
-func (m *ENIP) GetOptions() uint32 {
-	if m != nil {
-		return m.Options
+func (en *ENIP) GetOptions() uint32 {
+	if en != nil {
+		return en.Options
 	}
 	return 0
 }
 
-func (m *ENIP) GetCommandSpecific() *ENIPCommandSpecificData {
-	if m != nil {
-		return m.CommandSpecific
+func (en *ENIP) GetCommandSpecific() *ENIPCommandSpecificData {
+	if en != nil {
+		return en.CommandSpecific
 	}
 	return nil
 }
 
-func (m *ENIP) GetContext() *PacketContext {
-	if m != nil {
-		return m.Context
+func (en *ENIP) GetContext() *PacketContext {
+	if en != nil {
+		return en.Context
 	}
 	return nil
 }
@@ -15778,60 +15778,60 @@ func (m *Connection) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Ethernet) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
+func (eth *Ethernet) Marshal() (dAtA []byte, err error) {
+	size := eth.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := eth.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *Ethernet) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+func (eth *Ethernet) MarshalTo(dAtA []byte) (int, error) {
+	size := eth.Size()
+	return eth.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Ethernet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (eth *Ethernet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.PayloadSize != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.PayloadSize))
+	if eth.PayloadSize != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(eth.PayloadSize))
 		i--
 		dAtA[i] = 0x30
 	}
-	if m.PayloadEntropy != 0 {
+	if eth.PayloadEntropy != 0 {
 		i -= 8
-		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.PayloadEntropy))))
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(eth.PayloadEntropy))))
 		i--
 		dAtA[i] = 0x29
 	}
-	if m.EthernetType != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.EthernetType))
+	if eth.EthernetType != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(eth.EthernetType))
 		i--
 		dAtA[i] = 0x20
 	}
-	if len(m.DstMAC) > 0 {
-		i -= len(m.DstMAC)
-		copy(dAtA[i:], m.DstMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstMAC)))
+	if len(eth.DstMAC) > 0 {
+		i -= len(eth.DstMAC)
+		copy(dAtA[i:], eth.DstMAC)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(eth.DstMAC)))
 		i--
 		dAtA[i] = 0x1a
 	}
-	if len(m.SrcMAC) > 0 {
-		i -= len(m.SrcMAC)
-		copy(dAtA[i:], m.SrcMAC)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcMAC)))
+	if len(eth.SrcMAC) > 0 {
+		i -= len(eth.SrcMAC)
+		copy(dAtA[i:], eth.SrcMAC)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(eth.SrcMAC)))
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+	if len(eth.Timestamp) > 0 {
+		i -= len(eth.Timestamp)
+		copy(dAtA[i:], eth.Timestamp)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(eth.Timestamp)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -16742,47 +16742,47 @@ func (m *EthernetCTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *EthernetCTPReply) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
+func (ectpr *EthernetCTPReply) Marshal() (dAtA []byte, err error) {
+	size := ectpr.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := ectpr.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *EthernetCTPReply) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+func (ectpr *EthernetCTPReply) MarshalTo(dAtA []byte) (int, error) {
+	size := ectpr.Size()
+	return ectpr.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *EthernetCTPReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (ectpr *EthernetCTPReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Data)))
+	if len(ectpr.Data) > 0 {
+		i -= len(ectpr.Data)
+		copy(dAtA[i:], ectpr.Data)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(ectpr.Data)))
 		i--
 		dAtA[i] = 0x22
 	}
-	if m.ReceiptNumber != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReceiptNumber))
+	if ectpr.ReceiptNumber != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(ectpr.ReceiptNumber))
 		i--
 		dAtA[i] = 0x18
 	}
-	if m.Function != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Function))
+	if ectpr.Function != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(ectpr.Function))
 		i--
 		dAtA[i] = 0x10
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+	if len(ectpr.Timestamp) > 0 {
+		i -= len(ectpr.Timestamp)
+		copy(dAtA[i:], ectpr.Timestamp)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(ectpr.Timestamp)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -19877,47 +19877,47 @@ func (m *ICMPv6RouterSolicitation) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
-func (m *HTTP) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
+func (h *HTTP) Marshal() (dAtA []byte, err error) {
+	size := h.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := h.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *HTTP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+func (h *HTTP) MarshalTo(dAtA []byte) (int, error) {
+	size := h.Size()
+	return h.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (h *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ResponseBody) > 0 {
-		i -= len(m.ResponseBody)
-		copy(dAtA[i:], m.ResponseBody)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResponseBody)))
+	if len(h.ResponseBody) > 0 {
+		i -= len(h.ResponseBody)
+		copy(dAtA[i:], h.ResponseBody)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.ResponseBody)))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0xf2
 	}
-	if len(m.RequestBody) > 0 {
-		i -= len(m.RequestBody)
-		copy(dAtA[i:], m.RequestBody)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.RequestBody)))
+	if len(h.RequestBody) > 0 {
+		i -= len(h.RequestBody)
+		copy(dAtA[i:], h.RequestBody)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.RequestBody)))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0xea
 	}
-	if len(m.Parameters) > 0 {
-		for k := range m.Parameters {
-			v := m.Parameters[k]
+	if len(h.Parameters) > 0 {
+		for k := range h.Parameters {
+			v := h.Parameters[k]
 			baseI := i
 			i -= len(v)
 			copy(dAtA[i:], v)
@@ -19936,9 +19936,9 @@ func (m *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0xe2
 		}
 	}
-	if len(m.ResponseHeader) > 0 {
-		for k := range m.ResponseHeader {
-			v := m.ResponseHeader[k]
+	if len(h.ResponseHeader) > 0 {
+		for k := range h.ResponseHeader {
+			v := h.ResponseHeader[k]
 			baseI := i
 			i -= len(v)
 			copy(dAtA[i:], v)
@@ -19957,9 +19957,9 @@ func (m *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0xda
 		}
 	}
-	if len(m.RequestHeader) > 0 {
-		for k := range m.RequestHeader {
-			v := m.RequestHeader[k]
+	if len(h.RequestHeader) > 0 {
+		for k := range h.RequestHeader {
+			v := h.RequestHeader[k]
 			baseI := i
 			i -= len(v)
 			copy(dAtA[i:], v)
@@ -19978,65 +19978,65 @@ func (m *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0xd2
 		}
 	}
-	if len(m.ResContentTypeDetected) > 0 {
-		i -= len(m.ResContentTypeDetected)
-		copy(dAtA[i:], m.ResContentTypeDetected)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResContentTypeDetected)))
+	if len(h.ResContentTypeDetected) > 0 {
+		i -= len(h.ResContentTypeDetected)
+		copy(dAtA[i:], h.ResContentTypeDetected)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.ResContentTypeDetected)))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0xca
 	}
-	if len(m.ContentTypeDetected) > 0 {
-		i -= len(m.ContentTypeDetected)
-		copy(dAtA[i:], m.ContentTypeDetected)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ContentTypeDetected)))
+	if len(h.ContentTypeDetected) > 0 {
+		i -= len(h.ContentTypeDetected)
+		copy(dAtA[i:], h.ContentTypeDetected)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.ContentTypeDetected)))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0xc2
 	}
-	if m.TLSDoneAfter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.TLSDoneAfter))
+	if h.TLSDoneAfter != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(h.TLSDoneAfter))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0xb8
 	}
-	if m.FirstByteAfter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.FirstByteAfter))
+	if h.FirstByteAfter != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(h.FirstByteAfter))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0xb0
 	}
-	if m.DNSDoneAfter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DNSDoneAfter))
+	if h.DNSDoneAfter != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(h.DNSDoneAfter))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0xa8
 	}
-	if m.DoneAfter != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.DoneAfter))
+	if h.DoneAfter != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(h.DoneAfter))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0xa0
 	}
-	if len(m.ResContentType) > 0 {
-		i -= len(m.ResContentType)
-		copy(dAtA[i:], m.ResContentType)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResContentType)))
+	if len(h.ResContentType) > 0 {
+		i -= len(h.ResContentType)
+		copy(dAtA[i:], h.ResContentType)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.ResContentType)))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0x9a
 	}
-	if len(m.ResCookies) > 0 {
-		for iNdEx := len(m.ResCookies) - 1; iNdEx >= 0; iNdEx-- {
+	if len(h.ResCookies) > 0 {
+		for iNdEx := len(h.ResCookies) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.ResCookies[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := h.ResCookies[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -20049,78 +20049,78 @@ func (m *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x92
 		}
 	}
-	if len(m.ServerName) > 0 {
-		i -= len(m.ServerName)
-		copy(dAtA[i:], m.ServerName)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ServerName)))
+	if len(h.ServerName) > 0 {
+		i -= len(h.ServerName)
+		copy(dAtA[i:], h.ServerName)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.ServerName)))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0x8a
 	}
-	if len(m.ResContentEncoding) > 0 {
-		i -= len(m.ResContentEncoding)
-		copy(dAtA[i:], m.ResContentEncoding)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ResContentEncoding)))
+	if len(h.ResContentEncoding) > 0 {
+		i -= len(h.ResContentEncoding)
+		copy(dAtA[i:], h.ResContentEncoding)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.ResContentEncoding)))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0x82
 	}
-	if len(m.ReqContentEncoding) > 0 {
-		i -= len(m.ReqContentEncoding)
-		copy(dAtA[i:], m.ReqContentEncoding)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ReqContentEncoding)))
+	if len(h.ReqContentEncoding) > 0 {
+		i -= len(h.ReqContentEncoding)
+		copy(dAtA[i:], h.ReqContentEncoding)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.ReqContentEncoding)))
 		i--
 		dAtA[i] = 0x7a
 	}
-	if len(m.DstIP) > 0 {
-		i -= len(m.DstIP)
-		copy(dAtA[i:], m.DstIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.DstIP)))
+	if len(h.DstIP) > 0 {
+		i -= len(h.DstIP)
+		copy(dAtA[i:], h.DstIP)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.DstIP)))
 		i--
 		dAtA[i] = 0x72
 	}
-	if len(m.SrcIP) > 0 {
-		i -= len(m.SrcIP)
-		copy(dAtA[i:], m.SrcIP)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SrcIP)))
+	if len(h.SrcIP) > 0 {
+		i -= len(h.SrcIP)
+		copy(dAtA[i:], h.SrcIP)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.SrcIP)))
 		i--
 		dAtA[i] = 0x6a
 	}
-	if m.StatusCode != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.StatusCode))
+	if h.StatusCode != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(h.StatusCode))
 		i--
 		dAtA[i] = 0x60
 	}
-	if len(m.ContentType) > 0 {
-		i -= len(m.ContentType)
-		copy(dAtA[i:], m.ContentType)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.ContentType)))
+	if len(h.ContentType) > 0 {
+		i -= len(h.ContentType)
+		copy(dAtA[i:], h.ContentType)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.ContentType)))
 		i--
 		dAtA[i] = 0x5a
 	}
-	if m.ResContentLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ResContentLength))
+	if h.ResContentLength != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(h.ResContentLength))
 		i--
 		dAtA[i] = 0x50
 	}
-	if len(m.URL) > 0 {
-		i -= len(m.URL)
-		copy(dAtA[i:], m.URL)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.URL)))
+	if len(h.URL) > 0 {
+		i -= len(h.URL)
+		copy(dAtA[i:], h.URL)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.URL)))
 		i--
 		dAtA[i] = 0x4a
 	}
-	if m.ReqContentLength != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.ReqContentLength))
+	if h.ReqContentLength != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(h.ReqContentLength))
 		i--
 		dAtA[i] = 0x40
 	}
-	if len(m.ReqCookies) > 0 {
-		for iNdEx := len(m.ReqCookies) - 1; iNdEx >= 0; iNdEx-- {
+	if len(h.ReqCookies) > 0 {
+		for iNdEx := len(h.ReqCookies) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.ReqCookies[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := h.ReqCookies[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -20131,45 +20131,45 @@ func (m *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x3a
 		}
 	}
-	if len(m.Referer) > 0 {
-		i -= len(m.Referer)
-		copy(dAtA[i:], m.Referer)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Referer)))
+	if len(h.Referer) > 0 {
+		i -= len(h.Referer)
+		copy(dAtA[i:], h.Referer)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.Referer)))
 		i--
 		dAtA[i] = 0x32
 	}
-	if len(m.UserAgent) > 0 {
-		i -= len(m.UserAgent)
-		copy(dAtA[i:], m.UserAgent)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.UserAgent)))
+	if len(h.UserAgent) > 0 {
+		i -= len(h.UserAgent)
+		copy(dAtA[i:], h.UserAgent)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.UserAgent)))
 		i--
 		dAtA[i] = 0x2a
 	}
-	if len(m.Host) > 0 {
-		i -= len(m.Host)
-		copy(dAtA[i:], m.Host)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Host)))
+	if len(h.Host) > 0 {
+		i -= len(h.Host)
+		copy(dAtA[i:], h.Host)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.Host)))
 		i--
 		dAtA[i] = 0x22
 	}
-	if len(m.Method) > 0 {
-		i -= len(m.Method)
-		copy(dAtA[i:], m.Method)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Method)))
+	if len(h.Method) > 0 {
+		i -= len(h.Method)
+		copy(dAtA[i:], h.Method)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.Method)))
 		i--
 		dAtA[i] = 0x1a
 	}
-	if len(m.Proto) > 0 {
-		i -= len(m.Proto)
-		copy(dAtA[i:], m.Proto)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Proto)))
+	if len(h.Proto) > 0 {
+		i -= len(h.Proto)
+		copy(dAtA[i:], h.Proto)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.Proto)))
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+	if len(h.Timestamp) > 0 {
+		i -= len(h.Timestamp)
+		copy(dAtA[i:], h.Timestamp)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(h.Timestamp)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -25033,29 +25033,29 @@ func (m *CIP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ENIP) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
+func (en *ENIP) Marshal() (dAtA []byte, err error) {
+	size := en.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	n, err := en.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *ENIP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+func (en *ENIP) MarshalTo(dAtA []byte) (int, error) {
+	size := en.Size()
+	return en.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ENIP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (en *ENIP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Context != nil {
+	if en.Context != nil {
 		{
-			size, err := m.Context.MarshalToSizedBuffer(dAtA[:i])
+			size, err := en.Context.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -25065,9 +25065,9 @@ func (m *ENIP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x4a
 	}
-	if m.CommandSpecific != nil {
+	if en.CommandSpecific != nil {
 		{
-			size, err := m.CommandSpecific.MarshalToSizedBuffer(dAtA[:i])
+			size, err := en.CommandSpecific.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -25077,42 +25077,42 @@ func (m *ENIP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x42
 	}
-	if m.Options != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Options))
+	if en.Options != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(en.Options))
 		i--
 		dAtA[i] = 0x38
 	}
-	if len(m.SenderContext) > 0 {
-		i -= len(m.SenderContext)
-		copy(dAtA[i:], m.SenderContext)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.SenderContext)))
+	if len(en.SenderContext) > 0 {
+		i -= len(en.SenderContext)
+		copy(dAtA[i:], en.SenderContext)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(en.SenderContext)))
 		i--
 		dAtA[i] = 0x32
 	}
-	if m.Status != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Status))
+	if en.Status != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(en.Status))
 		i--
 		dAtA[i] = 0x28
 	}
-	if m.SessionHandle != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.SessionHandle))
+	if en.SessionHandle != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(en.SessionHandle))
 		i--
 		dAtA[i] = 0x20
 	}
-	if m.Length != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Length))
+	if en.Length != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(en.Length))
 		i--
 		dAtA[i] = 0x18
 	}
-	if m.Command != 0 {
-		i = encodeVarintNetcap(dAtA, i, uint64(m.Command))
+	if en.Command != 0 {
+		i = encodeVarintNetcap(dAtA, i, uint64(en.Command))
 		i--
 		dAtA[i] = 0x10
 	}
-	if len(m.Timestamp) > 0 {
-		i -= len(m.Timestamp)
-		copy(dAtA[i:], m.Timestamp)
-		i = encodeVarintNetcap(dAtA, i, uint64(len(m.Timestamp)))
+	if len(en.Timestamp) > 0 {
+		i -= len(en.Timestamp)
+		copy(dAtA[i:], en.Timestamp)
+		i = encodeVarintNetcap(dAtA, i, uint64(len(en.Timestamp)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -27122,32 +27122,32 @@ func (m *Connection) Size() (n int) {
 	return n
 }
 
-func (m *Ethernet) Size() (n int) {
-	if m == nil {
+func (eth *Ethernet) Size() (n int) {
+	if eth == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Timestamp)
+	l = len(eth.Timestamp)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.SrcMAC)
+	l = len(eth.SrcMAC)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.DstMAC)
+	l = len(eth.DstMAC)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	if m.EthernetType != 0 {
-		n += 1 + sovNetcap(uint64(m.EthernetType))
+	if eth.EthernetType != 0 {
+		n += 1 + sovNetcap(uint64(eth.EthernetType))
 	}
-	if m.PayloadEntropy != 0 {
+	if eth.PayloadEntropy != 0 {
 		n += 9
 	}
-	if m.PayloadSize != 0 {
-		n += 1 + sovNetcap(uint64(m.PayloadSize))
+	if eth.PayloadSize != 0 {
+		n += 1 + sovNetcap(uint64(eth.PayloadSize))
 	}
 	return n
 }
@@ -27552,23 +27552,23 @@ func (m *EthernetCTP) Size() (n int) {
 	return n
 }
 
-func (m *EthernetCTPReply) Size() (n int) {
-	if m == nil {
+func (ectpr *EthernetCTPReply) Size() (n int) {
+	if ectpr == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Timestamp)
+	l = len(ectpr.Timestamp)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	if m.Function != 0 {
-		n += 1 + sovNetcap(uint64(m.Function))
+	if ectpr.Function != 0 {
+		n += 1 + sovNetcap(uint64(ectpr.Function))
 	}
-	if m.ReceiptNumber != 0 {
-		n += 1 + sovNetcap(uint64(m.ReceiptNumber))
+	if ectpr.ReceiptNumber != 0 {
+		n += 1 + sovNetcap(uint64(ectpr.ReceiptNumber))
 	}
-	l = len(m.Data)
+	l = len(ectpr.Data)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
@@ -28976,138 +28976,138 @@ func (m *ICMPv6RouterSolicitation) Size() (n int) {
 	return n
 }
 
-func (m *HTTP) Size() (n int) {
-	if m == nil {
+func (h *HTTP) Size() (n int) {
+	if h == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Timestamp)
+	l = len(h.Timestamp)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.Proto)
+	l = len(h.Proto)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.Method)
+	l = len(h.Method)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.Host)
+	l = len(h.Host)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.UserAgent)
+	l = len(h.UserAgent)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.Referer)
+	l = len(h.Referer)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	if len(m.ReqCookies) > 0 {
-		for _, e := range m.ReqCookies {
+	if len(h.ReqCookies) > 0 {
+		for _, e := range h.ReqCookies {
 			l = e.Size()
 			n += 1 + l + sovNetcap(uint64(l))
 		}
 	}
-	if m.ReqContentLength != 0 {
-		n += 1 + sovNetcap(uint64(m.ReqContentLength))
+	if h.ReqContentLength != 0 {
+		n += 1 + sovNetcap(uint64(h.ReqContentLength))
 	}
-	l = len(m.URL)
+	l = len(h.URL)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	if m.ResContentLength != 0 {
-		n += 1 + sovNetcap(uint64(m.ResContentLength))
+	if h.ResContentLength != 0 {
+		n += 1 + sovNetcap(uint64(h.ResContentLength))
 	}
-	l = len(m.ContentType)
+	l = len(h.ContentType)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	if m.StatusCode != 0 {
-		n += 1 + sovNetcap(uint64(m.StatusCode))
+	if h.StatusCode != 0 {
+		n += 1 + sovNetcap(uint64(h.StatusCode))
 	}
-	l = len(m.SrcIP)
+	l = len(h.SrcIP)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.DstIP)
+	l = len(h.DstIP)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.ReqContentEncoding)
+	l = len(h.ReqContentEncoding)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.ResContentEncoding)
+	l = len(h.ResContentEncoding)
 	if l > 0 {
 		n += 2 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.ServerName)
+	l = len(h.ServerName)
 	if l > 0 {
 		n += 2 + l + sovNetcap(uint64(l))
 	}
-	if len(m.ResCookies) > 0 {
-		for _, e := range m.ResCookies {
+	if len(h.ResCookies) > 0 {
+		for _, e := range h.ResCookies {
 			l = e.Size()
 			n += 2 + l + sovNetcap(uint64(l))
 		}
 	}
-	l = len(m.ResContentType)
+	l = len(h.ResContentType)
 	if l > 0 {
 		n += 2 + l + sovNetcap(uint64(l))
 	}
-	if m.DoneAfter != 0 {
-		n += 2 + sovNetcap(uint64(m.DoneAfter))
+	if h.DoneAfter != 0 {
+		n += 2 + sovNetcap(uint64(h.DoneAfter))
 	}
-	if m.DNSDoneAfter != 0 {
-		n += 2 + sovNetcap(uint64(m.DNSDoneAfter))
+	if h.DNSDoneAfter != 0 {
+		n += 2 + sovNetcap(uint64(h.DNSDoneAfter))
 	}
-	if m.FirstByteAfter != 0 {
-		n += 2 + sovNetcap(uint64(m.FirstByteAfter))
+	if h.FirstByteAfter != 0 {
+		n += 2 + sovNetcap(uint64(h.FirstByteAfter))
 	}
-	if m.TLSDoneAfter != 0 {
-		n += 2 + sovNetcap(uint64(m.TLSDoneAfter))
+	if h.TLSDoneAfter != 0 {
+		n += 2 + sovNetcap(uint64(h.TLSDoneAfter))
 	}
-	l = len(m.ContentTypeDetected)
+	l = len(h.ContentTypeDetected)
 	if l > 0 {
 		n += 2 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.ResContentTypeDetected)
+	l = len(h.ResContentTypeDetected)
 	if l > 0 {
 		n += 2 + l + sovNetcap(uint64(l))
 	}
-	if len(m.RequestHeader) > 0 {
-		for k, v := range m.RequestHeader {
+	if len(h.RequestHeader) > 0 {
+		for k, v := range h.RequestHeader {
 			_ = k
 			_ = v
 			mapEntrySize := 1 + len(k) + sovNetcap(uint64(len(k))) + 1 + len(v) + sovNetcap(uint64(len(v)))
 			n += mapEntrySize + 2 + sovNetcap(uint64(mapEntrySize))
 		}
 	}
-	if len(m.ResponseHeader) > 0 {
-		for k, v := range m.ResponseHeader {
+	if len(h.ResponseHeader) > 0 {
+		for k, v := range h.ResponseHeader {
 			_ = k
 			_ = v
 			mapEntrySize := 1 + len(k) + sovNetcap(uint64(len(k))) + 1 + len(v) + sovNetcap(uint64(len(v)))
 			n += mapEntrySize + 2 + sovNetcap(uint64(mapEntrySize))
 		}
 	}
-	if len(m.Parameters) > 0 {
-		for k, v := range m.Parameters {
+	if len(h.Parameters) > 0 {
+		for k, v := range h.Parameters {
 			_ = k
 			_ = v
 			mapEntrySize := 1 + len(k) + sovNetcap(uint64(len(k))) + 1 + len(v) + sovNetcap(uint64(len(v)))
 			n += mapEntrySize + 2 + sovNetcap(uint64(mapEntrySize))
 		}
 	}
-	l = len(m.RequestBody)
+	l = len(h.RequestBody)
 	if l > 0 {
 		n += 2 + l + sovNetcap(uint64(l))
 	}
-	l = len(m.ResponseBody)
+	l = len(h.ResponseBody)
 	if l > 0 {
 		n += 2 + l + sovNetcap(uint64(l))
 	}
@@ -31286,41 +31286,41 @@ func (m *CIP) Size() (n int) {
 	return n
 }
 
-func (m *ENIP) Size() (n int) {
-	if m == nil {
+func (en *ENIP) Size() (n int) {
+	if en == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Timestamp)
+	l = len(en.Timestamp)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	if m.Command != 0 {
-		n += 1 + sovNetcap(uint64(m.Command))
+	if en.Command != 0 {
+		n += 1 + sovNetcap(uint64(en.Command))
 	}
-	if m.Length != 0 {
-		n += 1 + sovNetcap(uint64(m.Length))
+	if en.Length != 0 {
+		n += 1 + sovNetcap(uint64(en.Length))
 	}
-	if m.SessionHandle != 0 {
-		n += 1 + sovNetcap(uint64(m.SessionHandle))
+	if en.SessionHandle != 0 {
+		n += 1 + sovNetcap(uint64(en.SessionHandle))
 	}
-	if m.Status != 0 {
-		n += 1 + sovNetcap(uint64(m.Status))
+	if en.Status != 0 {
+		n += 1 + sovNetcap(uint64(en.Status))
 	}
-	l = len(m.SenderContext)
+	l = len(en.SenderContext)
 	if l > 0 {
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	if m.Options != 0 {
-		n += 1 + sovNetcap(uint64(m.Options))
+	if en.Options != 0 {
+		n += 1 + sovNetcap(uint64(en.Options))
 	}
-	if m.CommandSpecific != nil {
-		l = m.CommandSpecific.Size()
+	if en.CommandSpecific != nil {
+		l = en.CommandSpecific.Size()
 		n += 1 + l + sovNetcap(uint64(l))
 	}
-	if m.Context != nil {
-		l = m.Context.Size()
+	if en.Context != nil {
+		l = en.Context.Size()
 		n += 1 + l + sovNetcap(uint64(l))
 	}
 	return n
@@ -33843,7 +33843,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Ethernet) Unmarshal(dAtA []byte) error {
+func (eth *Ethernet) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -33902,7 +33902,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Timestamp = string(dAtA[iNdEx:postIndex])
+			eth.Timestamp = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -33934,7 +33934,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SrcMAC = string(dAtA[iNdEx:postIndex])
+			eth.SrcMAC = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -33966,13 +33966,13 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DstMAC = string(dAtA[iNdEx:postIndex])
+			eth.DstMAC = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field EthernetType", wireType)
 			}
-			m.EthernetType = 0
+			eth.EthernetType = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -33982,7 +33982,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.EthernetType |= int32(b&0x7F) << shift
+				eth.EthernetType |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -33997,12 +33997,12 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 			}
 			v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
 			iNdEx += 8
-			m.PayloadEntropy = float64(math.Float64frombits(v))
+			eth.PayloadEntropy = float64(math.Float64frombits(v))
 		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PayloadSize", wireType)
 			}
-			m.PayloadSize = 0
+			eth.PayloadSize = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -34012,7 +34012,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PayloadSize |= int32(b&0x7F) << shift
+				eth.PayloadSize |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36739,7 +36739,7 @@ func (m *EthernetCTP) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
+func (ectpr *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -36798,13 +36798,13 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Timestamp = string(dAtA[iNdEx:postIndex])
+			ectpr.Timestamp = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Function", wireType)
 			}
-			m.Function = 0
+			ectpr.Function = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -36814,7 +36814,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Function |= int32(b&0x7F) << shift
+				ectpr.Function |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36823,7 +36823,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ReceiptNumber", wireType)
 			}
-			m.ReceiptNumber = 0
+			ectpr.ReceiptNumber = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -36833,7 +36833,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReceiptNumber |= int32(b&0x7F) << shift
+				ectpr.ReceiptNumber |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -36867,9 +36867,9 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
-			if m.Data == nil {
-				m.Data = []byte{}
+			ectpr.Data = append(ectpr.Data[:0], dAtA[iNdEx:postIndex]...)
+			if ectpr.Data == nil {
+				ectpr.Data = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -46371,7 +46371,7 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *HTTP) Unmarshal(dAtA []byte) error {
+func (h *HTTP) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -46430,7 +46430,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Timestamp = string(dAtA[iNdEx:postIndex])
+			h.Timestamp = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -46462,7 +46462,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Proto = string(dAtA[iNdEx:postIndex])
+			h.Proto = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -46494,7 +46494,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Method = string(dAtA[iNdEx:postIndex])
+			h.Method = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -46526,7 +46526,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Host = string(dAtA[iNdEx:postIndex])
+			h.Host = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -46558,7 +46558,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.UserAgent = string(dAtA[iNdEx:postIndex])
+			h.UserAgent = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -46590,7 +46590,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Referer = string(dAtA[iNdEx:postIndex])
+			h.Referer = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -46621,8 +46621,8 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ReqCookies = append(m.ReqCookies, &HTTPCookie{})
-			if err := m.ReqCookies[len(m.ReqCookies)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			h.ReqCookies = append(h.ReqCookies, &HTTPCookie{})
+			if err := h.ReqCookies[len(h.ReqCookies)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -46630,7 +46630,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ReqContentLength", wireType)
 			}
-			m.ReqContentLength = 0
+			h.ReqContentLength = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -46640,7 +46640,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReqContentLength |= int32(b&0x7F) << shift
+				h.ReqContentLength |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46675,13 +46675,13 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.URL = string(dAtA[iNdEx:postIndex])
+			h.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ResContentLength", wireType)
 			}
-			m.ResContentLength = 0
+			h.ResContentLength = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -46691,7 +46691,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ResContentLength |= int32(b&0x7F) << shift
+				h.ResContentLength |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46726,13 +46726,13 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ContentType = string(dAtA[iNdEx:postIndex])
+			h.ContentType = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 12:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StatusCode", wireType)
 			}
-			m.StatusCode = 0
+			h.StatusCode = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -46742,7 +46742,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.StatusCode |= int32(b&0x7F) << shift
+				h.StatusCode |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46777,7 +46777,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SrcIP = string(dAtA[iNdEx:postIndex])
+			h.SrcIP = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 14:
 			if wireType != 2 {
@@ -46809,7 +46809,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DstIP = string(dAtA[iNdEx:postIndex])
+			h.DstIP = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 15:
 			if wireType != 2 {
@@ -46841,7 +46841,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ReqContentEncoding = string(dAtA[iNdEx:postIndex])
+			h.ReqContentEncoding = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 16:
 			if wireType != 2 {
@@ -46873,7 +46873,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ResContentEncoding = string(dAtA[iNdEx:postIndex])
+			h.ResContentEncoding = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 17:
 			if wireType != 2 {
@@ -46905,7 +46905,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ServerName = string(dAtA[iNdEx:postIndex])
+			h.ServerName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 18:
 			if wireType != 2 {
@@ -46936,8 +46936,8 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ResCookies = append(m.ResCookies, &HTTPCookie{})
-			if err := m.ResCookies[len(m.ResCookies)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			h.ResCookies = append(h.ResCookies, &HTTPCookie{})
+			if err := h.ResCookies[len(h.ResCookies)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -46971,13 +46971,13 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ResContentType = string(dAtA[iNdEx:postIndex])
+			h.ResContentType = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 20:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DoneAfter", wireType)
 			}
-			m.DoneAfter = 0
+			h.DoneAfter = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -46987,7 +46987,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DoneAfter |= int64(b&0x7F) << shift
+				h.DoneAfter |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -46996,7 +46996,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DNSDoneAfter", wireType)
 			}
-			m.DNSDoneAfter = 0
+			h.DNSDoneAfter = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -47006,7 +47006,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DNSDoneAfter |= int64(b&0x7F) << shift
+				h.DNSDoneAfter |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47015,7 +47015,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FirstByteAfter", wireType)
 			}
-			m.FirstByteAfter = 0
+			h.FirstByteAfter = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -47025,7 +47025,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FirstByteAfter |= int64(b&0x7F) << shift
+				h.FirstByteAfter |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47034,7 +47034,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TLSDoneAfter", wireType)
 			}
-			m.TLSDoneAfter = 0
+			h.TLSDoneAfter = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -47044,7 +47044,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TLSDoneAfter |= int64(b&0x7F) << shift
+				h.TLSDoneAfter |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -47079,7 +47079,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ContentTypeDetected = string(dAtA[iNdEx:postIndex])
+			h.ContentTypeDetected = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 25:
 			if wireType != 2 {
@@ -47111,7 +47111,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ResContentTypeDetected = string(dAtA[iNdEx:postIndex])
+			h.ResContentTypeDetected = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 26:
 			if wireType != 2 {
@@ -47142,8 +47142,8 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.RequestHeader == nil {
-				m.RequestHeader = make(map[string]string)
+			if h.RequestHeader == nil {
+				h.RequestHeader = make(map[string]string)
 			}
 			var mapkey string
 			var mapvalue string
@@ -47238,7 +47238,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 					iNdEx += skippy
 				}
 			}
-			m.RequestHeader[mapkey] = mapvalue
+			h.RequestHeader[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 27:
 			if wireType != 2 {
@@ -47269,8 +47269,8 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ResponseHeader == nil {
-				m.ResponseHeader = make(map[string]string)
+			if h.ResponseHeader == nil {
+				h.ResponseHeader = make(map[string]string)
 			}
 			var mapkey string
 			var mapvalue string
@@ -47365,7 +47365,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 					iNdEx += skippy
 				}
 			}
-			m.ResponseHeader[mapkey] = mapvalue
+			h.ResponseHeader[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 28:
 			if wireType != 2 {
@@ -47396,8 +47396,8 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Parameters == nil {
-				m.Parameters = make(map[string]string)
+			if h.Parameters == nil {
+				h.Parameters = make(map[string]string)
 			}
 			var mapkey string
 			var mapvalue string
@@ -47492,7 +47492,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 					iNdEx += skippy
 				}
 			}
-			m.Parameters[mapkey] = mapvalue
+			h.Parameters[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 29:
 			if wireType != 2 {
@@ -47523,9 +47523,9 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RequestBody = append(m.RequestBody[:0], dAtA[iNdEx:postIndex]...)
-			if m.RequestBody == nil {
-				m.RequestBody = []byte{}
+			h.RequestBody = append(h.RequestBody[:0], dAtA[iNdEx:postIndex]...)
+			if h.RequestBody == nil {
+				h.RequestBody = []byte{}
 			}
 			iNdEx = postIndex
 		case 30:
@@ -47557,9 +47557,9 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ResponseBody = append(m.ResponseBody[:0], dAtA[iNdEx:postIndex]...)
-			if m.ResponseBody == nil {
-				m.ResponseBody = []byte{}
+			h.ResponseBody = append(h.ResponseBody[:0], dAtA[iNdEx:postIndex]...)
+			if h.ResponseBody == nil {
+				h.ResponseBody = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -62643,7 +62643,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ENIP) Unmarshal(dAtA []byte) error {
+func (en *ENIP) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -62702,13 +62702,13 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Timestamp = string(dAtA[iNdEx:postIndex])
+			en.Timestamp = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Command", wireType)
 			}
-			m.Command = 0
+			en.Command = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -62718,7 +62718,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Command |= uint32(b&0x7F) << shift
+				en.Command |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -62727,7 +62727,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Length", wireType)
 			}
-			m.Length = 0
+			en.Length = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -62737,7 +62737,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Length |= uint32(b&0x7F) << shift
+				en.Length |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -62746,7 +62746,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SessionHandle", wireType)
 			}
-			m.SessionHandle = 0
+			en.SessionHandle = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -62756,7 +62756,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SessionHandle |= uint32(b&0x7F) << shift
+				en.SessionHandle |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -62765,7 +62765,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
 			}
-			m.Status = 0
+			en.Status = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -62775,7 +62775,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Status |= uint32(b&0x7F) << shift
+				en.Status |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -62809,16 +62809,16 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SenderContext = append(m.SenderContext[:0], dAtA[iNdEx:postIndex]...)
-			if m.SenderContext == nil {
-				m.SenderContext = []byte{}
+			en.SenderContext = append(en.SenderContext[:0], dAtA[iNdEx:postIndex]...)
+			if en.SenderContext == nil {
+				en.SenderContext = []byte{}
 			}
 			iNdEx = postIndex
 		case 7:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Options", wireType)
 			}
-			m.Options = 0
+			en.Options = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowNetcap
@@ -62828,7 +62828,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Options |= uint32(b&0x7F) << shift
+				en.Options |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -62862,10 +62862,10 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.CommandSpecific == nil {
-				m.CommandSpecific = &ENIPCommandSpecificData{}
+			if en.CommandSpecific == nil {
+				en.CommandSpecific = &ENIPCommandSpecificData{}
 			}
-			if err := m.CommandSpecific.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := en.CommandSpecific.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -62898,10 +62898,10 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Context == nil {
-				m.Context = &PacketContext{}
+			if en.Context == nil {
+				en.Context = &PacketContext{}
 			}
-			if err := m.Context.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := en.Context.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

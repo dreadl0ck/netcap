@@ -28,26 +28,26 @@ var fieldsEthernet = []string{
 	"PayloadSize",    // int32
 }
 
-func (e *Ethernet) CSVHeader() []string {
+func (eth *Ethernet) CSVHeader() []string {
 	return filter(fieldsEthernet)
 }
-func (e *Ethernet) CSVRecord() []string {
+func (eth *Ethernet) CSVRecord() []string {
 	return filter([]string{
-		formatTimestamp(e.Timestamp),
-		e.SrcMAC,                        // string
-		e.DstMAC,                        // string
-		formatInt32(e.EthernetType),     // int32
-		formatFloat64(e.PayloadEntropy), // float64
-		formatInt32(e.PayloadSize),      // int32
+		formatTimestamp(eth.Timestamp),
+		eth.SrcMAC,                        // string
+		eth.DstMAC,                        // string
+		formatInt32(eth.EthernetType),     // int32
+		formatFloat64(eth.PayloadEntropy), // float64
+		formatInt32(eth.PayloadSize),      // int32
 	})
 }
 
-func (e *Ethernet) Time() string {
-	return e.Timestamp
+func (eth *Ethernet) Time() string {
+	return eth.Timestamp
 }
 
-func (e *Ethernet) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(e)
+func (eth *Ethernet) JSON() (string, error) {
+	return jsonMarshaler.MarshalToString(eth)
 }
 
 var (
@@ -84,11 +84,11 @@ var fieldsEthernetMetrics = []string{
 	"EthernetType", // int32
 }
 
-func (e *Ethernet) metricValues() []string {
+func (eth *Ethernet) metricValues() []string {
 	return []string{
-		e.SrcMAC,                    // string
-		e.DstMAC,                    // string
-		formatInt32(e.EthernetType), // int32
+		eth.SrcMAC,                    // string
+		eth.DstMAC,                    // string
+		formatInt32(eth.EthernetType), // int32
 	}
 }
 
@@ -98,18 +98,18 @@ func init() {
 	prometheus.MustRegister(ethernetPayloadSize)
 }
 
-func (e *Ethernet) Inc() {
-	ethernetMetric.WithLabelValues(e.metricValues()...).Inc()
-	ethernetPayloadEntropy.WithLabelValues().Observe(e.PayloadEntropy)
-	ethernetPayloadSize.WithLabelValues().Observe(float64(e.PayloadSize))
+func (eth *Ethernet) Inc() {
+	ethernetMetric.WithLabelValues(eth.metricValues()...).Inc()
+	ethernetPayloadEntropy.WithLabelValues().Observe(eth.PayloadEntropy)
+	ethernetPayloadSize.WithLabelValues().Observe(float64(eth.PayloadSize))
 }
 
-func (a *Ethernet) SetPacketContext(ctx *PacketContext) {}
+func (eth *Ethernet) SetPacketContext(ctx *PacketContext) {}
 
-func (e *Ethernet) Src() string {
-	return e.SrcMAC
+func (eth *Ethernet) Src() string {
+	return eth.SrcMAC
 }
 
-func (e *Ethernet) Dst() string {
-	return e.DstMAC
+func (eth *Ethernet) Dst() string {
+	return eth.DstMAC
 }

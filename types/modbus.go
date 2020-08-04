@@ -69,7 +69,7 @@ func (a *Modbus) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
 
-var modbusTcpMetric = prometheus.NewCounterVec(
+var modbusTCPMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_Modbus.String()),
 		Help: Type_NC_Modbus.String() + " audit records",
@@ -78,11 +78,11 @@ var modbusTcpMetric = prometheus.NewCounterVec(
 )
 
 func init() {
-	prometheus.MustRegister(modbusTcpMetric)
+	prometheus.MustRegister(modbusTCPMetric)
 }
 
 func (a *Modbus) Inc() {
-	modbusTcpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	modbusTCPMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
 func (a *Modbus) SetPacketContext(ctx *PacketContext) {
