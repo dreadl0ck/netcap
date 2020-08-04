@@ -71,9 +71,9 @@ func TestGenerateAllEntities(t *testing.T) {
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	decoder.ApplyActionToCustomDecoders(func(e *decoder.CustomDecoder) {
-		genEntity("entities", e.Name+"AuditRecords", "insert_drive_file", "An archive of "+e.Name+" audit records", "", newStringField("path"))
-		genEntity("entities", e.Name, e.Name, e.Description, "")
+	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+		genEntity("entities", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path"))
+		genEntity("entities", d.GetName(), d.GetName(), d.GetDescription(), "")
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {

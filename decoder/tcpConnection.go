@@ -110,7 +110,7 @@ var stats struct {
 	numUnansweredRequests   int64
 	numClientStreamNotFound int64
 	numRequests             int64
-	numResponses            int64 // HTTP
+	numResponses            int64
 
 	sync.Mutex
 }
