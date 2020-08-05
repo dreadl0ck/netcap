@@ -58,6 +58,7 @@ func sendUDP(ctx context.Context, address string, reader io.Reader) error {
 		n, err = io.Copy(conn, reader)
 		if err != nil {
 			doneChan <- err
+
 			return
 		}
 
