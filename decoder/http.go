@@ -65,8 +65,8 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 
 		// decompress if required
 		if h.ReqContentEncoding == "gzip" {
-			r, err := gzip.NewReader(bytes.NewReader(body))
-			if err == nil {
+			r, errReader := gzip.NewReader(bytes.NewReader(body))
+			if errReader == nil {
 				body, err = ioutil.ReadAll(r)
 				if err == nil {
 					h.ContentTypeDetected = http.DetectContentType(body)
@@ -93,23 +93,26 @@ func removeCommas(s string) string {
 	return strings.Replace(s, ",", "(comma)", -1)
 }
 
+// readCookies transforms an array of *http.Cookie to an array of *types.HTTPCookie
 func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
 	cks := make([]*types.HTTPCookie, 0)
-	for _, c := range cookies {
-		if c != nil {
+
+	for _, co := range cookies {
+		if co != nil {
 			cks = append(cks, &types.HTTPCookie{
-				Name:     c.Name,
-				Value:    c.Value,
-				Path:     c.Path,
-				Domain:   c.Domain,
-				Expires:  uint64(c.Expires.Unix()),
-				MaxAge:   int32(c.MaxAge),
-				Secure:   c.Secure,
-				HttpOnly: c.HttpOnly,
-				SameSite: int32(c.SameSite),
+				Name:     co.Name,
+				Value:    co.Value,
+				Path:     co.Path,
+				Domain:   co.Domain,
+				Expires:  uint64(co.Expires.Unix()),
+				MaxAge:   int32(co.MaxAge),
+				Secure:   co.Secure,
+				HttpOnly: co.HttpOnly,
+				SameSite: int32(co.SameSite),
 			})
 		}
 	}
+
 	return cks
 }
 
@@ -130,8 +133,8 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 
 		// decompress payload if required
 		if res.Header.Get(headerContentEncoding) == "gzip" {
-			r, err := gzip.NewReader(bytes.NewReader(body))
-			if err == nil {
+			r, errReader := gzip.NewReader(bytes.NewReader(body))
+			if errReader == nil {
 				body, err = ioutil.ReadAll(r)
 				if err == nil {
 					detected = http.DetectContentType(body)

@@ -188,7 +188,7 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
 
 		// write netcap header
-		err := e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
+		err = e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to write header for audit record "+e.Type.String())
 		}
@@ -224,8 +224,8 @@ func (e *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l 
 
 		if ctx != nil {
 			// assert to audit record
-			if p, ok := record.(types.AuditRecord); ok {
-				p.SetPacketContext(ctx)
+			if r, ok := record.(types.AuditRecord); ok {
+				r.SetPacketContext(ctx)
 			} else {
 				fmt.Printf("type: %#v\n", record)
 				log.Fatal("type does not implement the types.AuditRecord interface")
@@ -248,9 +248,9 @@ func (e *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l 
 		// export metrics if configured
 		if e.export {
 			// assert to audit record
-			if p, ok := record.(types.AuditRecord); ok {
+			if r, ok := record.(types.AuditRecord); ok {
 				// export metrics
-				p.Inc()
+				r.Inc()
 			} else {
 				fmt.Printf("type: %#v\n", record)
 				log.Fatal("type does not implement the types.AuditRecord interface")
