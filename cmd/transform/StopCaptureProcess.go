@@ -2,7 +2,7 @@ package transform
 
 import (
 	"fmt"
-	maltego "github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"strconv"

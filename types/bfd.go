@@ -54,6 +54,7 @@ func (b *BFD) CSVRecord() []string {
 	if b.Context == nil {
 		b.Context = &PacketContext{}
 	}
+
 	return filter([]string{
 		formatTimestamp(b.Timestamp),
 		formatInt32(b.Version),                        // int32
@@ -85,6 +86,7 @@ func (b *BFD) Time() string {
 
 func (bah BFDAuthHeader) GetString() string {
 	var b strings.Builder
+
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(bah.AuthType))
 	b.WriteString(Separator)
@@ -94,6 +96,7 @@ func (bah BFDAuthHeader) GetString() string {
 	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(bah.Data))
 	b.WriteString(End)
+
 	return b.String()
 }
 

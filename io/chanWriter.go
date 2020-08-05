@@ -13,12 +13,12 @@
 
 package io
 
-// chanWriter writes into a []byte chan
+// chanWriter writes into a []byte chan.
 type ChanWriter struct {
 	ch chan []byte
 }
 
-// TODO make chan buf size configurable
+// TODO make chan buf size configurable.
 func NewChanWriter() *ChanWriter {
 	return &ChanWriter{make(chan []byte, 1024)}
 }

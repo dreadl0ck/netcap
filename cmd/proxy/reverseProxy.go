@@ -92,7 +92,6 @@ func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
 			DialContext: (&net.Dialer{
 				Timeout:   time.Duration(*flagDialTimeout) * time.Second,
 				KeepAlive: 30 * time.Second,
-				DualStack: true,
 			}).DialContext,
 
 			Proxy:        http.ProxyFromEnvironment,

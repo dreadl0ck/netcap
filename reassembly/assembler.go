@@ -645,15 +645,20 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 	// Keep un-consumed pages
 	nbKept := 0
 	half.saved = nil
+
 	var saved *page
+
 	for _, r := range a.cacheSG.all[ndx:] {
+
 		first, last, nb := r.convertToPages(a.pc, skip, ac)
+
 		if half.saved == nil {
 			half.saved = first
 		} else {
 			saved.next = first
 			first.prev = saved
 		}
+
 		saved = last
 		nbKept += nb
 	}

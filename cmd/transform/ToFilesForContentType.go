@@ -1,7 +1,7 @@
 package transform
 
 import (
-	maltego "github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"path/filepath"
 	"strconv"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/gopacket/pcap"
 	"github.com/dreadl0ck/netcap/collector"
-	maltego "github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"path/filepath"
