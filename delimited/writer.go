@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// This package implements a simple reader and writer for streams of length-delimited byte records.
+// Package delimited implements a simple reader and writer for streams of length-delimited byte records.
 // Each record is written as a varint-encoded length in bytes, followed immediately by the record itself.
 // A stream consists of a sequence of such records packed consecutively without additional padding.
 // No checksums or compression are being used.
@@ -25,7 +25,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-// Writer outputs delimited records to an io.Writer
+// Writer outputs delimited records to an io.Writer.
 type Writer struct {
 	w io.Writer
 }
@@ -45,7 +45,7 @@ func (w Writer) Put(record []byte) error {
 	return err
 }
 
-// PutProto encodes and writes the specified proto.Message to the writer
+// PutProto encodes and writes the specified proto.Message to the writer.
 func (w Writer) PutProto(msg proto.Message) error {
 	// pack protocol buffer
 	rec, err := proto.Marshal(msg)
