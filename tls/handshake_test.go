@@ -305,7 +305,8 @@ Dialing:
 	}
 
 	t.Fatalf("localPipe: failed to connect: %v", err)
-	panic("unreachable")
+
+	return nil, nil
 }
 
 // zeroSource is an io.Reader that returns an unlimited number of zero bytes.

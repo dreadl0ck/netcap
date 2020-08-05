@@ -20,7 +20,7 @@ import (
 	"strconv"
 
 	"github.com/evilsocket/islazy/tui"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 var (

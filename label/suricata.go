@@ -29,7 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/pkg/errors"
-	pb "gopkg.in/cheggaaa/pb.v1"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // eg: 04/15/2014-11:53:20.462091

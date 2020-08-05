@@ -40,7 +40,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/dreadl0ck/netcap/decoder"
-	humanize "github.com/dustin/go-humanize"
+	"github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 )

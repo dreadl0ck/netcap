@@ -1,12 +1,12 @@
 linters-settings:
   #depguard:
-    #list-type: blacklist
-    #packages:
-      # logging is allowed only by logutils.Log, logrus
-      # is allowed to use only in logutils package
-      #- github.com/sirupsen/logrus
-    #packages-with-error-message:
-    #  - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
+  #list-type: blacklist
+  #packages:
+  # logging is allowed only by logutils.Log, logrus
+  # is allowed to use only in logutils package
+  #- github.com/sirupsen/logrus
+  #packages-with-error-message:
+  #  - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
   dupl:
     threshold: 100
   exhaustive:
@@ -102,17 +102,26 @@ linters:
     - maligned
     - prealloc
     - wsl
-    #- gochecknoglobals
-    #- funlen
-    #- gomnd
-    #- lll
-    #- deadcode
-    #- unused
-    #- testpackage
-    #- nestif
-    #- whitespace
-    #- gocognit
-    #- dupl
+    - gochecknoglobals
+    - funlen
+    - gomnd
+    - lll
+    - deadcode
+    - unused
+    - testpackage
+    - nestif
+    - whitespace
+    - gocognit
+    - dupl
+    - exhaustive
+    - exportloopref
+    - gci
+    - goheader
+    - gofumpt
+    - gomodguard
+    - nlreturn
+    - noctx
+    - sqlclosecheck
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
@@ -124,13 +133,15 @@ issues:
         - gocritic
       text: "unnecessaryDefer:"
 run:
+  issues-exit-code: 0 # TODO: remove for production
+  tests: false # TODO: remove for production
+  timeout: 10m
+  skip-dirs-use-default: false
   skip-dirs:
-    - sshx # TODO
-    - tls # TODO
+    - (^|/)sshx($|/) # TODO
+    - (^|/)tls($|/) # TODO
     - test/testdata_etc
-    - internal/cache
-    - internal/renameio
-    - internal/robustio
+  allow-parallel-runners: true
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:

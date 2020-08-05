@@ -25,10 +25,10 @@ import (
 	"strings"
 )
 
-// IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile
+// IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
 type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ip string)
 
-// IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile
+// IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile.
 func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 	lt := ParseLocalArguments(os.Args[1:])
@@ -38,6 +38,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
+
 	netcap.PrintBuildInfo()
 
 	f, err := os.Open(profilesFile)
@@ -62,6 +63,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 	if errFileHeader != nil {
 		log.Fatal(errFileHeader)
 	}
+
 	if header.Type != types.Type_NC_DeviceProfile {
 		panic("file does not contain DeviceProfile records: " + header.Type.String())
 	}
@@ -72,6 +74,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 		ok      bool
 		trx     = Transform{}
 	)
+
 	pm = profile
 
 	if _, ok = pm.(types.AuditRecord); !ok {
@@ -84,7 +87,6 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(profile)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -108,7 +110,7 @@ func IPTransform(count CountFunc, transform IPTransformationFunc) {
 	}
 
 	// read netcap header - ignore err as it has been checked before
-	r.ReadHeader()
+	_, _ = r.ReadHeader()
 
 	for {
 		err = r.Next(profile)

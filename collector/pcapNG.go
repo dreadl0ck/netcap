@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/gopacket/pcapgo"
-	humanize "github.com/dustin/go-humanize"
+	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 )
 

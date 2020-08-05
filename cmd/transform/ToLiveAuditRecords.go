@@ -3,7 +3,7 @@ package transform
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap"
-	maltego "github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
 	"log"

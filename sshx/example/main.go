@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"encoding/hex"
 	"flag"
 	"fmt"
 	"github.com/dreadl0ck/gopacket/layers"
