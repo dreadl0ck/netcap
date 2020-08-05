@@ -39,10 +39,10 @@ const directoryPermission = 0o755
 
 // regular expressions to match data from suricata fast.log
 var (
-	protoc         = regexp.MustCompile(`\{[A-Z]*\}`)
-	classification = regexp.MustCompile(`\[Classification:[\s\w]*\]`)
-	flowIdent      = regexp.MustCompile(`\}.*`)
-	description    = regexp.MustCompile(`\[\*\*\].*\[\*\*\]`)
+	protoc         = regexp.MustCompile(`{[A-Z]*}`)
+	classification = regexp.MustCompile(`\[Classification:[\s\w]*]`)
+	flowIdent      = regexp.MustCompile(`}.*`)
+	description    = regexp.MustCompile(`\[\*\*].*\[\*\*]`)
 
 	// in case more than one label for the same timestamp exists
 	// stop execution and print info
