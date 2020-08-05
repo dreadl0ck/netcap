@@ -23,7 +23,6 @@ import (
 // sendUDP wraps the whole functionality of a UDP client that sends
 // a message and currently does not wait for a reply.
 func sendUDP(ctx context.Context, address string, reader io.Reader) error {
-
 	// in case a hostname is specified
 	// resolve the UDP address so that we can make use of DialUDP
 	// with an actual IP and port instead of a name

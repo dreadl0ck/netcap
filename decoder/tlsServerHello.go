@@ -31,13 +31,10 @@ var tlsServerHelloDecoder = NewCustomDecoder(
 	"The server hello from a Transport Layer Security handshake",
 	nil,
 	func(p gopacket.Packet) proto.Message {
-
 		hello := tlsx.GetServerHello(p)
 		if hello != nil {
 
-			var (
-				extensions = make([]int32, len(hello.Extensions))
-			)
+			extensions := make([]int32, len(hello.Extensions))
 			for i, v := range hello.Extensions {
 				extensions[i] = int32(v)
 			}

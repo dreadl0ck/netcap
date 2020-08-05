@@ -45,7 +45,6 @@ func (h *tcpReader) Decode(c2s, s2c Stream) {
 }
 
 func getServiceName(data []byte, flow gopacket.Flow) string {
-
 	var (
 		dstPort, _ = strconv.Atoi(flow.Dst().String())
 		s          = resolvers.LookupServiceByPort(dstPort, "tcp")
@@ -70,7 +69,6 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 }
 
 func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacket time.Time) []byte {
-
 	// only use harvesters when credential audit record type is loaded
 	// useHarvesters is set after the custom encoder initialization
 	if !useHarvesters {
@@ -138,13 +136,10 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 
 	// if we dont have a match yet, match against all available harvesters
 	if !found {
-
 		// iterate over all harvesters
 		for _, ch := range tcpConnectionHarvesters {
-
 			// if the port based first guess has not been found, do not run this harvester again
 			if &ch != tried {
-
 				// execute harvester
 				if creds := ch(banner, ident, firstPacket); creds != nil {
 
@@ -164,7 +159,6 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 }
 
 func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
-
 	// prevent processing zero bytes
 	if len(raw) == 0 {
 		return nil
@@ -176,8 +170,8 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		return nil
 	}
 
-	//fmt.Println("save conn", ident, len(raw), len(colored))
-	//fmt.Println(string(colored))
+	// fmt.Println("save conn", ident, len(raw), len(colored))
+	// fmt.Println(string(colored))
 
 	var (
 		typ = getServiceName(banner, transport)

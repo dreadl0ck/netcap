@@ -65,13 +65,12 @@ type tcpConnectionFactory struct {
 // this is the entry point for new network streams
 // depending on the used ports, a dedicated stream reader instance will be started and subsequently fed with new data from the stream
 func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
-
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
 
 	stream := &tcpConnection{
 		net:       net,
 		transport: transport,
-		//isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
+		// isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
 		tcpstate:    reassembly.NewTCPSimpleFSM(factory.fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),
@@ -107,7 +106,6 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 // WaitGoRoutines waits until the goroutines launched to process TCP streams are done
 // this will block forever if there are streams that are never shutdown (via RST or FIN flags)
 func (factory *tcpConnectionFactory) WaitGoRoutines() {
-
 	if !c.Quiet {
 		factory.Lock()
 		fmt.Println("\nwaiting for", factory.numActive, "flows")

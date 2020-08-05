@@ -85,7 +85,6 @@ type EntityCoreInfo struct {
 }
 
 func newEntity(entName string, imgName string, description string, parent string, fields ...PropertyField) XMLEntity {
-
 	if !strings.Contains(imgName, "/") {
 		imgName = ident + "/" + imgName
 	}
@@ -171,7 +170,6 @@ func newRequiredStringField(name string, description string) PropertyField {
 }
 
 func genEntity(outDir string, entName string, imgName string, description string, parent string, fields ...PropertyField) {
-
 	// not joking, Maltego fails to render images with this name
 	if imgName == "Vulnerability" {
 		imgName = "Vuln"
@@ -203,7 +201,7 @@ func genEntity(outDir string, entName string, imgName string, description string
 	}
 
 	// add icon files
-	os.MkdirAll(filepath.Join(outDir, "Icons", ident), 0700)
+	os.MkdirAll(filepath.Join(outDir, "Icons", ident), 0o700)
 	copyFile(
 		filepath.Join("/tmp", "icons", "renamed", imgName+".xml"),
 		filepath.Join(outDir, "Icons", ident, imgName+".xml"),
@@ -224,7 +222,6 @@ func genEntity(outDir string, entName string, imgName string, description string
 // copyFile the source file contents to destination
 // file attributes wont be copied and an existing file will be overwritten
 func copyFile(src, dst string) {
-
 	in, err := os.Open(src)
 	if err != nil {
 		log.Fatal(err)
@@ -265,14 +262,13 @@ func copyFile(src, dst string) {
 // │       └── sim_card_alert96.png
 // └── version.properties
 func genEntityArchive() {
-
 	// clean
 	os.RemoveAll("entities")
 
 	// create directories
-	os.MkdirAll("entities/Entities", 0700)
-	os.MkdirAll("entities/EntityCategories", 0700)
-	os.MkdirAll("entities/Icons", 0700)
+	os.MkdirAll("entities/Entities", 0o700)
+	os.MkdirAll("entities/EntityCategories", 0o700)
+	os.MkdirAll("entities/Icons", 0o700)
 
 	fVersion, err := os.Create("entities/version.properties")
 	if err != nil {
@@ -301,7 +297,6 @@ maltego.graph.version=1.2`)
 }
 
 func packEntityArchive() {
-
 	fmt.Println("packing maltego entity archive")
 
 	// zip and rename to: entities.mtz
@@ -329,7 +324,6 @@ func packEntityArchive() {
 }
 
 func addFiles(wr *zip.Writer, basePath, baseInZip string) {
-
 	files, err := ioutil.ReadDir(basePath)
 	if err != nil {
 		fmt.Println(err)

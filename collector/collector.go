@@ -89,7 +89,6 @@ type Collector struct {
 
 // New returns a new Collector instance.
 func New(config Config) *Collector {
-
 	if config.OutDirPermission == 0 {
 		config.OutDirPermission = os.FileMode(outDirPermissionDefault)
 	}
@@ -146,7 +145,6 @@ func (c *Collector) handleSignals() {
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines in round robin style.
 func (c *Collector) handlePacket(p *packet) {
-
 	// make it work for 1 worker only, can be used for debugging
 	if c.numWorkers == 1 {
 		c.workers[0] <- p
@@ -168,7 +166,6 @@ func (c *Collector) handlePacket(p *packet) {
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines in round robin style.
 func (c *Collector) handlePacketTimeout(p *packet) {
-
 	select {
 	// send the packetInfo to the encoder routine
 	case c.workers[c.next] <- p:
@@ -211,7 +208,6 @@ func (c *Collector) printErrors() {
 
 // closes the logfile for errors.
 func (c *Collector) closeErrorLogFile() {
-
 	c.errorMap.Lock()
 
 	// append  stats
@@ -249,7 +245,6 @@ func (c *Collector) closeErrorLogFile() {
 
 // Stats prints collector statistics.
 func (c *Collector) Stats() {
-
 	var target io.Writer
 	if c.config.Quiet {
 		target = logFileHandle
@@ -313,7 +308,6 @@ func (c *Collector) Stats() {
 
 // updates the progress indicator and writes to stdout.
 func (c *Collector) printProgress() {
-
 	// increment atomic packet counter
 	atomic.AddInt64(&c.current, 1)
 
@@ -342,9 +336,9 @@ func (c *Collector) printProgress() {
 			b.WriteString("decoding packets... (")
 			b.WriteString(utils.Progress(c.current, c.numPackets))
 			b.WriteString(")")
-			//b.WriteString(strconv.Itoa(decoder.Flows.Size()))
-			//b.WriteString(" connections: ")
-			//b.WriteString(strconv.Itoa(decoder.Connections.Size()))
+			// b.WriteString(strconv.Itoa(decoder.Flows.Size()))
+			// b.WriteString(" connections: ")
+			// b.WriteString(strconv.Itoa(decoder.Connections.Size()))
 			b.WriteString(" profiles: ")
 			b.WriteString(strconv.Itoa(decoder.Profiles.Size()))
 			b.WriteString(" packets: ")
@@ -359,8 +353,7 @@ func (c *Collector) printProgress() {
 
 // updates the progress indicator and writes to stdout periodically
 func (c *Collector) printProgressInterval() chan struct{} {
-
-	var stop = make(chan struct{})
+	stop := make(chan struct{})
 
 	// TODO: adjust progress refresh interval based on input file size?
 	const interval = 5
@@ -398,8 +391,8 @@ func (c *Collector) printProgressInterval() chan struct{} {
 					fmt.Fprintf(os.Stdout,
 						c.progressString,
 						utils.Progress(curr, num),
-						//decoder.Flows.Size(), // TODO: fetch this info from stats?
-						//decoder.Connections.Size(), // TODO: fetch this info from stats?
+						// decoder.Flows.Size(), // TODO: fetch this info from stats?
+						// decoder.Connections.Size(), // TODO: fetch this info from stats?
 						decoder.Profiles.Size(),
 						decoder.ServiceStore.Size(),
 						int(curr),
@@ -435,7 +428,6 @@ func (c *Collector) FreeOSMemory() {
 
 // PrintConfiguration dumps the current collector config to stdout
 func (c *Collector) PrintConfiguration() {
-
 	// ensure the logfile handle gets opened
 	err := c.InitLogging()
 	if err != nil {
@@ -490,7 +482,6 @@ func (c *Collector) PrintConfiguration() {
 // this is used to be able to dump the collector configuration into the netcap.log in quiet mode
 // following calls to Init() will not open the filehandle again
 func (c *Collector) InitLogging() error {
-
 	// prevent reopen
 	if logFileHandle != nil {
 		return nil

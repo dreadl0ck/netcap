@@ -31,6 +31,7 @@ var fieldsEthernet = []string{
 func (eth *Ethernet) CSVHeader() []string {
 	return filter(fieldsEthernet)
 }
+
 func (eth *Ethernet) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(eth.Timestamp),

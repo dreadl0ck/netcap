@@ -19,7 +19,6 @@ import (
 )
 
 func ToDNSQuestions() {
-
 	lt := maltego.ParseLocalArguments(os.Args)
 	dnsAuditRecords := lt.Values["path"]
 
@@ -64,7 +63,7 @@ func ToDNSQuestions() {
 		panic("type does not implement types.AuditRecord interface")
 	}
 
-	var results = make(map[string]int)
+	results := make(map[string]int)
 
 	for {
 		err = r.Next(dns)
@@ -74,7 +73,7 @@ func ToDNSQuestions() {
 			panic(err)
 		}
 
-		//log.Println("dns", dns.Context.String())
+		// log.Println("dns", dns.Context.String())
 
 		for _, q := range dns.Questions {
 			if len(q.Name) != 0 {

@@ -118,7 +118,6 @@ func (u *UDP) Inc() {
 }
 
 func (u *UDP) SetPacketContext(ctx *PacketContext) {
-
 	// create new context and only add information that is
 	// not yet present on the audit record type
 	u.Context = &PacketContext{

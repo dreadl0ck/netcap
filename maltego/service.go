@@ -35,7 +35,6 @@ type ServiceCountFunc = func(service *types.Service, mac string, min, max *uint6
 
 // ServiceTransform applies a maltego transformation over Service profiles seen for a target Service
 func ServiceTransform(count ServiceCountFunc, transform ServiceTransformationFunc) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	servicesFile := lt.Values["path"]
 	mac := lt.Values["mac"]

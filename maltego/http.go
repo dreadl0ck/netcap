@@ -36,7 +36,6 @@ type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *type
 
 // HTTPTransform applies a maltego transformation over HTTP audit records
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	ipaddr := lt.Values["ipaddr"]

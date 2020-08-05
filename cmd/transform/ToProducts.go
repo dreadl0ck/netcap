@@ -11,7 +11,6 @@ func ToProducts() {
 	maltego.SoftwareTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, soft *types.Software, min, max uint64, profilesFile string, mac string, ipaddr string) {
-
 			val := soft.Vendor + " " + soft.Product + " " + soft.Version
 			if len(soft.SourceName) > 0 {
 				if soft.SourceName == "Generic version harvester" {

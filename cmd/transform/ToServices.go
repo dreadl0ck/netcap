@@ -11,7 +11,6 @@ func ToServices() {
 	maltego.ServiceTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
-
 			val := service.IP + ":" + service.Port
 			if len(service.Vendor) > 0 {
 				val += "\n" + service.Vendor

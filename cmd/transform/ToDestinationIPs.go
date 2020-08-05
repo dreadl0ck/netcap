@@ -19,7 +19,6 @@ func ToDestinationIPs() {
 		maltego.CountPacketsContactIPs,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
 			if profile.MacAddr == mac {
-
 				for _, ip := range profile.Contacts {
 
 					var (

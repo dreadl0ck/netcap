@@ -66,7 +66,6 @@ func IsPrivateIP(ip net.IP) bool {
 
 // LookupDNSNames retrieves the DNS names associated with an IP address
 func LookupDNSNames(ip string) []string {
-
 	if disableReverseDNS {
 		return []string{}
 	}
@@ -97,7 +96,7 @@ func LookupDNSNames(ip string) []string {
 	var r net.Resolver
 	names, err := r.LookupAddr(ctx, ip)
 	if err != nil {
-		//fmt.Println("net.LookupAddr failed:", err)
+		// fmt.Println("net.LookupAddr failed:", err)
 		// failed values are added to the DB as well so we don't try to resolve them again
 	}
 

@@ -9,7 +9,6 @@ import (
 )
 
 func ToHTTPHostsFiltered() {
-
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitDNSWhitelist()

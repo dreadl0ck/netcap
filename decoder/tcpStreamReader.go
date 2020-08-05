@@ -55,7 +55,6 @@ func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 }
 
 func (t *tcpStreamReader) Read(p []byte) (int, error) {
-
 	data, ok := <-t.dataChan
 	if data == nil || !ok {
 		return 0, io.EOF
@@ -140,15 +139,19 @@ func (t *tcpStreamReader) SortAndMergeFragments() {
 func (t *tcpStreamReader) Ident() string {
 	return t.parent.ident
 }
+
 func (t *tcpStreamReader) Network() gopacket.Flow {
 	return t.parent.net
 }
+
 func (t *tcpStreamReader) Transport() gopacket.Flow {
 	return t.parent.transport
 }
+
 func (t *tcpStreamReader) FirstPacket() time.Time {
 	return t.parent.firstPacket
 }
+
 func (t *tcpStreamReader) Saved() bool {
 	t.parent.Lock()
 	defer t.parent.Unlock()
@@ -206,7 +209,6 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 
 // run starts reading TCP traffic in a single direction
 func (t *tcpStreamReader) Run(f *tcpConnectionFactory) {
-
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
 	defer t.Cleanup(f)
 
@@ -233,7 +235,6 @@ func (t *tcpStreamReader) Run(f *tcpConnectionFactory) {
 }
 
 func (t *tcpStreamReader) readStream(b io.ByteReader) error {
-
 	var err error
 	for {
 		_, err = b.ReadByte()

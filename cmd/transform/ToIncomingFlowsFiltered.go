@@ -14,7 +14,6 @@ import (
 )
 
 func ToIncomingFlowsFiltered() {
-
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitLocalDNS()
@@ -52,7 +51,6 @@ func isInTop12(val int32, sizes *[]int) bool {
 }
 
 func addInFlow(trx *maltego.Transform, flow *types.Flow, min, max uint64, name string) {
-
 	ent := trx.AddEntity("netcap.Flow", flow.UID+"\n"+name)
 
 	di := "<h3>Incoming Flow: " + flow.SrcIP + ":" + flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.TimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.TimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"

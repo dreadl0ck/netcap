@@ -73,7 +73,6 @@ type AuditRecord interface {
 
 // selectFields returns an array with the indices of the desired fields for selection
 func selectFields(all []string, selection string) (s []int) {
-
 	var (
 		fields = strings.Split(selection, ",")
 		ok     bool

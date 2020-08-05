@@ -138,7 +138,6 @@ func (p *StreamPool) getHalf(k *key) (*connection, *halfconnection, *halfconnect
 // does not already exist, returns nil.  This allows us to check for a
 // connection without actually creating one if it doesn't already exist.
 func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, tcp *layers.TCP, ac AssemblerContext) (*connection, *halfconnection, *halfconnection) {
-
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

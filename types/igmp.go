@@ -76,7 +76,6 @@ func (i *IGMP) Time() string {
 }
 
 func (i IGMPv3GroupRecord) ToString() string {
-
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(i.Type))

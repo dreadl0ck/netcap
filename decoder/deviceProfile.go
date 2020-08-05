@@ -54,15 +54,14 @@ var (
 	profiles               int64
 
 	// flags for flushing intervals - no flushing for now.
-	//flagProfileFlushInterval = flag.Int("profile-flush-interval", 10000, "flush connections every X flows")
+	// flagProfileFlushInterval = flag.Int("profile-flush-interval", 10000, "flush connections every X flows")
 
-	//profileFlushInterval int64
-	//profileTimeOut       time.Duration
+	// profileFlushInterval int64
+	// profileTimeOut       time.Duration
 )
 
 // GetDeviceProfile fetches a known profile and updates it or returns a new one
 func getDeviceProfile(macAddr string, i *packetInfo) *DeviceProfile {
-
 	Profiles.Lock()
 	if p, ok := Profiles.Items[macAddr]; ok {
 		Profiles.Unlock()
@@ -83,7 +82,6 @@ func getDeviceProfile(macAddr string, i *packetInfo) *DeviceProfile {
 
 // UpdateDeviceProfile can be used to update the profile for the passed identifiers
 func UpdateDeviceProfile(i *packetInfo) {
-
 	// lookup profile
 	Profiles.Lock()
 	if p, ok := Profiles.Items[i.srcMAC]; ok {
@@ -120,7 +118,6 @@ func NewDeviceProfile(i *packetInfo) *DeviceProfile {
 }
 
 func applyDeviceProfileUpdate(p *DeviceProfile, i *packetInfo) {
-
 	p.Lock()
 
 	// deviceIPs
@@ -176,20 +173,17 @@ var profileDecoder = NewCustomDecoder(
 	"DeviceProfile",
 	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
 	func(d *CustomDecoder) error {
-
 		profileDecoderInstance = d
 
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
-
 		// handle packet
 		UpdateDeviceProfile(newPacketInfo(p))
 
 		return nil
 	},
 	func(e *CustomDecoder) error {
-
 		// teardown DPI C libs
 		dpi.Destroy()
 
@@ -207,7 +201,6 @@ var profileDecoder = NewCustomDecoder(
 
 // writeProfile writes the profile
 func writeProfile(d *types.DeviceProfile) {
-
 	if c.Export {
 		d.Inc()
 	}

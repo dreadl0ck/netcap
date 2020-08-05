@@ -46,7 +46,6 @@ func printUsage() {
 }
 
 func exportDir(path string) {
-
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Fatal("failed to read dir: ", err)
@@ -131,7 +130,6 @@ func exportDir(path string) {
 			count++
 
 			go func() {
-
 				fmt.Println("SINCE:", time.Since(beginExportFirstFile))
 
 				// sub the time needed to spawn the goroutine
@@ -163,7 +161,6 @@ func exportDir(path string) {
 // this will open the netcap dump file at path
 // and return the timestamp of the first audit record in there
 func firstTimestamp(path string) time.Time {
-
 	r, err := netcap.Open(path, netcap.DefaultBufferSize)
 	if err != nil {
 		log.Fatal("failed to open netcap file:", err)
@@ -201,7 +198,6 @@ func firstTimestamp(path string) time.Time {
 }
 
 func exportFile(path string) {
-
 	var (
 		count  = 0
 		r, err = netcap.Open(path, *flagMemBufferSize)

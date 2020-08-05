@@ -35,7 +35,6 @@ type CredentialsCountFunc = func(credentials *types.Credentials, mac string, min
 
 // CredentialsTransform applies a maltego transformation over Credentials profiles seen for a target Credentials
 func CredentialsTransform(count CredentialsCountFunc, transform CredentialsTransformationFunc) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	credentialsFile := lt.Values["path"]
 	mac := lt.Values["mac"]

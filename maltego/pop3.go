@@ -36,7 +36,6 @@ type POP3TransformationFunc = func(lt LocalTransform, trx *Transform, pop3 *type
 
 // POP3Transform applies a maltego transformation over POP3 audit records
 func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	ipaddr := lt.Values["ipaddr"]

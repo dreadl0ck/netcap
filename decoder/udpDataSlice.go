@@ -19,9 +19,11 @@ type UDPDataSlice []*UDPData
 func (d UDPDataSlice) Len() int {
 	return len(d)
 }
+
 func (d UDPDataSlice) Less(i, j int) bool {
 	return d[i].ci.Timestamp.Before(d[j].ci.Timestamp)
 }
+
 func (d UDPDataSlice) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }

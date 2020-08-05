@@ -82,7 +82,6 @@ func TrimPortIPv4(addr string) string {
 
 // DumpHTTPResponse dumps an http.Response for debugging purposes
 func DumpHTTPResponse(resp *http.Response, proxyName string, rawbody []byte) {
-
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 	fmt.Println(proxyName + " received an HTTP Response:")
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
@@ -138,7 +137,6 @@ func DumpHTTPResponse(resp *http.Response, proxyName string, rawbody []byte) {
 
 // DumpHTTPRequest dumps an http.Request for debugging purposes
 func DumpHTTPRequest(req *http.Request, proxyName string) {
-
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 	fmt.Println(proxyName+" received an HTTP Request: ", req.URL)
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")

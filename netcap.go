@@ -27,7 +27,6 @@ import (
 // that conforms to the proto.Message interface
 // if netcap is extended with new audit records they need to be added here as well
 func InitRecord(typ types.Type) (record proto.Message) {
-
 	switch typ {
 	case types.Type_NC_Ethernet:
 		record = new(types.Ethernet)
@@ -177,7 +176,6 @@ func InitRecord(typ types.Type) (record proto.Message) {
 // it does not return an error in case of a regular EOF
 // but will return an error in case of an unexpected EOF
 func Count(filename string) (count int64, err error) {
-
 	// open audit record file
 	r, err := Open(filename, DefaultBufferSize)
 	if err != nil {

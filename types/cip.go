@@ -41,7 +41,7 @@ func (c *CIP) CSVHeader() []string {
 }
 
 func (c *CIP) CSVRecord() []string {
-	var additional = make([]string, len(c.AdditionalStatus))
+	additional := make([]string, len(c.AdditionalStatus))
 	if c.Response {
 		for _, v := range c.AdditionalStatus {
 			additional = append(additional, formatUint32(v))

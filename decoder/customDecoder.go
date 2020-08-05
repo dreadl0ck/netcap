@@ -135,7 +135,6 @@ func init() {
 
 // InitCustomDecoders initializes all custom decoders
 func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
-
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeDecoders, ",")
@@ -257,7 +256,6 @@ func NewCustomDecoder(t types.Type, name string, description string, postinit fu
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
 func (cd *CustomDecoder) Decode(p gopacket.Packet) error {
-
 	// call the Handler function of the encoder
 	record := cd.Handler(p)
 	if record != nil {
@@ -295,7 +293,6 @@ func (cd *CustomDecoder) Decode(p gopacket.Packet) error {
 
 // Destroy closes and flushes all writers and calls deinit if set
 func (cd *CustomDecoder) Destroy() (name string, size int64) {
-
 	err := cd.DeInit()
 	if err != nil {
 		panic(err)

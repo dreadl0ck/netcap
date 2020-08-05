@@ -33,7 +33,6 @@ type tcpStreamProcessor struct {
 // to process the streams in parallel
 // they are passed to several worker goroutines in round robin style.
 func (tsp *tcpStreamProcessor) handleStream(s StreamReader) {
-
 	tsp.wg.Add(1)
 
 	// make it work for 1 worker only, can be used for debugging
@@ -57,7 +56,6 @@ func (tsp *tcpStreamProcessor) handleStream(s StreamReader) {
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
 func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader {
-
 	// init channel to receive input packets
 	chanInput := make(chan StreamReader, 10)
 

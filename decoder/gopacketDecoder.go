@@ -28,66 +28,64 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var (
-	// contains all available gopacket decoders
-	defaultGoPacketDecoders = []*GoPacketDecoder{
-		tcpDecoder,
-		udpDecoder,
-		ipv4Decoder,
-		ipv6Decoder,
-		dhcpv4Decoder,
-		dhcpv6Decoder,
-		icmpv4Decoder,
-		icmpv6Decoder,
-		icmpv6EchoDecoder,
-		icmpv6NeighborSolicitationDecoder,
-		icmpv6RouterSolicitationDecoder,
-		dnsDecoder,
-		arpDecoder,
-		ethernetDecoder,
-		dot1QDecoder,
-		dot11Decoder,
-		ntpDecoder,
-		sipDecoder,
-		igmpDecoder,
-		llcDecoder,
-		ipv6HopByHopDecoder,
-		sctpDecoder,
-		snapDecoder,
-		linkLayerDiscoveryDecoder,
-		icmpv6NeighborAdvertisementDecoder,
-		icmpv6RouterAdvertisementDecoder,
-		ethernetCTPDecoder,
-		ethernetCTPReplyDecoder,
-		linkLayerDiscoveryInfoDecoder,
-		ipSecAHDecoder,
-		ipSecESPDecoder,
-		geneveDecoder,
-		ip6FragmentDecoder,
-		vxlanDecoder,
-		usbDecoder,
-		lcmDecoder,
-		mplsDecoder,
-		modbusDecoder,
-		ospfv2Decoder,
-		ospfv3Decoder,
-		bfdDecoder,
-		greDecoder,
-		fddiDecoder,
-		eapDecoder,
-		vrrpv2Decoder,
-		eapolDecoder,
-		eapolkeyDecoder,
-		ciscoDiscoveryDecoder,
-		ciscoDiscoveryInfoDecoder,
-		usbRequestBlockSetupDecoder,
-		nortelDiscoveryDecoder,
-		cipDecoder,
-		ethernetIPDecoder,
-		smtpDecoder,
-		diameterDecoder,
-	}
-)
+// contains all available gopacket decoders
+var defaultGoPacketDecoders = []*GoPacketDecoder{
+	tcpDecoder,
+	udpDecoder,
+	ipv4Decoder,
+	ipv6Decoder,
+	dhcpv4Decoder,
+	dhcpv6Decoder,
+	icmpv4Decoder,
+	icmpv6Decoder,
+	icmpv6EchoDecoder,
+	icmpv6NeighborSolicitationDecoder,
+	icmpv6RouterSolicitationDecoder,
+	dnsDecoder,
+	arpDecoder,
+	ethernetDecoder,
+	dot1QDecoder,
+	dot11Decoder,
+	ntpDecoder,
+	sipDecoder,
+	igmpDecoder,
+	llcDecoder,
+	ipv6HopByHopDecoder,
+	sctpDecoder,
+	snapDecoder,
+	linkLayerDiscoveryDecoder,
+	icmpv6NeighborAdvertisementDecoder,
+	icmpv6RouterAdvertisementDecoder,
+	ethernetCTPDecoder,
+	ethernetCTPReplyDecoder,
+	linkLayerDiscoveryInfoDecoder,
+	ipSecAHDecoder,
+	ipSecESPDecoder,
+	geneveDecoder,
+	ip6FragmentDecoder,
+	vxlanDecoder,
+	usbDecoder,
+	lcmDecoder,
+	mplsDecoder,
+	modbusDecoder,
+	ospfv2Decoder,
+	ospfv3Decoder,
+	bfdDecoder,
+	greDecoder,
+	fddiDecoder,
+	eapDecoder,
+	vrrpv2Decoder,
+	eapolDecoder,
+	eapolkeyDecoder,
+	ciscoDiscoveryDecoder,
+	ciscoDiscoveryInfoDecoder,
+	usbRequestBlockSetupDecoder,
+	nortelDiscoveryDecoder,
+	cipDecoder,
+	ethernetIPDecoder,
+	smtpDecoder,
+	diameterDecoder,
+}
 
 type (
 	// GoPacketDecoderHandler is the handler function for a layer encoder
@@ -108,7 +106,6 @@ type (
 
 // InitGoPacketDecoders initializes all gopacket decoders
 func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
-
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
 
 	var (
@@ -174,8 +171,8 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 	// initialize decoders
 	for _, e := range defaultGoPacketDecoders {
 
-		//fmt.Println("init", e.Layer)
-		var filename = e.Layer.String()
+		// fmt.Println("init", e.Layer)
+		filename := e.Layer.String()
 
 		// handle inconsistencies in gopacket naming convention
 		switch e.Type {
@@ -222,7 +219,6 @@ func NewGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
 func (e *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
-
 	record := e.Handler(l, utils.TimeToString(p.Metadata().Timestamp))
 	if record != nil {
 

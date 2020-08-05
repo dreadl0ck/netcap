@@ -11,7 +11,6 @@ import (
 )
 
 func ToSrcPorts() {
-
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitServiceDB()
@@ -41,7 +40,6 @@ func ToSrcPorts() {
 }
 
 func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile) {
-
 	ent := trx.AddEntity("netcap.SourcePort", portStr)
 	np, err := strconv.Atoi(portStr)
 	if err != nil {

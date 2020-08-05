@@ -161,7 +161,6 @@ type tcpConnection struct {
 // Accept decides whether the TCP packet should be accepted
 // start could be modified to force a start even if no SYN have been seen
 func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
-
 	// Finite State Machine
 	if !t.tcpstate.CheckState(tcp, dir) {
 		logReassemblyError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
@@ -212,7 +211,6 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 }
 
 func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, length int, saved int, start bool, end bool, dir reassembly.TCPFlowDirection) {
-
 	sgStats := sg.Stats()
 
 	stats.Lock()
@@ -251,9 +249,8 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 }
 
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
-
-	//fmt.Println(t.ident, "feedData", ansi.White, dir, ansi.Cyan, len(data), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset)
-	//fmt.Println(hex.Dump(data))
+	// fmt.Println(t.ident, "feedData", ansi.White, dir, ansi.Cyan, len(data), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset)
+	// fmt.Println(hex.Dump(data))
 
 	// Copy the data before passing it to the handler
 	// Because the passed in buffer can be reused as soon as the ReassembledSG function returned
@@ -319,7 +316,6 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 // The ScatterGather buffer is reused after each Reassembled call
 // so it's important to copy anything you need out of it (or use KeepFrom())
 func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
-
 	length, saved := sg.Lengths()
 	dir, start, end, skip := sg.Info()
 
@@ -340,7 +336,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	//	return
 	//}
 
-	//fmt.Println("got raw data:", len(data), ac.GetCaptureInfo().Timestamp, "\n", hex.Dump(data))
+	// fmt.Println("got raw data:", len(data), ac.GetCaptureInfo().Timestamp, "\n", hex.Dump(data))
 
 	if length > 0 {
 		if c.HexDump {
@@ -358,9 +354,8 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 // It can return false if it want to see subsequent packets with Accept(), e.g. to
 // see FIN-ACK, for deeper state-machine analysis.
 func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) bool {
-
-	//fmt.Println(t.ident, "t.firstPacket:", t.firstPacket, "ac.Timestamp", ac.GetCaptureInfo().Timestamp)
-	//fmt.Println(t.ident, !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp), "&&", t.firstPacket.After(ac.GetCaptureInfo().Timestamp))
+	// fmt.Println(t.ident, "t.firstPacket:", t.firstPacket, "ac.Timestamp", ac.GetCaptureInfo().Timestamp)
+	// fmt.Println(t.ident, !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp), "&&", t.firstPacket.After(ac.GetCaptureInfo().Timestamp))
 
 	// is this packet older than the oldest packet we saw for this connection?
 	// if yes, if check the direction of the client is correct
@@ -381,7 +376,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 				t.Lock()
 				t.ident = utils.ReverseIdent(t.ident)
-				//fmt.Println("flip! new", ansi.Red+t.ident+ansi.Reset, t.firstPacket)
+				// fmt.Println("flip! new", ansi.Red+t.ident+ansi.Reset, t.firstPacket)
 
 				t.client, t.server = t.server, t.client
 				t.transport, t.net = t.transport.Reverse(), t.net.Reverse()
@@ -476,7 +471,6 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 }
 
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
-
 	// prevent passing any non TCP packets in here
 	tcpLayer := packet.Layer(layers.LayerTypeTCP)
 	if tcpLayer == nil {
@@ -537,7 +531,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	stats.Unlock()
 
 	// for debugging:
-	//AssembleWithContextTimeout(packet, assembler, tcp)
+	// AssembleWithContextTimeout(packet, assembler, tcp)
 	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
@@ -561,7 +555,6 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 // when the stream reassembly gets stuck
 // used for debugging
 func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
-
 	done := make(chan bool, 1)
 	go func() {
 		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
@@ -580,7 +573,6 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 }
 
 func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
-
 	c.Lock()
 	if c.Debug {
 		utils.ReassemblyLog.Println("StreamPool:")
@@ -738,7 +730,6 @@ func waitForConns() chan struct{} {
 
 // sort the conversation fragments and fill the conversation buffers
 func (t *tcpConnection) sortAndMergeFragments() {
-
 	// concatenate both client and server data fragments
 	t.merged = append(t.client.DataSlice(), t.server.DataSlice()...)
 
@@ -748,7 +739,7 @@ func (t *tcpConnection) sortAndMergeFragments() {
 	// create the buffer with the entire conversation
 	for _, d := range t.merged {
 
-		//fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
+		// fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
 
 		t.conversationRaw.Write(d.raw)
 		if d.dir == reassembly.TCPDirClientToServer {
@@ -776,7 +767,6 @@ func (t *tcpConnection) sortAndMergeFragments() {
 }
 
 func (t *tcpConnection) ConversationRaw() []byte {
-
 	t.Lock()
 	defer t.Unlock()
 

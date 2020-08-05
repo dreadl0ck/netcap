@@ -12,7 +12,6 @@ import (
 )
 
 func ToCaptureProcess() {
-
 	lt := maltego.ParseLocalArguments(os.Args[1:])
 	log.Println("capture on interface:", lt.Value)
 
@@ -39,7 +38,6 @@ func ToCaptureProcess() {
 }
 
 func returnCaptureProcessEntity(pid int, path string, iface string) {
-
 	pidStr := strconv.Itoa(pid)
 
 	// generate maltego transform

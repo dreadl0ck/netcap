@@ -62,7 +62,6 @@ or: ./net <subcommand> [-h] to get help for the subcommand`)
 }
 
 func main() {
-
 	flag.Usage = help
 	flag.Parse()
 
@@ -126,10 +125,9 @@ func debug(args ...interface{}) {
 
 // print available completions for the bash-completion package
 func printCompletions(previous, current, full string) {
-
 	if os.Getenv("NC_COMPLETION_DEBUG") == "1" {
 		var err error
-		debugHandle, err = os.OpenFile("completion-debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0744)
+		debugHandle, err = os.OpenFile("completion-debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o744)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -225,8 +223,7 @@ func handleConfigFlag() {
 }
 
 func printFileForExt(exts ...string) {
-
-	var path = "."
+	path := "."
 	var currBase string
 	if *flagCurrent != "" {
 		currBase = filepath.Dir(*flagCurrent)
@@ -242,7 +239,7 @@ func printFileForExt(exts ...string) {
 		log.Fatal(err)
 	}
 
-	//debug("got", len(files), "results")
+	// debug("got", len(files), "results")
 
 	for _, f := range files {
 		for _, e := range exts {
@@ -252,7 +249,7 @@ func printFileForExt(exts ...string) {
 					path += "/"
 				}
 				fmt.Print(path + " ")
-				//debug("output", path)
+				// debug("output", path)
 				break
 			}
 		}
@@ -270,8 +267,7 @@ func printFlags(arr []string) {
 }
 
 func printFlagsFiltered(arr []string) {
-
-	var hide = make(map[string]struct{})
+	hide := make(map[string]struct{})
 	for _, f := range strings.Fields(*flagFull) {
 		if strings.HasPrefix(f, "-") {
 			hide[strings.TrimPrefix(f, "-")] = struct{}{}

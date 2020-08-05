@@ -11,7 +11,6 @@ import (
 )
 
 func ToDstPorts() {
-
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitServiceDB()

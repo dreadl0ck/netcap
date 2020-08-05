@@ -58,7 +58,6 @@ type ReverseProxyConfig struct {
 // NewReverseProxy creates a ReverseProxy instance for the given target URL
 // and sets the specified name
 func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
-
 	// instantiate proxy
 	proxy := &ReverseProxy{
 		Name: proxyName,

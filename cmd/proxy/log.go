@@ -30,7 +30,6 @@ var (
 
 // ConfigureLogger configures the logging instance
 func ConfigureLogger(debug bool, outputPath string) {
-
 	var (
 		zc  zap.Config
 		err error

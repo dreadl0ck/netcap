@@ -102,7 +102,6 @@ func IPv4(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 			// Unidirectional IPv4 packets
 			// checks if packet has a source or destination ip matching an alert
 			for _, a := range alerts {
-
 				// must be a IPv4 packet
 				if a.Proto == "IPv4" &&
 

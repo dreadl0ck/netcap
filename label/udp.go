@@ -102,7 +102,6 @@ func UDP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 			// Unidirectional UDP packets
 			// checks if packet has a source or destination port matching an alert
 			for _, a := range alerts {
-
 				// must be a UDP packet
 				if a.Proto == "UDP" &&
 

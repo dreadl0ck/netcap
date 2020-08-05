@@ -91,7 +91,6 @@ func clearLine() {
 }
 
 func calcMd5(s string) string {
-
 	var out []byte
 	for _, b := range md5.Sum([]byte(s)) {
 		out = append(out, b)
@@ -116,20 +115,20 @@ func countFields(t types.Type) int {
 			switch field.Type.String() {
 			case "string", "int32", "uint32", "bool", "int64", "uint64", "uint8", "float64":
 				recordFields++
-				//fmt.Println("  ", field.Name, field.Type, "1")
+				// fmt.Println("  ", field.Name, field.Type, "1")
 			default:
 				if field.Type.Elem().Kind() == reflect.Struct {
-					//fmt.Println("  ", field.Name, field.Type, field.Type.Elem().NumField())
+					// fmt.Println("  ", field.Name, field.Type, field.Type.Elem().NumField())
 					recordFields += field.Type.Elem().NumField()
 					typeMap[strings.TrimPrefix(field.Type.String(), "*")] = field.Type.Elem().NumField()
 				} else {
 					if field.Type.Elem().Kind() == reflect.Ptr {
 						recordFields += field.Type.Elem().Elem().NumField()
-						//fmt.Println("  ", field.Name, field.Type, field.Type.Elem().Elem().NumField())
+						// fmt.Println("  ", field.Name, field.Type, field.Type.Elem().Elem().NumField())
 						typeMap[strings.TrimPrefix(strings.TrimPrefix(field.Type.String(), "[]"), "*")] = field.Type.Elem().Elem().NumField()
 					} else {
 						// scalar array types
-						//fmt.Println("  ", field.Name, field.Type, "1")
+						// fmt.Println("  ", field.Name, field.Type, "1")
 						recordFields++
 					}
 				}
@@ -179,10 +178,7 @@ func ApplyActionToGoPacketDecoders(action func(*GoPacketDecoder)) {
 }
 
 func ShowDecoders(verbose bool) {
-
-	var (
-		totalFields, totalAuditRecords int
-	)
+	var totalFields, totalAuditRecords int
 
 	fmt.Println("Custom Audit Records: Total", len(defaultCustomDecoders), "Format: DecoderName ( Number of Fields )")
 	for _, d := range defaultCustomDecoders {
@@ -244,7 +240,6 @@ func pad(in interface{}, length int) string {
 }
 
 func logReassemblyError(t string, s string, a ...interface{}) {
-
 	stats.Lock()
 	stats.numErrors++
 	stats.Unlock()

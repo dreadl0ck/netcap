@@ -35,7 +35,6 @@ import (
 )
 
 func Run() {
-
 	// parse commandline flags
 	fs.Usage = printUsage
 	err := fs.Parse(os.Args[2:])
@@ -159,7 +158,7 @@ func Run() {
 	// get client id
 	// currently the user name is used for this
 	// TODO: generate a unique numerical identifier instead
-	var userName = os.Getenv("USER")
+	userName := os.Getenv("USER")
 	fmt.Println("\n["+userName+"] got", len(chans), "channels")
 
 	// iterate over encoder channels
@@ -173,7 +172,6 @@ func Run() {
 
 		// handle channel goroutine
 		go func() {
-
 			var leftOverBuf []byte
 
 			// send data loop
@@ -200,7 +198,6 @@ func Run() {
 
 				// read chan loop
 				for {
-
 					select {
 					case data := <-info.Chan:
 

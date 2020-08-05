@@ -27,9 +27,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var (
-	ja3DB = make(map[string]*Ja3Summary)
-)
+var ja3DB = make(map[string]*Ja3Summary)
 
 // Ja3Summary models the Trisul ja3DB json structure
 // https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json
@@ -59,7 +57,6 @@ func LookupJa3(hash string) string {
 
 // InitJa3Resolver loads the JSON mac DB into a map in memory
 func InitJa3Resolver() {
-
 	// read database dir
 	files, err := ioutil.ReadDir(DataBaseSource)
 	if err != nil {
@@ -116,7 +113,6 @@ func addToJa3DB(sum Ja3Summary, updated *int, sums *int) {
 }
 
 func parseUserAgents(data []byte, f os.FileInfo) {
-
 	var (
 		sums       = 0
 		updated    = 0
@@ -151,7 +147,6 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 }
 
 func parseSummariesArray(data []byte, f os.FileInfo) {
-
 	var (
 		sums      = 0
 		updated   = 0
@@ -175,7 +170,6 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 }
 
 func parseSummaries(data []byte, f os.FileInfo) {
-
 	var (
 		sums    = 0
 		updated = 0

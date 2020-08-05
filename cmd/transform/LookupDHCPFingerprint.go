@@ -12,13 +12,12 @@ import (
 )
 
 func LookupDHCPFingerprint() {
-
 	// init API key
 	resolvers.InitDHCPFingerprintAPIKey()
 	resolvers.InitDHCPFingerprintDB()
 
 	// read HTTP audit records and create a map of ips to useragents
-	var userAgentStore = make(map[string][]string)
+	userAgentStore := make(map[string][]string)
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
@@ -54,7 +53,6 @@ func LookupDHCPFingerprint() {
 	maltego.DHCPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
-
 			if dhcp.Operation == 2 {
 				if _, ok := addrMapping[dhcp.ClientHWAddr]; !ok {
 					log.Println("update addr mapping", dhcp.ClientHWAddr, dhcp.YourClientIP)
@@ -111,16 +109,16 @@ func LookupDHCPFingerprint() {
 		}
 
 		ip := addrMapping[messageToFingerprint.ClientHWAddr]
-		//log.Println("found ip:", ip, "for mac", messageToFingerprint.ClientHWAddr)
+		// log.Println("found ip:", ip, "for mac", messageToFingerprint.ClientHWAddr)
 		userAgents := userAgentStore[ip]
-		//log.Println("found user agents:", userAgents)
+		// log.Println("found user agents:", userAgents)
 
 		res, err := resolvers.LookupDHCPFingerprint(messageToFingerprint.Fingerprint, vendor, userAgents)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		//log.Println("got result", res.DeviceName, "for", messageToFingerprint.ClientHWAddr)
+		// log.Println("got result", res.DeviceName, "for", messageToFingerprint.ClientHWAddr)
 
 		val := strings.ReplaceAll(res.DeviceName, "/", "\n") + "\n" + ip
 		ent := mtrx.AddEntity("netcap.DHCPResult", val)

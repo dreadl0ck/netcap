@@ -14,7 +14,6 @@ func ToApplicationsForCategory() {
 			if profile.MacAddr == mac {
 
 				for _, ip := range profile.Contacts {
-
 					if ip.Addr == ipaddr {
 
 						category := lt.Values["description"]
@@ -29,7 +28,6 @@ func ToApplicationsForCategory() {
 					}
 				}
 				for _, ip := range profile.DeviceIPs {
-
 					if ip.Addr == ipaddr {
 
 						category := lt.Values["description"]

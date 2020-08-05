@@ -9,13 +9,11 @@ import (
 )
 
 func ToHostsForService() {
-
 	var ip, port string
 
 	maltego.ServiceTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
-
 			if len(ip) == 0 {
 				ip = lt.Values["ip"]
 				port = lt.Values["port"]
@@ -23,7 +21,6 @@ func ToHostsForService() {
 			}
 
 			if service.IP == ip && service.Port == port {
-
 				for _, f := range service.Flows {
 
 					srcIP, _, _, _ := utils.ParseIdent(f)

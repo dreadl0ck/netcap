@@ -75,7 +75,6 @@ func (s *SCTP) Inc() {
 }
 
 func (s *SCTP) SetPacketContext(ctx *PacketContext) {
-
 	// create new context and only add information that is
 	// not yet present on the audit record type
 	s.Context = &PacketContext{

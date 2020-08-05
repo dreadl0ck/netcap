@@ -82,7 +82,6 @@ func (a *OSPFv3) Time() string {
 }
 
 func (l HelloPkg) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)

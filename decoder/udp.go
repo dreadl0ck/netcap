@@ -188,7 +188,6 @@ func (u *UDPStreamPool) saveAllUDPConnections() {
 
 // saveUDPConnection saves the contents of a client server conversation via UDP to the filesystem
 func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
-
 	// prevent processing zero bytes
 	if len(raw) == 0 {
 		return nil
@@ -200,8 +199,8 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 		return nil
 	}
 
-	//fmt.Println("save conn", ident, len(raw), len(colored))
-	//fmt.Println(string(colored))
+	// fmt.Println("save conn", ident, len(raw), len(colored))
+	// fmt.Println(string(colored))
 
 	var (
 		typ = getServiceName(banner, transport)
@@ -256,7 +255,6 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 // saves the banner for a UDP service to the filesystem
 // and limits the length of the saved data to the BannerSize value from the config
 func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, firstPacket time.Time, serverBytes int, clientBytes int, net gopacket.Flow, transport gopacket.Flow) {
-
 	// limit length of data
 	if len(banner) >= c.BannerSize {
 		banner = banner[:c.BannerSize]

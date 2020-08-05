@@ -100,7 +100,6 @@ func BenchmarkTimeToString(b *testing.B) {
 }
 
 func TestStringToTime(t *testing.T) {
-
 	tim := StringToTime(tiStr)
 
 	if !tim.Equal(ti) {
@@ -109,7 +108,6 @@ func TestStringToTime(t *testing.T) {
 }
 
 func BenchmarkStringToTime(b *testing.B) {
-
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -119,8 +117,7 @@ func BenchmarkStringToTime(b *testing.B) {
 }
 
 func BenchmarkStringToTimeFieldsFunc(b *testing.B) {
-
-	var tiStr = TimeToString(ti)
+	tiStr := TimeToString(ti)
 
 	b.ReportAllocs()
 	b.ResetTimer()

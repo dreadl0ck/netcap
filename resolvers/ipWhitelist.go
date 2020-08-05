@@ -23,14 +23,11 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var (
-	ipWhitelist = make(map[string]struct{})
-)
+var ipWhitelist = make(map[string]struct{})
 
 // InitIPWhitelist initializes the ip address whitelist
 // TODO: integrate into DeviceProfiles audit record
 func InitIPWhitelist() {
-
 	var hosts int
 
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "ip-whitelist.csv"))
@@ -65,9 +62,9 @@ func InitIPWhitelist() {
 // IsWhitelistedIP checks whether a given ip address is whitelisted
 func IsWhitelistedIP(ip string) bool {
 	if _, ok := ipWhitelist[ip]; ok {
-		//log.Println(domain, "is whitelisted")
+		// log.Println(domain, "is whitelisted")
 		return true
 	}
-	//log.Println(ip, "is NOT whitelisted")
+	// log.Println(ip, "is NOT whitelisted")
 	return false
 }

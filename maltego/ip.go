@@ -32,7 +32,6 @@ type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *typ
 
 // IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile.
 func IPTransform(count CountFunc, transform IPTransformationFunc) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]

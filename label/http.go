@@ -91,7 +91,6 @@ func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 			// since an alert can either refer to the HTTP request or the response
 			// additionally one of the involved ports must be 80
 			for _, a := range alerts {
-
 				// if http request timestamp matches an alert -> label instantly
 				if a.Timestamp == http.Timestamp ||
 

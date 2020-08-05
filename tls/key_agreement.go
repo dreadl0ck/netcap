@@ -15,8 +15,10 @@ import (
 	"io"
 )
 
-var errClientKeyExchange = errors.New("tls: invalid ClientKeyExchange message")
-var errServerKeyExchange = errors.New("tls: invalid ServerKeyExchange message")
+var (
+	errClientKeyExchange = errors.New("tls: invalid ClientKeyExchange message")
+	errServerKeyExchange = errors.New("tls: invalid ServerKeyExchange message")
+)
 
 // rsaKeyAgreement implements the standard TLS key agreement where the client
 // encrypts the pre-master secret to the server's public key.

@@ -201,7 +201,6 @@ func parseUserAgent(ua string) *userAgent {
 
 // generic version harvester, scans the payload using a regular expression
 func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (software []*Software) {
-
 	var (
 		s       []*Software
 		matches = reGenericVersion.FindAll(data, -1)
@@ -235,7 +234,6 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 // tries to determine the kind of software and version
 // based on the provided input data
 func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (software []*Software) {
-
 	var (
 		service string
 		s       []*Software
@@ -262,7 +260,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 					processName := process.Process
 					if process.JA3 == JA3 && process.JA3s == JA3s {
 						pMu.Lock()
-						var values = regExpServerName.FindStringSubmatch(serverName)
+						values := regExpServerName.FindStringSubmatch(serverName)
 						s = append(s, &Software{
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
@@ -309,11 +307,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 
 // TODO: pass in the device profile
 func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (software []*Software) {
-
-	var (
-		s []*Software
-		//dpIdent = dp.MacAddr
-	)
+	var s []*Software // dpIdent = dp.MacAddr
 	// if dp.DeviceManufacturer != "" {
 	// 	dpIdent += " <" + dp.DeviceManufacturer + ">"
 	// }
@@ -337,7 +331,7 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 				Product:   userInfo.product,
 				Vendor:    userInfo.vendor,
 				Version:   userInfo.version,
-				//DeviceProfiles: []string{dpIdent},
+				// DeviceProfiles: []string{dpIdent},
 				SourceName: "UserAgent",
 				SourceData: h.UserAgent,
 				Service:    serviceHTTP,
@@ -349,14 +343,14 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 
 	// HTTP Server Name
 	if len(h.ServerName) != 0 && h.ServerName != " " {
-		var values = regExpServerName.FindStringSubmatch(h.ServerName)
+		values := regExpServerName.FindStringSubmatch(h.ServerName)
 		s = append(s, &Software{
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
 				Product:   values[1],                // Name of the server (Apache, Nginx, ...)
 				Notes:     "Maybe OS: " + values[3], // potentially operating system
 				Version:   values[2],                // Version as found after the '/'
-				//DeviceProfiles: []string{dpIdent},
+				// DeviceProfiles: []string{dpIdent},
 				SourceName: "ServerName",
 				SourceData: h.ServerName,
 				Service:    serviceHTTP,
@@ -368,13 +362,13 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 	// X-Powered-By HTTP Header
 	if poweredBy, ok := h.ResponseHeader["X-Powered-By"]; ok {
 		if len(poweredBy) != 0 && poweredBy != " " {
-			var values = regexpXPoweredBy.FindStringSubmatch(poweredBy)
+			values := regexpXPoweredBy.FindStringSubmatch(poweredBy)
 			s = append(s, &Software{
 				Software: &types.Software{
 					Timestamp: h.Timestamp,
 					Product:   values[1], // Name of the server (Apache, Nginx, ...)
 					Version:   values[2], // Version as found after the '/'
-					//DeviceProfiles: []string{dpIdent},
+					// DeviceProfiles: []string{dpIdent},
 					SourceName: "X-Powered-By",
 					SourceData: poweredBy,
 					Service:    serviceHTTP,
@@ -427,7 +421,6 @@ func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (softw
 // this function first gathers as much data as possible and then calls into whatSoftware
 // to determine what software the packet belongs to
 func AnalyzeSoftware(i *packetInfo) {
-
 	var (
 		serviceNameSrc, serviceNameDst string
 		ja3Hash                        = ja3.DigestHexPacket(i.p)
@@ -468,7 +461,6 @@ func AnalyzeSoftware(i *packetInfo) {
 			}
 		}
 	} else {
-
 		// no transport layer
 		f = i.srcIP + "->" + i.dstIP
 	}
@@ -514,7 +506,6 @@ func AnalyzeSoftware(i *packetInfo) {
 }
 
 func writeSoftware(software []*Software, update func(s *Software)) {
-
 	var newSoftware []*types.Software
 
 	// add new audit records or update existing
@@ -541,7 +532,7 @@ func writeSoftware(software []*Software, update func(s *Software)) {
 				update(item)
 			}
 		} else {
-			//fmt.Println(SoftwareStore.Items, s.Product, s.Version)
+			// fmt.Println(SoftwareStore.Items, s.Product, s.Version)
 			SoftwareStore.Items[ident] = s
 
 			stats.Lock()
@@ -574,10 +565,7 @@ func NewSoftware(i *packetInfo) *Software {
 }
 
 func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
-
-	var (
-		dpIdent = dp.MacAddr
-	)
+	dpIdent := dp.MacAddr
 	if dp.DeviceManufacturer != "" {
 		dpIdent += " <" + dp.DeviceManufacturer + ">"
 	}
@@ -605,7 +593,6 @@ var softwareDecoder = NewCustomDecoder(
 	"Software",
 	"A software product that was observed on the network",
 	func(d *CustomDecoder) error {
-
 		if errInitUAParser != nil {
 			return errInitUAParser
 		}
@@ -668,14 +655,12 @@ var softwareDecoder = NewCustomDecoder(
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
-
 		// handle packet
 		AnalyzeSoftware(newPacketInfo(p))
 
 		return nil
 	},
 	func(e *CustomDecoder) error {
-
 		httpStore.Lock()
 		var rows [][]string
 		for ip, ua := range httpStore.UserAgents {
@@ -707,7 +692,6 @@ var softwareDecoder = NewCustomDecoder(
 // TODO: move into CustomDecoder and use in other places to remove unnecessary package level decoders
 // writeProfile writes the profile
 func (cd *CustomDecoder) write(r types.AuditRecord) {
-
 	if c.Export {
 		r.Inc()
 	}

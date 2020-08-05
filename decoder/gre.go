@@ -53,7 +53,6 @@ var greDecoder = NewGoPacketDecoder(
 )
 
 func encodeGRERouting(AddressFamily uint16, SREOffset, SRELength uint8, RoutingInformation []byte, next *layers.GRERouting) *types.GRERouting {
-
 	var r *types.GRERouting
 	if next != nil {
 		r = encodeGRERouting(next.AddressFamily, next.SREOffset, next.SRELength, next.RoutingInformation, next.Next)

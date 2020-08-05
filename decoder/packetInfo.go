@@ -12,7 +12,6 @@ type packetInfo struct {
 }
 
 func newPacketInfo(p gopacket.Packet) *packetInfo {
-
 	i := new(packetInfo)
 
 	i.timestamp = p.Metadata().Timestamp.UTC().String()

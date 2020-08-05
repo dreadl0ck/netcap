@@ -165,7 +165,6 @@ type FlowTransformationFunc = func(lt LocalTransform, trx *Transform, flow *type
 
 // FlowTransform applies a maltego transformation over Flow audit records
 func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]

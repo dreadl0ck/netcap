@@ -102,7 +102,6 @@ func TLS(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 			// this labels the TLS audit record as malicious
 			// if ANY packet of the birectional connection initiated by the TLS handshake was classified as malicious
 			for _, a := range alerts {
-
 				// transport proto must be TCP
 				if a.Proto == "TCP" &&
 

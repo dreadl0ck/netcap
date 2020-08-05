@@ -297,3 +297,15 @@ commands:
 
     test:
         exec: go test ./...
+
+    format-code:
+        exec: |
+
+            gci -w -local github.com/dreadl0ck/netcap/...
+
+            # TODO: recursive ./... does not seem to be supported
+            gofumpt -w *.go
+            gofumpt -w ./*/*.go
+            gofumpt -w ./*/*/*.go
+
+            gofumports -w -v .

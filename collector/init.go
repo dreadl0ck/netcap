@@ -21,7 +21,6 @@ import (
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
-
 	decoder.SetConfig(c.config.DecoderConfig)
 
 	// start workers
@@ -76,7 +75,7 @@ func (c *Collector) Init() (err error) {
 
 		// only prompt if quiet mode is not active
 		if !c.config.Quiet {
-			var msg = strconv.Itoa(len(files)) + " audit record files found in output path! Overwrite?"
+			msg := strconv.Itoa(len(files)) + " audit record files found in output path! Overwrite?"
 			if errStreams == nil {
 				msg = "Data from previous runs found in output path! Overwrite?"
 			}
@@ -137,7 +136,6 @@ func (c *Collector) Init() (err error) {
 
 // displays a prompt message to the terminal and returns a bool indicating the user decision
 func confirm(s string) bool {
-
 	r := bufio.NewReader(os.Stdin)
 
 	fmt.Printf("%s [Y/n]: ", s)

@@ -16,7 +16,6 @@ import (
 )
 
 func ToLiveAuditRecords() {
-
 	var (
 		lt    = maltego.ParseLocalArguments(os.Args[1:])
 		path  = lt.Values["path"]
@@ -28,7 +27,6 @@ func ToLiveAuditRecords() {
 }
 
 func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
-
 	// generate maltego transform
 	trx := maltego.Transform{}
 	for _, name := range allDecoders {

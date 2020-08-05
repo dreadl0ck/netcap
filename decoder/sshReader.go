@@ -46,7 +46,6 @@ type sshReader struct {
 }
 
 func (h *sshReader) Decode(s2c Stream, c2s Stream) {
-
 	var (
 		serverBuf bytes.Buffer
 		clientBuf bytes.Buffer
@@ -111,7 +110,6 @@ func (h *sshReader) processSSHIdent(ident string, entity string) {
 }
 
 func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirection) {
-
 	if h.serverKexInit != nil && h.clientKexInit != nil {
 		return
 	}
@@ -121,14 +119,14 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		fmt.Println(err)
 		return
 	}
-	//fmt.Println(dir, len(data), "\n", hex.Dump(data))
+	// fmt.Println(dir, len(data), "\n", hex.Dump(data))
 
 	if len(data) == 0 {
 		return
 	}
 
 	// length of the ident if it was found
-	var offset = 0
+	offset := 0
 
 	if h.clientIdent == "" || h.serverIdent == "" {
 
@@ -162,12 +160,11 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 	// search the entire data fragment for the KexInit
 	for i, b := range data {
-
 		// 0x14 marks the beginning of the SSH KexInitMsg
 		if b == 0x14 {
 
-			//fmt.Println(dir, offset, len(data), i-1, "data[",offset,":",i-1,"]")
-			//fmt.Println(hex.Dump(data))
+			// fmt.Println(dir, offset, len(data), i-1, "data[",offset,":",i-1,"]")
+			// fmt.Println(hex.Dump(data))
 
 			// check if length would have correct length
 			if (i-1)-offset != 4 {
@@ -182,12 +179,12 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			length := int(binary.BigEndian.Uint32(data[offset : i-1]))
 			padding := int(data[i-1])
 			if len(data) < i+length-padding-1 {
-				//fmt.Println("break: len(data) < i+length-padding-1")
+				// fmt.Println("break: len(data) < i+length-padding-1")
 				break
 			}
 
-			//fmt.Println("padding", padding, "length", length)
-			//fmt.Println(hex.Dump(data[i:i+length-padding-1]))
+			// fmt.Println("padding", padding, "length", length)
+			// fmt.Println(hex.Dump(data[i:i+length-padding-1]))
 
 			var init sshx.KexInitMsg
 			err := sshx.Unmarshal(data[i:i+length-padding-1], &init)
@@ -195,7 +192,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				fmt.Println(err)
 			}
 
-			//spew.Dump("found SSH KexInit", h.parent.ident, init)
+			// spew.Dump("found SSH KexInit", h.parent.ident, init)
 			hash, raw := computeHASSH(init)
 			if dir == reassembly.TCPDirClientToServer {
 				sshDecoder.write(&types.SSH{
@@ -227,11 +224,11 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 					Product:   product,
 					Vendor:    "", // do not set the vendor for now
 					Version:   version,
-					//DeviceProfiles: []string{dpIdent},
+					// DeviceProfiles: []string{dpIdent},
 					SourceName: "HASSH Lookup",
 					SourceData: hash,
 					Service:    serviceSSH,
-					//DPIResults:     protos,
+					// DPIResults:     protos,
 					Flows: []string{h.parent.ident},
 					Notes: "Likelihood: " + soft.Likelihood + " Possible OS: " + os + "SSH Version: " + sshVersion,
 				})
@@ -242,7 +239,6 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 }
 
 func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, version string, os string) {
-
 	var (
 		firstSplit    = strings.Split(soft, " ? ")
 		sshVersionTmp = firstSplit[0]
@@ -289,7 +285,6 @@ func parseSSHIdent(ident string) *sshVersionInfo {
 // HASSH SSH Fingerprint
 // TODO: move this functionality into standalone package
 func computeHASSH(init sshx.KexInitMsg) (hash string, raw string) {
-
 	var b strings.Builder
 	b.WriteString(strings.Join(init.KexAlgos, ","))
 	b.WriteString(";")

@@ -11,7 +11,6 @@ func ToSoftwareVulnerabilities() {
 	maltego.VulnerabilityTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, vuln *types.Vulnerability, min, max uint64, profilesFile string, mac string, ipaddr string) {
-
 			val := vuln.ID
 			product := vuln.Software.Product + " / " + vuln.Software.Version
 			if len(product) > 0 {

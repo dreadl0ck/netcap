@@ -102,7 +102,6 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 			// Unidirectional TCP packets
 			// checks if packet has a source or destination port matching an alert
 			for _, a := range alerts {
-
 				// must be a TCP packet
 				if a.Proto == "TCP" &&
 

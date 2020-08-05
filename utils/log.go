@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	logFilePermission = 0755
+	logFilePermission = 0o755
 )
 
 var (
@@ -36,7 +36,6 @@ func InitLoggers(outpath string) {
 
 // CloseLogFiles closes the logfile handles
 func CloseLogFiles() []error {
-
 	var errs []error
 
 	if ReassemblyLogFileHandle != nil {

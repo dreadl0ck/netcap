@@ -15,7 +15,6 @@ import (
 )
 
 func ToPhoneNumbersFromFile() {
-
 	var (
 		lt   = maltego.ParseLocalArguments(os.Args)
 		trx  = &maltego.Transform{}

@@ -9,7 +9,6 @@ import (
 )
 
 func ToMD5HashesForImage() {
-
 	var (
 		name   string
 		length int64
@@ -18,7 +17,6 @@ func ToMD5HashesForImage() {
 	maltego.FilesTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
-
 			if len(name) == 0 {
 				name = lt.Values["name"]
 				var errLength error

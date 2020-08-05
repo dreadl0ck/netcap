@@ -96,18 +96,17 @@ var transforms = []TransformCoreInfo{
 }
 
 func genFullConfigArchive() {
-
 	// clean
 	os.RemoveAll("netcap")
 
 	// create directories
-	os.MkdirAll("netcap/Servers", 0700)
-	os.MkdirAll("netcap/TransformRepositories/Local", 0700)
+	os.MkdirAll("netcap/Servers", 0o700)
+	os.MkdirAll("netcap/TransformRepositories/Local", 0o700)
 
 	// create directories
-	os.MkdirAll("netcap/Entities", 0700)
-	os.MkdirAll("netcap/EntityCategories", 0700)
-	os.MkdirAll("netcap/Icons", 0700)
+	os.MkdirAll("netcap/Entities", 0o700)
+	os.MkdirAll("netcap/EntityCategories", 0o700)
+	os.MkdirAll("netcap/Icons", 0o700)
 
 	fVersion, err := os.Create("netcap/version.properties")
 	if err != nil {
@@ -138,7 +137,6 @@ maltego.graph.version=1.2`)
 
 // generate all transforms and pack as archive
 func TestGenerateFullMaltegoConfiguration(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -176,7 +174,6 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 // generate all transforms and pack as archive
 func TestGenerateAllTransforms(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -229,7 +226,6 @@ func TestToTransformDisplayName(t *testing.T) {
 //}
 
 func genServerListing(outDir string) {
-
 	srv := Server{
 		Name:        "Local",
 		Enabled:     true,
@@ -282,7 +278,6 @@ func genServerListing(outDir string) {
 }
 
 func genTransformSet(outDir string) {
-
 	set := TransformSet{
 		Name:        "NETCAP",
 		Description: "Transformations on NETCAP audit records",
@@ -302,7 +297,7 @@ func genTransformSet(outDir string) {
 		log.Fatal(err)
 	}
 
-	os.MkdirAll(filepath.Join(outDir, "TransformSets"), 0700)
+	os.MkdirAll(filepath.Join(outDir, "TransformSets"), 0o700)
 	f, err := os.Create(filepath.Join(outDir, "TransformSets", "netcap.set"))
 	if err != nil {
 		log.Fatal(err)
@@ -320,7 +315,6 @@ func genTransformSet(outDir string) {
 }
 
 func TestGenerateTransformServerListing(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -383,7 +377,6 @@ func TestGenerateTransformServerListing(t *testing.T) {
 }
 
 func TestGenerateTransformSettings(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -431,7 +424,8 @@ func TestGenerateTransformSettings(t *testing.T) {
 					Text:  "true",
 				},
 			},
-		}}
+		},
+	}
 
 	data, err := xml.MarshalIndent(&tr, "", " ")
 	if err != nil {
@@ -440,8 +434,8 @@ func TestGenerateTransformSettings(t *testing.T) {
 
 	compareGeneratedXML(data, expected, t)
 }
-func TestGenerateTransform(t *testing.T) {
 
+func TestGenerateTransform(t *testing.T) {
 	if !generateMaltegoConfig {
 		return
 	}

@@ -177,7 +177,6 @@ type assemblerAction struct {
 //    zero or one call to ReassembledSG on a single stream
 //    zero or one call to ReassemblyComplete on the same stream
 func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac AssemblerContext) {
-
 	var (
 		conn *connection
 		half *halfconnection
@@ -209,7 +208,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		half.flow = netFlow
 	}
 
-	//fmt.Println(netFlow, len(t.Payload), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format(tf), ansi.Green, half.firstSeen.Format(tf), ansi.Blue, half.lastSeen.Format(tf), ansi.Reset)
+	// fmt.Println(netFlow, len(t.Payload), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format(tf), ansi.Green, half.firstSeen.Format(tf), ansi.Blue, half.lastSeen.Format(tf), ansi.Reset)
 
 	a.start = half.nextSeq == invalidSequence && t.SYN
 	if Debug {
@@ -302,7 +301,6 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 //      2) overwrite queued part
 
 func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerContext) {
-
 	var (
 		next  *page
 		cur   = half.last
@@ -520,7 +518,6 @@ func (a *Assembler) overlapExisting(half *halfconnection, start, end Sequence, b
 
 // Prepare send or queue
 func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection, ci gopacket.CaptureInfo, start bool, end bool, action assemblerAction, ac AssemblerContext) assemblerAction {
-
 	// TODO: remove for production?
 	a.cacheLP.bytes = bytes
 	a.cacheLP.start = start
@@ -565,7 +562,6 @@ func (a *Assembler) setStatsToSG(half *halfconnection) {
 // Build the ScatterGather object, i.e. prepend saved bytes and
 // append continuous bytes.
 func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
-
 	// find if there are skipped bytes
 	skip := -1
 	if half.nextSeq != invalidSequence {
@@ -591,7 +587,6 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 }
 
 func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
-
 	var (
 		r    byteContainer
 		cur  = 0
@@ -674,7 +669,6 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 // sendToConnection sends the current values in a.ret to the connection, closing
 // the connection if the last thing sent had End set.
 func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Sequence {
-
 	if Debug {
 		fmt.Printf("sendToConnection\n")
 	}
@@ -870,7 +864,6 @@ type FlushOptions struct {
 // Returns the number of connections flushed, and of those, the number closed
 // because of the flush.
 func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
-
 	var (
 		conns   = a.connPool.connections()
 		closes  = 0

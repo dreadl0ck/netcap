@@ -8,7 +8,6 @@ import (
 
 // FTP Harvester test
 func TestFTPCredentialsHarvester(t *testing.T) {
-
 	data := `220 (vsFTPd 3.0.3)
 USER ftpuser
 331 Please specify the password.
@@ -62,7 +61,6 @@ QUIT
 	if c.Password != "test123" {
 		t.Fatal("incorrect pass, got:", c.Password, "expected: ftppass")
 	}
-
 }
 
 // HTTP Harvester test

@@ -39,7 +39,6 @@ func NewWriter(w io.Writer) *Writer {
 // Note:
 //  - equivalent to WriteRecord, but discards the number of bytes written
 func (w Writer) Put(record []byte) error {
-
 	// ignore the amount of bytes written
 	_, err := w.WriteRecord(record)
 
@@ -48,7 +47,6 @@ func (w Writer) Put(record []byte) error {
 
 // PutProto encodes and writes the specified proto.Message to the writer
 func (w Writer) PutProto(msg proto.Message) error {
-
 	// pack protocol buffer
 	rec, err := proto.Marshal(msg)
 	if err != nil {
@@ -63,7 +61,6 @@ func (w Writer) PutProto(msg proto.Message) error {
 // Note:
 //  - returns the total number of bytes written including the length tag
 func (w Writer) WriteRecord(record []byte) (int, error) {
-
 	var (
 		buffer [binary.MaxVarintLen64]byte
 		varint = binary.PutUvarint(buffer[:], uint64(len(record)))

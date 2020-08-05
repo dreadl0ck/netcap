@@ -75,7 +75,6 @@ var connectionDecoder = &ConnectionDecoder{
 }
 
 func (cd *ConnectionDecoder) PostInit() error {
-
 	// simply overwrite the handler with our custom one
 	// this way the CustomEncoders default Decode() implementation will be used
 	// (it takes care of applying config options and tracking stats)
@@ -87,7 +86,6 @@ func (cd *ConnectionDecoder) PostInit() error {
 
 // Destroy closes and flushes all writers and calls deinit if set
 func (cd *ConnectionDecoder) Destroy() (name string, size int64) {
-
 	// call Deinit on FlowDecoder, instead of CustomDecoder
 	err := cd.DeInit()
 	if err != nil {
@@ -233,7 +231,6 @@ func (cd *ConnectionDecoder) DeInit() error {
 
 // writeConn writes the connection
 func (cd *ConnectionDecoder) writeConn(conn *types.Connection) {
-
 	if c.Export {
 		conn.Inc()
 	}

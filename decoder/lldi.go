@@ -87,7 +87,7 @@ var linkLayerDiscoveryInfoDecoder = NewGoPacketDecoder(
 					Address:          lldi.MgmtAddress.Address,
 					InterfaceSubtype: int32(lldi.MgmtAddress.InterfaceSubtype),
 					InterfaceNumber:  lldi.MgmtAddress.InterfaceNumber,
-					//OID:              lldi.MgmtAddress.OID,
+					// OID:              lldi.MgmtAddress.OID,
 				},
 				OrgTLVs: tlvs,
 				Unknown: undecodedTlvs,

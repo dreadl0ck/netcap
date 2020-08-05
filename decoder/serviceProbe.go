@@ -72,7 +72,6 @@ type ServiceProbe struct {
 }
 
 func (s *ServiceProbe) String() string {
-
 	var b strings.Builder
 
 	b.WriteString("ServiceProbe: ")
@@ -103,8 +102,8 @@ func (s *ServiceProbe) String() string {
 		b.WriteString("\nDeviceType: ")
 		b.WriteString(s.DeviceType)
 	}
-	//b.WriteString("\nCPEs: ")
-	//b.WriteString(s.CPEs)
+	// b.WriteString("\nCPEs: ")
+	// b.WriteString(s.CPEs)
 	b.WriteString("\nCaseInsensitive: ")
 	b.WriteString(strconv.FormatBool(s.CaseInsensitive))
 	b.WriteString("\nIncludeNewlines: ")
@@ -212,16 +211,15 @@ func extractGroupDotNet(in *string, m *regexp2.Match) string {
 // - unpack unsigned int
 
 // example data:
-//match amanda m|^220 ([-.\w]+) AMANDA index server \((\d[-.\w ]+)\) ready\.\r\n| p/Amanda backup system index server/ v/$2/ o/Unix/ h/$1/ cpe:/a:amanda:amanda:$2/
-//match amanda m|^501 Could not read config file [^!\r\n]+!\r\n220 ([-.\w]+) AMANDA index server \(([-\w_.]+)\) ready\.\r\n| p/Amanda backup system index server/ v/$2/ i/broken: config file not found/ h/$1/ cpe:/a:amanda:amanda:$2/
-//match amanda m|^ld\.so\.1: amandad: fatal: (libsunmath\.so\.1): open failed: No such file or directory\n$| p/Amanda backup system index server/ i/broken: $1 not found/ cpe:/a:amanda:amanda/
-//match amanda m|^\n\*\* \(process:\d+\): CRITICAL \*\*: GLib version too old \(micro mismatch\): Amanda was compiled with glib-[\d.]+, but linking with ([\d.]+)\n| p/Amanda backup system index server/ i/broken: GLib $1 too old/ cpe:/a:amanda:amanda/
+// match amanda m|^220 ([-.\w]+) AMANDA index server \((\d[-.\w ]+)\) ready\.\r\n| p/Amanda backup system index server/ v/$2/ o/Unix/ h/$1/ cpe:/a:amanda:amanda:$2/
+// match amanda m|^501 Could not read config file [^!\r\n]+!\r\n220 ([-.\w]+) AMANDA index server \(([-\w_.]+)\) ready\.\r\n| p/Amanda backup system index server/ v/$2/ i/broken: config file not found/ h/$1/ cpe:/a:amanda:amanda:$2/
+// match amanda m|^ld\.so\.1: amandad: fatal: (libsunmath\.so\.1): open failed: No such file or directory\n$| p/Amanda backup system index server/ i/broken: $1 not found/ cpe:/a:amanda:amanda/
+// match amanda m|^\n\*\* \(process:\d+\): CRITICAL \*\*: GLib version too old \(micro mismatch\): Amanda was compiled with glib-[\d.]+, but linking with ([\d.]+)\n| p/Amanda backup system index server/ i/broken: GLib $1 too old/ cpe:/a:amanda:amanda/
 
 // parseVersionInfo uses the next read byte as a delimiter
 // and reads everything into a buffer until the delimiter appears again
 // it returns the final buffer and an error and advances the passed in *bytes.Reader to the
 func parseVersionInfo(r io.ByteReader) (string, error) {
-
 	var res []byte
 	d, err := r.ReadByte()
 	if err != nil {
@@ -239,7 +237,7 @@ func parseVersionInfo(r io.ByteReader) (string, error) {
 		res = append(res, bb)
 	}
 
-	//fmt.Println("parsed meta", string(res))
+	// fmt.Println("parsed meta", string(res))
 	return string(res), nil
 }
 
@@ -307,10 +305,10 @@ func InitServiceProbes() error {
 				} else if err != nil {
 					return err
 				}
-				//fmt.Println("read", string(b))
+				// fmt.Println("read", string(b))
 
 				if unicode.IsSpace(rune(b)) && !checkOpts {
-					//fmt.Println("its a space", string(b))
+					// fmt.Println("its a space", string(b))
 					spaces++
 
 					if delim != 0 {
@@ -325,7 +323,7 @@ func InitServiceProbes() error {
 
 					// skip over whitespace
 					if unicode.IsSpace(rune(b)) {
-						//fmt.Println("parse meta: skip whitespace")
+						// fmt.Println("parse meta: skip whitespace")
 						continue
 					}
 
@@ -395,7 +393,7 @@ func InitServiceProbes() error {
 				if checkOpts {
 					if unicode.IsSpace(rune(b)) {
 
-						//fmt.Println("options done!")
+						// fmt.Println("options done!")
 						// options done
 						checkOpts = false
 						parseMeta = true
@@ -412,7 +410,7 @@ func InitServiceProbes() error {
 				// check if delimiter was already found
 				if delim != 0 {
 					if b == delim {
-						//fmt.Println("parsed regex", ansi.Blue, string(regex), ansi.Reset, "from line", ansi.Green, line, ansi.Reset)
+						// fmt.Println("parsed regex", ansi.Blue, string(regex), ansi.Reset, "from line", ansi.Green, line, ansi.Reset)
 
 						// parse options
 						checkOpts = true
@@ -436,7 +434,7 @@ func InitServiceProbes() error {
 						return err
 					}
 
-					//fmt.Println("read delim", string(b))
+					// fmt.Println("read delim", string(b))
 
 					delim = b
 					continue
@@ -493,7 +491,6 @@ func InitServiceProbes() error {
 }
 
 func colorize(in string, num int) string {
-
 	var out string
 
 	for i, c := range in {
@@ -546,7 +543,7 @@ func clean(in string) string {
 		count++
 		debug := func(args ...interface{}) {
 			// TODO: make debug mode configurable
-			//fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, colorize(in, count), numIgnored)
+			// fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, colorize(in, count), numIgnored)
 		}
 		if string(b) == "\\" && !escaped {
 			debug("set escaped to true")
@@ -566,7 +563,6 @@ func clean(in string) string {
 		}
 		if ignore {
 			if string(b) == ")" {
-
 				if !escaped {
 
 					stopCnt++

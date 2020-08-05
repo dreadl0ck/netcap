@@ -18,7 +18,6 @@ import (
 )
 
 func TestJa3Resolver(t *testing.T) {
-
 	InitJa3Resolver()
 
 	res := LookupJa3("5ef08bc989a9fcc18d5011f07d953c14")

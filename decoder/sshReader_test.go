@@ -35,7 +35,6 @@ func TestParseSSHInfoFromHasshDB(t *testing.T) {
 }
 
 func TestParseSSHIdent(t *testing.T) {
-
 	i := parseSSHIdent("SSH-2.0-OpenSSH_for_Windows_7.7\\r\\n")
 	if i == nil {
 		t.Fatal("failed to parse")
@@ -86,7 +85,6 @@ func TestParseSSHIdent(t *testing.T) {
 	if i.os != "" {
 		t.Fatal("unexpected os", i.os)
 	}
-
 }
 
 func TestParseSSHKexInitMsgLength(t *testing.T) {

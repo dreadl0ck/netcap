@@ -97,7 +97,6 @@ func (l LSReq) ToString() string {
 }
 
 func (r *RouterLSAV2) ToString() string {
-
 	var routers []string
 	for _, e := range r.Routers {
 		routers = append(routers, toString(e))
@@ -135,7 +134,6 @@ func (r *ASExternalLSAV2) ToString() string {
 }
 
 func (r *RouterLSA) ToString() string {
-
 	var routers []string
 	for _, e := range r.Routers {
 		routers = append(routers, toString(e))
@@ -223,7 +221,6 @@ func (r *ASExternalLSA) ToString() string {
 }
 
 func (r *LinkLSA) ToString() string {
-
 	var prefixes []string
 	for _, p := range r.Prefixes {
 		prefixes = append(prefixes, toString(p))
@@ -247,7 +244,6 @@ func (r *LinkLSA) ToString() string {
 }
 
 func (r *IntraAreaPrefixLSA) ToString() string {
-
 	var prefixes []string
 	for _, p := range r.Prefixes {
 		prefixes = append(prefixes, toString(p))
@@ -307,7 +303,6 @@ func (r *RouterV2) ToString() string {
 }
 
 func (l *LSA) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -338,7 +333,6 @@ func (l *LSA) ToString() string {
 }
 
 func (l LSUpdate) ToString() string {
-
 	var lsas []string
 	for _, lsa := range l.LSAs {
 		lsas = append(lsas, toString(lsa))
@@ -356,7 +350,6 @@ func (l LSUpdate) ToString() string {
 }
 
 func (l DbDescPkg) ToString() string {
-
 	var headers []string
 	for _, lsa := range l.LSAinfo {
 		headers = append(headers, toString(lsa))
@@ -380,7 +373,6 @@ func (l DbDescPkg) ToString() string {
 }
 
 func (l HelloPkgV2) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -423,7 +415,6 @@ func (l LSAPrefix) ToString() string {
 }
 
 func (l LSAheader) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)

@@ -387,7 +387,6 @@ func (test *clientTest) run(t *testing.T, write bool) {
 
 				buf := make([]byte, 256)
 				n, err := client.Read(buf)
-
 				if err != nil {
 					t.Errorf("Client.Read failed after KeyUpdate: %s", err)
 					return
@@ -467,7 +466,7 @@ func (test *clientTest) run(t *testing.T, write bool) {
 
 	if write {
 		path := test.dataPath()
-		out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create output file: %s", err)
 		}
@@ -696,6 +695,7 @@ func TestHandshakeClientAES128SHA256(t *testing.T) {
 	}
 	runClientTestTLS13(t, test)
 }
+
 func TestHandshakeClientAES256SHA384(t *testing.T) {
 	test := &clientTest{
 		name: "AES256-SHA384",
@@ -703,6 +703,7 @@ func TestHandshakeClientAES256SHA384(t *testing.T) {
 	}
 	runClientTestTLS13(t, test)
 }
+
 func TestHandshakeClientCHACHA20SHA256(t *testing.T) {
 	test := &clientTest{
 		name: "CHACHA20-SHA256",
@@ -831,8 +832,10 @@ func TestHandshakeClientCertRSAPSS(t *testing.T) {
 
 	test := &clientTest{
 		name: "ClientCert-RSA-RSAPSS",
-		args: []string{"-cipher", "AES128", "-Verify", "1", "-client_sigalgs",
-			"rsa_pss_rsae_sha256", "-sigalgs", "rsa_pss_rsae_sha256"},
+		args: []string{
+			"-cipher", "AES128", "-Verify", "1", "-client_sigalgs",
+			"rsa_pss_rsae_sha256", "-sigalgs", "rsa_pss_rsae_sha256",
+		},
 		config: config,
 		cert:   testRSAPSSCertificate,
 		key:    testRSAPrivateKey,
@@ -848,8 +851,10 @@ func TestHandshakeClientCertRSAPKCS1v15(t *testing.T) {
 
 	test := &clientTest{
 		name: "ClientCert-RSA-RSAPKCS1v15",
-		args: []string{"-cipher", "AES128", "-Verify", "1", "-client_sigalgs",
-			"rsa_pkcs1_sha256", "-sigalgs", "rsa_pkcs1_sha256"},
+		args: []string{
+			"-cipher", "AES128", "-Verify", "1", "-client_sigalgs",
+			"rsa_pkcs1_sha256", "-sigalgs", "rsa_pkcs1_sha256",
+		},
 		config: config,
 	}
 

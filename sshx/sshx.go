@@ -66,5 +66,4 @@ func GetClientHello(p gopacket.Packet) *KexInitMsg {
 }
 
 func GetServerHello(p gopacket.Packet) {
-
 }

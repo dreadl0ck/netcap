@@ -24,7 +24,6 @@ import (
 //}
 
 func TestGenerateAuditRecordIconsV2(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
