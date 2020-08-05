@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
-	"github.com/umisama/go-cpe"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -16,9 +14,12 @@ import (
 	"unicode"
 
 	"github.com/dlclark/regexp2"
+	"github.com/gogo/protobuf/proto"
+	"github.com/mgutz/ansi"
+	"github.com/umisama/go-cpe"
+
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 )
 
 var (

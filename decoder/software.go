@@ -27,17 +27,17 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
-
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"github.com/ua-parser/uap-go/uaparser"
+
+	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (

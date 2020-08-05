@@ -18,8 +18,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/tui"
 	"math"
 	"os"
 	"reflect"
@@ -27,8 +25,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/evilsocket/islazy/tui"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (

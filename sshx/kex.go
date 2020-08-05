@@ -9,9 +9,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/curve25519"
 	"io"
 	"math/big"
+
+	"golang.org/x/crypto/curve25519"
 )
 
 // Copyright 2013 The Go Authors. All rights reserved.

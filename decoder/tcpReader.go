@@ -16,15 +16,17 @@ package decoder
 import (
 	"bytes"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*

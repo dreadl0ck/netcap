@@ -19,10 +19,11 @@ import (
 	"sync/atomic"
 
 	"github.com/dreadl0ck/gopacket"
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 )
 
 type DeviceProfile struct {

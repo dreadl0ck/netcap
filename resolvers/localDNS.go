@@ -15,12 +15,13 @@ package resolvers
 
 import (
 	"bytes"
-	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"net"
 	"path/filepath"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (

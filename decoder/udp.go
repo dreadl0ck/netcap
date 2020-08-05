@@ -16,13 +16,6 @@ package decoder
 import (
 	"bytes"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/gogo/protobuf/proto"
-	"github.com/mgutz/ansi"
 	"io"
 	"os"
 	"path"
@@ -31,6 +24,15 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/gogo/protobuf/proto"
+	"github.com/mgutz/ansi"
+
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var udpStreams = NewUDPStreamPool()

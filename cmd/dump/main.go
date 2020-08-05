@@ -21,11 +21,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/evilsocket/islazy/tui"
+	"github.com/mgutz/ansi"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/tui"
-	"github.com/mgutz/ansi"
 )
 
 func Run() {

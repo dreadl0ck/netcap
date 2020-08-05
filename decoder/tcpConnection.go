@@ -48,23 +48,23 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/mgutz/ansi"
-	"sort"
-	"sync"
-
 	"log"
 	"os"
 	"runtime/pprof"
+	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/evilsocket/islazy/tui"
+	"github.com/mgutz/ansi"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/tui"
 )
 
 var (

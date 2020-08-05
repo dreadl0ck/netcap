@@ -2,13 +2,15 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dsoprea/go-exif/v2"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/dsoprea/go-exif/v2"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func ToExifDataForImage() {

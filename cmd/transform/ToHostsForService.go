@@ -1,10 +1,11 @@
 package transform
 
 import (
+	"log"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"log"
 )
 
 func ToHostsForService() {

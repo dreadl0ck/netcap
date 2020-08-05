@@ -2,14 +2,16 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/nyaruka/phonenumbers"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/nyaruka/phonenumbers"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func ToPhoneNumbersFromFile() {

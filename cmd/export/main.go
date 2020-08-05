@@ -15,19 +15,20 @@ package export
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/decoder"
-	"github.com/dreadl0ck/netcap/metrics"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/tui"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
 	"strconv"
 
+	"github.com/evilsocket/islazy/tui"
+
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/collector"
+	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/metrics"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func Run() {

@@ -21,10 +21,10 @@ import (
 	"net/url"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
-
-	"go.uber.org/zap"
 )
 
 // ReverseProxy represents a named reverse proxy

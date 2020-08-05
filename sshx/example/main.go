@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/dreadl0ck/netcap/sshx"
 	"log"
 	"os"
 
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcap"
+
+	"github.com/dreadl0ck/netcap/sshx"
 )
 
 func main() {

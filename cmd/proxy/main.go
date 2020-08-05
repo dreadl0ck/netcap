@@ -21,8 +21,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dreadl0ck/netcap"
 	"go.uber.org/zap"
+
+	"github.com/dreadl0ck/netcap"
 )
 
 // a list of all reverse proxies

@@ -1,10 +1,11 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"strconv"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func ToMD5HashesForImage() {

@@ -21,8 +21,9 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcapgo"
-	"github.com/dreadl0ck/netcap"
 	"github.com/pkg/errors"
+
+	"github.com/dreadl0ck/netcap"
 )
 
 // close errors.pcap and unknown.pcap

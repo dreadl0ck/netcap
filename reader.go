@@ -19,9 +19,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 )
 
 // Reader implements reading netcap audit record files

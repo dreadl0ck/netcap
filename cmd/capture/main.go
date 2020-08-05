@@ -15,24 +15,24 @@ package capture
 
 import (
 	"fmt"
-	"github.com/felixge/fgprof"
 	"log"
 	"net/http"
+
 	//_ "net/http/pprof"
 	"os"
 	"runtime/pprof"
 	"strings"
 	"time"
 
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dustin/go-humanize"
-
+	"github.com/felixge/fgprof"
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
 

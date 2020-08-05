@@ -20,7 +20,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/reassembly"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -30,10 +29,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
 	"sync/atomic"
 
 	"github.com/dreadl0ck/cryptoutils"
+
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )

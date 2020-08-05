@@ -1,10 +1,12 @@
 package netcap
 
 import (
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 	"reflect"
 	"testing"
+
+	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // Test if the count function works as expected

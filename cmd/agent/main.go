@@ -15,6 +15,7 @@ package agent
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -22,17 +23,15 @@ import (
 	"log"
 	"os"
 
-	"github.com/dreadl0ck/netcap/resolvers"
-
-	"compress/gzip"
-
 	"github.com/dreadl0ck/cryptoutils"
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/gogo/protobuf/proto"
 )
 
 func Run() {

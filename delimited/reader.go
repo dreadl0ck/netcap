@@ -16,8 +16,9 @@ package delimited
 import (
 	"bufio"
 	"encoding/binary"
-	"github.com/gogo/protobuf/proto"
 	"io"
+
+	"github.com/gogo/protobuf/proto"
 )
 
 // Reader reads length-delimited records from a byte data source.

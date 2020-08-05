@@ -3,10 +3,6 @@ package transform
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
 	"os"
@@ -14,6 +10,12 @@ import (
 
 	//"strconv"
 	"strings"
+
+	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func ToDNSQuestions() {

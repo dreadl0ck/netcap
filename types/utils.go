@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+
 	"github.com/dreadl0ck/netcap/utils"
 )
 

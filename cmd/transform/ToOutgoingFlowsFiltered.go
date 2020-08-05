@@ -2,13 +2,15 @@ package transform
 
 import (
 	"fmt"
+	"os"
+	"time"
+
+	"github.com/dustin/go-humanize"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
-	"os"
-	"time"
 )
 
 func ToOutgoingFlowsFiltered() {

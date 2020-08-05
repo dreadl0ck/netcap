@@ -16,7 +16,6 @@ package label
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,8 +23,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dreadl0ck/netcap"
 	"gopkg.in/cheggaaa/pb.v1"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (

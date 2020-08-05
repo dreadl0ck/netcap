@@ -2,13 +2,15 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/mcnijman/go-emailaddress"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/mcnijman/go-emailaddress"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func ToEmailsFromFile() {

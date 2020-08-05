@@ -18,12 +18,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // internal structure that is used to read TCP data streams

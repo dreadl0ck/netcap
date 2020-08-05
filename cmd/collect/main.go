@@ -15,6 +15,7 @@ package collect
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -27,12 +28,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"compress/gzip"
-
 	"github.com/dreadl0ck/cryptoutils"
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 )
 
 // maxBufferSize specifies the size of the buffers that

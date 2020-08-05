@@ -20,9 +20,10 @@ import (
 	"sync/atomic"
 
 	"github.com/dreadl0ck/gopacket"
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/gogo/protobuf/proto"
 )
 
 // ConnectionID is a bidirectional connection

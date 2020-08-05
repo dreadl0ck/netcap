@@ -2,9 +2,10 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 var (

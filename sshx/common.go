@@ -7,14 +7,13 @@ package sshx
 import (
 	"crypto"
 	"crypto/rand"
+	_ "crypto/sha1"
+	_ "crypto/sha256"
+	_ "crypto/sha512"
 	"fmt"
 	"io"
 	"math"
 	"sync"
-
-	_ "crypto/sha1"
-	_ "crypto/sha256"
-	_ "crypto/sha512"
 )
 
 // These are string constants in the SSH protocol.

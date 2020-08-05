@@ -3,12 +3,11 @@ package reassembly
 import (
 	"bytes"
 	"fmt"
-	"github.com/dreadl0ck/gopacket/layers"
-	"sync"
-
 	"log"
-
+	"sync"
 	"time"
+
+	"github.com/dreadl0ck/gopacket/layers"
 )
 
 /*

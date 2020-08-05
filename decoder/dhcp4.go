@@ -14,12 +14,14 @@
 package decoder
 
 import (
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 var dhcpv4Decoder = NewGoPacketDecoder(

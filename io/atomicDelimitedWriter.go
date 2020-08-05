@@ -11,13 +11,15 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// Implements IO primitives
+// Package io implements IO primitives
 package io
 
 import (
-	"github.com/dreadl0ck/netcap/delimited"
-	"github.com/gogo/protobuf/proto"
 	"sync"
+
+	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/delimited"
 )
 
 /*

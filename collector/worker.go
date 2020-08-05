@@ -15,11 +15,12 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dreadl0ck/gopacket"
+
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // worker spawns a new worker goroutine

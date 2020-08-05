@@ -1,11 +1,12 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func ToFilesForContentType() {

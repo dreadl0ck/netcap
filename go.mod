@@ -8,6 +8,7 @@ require (
 	github.com/cznic/b v0.0.0-20181122101859-a26611c4d92d // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/cznic/strutil v0.0.0-20181122101858-275e90344537 // indirect
+	github.com/daixiang0/gci v0.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dlclark/regexp2 v1.2.0
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
@@ -58,7 +59,6 @@ require (
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	golang.org/x/sys v0.0.0-20200720211630-cb9d2d5c5666 // indirect
-	golang.org/x/tools v0.0.0-20200426102838-f3a5411a4c3b // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.3.0

@@ -15,12 +15,10 @@ package netcap
 
 import (
 	"bufio"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mgutz/ansi"
-	"github.com/namsral/flag"
-	"golang.org/x/crypto/ssh/terminal"
 	"io"
 	"log"
 	"os"
@@ -32,12 +30,14 @@ import (
 	"strings"
 	"time"
 
-	"compress/gzip"
+	"github.com/evilsocket/islazy/tui"
+	"github.com/gogo/protobuf/proto"
+	"github.com/mgutz/ansi"
+	"github.com/namsral/flag"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/tui"
-	"github.com/gogo/protobuf/proto"
 )
 
 var logo = `                       / |

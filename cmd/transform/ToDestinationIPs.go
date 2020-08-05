@@ -1,15 +1,17 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dustin/go-humanize"
 	"net"
 	"strconv"
 
 	//"strconv"
 	"strings"
+
+	"github.com/dustin/go-humanize"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func ToDestinationIPs() {

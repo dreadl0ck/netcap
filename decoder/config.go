@@ -14,13 +14,12 @@
 package decoder
 
 import (
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/utils"
 	"sync"
-
 	"time"
 
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (

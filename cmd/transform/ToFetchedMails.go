@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func ToFetchedMails() {

@@ -2,10 +2,10 @@ package reassembly
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
 	"sync"
-
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
 )
 
 const pageBytes = 1900

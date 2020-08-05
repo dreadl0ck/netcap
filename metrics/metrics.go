@@ -21,9 +21,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dreadl0ck/netcap/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/dreadl0ck/netcap/collector"
 )
 
 const metricsRoute = "/metrics"

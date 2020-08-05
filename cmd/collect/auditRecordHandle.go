@@ -16,10 +16,11 @@ package collect
 import (
 	"bufio"
 	"fmt"
-	gzip "github.com/klauspost/pgzip"
 	"log"
 	"os"
 	"runtime"
+
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
