@@ -35,7 +35,7 @@ import (
 // eg: 04/15/2014-11:53:20.462091
 const suricataTS = "01/02/2006-15:04:05.000000"
 
-const directoryPermission = 0755
+const directoryPermission = 0o755
 
 // regular expressions to match data from suricata fast.log
 var (
@@ -91,7 +91,6 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 		} else {
 			return err
 		}
-
 	} else {
 		debug("removing suricata logfiles from previous runs")
 
@@ -258,21 +257,20 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 	}
 
 	// alerts that have a duplicate timestamp
-	var duplicates = []*SuricataAlert{}
+	duplicates := []*SuricataAlert{}
 
 	// ts:alert
 	labelMap = make(map[string]*SuricataAlert)
 
 	// range fast.log contents line by line
 	for _, l := range strings.Split(string(contents), "\n") {
-
 		// minimum 27 chars for a valid log line starting with a timestamp
 		if len(l) > 27 {
 
 			// parse timestamp
 			// important: parse in current location
 			// declaring t here to avoid shadowing the error
-			var t = time.Time{}
+			t := time.Time{}
 			t, err = time.ParseInLocation(suricataTS, l[:26], time.Local)
 			if err != nil {
 				return

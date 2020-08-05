@@ -57,7 +57,6 @@ type pop3Reader struct {
 }
 
 func (h *pop3Reader) Decode(c2s, s2c Stream) {
-
 	var (
 		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
@@ -68,14 +67,13 @@ func (h *pop3Reader) Decode(c2s, s2c Stream) {
 
 	// parse conversation
 	for _, d := range h.parent.merged {
-
 		if d.dir == previousDir {
-			//fmt.Println(d.dir, "collect", len(d.raw), d.ac.GetCaptureInfo().Timestamp)
+			// fmt.Println(d.dir, "collect", len(d.raw), d.ac.GetCaptureInfo().Timestamp)
 			buf.Write(d.raw)
 		} else {
 			var err error
 
-			//fmt.Println(hex.Dump(buf.Bytes()))
+			// fmt.Println(hex.Dump(buf.Bytes()))
 
 			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
@@ -112,7 +110,7 @@ func (h *pop3Reader) Decode(c2s, s2c Stream) {
 	//	fmt.Println(err)
 	//}
 
-	//fmt.Println(servicePOP3, h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
+	// fmt.Println(servicePOP3, h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
 
 	mails, user, pass, token := h.parseMails()
 	pop3Msg := &types.POP3{
@@ -153,7 +151,6 @@ func (h *pop3Reader) Decode(c2s, s2c Stream) {
 
 // TODO: use saveFile to extract attachments
 func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encoding []string) error {
-
 	// prevent saving zero bytes
 	if len(body) == 0 {
 		return nil
@@ -215,7 +212,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		n++
 	}
 
-	//fmt.Println("saving file:", target)
+	// fmt.Println("saving file:", target)
 
 	f, err := os.Create(target)
 	if err != nil {
@@ -275,7 +272,6 @@ func mailDebug(args ...interface{}) {
 }
 
 func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
-
 	tp := textproto.NewReader(b)
 
 	// Parse the first line of the response.
@@ -306,7 +302,6 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
 }
 
 func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Stream) error {
-
 	tp := textproto.NewReader(b)
 
 	// Parse the first line of the response.
@@ -391,7 +386,6 @@ const (
 )
 
 func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string) {
-
 	if len(h.pop3Responses) == 0 || len(h.pop3Requests) == 0 {
 		return
 	}
@@ -421,7 +415,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 		}
 		r = next()
 		h.reqIndex++
-		//fmt.Println("CMD", r.Command, r.Argument, "h.resIndex", h.resIndex)
+		// fmt.Println("CMD", r.Command, r.Argument, "h.resIndex", h.resIndex)
 
 		switch state {
 		case StateAuthenticated:
@@ -548,7 +542,6 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 }
 
 func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
-
 	var (
 		header      = make(map[string]string)
 		r           = textproto.NewReader(bufio.NewReader(bytes.NewReader(buf)))
@@ -594,7 +587,6 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 }
 
 func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
-
 	mailDebug(ansi.Yellow, "parseMail", h.parent.ident, ansi.Reset)
 
 	header, body := splitMailHeaderAndBody(buf)
@@ -627,7 +619,6 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 const partIdent = "------=_Part_"
 
 func (h *pop3Reader) parseParts(body string) []*types.MailPart {
-
 	var (
 		parts        []*types.MailPart
 		currentPart  *types.MailPart
@@ -773,9 +764,9 @@ func copyMailPart(part *types.MailPart) *types.MailPart {
 // next command is token
 
 // parse user and MD5 from APOP cmd
-//S: +OK POP3 server ready <1896.697170952@dbc.mtview.ca.us>
-//C: APOP mrose c4c9334bac560ecc979e58001b3e22fb
-//S: +OK maildrop has 1 message (369 octets)
+// S: +OK POP3 server ready <1896.697170952@dbc.mtview.ca.us>
+// C: APOP mrose c4c9334bac560ecc979e58001b3e22fb
+// S: +OK maildrop has 1 message (369 octets)
 
 // save USER name and PASS
 //Possible Responses:

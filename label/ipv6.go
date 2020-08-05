@@ -102,7 +102,6 @@ func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 			// Unidirectional IPv6 packets
 			// checks if packet has a source or destination ip matching an alert
 			for _, a := range alerts {
-
 				// must be a IPv6 packet
 				if a.Proto == "IPv6" &&
 

@@ -10,7 +10,6 @@ import (
 )
 
 func StopCaptureProcess() {
-
 	lt := maltego.ParseLocalArguments(os.Args[1:])
 	pid := lt.Values["pid"]
 	log.Println("kill PID:", pid)
@@ -28,7 +27,7 @@ func StopCaptureProcess() {
 	// graceful shutdown
 	// TODO: add windows support
 	err = p.Signal(os.Interrupt)
-	//err = p.Kill()
+	// err = p.Kill()
 	if err != nil {
 		log.Fatal(err)
 	}

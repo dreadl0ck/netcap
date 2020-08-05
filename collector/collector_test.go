@@ -15,7 +15,6 @@ import (
 
 // TestCaptureLive will test capturing traffic live from the loopback interface
 func TestCaptureLive(t *testing.T) {
-
 	// init collector
 	// TODO: use base config from PCAP test, and set to live mode
 	c := New(Config{
@@ -67,7 +66,7 @@ func TestCaptureLive(t *testing.T) {
 			ServiceDB:     true,
 			GeolocationDB: true,
 		},
-		OutDirPermission:      0700,
+		OutDirPermission:      0o700,
 		FreeOSMem:             0,
 		ReassembleConnections: true,
 	})
@@ -84,7 +83,7 @@ func TestCaptureLive(t *testing.T) {
 		os.Exit(0)
 	}()
 
-	var iface = "lo"
+	iface := "lo"
 	if runtime.GOOS == "darwin" {
 		iface = "lo0"
 	}
@@ -96,7 +95,6 @@ func TestCaptureLive(t *testing.T) {
 }
 
 func TestCapturePCAP(t *testing.T) {
-
 	// init collector
 	c := New(Config{
 		WriteUnknownPackets: false,
@@ -147,7 +145,7 @@ func TestCapturePCAP(t *testing.T) {
 			ServiceDB:     true,
 			GeolocationDB: true,
 		},
-		OutDirPermission:      0700,
+		OutDirPermission:      0o700,
 		FreeOSMem:             0,
 		ReassembleConnections: true,
 	})

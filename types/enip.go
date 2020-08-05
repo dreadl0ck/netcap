@@ -38,6 +38,7 @@ var fieldsENIP = []string{
 func (en *ENIP) CSVHeader() []string {
 	return filter(fieldsENIP)
 }
+
 func (en *ENIP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if en.Context == nil {
@@ -67,14 +68,12 @@ func (en *ENIP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(en)
 }
 
-var (
-	enipMetric = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: strings.ToLower(Type_NC_ENIP.String()),
-			Help: Type_NC_ENIP.String() + " audit records",
-		},
-		fieldsENIP[1:],
-	)
+var enipMetric = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: strings.ToLower(Type_NC_ENIP.String()),
+		Help: Type_NC_ENIP.String() + " audit records",
+	},
+	fieldsENIP[1:],
 )
 
 func init() {

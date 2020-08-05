@@ -32,7 +32,6 @@ import (
 )
 
 func Run() {
-
 	// parse commandline flags
 	fs.Usage = printUsage
 	err := fs.Parse(os.Args[2:])
@@ -137,7 +136,7 @@ func Run() {
 			},
 			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
-			//FileStorage:   "files", // TODO:
+			// FileStorage:   "files", // TODO:
 			Quiet: false,
 			DPI:   *flagDPI,
 			ResolverConfig: resolvers.Config{
@@ -148,7 +147,7 @@ func Run() {
 				ServiceDB:     *flagServiceDB,
 				GeolocationDB: *flagGeolocationDB,
 			},
-			OutDirPermission:      0700,
+			OutDirPermission:      0o700,
 			FreeOSMem:             0,
 			ReassembleConnections: true,
 		})

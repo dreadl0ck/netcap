@@ -76,7 +76,6 @@ func (i *IPv4) Time() string {
 }
 
 func (i IPv4Option) ToString() string {
-
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(i.OptionType))
@@ -164,7 +163,6 @@ func (i *IPv4) Inc() {
 }
 
 func (i *IPv4) SetPacketContext(ctx *PacketContext) {
-
 	// create new context and only add information that is
 	// not yet present on the audit record type
 	i.Context = &PacketContext{

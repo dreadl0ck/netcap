@@ -102,7 +102,6 @@ func (a *CiscoDiscoveryInfo) Time() string {
 }
 
 func (c *CDPHello) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -135,7 +134,6 @@ func (c *CDPHello) ToString() string {
 }
 
 func (c *CDPCapabilities) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -163,7 +161,6 @@ func (c *CDPCapabilities) ToString() string {
 }
 
 func (i *IPNet) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -176,7 +173,6 @@ func (i *IPNet) ToString() string {
 }
 
 func (c *CDPVLANDialogue) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -189,7 +185,6 @@ func (c *CDPVLANDialogue) ToString() string {
 }
 
 func (c *CDPPowerDialogue) ToString() string {
-
 	var vals []string
 	for _, v := range c.Values {
 		vals = append(vals, formatUint32(v))
@@ -208,7 +203,6 @@ func (c *CDPPowerDialogue) ToString() string {
 }
 
 func (c *CDPSparePairPoE) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -225,7 +219,6 @@ func (c *CDPSparePairPoE) ToString() string {
 }
 
 func (c *CDPEnergyWise) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -266,7 +259,6 @@ func (c *CDPEnergyWise) ToString() string {
 }
 
 func (c *CDPLocation) ToString() string {
-
 	var b strings.Builder
 
 	b.WriteString(Begin)

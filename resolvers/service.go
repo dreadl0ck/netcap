@@ -62,7 +62,6 @@ func getServiceName(in string) string {
 
 // InitServiceDB initializes the ports to service names mapping
 func InitServiceDB() {
-
 	var (
 		f, err    = os.Open(filepath.Join(DataBaseSource, "service-names-port-numbers.csv"))
 		csvReader = csv.NewReader(f)

@@ -139,7 +139,6 @@ func (i *IPv6) Inc() {
 }
 
 func (i *IPv6) SetPacketContext(ctx *PacketContext) {
-
 	// create new context and only add information that is
 	// not yet present on the audit record type
 	i.Context = &PacketContext{

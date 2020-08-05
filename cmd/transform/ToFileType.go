@@ -10,7 +10,6 @@ import (
 )
 
 func ToFileType() {
-
 	lt := maltego.ParseLocalArguments(os.Args)
 	trx := &maltego.Transform{}
 

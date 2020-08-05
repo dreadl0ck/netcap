@@ -23,9 +23,8 @@ type dhcpFingerprintResult struct {
 }
 
 func TestDHCPRemote(t *testing.T) {
-
 	InitDHCPFingerprintAPIKey()
-	//InitDHCPFingerprintDB()
+	// InitDHCPFingerprintDB()
 
 	// Win XP
 	re, err := LookupDHCPFingerprint("53,116,61,12,60,55", "MSFT 5.0", []string{"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1) SCAgent"})
@@ -45,7 +44,7 @@ func TestDHCPRemote(t *testing.T) {
 		t.Fatal("expected Operating System/Windows OS/Microsoft Windows Kernel 10.0, got ", re.DeviceName)
 	}
 
-	//SaveFingerprintDB()
+	// SaveFingerprintDB()
 }
 
 func TestInitLocalDHCPFingerprintDB(t *testing.T) {
@@ -54,10 +53,9 @@ func TestInitLocalDHCPFingerprintDB(t *testing.T) {
 }
 
 func TestDHCPFingerprintLocal(t *testing.T) {
-
 	InitDHCPFingerprintDB()
 
-	var tests = []dhcpFingerprintResult{
+	tests := []dhcpFingerprintResult{
 		{
 			fingerprint: "58,59,1,28,121,33,3,12,119,15,6,40,41,42,26,17,120,9,7,44,45,46,47",
 			expected:    "VMware vCenter Server Appliance",

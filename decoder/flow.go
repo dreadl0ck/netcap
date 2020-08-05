@@ -60,7 +60,6 @@ var flowDecoder = &FlowDecoder{
 }
 
 func (fd *FlowDecoder) PostInit() error {
-
 	// simply overwrite the handler with our custom one
 	// this way the CustomEncoders default Decode() implementation will be used
 	// (it takes care of applying config options and tracking stats)
@@ -72,7 +71,6 @@ func (fd *FlowDecoder) PostInit() error {
 
 // Destroy closes and flushes all writers and calls deinit if set
 func (fd *FlowDecoder) Destroy() (name string, size int64) {
-
 	// call Deinit on FlowDecoder, instead of CustomDecoder
 	err := fd.DeInit()
 	if err != nil {
@@ -83,7 +81,6 @@ func (fd *FlowDecoder) Destroy() (name string, size int64) {
 }
 
 func (fd *FlowDecoder) handlePacket(p gopacket.Packet) proto.Message {
-
 	// get identifier
 	var (
 		net       gopacket.Flow
@@ -226,7 +223,6 @@ func (fd *FlowDecoder) DeInit() error {
 }
 
 func (fd *FlowDecoder) writeFlow(f *types.Flow) {
-
 	if c.Export {
 		f.Inc()
 	}

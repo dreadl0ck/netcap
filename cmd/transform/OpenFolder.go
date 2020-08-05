@@ -12,7 +12,6 @@ import (
 )
 
 func OpenFolder() {
-
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}

@@ -76,7 +76,6 @@ var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
 // generates max 20 intermediate versions
 // until is excluded
 func intermediatePatchVersions(from string, until string) []string {
-
 	var out []string
 
 	parts := strings.Split(from, ".")
@@ -111,7 +110,6 @@ func intermediatePatchVersions(from string, until string) []string {
 }
 
 func indexData(in string) {
-
 	var (
 		start     = time.Now()
 		indexPath string
@@ -306,7 +304,7 @@ func indexData(in string) {
 				log.Fatal("Could not open file " + filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
 			}
 
-			var items = new(decoder.NVDVulnerabilityItems)
+			items := new(decoder.NVDVulnerabilityItems)
 			err = json.Unmarshal(data, items)
 			total += len(items.CVEItems)
 			length := len(items.CVEItems)
@@ -323,7 +321,6 @@ func indexData(in string) {
 							if n.Operator == "OR" {
 								for _, cpe := range n.CpeMatch {
 									if cpe.Vulnerable {
-
 										if cpe.VersionStartIncluding != "" {
 											versions = append(versions, cpe.VersionStartIncluding)
 
@@ -355,7 +352,7 @@ func indexData(in string) {
 								versions = append(versions, genRes)
 							}
 						}
-						//fmt.Println(" ", v.Cve.CVEDataMeta.ID, entry.Value, " =>", versions)
+						// fmt.Println(" ", v.Cve.CVEDataMeta.ID, entry.Value, " =>", versions)
 
 						e := Vulnerability{
 							Id:                    v.Cve.CVEDataMeta.ID,

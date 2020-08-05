@@ -44,12 +44,10 @@ func (a *AtomicServiceMap) Size() int {
 	return len(a.Items)
 }
 
-var (
-	// ServiceStore hold all connections
-	ServiceStore = &AtomicServiceMap{
-		Items: make(map[string]*Service),
-	}
-)
+// ServiceStore hold all connections
+var ServiceStore = &AtomicServiceMap{
+	Items: make(map[string]*Service),
+}
 
 // addInfo is util to append information to a string using a delimiter
 // information will be deduplicated
@@ -74,7 +72,6 @@ func addInfo(old string, new string) string {
 // saves the banner for a TCP service to the filesystem
 // and limits the length of the saved data to the BannerSize value from the config
 func saveTCPServiceBanner(s StreamReader) {
-
 	banner := s.ServiceBanner()
 
 	// limit length of data
@@ -171,7 +168,6 @@ var serviceDecoder = NewCustomDecoder(
 		return nil
 	},
 	func(e *CustomDecoder) error {
-
 		// flush writer
 		if !e.writer.IsChanWriter {
 			for _, c := range ServiceStore.Items {

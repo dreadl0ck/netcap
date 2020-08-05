@@ -23,9 +23,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var (
-	fileDecoderInstance *CustomDecoder
-)
+var fileDecoderInstance *CustomDecoder
 
 var fileDecoder = NewCustomDecoder(
 	types.Type_NC_File,
@@ -45,7 +43,6 @@ var fileDecoder = NewCustomDecoder(
 
 // writeProfile writes the profile
 func writeFile(f *types.File) {
-
 	if c.Export {
 		f.Inc()
 	}

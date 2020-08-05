@@ -34,7 +34,6 @@ func TestInitRecord(t *testing.T) {
 
 // Benchmark how long it takes to initialize the first record in the type switch
 func BenchmarkInitRecordFirst(b *testing.B) {
-
 	var r proto.Message
 
 	b.ReportAllocs()
@@ -50,7 +49,6 @@ func BenchmarkInitRecordFirst(b *testing.B) {
 
 // Benchmark how long it takes to initialize the last record in the type switch
 func BenchmarkInitRecordLast(b *testing.B) {
-
 	var r proto.Message
 
 	b.ReportAllocs()

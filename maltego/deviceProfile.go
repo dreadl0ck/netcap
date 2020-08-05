@@ -75,7 +75,6 @@ type DeviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, p
 
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records
 func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformationFunc) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]

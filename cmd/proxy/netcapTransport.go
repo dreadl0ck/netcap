@@ -42,7 +42,6 @@ type NetcapTransport struct {
 
 // RoundTrip implements the http.Transport interface
 func (t *NetcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-
 	// set basic auth on request if present
 	if t.targetURL.User != nil {
 		pass, ok := t.targetURL.User.Password()
@@ -115,7 +114,6 @@ makeHTTPRequest:
 
 	// handle redirect and special status codes
 	switch resp.StatusCode {
-
 	// handle redirects
 	case http.StatusFound:
 
@@ -166,7 +164,7 @@ makeHTTPRequest:
 		DumpHTTPResponse(resp, t.proxyName, rawbody)
 	}
 
-	var sourceIP = req.RemoteAddr
+	sourceIP := req.RemoteAddr
 	if sourceIP == "" {
 		sourceIP = getIPAdress(req)
 	}
@@ -177,7 +175,7 @@ makeHTTPRequest:
 		Timestamp: utils.TimeToString(startTime),
 
 		// Request information
-		//ReqCookies:         reqCookies,
+		// ReqCookies:         reqCookies,
 		Proto:              req.Proto,
 		Method:             req.Method,
 		Host:               req.URL.Host,

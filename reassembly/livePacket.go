@@ -15,24 +15,31 @@ type livePacket struct {
 func (lp *livePacket) getBytes() []byte {
 	return lp.bytes
 }
+
 func (lp *livePacket) captureInfo() gopacket.CaptureInfo {
 	return lp.ci
 }
+
 func (lp *livePacket) assemblerContext() AssemblerContext {
 	return lp.ac
 }
+
 func (lp *livePacket) length() int {
 	return len(lp.bytes)
 }
+
 func (lp *livePacket) isStart() bool {
 	return lp.start
 }
+
 func (lp *livePacket) isEnd() bool {
 	return lp.end
 }
+
 func (lp *livePacket) getSeq() Sequence {
 	return lp.seq
 }
+
 func (lp *livePacket) isPacket() bool {
 	return true
 }
@@ -67,6 +74,7 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, ac AssemblerContex
 	}
 	return first, current, numPages
 }
+
 func (lp *livePacket) estimateNumberOfPages() int {
 	return (len(lp.bytes) + pageBytes + 1) / pageBytes
 }

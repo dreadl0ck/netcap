@@ -49,7 +49,6 @@ type AttackInfo struct {
 }
 
 func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*AttackInfo) {
-
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
@@ -63,7 +62,7 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 	}
 
 	// alerts that have a duplicate timestamp
-	var duplicates = []*AttackInfo{}
+	duplicates := []*AttackInfo{}
 
 	// ts:alert
 	labelMap = make(map[string]*AttackInfo)
@@ -139,7 +138,6 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 
 // CustomLabels uses info from a csv file to label the data
 func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separator, selection string) error {
-
 	var (
 		start            = time.Now()
 		labelMap, labels = ParseAttackInfos(pathMappingInfo)
@@ -183,7 +181,6 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 
 	// iterate over all files in dir
 	for _, f := range files {
-
 		// check if its an audit record file
 		if strings.HasSuffix(f.Name(), ".ncap.gz") || strings.HasSuffix(f.Name(), ".ncap") {
 			wg.Add(1)
@@ -194,7 +191,7 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 				typ      = strings.TrimSuffix(strings.TrimSuffix(filename, ".ncap.gz"), ".ncap")
 			)
 
-			//fmt.Println("type", typ)
+			// fmt.Println("type", typ)
 			pbs = append(pbs, CustomMap(&wg, filename, typ, labelMap, labels, outputPath, separator, selection))
 		}
 	}
@@ -228,9 +225,8 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 }
 
 // CustomMap uses info from a csv file to label the data
-//func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*AttackInfo, labels []*AttackInfo, outDir, separator, selection string) *pb.ProgressBar {
-
 	var (
 		fname           = filepath.Join(outDir, file)
 		total, errCount = netcap.Count(fname)
@@ -243,7 +239,6 @@ func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]
 	}
 
 	go func() {
-
 		// open layer data file
 		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {

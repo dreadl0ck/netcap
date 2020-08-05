@@ -34,7 +34,6 @@ var disableDPI = true
 
 // Init initializes the deep packet inspection engines
 func Init() {
-
 	disableDPI = false
 
 	var (
@@ -65,20 +64,19 @@ func Destroy() {
 // GetProtocols returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
 func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
-
 	protocols := make(map[string]ClassificationResult)
 
 	if disableDPI {
 		return protocols
 	}
 
-	//start := time.Now()
-	//fmt.Println("DPI", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
+	// start := time.Now()
+	// fmt.Println("DPI", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
 
 	flow, _ := godpi.GetPacketFlow(packet)
 	results := godpi.ClassifyFlowAllModules(flow)
 
-	//fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete", time.Since(start))
+	// fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete", time.Since(start))
 
 	// when using all modules we might receive duplicate classifications
 	// so they will be deduplicated by protocol name before counting them later
@@ -100,27 +98,24 @@ func NewProto(res *ClassificationResult) *types.Protocol {
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
 // this function spawn a goroutine to allow setting a timeout for each packet
 func GetProtocolsTimeout(packet gopacket.Packet) map[string]ClassificationResult {
-
 	protocols := make(map[string]ClassificationResult)
 
 	if disableDPI {
 		return protocols
 	}
 
-	var (
-		results = make(chan []ClassificationResult, 1)
-	)
+	results := make(chan []ClassificationResult, 1)
 	go func() {
 		flow, _ := godpi.GetPacketFlow(packet)
 		results <- godpi.ClassifyFlowAllModules(flow)
 	}()
 
-	//start := time.Now()
+	// start := time.Now()
 
 	select {
 	case res := <-results:
 
-		//fmt.Println("got result after", time.Since(start))
+		// fmt.Println("got result after", time.Since(start))
 
 		// when using all modules we might receive duplicate classifications
 		// so they will be deduplicated by protocol name before counting them later

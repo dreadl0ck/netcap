@@ -194,7 +194,6 @@ func (t *TCP) Inc() {
 }
 
 func (t *TCP) SetPacketContext(ctx *PacketContext) {
-
 	// create new context and only add information that is
 	// not yet present on the audit record type
 	t.Context = &PacketContext{

@@ -38,7 +38,6 @@ func printUsage() {
 }
 
 func cleanup() {
-
 	fmt.Println("cleanup")
 
 	// cleanup

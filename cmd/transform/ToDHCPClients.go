@@ -10,13 +10,11 @@ import (
 )
 
 func ToDHCPClients() {
-
-	var results = map[string]int{}
+	results := map[string]int{}
 
 	maltego.DHCPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
-
 			// DHCP operations fall into four phases: server discovery, IP lease offer, IP lease request, and IP lease acknowledgement.
 			// to identify the client we are only looking for server discovery messages for now
 			if dhcp.Operation != 1 {
@@ -32,7 +30,7 @@ func ToDHCPClients() {
 			}
 			results[ident]++
 
-			//log.Println("ident", ident, dhcp.Fingerprint)
+			// log.Println("ident", ident, dhcp.Fingerprint)
 
 			ent := trx.AddEntity("netcap.DHCPClient", ident)
 

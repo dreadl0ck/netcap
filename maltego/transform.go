@@ -181,11 +181,9 @@ type TransformSet struct {
 
 // e.g. "ToAuditRecords" -> "To Audit Records [NETCAP]"
 func toTransformDisplayName(in string) string {
-
 	var b strings.Builder
 
 	for i, c := range in {
-
 		switch {
 		// if current char is upper case, but the previous is lowercase
 		case i > 0 && unicode.IsUpper(c) && unicode.IsLower(rune(in[i-1])):
@@ -215,7 +213,6 @@ func toTransformDisplayName(in string) string {
 }
 
 func newTransformSettings(id string, debug bool) TransformSettings {
-
 	trs := TransformSettings{
 		Enabled:            true,
 		DisclaimerAccepted: false,
@@ -256,7 +253,6 @@ func newTransformSettings(id string, debug bool) TransformSettings {
 }
 
 func newTransform(id string, description string, input string) XMLTransform {
-
 	tr := XMLTransform{
 		Name:               "netcap." + id,
 		DisplayName:        toTransformDisplayName(id),
@@ -383,7 +379,6 @@ func newTransform(id string, description string, input string) XMLTransform {
 }
 
 func genTransform(outDir string, name string, description string, inputEntity string) {
-
 	var (
 		tr  = newTransform(name, description, inputEntity)
 		trs = newTransformSettings(name, transformDebug)
@@ -446,13 +441,12 @@ func genTransform(outDir string, name string, description string, inputEntity st
 // │       └── ...
 // └── version.properties
 func genTransformArchive() {
-
 	// clean
 	os.RemoveAll("transforms")
 
 	// create directories
-	os.MkdirAll("transforms/Servers", 0700)
-	os.MkdirAll("transforms/TransformRepositories/Local", 0700)
+	os.MkdirAll("transforms/Servers", 0o700)
+	os.MkdirAll("transforms/TransformRepositories/Local", 0o700)
 
 	fVersion, err := os.Create("transforms/version.properties")
 	if err != nil {
@@ -473,7 +467,6 @@ maltego.graph.version=1.2`)
 }
 
 func packTransformArchive() {
-
 	fmt.Println("packing maltego transform archive")
 
 	// zip and rename to: transforms.mtz
@@ -501,7 +494,6 @@ func packTransformArchive() {
 }
 
 func packMaltegoArchive(name string) {
-
 	fmt.Println("packing maltego " + name + " archive")
 
 	// zip and rename to: transforms.mtz

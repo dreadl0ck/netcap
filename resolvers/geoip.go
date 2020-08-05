@@ -60,6 +60,7 @@ func initCityReader() (err error) {
 
 	return
 }
+
 func initAsnReader() (err error) {
 	asnReader, err = maxminddb.Open(filepath.Join(DataBaseSource, "GeoLite2-ASN.mmdb"))
 	return
@@ -79,7 +80,6 @@ func (record GeoRecord) repr() (geoloc, asn string) {
 // LookupGeolocation returns all associated geolocations for a given address and db handle
 // results are being cached in an atomic map to avoid unnecessary lookups
 func LookupGeolocation(addr string) (string, string) {
-
 	if asnReader == nil || cityReader == nil {
 		return "", ""
 	}
@@ -97,7 +97,7 @@ func LookupGeolocation(addr string) (string, string) {
 		return result.(GeoRecord).repr()
 	}
 
-	var record = GeoRecord{}
+	record := GeoRecord{}
 	err := cityReader.Lookup(ip, &record)
 	if err != nil {
 		logger.WithError(err).Error("failed to lookup city")

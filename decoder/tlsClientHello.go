@@ -31,7 +31,6 @@ var tlsClientHelloDecoder = NewCustomDecoder(
 	"The client hello from a Transport Layer Security handshake",
 	nil,
 	func(p gopacket.Packet) proto.Message {
-
 		hello := tlsx.GetClientHello(p)
 		if hello != nil {
 

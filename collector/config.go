@@ -23,7 +23,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var outDirPermissionDefault = 0755
+var outDirPermissionDefault = 0o755
 
 var DefaultConfig = Config{
 	Workers:             1000,

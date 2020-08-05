@@ -23,13 +23,10 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var (
-	dnsWhitelist = make(map[string]struct{})
-)
+var dnsWhitelist = make(map[string]struct{})
 
 // InitDNSWhitelist initializes the domain whitelist
 func InitDNSWhitelist() {
-
 	var hosts int
 
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "domain-whitelist.csv"))
@@ -73,9 +70,9 @@ func getHost(domain string) string {
 // must be called after calling InitDNSWhitelist()
 func IsWhitelistedDomain(domain string) bool {
 	if _, ok := dnsWhitelist[getHost(domain)]; ok {
-		//log.Println(domain, "is whitelisted")
+		// log.Println(domain, "is whitelisted")
 		return true
 	}
-	//log.Println(domain, "is NOT whitelisted")
+	// log.Println(domain, "is NOT whitelisted")
 	return false
 }

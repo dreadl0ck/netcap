@@ -12,7 +12,6 @@ func ToParametersForHTTPHost() {
 			if http.SrcIP == ipaddr {
 				host := lt.Value
 				if http.Host == host {
-
 					for key := range http.Parameters {
 						ent := trx.AddEntity("netcap.HTTPParameter", key)
 						ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)

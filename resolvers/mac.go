@@ -51,7 +51,6 @@ var macDB = make(map[string]MacSummary)
 
 // InitMACResolver loads the JSON mac DB into a map in memory
 func InitMACResolver() {
-
 	var sums int
 
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "macaddress.io-db.json"))
@@ -84,7 +83,6 @@ func InitMACResolver() {
 
 // LookupManufacturer resolves a MAC addr to the manufacturer
 func LookupManufacturer(mac string) string {
-
 	if len(mac) < 8 {
 		return ""
 	}

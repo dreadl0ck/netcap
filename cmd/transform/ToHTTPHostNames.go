@@ -8,8 +8,7 @@ import (
 )
 
 func ToHTTPHostNames() {
-
-	var hostStats = make(map[string]int)
+	hostStats := make(map[string]int)
 
 	maltego.HTTPTransform(
 		nil,
@@ -19,7 +18,7 @@ func ToHTTPHostNames() {
 
 				hostStats[http.Host]++
 				ent.SetLinkLabel(strconv.Itoa(hostStats[http.Host]))
-				//ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
+				// ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 
 				ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
 				ent.AddProperty("path", "Path", "strict", profilesFile)

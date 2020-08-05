@@ -43,7 +43,6 @@ const (
 )
 
 func Run() {
-
 	// parse commandline flags
 	fs.Usage = printUsage
 	err := fs.Parse(os.Args[2:])
@@ -113,7 +112,6 @@ func Run() {
 
 // udpServer implements a simple UDP server
 func udpServer(ctx context.Context, address string) (err error) {
-
 	// ListenPacket provides a wrapper around ListenUDP
 	// eliminating the need to call net.ResolveUDPAddr
 	//
@@ -175,15 +173,14 @@ func udpServer(ctx context.Context, address string) (err error) {
 			fmt.Printf("packet-received: bytes=%d from=%s\n", n, addr.String())
 
 			// create a copy of the data to allow reusing the buffer for the next incoming packet
-			var copyBuf = make([]byte, n)
+			copyBuf := make([]byte, n)
 			copy(copyBuf, buffer[:n])
 			buf := bytes.NewBuffer(copyBuf)
 
 			// spawn a new goroutine to handle packet data
 			go func() {
-
 				// trim off the public key of the peer
-				var pubKeyClient = [32]byte{}
+				pubKeyClient := [32]byte{}
 				for i, b := range buf.Bytes() {
 					if i == 32 {
 						break
@@ -197,7 +194,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 					panic("decryption failed")
 				}
 
-				var decryptedBuf = bytes.NewBuffer(decrypted)
+				decryptedBuf := bytes.NewBuffer(decrypted)
 
 				// create a new gzipped reader
 				// IMPORTANT: do not shadow or use the err variable from outside the closure!

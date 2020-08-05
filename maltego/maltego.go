@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-//Set constants
+// Set constants
 const (
 	BOOKMARK_COLOR_NONE   = "-1"
 	BOOKMARK_COLOR_BLUE   = "0"
@@ -37,7 +37,6 @@ const (
 )
 
 func GetThicknessInterval(val, min, max uint64) int {
-
 	if min == max {
 		min = 0
 	}
@@ -74,18 +73,17 @@ func GetThicknessInterval(val, min, max uint64) int {
 //}
 
 func GetThickness(val, min, max uint64) int {
-
 	if min == max {
 		min = 0
 	}
 
 	delta := max - min
 
-	//log.Println("delta=", delta, "float64(delta)*0.01 = ", float64(delta)*0.01)
-	//log.Println("delta=", delta, "float64(delta)*0.1 = ", float64(delta)*0.1)
-	//log.Println("delta=", delta, "float64(delta)*0.5 = ", float64(delta)*0.5)
-	//log.Println("delta=", delta, "float64(delta)*1 = ", float64(delta)*1)
-	//log.Println("delta=", delta, "float64(delta)*2 = ", float64(delta)*2)
+	// log.Println("delta=", delta, "float64(delta)*0.01 = ", float64(delta)*0.01)
+	// log.Println("delta=", delta, "float64(delta)*0.1 = ", float64(delta)*0.1)
+	// log.Println("delta=", delta, "float64(delta)*0.5 = ", float64(delta)*0.5)
+	// log.Println("delta=", delta, "float64(delta)*1 = ", float64(delta)*1)
+	// log.Println("delta=", delta, "float64(delta)*2 = ", float64(delta)*2)
 
 	switch {
 	case float64(val) <= float64(delta)*0.01:
@@ -114,7 +112,7 @@ type EntityObj struct {
 	AdditionalFields   [][]string
 }
 
-//Constructor for MaltegoEntityObj
+// Constructor for MaltegoEntityObj
 func NewEntityObj(eT string, eV string) *EntityObj {
 	return &EntityObj{entityType: eT, value: eV, weight: 100}
 }
@@ -175,7 +173,7 @@ func (m *Transform) ThrowExceptions() string {
 	return r
 }
 
-//2. Setter and Getter functions for MaltegoEntityObjs
+// 2. Setter and Getter functions for MaltegoEntityObjs
 func (m *EntityObj) SetType(eT string) {
 	m.entityType = eT
 }
@@ -229,7 +227,7 @@ func (m *EntityObj) SetNote(note string) {
 
 func (m *EntityObj) SetLinkDirection(dir string) {
 	m.AddProperty("link#maltego.link.direction", "Direction", "loose", dir)
-	//me.addProperty('link#maltego.link.direction','link#maltego.link.direction','loose','output-to-input')
+	// me.addProperty('link#maltego.link.direction','link#maltego.link.direction','loose','output-to-input')
 }
 
 func (m *EntityObj) ReturnEntity() string {
@@ -265,14 +263,13 @@ func (m *EntityObj) ReturnEntity() string {
 	r += "</Entity>"
 
 	return r
-
 }
 
 /***/
 
 /* 3. MaltegoMsg Python class implementation */
 
-//Here we have the XML structs to map to
+// Here we have the XML structs to map to
 type Message struct {
 	XMLName xml.Name `xml:"MaltegoMessage"`
 	MTRM    TransformRequestMessage
@@ -289,7 +286,7 @@ type Entities struct {
 }
 
 type Entity struct {
-	//Text string `xml:",chardata"`
+	// Text string `xml:",chardata"`
 	XMLName xml.Name         `xml:"Entity"`
 	Type    string           `xml:"Type,attr"`
 	AddF    AdditionalFields `xml:"AdditionalFields"`
@@ -313,28 +310,27 @@ type Limit struct {
 	SoftLimit string   `xml:"SoftLimit,attr"`
 }
 
-//End XML structs mapping
+// End XML structs mapping
 
-//Code to parse Maltego XML Input
+// Code to parse Maltego XML Input
 type MsgObj struct {
 	Value             string
 	Weight            string
-	Slider            string //Forgot to implement the XML for this
+	Slider            string // Forgot to implement the XML for this
 	Type              string
 	Properties        map[string]string
-	TransformSettings map[string]string //Forgot to implement the XML for this
+	TransformSettings map[string]string // Forgot to implement the XML for this
 }
 
-//Constructor for MaltegoMsg
+// Constructor for MaltegoMsg
 func Msg(MaltegoXML string) MsgObj {
-
 	v := Message{}
 	err := xml.Unmarshal([]byte(MaltegoXML), &v)
 	if err != nil {
 		panic(err)
 	}
 
-	//Copying the Python code it seems there can be only one Entity Value in
+	// Copying the Python code it seems there can be only one Entity Value in
 	// the entity list. So we just hardcode the [0] index here.
 	Value := v.MTRM.Entities.EntityList[0].Value
 	Weight := v.MTRM.Entities.EntityList[0].Weight
@@ -372,7 +368,6 @@ func ParseLocalArguments(args []string) LocalTransform {
 	Value := args[2]
 	Vals := make(map[string]string)
 	if len(args) > 3 {
-
 		// search the remaining arguments for variables
 		for _, arg := range args[3:] {
 			if len(arg) > 0 {

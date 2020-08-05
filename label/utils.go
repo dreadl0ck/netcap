@@ -66,7 +66,6 @@ func SetExcluded(arg string) {
 }
 
 func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) {
-
 	if UseProgressBars {
 		progress.Finish()
 	}

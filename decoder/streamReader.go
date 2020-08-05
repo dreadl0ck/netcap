@@ -71,6 +71,7 @@ func (d StreamDataSlice) Bytes() []byte {
 func (d StreamDataSlice) Len() int {
 	return len(d)
 }
+
 func (d StreamDataSlice) Less(i, j int) bool {
 	data1 := d[i]
 	data2 := d[j]
@@ -79,6 +80,7 @@ func (d StreamDataSlice) Less(i, j int) bool {
 	}
 	return data1.ac.GetCaptureInfo().Timestamp.Before(data2.ac.GetCaptureInfo().Timestamp)
 }
+
 func (d StreamDataSlice) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }

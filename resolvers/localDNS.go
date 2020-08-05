@@ -24,13 +24,10 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var (
-	localDNSNamesDB = make(map[string]string)
-)
+var localDNSNamesDB = make(map[string]string)
 
 // InitLocalDNS initializes reverse dns resolution via local hosts mapping
 func InitLocalDNS() {
-
 	var hosts int
 
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "hosts"))
@@ -65,7 +62,6 @@ func InitLocalDNS() {
 
 // LookupDNSNames retrieves the DNS names associated with an IP addr
 func LookupDNSNameLocal(ip string) string {
-
 	// check if ip is valid
 	i := net.ParseIP(ip)
 	if i == nil {
@@ -77,5 +73,4 @@ func LookupDNSNameLocal(ip string) string {
 		return res
 	}
 	return ""
-
 }

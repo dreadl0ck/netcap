@@ -8,8 +8,10 @@ import (
 	"github.com/dreadl0ck/gopacket/pcapgo"
 )
 
-var ngFile = "../pcaps/Monday-WorkingHours.pcapng"
-var pcapFile = "../pcaps/maccdc2012_00000.pcap"
+var (
+	ngFile   = "../pcaps/Monday-WorkingHours.pcapng"
+	pcapFile = "../pcaps/maccdc2012_00000.pcap"
+)
 
 func BenchmarkReadPcapNG(b *testing.B) {
 	r, f, err := openPcapNG(ngFile)

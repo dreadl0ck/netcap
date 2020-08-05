@@ -59,7 +59,6 @@ func IsPcap(file string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
-
 }
 
 // countPackets returns the number of packets in a PCAP file

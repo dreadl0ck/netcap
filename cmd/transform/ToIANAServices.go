@@ -13,7 +13,6 @@ import (
 )
 
 func ToIANAServices() {
-
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitServiceDB()
@@ -22,7 +21,6 @@ func ToIANAServices() {
 	maltego.FlowTransform(
 		maltego.CountOutgoingFlowBytesFiltered,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
-
 			i, err := strconv.Atoi(flow.DstPort)
 			if err != nil {
 				return

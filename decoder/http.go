@@ -49,7 +49,6 @@ var httpDecoder = NewCustomDecoder(
 
 // set HTTP request on types.HTTP
 func setRequest(h *types.HTTP, req *httpRequest) {
-
 	// set basic info
 	h.Timestamp = req.timestamp
 	h.Proto = req.request.Proto
@@ -95,7 +94,7 @@ func removeCommas(s string) string {
 }
 
 func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
-	var cks = make([]*types.HTTPCookie, 0)
+	cks := make([]*types.HTTPCookie, 0)
 	for _, c := range cookies {
 		if c != nil {
 			cks = append(cks, &types.HTTPCookie{
@@ -115,7 +114,6 @@ func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
 }
 
 func newHTTPFromResponse(res *http.Response) *types.HTTP {
-
 	var (
 		detected      string
 		contentLength = int32(res.ContentLength)

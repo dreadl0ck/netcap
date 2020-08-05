@@ -26,7 +26,6 @@ import (
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
 func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
-
 	// init channel to receive input packets
 	chanInput := make(chan *packet, c.config.PacketBufferSize)
 
@@ -55,7 +54,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				}
 
 				// create context for packet
-				var ctx = &types.PacketContext{}
+				ctx := &types.PacketContext{}
 				if c.config.DecoderConfig.AddContext {
 					var (
 						netLayer       = p.NetworkLayer()
@@ -105,7 +104,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 					// pick decoders from the encoderMap by looking up the layer type
 					if decoders, ok := c.goPacketDecoders[layer.LayerType()]; ok {
-
 						for _, e := range decoders {
 							err := e.Decode(ctx, p, layer)
 							if err != nil {
@@ -166,7 +164,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 			c.wg.Done()
 			continue
 		}
-
 	}()
 
 	// return input channel

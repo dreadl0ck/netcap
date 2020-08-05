@@ -28,7 +28,6 @@ var Icon = `<Icon>
 </Icon>`
 
 func generateIcons() {
-
 	os.RemoveAll("/tmp/icons")
 	_, err := git.PlainClone("/tmp/icons", false, &git.CloneOptions{
 		URL:      "https://github.com/material-icons/material-icons-png.git",
@@ -41,7 +40,7 @@ func generateIcons() {
 	fmt.Println("cloned icon repository to", "/tmp/icons")
 
 	// rename icons
-	os.Mkdir("/tmp/icons/renamed", 0700)
+	os.Mkdir("/tmp/icons/renamed", 0o700)
 
 	files, err := ioutil.ReadDir("/tmp/icons/png/black")
 	if err != nil {
@@ -114,7 +113,6 @@ func generateSizes(newBase string, newPath string) {
 }
 
 func generateAuditRecordIconV2(text string) {
-
 	const size = 96
 	im, err := gg.LoadPNG("/tmp/icons/renamed/check_box_outline_blank.png")
 	if err != nil {
@@ -122,7 +120,7 @@ func generateAuditRecordIconV2(text string) {
 	}
 
 	dc := gg.NewContext(size, size)
-	//dc.SetRGB(1, 1, 1)
+	// dc.SetRGB(1, 1, 1)
 	dc.Clear()
 	dc.SetRGB(0, 0, 0)
 
@@ -143,9 +141,9 @@ func generateAuditRecordIconV2(text string) {
 		panic(err)
 	}
 
-	//dc.DrawRoundedRectangle(0, 0, 512, 512, 0)
+	// dc.DrawRoundedRectangle(0, 0, 512, 512, 0)
 	dc.DrawImage(im, 0, 0)
-	//dc.DrawStringWrapped(text, size/2, size/2, 0.5, 0.5, 80, 1, 0)
+	// dc.DrawStringWrapped(text, size/2, size/2, 0.5, 0.5, 80, 1, 0)
 
 	if strings.Contains(text, "ICMPv6") {
 		dc.DrawStringAnchored("ICMPv6", size/2, size/2, 0.5, 0.5)
@@ -166,10 +164,10 @@ func generateAuditRecordIconV2(text string) {
 		imgPath = imgBase + ".png"
 	)
 
-	//for testing:
-	//imgBase = filepath.Join("/tmp", "icons", "V2", text)
-	//imgPath = imgBase + ".png"
-	//os.MkdirAll(filepath.Dir(imgBase), 0700)
+	// for testing:
+	// imgBase = filepath.Join("/tmp", "icons", "V2", text)
+	// imgPath = imgBase + ".png"
+	// os.MkdirAll(filepath.Dir(imgBase), 0700)
 
 	err = dc.SavePNG(imgPath)
 	if err != nil {
@@ -180,7 +178,6 @@ func generateAuditRecordIconV2(text string) {
 }
 
 func generateAuditRecordIcon(text string) {
-
 	var (
 		dpi      = 72.0
 		fontfile = filepath.Join("Roboto", "Roboto-Black.ttf")

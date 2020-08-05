@@ -336,7 +336,6 @@ func TestTLSUniqueMatches(t *testing.T) {
 }
 
 func TestVerifyHostname(t *testing.T) {
-
 	c, err := Dial("tcp", "www.google.com:https", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -411,7 +410,7 @@ func TestConnCloseBreakingWrite(t *testing.T) {
 	}
 
 	inWrite := make(chan bool, 1)
-	var errConnClosed = errors.New("conn closed for test")
+	errConnClosed := errors.New("conn closed for test")
 	conn.writeFunc = func(p []byte) (n int, err error) {
 		inWrite <- true
 		<-connClosed
@@ -917,8 +916,8 @@ func TestConnectionState(t *testing.T) {
 
 	const alpnProtocol = "golang"
 	const serverName = "example.golang"
-	var scts = [][]byte{[]byte("dummy sct 1"), []byte("dummy sct 2")}
-	var ocsp = []byte("dummy ocsp")
+	scts := [][]byte{[]byte("dummy sct 1"), []byte("dummy sct 2")}
+	ocsp := []byte("dummy ocsp")
 
 	for _, v := range []uint16{VersionTLS12, VersionTLS13} {
 		var name string

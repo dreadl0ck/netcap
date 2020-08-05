@@ -35,7 +35,6 @@ type SoftwareCountFunc = func(software *types.Software, mac string, min, max *ui
 
 // SoftwareTransform applies a maltego transformation over Software profiles seen for a target Software
 func SoftwareTransform(count SoftwareCountFunc, transform SoftwareTransformationFunc) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	softwaresFile := lt.Values["path"]
 	mac := lt.Values["mac"]

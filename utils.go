@@ -72,7 +72,6 @@ func PrintBuildInfo() {
 
 // PrintBuildInfo displays build information related to netcap to the specified io Writer
 func FPrintBuildInfo(w io.Writer) {
-
 	fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
 	fmt.Fprintln(w, "> NETCAP build commit:", Commit)
 	fmt.Fprintln(w, "> go runtime version:", runtime.Version())
@@ -108,7 +107,6 @@ type DumpConfig struct {
 // Dump reads the specified netcap file
 // and dumps the output according to the configuration to the specified *io.File
 func Dump(w *os.File, c DumpConfig) error {
-
 	var (
 		isTTY  = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
 		count  = 0
@@ -229,7 +227,6 @@ func Dump(w *os.File, c DumpConfig) error {
 // CloseFile closes the netcap file handle
 // and removes files that do only contain a header but no audit records
 func CloseFile(outDir string, file *os.File, typ string) (name string, size int64) {
-
 	i, err := file.Stat()
 	if err != nil {
 		fmt.Println("[ERROR] failed to stat file:", err, "type", typ)
@@ -258,7 +255,6 @@ func CreateFile(name, ext string) *os.File {
 
 // RemoveAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records
 func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
-
 	if strings.HasSuffix(name, ".csv") || strings.HasSuffix(name, ".csv.gz") {
 		f, err := os.Open(name)
 		if err != nil {
@@ -361,7 +357,6 @@ func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 
 // NewHeader creates and returns a new netcap audit file header
 func NewHeader(t types.Type, source, version string, includesPayloads bool) *types.Header {
-
 	// init header
 	header := new(types.Header)
 	header.Type = t
@@ -394,7 +389,6 @@ var (
 )
 
 func colorizeProto(in string, colorMap map[string]string) string {
-
 	var (
 		b     strings.Builder
 		index int

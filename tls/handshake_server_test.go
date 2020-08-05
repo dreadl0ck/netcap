@@ -712,7 +712,7 @@ func (test *serverTest) run(t *testing.T, write bool) {
 
 	if write {
 		path := test.dataPath()
-		out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create output file: %s", err)
 		}
@@ -812,6 +812,7 @@ func TestHandshakeServerAES128SHA256(t *testing.T) {
 	}
 	runServerTestTLS13(t, test)
 }
+
 func TestHandshakeServerAES256SHA384(t *testing.T) {
 	test := &serverTest{
 		name:    "AES256-SHA384",
@@ -819,6 +820,7 @@ func TestHandshakeServerAES256SHA384(t *testing.T) {
 	}
 	runServerTestTLS13(t, test)
 }
+
 func TestHandshakeServerCHACHA20SHA256(t *testing.T) {
 	test := &serverTest{
 		name:    "CHACHA20-SHA256",
@@ -1355,8 +1357,10 @@ func TestClientAuth(t *testing.T) {
 
 	test = &serverTest{
 		name: "ClientAuthRequestedAndGiven",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA",
-			"-cert", certPath, "-key", keyPath, "-client_sigalgs", "rsa_pss_rsae_sha256"},
+		command: []string{
+			"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA",
+			"-cert", certPath, "-key", keyPath, "-client_sigalgs", "rsa_pss_rsae_sha256",
+		},
 		config:            config,
 		expectedPeerCerts: []string{clientCertificatePEM},
 	}
@@ -1365,8 +1369,10 @@ func TestClientAuth(t *testing.T) {
 
 	test = &serverTest{
 		name: "ClientAuthRequestedAndECDSAGiven",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA",
-			"-cert", ecdsaCertPath, "-key", ecdsaKeyPath},
+		command: []string{
+			"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA",
+			"-cert", ecdsaCertPath, "-key", ecdsaKeyPath,
+		},
 		config:            config,
 		expectedPeerCerts: []string{clientECDSACertificatePEM},
 	}
@@ -1375,8 +1381,10 @@ func TestClientAuth(t *testing.T) {
 
 	test = &serverTest{
 		name: "ClientAuthRequestedAndEd25519Given",
-		command: []string{"openssl", "s_client", "-no_ticket",
-			"-cert", ed25519CertPath, "-key", ed25519KeyPath},
+		command: []string{
+			"openssl", "s_client", "-no_ticket",
+			"-cert", ed25519CertPath, "-key", ed25519KeyPath,
+		},
 		config:            config,
 		expectedPeerCerts: []string{clientEd25519CertificatePEM},
 	}
@@ -1385,8 +1393,10 @@ func TestClientAuth(t *testing.T) {
 
 	test = &serverTest{
 		name: "ClientAuthRequestedAndPKCS1v15Given",
-		command: []string{"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA",
-			"-cert", certPath, "-key", keyPath, "-client_sigalgs", "rsa_pkcs1_sha256"},
+		command: []string{
+			"openssl", "s_client", "-no_ticket", "-cipher", "AES128-SHA",
+			"-cert", certPath, "-key", keyPath, "-client_sigalgs", "rsa_pkcs1_sha256",
+		},
 		config:            config,
 		expectedPeerCerts: []string{clientCertificatePEM},
 	}

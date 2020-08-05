@@ -39,7 +39,6 @@ var (
 
 // TODO: use a boltDB?
 func SaveFingerprintDB() {
-
 	if !dhcpDBinitialized {
 		return
 	}
@@ -87,7 +86,6 @@ func SaveFingerprintDB() {
 var apiKey string
 
 func InitDHCPFingerprintAPIKey() {
-
 	k := os.Getenv("FINGERPRINT_API_KEY")
 
 	if k != "" {
@@ -134,7 +132,6 @@ type DHCPFingerprintRequest struct {
 
 // LookupDHCPFingerprint retrieves the data associated with an DHCP fingerprint
 func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCPResult, error) {
-
 	if len(fp) == 0 {
 		return nil, nil
 	}
@@ -184,7 +181,7 @@ func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCP
 	}
 
 	// parse JSON response
-	var res = new(DHCPResult)
+	res := new(DHCPResult)
 	err = json.Unmarshal(data, res)
 	if err != nil {
 		return nil, err
@@ -208,7 +205,6 @@ func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCP
 
 // InitDHCPFingerprintDB initializes the DHCP fingerprint database from the JSON encoded mapping persisted on disk
 func InitDHCPFingerprintDB() {
-
 	dhcpDBinitialized = true
 
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, dhcpDBFile))
@@ -233,7 +229,6 @@ func InitDHCPFingerprintDB() {
 // InitDHCPFingerprintDBCSV initializes the DHCP fingerprint database from a CSV formatted source
 // initial database source: https://raw.githubusercontent.com/karottc/fingerbank/master/upstream/startup/fingerprints.csv
 func InitDHCPFingerprintDBCSV() {
-
 	dhcpDBinitialized = true
 
 	var fingerprints int
@@ -273,7 +268,6 @@ func InitDHCPFingerprintDBCSV() {
 
 // LookupDHCPFingerprintLocal retrieves the data associated with an DHCP fingerprint
 func LookupDHCPFingerprintLocal(fp string) *DHCPResult {
-
 	if len(fp) == 0 {
 		return nil
 	}

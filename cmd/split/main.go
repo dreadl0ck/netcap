@@ -15,12 +15,9 @@ import (
 	"github.com/dreadl0ck/netcap/collector"
 )
 
-var (
-	flagInput = flag.String("read", "", "input pcap file")
-)
+var flagInput = flag.String("read", "", "input pcap file")
 
 func main() {
-
 	// stat input file
 	stat, err := os.Stat(*flagInput)
 	if err != nil {

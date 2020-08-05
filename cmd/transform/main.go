@@ -8,12 +8,9 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-var (
-	outDirPermission os.FileMode = 0755
-)
+var outDirPermission os.FileMode = 0o755
 
 func Run() {
-
 	if len(os.Args) < 3 {
 		log.Fatal("expecting transform name")
 	}
@@ -87,8 +84,8 @@ func Run() {
 	// Flow
 	case "ToIANAServices":
 		ToIANAServices()
-	//case "ToHighestVolumeFlows":
-	//ToHighestVolumeFlows()
+	// case "ToHighestVolumeFlows":
+	// ToHighestVolumeFlows()
 
 	// DeviceProfile
 	case "ToDevices":
@@ -207,7 +204,7 @@ func Run() {
 		trx := maltego.Transform{}
 		trx.AddUIMessage("Unknown transform: "+os.Args[2], maltego.UIM_FATAL)
 		fmt.Println(trx.ReturnOutput())
-		//log.Fatal("unknown transform: ", os.Args[2])
+		// log.Fatal("unknown transform: ", os.Args[2])
 		return
 	}
 }

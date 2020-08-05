@@ -32,7 +32,7 @@ var maltegoBaseConfig = collector.Config{
 		MemBufferSize: netcap.DefaultBufferSize,
 		Compression:   true,
 		CSV:           false,
-		//IncludeDecoders:         strings.Join(auditRecords, ","),
+		// IncludeDecoders:         strings.Join(auditRecords, ","),
 		ExcludeDecoders:         "",
 		WriteChan:               false,
 		IncludePayloads:         false,
@@ -77,13 +77,12 @@ var maltegoBaseConfig = collector.Config{
 		ServiceDB:     true,
 		GeolocationDB: true,
 	},
-	OutDirPermission:      0700,
+	OutDirPermission:      0o700,
 	FreeOSMem:             0,
 	ReassembleConnections: true,
 }
 
 func ToAuditRecords() {
-
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]
@@ -166,7 +165,6 @@ func ToAuditRecords() {
 }
 
 func writeAuditRecords(trx maltego.Transform, inputSize int64, outDir string, inputFile string, r *pcap.Handle, start time.Time) {
-
 	files, err := ioutil.ReadDir(outDir)
 	if err != nil {
 		log.Fatal(err)
@@ -209,7 +207,7 @@ func writeAuditRecords(trx maltego.Transform, inputSize int64, outDir string, in
 
 		// add notes for specific audit records here
 		switch name {
-		//case "DeviceProfile":
+		// case "DeviceProfile":
 		//	di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 		//	ent.AddDisplayInformation(di, "Netcap Info")
 		//	ent.SetNote("Storage Path: " + outDir + "\nInput File Size: " + humanize.Bytes(uint64(inputSize)) + "\nOutput File Size: " + humanize.Bytes(uint64(f.Size())) + "\nNum Profiles: " + strconv.FormatInt(netcap.Count(ident), 10) + "\nSource File: " + inputFile + "\nLink Type: " + r.LinkType().String() + "\nParsing Time: " + time.Since(start).String())

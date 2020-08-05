@@ -84,7 +84,6 @@ func (a *GRE) Time() string {
 }
 
 func (r *GRERouting) GetString() string {
-
 	if r == nil {
 		return ""
 	}

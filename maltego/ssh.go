@@ -35,7 +35,6 @@ type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
 
 // SSHTransform applies a maltego transformation over SSH sshs seen for a target SSH
 func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	sshFile := lt.Values["path"]
 	mac := lt.Values["mac"]

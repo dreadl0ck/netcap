@@ -63,5 +63,6 @@ require (
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
+	mvdan.cc/gofumpt v0.0.0-20200802201014-ab5a8192947d // indirect
 	mvdan.cc/xurls/v2 v2.2.0
 )

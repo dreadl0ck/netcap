@@ -35,7 +35,6 @@ type packet struct {
 }
 
 func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
-
 	// pass packet to a worker routine
 	c.handlePacket(&packet{
 		data: data,
@@ -45,7 +44,6 @@ func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
 
 // printProgressLive prints live statistics.
 func (c *Collector) printProgressLive() {
-
 	atomic.AddInt64(&c.current, 1)
 
 	// must be locked, otherwise a race occurs when sending a SIGINT and triggering wg.Wait() in another goroutine...

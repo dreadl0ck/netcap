@@ -59,7 +59,6 @@ var entities = []EntityCoreInfo{
 
 // generate all entities and pack as archive
 func TestGenerateAllEntities(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -90,7 +89,6 @@ func TestGenerateAllEntities(t *testing.T) {
 }
 
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -101,7 +99,6 @@ func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
 }
 
 func TestGenerateAndPackCaptureProcessEntity(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -112,7 +109,6 @@ func TestGenerateAndPackCaptureProcessEntity(t *testing.T) {
 }
 
 func TestGenerateAndPackPCAPEntity(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -123,7 +119,6 @@ func TestGenerateAndPackPCAPEntity(t *testing.T) {
 }
 
 func TestGeneratePCAPXMLEntity(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}
@@ -185,7 +180,6 @@ func compareGeneratedXML(data []byte, expected string, t *testing.T) {
 }
 
 func TestGenerateDHCPClientXMLEntity(t *testing.T) {
-
 	if !generateMaltegoConfig {
 		return
 	}

@@ -45,7 +45,6 @@ var auditRecordData = []byte{10, 17, 49, 53, 52, 55, 55, 54, 48, 52, 54, 54, 46,
  */
 
 func TestMarshal(t *testing.T) {
-
 	data, err := proto.Marshal(auditRecord)
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +89,6 @@ func TestMarshal(t *testing.T) {
 // ok  	github.com/dreadl0ck/netcap/types	4.215s
 
 func BenchmarkMarshal(b *testing.B) {
-
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -103,7 +101,6 @@ func BenchmarkMarshal(b *testing.B) {
 }
 
 func BenchmarkUnmarshal(b *testing.B) {
-
 	b.ReportAllocs()
 	b.ResetTimer()
 

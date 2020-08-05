@@ -28,7 +28,6 @@ import (
 
 // close errors.pcap and unknown.pcap
 func (c *Collector) closePcapFiles() error {
-
 	// unknown.pcap
 
 	if c.unkownPcapWriterBuffered != nil {
@@ -53,7 +52,7 @@ func (c *Collector) closePcapFiles() error {
 
 		// if file is empty, or a pcap with just the header
 		if i.Size() == 0 || i.Size() == 24 {
-			//println("removing", fd.Name())
+			// println("removing", fd.Name())
 			err := os.Remove(c.unknownPcapFile.Name())
 			if err != nil {
 				return errors.Wrap(err, "failed to remove file: "+c.unknownPcapFile.Name())
@@ -84,7 +83,7 @@ func (c *Collector) closePcapFiles() error {
 
 		// if file is empty, or a pcap with just the header
 		if i.Size() == 0 || i.Size() == 24 {
-			//println("removing", fd.Name())
+			// println("removing", fd.Name())
 			if err := os.Remove(c.errorsPcapFile.Name()); err != nil {
 				return err
 			}
@@ -96,7 +95,6 @@ func (c *Collector) closePcapFiles() error {
 
 // create unknown.pcap file for packets with unknown layers.
 func (c *Collector) createUnknownPcap() error {
-
 	var err error
 
 	// Open output pcap file and write header
@@ -118,7 +116,6 @@ func (c *Collector) createUnknownPcap() error {
 
 // create errors.pcap file for errors
 func (c *Collector) createErrorsPcap() error {
-
 	var err error
 
 	// Open output pcap file and write header
@@ -149,7 +146,6 @@ func (c *Collector) writePacketToUnknownPcap(p gopacket.Packet) error {
 
 // logPacketError handles an error when decoding a packet.
 func (c *Collector) logPacketError(p gopacket.Packet, err string) error {
-
 	// increment errorMap stats
 	c.errorMap.Inc(err)
 

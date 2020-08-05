@@ -14,7 +14,6 @@ import (
 )
 
 func ToExifDataForImage() {
-
 	var (
 		lt   = maltego.ParseLocalArguments(os.Args)
 		trx  = &maltego.Transform{}

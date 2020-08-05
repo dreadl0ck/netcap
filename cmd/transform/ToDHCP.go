@@ -12,8 +12,7 @@ import (
 )
 
 func ToDHCP() {
-
-	var results = map[string]int{}
+	results := map[string]int{}
 
 	maltego.DHCPTransform(
 		nil,

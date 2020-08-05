@@ -70,7 +70,6 @@ func (i *Geneve) Time() string {
 }
 
 func (i GeneveOption) ToString() string {
-
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(i.Class))

@@ -22,18 +22,15 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var (
-	c *Config
-)
+var c *Config
 
 const (
-	defaultDirectoryPermission = 0700
-	defaultFilesPermission     = 0700
+	defaultDirectoryPermission = 0o700
+	defaultFilesPermission     = 0o700
 )
 
 // SetConfig can be used to set a configuration for the package
 func SetConfig(cfg *Config) {
-
 	c = cfg
 
 	streamFactory.fsmOptions = reassembly.TCPSimpleFSMOptions{

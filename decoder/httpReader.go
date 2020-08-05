@@ -126,7 +126,6 @@ type httpReader struct {
 }
 
 func (h *httpReader) Decode(s2c Stream, c2s Stream) {
-
 	// parse conversation
 	var (
 		buf         bytes.Buffer
@@ -137,14 +136,13 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 	}
 
 	for _, d := range h.parent.merged {
-
 		if d.dir == previousDir {
-			//fmt.Println(d.dir, "collect", len(d.raw), d.ac.GetCaptureInfo().Timestamp)
+			// fmt.Println(d.dir, "collect", len(d.raw), d.ac.GetCaptureInfo().Timestamp)
 			buf.Write(d.raw)
 		} else {
 			var err error
 
-			//fmt.Println(hex.Dump(buf.Bytes()))
+			// fmt.Println(hex.Dump(buf.Bytes()))
 
 			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
@@ -284,7 +282,6 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 }
 
 func (t *tcpConnection) writeHTTP(h *types.HTTP) {
-
 	httpStore.Lock()
 
 	if h.UserAgent != "" {
@@ -407,7 +404,6 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 // HTTP Response
 
 func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
-
 	// try to read HTTP response from the buffered reader
 	res, err := http.ReadResponse(b, nil)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -496,7 +492,6 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 }
 
 func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
-
 	// try to find the matching HTTP request for the response
 	var (
 		req    *http.Request
@@ -521,7 +516,6 @@ func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
 }
 
 func fileExtensionForContentType(typ string) string {
-
 	parts := strings.Split(typ, ";")
 	if len(typ) > 1 {
 		typ = parts[0]
@@ -697,7 +691,6 @@ var (
 // createContentTypePathIfRequired will create the passed in filesystem path once
 // it is safe for concurrent access and will block until the path has been created on disk
 func createContentTypePathIfRequired(fsPath string) {
-
 	contentTypeMapMu.Lock()
 	if _, ok := contentTypeMap[fsPath]; !ok {
 
@@ -717,7 +710,6 @@ func createContentTypePathIfRequired(fsPath string) {
 
 // TODO: write unit tests and cleanup
 func (h *httpReader) saveFile(host, source, name string, err error, body []byte, encoding []string, contentType string) error {
-
 	// prevent saving zero bytes
 	if len(body) == 0 {
 		return nil

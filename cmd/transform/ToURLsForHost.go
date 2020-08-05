@@ -10,8 +10,7 @@ import (
 )
 
 func ToURLsForHost() {
-
-	var urlStats = make(map[string]int)
+	urlStats := make(map[string]int)
 
 	maltego.HTTPTransform(
 		nil,

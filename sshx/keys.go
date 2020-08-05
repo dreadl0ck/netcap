@@ -1222,7 +1222,6 @@ func unencryptedOpenSSHKey(cipherName, kdfName, kdfOpts string, privKeyBlock []b
 
 func passphraseProtectedOpenSSHKey(passphrase []byte) openSSHDecryptFunc {
 	return func(cipherName, kdfName, kdfOpts string, privKeyBlock []byte) ([]byte, error) {
-
 		return nil, errors.New("FIXME")
 
 		//if kdfName == "none" || cipherName == "none" {

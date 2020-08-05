@@ -58,7 +58,6 @@ func init() {
 
 // ServeMetricsAt exposes the prometheus at the given address
 func ServeMetricsAt(addr string, c *collector.Collector) {
-
 	fmt.Println("starting to serve metrics at:", addr+metricsRoute)
 
 	go func() {
@@ -66,7 +65,6 @@ func ServeMetricsAt(addr string, c *collector.Collector) {
 
 		// serve prometheus metrics on the /metrics route
 		http.HandleFunc(metricsRoute, func(w http.ResponseWriter, r *http.Request) {
-
 			upTime.WithLabelValues().Set(math.RoundToEven(time.Since(startTime).Seconds()))
 
 			if c != nil {

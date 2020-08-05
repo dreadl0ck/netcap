@@ -36,7 +36,6 @@ type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *type
 
 // DHCPTransform applies a maltego transformation over DHCP audit records
 func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, continueTransform bool) {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	ipaddr := lt.Values["ipaddr"]

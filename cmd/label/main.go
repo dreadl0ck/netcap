@@ -23,7 +23,6 @@ import (
 )
 
 func Run() {
-
 	// parse commandline flags
 	fs.Usage = printUsage
 	err := fs.Parse(os.Args[2:])

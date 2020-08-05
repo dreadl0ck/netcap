@@ -33,7 +33,7 @@ import (
  *	Type Definition
  */
 
-// Writer is a structure that supports writing audit records to disk
+// Writer is a structure that supports writing audit records to disk.
 type Writer struct {
 	out  string
 	Name string
@@ -58,9 +58,8 @@ type Writer struct {
  *	Constructor
  */
 
-// NewWriter initializes and configures a new Writer
+// NewWriter initializes and configures a new Writer instance.
 func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bool, memBufferSize int) *Writer {
-
 	w := &Writer{}
 	w.Name = name
 	w.compress = compress
@@ -138,7 +137,6 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 
 	// buffer data?
 	if buffer {
-
 		if compress {
 			// experiment: pgzip -> file
 			var errGzipWriter error
@@ -189,7 +187,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
  *	Protobuf
  */
 
-// WriteProto writes a protobuf message
+// WriteProto writes a protobuf message.
 func (w *Writer) WriteProto(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -200,17 +198,19 @@ func (w *Writer) WriteProto(msg proto.Message) error {
  *	CSV
  */
 
-// WriteCSV writes a csv record
+// WriteCSV writes a csv record.
 func (w *Writer) WriteCSV(msg proto.Message) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
 	return w.csvWriter.WriteRecord(msg)
 }
 
-// WriteCSVHeader writes a CSV record
+// WriteCSVHeader writes a CSV record.
 func (w *Writer) WriteCSVHeader(msg proto.Message) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
 	return w.csvWriter.WriteHeader(msg)
 }
 
@@ -249,6 +249,7 @@ func (w *Writer) WriteHeader(t types.Type, source string, version string, includ
 			panic(err)
 		}
 	}
+
 	return nil
 }
 
@@ -279,7 +280,6 @@ func CloseGzipWriters(writers ...*pgzip.Writer) {
 }
 
 func (w *Writer) Close() (name string, size int64) {
-
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -287,13 +287,15 @@ func (w *Writer) Close() (name string, size int64) {
 	if w.buffer {
 		FlushWriters(w.bWriter)
 	}
+
 	if w.compress {
 		CloseGzipWriters(w.gWriter)
 	}
+
 	return CloseFile(w.out, w.file, w.Name)
 }
 
-// GetChan returns a channel for receiving bytes
+// GetChan returns a channel for receiving bytes.
 func (w *Writer) GetChan() <-chan []byte {
 	return w.cWriter.Chan()
 }

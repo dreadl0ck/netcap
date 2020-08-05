@@ -46,7 +46,6 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 	}
 
 	go func() {
-
 		// open layer data file
 		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
 		if err != nil {
@@ -107,10 +106,8 @@ func Layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*Sur
 				// check if flow has a source or destination address matching an alert
 				// if not label it as normal
 				for _, a := range labels {
-
 					// if the layer audit record has a timestamp of an alert
 					if a.Timestamp == p.Time() {
-
 						// only if it is not already part of the label
 						if !strings.Contains(label, a.Classification) {
 							if label == "" {

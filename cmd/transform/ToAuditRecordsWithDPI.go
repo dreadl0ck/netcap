@@ -14,7 +14,6 @@ import (
 )
 
 func ToAuditRecordsWithDPI() {
-
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]

@@ -604,14 +604,14 @@ func (gex dhGEXSHA) Client(c packetConn, randSource io.Reader, magics *handshake
 
 	// Check if p is safe by verifing that p and (p-1)/2 are primes
 	one := big.NewInt(1)
-	var pHalf = &big.Int{}
+	pHalf := &big.Int{}
 	pHalf.Rsh(gex.p, 1)
 	if !gex.p.ProbablyPrime(numMRTests) || !pHalf.ProbablyPrime(numMRTests) {
 		return nil, fmt.Errorf("ssh: server provided gex p is not safe")
 	}
 
 	// Check if g is safe by verifing that g > 1 and g < p - 1
-	var pMinusOne = &big.Int{}
+	pMinusOne := &big.Int{}
 	pMinusOne.Sub(gex.p, one)
 	if gex.g.Cmp(one) != 1 && gex.g.Cmp(pMinusOne) != -1 {
 		return nil, fmt.Errorf("ssh: server provided gex g is not safe")
@@ -730,7 +730,7 @@ func (gex dhGEXSHA) Server(c packetConn, randSource io.Reader, magics *handshake
 		return
 	}
 
-	var pHalf = &big.Int{}
+	pHalf := &big.Int{}
 	pHalf.Rsh(gex.p, 1)
 
 	y, err := rand.Int(randSource, pHalf)

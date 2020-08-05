@@ -14,7 +14,6 @@ type regexTest struct {
 }
 
 func (r regexTest) testCleanRegex(t *testing.T) {
-
 	// remove backtracking from regex and replace with a group of a single char repetition (.*)
 	out := clean(r.input)
 	if out != r.expected {
@@ -151,7 +150,6 @@ var serviceBanners = []bannerTest{
 //}
 
 func (b bannerTest) testClassifyBanner(t *testing.T) {
-
 	// make dummy service
 	serv := NewService("", 0, 0, "")
 	serv.IP = "127.0.0.1"

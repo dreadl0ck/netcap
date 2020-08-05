@@ -29,7 +29,6 @@ const testData = "\x00\x01N\x02ET\x03CAP"
 */
 
 func TestCorruptedWriter(t *testing.T) {
-
 	var (
 		bad    = errors.New("BAD")
 		buffer = &errWriter{
@@ -47,7 +46,6 @@ func TestCorruptedWriter(t *testing.T) {
 }
 
 func TestGoodWriter(t *testing.T) {
-
 	var (
 		buffer bytes.Buffer
 		wr     = NewWriter(&buffer)
@@ -71,7 +69,6 @@ func TestGoodWriter(t *testing.T) {
 */
 
 func TestCorruptedReader(t *testing.T) {
-
 	const corrupt = "\x05NETC" // n = 5, only 4 bytes of data
 
 	var (
@@ -88,7 +85,6 @@ func TestCorruptedReader(t *testing.T) {
 }
 
 func TestGoodReader(t *testing.T) {
-
 	var (
 		r  = strings.NewReader(testData)
 		rd = NewReader(r)
@@ -117,7 +113,6 @@ func TestGoodReader(t *testing.T) {
 */
 
 func TestRoundTrip(t *testing.T) {
-
 	const input = "Some of what a fool thinks often remains."
 
 	// write all the words in the input as records to a delimited writer

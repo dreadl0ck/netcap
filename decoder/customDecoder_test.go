@@ -69,9 +69,7 @@ func TestInitCustomDecoders(t *testing.T) {
 }
 
 func TestCustomDecoder_Decode(t *testing.T) {
-
 }
 
 func TestCustomDecoder_Destroy(t *testing.T) {
-
 }

@@ -94,8 +94,7 @@ func harvesterDebug(ident string, data []byte, args ...interface{}) {
 
 // harvester for the FTP protocol
 func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-
-	//harvesterDebug(ident, data, serviceFTP)
+	// harvesterDebug(ident, data, serviceFTP)
 
 	matches := reFTP.FindSubmatch(data)
 	if len(matches) > 1 {
@@ -113,7 +112,6 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 // harvester for the HTTP protocol
 func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-
 	var (
 		matchesBasic  = reHTTPBasic.FindSubmatch(data)
 		matchesDigest = reHTTPDigest.FindSubmatch(data)
@@ -189,7 +187,6 @@ func decodeSMTPLogin(in [][]byte, typ string) (user, pass string) {
 
 // harvester for the SMTP protocol
 func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-
 	var (
 		username             string
 		password             string
@@ -344,7 +341,6 @@ var credentialsDecoder = NewCustomDecoder(
 	credentialsDecoderName,
 	"Credentials represent a user and password combination to authenticate to a service",
 	func(d *CustomDecoder) error {
-
 		if c.CustomRegex != "" {
 			r, err := regexp.Compile(c.CustomRegex)
 			if err != nil {
@@ -398,7 +394,6 @@ var credentialsDecoder = NewCustomDecoder(
 // writeCredentials is a util that should be used to write credential audit to disk
 // it will deduplicate the audit records to avoid repeating information on disk
 func writeCredentials(conn *types.Credentials) {
-
 	ident := conn.Service + conn.User + conn.Password
 
 	// prevent saving duplicate credentials

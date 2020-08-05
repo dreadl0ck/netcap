@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-
 	var (
 		flagInterface = flag.String("iface", "en0", "Network interface to capture on")
 		flagPcap      = flag.String("pcap", "", "use pcap file")

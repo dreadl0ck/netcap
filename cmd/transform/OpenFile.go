@@ -14,7 +14,6 @@ import (
 )
 
 func OpenFile() {
-
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
@@ -56,7 +55,7 @@ func OpenFile() {
 	}
 	defer f.Close()
 
-	var buf = make([]byte, 512)
+	buf := make([]byte, 512)
 	_, err = io.ReadFull(f, buf)
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		log.Fatal(err)
@@ -92,5 +91,5 @@ func OpenFile() {
 }
 
 func IsExecAny(mode os.FileMode) bool {
-	return mode&0111 != 0
+	return mode&0o111 != 0
 }

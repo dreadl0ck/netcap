@@ -31,7 +31,6 @@ import (
 var proxies []*ReverseProxy
 
 func Run() {
-
 	// parse commandline flags
 	fs.Usage = printUsage
 	err := fs.Parse(os.Args[2:])
@@ -104,7 +103,6 @@ func Run() {
 
 		// spawn a goroutine for each proxy
 		go func() {
-
 			Log.Info("initializing proxy",
 				zap.String("local", local),
 				zap.String("remote", remote),

@@ -15,7 +15,6 @@ import (
 
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup(force bool) {
-
 	c.statMutex.Lock()
 	c.shutdown = true
 	c.statMutex.Unlock()

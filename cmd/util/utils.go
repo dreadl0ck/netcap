@@ -45,7 +45,6 @@ func printUsage() {
 // CheckFields checks if the separator occurs inside fields of audit records
 // to prevent this breaking the generated CSV file
 func checkFields() {
-
 	r, err := netcap.Open(*flagInput, *flagMemBufferSize)
 	if err != nil {
 		panic(err)
@@ -92,7 +91,6 @@ func checkFields() {
 
 			// check if field count matches
 			if p, ok := record.(types.AuditRecord); ok {
-
 				// bail out and print error if field count does not match
 				if len(p.CSVRecord()) != numStructFields {
 
