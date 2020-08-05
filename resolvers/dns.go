@@ -16,10 +16,8 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"sync"
-
 	"net"
-
+	"sync"
 	"time"
 )
 

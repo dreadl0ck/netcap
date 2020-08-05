@@ -2,10 +2,11 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func StopCaptureProcess() {

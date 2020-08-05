@@ -16,8 +16,9 @@ package decoder
 import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 var ipv6HopByHopDecoder = NewGoPacketDecoder(

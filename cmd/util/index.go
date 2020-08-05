@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
 	"io"
 	"io/ioutil"
 	"log"
@@ -30,12 +28,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
 	"time"
 
 	"github.com/blevesearch/bleve"
+	"github.com/dustin/go-humanize"
+
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // TODO: can we use the protobuf from types package instead?

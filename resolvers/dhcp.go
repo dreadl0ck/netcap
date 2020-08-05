@@ -17,16 +17,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/dreadl0ck/netcap/utils"
-	"sync"
-
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (

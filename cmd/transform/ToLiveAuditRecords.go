@@ -2,15 +2,17 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/dustin/go-humanize"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func ToLiveAuditRecords() {

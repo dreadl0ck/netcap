@@ -1,10 +1,12 @@
 package transform
 
 import (
+	"strconv"
+
+	"github.com/dustin/go-humanize"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dustin/go-humanize"
-	"strconv"
 )
 
 func ToDevices() {

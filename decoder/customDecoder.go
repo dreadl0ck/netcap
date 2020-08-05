@@ -15,17 +15,18 @@ package decoder
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
-	"github.com/pkg/errors"
 	"log"
 	"strings"
 	"sync/atomic"
 
 	"github.com/dreadl0ck/gopacket"
+	"github.com/gogo/protobuf/proto"
+	"github.com/mgutz/ansi"
+	"github.com/pkg/errors"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (

@@ -2,6 +2,7 @@ package reassembly
 
 import (
 	"fmt"
+
 	"github.com/dreadl0ck/gopacket"
 )
 

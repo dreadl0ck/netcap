@@ -14,7 +14,6 @@ package decoder
 
 import (
 	"fmt"
-
 	"runtime"
 	"sync"
 )

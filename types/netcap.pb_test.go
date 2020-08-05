@@ -17,8 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*

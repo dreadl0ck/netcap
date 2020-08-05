@@ -7,9 +7,10 @@ package sshx
 import (
 	"encoding/hex"
 	"fmt"
+	"log"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
-	"log"
 )
 
 func GetClientHello(p gopacket.Packet) *KexInitMsg {

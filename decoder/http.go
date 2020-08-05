@@ -22,8 +22,9 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 var httpDecoder = NewCustomDecoder(

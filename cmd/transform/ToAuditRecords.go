@@ -2,13 +2,6 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket/pcap"
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/decoder"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,6 +10,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/gopacket/pcap"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/collector"
+	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var maltegoBaseConfig = collector.Config{

@@ -17,12 +17,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // https://macaddress.io/database/macaddress.io-db.json

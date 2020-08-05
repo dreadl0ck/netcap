@@ -16,15 +16,16 @@ package decoder
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"log"
 	"strings"
 
 	"github.com/dreadl0ck/gopacket"
+	"github.com/gogo/protobuf/proto"
+	"github.com/pkg/errors"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/gogo/protobuf/proto"
 )
 
 var (

@@ -3,12 +3,14 @@ package maltego
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
-	"github.com/mgutz/ansi"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/mgutz/ansi"
+
+	"github.com/dreadl0ck/netcap/decoder"
 )
 
 // additional entities that are not actual NETCAP audit records

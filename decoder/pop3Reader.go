@@ -16,10 +16,9 @@ package decoder
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"encoding/hex"
 	"errors"
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"net/http"
 	"net/textproto"
@@ -35,9 +34,9 @@ import (
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/mgutz/ansi"
 
-	"compress/gzip"
-
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*

@@ -7,7 +7,6 @@ package sshx
 import (
 	"encoding/binary"
 	"fmt"
-
 	"io"
 	"log"
 	"sync"

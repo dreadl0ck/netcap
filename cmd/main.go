@@ -15,6 +15,14 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/namsral/flag"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/cmd/agent"
 	"github.com/dreadl0ck/netcap/cmd/capture"
@@ -25,12 +33,6 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/proxy"
 	"github.com/dreadl0ck/netcap/cmd/transform"
 	"github.com/dreadl0ck/netcap/cmd/util"
-	"github.com/namsral/flag"
-	"io/ioutil"
-	"log"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 var (

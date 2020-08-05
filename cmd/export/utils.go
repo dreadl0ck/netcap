@@ -21,13 +21,11 @@ import (
 	"log"
 	"path/filepath"
 	"sync"
-
 	"time"
-
-	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func printHeader() {

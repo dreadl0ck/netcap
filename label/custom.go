@@ -26,16 +26,15 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
 	"time"
 
+	"github.com/evilsocket/islazy/tui"
 	gzip "github.com/klauspost/pgzip"
+	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/tui"
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 type AttackInfo struct {

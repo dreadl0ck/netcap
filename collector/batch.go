@@ -18,6 +18,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/pcap"
+
 	"github.com/dreadl0ck/netcap/types"
 )
 

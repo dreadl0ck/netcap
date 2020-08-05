@@ -3,13 +3,14 @@ package maltego
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/dreadl0ck/netcap/decoder"
 )
 
 const generateMaltegoConfig = false

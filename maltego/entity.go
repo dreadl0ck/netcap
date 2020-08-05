@@ -4,13 +4,14 @@ import (
 	"archive/zip"
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (

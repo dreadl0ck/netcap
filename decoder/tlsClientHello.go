@@ -15,13 +15,14 @@ package decoder
 
 import (
 	"encoding/binary"
-	"github.com/dreadl0ck/ja3"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var tlsClientHelloDecoder = NewCustomDecoder(

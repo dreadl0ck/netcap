@@ -18,15 +18,16 @@ package dpi
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/go-dpi/modules/classifiers"
-	. "github.com/dreadl0ck/go-dpi/types"
-	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"time"
 
 	godpi "github.com/dreadl0ck/go-dpi"
+	"github.com/dreadl0ck/go-dpi/modules/classifiers"
 	"github.com/dreadl0ck/go-dpi/modules/wrappers"
+	. "github.com/dreadl0ck/go-dpi/types"
 	"github.com/dreadl0ck/gopacket"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 var disableDPI = true

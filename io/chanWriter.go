@@ -13,26 +13,32 @@
 
 package io
 
-// chanWriter writes into a []byte chan.
+// ChanWriter writes into a []byte chan.
 type ChanWriter struct {
 	ch chan []byte
 }
 
-// TODO make chan buf size configurable.
+// NewChanWriter returns a new channel writer instance.
+// TODO make chan buf size configurable
 func NewChanWriter() *ChanWriter {
 	return &ChanWriter{make(chan []byte, 1024)}
 }
 
+// Chan returns the byte channel used to receive data.
 func (w *ChanWriter) Chan() <-chan []byte {
 	return w.ch
 }
 
+// WriteRecord writes a protocol buffer into the channel writer.
 func (w *ChanWriter) Write(p []byte) (int, error) {
 	w.ch <- p
+
 	return len(p), nil
 }
 
+// Close will close the channel writer.
 func (w *ChanWriter) Close() error {
 	close(w.ch)
+
 	return nil
 }

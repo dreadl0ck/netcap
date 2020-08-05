@@ -2,13 +2,15 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
 	"io/ioutil"
 	"log"
-	"mvdan.cc/xurls/v2"
 	"net/url"
 	"os"
 	"strings"
+
+	"mvdan.cc/xurls/v2"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func ToLinksFromFile() {

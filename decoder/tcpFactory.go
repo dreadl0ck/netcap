@@ -15,12 +15,14 @@ package decoder
 
 import (
 	"fmt"
+	"path/filepath"
+	"sync"
+
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/ip4defrag"
 	"github.com/dreadl0ck/gopacket/layers"
+
 	"github.com/dreadl0ck/netcap/reassembly"
-	"path/filepath"
-	"sync"
 )
 
 var streamFactory = newStreamFactory()

@@ -22,10 +22,11 @@ import (
 	"strings"
 	"sync"
 
+	"gopkg.in/cheggaaa/pb.v1"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // CollectLabels indicates whether labels should be collected

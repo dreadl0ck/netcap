@@ -16,14 +16,16 @@ package maltego
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // FilesCountFunc is a function that counts something over File audit records

@@ -4,16 +4,18 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
-	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/mgutz/ansi"
+
+	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // Init sets up the collector and starts the configured number of workers

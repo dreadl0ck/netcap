@@ -14,9 +14,11 @@
 package collect
 
 import (
-	"github.com/dreadl0ck/netcap"
-	"github.com/namsral/flag"
 	"os"
+
+	"github.com/namsral/flag"
+
+	"github.com/dreadl0ck/netcap"
 )
 
 func Flags() (flags []string) {

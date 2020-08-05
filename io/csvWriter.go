@@ -14,25 +14,30 @@
 package io
 
 import (
-	"github.com/davecgh/go-spew/spew"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 	"io"
 	"strings"
 	"sync"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
+// CSVWriter implements writing audit records to disk in the CSV format.
 type CSVWriter struct {
 	w io.Writer
 	sync.Mutex
 }
 
+// NewCSVWriter returns a new CSV writer instance.
 func NewCSVWriter(w io.Writer) *CSVWriter {
 	return &CSVWriter{
 		w: w,
 	}
 }
 
+// WriteHeader writes the CSV header to the underlying file.
 func (w *CSVWriter) WriteHeader(msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
@@ -45,8 +50,8 @@ func (w *CSVWriter) WriteHeader(msg proto.Message) (int, error) {
 	panic("protocol buffer does not implement the types.AuditRecord interface")
 }
 
+// WriteRecord writes a protocol buffer into the CSV writer.
 func (w *CSVWriter) WriteRecord(msg proto.Message) (int, error) {
-
 	w.Lock()
 	defer w.Unlock()
 
@@ -56,8 +61,4 @@ func (w *CSVWriter) WriteRecord(msg proto.Message) (int, error) {
 
 	spew.Dump(msg)
 	panic("can not write as CSV")
-}
-
-func (w *CSVWriter) Close() error {
-	return nil
 }

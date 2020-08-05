@@ -3,14 +3,16 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dustin/go-humanize"
-	"github.com/namsral/flag"
 	"io"
 	"log"
 	"os"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dustin/go-humanize"
+	"github.com/namsral/flag"
+
+	"github.com/dreadl0ck/netcap/collector"
 )
 
 var (

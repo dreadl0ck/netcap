@@ -18,11 +18,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dreadl0ck/netcap/resolvers"
-
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 type Service struct {

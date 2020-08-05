@@ -23,13 +23,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
 	"time"
 
-	"github.com/dreadl0ck/netcap/utils"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/pkg/errors"
 	"gopkg.in/cheggaaa/pb.v1"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // eg: 04/15/2014-11:53:20.462091

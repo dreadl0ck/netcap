@@ -14,11 +14,13 @@
 package collector
 
 import (
+	"os"
+
 	"github.com/dreadl0ck/gopacket"
+
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
-	"os"
 )
 
 var outDirPermissionDefault = 0755

@@ -22,11 +22,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gogo/protobuf/proto"
+	"gopkg.in/cheggaaa/pb.v1"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/gogo/protobuf/proto"
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // IPv4 labels type NC_IPv4.

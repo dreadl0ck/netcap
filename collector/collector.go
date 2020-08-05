@@ -32,17 +32,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/reassembly"
-
 	"github.com/dreadl0ck/gopacket"
-
-	"github.com/dreadl0ck/netcap/utils"
-
-	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // Collector provides an interface to collect data from PCAP or a network interface.

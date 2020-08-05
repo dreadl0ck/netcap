@@ -21,6 +21,7 @@ package dpi
 
 import (
 	"github.com/dreadl0ck/gopacket"
+
 	"github.com/dreadl0ck/netcap/types"
 )
 

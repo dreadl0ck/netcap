@@ -15,18 +15,18 @@ package netcap
 
 import (
 	"bufio"
-	"github.com/klauspost/pgzip"
-	"sync"
-
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 )
 
 /*

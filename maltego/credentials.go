@@ -16,13 +16,15 @@ package maltego
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // CredentialsTransformationFunc is a transformation over Credentials profiles for a selected Credentials

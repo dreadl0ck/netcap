@@ -3,11 +3,12 @@ package reassembly
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
 )
 
 const assemblerReturnValueInitialSize = 16

@@ -14,8 +14,9 @@
 package label
 
 import (
-	"github.com/namsral/flag"
 	"os"
+
+	"github.com/namsral/flag"
 )
 
 func Flags() (flags []string) {

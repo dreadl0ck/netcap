@@ -14,8 +14,9 @@
 package netcap
 
 import (
-	"github.com/dreadl0ck/netcap/types"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 var tcps = []*types.TCP{

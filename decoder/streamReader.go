@@ -2,9 +2,11 @@ package decoder
 
 import (
 	"bytes"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/reassembly"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+
+	"github.com/dreadl0ck/netcap/reassembly"
 )
 
 // StreamReader is an interface for processing a uni-directional stream of network data

@@ -16,12 +16,13 @@ package resolvers
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv

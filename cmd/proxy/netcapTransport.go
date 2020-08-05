@@ -25,9 +25,10 @@ import (
 	"net/url"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"go.uber.org/zap"
 )
 
 // NetcapTransport contains a http.Transport for RoundTrips

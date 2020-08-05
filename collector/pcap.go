@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/gopacket/layers"
-
 	"github.com/dreadl0ck/gopacket/pcapgo"
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"

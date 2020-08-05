@@ -2,9 +2,10 @@ package maltego
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
 	"strings"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/decoder"
 )
 
 // deprecated, use V2

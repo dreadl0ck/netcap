@@ -15,10 +15,12 @@ package netcap
 
 import (
 	"errors"
+	"io"
+
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/gogo/protobuf/proto"
-	"io"
 )
 
 // InitRecord initializes a new record of the given type

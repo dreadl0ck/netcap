@@ -4,12 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/fogleman/gg"
-	"github.com/go-git/go-git/v5"
-	"github.com/golang/freetype"
-	"github.com/nfnt/resize"
-	"golang.org/x/image/font"
-	"golang.org/x/image/math/fixed"
 	"image"
 	"image/draw"
 	"image/png"
@@ -19,6 +13,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/fogleman/gg"
+	"github.com/go-git/go-git/v5"
+	"github.com/golang/freetype"
+	"github.com/nfnt/resize"
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
 )
 
 // Icons/Netcap/sim_card_alert.xml

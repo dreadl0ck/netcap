@@ -2,13 +2,15 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket/pcap"
-	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/dreadl0ck/gopacket/pcap"
+
+	"github.com/dreadl0ck/netcap/collector"
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func ToAuditRecordsWithDPI() {

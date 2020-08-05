@@ -2,8 +2,9 @@ package reassembly
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
 )
 
 // one-way connection, i.e. halfconnection

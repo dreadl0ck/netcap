@@ -15,9 +15,10 @@ package netcap
 
 import (
 	"errors"
-	"github.com/dreadl0ck/netcap/types"
 	"io"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func TestReader(t *testing.T) {

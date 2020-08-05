@@ -2,14 +2,15 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/decoder"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 	"os"
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // TestCaptureLive will test capturing traffic live from the loopback interface

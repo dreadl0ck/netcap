@@ -2,13 +2,15 @@ package collector
 
 import (
 	"fmt"
+	"log"
+	"time"
+
+	"github.com/dustin/go-humanize"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
-	"log"
-	"time"
 )
 
 // cleanup before leaving. closes all buffers and displays stats.

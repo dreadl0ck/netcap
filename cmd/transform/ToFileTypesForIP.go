@@ -1,9 +1,10 @@
 package transform
 
 import (
+	"strings"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"strings"
 )
 
 func ToFileTypesForIP() {

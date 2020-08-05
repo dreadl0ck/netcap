@@ -20,7 +20,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -30,6 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/sshx"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*

@@ -20,9 +20,10 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/mgutz/ansi"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/mgutz/ansi"
 )
 
 func printHeader() {

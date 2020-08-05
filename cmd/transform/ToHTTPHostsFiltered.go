@@ -1,10 +1,11 @@
 package transform
 
 import (
+	"os"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"os"
 )
 
 func ToHTTPHostsFiltered() {
