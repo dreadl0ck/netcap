@@ -7,7 +7,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToProducts() {
+func toProducts() {
 	maltego.SoftwareTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, soft *types.Software, min, max uint64, profilesFile string, mac string, ipaddr string) {

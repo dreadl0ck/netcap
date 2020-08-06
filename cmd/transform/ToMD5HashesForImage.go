@@ -8,7 +8,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToMD5HashesForImage() {
+func toMD5HashesForImage() {
 	var (
 		name   string
 		length int64

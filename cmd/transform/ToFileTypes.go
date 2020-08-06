@@ -7,7 +7,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToFileTypes() {
+func toFileTypes() {
 	maltego.FilesTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {

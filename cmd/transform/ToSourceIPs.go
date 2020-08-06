@@ -12,7 +12,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToSourceIPs() {
+func toSourceIPs() {
 	maltego.DeviceProfileTransform(
 		maltego.CountPacketsDeviceIPs,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {

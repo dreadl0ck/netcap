@@ -5,7 +5,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToHTTPHosts() {
+func toHTTPHosts() {
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {

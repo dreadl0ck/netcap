@@ -11,7 +11,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func LookupDHCPFingerprint() {
+func lookupDHCPFingerprint() {
 	// init API key
 	resolvers.InitDHCPFingerprintAPIKey()
 	resolvers.InitDHCPFingerprintDB()

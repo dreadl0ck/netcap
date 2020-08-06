@@ -9,7 +9,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func StopCaptureProcess() {
+func stopCaptureProcess() {
 	lt := maltego.ParseLocalArguments(os.Args[1:])
 	pid := lt.Values["pid"]
 	log.Println("kill PID:", pid)

@@ -13,7 +13,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func ToIncomingFlowsFiltered() {
+func toIncomingFlowsFiltered() {
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitLocalDNS()

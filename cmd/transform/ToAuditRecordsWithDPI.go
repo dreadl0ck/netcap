@@ -11,7 +11,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func ToAuditRecordsWithDPI() {
+func toAuditRecordsWithDPI() {
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = lt.Values["path"]

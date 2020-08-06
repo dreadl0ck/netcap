@@ -5,7 +5,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToCredentialsByService() {
+func toCredentialsByService() {
 	maltego.CredentialsTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, cred *types.Credentials, min, max uint64, profilesFile string, mac string, ipaddr string) {

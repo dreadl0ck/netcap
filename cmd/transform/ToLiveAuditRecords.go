@@ -15,7 +15,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func ToLiveAuditRecords() {
+func toLiveAuditRecords() {
 	var (
 		lt    = maltego.ParseLocalArguments(os.Args[1:])
 		path  = lt.Values["path"]

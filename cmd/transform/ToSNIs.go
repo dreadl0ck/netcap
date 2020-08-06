@@ -5,7 +5,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToSNIs() {
+func toSNIs() {
 	maltego.IPTransform(
 		maltego.CountPacketsContactIPs,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {

@@ -7,7 +7,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToServices() {
+func toServices() {
 	maltego.ServiceTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {

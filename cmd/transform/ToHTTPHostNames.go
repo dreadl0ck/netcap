@@ -7,7 +7,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToHTTPHostNames() {
+func toHTTPHostNames() {
 	hostStats := make(map[string]int)
 
 	maltego.HTTPTransform(
