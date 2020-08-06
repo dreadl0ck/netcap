@@ -374,8 +374,8 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	// }
 
 	if c.IncludePayloads {
-		h.RequestBody = t.client.DataSlice().Bytes()
-		h.ResponseBody = t.server.DataSlice().Bytes()
+		h.RequestBody = t.client.DataSlice().bytes()
+		h.ResponseBody = t.server.DataSlice().bytes()
 	}
 
 	// export metrics if configured

@@ -31,10 +31,10 @@ import (
 type CredentialsTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Credentials, min, max uint64, profilesFile string, mac string, ip string)
 
 // CountFunc is a function that counts something over DeviceProfiles
-type CredentialsCountFunc = func(credentials *types.Credentials, mac string, min, max *uint64)
+type credentialsCountFunc = func(credentials *types.Credentials, mac string, min, max *uint64)
 
 // CredentialsTransform applies a maltego transformation over Credentials profiles seen for a target Credentials
-func CredentialsTransform(count CredentialsCountFunc, transform CredentialsTransformationFunc) {
+func CredentialsTransform(count credentialsCountFunc, transform CredentialsTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	credentialsFile := lt.Values["path"]
 	mac := lt.Values["mac"]

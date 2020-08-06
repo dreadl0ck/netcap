@@ -36,34 +36,34 @@ type XMLEntity struct {
 	ConversionOrder string `xml:"conversionOrder,attr"`
 	Visible         bool   `xml:"visible,attr"`
 
-	Entities   *BaseEntities    `xml:"BaseEntities,omitempty"`
-	Properties EntityProperties `xml:"Properties"`
+	Entities   *baseEntities    `xml:"BaseEntities,omitempty"`
+	Properties entityProperties `xml:"Properties"`
 }
 
-type BaseEntities struct {
+type baseEntities struct {
 	Text     string `xml:",chardata"`
-	Entities []BaseEntity
+	Entities []baseEntity
 }
 
-type BaseEntity struct {
+type baseEntity struct {
 	Text string `xml:",chardata"`
 }
 
-type EntityProperties struct {
+type entityProperties struct {
 	XMLName      xml.Name `xml:"Properties"`
 	Text         string   `xml:",chardata"`
 	Value        string   `xml:"value,attr"`
 	DisplayValue string   `xml:"displayValue,attr"`
 	Groups       string   `xml:"Groups"`
-	Fields       Fields   `xml:"Fields"`
+	Fields       fields   `xml:"Fields"`
 }
 
-type Fields struct {
+type fields struct {
 	Text  string `xml:",chardata"`
-	Items []PropertyField
+	Items []propertyField
 }
 
-type PropertyField struct {
+type propertyField struct {
 	XMLName     xml.Name `xml:"Field"`
 	Text        string   `xml:",chardata"`
 	Name        string   `xml:"name,attr"`
@@ -76,15 +76,15 @@ type PropertyField struct {
 	SampleValue string   `xml:"SampleValue"`
 }
 
-type EntityCoreInfo struct {
+type entityCoreInfo struct {
 	Name        string
 	Icon        string
 	Description string
 	Parent      string
-	Fields      []PropertyField
+	Fields      []propertyField
 }
 
-func newEntity(entName string, imgName string, description string, parent string, fields ...PropertyField) XMLEntity {
+func newEntity(entName string, imgName string, description string, parent string, propertyFields ...propertyField) XMLEntity {
 	if !strings.Contains(imgName, "/") {
 		imgName = ident + "/" + imgName
 	}
@@ -102,14 +102,14 @@ func newEntity(entName string, imgName string, description string, parent string
 			AllowedRoot:       true,
 			ConversionOrder:   "2147483647",
 			Visible:           true,
-			Properties: EntityProperties{
+			Properties: entityProperties{
 				XMLName:      xml.Name{},
 				Text:         "",
 				Value:        propsPrefix + strings.ToLower(entName),
 				DisplayValue: propsPrefix + strings.ToLower(entName),
-				Fields: Fields{
+				Fields: fields{
 					Text: "",
-					Items: []PropertyField{
+					Items: []propertyField{
 						{
 							Name:        propsPrefix + strings.ToLower(entName),
 							Type:        "string",
@@ -126,13 +126,13 @@ func newEntity(entName string, imgName string, description string, parent string
 		}
 	)
 
-	if len(fields) > 0 {
-		ent.Properties.Fields.Items = append(ent.Properties.Fields.Items, fields...)
+	if len(propertyFields) > 0 {
+		ent.Properties.Fields.Items = append(ent.Properties.Fields.Items, propertyFields...)
 	}
 
 	if len(parent) > 0 {
-		ent.Entities = &BaseEntities{
-			Entities: []BaseEntity{
+		ent.Entities = &baseEntities{
+			Entities: []baseEntity{
 				{
 					Text: parent,
 				},
@@ -143,8 +143,8 @@ func newEntity(entName string, imgName string, description string, parent string
 	return ent
 }
 
-func newStringField(name string) PropertyField {
-	return PropertyField{
+func newStringField(name string) propertyField {
+	return propertyField{
 		Name:        strings.ToLower(name),
 		Type:        "string",
 		Nullable:    true,
@@ -156,8 +156,8 @@ func newStringField(name string) PropertyField {
 	}
 }
 
-func newRequiredStringField(name string, description string) PropertyField {
-	return PropertyField{
+func newRequiredStringField(name string, description string) propertyField {
+	return propertyField{
 		Name:        strings.ToLower(name),
 		Type:        "string",
 		Nullable:    false,
@@ -169,7 +169,7 @@ func newRequiredStringField(name string, description string) PropertyField {
 	}
 }
 
-func genEntity(outDir string, entName string, imgName string, description string, parent string, fields ...PropertyField) {
+func genEntity(outDir string, entName string, imgName string, description string, parent string, fields ...propertyField) {
 	// not joking, Maltego fails to render images with this name
 	if imgName == "Vulnerability" {
 		imgName = "Vuln"

@@ -170,7 +170,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		return nil
 	}
 
-	// fmt.Println("save conn", ident, len(raw), len(colored))
+	// fmt.Println("save connection", ident, len(raw), len(colored))
 	// fmt.Println(string(colored))
 
 	var (
@@ -196,7 +196,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	// append to files
 	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaultFilesPermission)
 	if err != nil {
-		logReassemblyError("TCP conn create", "Cannot create %s: %s\n", base, err)
+		logReassemblyError("TCP connection create", "Cannot create %s: %s\n", base, err)
 		return err
 	}
 
@@ -210,14 +210,14 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	r := bytes.NewBuffer(colored)
 	w, err := io.Copy(f, r)
 	if err != nil {
-		logReassemblyError("TCP stream", "%s: failed to save TCP conn %s (l:%d): %s\n", ident, base, w, err)
+		logReassemblyError("TCP stream", "%s: failed to save TCP connection %s (l:%d): %s\n", ident, base, w, err)
 	} else {
-		logReassemblyInfo("%s: Saved TCP conn %s (l:%d)\n", ident, base, w)
+		logReassemblyInfo("%s: Saved TCP connection %s (l:%d)\n", ident, base, w)
 	}
 
 	err = f.Close()
 	if err != nil {
-		logReassemblyError("TCP conn", "%s: failed to close TCP conn file %s (l:%d): %s\n", ident, base, w, err)
+		logReassemblyError("TCP connection", "%s: failed to close TCP connection file %s (l:%d): %s\n", ident, base, w, err)
 	}
 
 	return nil

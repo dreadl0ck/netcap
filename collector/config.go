@@ -25,7 +25,7 @@ import (
 
 var outDirPermissionDefault = 0o755
 
-var DefaultConfig = Config{
+var defaultConfig = Config{
 	Workers:             1000,
 	PacketBufferSize:    100,
 	WriteUnknownPackets: false,
@@ -40,7 +40,7 @@ var DefaultConfig = Config{
 	LogErrors:           false,
 }
 
-var DefaultConfigDPI = Config{
+var defaultConfigDPI = Config{
 	Workers:             1000,
 	PacketBufferSize:    100,
 	WriteUnknownPackets: false,

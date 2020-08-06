@@ -24,7 +24,7 @@ import (
 
 var (
 	// all initialized service probes at runtime
-	serviceProbes []*ServiceProbe
+	serviceProbes []*serviceProbe
 
 	// ignored probes for RE2 engine (RE2 does not support backtracking
 	// groups in regexes with backtracking will be replaced by wildcard groups)
@@ -52,9 +52,9 @@ var (
 	}
 )
 
-// ServiceProbe is a regex based probe to fingerprint a network service by looking at its banner
+// serviceProbe is a regex based probe to fingerprint a network service by looking at its banner
 // the term banner refers to the first X bytes of data (usually 512) that have been sent by the server
-type ServiceProbe struct {
+type serviceProbe struct {
 	RegEx           *regexp.Regexp
 	RegExDotNet     *regexp2.Regexp
 	RegExRaw        string
@@ -71,7 +71,7 @@ type ServiceProbe struct {
 	Ident           string
 }
 
-func (s *ServiceProbe) String() string {
+func (s *serviceProbe) String() string {
 	var b strings.Builder
 
 	b.WriteString("ServiceProbe: ")
@@ -113,7 +113,7 @@ func (s *ServiceProbe) String() string {
 }
 
 func writeSoftwareFromBanner(serv *Service, ident string, probeIdent string) {
-	writeSoftware([]*Software{
+	writeSoftware([]*software{
 		{
 			Software: &types.Software{
 				Timestamp:  serv.Timestamp,
@@ -253,7 +253,7 @@ func enumerate(in string) string {
 	}
 }
 
-func InitServiceProbes() error {
+func initServiceProbes() error {
 	// load nmap service probes
 	data, err := ioutil.ReadFile("/usr/local/etc/netcap/dbs/nmap-service-probes")
 	if err != nil {
@@ -261,7 +261,7 @@ func InitServiceProbes() error {
 	}
 
 	lines := strings.Split(string(data), "\n")
-	serviceProbes = make([]*ServiceProbe, 0, len(lines))
+	serviceProbes = make([]*serviceProbe, 0, len(lines))
 
 	for _, line := range lines {
 		if len(line) == 0 || line == "\n" || strings.HasPrefix(line, "#") {
@@ -291,7 +291,7 @@ func InitServiceProbes() error {
 				r         = bytes.NewReader([]byte(line))
 				checkOpts bool
 				parseMeta bool
-				s         = new(ServiceProbe)
+				s         = new(serviceProbe)
 			)
 
 			// enumerate the ident type (e.g: http -> http-1 for the first http banner probe)

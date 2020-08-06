@@ -124,7 +124,7 @@ func (p *StreamPool) getHalf(k *key) (*connection, *halfconnection, *halfconnect
 	if conn != nil {
 		return conn, &conn.c2s, &conn.s2c
 	}
-	rk := k.Reverse()
+	rk := k.reverse()
 	conn = p.conns[rk]
 	if conn != nil {
 		return conn, &conn.s2c, &conn.c2s

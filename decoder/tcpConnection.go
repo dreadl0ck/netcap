@@ -213,7 +213,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		stats.rejectOpt++
 		stats.Unlock()
 	}
-	
+
 	return accept
 }
 
@@ -408,7 +408,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		t.client.MarkSaved()
 
 		// client
-		err := saveConnection(t.ConversationRaw(), t.ConversationColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
+		err := saveConnection(t.ConversationRaw(), t.conversationDataColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
 		if err != nil {
 			fmt.Println("failed to save stream", err)
 		}
@@ -685,7 +685,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		rows = append(rows, []string{"rejected Options", strconv.FormatInt(stats.rejectOpt, 10)})
 		rows = append(rows, []string{"reassembled bytes", strconv.FormatInt(stats.sz, 10)})
 		rows = append(rows, []string{"total TCP bytes", strconv.FormatInt(stats.totalsz, 10)})
-		rows = append(rows, []string{"conn rejected FSM", strconv.FormatInt(stats.rejectConnFsm, 10)})
+		rows = append(rows, []string{"connection rejected FSM", strconv.FormatInt(stats.rejectConnFsm, 10)})
 		rows = append(rows, []string{"reassembled chunks", strconv.FormatInt(stats.reassembled, 10)})
 		rows = append(rows, []string{"out-of-order packets", strconv.FormatInt(stats.outOfOrderPackets, 10)})
 		rows = append(rows, []string{"out-of-order bytes", strconv.FormatInt(stats.outOfOrderBytes, 10)})
@@ -781,8 +781,9 @@ func (t *tcpConnection) ConversationRaw() []byte {
 	return t.conversationRaw.Bytes()
 }
 
-func (t *tcpConnection) ConversationColored() []byte {
+func (t *tcpConnection) conversationDataColored() []byte {
 	t.Lock()
 	defer t.Unlock()
+
 	return t.conversationColored.Bytes()
 }

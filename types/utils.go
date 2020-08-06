@@ -29,7 +29,7 @@ var (
 	Separator = "-"
 )
 
-type Stringable interface {
+type stringable interface {
 	ToString() string
 }
 
@@ -42,7 +42,7 @@ type Stringable interface {
 // }
 
 // this function wraps the ToString() function call with a nil pointer check
-func toString(c Stringable) string {
+func toString(c stringable) string {
 	// make sure its not a nil pointer
 	// a simple nil check is apparently not enough here
 	if c == nil || (reflect.ValueOf(c).Kind() == reflect.Ptr && reflect.ValueOf(c).IsNil()) {
@@ -50,7 +50,7 @@ func toString(c Stringable) string {
 	}
 
 	// now check if the Stringable interface is implemented
-	if str, ok := c.(Stringable); ok {
+	if str, ok := c.(stringable); ok {
 		return str.ToString()
 	}
 

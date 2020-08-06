@@ -257,7 +257,7 @@ type flushableWriter interface {
 	Flush() error
 }
 
-func FlushWriters(writers ...flushableWriter) {
+func flushWriters(writers ...flushableWriter) {
 	for _, w := range writers {
 		err := w.Flush()
 		if err != nil {
@@ -266,7 +266,7 @@ func FlushWriters(writers ...flushableWriter) {
 	}
 }
 
-func CloseGzipWriters(writers ...*pgzip.Writer) {
+func closeGzipWriters(writers ...*pgzip.Writer) {
 	for _, w := range writers {
 		err := w.Flush()
 		if err != nil {
@@ -285,11 +285,11 @@ func (w *Writer) Close() (name string, size int64) {
 
 	// TODO: due to buffering experiment, flush the buffers first, then the compressor
 	if w.buffer {
-		FlushWriters(w.bWriter)
+		flushWriters(w.bWriter)
 	}
 
 	if w.compress {
-		CloseGzipWriters(w.gWriter)
+		closeGzipWriters(w.gWriter)
 	}
 
 	return CloseFile(w.out, w.file, w.Name)

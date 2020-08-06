@@ -47,12 +47,12 @@ func StringToTimeFieldsFunc(val string) time.Time {
 	return time.Time{}
 }
 
-func TestChopTransportIdent(t *testing.T) {
-	res := ChopTransportIdent("192.168.1.47->165.227.109.154-53032->80")
-	if res != "53032->80" {
-		t.Fatal("got", res, "expected: 53032->80")
-	}
-}
+//func TestChopTransportIdent(t *testing.T) {
+//	res := ChopTransportIdent("192.168.1.47->165.227.109.154-53032->80")
+//	if res != "53032->80" {
+//		t.Fatal("got", res, "expected: 53032->80")
+//	}
+//}
 
 func TestReverseIdent(t *testing.T) {
 	res := ReverseIdent("192.168.1.47->165.227.109.154-53032->80")

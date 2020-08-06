@@ -26,32 +26,32 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// ConnectionID is a bidirectional connection
+// connectionID is a bidirectional connection
 // between two devices over the network
 // that includes the Link, Network and TransportLayer
-type ConnectionID struct {
+type connectionID struct {
 	LinkFlowID      uint64
 	NetworkFlowID   uint64
 	TransportFlowID uint64
 }
 
-func (c ConnectionID) String() string {
+func (c connectionID) String() string {
 	return strconv.FormatUint(c.LinkFlowID, 10) + strconv.FormatUint(c.NetworkFlowID, 10) + strconv.FormatUint(c.TransportFlowID, 10)
 }
 
-type Conn struct {
+type connection struct {
 	*types.Connection
 	sync.Mutex
 }
 
-// AtomicConnMap contains all connections and provides synchronized access
-type AtomicConnMap struct {
-	Items map[string]*Conn
+// atomicConnMap contains all connections and provides synchronized access
+type atomicConnMap struct {
+	Items map[string]*connection
 	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map
-func (a *AtomicConnMap) Size() int {
+func (a *atomicConnMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
 
@@ -60,17 +60,17 @@ func (a *AtomicConnMap) Size() int {
 
 type ConnectionDecoder struct {
 	*CustomDecoder
-	Conns *AtomicConnMap
+	Conns *atomicConnMap
 }
 
-var connectionDecoder = &ConnectionDecoder{
+var connDecoder = &ConnectionDecoder{
 	CustomDecoder: &CustomDecoder{
 		Type:        types.Type_NC_Connection,
 		Name:        "Connection",
 		Description: "A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
 	},
-	Conns: &AtomicConnMap{
-		Items: make(map[string]*Conn),
+	Conns: &atomicConnMap{
+		Items: make(map[string]*connection),
 	},
 }
 
@@ -97,7 +97,7 @@ func (cd *ConnectionDecoder) Destroy() (name string, size int64) {
 
 func (cd *ConnectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	// assemble connectionID
-	connID := ConnectionID{}
+	connID := connectionID{}
 	if ll := p.LinkLayer(); ll != nil {
 		connID.LinkFlowID = ll.LinkFlow().FastHash()
 	}
@@ -132,10 +132,12 @@ func (cd *ConnectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 				conn.SrcMAC = ll.LinkFlow().Src().String()
 				conn.DstMAC = ll.LinkFlow().Dst().String()
 			}
+
 			if nl := p.NetworkLayer(); nl != nil {
 				conn.SrcIP = nl.NetworkFlow().Src().String()
 				conn.DstIP = nl.NetworkFlow().Dst().String()
 			}
+
 			if tl := p.TransportLayer(); tl != nil {
 				conn.SrcPort = tl.TransportFlow().Src().String()
 				conn.DstPort = tl.TransportFlow().Dst().String()
@@ -185,7 +187,7 @@ func (cd *ConnectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 			conn.ApplicationProto = al.LayerType().String()
 			conn.AppPayloadSize = int32(len(al.Payload()))
 		}
-		cd.Conns.Items[connID.String()] = &Conn{
+		cd.Conns.Items[connID.String()] = &connection{
 			Connection: conn,
 		}
 

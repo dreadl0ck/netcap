@@ -31,10 +31,10 @@ import (
 type ServiceTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Service, min, max uint64, profilesFile string, mac string, ip string)
 
 // CountFunc is a function that counts something over DeviceProfiles
-type ServiceCountFunc = func(service *types.Service, mac string, min, max *uint64)
+type serviceCountFunc = func(service *types.Service, mac string, min, max *uint64)
 
 // ServiceTransform applies a maltego transformation over Service profiles seen for a target Service
-func ServiceTransform(count ServiceCountFunc, transform ServiceTransformationFunc) {
+func ServiceTransform(count serviceCountFunc, transform ServiceTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	servicesFile := lt.Values["path"]
 	mac := lt.Values["mac"]

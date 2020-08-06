@@ -73,7 +73,7 @@ func PrintBuildInfo() {
 // PrintBuildInfo displays build information related to netcap to the specified io Writer
 func FPrintBuildInfo(w io.Writer) {
 	fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
-	fmt.Fprintln(w, "> NETCAP build commit:", Commit)
+	fmt.Fprintln(w, "> NETCAP build commit:", commit)
 	fmt.Fprintln(w, "> go runtime version:", runtime.Version())
 	fmt.Fprintln(w, "> number of cores:", runtime.NumCPU(), "cores")
 

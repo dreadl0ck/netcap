@@ -37,7 +37,7 @@ const (
 	UIM_DEBUG   = "Debug"
 )
 
-func GetThicknessInterval(val, min, max uint64) int {
+func getThicknessInterval(val, min, max uint64) int {
 	if min == max {
 		min = 0
 	}
@@ -114,7 +114,7 @@ type EntityObj struct {
 }
 
 // Constructor for MaltegoEntityObj
-func NewEntityObj(eT string, eV string) *EntityObj {
+func newEntityObj(eT string, eV string) *EntityObj {
 	return &EntityObj{entityType: eT, value: eV, weight: 100}
 }
 
@@ -136,7 +136,7 @@ func (m *Transform) AddUIMessage(message, messageType string) {
 	m.UIMessages = append(m.UIMessages, msg)
 }
 
-func (m *Transform) AddException(exceptionString, code string) {
+func (m *Transform) addException(exceptionString, code string) {
 	exc := []string{exceptionString, code}
 	m.exceptions = append(m.exceptions, exc)
 }
@@ -146,7 +146,7 @@ func (m *Transform) ReturnOutput() string {
 	r += "<MaltegoTransformResponseMessage>\n"
 	r += "<Entities>\n"
 	for _, e := range m.entities {
-		r += e.ReturnEntity()
+		r += e.returnEntity()
 	}
 	r += "</Entities>\n"
 	r += "<UIMessages>\n"
@@ -160,7 +160,7 @@ func (m *Transform) ReturnOutput() string {
 	return r
 }
 
-func (m *Transform) ThrowExceptions() string {
+func (m *Transform) throwExceptions() string {
 	r := "<MaltegoMessage>\n"
 	r += "<MaltegoTransformExceptionMessage>\n"
 	r += "<Exceptions>\n"
@@ -175,15 +175,15 @@ func (m *Transform) ThrowExceptions() string {
 }
 
 // 2. Setter and Getter functions for MaltegoEntityObjs
-func (m *EntityObj) SetType(eT string) {
+func (m *EntityObj) setType(eT string) {
 	m.entityType = eT
 }
 
-func (m *EntityObj) SetValue(eV string) {
+func (m *EntityObj) setValue(eV string) {
 	m.value = eV
 }
 
-func (m *EntityObj) SetWeight(w int) {
+func (m *EntityObj) setWeight(w int) {
 	m.weight = w
 }
 
@@ -201,11 +201,11 @@ func (m *EntityObj) AddDisplayInformation(di, dl string) {
 	m.displayInformation = append(m.displayInformation, info)
 }
 
-func (m *EntityObj) SetLinkColor(color string) {
+func (m *EntityObj) setLinkColor(color string) {
 	m.AddProperty("link#maltego.link.color", "LinkColor", "", color)
 }
 
-func (m *EntityObj) SetLinkStyle(style string) {
+func (m *EntityObj) setLinkStyle(style string) {
 	m.AddProperty("link#maltego.link.style", "LinkStyle", "", style)
 }
 
@@ -218,7 +218,7 @@ func (m *EntityObj) SetLinkLabel(label string) {
 	m.AddProperty("link#maltego.link.label", "Label", "", label)
 }
 
-func (m *EntityObj) SetBookmark(bookmark string) {
+func (m *EntityObj) setBookmark(bookmark string) {
 	m.AddProperty("bookmark#", "Bookmark", "", bookmark)
 }
 
@@ -231,7 +231,7 @@ func (m *EntityObj) SetLinkDirection(dir string) {
 	// me.addProperty('link#maltego.link.direction','link#maltego.link.direction','loose','output-to-input')
 }
 
-func (m *EntityObj) ReturnEntity() string {
+func (m *EntityObj) returnEntity() string {
 	r := "<Entity Type=\"" + m.entityType + "\">\n"
 	r += "<Value>" + m.value + "</Value>\n"
 	r += "<Weight>" + strconv.Itoa(m.weight) + "</Weight>\n"
@@ -271,41 +271,41 @@ func (m *EntityObj) ReturnEntity() string {
 /* 3. MaltegoMsg Python class implementation */
 
 // Here we have the XML structs to map to
-type Message struct {
+type message struct {
 	XMLName xml.Name `xml:"MaltegoMessage"`
-	MTRM    TransformRequestMessage
+	MTRM    transformRequestMessage
 }
 
-type TransformRequestMessage struct {
+type transformRequestMessage struct {
 	XMLName  xml.Name `xml:"MaltegoTransformRequestMessage"`
 	Entities Entities `xml:"Entities"`
-	Limits   Limit    `xml:"Limits"`
+	Limits   limit    `xml:"Limits"`
 }
 
 type Entities struct {
-	EntityList []Entity `xml:"Entity"`
+	EntityList []entity `xml:"Entity"`
 }
 
-type Entity struct {
+type entity struct {
 	// Text string `xml:",chardata"`
 	XMLName xml.Name         `xml:"Entity"`
 	Type    string           `xml:"Type,attr"`
-	AddF    AdditionalFields `xml:"AdditionalFields"`
+	AddF    additionalFields `xml:"AdditionalFields"`
 	Value   string           `xml:"Value"`
 	Weight  string           `xml:"Weight"`
 }
 
-type AdditionalFields struct {
-	FieldList []Field `xml:"Field"`
+type additionalFields struct {
+	FieldList []field `xml:"Field"`
 }
 
-type Field struct {
+type field struct {
 	FieldValue  string `xml:",chardata"`
 	FieldName   string `xml:"Name,attr"`
 	DisplayName string `xml:"DisplayName,attr"`
 }
 
-type Limit struct {
+type limit struct {
 	XMLName   xml.Name `xml:"Limits"`
 	HardLimit string   `xml:"HardLimit,attr"`
 	SoftLimit string   `xml:"SoftLimit,attr"`
@@ -314,7 +314,7 @@ type Limit struct {
 // End XML structs mapping
 
 // Code to parse Maltego XML Input
-type MsgObj struct {
+type msgObj struct {
 	Value             string
 	Weight            string
 	Slider            string // Forgot to implement the XML for this
@@ -324,8 +324,8 @@ type MsgObj struct {
 }
 
 // Constructor for MaltegoMsg
-func Msg(MaltegoXML string) MsgObj {
-	v := Message{}
+func msg(MaltegoXML string) msgObj {
+	v := message{}
 	err := xml.Unmarshal([]byte(MaltegoXML), &v)
 	if err != nil {
 		panic(err)
@@ -344,15 +344,15 @@ func Msg(MaltegoXML string) MsgObj {
 		Props[f.FieldName] = f.FieldValue
 	}
 
-	m := MsgObj{Value: Value, Weight: Weight, Type: Type, Slider: Slider, Properties: Props}
+	m := msgObj{Value: Value, Weight: Weight, Type: Type, Slider: Slider, Properties: Props}
 	return m
 }
 
-func (m *MsgObj) GetProperty(p string) string {
+func (m *msgObj) getProperty(p string) string {
 	return m.Properties[p]
 }
 
-func (m *MsgObj) GetTransformSetting(t string) string {
+func (m *msgObj) getTransformSetting(t string) string {
 	return m.TransformSettings[t]
 }
 

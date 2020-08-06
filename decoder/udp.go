@@ -35,7 +35,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var udpStreams = NewUDPStreamPool()
+var udpStreams = newUDPStreamPool()
 
 type UDPStream struct {
 	data UDPDataSlice
@@ -54,7 +54,7 @@ type UDPStreamPool struct {
 	sync.Mutex
 }
 
-func NewUDPStreamPool() *UDPStreamPool {
+func newUDPStreamPool() *UDPStreamPool {
 	return &UDPStreamPool{
 		streams: make(map[uint64]*UDPStream),
 	}
@@ -177,7 +177,7 @@ func (u *UDPStreamPool) saveAllUDPConnections() {
 		// save stream data
 		err := saveUDPConnection(raw.Bytes(), colored.Bytes(), ident, firstPacket, clientTransport)
 		if err != nil {
-			fmt.Println("failed to save UDP conn:", err)
+			fmt.Println("failed to save UDP connection:", err)
 		}
 
 		// save service banner
@@ -199,7 +199,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 		return nil
 	}
 
-	// fmt.Println("save conn", ident, len(raw), len(colored))
+	// fmt.Println("save connection", ident, len(raw), len(colored))
 	// fmt.Println(string(colored))
 
 	var (
@@ -225,7 +225,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 	// append to files
 	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaultFilesPermission)
 	if err != nil {
-		logReassemblyError("UDP conn create", "Cannot create %s: %s\n", base, err)
+		logReassemblyError("UDP connection create", "Cannot create %s: %s\n", base, err)
 		return err
 	}
 
@@ -239,14 +239,14 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 	r := bytes.NewBuffer(colored)
 	w, err := io.Copy(f, r)
 	if err != nil {
-		logReassemblyError("UDP stream", "%s: failed to save UDP conn %s (l:%d): %s\n", ident, base, w, err)
+		logReassemblyError("UDP stream", "%s: failed to save UDP connection %s (l:%d): %s\n", ident, base, w, err)
 	} else {
-		logReassemblyInfo("%s: Saved UDP conn %s (l:%d)\n", ident, base, w)
+		logReassemblyInfo("%s: Saved UDP connection %s (l:%d)\n", ident, base, w)
 	}
 
 	err = f.Close()
 	if err != nil {
-		logReassemblyError("UDP conn", "%s: failed to close UDP conn file %s (l:%d): %s\n", ident, base, w, err)
+		logReassemblyError("UDP connection", "%s: failed to close UDP connection file %s (l:%d): %s\n", ident, base, w, err)
 	}
 
 	return nil
@@ -277,7 +277,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	serv := NewService(firstPacket.String(), serverBytes, clientBytes, net.Dst().String())
+	serv := newService(firstPacket.String(), serverBytes, clientBytes, net.Dst().String())
 	serv.Banner = banner
 	serv.IP = net.Dst().String()
 	serv.Port = transport.Dst().String()

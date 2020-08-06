@@ -150,7 +150,7 @@ func InitServiceDB() {
 		}
 	}
 
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", len(tcpPortMap), "TCP service records")
 		utils.DebugLog.Println("loaded", len(udpPortMap), "UDP service records")
 	}

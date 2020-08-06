@@ -54,7 +54,7 @@ func InitLocalDNS() {
 		hosts++
 	}
 
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", hosts, "local DNS hosts")
 	}
 }

@@ -220,7 +220,7 @@ func InitDHCPFingerprintDB() {
 	}
 	dhcpFingerprintMu.Unlock()
 
-	if !Quiet {
+	if !quiet {
 		dhcpFingerprintMu.Lock()
 		utils.DebugLog.Println("loaded", len(dhcpFingerprintDB), "DHCP fingerprints")
 		dhcpFingerprintMu.Unlock()
@@ -262,7 +262,7 @@ func InitDHCPFingerprintDBCSV() {
 	}
 	dhcpFingerprintMu.Unlock()
 
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", fingerprints, "DHCP fingerprints")
 	}
 }

@@ -49,15 +49,15 @@ const (
 	serviceFTP    = "FTP"
 )
 
-type Software struct {
+type software struct {
 	*types.Software
 	sync.Mutex
 }
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
-type AtomicSoftwareMap struct {
+type atomicSoftwareMap struct {
 	// mapped product + version to software
-	Items map[string]*Software
+	Items map[string]*software
 	sync.Mutex
 }
 
@@ -76,22 +76,22 @@ var (
 )
 
 // Size returns the number of elements in the Items map
-func (a *AtomicSoftwareMap) Size() int {
+func (a *atomicSoftwareMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
 	return len(a.Items)
 }
 
 var (
-	// SoftwareStore hold all connections
-	SoftwareStore = &AtomicSoftwareMap{
-		Items: make(map[string]*Software),
+	// softwareStore hold all connections
+	softwareStore = &atomicSoftwareMap{
+		Items: make(map[string]*software),
 	}
 
 	parser, errInitUAParser = uaparser.New("/usr/local/etc/netcap/dbs/regexes.yaml")
 	pMu                     sync.Mutex
 
-	ja3db     Ja3CombinationsDB
+	ja3db     ja3CombinationsDB
 	hasshDB   []SSHHash
 	hashDBMap map[string][]SSHSoftware
 )
@@ -104,25 +104,25 @@ type userAgent struct {
 	full    string
 }
 
-type Process struct {
+type process struct {
 	Process string `json:"process"`
 	JA3     string `json:"JA3"`
 	JA3s    string `json:"JA3S"`
 }
 
-type Client struct {
+type client struct {
 	Os        string    `json:"os"`
 	Arch      string    `json:"arch"`
-	Processes []Process `json:"processes"`
+	Processes []process `json:"processes"`
 }
 
-type Server struct {
+type server struct {
 	Server  string   `json:"server"`
-	Clients []Client `json:"clients"`
+	Clients []client `json:"clients"`
 }
 
-type Ja3CombinationsDB struct {
-	Servers []Server `json:"servers"`
+type ja3CombinationsDB struct {
+	Servers []server `json:"servers"`
 }
 
 type SSHSoftware struct {
@@ -200,11 +200,8 @@ func parseUserAgent(ua string) *userAgent {
 }
 
 // generic version harvester, scans the payload using a regular expression
-func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (software []*Software) {
-	var (
-		s       []*Software
-		matches = reGenericVersion.FindAll(data, -1)
-	)
+func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (s []*software) {
+	matches := reGenericVersion.FindAll(data, -1)
 
 	//fmt.Println("got", len(matches), "matches")
 	//for _, m := range matches {
@@ -213,7 +210,7 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 
 	if len(matches) > 0 {
 		for _, v := range matches {
-			s = append(s, &Software{
+			s = append(s, &software{
 				Software: &types.Software{
 					Timestamp:      ts.String(),
 					DeviceProfiles: []string{dpIdent},
@@ -233,10 +230,9 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 
 // tries to determine the kind of software and version
 // based on the provided input data
-func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (software []*Software) {
+func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (s []*software) {
 	var (
 		service string
-		s       []*Software
 		dpIdent = dp.MacAddr
 	)
 	if serviceNameSrc != "" {
@@ -261,7 +257,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 					if process.JA3 == JA3 && process.JA3s == JA3s {
 						pMu.Lock()
 						values := regExpServerName.FindStringSubmatch(serverName)
-						s = append(s, &Software{
+						s = append(s, &software{
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
 								Product:        values[1], // Name of the server (Apache, Nginx, ...)
@@ -275,7 +271,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 								Flows:          []string{flowIdent},
 							},
 						})
-						s = append(s, &Software{
+						s = append(s, &software{
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
 								Product:        processName, // Name of the browser, including version
@@ -306,11 +302,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 }
 
 // TODO: pass in the device profile
-func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (software []*Software) {
-	var s []*Software // dpIdent = dp.MacAddr
-	// if dp.DeviceManufacturer != "" {
-	// 	dpIdent += " <" + dp.DeviceManufacturer + ">"
-	// }
+func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 
 	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
@@ -325,7 +317,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (software []*Software) {
 		}
 		pMu.Unlock()
 
-		s = append(s, &Software{
+		s = append(s, &software{
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
 				Product:   userInfo.product,
@@ -344,7 +336,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (software []*Software) {
 	// HTTP Server Name
 	if len(h.ServerName) != 0 && h.ServerName != " " {
 		values := regExpServerName.FindStringSubmatch(h.ServerName)
-		s = append(s, &Software{
+		s = append(s, &software{
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
 				Product:   values[1],                // Name of the server (Apache, Nginx, ...)
@@ -363,7 +355,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (software []*Software) {
 	if poweredBy, ok := h.ResponseHeader["X-Powered-By"]; ok {
 		if len(poweredBy) != 0 && poweredBy != " " {
 			values := regexpXPoweredBy.FindStringSubmatch(poweredBy)
-			s = append(s, &Software{
+			s = append(s, &software{
 				Software: &types.Software{
 					Timestamp: h.Timestamp,
 					Product:   values[1], // Name of the server (Apache, Nginx, ...)
@@ -393,7 +385,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (software []*Software) {
 								fmt.Println("Failed to compile:    " + val.(string))
 							} else {
 								if strings.ToLower(receivedHeader.HeaderName) == strings.ToLower(key) && (re.MatchString(receivedHeader.HeaderValue) || val == "") {
-									s = append(s, &Software{
+									s = append(s, &software{
 										Software: &types.Software{
 											Timestamp:  h.Timestamp,
 											Product:    k,
@@ -417,10 +409,10 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (software []*Software) {
 	return s
 }
 
-// AnalyzeSoftware tries to identify software based on observations from the data
+// analyzeSoftware tries to identify software based on observations from the data
 // this function first gathers as much data as possible and then calls into whatSoftware
 // to determine what software the packet belongs to
-func AnalyzeSoftware(i *packetInfo) {
+func analyzeSoftware(i *packetInfo) {
 	var (
 		serviceNameSrc, serviceNameDst string
 		ja3Hash                        = ja3.DigestHexPacket(i.p)
@@ -495,21 +487,21 @@ func AnalyzeSoftware(i *packetInfo) {
 
 	// now that we have some information at hands
 	// try to determine what kind of software it is
-	software := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, protos)
-	if len(software) == 0 {
+	soft := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, protos)
+	if len(soft) == 0 {
 		return
 	}
 
-	writeSoftware(software, func(s *Software) {
+	writeSoftware(soft, func(s *software) {
 		updateSoftwareAuditRecord(dp, s, i)
 	})
 }
 
-func writeSoftware(software []*Software, update func(s *Software)) {
+func writeSoftware(software []*software, update func(s *software)) {
 	var newSoftware []*types.Software
 
 	// add new audit records or update existing
-	SoftwareStore.Lock()
+	softwareStore.Lock()
 	for _, s := range software {
 		if s == nil {
 			continue
@@ -527,13 +519,13 @@ func writeSoftware(software []*Software, update func(s *Software)) {
 			s.Version = s.Version[:10] + "..."
 		}
 		s.Unlock()
-		if item, ok := SoftwareStore.Items[ident]; ok {
+		if item, ok := softwareStore.Items[ident]; ok {
 			if update != nil {
 				update(item)
 			}
 		} else {
 			// fmt.Println(SoftwareStore.Items, s.Product, s.Version)
-			SoftwareStore.Items[ident] = s
+			softwareStore.Items[ident] = s
 
 			stats.Lock()
 			stats.numSoftware++
@@ -542,7 +534,7 @@ func writeSoftware(software []*Software, update func(s *Software)) {
 			newSoftware = append(newSoftware, s.Software)
 		}
 	}
-	SoftwareStore.Unlock()
+	softwareStore.Unlock()
 
 	if len(newSoftware) > 0 {
 		// lookup known issues with identified software in the background
@@ -556,15 +548,15 @@ func writeSoftware(software []*Software, update func(s *Software)) {
 }
 
 // newSoftware creates a new device specific profile
-func newSoftware(i *packetInfo) *Software {
-	return &Software{
+func newSoftware(i *packetInfo) *software {
+	return &software{
 		Software: &types.Software{
 			Timestamp: i.timestamp,
 		},
 	}
 }
 
-func updateSoftwareAuditRecord(dp *DeviceProfile, p *Software, i *packetInfo) {
+func updateSoftwareAuditRecord(dp *deviceProfile, p *software, i *packetInfo) {
 	dpIdent := dp.MacAddr
 	if dp.DeviceManufacturer != "" {
 		dpIdent += " <" + dp.DeviceManufacturer + ">"
@@ -656,7 +648,7 @@ var softwareDecoder = NewCustomDecoder(
 	},
 	func(p gopacket.Packet) proto.Message {
 		// handle packet
-		AnalyzeSoftware(newPacketInfo(p))
+		analyzeSoftware(newPacketInfo(p))
 
 		return nil
 	},
@@ -679,7 +671,7 @@ var softwareDecoder = NewCustomDecoder(
 
 		// flush writer
 		if !e.writer.IsChanWriter {
-			for _, c := range SoftwareStore.Items {
+			for _, c := range softwareStore.Items {
 				c.Lock()
 				e.write(c.Software)
 				c.Unlock()

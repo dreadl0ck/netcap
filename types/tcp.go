@@ -78,7 +78,7 @@ func (t *TCP) CSVRecord() []string {
 		formatInt32(t.Checksum),                           // int32
 		formatInt32(t.Urgent),                             // int32
 		string(t.Padding),                                 // []byte
-		t.GetOptionString(),                               // []*TCPOption
+		t.getOptionString(),                               // []*TCPOption
 		strconv.FormatFloat(t.PayloadEntropy, 'f', 8, 64), // float64
 		formatInt32(t.PayloadSize),                        // int32
 		hex.EncodeToString(t.Payload),
@@ -87,7 +87,7 @@ func (t *TCP) CSVRecord() []string {
 	})
 }
 
-func (t *TCP) GetOptionString() string {
+func (t *TCP) getOptionString() string {
 	var b strings.Builder
 	for _, o := range t.Options {
 		b.WriteString(Begin)

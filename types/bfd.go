@@ -72,7 +72,7 @@ func (b *BFD) CSVRecord() []string {
 		formatInt32(b.DesiredMinTxInterval),           // int32
 		formatInt32(b.RequiredMinRxInterval),          // int32
 		formatInt32(b.RequiredMinEchoRxInterval),      // int32
-		b.AuthHeader.GetString(),                      // *BFDAuthHeader
+		b.AuthHeader.getString(),                      // *BFDAuthHeader
 		b.Context.SrcIP,
 		b.Context.DstIP,
 		b.Context.SrcPort,
@@ -84,7 +84,7 @@ func (b *BFD) Time() string {
 	return b.Timestamp
 }
 
-func (bah BFDAuthHeader) GetString() string {
+func (bah BFDAuthHeader) getString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)

@@ -26,7 +26,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-type DeviceProfile struct {
+type deviceProfile struct {
 	*types.DeviceProfile
 	sync.Mutex
 }
@@ -34,7 +34,7 @@ type DeviceProfile struct {
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
 type AtomicDeviceProfileMap struct {
 	// SrcMAC to Profiles
-	Items map[string]*DeviceProfile
+	Items map[string]*deviceProfile
 	sync.Mutex
 }
 
@@ -48,7 +48,7 @@ func (a *AtomicDeviceProfileMap) Size() int {
 var (
 	// Profiles hold all connections
 	Profiles = &AtomicDeviceProfileMap{
-		Items: make(map[string]*DeviceProfile),
+		Items: make(map[string]*deviceProfile),
 	}
 	profileDecoderInstance *CustomDecoder
 	profiles               int64
@@ -61,7 +61,7 @@ var (
 )
 
 // GetDeviceProfile fetches a known profile and updates it or returns a new one
-func getDeviceProfile(macAddr string, i *packetInfo) *DeviceProfile {
+func getDeviceProfile(macAddr string, i *packetInfo) *deviceProfile {
 	Profiles.Lock()
 	if p, ok := Profiles.Items[macAddr]; ok {
 		Profiles.Unlock()
@@ -94,7 +94,7 @@ func UpdateDeviceProfile(i *packetInfo) {
 }
 
 // NewDeviceProfile creates a new device specifc profile
-func NewDeviceProfile(i *packetInfo) *DeviceProfile {
+func NewDeviceProfile(i *packetInfo) *deviceProfile {
 	var contacts []*types.IPProfile
 	if ip := getIPProfile(i.dstIP, i); ip != nil {
 		contacts = append(contacts, ip.IPProfile)
@@ -104,7 +104,7 @@ func NewDeviceProfile(i *packetInfo) *DeviceProfile {
 		devices = append(devices, ip.IPProfile)
 	}
 
-	return &DeviceProfile{
+	return &deviceProfile{
 		DeviceProfile: &types.DeviceProfile{
 			MacAddr:            i.srcMAC,
 			DeviceManufacturer: resolvers.LookupManufacturer(i.srcMAC),
@@ -117,7 +117,7 @@ func NewDeviceProfile(i *packetInfo) *DeviceProfile {
 	}
 }
 
-func applyDeviceProfileUpdate(p *DeviceProfile, i *packetInfo) {
+func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
 	p.Lock()
 
 	// deviceIPs
