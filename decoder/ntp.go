@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ntpDecoder = NewGoPacketDecoder(
+var ntpDecoder = newGoPacketDecoder(
 	types.Type_NC_NTP,
 	layers.LayerTypeNTP,
 	"The Network Time Protocol is a networking protocol for clock synchronization between computer systems over packet-switched, variable-latency data networks",

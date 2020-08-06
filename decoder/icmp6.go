@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var icmpv6Decoder = NewGoPacketDecoder(
+var icmpv6Decoder = newGoPacketDecoder(
 	types.Type_NC_ICMPv6,
 	layers.LayerTypeICMPv6,
 	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",

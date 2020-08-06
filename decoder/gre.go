@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var greDecoder = NewGoPacketDecoder(
+var greDecoder = newGoPacketDecoder(
 	types.Type_NC_GRE,
 	layers.LayerTypeGRE,
 	"Generic Routing Encapsulation is a tunneling protocol developed by Cisco Systems that can encapsulate a wide variety of network layer protocols inside virtual point-to-point links or point-to-multipoint links over an Internet Protocol network",

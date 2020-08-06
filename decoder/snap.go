@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var snapDecoder = NewGoPacketDecoder(
+var snapDecoder = newGoPacketDecoder(
 	types.Type_NC_SNAP,
 	layers.LayerTypeSNAP,
 	"The Subnetwork Access Protocol (SNAP) is a mechanism for multiplexing, on networks using IEEE 802.2 LLC",

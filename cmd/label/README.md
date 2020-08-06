@@ -5,7 +5,7 @@
 ## Description
 
 As a source for the alerts, the source pcap file is scanned with suricata.
-*Netcap* parses suricata's output and maps it to the previously generated netcap audit records.
+*Netcap* parses the suricata output and maps it to the previously generated netcap audit records.
 A labeled comma-separated values (CSV) file will be generated for each audit record type.
 
 Read more about this tool in the documentation: https://docs.netcap.io

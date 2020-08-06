@@ -25,15 +25,15 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-type Service struct {
+type service struct {
 	*types.Service
 	sync.Mutex
 }
 
-// AtomicDeviceProfileMap contains all connections and provides synchronized access
+// atomicDeviceProfileMap contains all connections and provides synchronized access
 type atomicServiceMap struct {
-	// map server IP + Port to Service
-	Items map[string]*Service
+	// map server IP + Port to service
+	Items map[string]*service
 	sync.Mutex
 }
 
@@ -46,7 +46,7 @@ func (a *atomicServiceMap) Size() int {
 
 // ServiceStore hold all connections
 var ServiceStore = &atomicServiceMap{
-	Items: make(map[string]*Service),
+	Items: make(map[string]*service),
 }
 
 // addInfo is util to append information to a string using a delimiter
@@ -71,7 +71,7 @@ func addInfo(old string, new string) string {
 
 // saves the banner for a TCP service to the filesystem
 // and limits the length of the saved data to the BannerSize value from the config
-func saveTCPServiceBanner(s StreamReader) {
+func saveTCPServiceBanner(s streamReader) {
 	banner := s.ServiceBanner()
 
 	// limit length of data
@@ -139,15 +139,15 @@ func saveTCPServiceBanner(s StreamReader) {
 	stats.Unlock()
 }
 
-// NewDeviceProfile creates a new network service
-func newService(ts string, numBytesServer int, numBytesClient int, ip string) *Service {
+// newDeviceProfile creates a new network service
+func newService(ts string, numBytesServer int, numBytesClient int, ip string) *service {
 	var host string
 	if resolvers.CurrentConfig.ReverseDNS {
 		host = strings.Join(resolvers.LookupDNSNames(ip), "; ")
 	} else if resolvers.CurrentConfig.LocalDNS {
 		host = resolvers.LookupDNSNameLocal(ip)
 	}
-	return &Service{
+	return &service{
 		Service: &types.Service{
 			Timestamp:   ts,
 			BytesServer: int32(numBytesServer),
@@ -157,17 +157,17 @@ func newService(ts string, numBytesServer int, numBytesClient int, ip string) *S
 	}
 }
 
-var serviceDecoder = NewCustomDecoder(
+var serviceDecoder = newCustomDecoder(
 	types.Type_NC_Service,
 	"Service",
 	"A network service",
-	func(d *CustomDecoder) error {
+	func(d *customDecoder) error {
 		return initServiceProbes()
 	},
 	func(p gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *CustomDecoder) error {
+	func(e *customDecoder) error {
 		// flush writer
 		if !e.writer.IsChanWriter {
 			for _, c := range ServiceStore.Items {

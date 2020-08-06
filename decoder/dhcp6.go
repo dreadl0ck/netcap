@@ -24,7 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var dhcpv6Decoder = NewGoPacketDecoder(
+var dhcpv6Decoder = newGoPacketDecoder(
 	types.Type_NC_DHCPv6,
 	layers.LayerTypeDHCPv6,
 	"The Dynamic Host Configuration Protocol (DHCP) is a network management protocol used on Internet Protocol networks whereby a DHCP server dynamically assigns an IP address and other network configuration parameters to each device on a network so they can communicate with other IP networks",

@@ -25,7 +25,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var tlsServerHelloDecoder = NewCustomDecoder(
+var tlsServerHelloDecoder = newCustomDecoder(
 	types.Type_NC_TLSServerHello,
 	"TLSServerHello",
 	"The server hello from a Transport Layer Security handshake",

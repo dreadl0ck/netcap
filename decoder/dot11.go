@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var dot11Decoder = NewGoPacketDecoder(
+var dot11Decoder = newGoPacketDecoder(
 	types.Type_NC_Dot11,
 	layers.LayerTypeDot11,
 	"IEEE 802.11 is part of the IEEE 802 set of local area network protocols, and specifies the set of media access control and physical layer protocols for implementing wireless local area network Wi-Fi",

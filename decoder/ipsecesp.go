@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ipSecESPDecoder = NewGoPacketDecoder(
+var ipSecESPDecoder = newGoPacketDecoder(
 	types.Type_NC_IPSecESP,
 	layers.LayerTypeIPSecESP,
 	"IPSec Encapsulating Security Payload (ESP)",

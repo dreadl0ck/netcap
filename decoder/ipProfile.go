@@ -28,21 +28,21 @@ import (
 
 var LocalDNS = true
 
-// AtomicIPProfileMap contains all connections and provides synchronized access
-type AtomicIPProfileMap struct {
+// atomicIPProfileMap contains all connections and provides synchronized access
+type atomicIPProfileMap struct {
 	// SrcIP to Profiles
 	Items map[string]*IPProfile
 	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map
-func (a *AtomicIPProfileMap) Size() int {
+func (a *atomicIPProfileMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
 	return len(a.Items)
 }
 
-var ipProfiles = &AtomicIPProfileMap{
+var ipProfiles = &atomicIPProfileMap{
 	Items: make(map[string]*IPProfile),
 }
 

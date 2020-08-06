@@ -20,18 +20,18 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var pop3Decoder = NewCustomDecoder(
+var pop3Decoder = newCustomDecoder(
 	types.Type_NC_POP3,
 	servicePOP3,
 	"The POP3 protocol is used to fetch emails from a mail server",
-	func(d *CustomDecoder) error {
+	func(d *customDecoder) error {
 		streamFactory.decodePOP3 = true
 		return nil
 	},
 	func(packet gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *CustomDecoder) error {
+	func(e *customDecoder) error {
 		return nil
 	},
 )

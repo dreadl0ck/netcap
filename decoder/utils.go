@@ -141,29 +141,29 @@ func countFields(t types.Type) int {
 	return recordFields
 }
 
-func rankByWordCount(wordFrequencies map[string]int) PairList {
-	pl := make(PairList, len(wordFrequencies))
+func rankByWordCount(wordFrequencies map[string]int) pairList {
+	pl := make(pairList, len(wordFrequencies))
 	i := 0
 	for k, v := range wordFrequencies {
-		pl[i] = Pair{k, v}
+		pl[i] = pair{k, v}
 		i++
 	}
 	sort.Sort(sort.Reverse(pl))
 	return pl
 }
 
-// Pair describes a key and an associated value
-type Pair struct {
+// pair describes a key and an associated value
+type pair struct {
 	Key   string
 	Value int
 }
 
-// PairList implements sort.Interface
-type PairList []Pair
+// pairList implements sort.Interface
+type pairList []pair
 
-func (p PairList) Len() int           { return len(p) }
-func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
-func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p pairList) Len() int           { return len(p) }
+func (p pairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+func (p pairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 func ApplyActionToCustomDecoders(action func(CustomDecoderAPI)) {
 	for _, d := range defaultCustomDecoders {
@@ -219,9 +219,9 @@ func ShowDecoders(verbose bool) {
 	}
 }
 
-// Entropy returns the shannon entropy value
+// entropy returns the shannon entropy value
 // https://rosettacode.org/wiki/Entropy#Go
-func Entropy(data []byte) (entropy float64) {
+func entropy(data []byte) (entropy float64) {
 	if len(data) == 0 {
 		return 0
 	}

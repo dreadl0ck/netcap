@@ -32,11 +32,11 @@ import (
 // this structure has an optimized field order to avoid excessive padding
 type tcpStreamReader struct {
 	serviceBanner      bytes.Buffer
-	data               []*StreamData
+	data               []*streamData
 	ident              string
 	parent             *tcpConnection
 	numBytes           int
-	dataChan           chan *StreamData
+	dataChan           chan *streamData
 	serviceBannerBytes int
 	hexdump            bool
 	isClient           bool
@@ -46,7 +46,7 @@ type tcpStreamReader struct {
 
 func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 	return &tcpStreamReader{
-		dataChan: make(chan *StreamData, c.StreamDecoderBufSize),
+		dataChan: make(chan *streamData, c.StreamDecoderBufSize),
 		ident:    t.ident,
 		hexdump:  c.HexDump,
 		parent:   t,
@@ -71,7 +71,7 @@ func (t *tcpStreamReader) Read(p []byte) (int, error) {
 	return l, nil
 }
 
-func (t *tcpStreamReader) DataChan() chan *StreamData {
+func (t *tcpStreamReader) DataChan() chan *streamData {
 	return t.dataChan
 }
 
@@ -83,7 +83,7 @@ func (t *tcpStreamReader) Cleanup(f *tcpConnectionFactory) {
 	f.Unlock()
 }
 
-func (t *tcpStreamReader) DataSlice() StreamDataSlice {
+func (t *tcpStreamReader) DataSlice() streamDataSlice {
 	return t.data
 }
 
@@ -164,7 +164,7 @@ func (t *tcpStreamReader) NumBytes() int {
 	return t.numBytes
 }
 
-func (t *tcpStreamReader) Client() StreamReader {
+func (t *tcpStreamReader) Client() streamReader {
 	return t.parent.client
 }
 

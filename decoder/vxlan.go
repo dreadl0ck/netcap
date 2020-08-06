@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var vxlanDecoder = NewGoPacketDecoder(
+var vxlanDecoder = newGoPacketDecoder(
 	types.Type_NC_VXLAN,
 	layers.LayerTypeVXLAN,
 	"Virtual Extensible LAN is a network virtualization technology that attempts to address the scalability problems associated with large cloud computing deployments",

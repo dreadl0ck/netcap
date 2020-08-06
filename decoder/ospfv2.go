@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ospfv2Decoder = NewGoPacketDecoder(
+var ospfv2Decoder = newGoPacketDecoder(
 	types.Type_NC_OSPFv2,
 	layers.LayerTypeOSPF,
 	"Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks",

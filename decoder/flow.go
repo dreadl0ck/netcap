@@ -43,13 +43,13 @@ func (a *atomicFlowMap) Size() int {
 	return len(a.Items)
 }
 
-type FlowDecoder struct {
-	*CustomDecoder
+type flowCustomDecoder struct {
+	*customDecoder
 	Flows *atomicFlowMap
 }
 
-var flowDecoder = &FlowDecoder{
-	CustomDecoder: &CustomDecoder{
+var flowDecoder = &flowCustomDecoder{
+	customDecoder: &customDecoder{
 		Type:        types.Type_NC_Flow,
 		Name:        "Flow",
 		Description: "A flow represents uni-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
@@ -59,7 +59,7 @@ var flowDecoder = &FlowDecoder{
 	},
 }
 
-func (fd *FlowDecoder) PostInit() error {
+func (fd *flowCustomDecoder) PostInit() error {
 	// simply overwrite the handler with our custom one
 	// this way the CustomEncoders default Decode() implementation will be used
 	// (it takes care of applying config options and tracking stats)
@@ -70,7 +70,7 @@ func (fd *FlowDecoder) PostInit() error {
 }
 
 // Destroy closes and flushes all writers and calls deinit if set
-func (fd *FlowDecoder) Destroy() (name string, size int64) {
+func (fd *flowCustomDecoder) Destroy() (name string, size int64) {
 	// call Deinit on FlowDecoder, instead of CustomDecoder
 	err := fd.DeInit()
 	if err != nil {
@@ -80,7 +80,7 @@ func (fd *FlowDecoder) Destroy() (name string, size int64) {
 	return fd.writer.Close()
 }
 
-func (fd *FlowDecoder) handlePacket(p gopacket.Packet) proto.Message {
+func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	// get identifier
 	var (
 		net       gopacket.Flow
@@ -209,7 +209,8 @@ func (fd *FlowDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	return nil
 }
 
-func (fd *FlowDecoder) DeInit() error {
+// DeInit will teardown and flush all remaining records.
+func (fd *flowCustomDecoder) DeInit() error {
 	if !fd.writer.IsChanWriter {
 		fd.Flows.Lock()
 		for _, f := range fd.Flows.Items {
@@ -219,18 +220,18 @@ func (fd *FlowDecoder) DeInit() error {
 		}
 		fd.Flows.Unlock()
 	}
-	
+
 	return nil
 }
 
-func (fd *FlowDecoder) writeFlow(f *types.Flow) {
+func (fd *flowCustomDecoder) writeFlow(f *types.Flow) {
 	if c.Export {
 		f.Inc()
 	}
 
 	atomic.AddInt64(&fd.numRecords, 1)
 	err := fd.writer.Write(f)
-	
+
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

@@ -107,7 +107,7 @@ func (c *Collector) createUnknownPcap() error {
 	pcapWriter := pcapgo.NewWriter(c.unkownPcapWriterBuffered)
 
 	// set global pcap writer
-	c.unkownPcapWriterAtomic = NewAtomicPcapGoWriter(pcapWriter)
+	c.unkownPcapWriterAtomic = newAtomicPcapGoWriter(pcapWriter)
 	if err := pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (c *Collector) createErrorsPcap() error {
 	pcapWriter := pcapgo.NewWriter(c.errorsPcapWriterBuffered)
 
 	// set global pcap writer
-	c.errorsPcapWriterAtomic = NewAtomicPcapGoWriter(pcapWriter)
+	c.errorsPcapWriterAtomic = newAtomicPcapGoWriter(pcapWriter)
 	if err := pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (c *Collector) createErrorsPcap() error {
 // if WriteUnknownPackets is set in the config.
 func (c *Collector) writePacketToUnknownPcap(p gopacket.Packet) error {
 	if c.config.WriteUnknownPackets {
-		return c.unkownPcapWriterAtomic.WritePacket(p.Metadata().CaptureInfo, p.Data())
+		return c.unkownPcapWriterAtomic.writePacket(p.Metadata().CaptureInfo, p.Data())
 	}
 	return nil
 }
@@ -162,5 +162,5 @@ func (c *Collector) logPacketError(p gopacket.Packet, err string) error {
 
 // writePacketToErrorsPcap writes a packet to the errors.pcap file.
 func (c *Collector) writePacketToErrorsPcap(p gopacket.Packet) error {
-	return c.errorsPcapWriterAtomic.WritePacket(p.Metadata().CaptureInfo, p.Data())
+	return c.errorsPcapWriterAtomic.writePacket(p.Metadata().CaptureInfo, p.Data())
 }

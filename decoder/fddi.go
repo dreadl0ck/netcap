@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var fddiDecoder = NewGoPacketDecoder(
+var fddiDecoder = newGoPacketDecoder(
 	types.Type_NC_FDDI,
 	layers.LayerTypeFDDI,
 	"Fiber Distributed Data Interface (FDDI) is a standard for data transmission in a local area network",

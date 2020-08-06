@@ -52,7 +52,7 @@ type tcpConnectionFactory struct {
 	decodePOP3    bool
 	decodeSSH     bool
 	numActive     int64
-	streamReaders []StreamReader
+	streamReaders []streamReader
 
 	defragger  *ip4defrag.IPv4Defragmenter
 	StreamPool *reassembly.StreamPool
@@ -102,9 +102,9 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reasse
 	return stream
 }
 
-// WaitGoRoutines waits until the goroutines launched to process TCP streams are done
+// waitGoRoutines waits until the goroutines launched to process TCP streams are done
 // this will block forever if there are streams that are never shutdown (via RST or FIN flags)
-func (factory *tcpConnectionFactory) WaitGoRoutines() {
+func (factory *tcpConnectionFactory) waitGoRoutines() {
 	if !c.Quiet {
 		factory.Lock()
 		fmt.Println("\nwaiting for", factory.numActive, "flows")
@@ -114,12 +114,12 @@ func (factory *tcpConnectionFactory) WaitGoRoutines() {
 	factory.wg.Wait()
 }
 
-// Context is the assembler context
-type Context struct {
+// context is the assembler context
+type context struct {
 	CaptureInfo gopacket.CaptureInfo
 }
 
 // GetCaptureInfo returns the gopacket.CaptureInfo from the context
-func (c *Context) GetCaptureInfo() gopacket.CaptureInfo {
+func (c *context) GetCaptureInfo() gopacket.CaptureInfo {
 	return c.CaptureInfo
 }

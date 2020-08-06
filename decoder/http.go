@@ -27,18 +27,18 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var httpDecoder = NewCustomDecoder(
+var httpDecoder = newCustomDecoder(
 	types.Type_NC_HTTP,
 	serviceHTTP,
 	"The Hypertext Transfer Protocol is powering the world wide web",
-	func(d *CustomDecoder) error {
+	func(d *customDecoder) error {
 		streamFactory.decodeHTTP = true
 		return nil
 	},
 	func(packet gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *CustomDecoder) error {
+	func(e *customDecoder) error {
 		return nil
 	},
 )

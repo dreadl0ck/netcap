@@ -1,5 +1,5 @@
 <a href="https://netcap.io">
-  <img src="docs/graphics/Netcap-Logov2.jpg" width="100%" height="300">
+  <img alt="Netcap Logo" src="docs/graphics/Netcap-Logov2.jpg" width="100%" height="300">
 </a>
 
 <br>
@@ -20,7 +20,7 @@ The *Netcap* (NETwork CAPture) framework efficiently converts a stream of networ
 These audit records can be stored on disk or exchanged over the network,
 and are well suited as a data source for machine learning algorithms.
 Since parsing of untrusted input can be dangerous and network data is potentially malicious,
-implementation was performed in a programming language that provides a garbage collected memory safe runtime.
+a programming language that provides a garbage collected memory safe runtime is used for the implementation.
 
 It was developed for a series of experiments in my bachelor thesis: _Implementation and evaluation of secure and scalable anomaly-based network intrusion detection_.
 Slides from my presentation at the Leibniz Supercomputing Centre of the Bavarian Academy of Sciences and Humanities are available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).

@@ -438,10 +438,6 @@ func (l LSAheader) ToString() string {
 	return b.String()
 }
 
-func (l *LSAheader) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(l)
-}
-
 var ospf2Metric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_OSPFv2.String()),

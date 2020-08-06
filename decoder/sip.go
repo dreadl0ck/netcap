@@ -23,7 +23,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var sipDecoder = NewGoPacketDecoder(
+var sipDecoder = newGoPacketDecoder(
 	types.Type_NC_SIP,
 	layers.LayerTypeSIP,
 	"The Session Initiation Protocol is a signaling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications",

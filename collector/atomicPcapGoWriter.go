@@ -25,16 +25,16 @@ import (
 // Atomic PcapGo Writer //
 //////////////////////////
 
-// AtomicPcapGoWriter is a symchronized PCAP writer
+// atomicPcapGoWriter is a synchronized PCAP writer
 // that counts the number of packets written.
-type AtomicPcapGoWriter struct {
+type atomicPcapGoWriter struct {
 	count int64
 	w     pcapgo.Writer
 	sync.Mutex
 }
 
-// WritePacket writes a packet into the writer.
-func (a *AtomicPcapGoWriter) WritePacket(ci gopacket.CaptureInfo, data []byte) error {
+// writePacket writes a packet into the writer.
+func (a *atomicPcapGoWriter) writePacket(ci gopacket.CaptureInfo, data []byte) error {
 	// sync
 	a.Lock()
 	err := a.w.WritePacket(ci, data)
@@ -45,9 +45,9 @@ func (a *AtomicPcapGoWriter) WritePacket(ci gopacket.CaptureInfo, data []byte) e
 	return err
 }
 
-// NewAtomicPcapGoWriter takes a pcapgo.Writer and returns an atomic version
-func NewAtomicPcapGoWriter(w *pcapgo.Writer) *AtomicPcapGoWriter {
-	return &AtomicPcapGoWriter{
+// newAtomicPcapGoWriter takes a pcapgo.Writer and returns an atomic version
+func newAtomicPcapGoWriter(w *pcapgo.Writer) *atomicPcapGoWriter {
+	return &atomicPcapGoWriter{
 		w: *w,
 	}
 }

@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var nortelDiscoveryDecoder = NewGoPacketDecoder(
+var nortelDiscoveryDecoder = newGoPacketDecoder(
 	types.Type_NC_NortelDiscovery,
 	layers.LayerTypeNortelDiscovery,
 	"The Nortel Discovery Protocol (NDP) is a Data Link Layer (OSI Layer 2) network protocol for discovery of Nortel networking devices and certain products from Avaya and Ciena",

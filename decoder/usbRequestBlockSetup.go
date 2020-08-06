@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var usbRequestBlockSetupDecoder = NewGoPacketDecoder(
+var usbRequestBlockSetupDecoder = newGoPacketDecoder(
 	types.Type_NC_USBRequestBlockSetup,
 	layers.LayerTypeUSBRequestBlockSetup,
 	"Universal Serial Bus (USB) is an industry standard that establishes specifications for cables and connectors and protocols for connection, communication and power supply (interfacing) between computers, peripherals and other computers",

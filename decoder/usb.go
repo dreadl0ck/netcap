@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var usbDecoder = NewGoPacketDecoder(
+var usbDecoder = newGoPacketDecoder(
 	types.Type_NC_USB,
 	layers.LayerTypeUSB,
 	"Universal Serial Bus (USB) is an industry standard that establishes specifications for cables and connectors and protocols for connection, communication and power supply (interfacing) between computers, peripherals and other computers",

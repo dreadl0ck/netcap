@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var modbusDecoder = NewGoPacketDecoder(
+var modbusDecoder = newGoPacketDecoder(
 	types.Type_NC_Modbus,
 	layers.LayerTypeModbus,
 	"Modbus is a data communications protocol originally published by Modicon in 1979 for use with its programmable logic controllers",

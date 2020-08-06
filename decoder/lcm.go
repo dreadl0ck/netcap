@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var lcmDecoder = NewGoPacketDecoder(
+var lcmDecoder = newGoPacketDecoder(
 	types.Type_NC_LCM,
 	layers.LayerTypeLCM,
 	"LCM is a set of libraries and tools for message passing and data marshaling, targeted at real-time systems where high-bandwidth and low latency are critical",

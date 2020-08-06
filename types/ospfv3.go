@@ -105,10 +105,6 @@ func (l HelloPkg) ToString() string {
 	return b.String()
 }
 
-func (u HelloPkg) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
-}
-
 var ospf3Metric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_OSPFv3.String()),

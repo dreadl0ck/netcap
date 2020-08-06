@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var vrrpv2Decoder = NewGoPacketDecoder(
+var vrrpv2Decoder = newGoPacketDecoder(
 	types.Type_NC_VRRPv2,
 	layers.LayerTypeVRRP,
 	"The Virtual Router Redundancy Protocol is a computer networking protocol that provides for automatic assignment of available Internet Protocol routers to participating hosts",

@@ -51,21 +51,21 @@ var (
 )
 
 type (
-	// CustomDecoderHandler takes a gopacket.Packet and returns a proto.Message
-	CustomDecoderHandler = func(p gopacket.Packet) proto.Message
+	// customDecoderHandler takes a gopacket.Packet and returns a proto.Message
+	customDecoderHandler = func(p gopacket.Packet) proto.Message
 
-	// CustomDecoder implements custom logic to decode data from a gopacket.Packet
+	// customDecoder implements custom logic to decode data from a gopacket.Packet
 	// this structure has an optimized field order to avoid excessive padding
-	CustomDecoder struct {
+	customDecoder struct {
 
 		// public fields
 		Name        string
 		Description string
 		Icon        string
 
-		Handler  CustomDecoderHandler
-		postinit func(*CustomDecoder) error
-		deinit   func(*CustomDecoder) error
+		Handler  customDecoderHandler
+		postinit func(*customDecoder) error
+		deinit   func(*customDecoder) error
 
 		// used to keep track of the number of generated audit records
 		numRecords int64
@@ -91,33 +91,33 @@ type (
 	}
 )
 
-func (cd *CustomDecoder) PostInit() error {
+func (cd *customDecoder) PostInit() error {
 	if cd.postinit == nil {
 		return nil
 	}
 	return cd.postinit(cd)
 }
 
-func (cd *CustomDecoder) DeInit() error {
+func (cd *customDecoder) DeInit() error {
 	if cd.deinit == nil {
 		return nil
 	}
 	return cd.deinit(cd)
 }
 
-func (cd *CustomDecoder) GetName() string {
+func (cd *customDecoder) GetName() string {
 	return cd.Name
 }
 
-func (cd *CustomDecoder) SetWriter(w *netcap.Writer) {
+func (cd *customDecoder) SetWriter(w *netcap.Writer) {
 	cd.writer = w
 }
 
-func (cd *CustomDecoder) GetType() types.Type {
+func (cd *customDecoder) GetType() types.Type {
 	return cd.Type
 }
 
-func (cd *CustomDecoder) GetDescription() string {
+func (cd *customDecoder) GetDescription() string {
 	return cd.Description
 }
 
@@ -240,9 +240,9 @@ func isCustomDecoderLoaded(name string) bool {
 	return false
 }
 
-// NewCustomDecoder returns a new CustomDecoder instance
-func NewCustomDecoder(t types.Type, name string, description string, postinit func(*CustomDecoder) error, handler CustomDecoderHandler, deinit func(*CustomDecoder) error) *CustomDecoder {
-	return &CustomDecoder{
+// newCustomDecoder returns a new customDecoder instance
+func newCustomDecoder(t types.Type, name string, description string, postinit func(*customDecoder) error, handler customDecoderHandler, deinit func(*customDecoder) error) *customDecoder {
+	return &customDecoder{
 		Name:        name,
 		Handler:     handler,
 		deinit:      deinit,
@@ -255,7 +255,7 @@ func NewCustomDecoder(t types.Type, name string, description string, postinit fu
 // Decode is called for each layer
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe
-func (cd *CustomDecoder) Decode(p gopacket.Packet) error {
+func (cd *customDecoder) Decode(p gopacket.Packet) error {
 	// call the Handler function of the encoder
 	record := cd.Handler(p)
 	if record != nil {
@@ -292,7 +292,7 @@ func (cd *CustomDecoder) Decode(p gopacket.Packet) error {
 }
 
 // Destroy closes and flushes all writers and calls deinit if set
-func (cd *CustomDecoder) Destroy() (name string, size int64) {
+func (cd *customDecoder) Destroy() (name string, size int64) {
 	err := cd.DeInit()
 	if err != nil {
 		panic(err)
@@ -302,11 +302,11 @@ func (cd *CustomDecoder) Destroy() (name string, size int64) {
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder
-func (cd *CustomDecoder) GetChan() <-chan []byte {
+func (cd *customDecoder) GetChan() <-chan []byte {
 	return cd.writer.GetChan()
 }
 
 // NumRecords returns the number of written records
-func (cd *CustomDecoder) NumRecords() int64 {
+func (cd *customDecoder) NumRecords() int64 {
 	return atomic.LoadInt64(&cd.numRecords)
 }

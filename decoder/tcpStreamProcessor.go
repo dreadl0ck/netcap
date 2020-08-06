@@ -21,7 +21,7 @@ import (
 // internal data structure to parallelize processing of tcp streams
 // when the core engine is stopped and the remaining open connections are processed
 type tcpStreamProcessor struct {
-	workers    []chan StreamReader
+	workers    []chan streamReader
 	numWorkers int
 	next       int
 	wg         sync.WaitGroup
@@ -32,7 +32,7 @@ type tcpStreamProcessor struct {
 
 // to process the streams in parallel
 // they are passed to several worker goroutines in round robin style.
-func (tsp *tcpStreamProcessor) handleStream(s StreamReader) {
+func (tsp *tcpStreamProcessor) handleStream(s streamReader) {
 	tsp.wg.Add(1)
 
 	// make it work for 1 worker only, can be used for debugging
@@ -55,9 +55,9 @@ func (tsp *tcpStreamProcessor) handleStream(s StreamReader) {
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
-func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReader {
+func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReader {
 	// init channel to receive input packets
-	chanInput := make(chan StreamReader, 10)
+	chanInput := make(chan streamReader, 10)
 
 	// start worker
 	go func() {
@@ -109,7 +109,7 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan StreamReade
 
 // spawn the configured number of workers
 func (tsp *tcpStreamProcessor) initWorkers() {
-	tsp.workers = make([]chan StreamReader, runtime.NumCPU())
+	tsp.workers = make([]chan streamReader, runtime.NumCPU())
 	for i := range tsp.workers {
 		tsp.workers[i] = tsp.streamWorker(&tsp.wg)
 	}

@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ciscoDiscoveryInfoDecoder = NewGoPacketDecoder(
+var ciscoDiscoveryInfoDecoder = newGoPacketDecoder(
 	types.Type_NC_CiscoDiscoveryInfo,
 	layers.LayerTypeCiscoDiscoveryInfo,
 	"Cisco Discovery Protocol is a proprietary Data Link Layer protocol used to share information about other directly connected Cisco equipment, such as the operating system version and IP address",

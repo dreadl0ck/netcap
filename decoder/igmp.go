@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var igmpDecoder = NewGoPacketDecoder(
+var igmpDecoder = newGoPacketDecoder(
 	types.Type_NC_IGMP,
 	layers.LayerTypeIGMP,
 	"The Internet Group Management Protocol (IGMP) is a communications protocol used by hosts and adjacent routers on IPv4 networks to establish multicast group memberships",

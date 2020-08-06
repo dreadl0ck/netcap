@@ -78,7 +78,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 	var (
 		banner = make([]byte, 0, c.HarvesterBannerSize)
 		found  bool
-		tried  *CredentialHarvester
+		tried  *credentialHarvester
 	)
 
 	// copy c.HarvesterBannerSize number of bytes from the raw conversation

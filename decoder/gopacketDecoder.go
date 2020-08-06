@@ -88,15 +88,15 @@ var defaultGoPacketDecoders = []*GoPacketDecoder{
 }
 
 type (
-	// GoPacketDecoderHandler is the handler function for a layer encoder.
-	GoPacketDecoderHandler = func(layer gopacket.Layer, timestamp string) proto.Message
+	// goPacketDecoderHandler is the handler function for a layer encoder.
+	goPacketDecoderHandler = func(layer gopacket.Layer, timestamp string) proto.Message
 
 	// GoPacketDecoder represents an encoder for the gopacket.Layer type
 	// this structure has an optimized field order to avoid excessive padding.
 	GoPacketDecoder struct {
 		Description string
 		Layer       gopacket.LayerType
-		Handler     GoPacketDecoderHandler
+		Handler     goPacketDecoderHandler
 
 		writer *netcap.Writer
 		Type   types.Type
@@ -205,8 +205,8 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 	return decoders, nil
 }
 
-// NewGoPacketDecoder returns a new GoPacketDecoder instance.
-func NewGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string, handler GoPacketDecoderHandler) *GoPacketDecoder {
+// newGoPacketDecoder returns a new GoPacketDecoder instance.
+func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string, handler goPacketDecoderHandler) *GoPacketDecoder {
 	return &GoPacketDecoder{
 		Layer:       lt,
 		Handler:     handler,

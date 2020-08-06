@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var sctpDecoder = NewGoPacketDecoder(
+var sctpDecoder = newGoPacketDecoder(
 	types.Type_NC_SCTP,
 	layers.LayerTypeSCTP,
 	"The Stream Control Transmission Protocol (SCTP) is a computer networking communications protocol which operates at the transport layer and serves a role similar to the popular protocols TCP and UDP",

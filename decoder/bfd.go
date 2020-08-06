@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var bfdDecoder = NewGoPacketDecoder(
+var bfdDecoder = newGoPacketDecoder(
 	types.Type_NC_BFD,
 	layers.LayerTypeBFD,
 	"Bidirectional Forwarding Detection (BFD) is a network protocol that is used to detect faults between two forwarding engines connected by a link",

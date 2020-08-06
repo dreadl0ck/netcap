@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var arpDecoder = NewGoPacketDecoder(
+var arpDecoder = newGoPacketDecoder(
 	types.Type_NC_ARP,
 	layers.LayerTypeARP,
 	"The Address Resolution Protocol resolves IP to hardware addresses",
