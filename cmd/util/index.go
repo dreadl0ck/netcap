@@ -38,6 +38,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+// Exploit models information about a software exploit.
 // TODO: can we use the protobuf from types package instead?
 type Exploit struct {
 	Id          string
@@ -50,6 +51,7 @@ type Exploit struct {
 	Port        string
 }
 
+// Vulnerability models information about a software Vulnerability.
 // TODO: can we use the protobuf from types package instead?
 type Vulnerability struct {
 	Id                    string
@@ -74,7 +76,7 @@ type Vulnerability struct {
 var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
 
 // generates max 20 intermediate versions
-// until is excluded
+// until is excluded.
 func intermediatePatchVersions(from string, until string) []string {
 	var out []string
 
@@ -134,9 +136,12 @@ func indexData(in string) {
 			log.Fatal(err)
 		}
 
-		// count total number of lines
-		tr := textproto.NewReader(bufio.NewReader(file))
-		var total int
+		var (
+			// count total number of lines
+			total int
+			tr    = textproto.NewReader(bufio.NewReader(file))
+		)
+
 		for {
 			line, err := tr.ReadLine()
 			if errors.Is(err, io.EOF) {
@@ -184,7 +189,6 @@ func indexData(in string) {
 		fmt.Println("indexed mitre DB, num entries:", count)
 
 	case "exploit-db":
-
 		indexPath = filepath.Join(resolvers.DataBaseSource, "exploit-db.bleve")
 		fmt.Println("index path", indexPath)
 
@@ -206,15 +210,18 @@ func indexData(in string) {
 			total int
 			line  string
 		)
+
 		for {
 			line, err = tr.ReadLine()
 			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			if !strings.HasPrefix(line, "#") {
 				total++
 			}
 		}
+
 		err = file.Close()
 		if err != nil {
 			log.Fatal(err)
@@ -232,6 +239,7 @@ func indexData(in string) {
 			count int
 			rec   []string
 		)
+
 		for {
 			rec, err = r.Read()
 			if errors.Is(err, io.EOF) {
@@ -241,8 +249,11 @@ func indexData(in string) {
 				continue
 			}
 			count++
+
 			utils.ClearLine()
+
 			fmt.Print("processing: ", count, " / ", total)
+
 			e := Exploit{
 				Id:          rec[0],
 				File:        rec[1],
@@ -253,6 +264,7 @@ func indexData(in string) {
 				Platform:    rec[6],
 				Port:        rec[7],
 			}
+
 			err = index.Index(e.Id, e)
 			if err != nil {
 				fmt.Println(err)
@@ -262,7 +274,6 @@ func indexData(in string) {
 		fmt.Println("indexed exploit DB, num entries:", count)
 
 	case "nvd":
-
 		indexPath = filepath.Join(resolvers.DataBaseSource, "nvd-v2.bleve")
 		fmt.Println("index path", indexPath)
 
@@ -297,6 +308,7 @@ func indexData(in string) {
 			}
 			total int
 		)
+
 		for _, year := range years {
 			fmt.Print("processing files for year ", year)
 			data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
@@ -305,9 +317,15 @@ func indexData(in string) {
 			}
 
 			items := new(decoder.NVDVulnerabilityItems)
+
 			err = json.Unmarshal(data, items)
+			if err != nil {
+				log.Fatal("failed to unmarshal CVE items for file"+filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"), err)
+			}
+
 			total += len(items.CVEItems)
 			length := len(items.CVEItems)
+
 			for i, v := range items.CVEItems {
 
 				utils.ClearLine()
@@ -332,7 +350,6 @@ func indexData(in string) {
 												}
 											}
 										} else {
-
 											// try to get version from cpeURI
 											parts := strings.Split(cpe.Cpe23URI, ":")
 											if len(parts) > 5 {
@@ -346,6 +363,7 @@ func indexData(in string) {
 								}
 							}
 						}
+
 						if len(versions) == 0 {
 							genRes := reSimpleVersion.FindString(entry.Value)
 							if genRes != "" {
@@ -371,14 +389,17 @@ func indexData(in string) {
 							BaseSeverity:          v.Impact.BaseMetricV3.CvssV3.BaseSeverity,
 							Versions:              versions,
 						}
+
 						err = index.Index(e.Id, e)
 						if err != nil {
 							fmt.Println(err)
 						}
+
 						break
 					}
 				}
 			}
+
 			fmt.Println()
 		}
 
@@ -398,9 +419,11 @@ func indexData(in string) {
 
 func makeBleveIndex(indexName string) bleve.Index {
 	mapping := bleve.NewIndexMapping()
+
 	index, err := bleve.New(indexName, mapping)
 	if err != nil {
 		log.Fatalln("failed to create index:", err)
 	}
+
 	return index
 }

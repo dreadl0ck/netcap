@@ -21,30 +21,30 @@ import (
 )
 
 // CollectBPF open the named PCAP file and sets the specified BPF filter.
-func (c *Collector) CollectBPF(path string, bpf string) error {
+func (c *Collector) CollectBPF(path, bpf string) error {
 	handle, err := pcap.OpenOffline(path)
 	if err != nil {
 		return err
 	}
 	defer handle.Close()
 
-	if err = handle.SetBPFFilter(bpf); err != nil {
+	if err = handle.SetBPFFilter(bpf); err != nil { //nolint:gocritic
 		return err
 	}
 
-	if err = c.Init(); err != nil {
+	if err = c.Init(); err != nil { //nolint:gocritic
 		return err
 	}
 
 	// read packets
 	for {
-
 		// fetch the next packetdata and packetheader
 		data, ci, err := handle.ZeroCopyReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			return errors.Wrap(err, "Error reading packet data")
 		}
 
@@ -57,5 +57,6 @@ func (c *Collector) CollectBPF(path string, bpf string) error {
 		})
 	}
 	c.cleanup(false)
+
 	return nil
 }

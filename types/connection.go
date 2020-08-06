@@ -159,7 +159,7 @@ func (c *Connection) Inc() {
 	connDuration.WithLabelValues(c.SrcMAC, c.DstMAC).Observe(float64(c.Duration))
 }
 
-func (c *Connection) SetPacketContext(ctx *PacketContext) {}
+func (c *Connection) SetPacketContext(*PacketContext) {}
 
 func (c *Connection) Src() string {
 	return c.SrcIP

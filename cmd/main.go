@@ -244,12 +244,13 @@ func printFileForExt(exts ...string) {
 	for _, f := range files {
 		for _, e := range exts {
 			if f.IsDir() || filepath.Ext(f.Name()) == e {
-				path := filepath.Join(currBase, f.Name())
+				p := filepath.Join(currBase, f.Name())
 				if f.IsDir() {
-					path += "/"
+					p += "/"
 				}
-				fmt.Print(path + " ")
-				// debug("output", path)
+
+				fmt.Print(p + " ")
+				// debug("output", p)
 				break
 			}
 		}

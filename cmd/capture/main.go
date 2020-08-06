@@ -234,11 +234,11 @@ func Run() {
 	// logic is split for both types here
 	// because the pcapng reader offers ZeroCopyReadPacketData()
 	if isPcap {
-		if err := c.CollectPcap(*flagInput); err != nil {
+		if err = c.CollectPcap(*flagInput); err != nil {
 			log.Fatal("failed to collect audit records from pcap file: ", err)
 		}
 	} else {
-		if err := c.CollectPcapNG(*flagInput); err != nil {
+		if err = c.CollectPcapNG(*flagInput); err != nil {
 			log.Fatal("failed to collect audit records from pcapng file: ", err)
 		}
 	}
@@ -251,13 +251,15 @@ func Run() {
 
 	// memory profiling
 	if *flagMemProfile {
-		f, err := os.Create("netcap-" + netcap.Version + ".mem.profile")
-		if err != nil {
-			log.Fatal("failed create memory profile: ", err)
+		f, errProfile := os.Create("netcap-" + netcap.Version + ".mem.profile")
+		if errProfile != nil {
+			log.Fatal("failed create memory profile: ", errProfile)
 		}
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Fatal("failed to write heap profile: ", err)
+
+		if errProfile = pprof.WriteHeapProfile(f); errProfile != nil {
+			log.Fatal("failed to write heap profile: ", errProfile)
 		}
+
 		err = f.Close()
 		if err != nil {
 			panic("failed to write memory profile: " + err.Error())

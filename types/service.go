@@ -57,7 +57,7 @@ func (a *Service) Inc() {
 	serviceMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *Service) SetPacketContext(ctx *PacketContext) {}
+func (a *Service) SetPacketContext(*PacketContext) {}
 
 func (a *Service) Src() string {
 	return ""

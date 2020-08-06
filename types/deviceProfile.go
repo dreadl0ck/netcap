@@ -51,7 +51,7 @@ func (d *DeviceProfile) JSON() (string, error) {
 
 func (d *DeviceProfile) Inc() {}
 
-func (d *DeviceProfile) SetPacketContext(ctx *PacketContext) {}
+func (d *DeviceProfile) SetPacketContext(*PacketContext) {}
 
 func (d *DeviceProfile) Src() string {
 	return ""

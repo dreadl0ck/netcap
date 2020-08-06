@@ -37,20 +37,21 @@ const suricataTS = "01/02/2006-15:04:05.000000"
 
 const directoryPermission = 0o755
 
-// regular expressions to match data from suricata fast.log
+// regular expressions to match data from suricata fast.log.
 var (
 	protoc         = regexp.MustCompile(`{[A-Z]*}`)
 	classification = regexp.MustCompile(`\[Classification:[\s\w]*]`)
 	flowIdent      = regexp.MustCompile(`}.*`)
 	description    = regexp.MustCompile(`\[\*\*].*\[\*\*]`)
 
+	// StopOnDuplicateLabels will stop execution and print info
 	// in case more than one label for the same timestamp exists
-	// stop execution and print info
 	// this affects layers being labeled, because they use the labelMap
 	// other record types use the label array, which is not affected.
-	// handling this needs to be improved in the future
+	// handling this needs to be improved in the future.
 	StopOnDuplicateLabels = false
 
+	// DisableLayerMapping can be used to disable mapping gopacket layer types.
 	DisableLayerMapping = false
 
 	// SuricataConfigPath contains the path for the suricata config file.

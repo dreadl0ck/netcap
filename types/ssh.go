@@ -60,7 +60,7 @@ func (a *SSH) Inc() {
 	sshMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *SSH) SetPacketContext(ctx *PacketContext) {}
+func (a *SSH) SetPacketContext(*PacketContext) {}
 
 // TODO: preserve source and destination mac adresses for SSH and return them here
 func (a *SSH) Src() string {

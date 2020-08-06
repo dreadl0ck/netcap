@@ -70,7 +70,7 @@ func (a *NortelDiscovery) Inc() {
 	nortelDiscoveryMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *NortelDiscovery) SetPacketContext(ctx *PacketContext) {}
+func (a *NortelDiscovery) SetPacketContext(*PacketContext) {}
 
 // TODO
 func (a *NortelDiscovery) Src() string {

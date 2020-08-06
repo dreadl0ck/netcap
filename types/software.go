@@ -57,7 +57,7 @@ func (a *Software) Inc() {
 	softwareMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *Software) SetPacketContext(ctx *PacketContext) {}
+func (a *Software) SetPacketContext(*PacketContext) {}
 
 func (a *Software) Src() string {
 	return ""

@@ -70,7 +70,7 @@ func (a *POP3) Inc() {
 	pop3Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *POP3) SetPacketContext(ctx *PacketContext) {}
+func (a *POP3) SetPacketContext(*PacketContext) {}
 
 func (a *POP3) Src() string {
 	return a.ClientIP

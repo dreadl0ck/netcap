@@ -13,13 +13,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// Implements an interface for application layer classification via bindings to nDPI and libprotoident
+// Package dpi implements an interface for application layer classification via bindings to nDPI and libprotoident
 package dpi
 
 import (
 	"fmt"
 	"log"
-	"time"
 
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
@@ -97,34 +96,34 @@ func NewProto(res *ClassificationResult) *types.Protocol {
 // GetProtocolsTimeout returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
 // this function spawn a goroutine to allow setting a timeout for each packet
-func GetProtocolsTimeout(packet gopacket.Packet) map[string]ClassificationResult {
-	protocols := make(map[string]ClassificationResult)
-
-	if disableDPI {
-		return protocols
-	}
-
-	results := make(chan []ClassificationResult, 1)
-	go func() {
-		flow, _ := godpi.GetPacketFlow(packet)
-		results <- godpi.ClassifyFlowAllModules(flow)
-	}()
-
-	// start := time.Now()
-
-	select {
-	case res := <-results:
-
-		// fmt.Println("got result after", time.Since(start))
-
-		// when using all modules we might receive duplicate classifications
-		// so they will be deduplicated by protocol name before counting them later
-		for _, r := range res {
-			protocols[string(r.Protocol)] = r
-		}
-	case <-time.After(3 * time.Second):
-		fmt.Println("get protocols timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
-	}
-
-	return protocols
-}
+//func GetProtocolsTimeout(packet gopacket.Packet) map[string]ClassificationResult {
+//	protocols := make(map[string]ClassificationResult)
+//
+//	if disableDPI {
+//		return protocols
+//	}
+//
+//	results := make(chan []ClassificationResult, 1)
+//	go func() {
+//		flow, _ := godpi.GetPacketFlow(packet)
+//		results <- godpi.ClassifyFlowAllModules(flow)
+//	}()
+//
+//	// start := time.Now()
+//
+//	select {
+//	case res := <-results:
+//
+//		// fmt.Println("got result after", time.Since(start))
+//
+//		// when using all modules we might receive duplicate classifications
+//		// so they will be deduplicated by protocol name before counting them later
+//		for _, r := range res {
+//			protocols[string(r.Protocol)] = r
+//		}
+//	case <-time.After(3 * time.Second):
+//		fmt.Println("get protocols timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
+//	}
+//
+//	return protocols
+//}

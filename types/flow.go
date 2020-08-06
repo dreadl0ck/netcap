@@ -159,7 +159,7 @@ func (f *Flow) Inc() {
 	flowDuration.WithLabelValues(f.SrcMAC, f.DstMAC).Observe(float64(f.Duration))
 }
 
-func (f *Flow) SetPacketContext(ctx *PacketContext) {}
+func (f *Flow) SetPacketContext(*PacketContext) {}
 
 func (f *Flow) Src() string {
 	return f.SrcIP

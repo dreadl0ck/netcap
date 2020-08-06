@@ -105,7 +105,7 @@ func (eth *Ethernet) Inc() {
 	ethernetPayloadSize.WithLabelValues().Observe(float64(eth.PayloadSize))
 }
 
-func (eth *Ethernet) SetPacketContext(ctx *PacketContext) {}
+func (eth *Ethernet) SetPacketContext(*PacketContext) {}
 
 func (eth *Ethernet) Src() string {
 	return eth.SrcMAC

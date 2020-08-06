@@ -64,7 +64,7 @@ func (ectpr *EthernetCTPReply) Inc() {
 	ethernetCTPReplyMetric.WithLabelValues(ectpr.CSVRecord()[1:]...).Inc()
 }
 
-func (ectpr *EthernetCTPReply) SetPacketContext(ctx *PacketContext) {}
+func (ectpr *EthernetCTPReply) SetPacketContext(*PacketContext) {}
 
 // TODO
 func (ectpr *EthernetCTPReply) Src() string {

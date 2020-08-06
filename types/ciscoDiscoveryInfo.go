@@ -290,7 +290,7 @@ func (a *CiscoDiscoveryInfo) Inc() {
 	ciscoDiscoveryInfoMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *CiscoDiscoveryInfo) SetPacketContext(ctx *PacketContext) {}
+func (a *CiscoDiscoveryInfo) SetPacketContext(*PacketContext) {}
 
 // TODO
 func (a *CiscoDiscoveryInfo) Src() string {

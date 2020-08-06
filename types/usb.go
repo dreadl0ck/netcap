@@ -97,7 +97,7 @@ func (u *USB) Inc() {
 	usbMetric.WithLabelValues(u.CSVRecord()[1:]...).Inc()
 }
 
-func (u *USB) SetPacketContext(ctx *PacketContext) {}
+func (u *USB) SetPacketContext(*PacketContext) {}
 
 // TODO return source DeviceAddress?
 func (u *USB) Src() string {

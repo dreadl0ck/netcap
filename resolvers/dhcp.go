@@ -37,6 +37,7 @@ var (
 	dhcpDBFile        = "dhcp-fingerprints.json"
 )
 
+// SaveFingerprintDB will persist the fingerprint database on disk.
 // TODO: use a boltDB?
 func SaveFingerprintDB() {
 	if !dhcpDBinitialized {

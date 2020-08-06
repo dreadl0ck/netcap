@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// Provides a mechanism to collect network packets from a network interface on macOS, linux and windows
+// Package collector provides a mechanism to collect network packets from a network interface on macOS, linux and windows
 package collector
 
 import (
@@ -132,8 +132,8 @@ func (c *Collector) handleSignals() {
 		fmt.Println("exiting")
 
 		go func() {
-			sig := <-sigs
-			fmt.Println("force quitting, signal:", sig)
+			sign := <-sigs
+			fmt.Println("force quitting, signal:", sign)
 			os.Exit(0)
 		}()
 
@@ -170,17 +170,21 @@ func (c *Collector) handlePacketTimeout(p *packet) {
 	// send the packetInfo to the encoder routine
 	case c.workers[c.next] <- p:
 	case <-time.After(3 * time.Second):
-		p := gopacket.NewPacket(p.data, c.config.BaseLayer, gopacket.Default)
+		pkt := gopacket.NewPacket(p.data, c.config.BaseLayer, gopacket.Default)
+
 		var (
 			nf gopacket.Flow
 			tf gopacket.Flow
 		)
-		if nl := p.NetworkLayer(); nl != nil {
+
+		if nl := pkt.NetworkLayer(); nl != nil {
 			nf = nl.NetworkFlow()
 		}
-		if tl := p.TransportLayer(); tl != nil {
+
+		if tl := pkt.TransportLayer(); tl != nil {
 			tf = tl.TransportFlow()
 		}
+
 		fmt.Println("handle packet timeout", nf, tf)
 	}
 
@@ -198,9 +202,11 @@ func (c *Collector) printErrors() {
 	c.errorMap.Lock()
 	if len(c.errorMap.Items) > 0 {
 		fmt.Println("")
+
 		for msg, count := range c.errorMap.Items {
 			fmt.Println(ansi.Red, "[ERROR]", msg, "COUNT:", count, ansi.Reset)
 		}
+
 		fmt.Println("")
 	}
 	c.errorMap.Unlock()
@@ -223,6 +229,7 @@ func (c *Collector) closeErrorLogFile() {
 	_, err := c.errorLogFile.WriteString(stats)
 	if err != nil {
 		utils.DebugLog.Println("failed to write stats into error log:", err)
+
 		return
 	}
 
@@ -230,6 +237,7 @@ func (c *Collector) closeErrorLogFile() {
 	err = c.errorLogFile.Sync()
 	if err != nil {
 		utils.DebugLog.Println("failed to sync error log:", err)
+
 		return
 	}
 
@@ -237,6 +245,7 @@ func (c *Collector) closeErrorLogFile() {
 	err = c.errorLogFile.Close()
 	if err != nil {
 		utils.DebugLog.Println("failed to close error log:", err)
+
 		return
 	}
 
@@ -253,19 +262,25 @@ func (c *Collector) Stats() {
 	}
 
 	rows := [][]string{}
+
 	c.unknownProtosAtomic.Lock()
+
 	for k, v := range c.allProtosAtomic.Items {
 		if k == "Payload" {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
+
 			continue
 		}
+
 		if _, ok := c.unknownProtosAtomic.Items[k]; ok {
 			rows = append(rows, []string{"*" + k, fmt.Sprint(v), share(v, c.numPackets)})
 		} else {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
 		}
 	}
+
 	numUnknown := len(c.unknownProtosAtomic.Items)
+
 	c.unknownProtosAtomic.Unlock()
 	tui.Table(target, []string{"Layer", "NumRecords", "Share"}, rows)
 
@@ -282,10 +297,12 @@ func (c *Collector) Stats() {
 		for _, d := range c.customDecoders {
 			rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
 		}
+
 		tui.Table(target, []string{"CustomDecoder", "NumRecords", "Share"}, rows)
 	}
 
 	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
+
 	if c.unkownPcapWriterAtomic != nil {
 		if c.unkownPcapWriterAtomic.count > 0 {
 			res += "-> " + share(c.unkownPcapWriterAtomic.count, c.numPackets) + " of packets (" + strconv.FormatInt(c.unkownPcapWriterAtomic.count, 10) + ") written to unknown.pcap\n"
@@ -298,7 +315,9 @@ func (c *Collector) Stats() {
 		}
 	}
 
-	fmt.Fprintln(target, res)
+	if _, err := fmt.Fprintln(target, res); err != nil {
+		fmt.Println("failed to print stats:", err)
+	}
 
 	if c.config.DecoderConfig.SaveConns {
 		fmt.Fprintln(target, "saved TCP connections:", decoder.NumSavedTCPConns())
@@ -406,17 +425,17 @@ func (c *Collector) printProgressInterval() chan struct{} {
 	return stop
 }
 
-// assemble the progress string once, to reduce recurring allocations
+// assemble the progress string once, to reduce recurring allocations.
 func (c *Collector) buildProgressString() {
 	c.progressString = "decoding packets... (%s) profiles: %d services: %d total packets: %d pkts/sec %d"
 }
 
-// GetNumPackets returns the current number of processed packets
+// GetNumPackets returns the current number of processed packets.
 func (c *Collector) GetNumPackets() int64 {
 	return atomic.LoadInt64(&c.current)
 }
 
-// FreeOSMemory forces freeing memory
+// FreeOSMemory forces freeing memory.
 func (c *Collector) FreeOSMemory() {
 	for {
 		select {
@@ -480,7 +499,7 @@ func (c *Collector) PrintConfiguration() {
 
 // InitLogging can be used to open the logfile before calling Init()
 // this is used to be able to dump the collector configuration into the netcap.log in quiet mode
-// following calls to Init() will not open the filehandle again
+// following calls to Init() will not open the filehandle again.
 func (c *Collector) InitLogging() error {
 	// prevent reopen
 	if logFileHandle != nil {
@@ -506,15 +525,16 @@ func (c *Collector) InitLogging() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-// Stop will halt packet collection and wait for all processing to finish
+// Stop will halt packet collection and wait for all processing to finish.
 func (c *Collector) Stop() {
 	c.cleanup(false)
 }
 
-// Stop will halt packet collection immediately without waiting for processing to finish
+// ForceStop will halt packet collection immediately without waiting for processing to finish.
 func (c *Collector) ForceStop() {
 	c.cleanup(true)
 }

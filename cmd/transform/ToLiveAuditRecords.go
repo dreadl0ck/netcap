@@ -69,10 +69,12 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		case "DeviceProfile":
 			di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 			ent.AddDisplayInformation(di, "Netcap Info")
-			num, errCount := netcap.Count(ident)
-			if errCount != nil {
-				utils.DebugLog.Println("failed to count audit records:", errCount)
+
+			num, errCountRecords := netcap.Count(ident)
+			if errCountRecords != nil {
+				utils.DebugLog.Println("failed to count audit records:", errCountRecords)
 			}
+
 			ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(num, 10) + "\nInterface: " + iface + "\nStart Time: " + start.String())
 		}
 	}
