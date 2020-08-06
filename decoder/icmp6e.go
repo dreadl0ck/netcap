@@ -33,6 +33,7 @@ var icmpv6EchoDecoder = newGoPacketDecoder(
 				SeqNumber:  int32(icmp6e.SeqNumber),
 			}
 		}
+
 		return nil
 	},
 )

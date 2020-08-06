@@ -37,6 +37,7 @@ var nortelDiscoveryDecoder = newGoPacketDecoder(
 				NumLinks:  int32(nortel.NumLinks),
 			}
 		}
+
 		return nil
 	},
 )

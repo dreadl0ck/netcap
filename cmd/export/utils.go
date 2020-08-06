@@ -39,7 +39,7 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use
+// usage prints the use.
 func printUsage() {
 	printHeader()
 	fs.PrintDefaults()
@@ -58,7 +58,6 @@ func exportDir(path string) {
 	)
 
 	for _, f := range files {
-
 		var (
 			fName = f.Name()
 			ext   = filepath.Ext(fName)
@@ -66,7 +65,6 @@ func exportDir(path string) {
 
 		if ext == ".ncap" || ext == ".gz" {
 			if !*flagReplay {
-
 				fmt.Println("exporting", fName)
 
 				// add to waitgroup
@@ -112,7 +110,6 @@ func exportDir(path string) {
 		delete(times, beginPath)
 
 		for p, t := range times {
-
 			var (
 				// copy to avoid capturing loop variable
 				path = p
@@ -159,7 +156,7 @@ func exportDir(path string) {
 }
 
 // this will open the netcap dump file at path
-// and return the timestamp of the first audit record in there
+// and return the timestamp of the first audit record in there.
 func firstTimestamp(path string) time.Time {
 	r, err := netcap.Open(path, netcap.DefaultBufferSize)
 	if err != nil {

@@ -23,10 +23,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// config for the commandline application
+// config for the commandline application.
 var c = new(Config)
 
-// Config represents the proxy configuration
+// Config represents the proxy configuration.
 type Config struct {
 
 	// Proxies map holds all reverse proxies
@@ -42,7 +42,7 @@ type Config struct {
 	Logdir string `yaml:"logdir"`
 }
 
-// Dump prints the current configuration
+// Dump prints the current configuration.
 func (c Config) Dump(w io.Writer) {
 	fmt.Println("logDir:", c.Logdir)
 
@@ -59,7 +59,7 @@ func (c Config) Dump(w io.Writer) {
 	fmt.Println()
 }
 
-// ParseConfiguration reads the config file and returns a config instance
+// ParseConfiguration reads the config file and returns a config instance.
 func ParseConfiguration(path string) (*Config, error) {
 	// read file at path
 	b, err := ioutil.ReadFile(path)

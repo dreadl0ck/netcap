@@ -8,7 +8,7 @@ import (
 )
 
 // one-way connection, i.e. halfconnection
-// this structure has an optimized field order to avoid excessive padding
+// this structure has an optimized field order to avoid excessive padding.
 type halfconnection struct {
 	flow gopacket.Flow
 
@@ -42,7 +42,7 @@ func (half *halfconnection) String() string {
 	return fmt.Sprintf("%screated:%v, last:%v", closed, half.created, half.lastSeen)
 }
 
-// Dump returns a string (crypticly) describing the halfconnction
+// Dump returns a string (crypticly) describing the halfconnction.
 func (half *halfconnection) Dump() string {
 	s := fmt.Sprintf("pages: %d\n"+
 		"nextSeq: %d\n"+

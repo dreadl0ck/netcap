@@ -39,6 +39,7 @@ var ipv4Decoder = newGoPacketDecoder(
 					OptionType:   int32(o.OptionType),
 				})
 			}
+
 			return &types.IPv4{
 				Timestamp:      timestamp,
 				Version:        int32(ip4.Version),
@@ -59,6 +60,7 @@ var ipv4Decoder = newGoPacketDecoder(
 				PayloadSize:    int32(len(ip4.Payload)),
 			}
 		}
+
 		return nil
 	},
 )

@@ -27,7 +27,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// CountPacketsDevices returns the lowest and highest number of packets seen for a given DeviceProfile
+// CountPacketsDevices returns the lowest and highest number of packets seen for a given DeviceProfile.
 var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
 	if uint64(profile.NumPackets) < *min {
 		*min = uint64(profile.NumPackets)
@@ -38,7 +38,7 @@ var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, ma
 }
 
 // CountPacketsDeviceIPs CountPacketsDevices returns the lowest and highest number of packets
-// seen for all DeviceIPs of a given DeviceProfile
+// seen for all DeviceIPs of a given DeviceProfile.
 var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
 	if profile.MacAddr == mac {
 		for _, ip := range profile.DeviceIPs {
@@ -53,7 +53,7 @@ var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, 
 }
 
 // CountPacketsDevices returns the lowest and highest number of packets
-// seen for all ContactIPs of a given DeviceProfile
+// seen for all ContactIPs of a given DeviceProfile.
 var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
 	if profile.MacAddr == mac {
 		for _, ip := range profile.Contacts {
@@ -67,13 +67,13 @@ var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min,
 	}
 }
 
-// CountFunc is a function that counts something over DeviceProfiles
+// CountFunc is a function that counts something over DeviceProfiles.
 type CountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64)
 
-// DeviceProfileTransformationFunc is transform over DeviceProfiles
+// DeviceProfileTransformationFunc is transform over DeviceProfiles.
 type DeviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
 
-// DeviceProfileTransform applies a maltego transformation DeviceProfile audit records
+// DeviceProfileTransform applies a maltego transformation DeviceProfile audit records.
 func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
@@ -127,7 +127,6 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(profile)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

@@ -60,7 +60,7 @@ func getServiceName(in string) string {
 	return filepath.Clean(name)
 }
 
-// InitServiceDB initializes the ports to service names mapping
+// InitServiceDB initializes the ports to service names mapping.
 func InitServiceDB() {
 	var (
 		f, err    = os.Open(filepath.Join(DataBaseSource, "service-names-port-numbers.csv"))
@@ -77,9 +77,7 @@ func InitServiceDB() {
 		log.Fatal(err)
 	}
 
-	for i, r := range records {
-
-		// skip CSV header
+	for i, r := range records { // skip CSV header
 		if i == 0 {
 			continue
 		}
@@ -156,7 +154,7 @@ func InitServiceDB() {
 	}
 }
 
-// LookupServiceByPort looks up the service name associated with a given port
+// LookupServiceByPort looks up the service name associated with a given port.
 func LookupServiceByPort(port int, typ string) string {
 	if typ == "TCP" {
 		if res, ok := tcpPortMap[port]; ok {

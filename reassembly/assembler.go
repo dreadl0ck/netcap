@@ -130,19 +130,19 @@ func NewAssembler(pool *StreamPool) *Assembler {
 	}
 }
 
-// Dump returns a short string describing the page usage of the Assembler
+// Dump returns a short string describing the page usage of the Assembler.
 func (a *Assembler) Dump() string {
 	s := ""
 	s += fmt.Sprintf("pageCache: used: %d, size: %d, free: %d", a.pc.used, a.pc.size, len(a.pc.free))
 	return s
 }
 
-// AssemblerContext provides method to get metadata
+// AssemblerContext provides method to get metadata.
 type AssemblerContext interface {
 	GetCaptureInfo() gopacket.CaptureInfo
 }
 
-// Implements AssemblerContext for Assemble()
+// Implements AssemblerContext for Assemble().
 type assemblerSimpleContext gopacket.CaptureInfo
 
 func (asc *assemblerSimpleContext) GetCaptureInfo() gopacket.CaptureInfo {
@@ -325,7 +325,6 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 	//   [s1:e1][s2:e2] -- [s3:e3] -- [s4:e4][s5:e5]
 	//             [s <--ds-- : --de--> e]
 	for cur != nil {
-
 		if Debug {
 			log.Printf("cur = %p (%s)\n", cur, cur)
 		}
@@ -541,7 +540,7 @@ func (a *Assembler) overlapExisting(half *halfconnection, start Sequence, bytes 
 	return bytes, half.nextSeq
 }
 
-// handleBytes will prepare send or queue the data
+// handleBytes will prepare send or queue the data.
 func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection, ci gopacket.CaptureInfo, start bool, end bool, action assemblerAction, ac AssemblerContext) assemblerAction {
 	// TODO: remove for production?
 	a.cacheLP.bytes = bytes
@@ -736,7 +735,7 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Seq
 	return nextSeq
 }
 
-// addPending will add the pending bytes
+// addPending will add the pending bytes.
 func (a *Assembler) addPending(half *halfconnection, firstSeq Sequence) int {
 	if half.saved == nil {
 		return 0

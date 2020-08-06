@@ -35,6 +35,7 @@ var ipSecAHDecoder = newGoPacketDecoder(
 				AuthenticationData: ipsecah.AuthenticationData, // []byte
 			}
 		}
+
 		return nil
 	},
 )

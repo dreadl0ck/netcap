@@ -12,10 +12,8 @@ func toApplications() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
-
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
-
 						for protoName, proto := range ip.Protocols {
 							ent := trx.AddEntity("maltego.Service", protoName)
 
@@ -30,7 +28,6 @@ func toApplications() {
 				}
 				for _, ip := range profile.DeviceIPs {
 					if ip.Addr == ipaddr {
-
 						for protoName, proto := range ip.Protocols {
 							ent := trx.AddEntity("maltego.Service", protoName)
 

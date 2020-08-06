@@ -39,7 +39,7 @@ import (
 //     "dateUpdated":"2018-11-09"
 // }
 
-// MacSummary contains infos about a specific OUI
+// MacSummary contains infos about a specific OUI.
 type MacSummary struct {
 	OUI         string `json:"oui"`
 	IsPrivate   bool   `json:"isPrivate"`
@@ -49,7 +49,7 @@ type MacSummary struct {
 
 var macDB = make(map[string]MacSummary)
 
-// InitMACResolver loads the JSON mac DB into a map in memory
+// InitMACResolver loads the JSON mac DB into a map in memory.
 func InitMACResolver() {
 	var sums int
 
@@ -60,7 +60,6 @@ func InitMACResolver() {
 	}
 
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
-
 		if len(line) == 0 {
 			continue
 		}
@@ -81,7 +80,7 @@ func InitMACResolver() {
 	}
 }
 
-// LookupManufacturer resolves a MAC addr to the manufacturer
+// LookupManufacturer resolves a MAC addr to the manufacturer.
 func LookupManufacturer(mac string) string {
 	if len(mac) < 8 {
 		return ""

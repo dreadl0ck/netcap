@@ -45,7 +45,7 @@ func GetStreamPool() *reassembly.StreamPool {
  */
 
 // internal data structure to handle new network streams
-// and spawn the stream decoder routines for processing the data
+// and spawn the stream decoder routines for processing the data.
 type tcpConnectionFactory struct {
 	wg            sync.WaitGroup
 	decodeHTTP    bool
@@ -103,7 +103,7 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reasse
 }
 
 // waitGoRoutines waits until the goroutines launched to process TCP streams are done
-// this will block forever if there are streams that are never shutdown (via RST or FIN flags)
+// this will block forever if there are streams that are never shutdown (via RST or FIN flags).
 func (factory *tcpConnectionFactory) waitGoRoutines() {
 	if !c.Quiet {
 		factory.Lock()
@@ -114,12 +114,12 @@ func (factory *tcpConnectionFactory) waitGoRoutines() {
 	factory.wg.Wait()
 }
 
-// context is the assembler context
+// context is the assembler context.
 type context struct {
 	CaptureInfo gopacket.CaptureInfo
 }
 
-// GetCaptureInfo returns the gopacket.CaptureInfo from the context
+// GetCaptureInfo returns the gopacket.CaptureInfo from the context.
 func (c *context) GetCaptureInfo() gopacket.CaptureInfo {
 	return c.CaptureInfo
 }

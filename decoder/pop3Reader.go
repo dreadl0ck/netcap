@@ -92,6 +92,7 @@ func (h *pop3Reader) Decode() {
 			previousDir = d.dir
 
 			buf.Write(d.raw)
+
 			continue
 		}
 	}
@@ -149,7 +150,7 @@ func (h *pop3Reader) Decode() {
 	mailDebug()
 }
 
-// TODO: use saveFile to extract attachments
+// TODO: use saveFile to extract attachments.
 func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encoding []string) error {
 	// prevent saving zero bytes
 	if len(body) == 0 {
@@ -217,6 +218,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	f, err := os.Create(target)
 	if err != nil {
 		logReassemblyError("POP3-create", "Cannot create %s: %s\n", target, err)
+
 		return err
 	}
 
@@ -280,6 +282,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader) error {
 		return err
 	} else if err != nil {
 		utils.DebugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+
 		return err
 	}
 
@@ -310,6 +313,7 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 		return err
 	} else if err != nil {
 		logReassemblyError("POP3-response", "POP3/%s Response error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+
 		return err
 	}
 
@@ -342,7 +346,7 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 	return nil
 }
 
-// cuts the line into command and arguments
+// cuts the line into command and arguments.
 func getCommand(line string) (string, []string) {
 	line = strings.Trim(line, "\r \n")
 	cmd := strings.Split(line, " ")
@@ -382,7 +386,7 @@ const (
 	stateNotAuthenticated POP3State = iota
 	stateAuthenticated
 	// StateNotIdentified
-	// StateDataTransfer
+	// StateDataTransfer.
 )
 
 func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string) {
@@ -422,6 +426,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 			switch r.Command {
 			case "STAT":
 				h.resIndex++
+
 				continue
 			case "LIST", "UIDL":
 				var n int
@@ -558,6 +563,7 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 
 		if collectBody {
 			body += line + "\n"
+
 			continue
 		}
 
@@ -568,6 +574,7 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 		parts := strings.Split(line, ": ")
 		if len(parts) == 0 {
 			header[lastHeader] += "\n" + line
+
 			continue
 		}
 
@@ -610,6 +617,7 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 	for _, p := range mail.Body {
 		if strings.Contains(p.Header["Content-Disposition"], "attachment") {
 			mail.HasAttachments = true
+
 			break
 		}
 	}
@@ -635,6 +643,7 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 				break
 			} else {
 				mailDebug("failed to read line: ", err)
+
 				return parts
 			}
 		}

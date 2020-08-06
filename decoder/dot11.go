@@ -119,6 +119,7 @@ var dot11Decoder = newGoPacketDecoder(
 					HT:           ht,
 				}
 			}
+
 			return &types.Dot11{
 				Timestamp:      timestamp,
 				Type:           int32(dot11.Type),
@@ -136,6 +137,7 @@ var dot11Decoder = newGoPacketDecoder(
 				HTControl:      htcontrol,
 			}
 		}
+
 		return nil
 	},
 )

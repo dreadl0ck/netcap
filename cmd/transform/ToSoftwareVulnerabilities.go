@@ -27,6 +27,7 @@ func toSoftwareVulnerabilities() {
 			for i, f := range vuln.Software.Flows {
 				if i == 3 {
 					val += "\n..."
+
 					break
 				}
 				val += "\n" + f

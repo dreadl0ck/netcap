@@ -40,20 +40,20 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use
+// usage prints the use.
 func printUsage() {
 	printHeader()
 	fs.PrintDefaults()
 }
 
-// cleanup when receiving OS signals
+// cleanup when receiving OS signals.
 func cleanup() {
 	for _, p := range proxies {
 		p.writer.Close()
 	}
 }
 
-// handle OS signals
+// handle OS signals.
 func handleSignals() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)

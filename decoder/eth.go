@@ -31,6 +31,7 @@ var ethernetDecoder = newGoPacketDecoder(
 			if c.CalculateEntropy {
 				e = entropy(eth.Payload)
 			}
+
 			return &types.Ethernet{
 				Timestamp:      timestamp,
 				SrcMAC:         eth.SrcMAC.String(),
@@ -40,6 +41,7 @@ var ethernetDecoder = newGoPacketDecoder(
 				PayloadSize:    int32(len(eth.Payload)),
 			}
 		}
+
 		return nil
 	},
 )

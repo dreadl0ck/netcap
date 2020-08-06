@@ -72,7 +72,7 @@ type vulnerability struct {
 }
 
 // used to fetch version identifier from description string from NVD item
-// if cpe url does not contain version information
+// if cpe url does not contain version information.
 var reSimpleVersion = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.?([0-9]*)?`)
 
 // generates max 20 intermediate versions

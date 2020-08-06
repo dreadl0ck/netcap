@@ -29,7 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// CollectLabels indicates whether labels should be collected
+// CollectLabels indicates whether labels should be collected.
 var CollectLabels bool
 
 // Layer labels packets of a given gopacket.LayerType string.

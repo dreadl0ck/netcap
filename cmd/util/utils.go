@@ -36,14 +36,14 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use
+// usage prints the use.
 func printUsage() {
 	printHeader()
 	fs.PrintDefaults()
 }
 
 // CheckFields checks if the separator occurs inside fields of audit records
-// to prevent this breaking the generated CSV file
+// to prevent this breaking the generated CSV file.
 func checkFields() {
 	r, err := netcap.Open(*flagInput, *flagMemBufferSize)
 	if err != nil {
@@ -92,9 +92,7 @@ func checkFields() {
 			// check if field count matches
 			if p, ok := record.(types.AuditRecord); ok {
 				// bail out and print error if field count does not match
-				if len(p.CSVRecord()) != numStructFields {
-
-					// print all struct fields
+				if len(p.CSVRecord()) != numStructFields { // print all struct fields
 					fmt.Println(h.Type.String() + " struct fields:")
 					for i := 0; i < numStructFields; i++ {
 						fmt.Println("- " + reflectedValue.Type().Field(i).Name)

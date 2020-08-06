@@ -39,6 +39,7 @@ func Run() {
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "dump")
+
 		return
 	}
 
@@ -63,9 +64,7 @@ func Run() {
 	}
 
 	// read dumpfile header and exit
-	if *flagHeader {
-
-		// open input file for reading
+	if *flagHeader { // open input file for reading
 		r, err := netcap.Open(*flagInput, *flagMemBufferSize)
 		if err != nil {
 			panic(err)

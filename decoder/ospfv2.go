@@ -92,6 +92,7 @@ var ospfv2Decoder = newGoPacketDecoder(
 					NetworkMask:              v.NetworkMask,
 				}
 			}
+
 			return &types.OSPFv2{
 				Timestamp:      timestamp,
 				Version:        int32(ospf2.Version),
@@ -109,6 +110,7 @@ var ospfv2Decoder = newGoPacketDecoder(
 				HelloV2:        hello,   // *HelloPkgV2
 			}
 		}
+
 		return nil
 	},
 )

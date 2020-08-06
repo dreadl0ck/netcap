@@ -33,6 +33,7 @@ var snapDecoder = newGoPacketDecoder(
 				Type:               int32(snap.Type),
 			}
 		}
+
 		return nil
 	},
 )

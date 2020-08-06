@@ -89,7 +89,7 @@ var (
 	flagCalcEntropy = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
 	flagLogErrors   = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
 
-	// reassembly
+	// reassembly.
 	flagFlushevery           = fs.Int("flushevery", netcap.DefaultFlushEvery, "flush assembler every N packets")
 	flagDefragIPv4           = fs.Bool("ip4defrag", netcap.DefaultDefragIPv4, "Defragment IPv4 packets")
 	flagChecksum             = fs.Bool("checksum", netcap.DefaultChecksum, "check TCP checksum")

@@ -45,6 +45,7 @@ var tcpDecoder = newGoPacketDecoder(
 					OptionType:   int32(o.OptionType),
 				})
 			}
+
 			return &types.TCP{
 				Timestamp:      timestamp,
 				SrcPort:        int32(tcp.SrcPort),
@@ -71,6 +72,7 @@ var tcpDecoder = newGoPacketDecoder(
 				Payload:        payload,
 			}
 		}
+
 		return nil
 	},
 )

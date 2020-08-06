@@ -134,7 +134,7 @@ func NumSavedUDPConns() int64 {
 // internal structure that describes a bi-directional TCP connection
 // It implements the reassembly.Stream interface to handle the incoming data
 // and manage the stream lifecycle
-// this structure has an optimized field order to avoid excessive padding
+// this structure has an optimized field order to avoid excessive padding.
 type tcpConnection struct {
 	net, transport gopacket.Flow
 
@@ -321,7 +321,7 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 
 // ReassembledSG is called zero or more times and delivers the data for a stream
 // The ScatterGather buffer is reused after each Reassembled call
-// so it's important to copy anything you need out of it (or use KeepFrom())
+// so it's important to copy anything you need out of it (or use KeepFrom()).
 func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
 	length, saved := sg.Lengths()
 	dir, start, end, skip := sg.Info()
@@ -366,18 +366,14 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 	// is this packet older than the oldest packet we saw for this connection?
 	// if yes, if check the direction of the client is correct
-	if !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp) && t.firstPacket.After(ac.GetCaptureInfo().Timestamp) {
-
-		// update first packet timestamp on connection
+	if !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp) && t.firstPacket.After(ac.GetCaptureInfo().Timestamp) { // update first packet timestamp on connection
 		t.Lock()
 		t.firstPacket = ac.GetCaptureInfo().Timestamp
 		t.Unlock()
 
 		if t.client != nil && t.server != nil {
 			// check if firstFlow is identical or needs to be flipped
-			if !(t.client.Network() == firstFlow) {
-
-				// flip
+			if !(t.client.Network() == firstFlow) { // flip
 				t.client.SetClient(false)
 				t.server.SetClient(true)
 
@@ -404,7 +400,6 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 	// save data for the current stream
 	if t.client != nil {
-
 		t.client.MarkSaved()
 
 		// client
@@ -415,7 +410,6 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	}
 
 	if t.server != nil {
-
 		t.server.MarkSaved()
 
 		// server
@@ -438,9 +432,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		close(t.server.DataChan())
 	}()
 
-	if t.decoder != nil {
-
-		// try to determine what type of raw tcp stream and update decoder
+	if t.decoder != nil { // try to determine what type of raw tcp stream and update decoder
 		// TODO: move this functionality into a dedicated package and create a voting model
 		if _, ok := t.decoder.(*tcpReader); ok {
 			switch {
@@ -473,7 +465,6 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	// prevent passing any non TCP packets in here
 	tcpLayer := packet.Layer(layers.LayerTypeTCP)
 	if tcpLayer == nil {
-
 		udpLayer := packet.Layer(layers.LayerTypeUDP)
 		if udpLayer != nil {
 			udpStreams.handleUDP(packet, udpLayer)
@@ -552,7 +543,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 
 // assembleWithContextTimeout is a function that times out with a log message after a specified interval
 // when the stream reassembly gets stuck
-// used for debugging
+// used for debugging.
 func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
 	done := make(chan bool, 1)
 	go func() {
@@ -731,7 +722,7 @@ func waitForConns() chan struct{} {
 	return out
 }
 
-// sort the conversation fragments and fill the conversation buffers
+// sort the conversation fragments and fill the conversation buffers.
 func (t *tcpConnection) sortAndMergeFragments() {
 	// concatenate both client and server data fragments
 	t.merged = append(t.client.DataSlice(), t.server.DataSlice()...)
@@ -740,9 +731,7 @@ func (t *tcpConnection) sortAndMergeFragments() {
 	sort.Sort(t.merged)
 
 	// create the buffer with the entire conversation
-	for _, d := range t.merged {
-
-		// fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
+	for _, d := range t.merged { // fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
 
 		t.conversationRaw.Write(d.raw)
 		if d.dir == reassembly.TCPDirClientToServer {

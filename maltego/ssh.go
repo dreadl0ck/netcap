@@ -27,13 +27,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// SSHTransformationFunc is a transformation over SSH sshs for a selected SSH
+// SSHTransformationFunc is a transformation over SSH sshs for a selected SSH.
 type SSHTransformationFunc = func(lt LocalTransform, trx *Transform, ssh *types.SSH, min, max uint64, sshsFile string, mac string, ip string)
 
-// SSHCountFunc CountFunc is a function that counts something over DeviceProfiles
+// SSHCountFunc CountFunc is a function that counts something over DeviceProfiles.
 type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
 
-// SSHTransform applies a maltego transformation over SSH sshs seen for a target SSH
+// SSHTransform applies a maltego transformation over SSH sshs seen for a target SSH.
 func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	sshFile := lt.Values["path"]
@@ -88,7 +88,6 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(ssh)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

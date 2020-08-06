@@ -52,6 +52,7 @@ var bfdDecoder = newGoPacketDecoder(
 				},
 			}
 		}
+
 		return nil
 	},
 )

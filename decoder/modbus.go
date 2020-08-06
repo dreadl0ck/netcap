@@ -31,6 +31,7 @@ var modbusDecoder = newGoPacketDecoder(
 			if c.IncludePayloads {
 				payload = m.ReqResp
 			}
+
 			return &types.Modbus{
 				Timestamp:     timestamp,
 				TransactionID: int32(m.TransactionID),
@@ -42,6 +43,7 @@ var modbusDecoder = newGoPacketDecoder(
 				FunctionCode:  int32(m.FunctionCode),
 			}
 		}
+
 		return nil
 	},
 )

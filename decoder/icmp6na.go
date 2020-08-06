@@ -34,6 +34,7 @@ var icmpv6NeighborAdvertisementDecoder = newGoPacketDecoder(
 					Type: int32(o.Type),
 				})
 			}
+
 			return &types.ICMPv6NeighborAdvertisement{
 				Timestamp:     timestamp,
 				Flags:         int32(icmp6na.Flags),
@@ -41,6 +42,7 @@ var icmpv6NeighborAdvertisementDecoder = newGoPacketDecoder(
 				Options:       opts,
 			}
 		}
+
 		return nil
 	},
 )

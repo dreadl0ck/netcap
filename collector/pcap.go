@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// OpenPCAP opens a Packet Capture file
+// OpenPCAP opens a Packet Capture file.
 func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	// get file handle
 	f, err := os.Open(file)
@@ -42,7 +42,7 @@ func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	return r, f, nil
 }
 
-// IsPcap checks whether a file is a PCAP file
+// IsPcap checks whether a file is a PCAP file.
 func IsPcap(file string) (bool, error) {
 	// get file handle
 	f, err := os.Open(file)
@@ -61,7 +61,7 @@ func IsPcap(file string) (bool, error) {
 	return true, nil
 }
 
-// countPackets returns the number of packets in a PCAP file
+// countPackets returns the number of packets in a PCAP file.
 func countPackets(path string) (count int64, err error) {
 	// get reader and file handle
 	r, f, err := OpenPCAP(path)
@@ -151,9 +151,7 @@ func (c *Collector) CollectPcap(path string) error {
 
 	stopProgress := c.printProgressInterval()
 
-	for {
-
-		// fetch the next packetdata and packetheader
+	for { // fetch the next packetdata and packetheader
 		// for pcap, currently ZeroCopyReadPacketData() is not supported
 		data, ci, err := r.ReadPacketData()
 		if err != nil {

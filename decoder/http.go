@@ -33,6 +33,7 @@ var httpDecoder = newCustomDecoder(
 	"The Hypertext Transfer Protocol is powering the world wide web",
 	func(d *customDecoder) error {
 		streamFactory.decodeHTTP = true
+
 		return nil
 	},
 	func(packet gopacket.Packet) proto.Message {
@@ -47,7 +48,7 @@ var httpDecoder = newCustomDecoder(
  *	Utils
  */
 
-// set HTTP request on types.HTTP
+// set HTTP request on types.HTTP.
 func setRequest(h *types.HTTP, req *httpRequest) {
 	// set basic info
 	h.Timestamp = req.timestamp
@@ -93,7 +94,7 @@ func removeCommas(s string) string {
 	return strings.Replace(s, ",", "(comma)", -1)
 }
 
-// readCookies transforms an array of *http.Cookie to an array of *types.HTTPCookie
+// readCookies transforms an array of *http.Cookie to an array of *types.HTTPCookie.
 func readCookies(cookies []*http.Cookie) []*types.HTTPCookie {
 	cks := make([]*types.HTTPCookie, 0)
 

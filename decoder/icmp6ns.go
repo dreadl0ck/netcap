@@ -34,12 +34,14 @@ var icmpv6NeighborSolicitationDecoder = newGoPacketDecoder(
 					Type: int32(o.Type),
 				})
 			}
+
 			return &types.ICMPv6NeighborSolicitation{
 				Timestamp:     timestamp,
 				TargetAddress: icmp6ns.TargetAddress.String(),
 				Options:       opts,
 			}
 		}
+
 		return nil
 	},
 )

@@ -35,6 +35,7 @@ var fddiDecoder = newGoPacketDecoder(
 				DstMAC:       string(fddi.DstMAC),
 			}
 		}
+
 		return nil
 	},
 )

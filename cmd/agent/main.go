@@ -44,6 +44,7 @@ func Run() {
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "agent")
+
 		return
 	}
 
@@ -76,11 +77,13 @@ func Run() {
 
 	if *flagDecoders {
 		decoder.ShowDecoders(true)
+
 		return
 	}
 
 	if *flagListInterfaces {
 		utils.ListAllNetworkInterfaces()
+
 		return
 	}
 
@@ -162,9 +165,7 @@ func Run() {
 	fmt.Println("\n["+userName+"] got", len(chans), "channels")
 
 	// iterate over encoder channels
-	for _, bi := range chans {
-
-		// create a copy of loop variable
+	for _, bi := range chans { // create a copy of loop variable
 		info := collector.BatchInfo{
 			Type: bi.Type,
 			Chan: bi.Chan,
@@ -179,7 +180,6 @@ func Run() {
 
 			// send data loop
 			for {
-
 				var (
 					b    = &types.Batch{}
 					size []byte
@@ -206,7 +206,6 @@ func Run() {
 
 						// message complete
 						if len(size) != 0 {
-
 							fmt.Println("got", len(data), "bytes of type", info.Type, "expected", size)
 
 							// calculate new size
@@ -216,6 +215,7 @@ func Run() {
 							if newSize > int32(*flagMaxSize) {
 								// buffer and break from loop
 								leftOverBuf = append(size, data...)
+
 								goto send
 							}
 

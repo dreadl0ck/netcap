@@ -134,7 +134,7 @@ func (c *Collector) Init() (err error) {
 	return
 }
 
-// displays a prompt message to the terminal and returns a bool indicating the user decision
+// displays a prompt message to the terminal and returns a bool indicating the user decision.
 func confirm(s string) bool {
 	r := bufio.NewReader(os.Stdin)
 

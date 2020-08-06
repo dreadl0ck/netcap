@@ -26,6 +26,7 @@ var pop3Decoder = newCustomDecoder(
 	"The POP3 protocol is used to fetch emails from a mail server",
 	func(d *customDecoder) error {
 		streamFactory.decodePOP3 = true
+
 		return nil
 	},
 	func(packet gopacket.Packet) proto.Message {

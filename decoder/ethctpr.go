@@ -34,6 +34,7 @@ var ethernetCTPReplyDecoder = newGoPacketDecoder(
 				Data:          ethctpr.Data,
 			}
 		}
+
 		return nil
 	},
 )

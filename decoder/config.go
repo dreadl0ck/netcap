@@ -29,7 +29,7 @@ const (
 	defaultFilesPermission     = 0o700
 )
 
-// SetConfig can be used to set a configuration for the package
+// SetConfig can be used to set a configuration for the package.
 func SetConfig(cfg *Config) {
 	c = cfg
 
@@ -44,7 +44,7 @@ func SetConfig(cfg *Config) {
 	}
 }
 
-// DefaultConfig is a sane example configuration for the encoder package
+// DefaultConfig is a sane example configuration for the encoder package.
 var DefaultConfig = &Config{
 	Buffer:                  true,
 	MemBufferSize:           netcap.DefaultBufferSize,
@@ -88,7 +88,7 @@ var DefaultConfig = &Config{
 
 // Config contains configuration parameters
 // for the decoders
-// this structure has an optimized field order to avoid excessive padding
+// this structure has an optimized field order to avoid excessive padding.
 type Config struct {
 
 	// Output path

@@ -65,7 +65,7 @@ func (a *EAPOL) Inc() {
 
 func (a *EAPOL) SetPacketContext(*PacketContext) {}
 
-// Src TODO: return Mac addr
+// Src TODO: return Mac addr.
 func (a *EAPOL) Src() string {
 	return ""
 }

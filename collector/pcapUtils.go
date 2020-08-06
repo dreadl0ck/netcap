@@ -26,7 +26,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 )
 
-// close errors.pcap and unknown.pcap
+// close errors.pcap and unknown.pcap.
 func (c *Collector) closePcapFiles() error {
 	// unknown.pcap
 
@@ -114,7 +114,7 @@ func (c *Collector) createUnknownPcap() error {
 	return nil
 }
 
-// create errors.pcap file for errors
+// create errors.pcap file for errors.
 func (c *Collector) createErrorsPcap() error {
 	var err error
 

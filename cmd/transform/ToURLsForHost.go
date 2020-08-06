@@ -17,7 +17,6 @@ func toURLsForHost() {
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
 				if http.URL != "" {
-
 					bareURL := http.Host + stripQueryString(http.URL)
 					log.Println(bareURL)
 

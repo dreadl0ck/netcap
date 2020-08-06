@@ -32,14 +32,14 @@ var ja3DB = make(map[string]*Ja3Summary)
 // Ja3Summary models the Trisul ja3DB json structure
 // https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json
 // the format is also compatible with ja3er.com, but comes as an array of records
-// whereas trisul uses newline delimited summary structures
+// whereas trisul uses newline delimited summary structures.
 type Ja3Summary struct {
 	Desc string `json:"desc"`
 	Hash string `json:"ja3_hash"`
 }
 
 // Ja3UserAgent DB from ja3er.com
-// entry example: {"User-Agent": "-", "Count": 1, "md5": "e05744a5eb9f795f148ed77cb471f725", "Last_seen": "2019-11-19 21:10:04"},
+// entry example: {"User-Agent": "-", "Count": 1, "md5": "e05744a5eb9f795f148ed77cb471f725", "Last_seen": "2019-11-19 21:10:04"},.
 type Ja3UserAgent struct {
 	UserAgent string `json:"User-Agent"`
 	Hash      string `json:"md5"`
@@ -47,7 +47,7 @@ type Ja3UserAgent struct {
 
 // LookupJa3 tries to locate the JA3(S) hash in the ja3 database and return a description
 // access to the underlying map is not locked
-// because after initialization the map is always read and never written again
+// because after initialization the map is always read and never written again.
 func LookupJa3(hash string) string {
 	if res, ok := ja3DB[hash]; ok {
 		return res.Desc
@@ -55,7 +55,7 @@ func LookupJa3(hash string) string {
 	return ""
 }
 
-// InitJa3Resolver loads the JSON mac DB into a map in memory
+// InitJa3Resolver loads the JSON mac DB into a map in memory.
 func InitJa3Resolver() {
 	// read database dir
 	files, err := ioutil.ReadDir(DataBaseSource)
@@ -65,9 +65,7 @@ func InitJa3Resolver() {
 	}
 
 	// iterate over results
-	for _, f := range files {
-
-		// only process files that start with ja3 and have the JSON file extension
+	for _, f := range files { // only process files that start with ja3 and have the JSON file extension
 		if !strings.HasPrefix(f.Name(), "ja3") || !strings.HasSuffix(f.Name(), ".json") {
 			continue
 		}
@@ -176,7 +174,6 @@ func parseSummaries(data []byte, f os.FileInfo) {
 	)
 
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
-
 		if len(line) == 0 {
 			continue
 		}

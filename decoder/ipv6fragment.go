@@ -37,6 +37,7 @@ var ip6FragmentDecoder = newGoPacketDecoder(
 				Identification: ip6f.Identification,
 			}
 		}
+
 		return nil
 	},
 )

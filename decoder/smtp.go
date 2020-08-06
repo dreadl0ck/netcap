@@ -34,6 +34,7 @@ var smtpDecoder = newGoPacketDecoder(
 					Parameter:    r.Parameter,
 				})
 			}
+
 			return &types.SMTP{
 				Timestamp:     timestamp,
 				IsEncrypted:   smtp.IsEncrypted,
@@ -45,6 +46,7 @@ var smtpDecoder = newGoPacketDecoder(
 				},
 			}
 		}
+
 		return nil
 	},
 )

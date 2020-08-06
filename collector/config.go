@@ -57,7 +57,7 @@ var defaultConfigDPI = Config{
 
 // Config contains configuration parameters
 // for the Collector instance.
-// this structure has an optimized field order to avoid excessive padding
+// this structure has an optimized field order to avoid excessive padding.
 type Config struct {
 
 	// Decoder configuration

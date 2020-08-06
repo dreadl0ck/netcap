@@ -19,16 +19,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// LogFileName holds name of the logfile
+// LogFileName holds name of the logfile.
 const LogFileName = "net.proxy.log"
 
 var (
-	// Log instance
+	// Log instance.
 	Log   *zap.Logger
 	debug bool
 )
 
-// ConfigureLogger configures the logging instance
+// ConfigureLogger configures the logging instance.
 func ConfigureLogger(debug bool, outputPath string) {
 	var (
 		zc  zap.Config

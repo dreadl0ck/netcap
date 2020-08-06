@@ -18,7 +18,6 @@ func toSourceIPs() {
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.DeviceIPs {
-
 					var (
 						ent      *maltego.EntityObj
 						dnsNames = strings.Join(ip.DNSNames, "\n")

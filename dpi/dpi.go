@@ -31,7 +31,7 @@ import (
 
 var disableDPI = true
 
-// Init initializes the deep packet inspection engines
+// Init initializes the deep packet inspection engines.
 func Init() {
 	disableDPI = false
 
@@ -51,7 +51,7 @@ func Init() {
 }
 
 // Destroy tears down godpi and frees the memory allocated for cgo
-// returned errors are logged to stdout
+// returned errors are logged to stdout.
 func Destroy() {
 	for _, e := range godpi.Destroy() {
 		if e != nil {
@@ -61,7 +61,7 @@ func Destroy() {
 }
 
 // GetProtocols returns a map of all the identified protocol names to a result datastructure
-// packets are identified with libprotoident, nDPI and a few custom heuristics from godpi
+// packets are identified with libprotoident, nDPI and a few custom heuristics from godpi.
 func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 	protocols := make(map[string]ClassificationResult)
 

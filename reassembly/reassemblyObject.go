@@ -2,7 +2,7 @@ package reassembly
 
 import "github.com/dreadl0ck/gopacket"
 
-// Implements a ScatterGather
+// Implements a ScatterGather.
 type reassemblyObject struct {
 	all       []byteContainer
 	Skip      int

@@ -28,13 +28,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// HTTPCountFunc is a function that counts something over multiple HTTP audit records
+// HTTPCountFunc is a function that counts something over multiple HTTP audit records.
 type HTTPCountFunc = func(http *types.HTTP, min, max *uint64)
 
-// HTTPTransformationFunc is a transformation over HTTP audit records
+// HTTPTransformationFunc is a transformation over HTTP audit records.
 type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
 
-// HTTPTransform applies a maltego transformation over HTTP audit records
+// HTTPTransform applies a maltego transformation over HTTP audit records.
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
@@ -88,7 +88,6 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(http)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

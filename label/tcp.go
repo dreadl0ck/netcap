@@ -113,7 +113,6 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 
 					// AND source port must match
 					a.SrcPort == int(tcp.SrcPort) {
-
 					if CollectLabels {
 						// only if it is not already part of the label
 						if !strings.Contains(finalLabel, a.Classification) {
@@ -123,12 +122,14 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 								finalLabel += " | " + a.Classification
 							}
 						}
+
 						continue
 					}
 
 					// add label
 					f.WriteString(strings.Join(tcp.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
+
 					goto read
 				}
 			}
@@ -142,6 +143,7 @@ func TCP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 				// add final label
 				f.WriteString(strings.Join(tcp.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
+
 				goto read
 			}
 

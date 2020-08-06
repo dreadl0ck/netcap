@@ -28,21 +28,21 @@ import (
 )
 
 // ReverseProxy represents a named reverse proxy
-// that uses a custom http.Transport to export netcap audit records
+// that uses a custom http.Transport to export netcap audit records.
 type ReverseProxy struct {
 	Name   string
 	rp     *httputil.ReverseProxy
 	writer *netcap.Writer
 }
 
-// ServeHTTP implements the http.Handler interface
+// ServeHTTP implements the http.Handler interface.
 func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.rp.ServeHTTP(w, r)
 }
 
 // ReverseProxyConfig represents the configuration of a single reverse proxy
 // if the TLS field is set to true
-// paths to the cert and key files must be specified
+// paths to the cert and key files must be specified.
 type ReverseProxyConfig struct {
 
 	// Remote endpoint address
@@ -56,7 +56,7 @@ type ReverseProxyConfig struct {
 }
 
 // NewReverseProxy creates a ReverseProxy instance for the given target URL
-// and sets the specified name
+// and sets the specified name.
 func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
 	// instantiate proxy
 	proxy := &ReverseProxy{

@@ -105,6 +105,7 @@ var dnsDecoder = newGoPacketDecoder(
 				Additionals: adds,
 			}
 		}
+
 		return nil
 	},
 )

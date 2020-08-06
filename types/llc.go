@@ -70,7 +70,7 @@ func (l *LLC) Inc() {
 
 func (l *LLC) SetPacketContext(*PacketContext) {}
 
-// Src TODO
+// Src TODO.
 func (l *LLC) Src() string {
 	return ""
 }

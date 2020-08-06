@@ -30,17 +30,18 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 	// generate maltego transform
 	trx := maltego.Transform{}
 	for _, name := range allDecoders {
-
 		ident := filepath.Join(outDir, name+".ncap")
 
 		// stat generated profiles
 		stat, err := os.Stat(ident)
 		if err != nil {
 			utils.DebugLog.Println("invalid path: ", err)
+
 			continue
 		}
 		if stat.IsDir() {
 			utils.DebugLog.Println("not a file: ", err)
+
 			continue
 		}
 
@@ -50,6 +51,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		numRecords, errCount := netcap.Count(ident)
 		if errCount != nil {
 			utils.DebugLog.Println("failed to count audit records:", errCount)
+
 			continue
 		}
 

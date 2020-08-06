@@ -119,7 +119,6 @@ func TLS(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 
 					// AND destination port must either be source or destination of alert
 					(int32(a.DstPort) == tls.SrcPort || int32(a.DstPort) == tls.DstPort) {
-
 					if CollectLabels {
 						// only if it is not already part of the label
 						if !strings.Contains(finalLabel, a.Classification) {
@@ -129,6 +128,7 @@ func TLS(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 								finalLabel += " | " + a.Classification
 							}
 						}
+
 						continue
 					}
 
@@ -144,6 +144,7 @@ func TLS(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separ
 				// add final label
 				f.WriteString(strings.Join(tls.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
+
 				goto read
 			}
 

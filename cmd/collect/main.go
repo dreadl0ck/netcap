@@ -52,6 +52,7 @@ func Run() {
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "collect")
+
 		return
 	}
 
@@ -117,7 +118,7 @@ func Run() {
 	log.Fatal(udpServer(ctx, *flagAddr))
 }
 
-// udpServer implements a simple UDP server
+// udpServer implements a simple UDP server.
 func udpServer(ctx context.Context, address string) (err error) {
 	// ListenPacket provides a wrapper around ListenUDP
 	// eliminating the need to call net.ResolveUDPAddr
@@ -174,6 +175,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 			n, addr, errRead := pc.ReadFrom(buffer)
 			if errRead != nil {
 				doneChan <- errRead
+
 				return
 			}
 

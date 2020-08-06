@@ -36,6 +36,7 @@ var usbRequestBlockSetupDecoder = newGoPacketDecoder(
 				Length:      int32(usbR.Length),
 			}
 		}
+
 		return nil
 	},
 )

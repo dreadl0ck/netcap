@@ -30,27 +30,27 @@ type service struct {
 	sync.Mutex
 }
 
-// atomicDeviceProfileMap contains all connections and provides synchronized access
+// atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicServiceMap struct {
 	// map server IP + Port to service
 	Items map[string]*service
 	sync.Mutex
 }
 
-// Size returns the number of elements in the Items map
+// Size returns the number of elements in the Items map.
 func (a *atomicServiceMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
 	return len(a.Items)
 }
 
-// ServiceStore hold all connections
+// ServiceStore hold all connections.
 var ServiceStore = &atomicServiceMap{
 	Items: make(map[string]*service),
 }
 
 // addInfo is util to append information to a string using a delimiter
-// information will be deduplicated
+// information will be deduplicated.
 func addInfo(old string, new string) string {
 	if len(old) == 0 {
 		return new
@@ -63,14 +63,16 @@ func addInfo(old string, new string) string {
 			b.WriteString(old)
 			b.WriteString(" | ")
 			b.WriteString(new)
+
 			return b.String()
 		}
+
 		return old
 	}
 }
 
 // saves the banner for a TCP service to the filesystem
-// and limits the length of the saved data to the BannerSize value from the config
+// and limits the length of the saved data to the BannerSize value from the config.
 func saveTCPServiceBanner(s streamReader) {
 	banner := s.ServiceBanner()
 
@@ -139,7 +141,7 @@ func saveTCPServiceBanner(s streamReader) {
 	stats.Unlock()
 }
 
-// newDeviceProfile creates a new network service
+// newDeviceProfile creates a new network service.
 func newService(ts string, numBytesServer int, numBytesClient int, ip string) *service {
 	var host string
 	if resolvers.CurrentConfig.ReverseDNS {
@@ -176,6 +178,7 @@ var serviceDecoder = newCustomDecoder(
 				c.Unlock()
 			}
 		}
+
 		return nil
 	},
 )

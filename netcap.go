@@ -25,7 +25,7 @@ import (
 
 // InitRecord initializes a new record of the given type
 // that conforms to the proto.Message interface
-// if netcap is extended with new audit records they need to be added here as well
+// if netcap is extended with new audit records they need to be added here as well.
 func InitRecord(typ types.Type) (record proto.Message) {
 	switch typ {
 	case types.Type_NC_Ethernet:
@@ -174,7 +174,7 @@ func InitRecord(typ types.Type) (record proto.Message) {
 
 // Count returns the total number of records found in an audit record file
 // it does not return an error in case of a regular EOF
-// but will return an error in case of an unexpected EOF
+// but will return an error in case of an unexpected EOF.
 func Count(filename string) (count int64, err error) {
 	// open audit record file
 	r, err := Open(filename, DefaultBufferSize)

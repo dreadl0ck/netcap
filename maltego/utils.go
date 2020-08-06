@@ -19,7 +19,7 @@ import (
 	"fmt"
 )
 
-// EscapeText ensures that the input text is safe to embed within XML
+// EscapeText ensures that the input text is safe to embed within XML.
 func EscapeText(text string) string {
 	var buf bytes.Buffer
 	err := xml.EscapeText(&buf, []byte(text))

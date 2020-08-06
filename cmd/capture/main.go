@@ -46,6 +46,7 @@ func Run() {
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "capture")
+
 		return
 	}
 
@@ -58,11 +59,13 @@ func Run() {
 	// print a markdown overview of all available decoders and fields
 	if *flagPrintProtocolOverview {
 		decoder.MarkdownOverview()
+
 		return
 	}
 
 	if *flagListInterfaces {
 		utils.ListAllNetworkInterfaces()
+
 		return
 	}
 
@@ -98,6 +101,7 @@ func Run() {
 	// print decoders and exit
 	if *flagDecoders {
 		decoder.ShowDecoders(true)
+
 		return
 	}
 

@@ -103,9 +103,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 
 	// check if its a well known port and use the harvester for that one
 	if ch, ok := harvesterPortMapping[dstPort]; ok {
-		if creds := ch(banner, ident, firstPacket); creds != nil {
-
-			// write audit record
+		if creds := ch(banner, ident, firstPacket); creds != nil { // write audit record
 			writeCredentials(creds)
 
 			// we found a match and will stop processing
@@ -119,9 +117,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 	}
 
 	if ch, ok := harvesterPortMapping[srcPort]; ok {
-		if creds := ch(banner, ident, firstPacket); creds != nil {
-
-			// write audit record
+		if creds := ch(banner, ident, firstPacket); creds != nil { // write audit record
 			writeCredentials(creds)
 
 			// we found a match and will stop processing
@@ -141,9 +137,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 			// if the port based first guess has not been found, do not run this harvester again
 			if &ch != tried {
 				// execute harvester
-				if creds := ch(banner, ident, firstPacket); creds != nil {
-
-					// write audit record
+				if creds := ch(banner, ident, firstPacket); creds != nil { // write audit record
 					writeCredentials(creds)
 
 					// stop after a match for now
@@ -197,6 +191,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaultFilesPermission)
 	if err != nil {
 		logReassemblyError("TCP connection create", "Cannot create %s: %s\n", base, err)
+
 		return err
 	}
 

@@ -32,6 +32,7 @@ var ethernetCTPDecoder = newGoPacketDecoder(
 				SkipCount: int32(ethctp.SkipCount),
 			}
 		}
+
 		return nil
 	},
 )

@@ -34,7 +34,7 @@ func InitLoggers(outpath string) {
 	ReassemblyLog.SetOutput(ReassemblyLogFileHandle)
 }
 
-// CloseLogFiles closes the logfile handles
+// CloseLogFiles closes the logfile handles.
 func CloseLogFiles() []error {
 	var errs []error
 

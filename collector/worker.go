@@ -174,7 +174,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 	return chanInput
 }
 
-// spawn the configured number of workers
+// spawn the configured number of workers.
 func (c *Collector) initWorkers() []chan *packet {
 	workers := make([]chan *packet, c.config.Workers)
 	for i := range workers {

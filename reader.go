@@ -25,7 +25,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// Reader implements reading netcap audit record files
+// Reader implements reading netcap audit record files.
 type Reader struct {
 	file    *os.File
 	bReader *bufio.Reader
@@ -33,7 +33,7 @@ type Reader struct {
 	dReader *delimited.Reader
 }
 
-// Open a netcap audit record file for reading
+// Open a netcap audit record file for reading.
 func Open(file string, memBufSize int) (*Reader, error) {
 	r := &Reader{}
 
@@ -62,7 +62,7 @@ func Open(file string, memBufSize int) (*Reader, error) {
 	return r, nil
 }
 
-// Close the file
+// Close the file.
 func (r *Reader) Close() error {
 	if r.gReader != nil {
 		err := r.gReader.Close()
@@ -77,12 +77,12 @@ func (r *Reader) Close() error {
 	return r.file.Close()
 }
 
-// Next Message
+// Next Message.
 func (r *Reader) Next(msg proto.Message) error {
 	return r.dReader.NextProto(msg)
 }
 
-// ReadHeader reads the file header
+// ReadHeader reads the file header.
 func (r *Reader) ReadHeader() (*types.Header, error) {
 	// read netcap header
 	var (

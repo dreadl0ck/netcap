@@ -17,7 +17,6 @@ func Run() {
 
 	log.Println("os.Args:", os.Args)
 	switch os.Args[2] {
-
 	// core
 	case "toCaptureProcess":
 		toCaptureProcess()

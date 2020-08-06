@@ -44,7 +44,7 @@ import (
 )
 
 // Collector provides an interface to collect data from PCAP or a network interface.
-// this structure has an optimized field order to avoid excessive padding
+// this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
 	wg sync.WaitGroup
 
@@ -370,7 +370,7 @@ func (c *Collector) printProgress() {
 	}
 }
 
-// updates the progress indicator and writes to stdout periodically
+// updates the progress indicator and writes to stdout periodically.
 func (c *Collector) printProgressInterval() chan struct{} {
 	stop := make(chan struct{})
 
@@ -403,9 +403,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 				)
 				atomic.StoreInt64(&c.numPacketsLast, curr)
 
-				if !c.config.Quiet {
-
-					// print
+				if !c.config.Quiet { // print
 					clearLine()
 					fmt.Fprintf(os.Stdout,
 						c.progressString,
@@ -445,7 +443,7 @@ func (c *Collector) freeOSMemory() {
 	}
 }
 
-// PrintConfiguration dumps the current collector config to stdout
+// PrintConfiguration dumps the current collector config to stdout.
 func (c *Collector) PrintConfiguration() {
 	// ensure the logfile handle gets opened
 	err := c.initLogging()

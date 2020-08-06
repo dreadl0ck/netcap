@@ -28,13 +28,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// FilesCountFunc is a function that counts something over File audit records
+// FilesCountFunc is a function that counts something over File audit records.
 type FilesCountFunc func()
 
-// FilesTransformationFunc is a transformation over File audit records
+// FilesTransformationFunc is a transformation over File audit records.
 type FilesTransformationFunc = func(lt LocalTransform, trx *Transform, file *types.File, min, max uint64, profilesFile string, ip string)
 
-// FilesTransform applies a maltego transformation over File audit records
+// FilesTransform applies a maltego transformation over File audit records.
 func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
@@ -89,7 +89,6 @@ func FilesTransform(count FilesCountFunc, transform FilesTransformationFunc) {
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(file)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

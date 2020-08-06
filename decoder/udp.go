@@ -60,7 +60,7 @@ func newUDPStreamPool() *UDPStreamPool {
 	}
 }
 
-// takes a udp packet and tracks the data seen for the conversation
+// takes a udp packet and tracks the data seen for the conversation.
 func (u *UDPStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
 	u.Lock()
 	if s, ok := u.streams[packet.TransportLayer().TransportFlow().FastHash()]; ok {
@@ -105,6 +105,7 @@ var udpDecoder = newGoPacketDecoder(
 			if c.CalculateEntropy {
 				e = entropy(udp.Payload)
 			}
+
 			return &types.UDP{
 				Timestamp:      timestamp,
 				SrcPort:        int32(udp.SrcPort),
@@ -116,6 +117,7 @@ var udpDecoder = newGoPacketDecoder(
 				Payload:        payload,
 			}
 		}
+
 		return nil
 	},
 )
@@ -186,7 +188,7 @@ func (u *UDPStreamPool) saveAllUDPConnections() {
 	u.Unlock()
 }
 
-// saveUDPConnection saves the contents of a client server conversation via UDP to the filesystem
+// saveUDPConnection saves the contents of a client server conversation via UDP to the filesystem.
 func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
 	// prevent processing zero bytes
 	if len(raw) == 0 {
@@ -226,6 +228,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaultFilesPermission)
 	if err != nil {
 		logReassemblyError("UDP connection create", "Cannot create %s: %s\n", base, err)
+
 		return err
 	}
 
@@ -253,7 +256,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 }
 
 // saves the banner for a UDP service to the filesystem
-// and limits the length of the saved data to the BannerSize value from the config
+// and limits the length of the saved data to the BannerSize value from the config.
 func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, firstPacket time.Time, serverBytes int, clientBytes int, net gopacket.Flow, transport gopacket.Flow) {
 	// limit length of data
 	if len(banner) >= c.BannerSize {

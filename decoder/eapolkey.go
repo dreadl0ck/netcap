@@ -52,6 +52,7 @@ var eapolkeyDecoder = newGoPacketDecoder(
 				EncryptedKeyData:     eapolkey.EncryptedKeyData,
 			}
 		}
+
 		return nil
 	},
 )

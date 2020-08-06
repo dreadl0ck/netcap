@@ -105,7 +105,6 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 			// also checks ports and transport proto
 			// if not label it as normal
 			for _, a := range alerts {
-
 				var (
 					alertTime = utils.StringToTime(a.Timestamp)
 					last      = utils.StringToTime(flow.TimestampLast)
@@ -132,7 +131,6 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 
 					// AND transport protocol must match
 					a.Proto == flow.TransportProto {
-
 					if CollectLabels {
 						// only if it is not already part of the label
 						if !strings.Contains(finalLabel, a.Classification) {
@@ -142,6 +140,7 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 								finalLabel += " | " + a.Classification
 							}
 						}
+
 						continue
 					}
 
@@ -157,6 +156,7 @@ func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sep
 				// add final label
 				f.WriteString(strings.Join(flow.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
+
 				goto read
 			}
 

@@ -128,9 +128,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 	// length of the ident if it was found
 	offset := 0
 
-	if h.clientIdent == "" || h.serverIdent == "" {
-
-		// read the SSH ident from the buffer
+	if h.clientIdent == "" || h.serverIdent == "" { // read the SSH ident from the buffer
 		var (
 			b        = bytes.NewReader(data)
 			ident    []byte
@@ -267,7 +265,6 @@ var regSSHIdent = regexp.MustCompile("^(SSH-[0-9]\\.?[0-9]?)-(.*[[:word:]]*)_([0
 
 func parseSSHIdent(ident string) *sshVersionInfo {
 	if m := regSSHIdent.FindStringSubmatch(ident); len(m) > 0 {
-
 		var os string
 		if len(m) > 4 {
 			os = m[4]
@@ -283,7 +280,7 @@ func parseSSHIdent(ident string) *sshVersionInfo {
 }
 
 // HASSH SSH Fingerprint
-// TODO: move this functionality into standalone package
+// TODO: move this functionality into standalone package.
 func computeHASSH(init sshx.KexInitMsg) (hash string, raw string) {
 	var b strings.Builder
 	b.WriteString(strings.Join(init.KexAlgos, ","))

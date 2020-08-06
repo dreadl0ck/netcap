@@ -11,7 +11,7 @@ import (
 
 // streamReader is an interface for processing a uni-directional stream of network data
 // it defines to manage a stream lifecycle and is used to close the remaining open streams
-// and process the remaining data when the engine is stopped
+// and process the remaining data when the engine is stopped.
 type streamReader interface {
 	Read(p []byte) (int, error)
 	Run(f *tcpConnectionFactory)
@@ -44,20 +44,20 @@ type streamReader interface {
 	SortAndMergeFragments()
 }
 
-// streamDecoder is the interface for processing a bi-directional network connection
+// streamDecoder is the interface for processing a bi-directional network connection.
 type streamDecoder interface {
 	Decode()
 }
 
 // streamData is a fragment of data we received from a streamReader
-// its contains the raw bytes as well an assembler context with timestamp information
+// its contains the raw bytes as well an assembler context with timestamp information.
 type streamData struct {
 	raw []byte
 	ac  reassembly.AssemblerContext
 	dir reassembly.TCPFlowDirection
 }
 
-// streamDataSlice implements sort.Interface to sort data fragments based on their timestamps
+// streamDataSlice implements sort.Interface to sort data fragments based on their timestamps.
 type streamDataSlice []*streamData
 
 func (d streamDataSlice) bytes() []byte {
@@ -85,13 +85,13 @@ func (d streamDataSlice) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
 
-// stream contains both flows for a connection
+// stream contains both flows for a connection.
 type stream struct {
 	a gopacket.Flow
 	b gopacket.Flow
 }
 
-// reverse flips source and destination
+// reverse flips source and destination.
 func (s stream) reverse() stream {
 	return stream{
 		s.a.Reverse(),

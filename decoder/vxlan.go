@@ -37,6 +37,7 @@ var vxlanDecoder = newGoPacketDecoder(
 				GBPGroupPolicyID: int32(vx.GBPGroupPolicyID),
 			}
 		}
+
 		return nil
 	},
 )

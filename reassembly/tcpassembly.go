@@ -31,7 +31,7 @@ import (
 
 var Debug = false
 
-// TCPAssemblyStats provides some figures for a ScatterGather
+// TCPAssemblyStats provides some figures for a ScatterGather.
 type TCPAssemblyStats struct {
 	// For this ScatterGather
 	Chunks  int

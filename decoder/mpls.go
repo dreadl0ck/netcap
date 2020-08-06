@@ -35,6 +35,7 @@ var mplsDecoder = newGoPacketDecoder(
 				TTL:          int32(mpls.TTL),
 			}
 		}
+
 		return nil
 	},
 )

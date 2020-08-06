@@ -32,7 +32,7 @@ import (
 )
 
 // NetcapTransport contains a http.Transport for RoundTrips
-// and the target URL of the associated reverse proxy
+// and the target URL of the associated reverse proxy.
 type NetcapTransport struct {
 	proxyName string
 	rt        http.RoundTripper
@@ -40,7 +40,7 @@ type NetcapTransport struct {
 	proxy     *ReverseProxy
 }
 
-// RoundTrip implements the http.Transport interface
+// RoundTrip implements the http.Transport interface.
 func (t *NetcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	// set basic auth on request if present
 	if t.targetURL.User != nil {

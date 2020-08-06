@@ -113,7 +113,6 @@ func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 
 					// AND source ip must match
 					a.SrcIP == ip6.SrcIP {
-
 					if CollectLabels {
 						// only if it is not already part of the label
 						if !strings.Contains(finalLabel, a.Classification) {
@@ -123,6 +122,7 @@ func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 								finalLabel += " | " + a.Classification
 							}
 						}
+
 						continue
 					}
 
@@ -138,6 +138,7 @@ func IPv6(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 				// add final label
 				f.WriteString(strings.Join(ip6.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
+
 				goto read
 			}
 

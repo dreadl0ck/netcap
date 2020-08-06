@@ -48,6 +48,7 @@ var greDecoder = newGoPacketDecoder(
 				// Routing: encodeGRERouting(gre.AddressFamily, gre.SREOffset, gre.SRELength, gre.RoutingInformation, nil),
 			}
 		}
+
 		return nil
 	},
 )

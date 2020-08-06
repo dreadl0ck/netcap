@@ -40,20 +40,20 @@ const (
 	// default settings are meant to be forgiving in terms of TCP state machine correctness
 	// in order to capture as much information as possible.
 
-	// DefaultReassemblyTimeout How long to wait for remaining open streams to close, before initiating teardown
+	// DefaultReassemblyTimeout How long to wait for remaining open streams to close, before initiating teardown.
 	DefaultReassemblyTimeout = 5 * time.Second
 
 	// DefaultFlushEvery TODO: refactor to flush periodically, instead of every n packets?
-	// controls how often collected reassembly data is flushed to consumers
+	// controls how often collected reassembly data is flushed to consumers.
 	DefaultFlushEvery = 100
 
-	// DefaultClosePendingTimeout Close streams with pending bytes after
+	// DefaultClosePendingTimeout Close streams with pending bytes after.
 	DefaultClosePendingTimeout = 1 * time.Hour
 
-	// DefaultCloseInactiveTimeout Close inactive streams after
+	// DefaultCloseInactiveTimeout Close inactive streams after.
 	DefaultCloseInactiveTimeout = 1 * time.Hour
 
-	// DefaultAllowMissingInit TCP State Machine
+	// DefaultAllowMissingInit TCP State Machine.
 	DefaultAllowMissingInit = true
 	DefaultDefragIPv4       = true
 	DefaultNoOptCheck       = true
