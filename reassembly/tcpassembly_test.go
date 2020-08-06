@@ -45,11 +45,11 @@ type testSequence struct {
 type testFactoryBench struct {
 }
 
-func (t *testFactoryBench) New(gopacket.Flow, gopacket.Flow, *layers.TCP, AssemblerContext) Stream {
+func (t *testFactoryBench) New(gopacket.Flow, gopacket.Flow, AssemblerContext) Stream {
 	return t
 }
 
-func (t *testFactoryBench) Accept(*layers.TCP, gopacket.CaptureInfo, TCPFlowDirection, Sequence, *bool, AssemblerContext) bool {
+func (t *testFactoryBench) Accept(*layers.TCP, TCPFlowDirection, Sequence) bool {
 	return true
 }
 
@@ -65,7 +65,7 @@ type testFactory struct {
 	reassembly []Reassembly
 }
 
-func (t *testFactory) New(gopacket.Flow, gopacket.Flow, *layers.TCP, AssemblerContext) Stream {
+func (t *testFactory) New(gopacket.Flow, gopacket.Flow, AssemblerContext) Stream {
 	return t
 }
 
@@ -91,7 +91,7 @@ func (t *testFactory) ReassemblyComplete(AssemblerContext, gopacket.Flow) bool {
 	return true
 }
 
-func (t *testFactory) Accept(*layers.TCP, gopacket.CaptureInfo, TCPFlowDirection, Sequence, *bool, AssemblerContext) bool {
+func (t *testFactory) Accept(*layers.TCP, TCPFlowDirection, Sequence) bool {
 	return true
 }
 
@@ -100,11 +100,11 @@ type testMemoryFactory struct {
 	bytes int
 }
 
-func (tf *testMemoryFactory) New(a, b gopacket.Flow, tcp *layers.TCP, ac AssemblerContext) Stream {
+func (tf *testMemoryFactory) New(_, _ gopacket.Flow, _ AssemblerContext) Stream {
 	return tf
 }
 
-func (tf *testMemoryFactory) Accept(*layers.TCP, gopacket.CaptureInfo, TCPFlowDirection, Sequence, *bool, AssemblerContext) bool {
+func (tf *testMemoryFactory) Accept(*layers.TCP, TCPFlowDirection, Sequence) bool {
 	return true
 }
 
@@ -941,12 +941,11 @@ type testKeepFactory struct {
 }
 
 // nolint
-func (tkf *testKeepFactory) New(a, b gopacket.Flow, tcp *layers.TCP, ac AssemblerContext) Stream {
+func (tkf *testKeepFactory) New(_, _ gopacket.Flow, _ AssemblerContext) Stream {
 	return tkf
 }
 
-// nolint
-func (tkf *testKeepFactory) ReassembledSG(sg ScatterGather, ac AssemblerContext) {
+func (tkf *testKeepFactory) ReassembledSG(sg ScatterGather, _ AssemblerContext) {
 	l, _ := sg.Lengths()
 	_, _, _, tkf.skipped = sg.Info()
 	tkf.bytes = sg.Fetch(l)
@@ -957,7 +956,7 @@ func (tkf *testKeepFactory) ReassemblyComplete(AssemblerContext, gopacket.Flow) 
 	return true
 }
 
-func (tkf *testKeepFactory) Accept(*layers.TCP, gopacket.CaptureInfo, TCPFlowDirection, Sequence, *bool, AssemblerContext) bool {
+func (tkf *testKeepFactory) Accept(*layers.TCP, TCPFlowDirection, Sequence) bool {
 	return true
 }
 
@@ -1213,7 +1212,7 @@ type testFSMFactory struct {
 	fsm TCPSimpleFSM
 }
 
-func (t *testFSMFactory) New(gopacket.Flow, gopacket.Flow, *layers.TCP, AssemblerContext) Stream {
+func (t *testFSMFactory) New(gopacket.Flow, gopacket.Flow, AssemblerContext) Stream {
 	return t
 }
 
@@ -1224,7 +1223,7 @@ func (t *testFSMFactory) ReassemblyComplete(AssemblerContext, gopacket.Flow) boo
 	return false
 }
 
-func (t *testFSMFactory) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TCPFlowDirection, seq Sequence, start *bool, ac AssemblerContext) bool {
+func (t *testFSMFactory) Accept(tcp *layers.TCP, dir TCPFlowDirection, _ Sequence) bool {
 	ok := t.fsm.CheckState(tcp, dir)
 	if ok {
 		t.nb++

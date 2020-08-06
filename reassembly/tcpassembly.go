@@ -44,23 +44,28 @@ type TCPAssemblyStats struct {
 }
 
 // ScatterGather is used to pass reassembled data and metadata of reassembled
-// packets to a Stream via ReassembledSG
+// packets to a Stream via ReassembledSG.
 type ScatterGather interface {
-	// Returns the length of available bytes and saved bytes
+	// Lengths returns the length of available bytes and saved bytes
 	Lengths() (int, int)
-	// Returns the bytes up to length (shall be <= available bytes)
+
+	// Fetch returns the bytes up to length (shall be <= available bytes)
 	Fetch(length int) []byte
-	// Tell to keep from offset
+
+	// KeepFrom tell to keep from offset
 	KeepFrom(offset int)
-	// Return CaptureInfo of packet corresponding to given offset
+
+	// CaptureInfo returns the CaptureInfo of packet corresponding to given offset
 	CaptureInfo(offset int) gopacket.CaptureInfo
-	// Return some info about the reassembled chunks
+
+	// Info returns some info about the reassembled chunks
 	Info() (direction TCPFlowDirection, start bool, end bool, skip int)
-	// Return some stats regarding the state of the stream
+
+	// Stats returns some stats regarding the state of the stream
 	Stats() TCPAssemblyStats
 }
 
-// byteContainer is either a page or a livePacket
+// byteContainer is either a page or a livePacket.
 type byteContainer interface {
 	getBytes() []byte
 	length() int
@@ -78,5 +83,6 @@ func min(a, b int) int {
 	if a < b {
 		return a
 	}
+
 	return b
 }

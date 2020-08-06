@@ -161,7 +161,7 @@ makeHTTPRequest:
 	}
 
 	if *flagDebug {
-		DumpHTTPResponse(resp, t.proxyName, rawbody)
+		dumpHTTPResponse(resp, t.proxyName, rawbody)
 	}
 
 	sourceIP := req.RemoteAddr

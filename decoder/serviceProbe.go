@@ -503,8 +503,8 @@ func colorize(in string, num int) string {
 	return out
 }
 
-// DumpServiceProbes prints all loaded probes as JSON
-func DumpServiceProbes() {
+// dumpServiceProbes prints all loaded probes as JSON
+func dumpServiceProbes() {
 	for _, p := range serviceProbes {
 		data, err := json.MarshalIndent(p, " ", "  ")
 		if err == nil {

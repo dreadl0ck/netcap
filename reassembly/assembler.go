@@ -179,7 +179,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		conn *connection
 		half *halfconnection
 		rev  *halfconnection
-		key  = &key{netFlow, t.TransportFlow()}
+		flowKey  = &key{netFlow, t.TransportFlow()}
 	)
 
 	// RACE
@@ -187,11 +187,12 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	a.ret = a.ret[:0]
 	a.Unlock()
 
-	conn, half, rev = a.connPool.getConnection(key, false, ac.GetCaptureInfo().Timestamp, t, ac)
+	conn, half, rev = a.connPool.getConnection(flowKey, false, ac.GetCaptureInfo().Timestamp, ac)
 	if conn == nil {
 		if Debug {
-			log.Printf("%v got empty packet on otherwise empty connection", key)
+			log.Printf("%v got empty packet on otherwise empty connection", flowKey)
 		}
+
 		return
 	}
 
@@ -213,11 +214,11 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 
 	if Debug {
 		if half.nextSeq < rev.ackSeq {
-			log.Printf("Delay detected on %v, data is acked but not assembled yet (acked %v, nextSeq %v)", key, rev.ackSeq, half.nextSeq)
+			log.Printf("Delay detected on %v, data is acked but not assembled yet (acked %v, nextSeq %v)", flowKey, rev.ackSeq, half.nextSeq)
 		}
 	}
 
-	if !half.stream.Accept(t, ac.GetCaptureInfo(), half.dir, half.nextSeq, &a.start, ac) {
+	if !half.stream.Accept(t, half.dir, half.nextSeq) {
 		if Debug {
 			log.Printf("Ignoring packet")
 		}
@@ -228,7 +229,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	if half.closed {
 		// this way is closed
 		if Debug {
-			log.Printf("%v got packet on closed half", key)
+			log.Printf("%v got packet on closed half", flowKey)
 		}
 
 		return
@@ -251,31 +252,31 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	if half.nextSeq == invalidSequence {
 		if t.SYN {
 			if Debug {
-				log.Printf("%v saw first SYN packet, returning immediately, seq=%v", key, seq)
+				log.Printf("%v saw first SYN packet, returning immediately, seq=%v", flowKey, seq)
 			}
 			seq = seq.Add(1)
 			half.nextSeq = seq
 			action.queue = false
 		} else if a.start {
 			if Debug {
-				log.Printf("%v start forced", key)
+				log.Printf("%v start forced", flowKey)
 			}
 			half.nextSeq = seq
 			action.queue = false
 		} else {
 			if Debug {
-				log.Printf("%v waiting for start, storing into connection", key)
+				log.Printf("%v waiting for start, storing into connection", flowKey)
 			}
 		}
 	} else {
 		diff := half.nextSeq.Difference(seq)
 		if diff > 0 {
 			if Debug {
-				log.Printf("%v gap in sequence numbers (%v, %v) diff %v, storing into connection", key, half.nextSeq, seq, diff)
+				log.Printf("%v gap in sequence numbers (%v, %v) diff %v, storing into connection", flowKey, half.nextSeq, seq, diff)
 			}
 		} else {
 			if Debug {
-				log.Printf("%v found contiguous data (%v, %v), returning immediately: len:%d", key, seq, half.nextSeq, len(bytes))
+				log.Printf("%v found contiguous data (%v, %v), returning immediately: len:%d", flowKey, seq, half.nextSeq, len(bytes))
 			}
 			action.queue = false
 		}
@@ -294,7 +295,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	}
 
 	if Debug {
-		log.Printf("%v nextSeq:%d", key, half.nextSeq)
+		log.Printf("%v nextSeq:%d", flowKey, half.nextSeq)
 	}
 }
 

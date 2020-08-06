@@ -159,18 +159,20 @@ type tcpConnection struct {
 }
 
 // Accept decides whether the TCP packet should be accepted
-// start could be modified to force a start even if no SYN have been seen
-func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
+// start could be modified to force a start even if no SYN have been seen.
+func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence) bool {
 	// Finite State Machine
 	if !t.tcpstate.CheckState(tcp, dir) {
 		logReassemblyError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
 		stats.Lock()
 		stats.rejectFsm++
+
 		if !t.fsmerr {
 			t.fsmerr = true
 			stats.rejectConnFsm++
 		}
 		stats.Unlock()
+
 		if !c.IgnoreFSMerr {
 			return false
 		}
@@ -183,6 +185,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 		stats.Lock()
 		stats.rejectOpt++
 		stats.Unlock()
+
 		if !c.NoOptCheck {
 			return false
 		}
@@ -190,13 +193,16 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 
 	// TCP Checksum
 	accept := true
+
 	if c.Checksum {
-		c, err := tcp.ComputeChecksum()
-		if err != nil {
-			logReassemblyError("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, err)
+		chk, errChk := tcp.ComputeChecksum()
+		if errChk != nil {
+			logReassemblyError("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, errChk)
+
 			accept = false
-		} else if c != 0x0 {
-			logReassemblyError("Checksum", "%s: Invalid checksum: 0x%x\n", t.ident, c)
+		} else if chk != 0x0 {
+			logReassemblyError("Checksum", "%s: Invalid checksum: 0x%x\n", t.ident, chk)
+
 			accept = false
 		}
 	}
@@ -207,6 +213,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 		stats.rejectOpt++
 		stats.Unlock()
 	}
+	
 	return accept
 }
 
@@ -543,10 +550,10 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	}
 }
 
-// AssembleWithContextTimeout is a function that times out with a log message after a specified interval
+// assembleWithContextTimeout is a function that times out with a log message after a specified interval
 // when the stream reassembly gets stuck
 // used for debugging
-func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
+func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
 	done := make(chan bool, 1)
 	go func() {
 		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
@@ -564,6 +571,7 @@ func AssembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 	}
 }
 
+// CleanupReassembly will shutdown the reassembly.
 func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	c.Lock()
 	if c.Debug {
@@ -670,6 +678,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		if c.DefragIPv4 {
 			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(stats.ipdefrag, 10)})
 		}
+
 		rows = append(rows, []string{"missed bytes", strconv.FormatInt(stats.missedBytes, 10)})
 		rows = append(rows, []string{"total packets", strconv.FormatInt(stats.pkt, 10)})
 		rows = append(rows, []string{"rejected FSM", strconv.FormatInt(stats.rejectFsm, 10)})
@@ -699,8 +708,10 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			for e := range errorsMap {
 				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
 			}
+
 			tui.Table(utils.ReassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
 		}
+
 		utils.ReassemblyLog.Println("\nencountered", stats.numErrors, "errors during processing.", "HTTP requests", stats.requests, " responses", stats.responses)
 		stats.Unlock()
 		errorsMapMutex.Unlock()
