@@ -68,6 +68,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 				Fingerprint:  fp.String(),
 			}
 		}
+
 		return nil
 	},
 )

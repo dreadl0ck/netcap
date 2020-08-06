@@ -34,6 +34,7 @@ var icmpv6RouterAdvertisementDecoder = newGoPacketDecoder(
 					Type: int32(o.Type),
 				})
 			}
+
 			return &types.ICMPv6RouterAdvertisement{
 				Timestamp:      timestamp,
 				HopLimit:       int32(icmp6ra.HopLimit),
@@ -44,6 +45,7 @@ var icmpv6RouterAdvertisementDecoder = newGoPacketDecoder(
 				Options:        opts,
 			}
 		}
+
 		return nil
 	},
 )

@@ -28,14 +28,14 @@ import (
 
 var LocalDNS = true
 
-// atomicIPProfileMap contains all connections and provides synchronized access
+// atomicIPProfileMap contains all connections and provides synchronized access.
 type atomicIPProfileMap struct {
 	// SrcIP to Profiles
 	Items map[string]*IPProfile
 	sync.Mutex
 }
 
-// Size returns the number of elements in the Items map
+// Size returns the number of elements in the Items map.
 func (a *atomicIPProfileMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
@@ -51,7 +51,7 @@ type IPProfile struct {
 	sync.Mutex
 }
 
-// GetIPProfile fetches a known profile and updates it or returns a new one
+// GetIPProfile fetches a known profile and updates it or returns a new one.
 func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 	if len(ipAddr) == 0 {
 		return nil
@@ -70,9 +70,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 		p.Bytes += dataLen
 
 		// Transport Layer
-		if tl := i.p.TransportLayer(); tl != nil {
-
-			// log.Println(i.p.NetworkLayer().NetworkFlow().String() + " " + tl.TransportFlow().String())
+		if tl := i.p.TransportLayer(); tl != nil { // log.Println(i.p.NetworkLayer().NetworkFlow().String() + " " + tl.TransportFlow().String())
 
 			if port, ok := p.SrcPorts[tl.TransportFlow().Src().String()]; ok {
 				atomic.AddUint64(&port.NumTotal, dataLen)
@@ -166,7 +164,6 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 	// Transport Layer: Port information
 
 	if tl := i.p.TransportLayer(); tl != nil {
-
 		srcPort := &types.Port{
 			NumTotal: dataLen,
 		}

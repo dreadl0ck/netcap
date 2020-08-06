@@ -35,6 +35,7 @@ var sctpDecoder = newGoPacketDecoder(
 				VerificationTag: sctp.VerificationTag,
 			}
 		}
+
 		return nil
 	},
 )

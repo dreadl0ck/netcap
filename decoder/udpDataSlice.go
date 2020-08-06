@@ -13,7 +13,7 @@
 
 package decoder
 
-// UDPDataSlice implements sort.Interface to sort data fragments based on their timestamps
+// UDPDataSlice implements sort.Interface to sort data fragments based on their timestamps.
 type UDPDataSlice []*UDPData
 
 func (d UDPDataSlice) Len() int {

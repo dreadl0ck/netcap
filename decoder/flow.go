@@ -69,7 +69,7 @@ func (fd *flowCustomDecoder) PostInit() error {
 	return nil
 }
 
-// Destroy closes and flushes all writers and calls deinit if set
+// Destroy closes and flushes all writers and calls deinit if set.
 func (fd *flowCustomDecoder) Destroy() (name string, size int64) {
 	// call Deinit on FlowDecoder, instead of CustomDecoder
 	err := fd.DeInit()
@@ -106,7 +106,6 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		// check if received packet from the same flow
 		// was captured BEFORE the flows first seen timestamp
 		if !utils.StringToTime(f.TimestampFirst).Before(p.Metadata().Timestamp) {
-
 			calcDuration = true
 
 			// if there is no last seen timestamp yet, simply swap the values

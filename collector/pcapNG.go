@@ -41,7 +41,7 @@ func openPcapNG(file string) (*pcapgo.NgReader, *os.File, error) {
 	return r, f, nil
 }
 
-// countPackets returns the number of packets in a PCAP file
+// countPackets returns the number of packets in a PCAP file.
 func countPacketsNG(path string) (count int64, err error) {
 	// get reader and file handle
 	r, f, err := openPcapNG(path)

@@ -157,7 +157,7 @@ func (l *LinkLayerDiscoveryInfo) Inc() {
 
 func (l *LinkLayerDiscoveryInfo) SetPacketContext(*PacketContext) {}
 
-// Src TODO
+// Src TODO.
 func (l *LinkLayerDiscoveryInfo) Src() string {
 	return ""
 }

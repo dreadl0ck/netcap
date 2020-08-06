@@ -49,5 +49,5 @@ var (
 	// this wont work currently, because the Select() func will stop if there are fields that are not present on an audit record
 	// as labeling iterates over all available records, there will always be a record that does not have all selected fields
 	// TODO: create a func that ignores fields that do not exist on the target audit record, maybe Select() and SelectStrict()
-	// flagSelect    = flag.String("select", "", "select specific fields of an audit records when generating csv or tables")
+	// flagSelect    = flag.String("select", "", "select specific fields of an audit records when generating csv or tables").
 )

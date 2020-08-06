@@ -17,7 +17,6 @@ func toMails() {
 		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, profilesFile string, ipaddr string) {
 			if pop3.ClientIP == ipaddr {
 				for _, m := range pop3.Mails {
-
 					log.Println(m.Subject)
 
 					var buf bytes.Buffer

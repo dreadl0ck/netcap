@@ -35,6 +35,7 @@ var ciscoDiscoveryDecoder = newGoPacketDecoder(
 					Value:  v.Value,
 				})
 			}
+
 			return &types.CiscoDiscovery{
 				Timestamp: timestamp,
 				Version:   int32(ciscoDiscovery.Version),
@@ -43,6 +44,7 @@ var ciscoDiscoveryDecoder = newGoPacketDecoder(
 				Values:    values,
 			}
 		}
+
 		return nil
 	},
 )

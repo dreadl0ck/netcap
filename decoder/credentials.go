@@ -354,10 +354,12 @@ var credentialsDecoder = newCustomDecoder(
 					for _, m := range matches {
 						notes += " " + string(m) + " "
 					}
+
 					return &types.Credentials{
 						Notes: notes,
 					}
 				}
+
 				return nil
 			})
 		}
@@ -400,6 +402,7 @@ func writeCredentials(conn *types.Credentials) {
 	credStoreMu.Lock()
 	if _, ok := credStore[ident]; ok {
 		credStoreMu.Unlock()
+
 		return
 	}
 	credStore[ident] = conn.Flow

@@ -15,7 +15,6 @@ func toApplicationsForCategory() {
 
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
-
 						category := lt.Values["description"]
 						for protoName, proto := range ip.Protocols {
 							if proto.Category == category {
@@ -29,7 +28,6 @@ func toApplicationsForCategory() {
 				}
 				for _, ip := range profile.DeviceIPs {
 					if ip.Addr == ipaddr {
-
 						category := lt.Values["description"]
 						for protoName, proto := range ip.Protocols {
 							if proto.Category == category {

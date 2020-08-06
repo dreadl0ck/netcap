@@ -108,7 +108,7 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 	return chanInput
 }
 
-// spawn the configured number of workers
+// spawn the configured number of workers.
 func (tsp *tcpStreamProcessor) initWorkers() {
 	tsp.workers = make([]chan streamReader, runtime.NumCPU())
 	for i := range tsp.workers {

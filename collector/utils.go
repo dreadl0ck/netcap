@@ -54,6 +54,7 @@ func (c *Collector) printProgressLive() {
 	// dont print message when collector is about to shutdown
 	if c.shutdown {
 		c.statMutex.Unlock()
+
 		return
 	}
 	c.statMutex.Unlock()
@@ -75,6 +76,7 @@ func clearLine() {
 
 func share(current, total int64) string {
 	percent := (float64(current) / float64(total)) * 100
+
 	return strconv.FormatFloat(percent, 'f', 5, 64) + "%"
 }
 

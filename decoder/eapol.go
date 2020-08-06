@@ -34,6 +34,7 @@ var eapolDecoder = newGoPacketDecoder(
 				Length:    int32(eapol.Length),
 			}
 		}
+
 		return nil
 	},
 )

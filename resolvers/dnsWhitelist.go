@@ -25,7 +25,7 @@ import (
 
 var dnsWhitelist = make(map[string]struct{})
 
-// InitDNSWhitelist initializes the domain whitelist
+// InitDNSWhitelist initializes the domain whitelist.
 func InitDNSWhitelist() {
 	var hosts int
 
@@ -35,7 +35,6 @@ func InitDNSWhitelist() {
 	}
 
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
-
 		if len(line) == 0 {
 			continue
 		}
@@ -67,7 +66,7 @@ func getHost(domain string) string {
 }
 
 // IsWhitelistedDomain checks whether a given domain is whitelisted
-// must be called after calling InitDNSWhitelist()
+// must be called after calling InitDNSWhitelist().
 func IsWhitelistedDomain(domain string) bool {
 	if _, ok := dnsWhitelist[getHost(domain)]; ok {
 		// log.Println(domain, "is whitelisted")

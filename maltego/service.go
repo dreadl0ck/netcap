@@ -27,13 +27,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// ServiceTransformationFunc is a transformation over Service profiles for a selected Service
+// ServiceTransformationFunc is a transformation over Service profiles for a selected Service.
 type ServiceTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Service, min, max uint64, profilesFile string, mac string, ip string)
 
-// CountFunc is a function that counts something over DeviceProfiles
+// CountFunc is a function that counts something over DeviceProfiles.
 type serviceCountFunc = func(service *types.Service, mac string, min, max *uint64)
 
-// ServiceTransform applies a maltego transformation over Service profiles seen for a target Service
+// ServiceTransform applies a maltego transformation over Service profiles seen for a target Service.
 func ServiceTransform(count serviceCountFunc, transform ServiceTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	servicesFile := lt.Values["path"]
@@ -88,7 +88,6 @@ func ServiceTransform(count serviceCountFunc, transform ServiceTransformationFun
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(service)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

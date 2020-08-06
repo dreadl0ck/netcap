@@ -13,7 +13,7 @@
 
 package delimited
 
-// Sink models a receiver of delimited records
+// Sink models a receiver of delimited records.
 type Sink interface {
 	// Put delivers a record to the sink.
 	Put([]byte) error

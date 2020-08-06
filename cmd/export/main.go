@@ -31,6 +31,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+const _a_good_name = ".ncap"
+
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
@@ -41,6 +43,7 @@ func Run() {
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "export")
+
 		return
 	}
 
@@ -52,6 +55,7 @@ func Run() {
 
 	if *flagListInterfaces {
 		utils.ListAllNetworkInterfaces()
+
 		return
 	}
 
@@ -66,7 +70,7 @@ func Run() {
 	}
 
 	switch {
-	case filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz":
+	case filepath.Ext(*flagInput) == _a_good_name || filepath.Ext(*flagInput) == ".gz":
 		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
 		exportFile(*flagInput)
 	case *flagDir != "":
@@ -88,6 +92,7 @@ func Run() {
 			// check if its a directory
 			if stat.IsDir() {
 				exportDir(*flagInput)
+
 				break
 			}
 		}

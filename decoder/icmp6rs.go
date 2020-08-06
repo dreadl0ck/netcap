@@ -34,11 +34,13 @@ var icmpv6RouterSolicitationDecoder = newGoPacketDecoder(
 					Type: int32(o.Type),
 				})
 			}
+
 			return &types.ICMPv6NeighborSolicitation{
 				Timestamp: timestamp,
 				Options:   opts,
 			}
 		}
+
 		return nil
 	},
 )

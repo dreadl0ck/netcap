@@ -36,6 +36,7 @@ var llcDecoder = newGoPacketDecoder(
 				Control:   int32(llc.Control),
 			}
 		}
+
 		return nil
 	},
 )

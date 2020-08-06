@@ -34,6 +34,7 @@ func Run() {
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "util")
+
 		return
 	}
 
@@ -52,6 +53,7 @@ func Run() {
 	// util to check if fields count matches for all generated rows
 	if *flagCheckFields {
 		checkFields()
+
 		return
 	}
 
@@ -72,6 +74,7 @@ func Run() {
 
 	if *flagInterfaces {
 		utils.ListAllNetworkInterfaces()
+
 		return
 	}
 

@@ -49,6 +49,7 @@ var linkLayerDiscoveryInfoDecoder = newGoPacketDecoder(
 					})
 				}
 			}
+
 			return &types.LinkLayerDiscoveryInfo{
 				Timestamp:       timestamp,
 				PortDescription: lldi.PortDescription,
@@ -93,6 +94,7 @@ var linkLayerDiscoveryInfoDecoder = newGoPacketDecoder(
 				Unknown: undecodedTlvs,
 			}
 		}
+
 		return nil
 	},
 )

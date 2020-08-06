@@ -35,6 +35,7 @@ var dot1QDecoder = newGoPacketDecoder(
 				Type:           int32(dot1q.Type),
 			}
 		}
+
 		return nil
 	},
 )

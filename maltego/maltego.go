@@ -113,12 +113,12 @@ type EntityObj struct {
 	AdditionalFields   [][]string
 }
 
-// Constructor for MaltegoEntityObj
+// Constructor for MaltegoEntityObj.
 func newEntityObj(eT string, eV string) *EntityObj {
 	return &EntityObj{entityType: eT, value: eV, weight: 100}
 }
 
-// Transform /*Next we handle the MalteoTransform class from Python*/
+// Transform /*Next we handle the MalteoTransform class from Python*/.
 type Transform struct {
 	entities   []*EntityObj
 	exceptions [][]string
@@ -174,7 +174,7 @@ func (m *Transform) throwExceptions() string {
 	return r
 }
 
-// 2. Setter and Getter functions for MaltegoEntityObjs
+// 2. Setter and Getter functions for MaltegoEntityObjs.
 func (m *EntityObj) setType(eT string) {
 	m.entityType = eT
 }
@@ -245,7 +245,6 @@ func (m *EntityObj) returnEntity() string {
 	}
 
 	if len(m.AdditionalFields) > 0 {
-
 		r += "<AdditionalFields>\n"
 		for _, e := range m.AdditionalFields {
 			fieldName_, displayName_, matchingRule_, value_ := e[0], e[1], e[2], e[3]
@@ -270,7 +269,7 @@ func (m *EntityObj) returnEntity() string {
 
 /* 3. MaltegoMsg Python class implementation */
 
-// Here we have the XML structs to map to
+// Here we have the XML structs to map to.
 type message struct {
 	XMLName xml.Name `xml:"MaltegoMessage"`
 	MTRM    transformRequestMessage
@@ -313,7 +312,7 @@ type limit struct {
 
 // End XML structs mapping
 
-// Code to parse Maltego XML Input
+// Code to parse Maltego XML Input.
 type msgObj struct {
 	Value             string
 	Weight            string
@@ -323,7 +322,7 @@ type msgObj struct {
 	TransformSettings map[string]string // Forgot to implement the XML for this
 }
 
-// Constructor for MaltegoMsg
+// Constructor for MaltegoMsg.
 func msg(MaltegoXML string) msgObj {
 	v := message{}
 	err := xml.Unmarshal([]byte(MaltegoXML), &v)
@@ -356,7 +355,7 @@ func (m *msgObj) getTransformSetting(t string) string {
 	return m.TransformSettings[t]
 }
 
-// LocalTransform /* 4. Handle local transform from stdin */
+// LocalTransform /* 4. Handle local transform from stdin */.
 type LocalTransform struct {
 	Value  string
 	Values map[string]string

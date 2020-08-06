@@ -20,7 +20,7 @@ import (
 
 // Copy copies each record read from src to sink sequentially until src.Next()
 // Note:
-// - returns io.EOF or another error occurs
+// - returns io.EOF or another error occurs.
 func Copy(sink Sink, src DataSource) error {
 	for {
 		record, err := src.Next()

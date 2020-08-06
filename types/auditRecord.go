@@ -28,7 +28,7 @@ import (
 var (
 	selection []int
 
-	// UTC allows to print timestamp in the utc format
+	// UTC allows to print timestamp in the utc format.
 	UTC bool
 
 	jsonMarshaler = &jsonpb.Marshaler{}
@@ -36,7 +36,7 @@ var (
 
 // AuditRecord is the interface for basic operations with NETCAP audit records
 // this includes dumping as CSV or JSON or prometheus metrics
-// and provides access to the timestamp of the audit record
+// and provides access to the timestamp of the audit record.
 type AuditRecord interface {
 
 	// CSVRecord returns CSV values
@@ -71,7 +71,7 @@ type AuditRecord interface {
 	SetPacketContext(ctx *PacketContext)
 }
 
-// selectFields returns an array with the indices of the desired fields for selection
+// selectFields returns an array with the indices of the desired fields for selection.
 func selectFields(all []string, selection string) (s []int) {
 	var (
 		fields = strings.Split(selection, ",")
@@ -97,7 +97,7 @@ func selectFields(all []string, selection string) (s []int) {
 	return s
 }
 
-// Select takes a proto.Message and sets the selection on the package level
+// Select takes a proto.Message and sets the selection on the package level.
 func Select(msg proto.Message, vals string) {
 	if vals != "" && vals != " " {
 		if p, ok := msg.(AuditRecord); ok {
@@ -109,7 +109,7 @@ func Select(msg proto.Message, vals string) {
 	}
 }
 
-// filter applies a selection if configured
+// filter applies a selection if configured.
 func filter(in []string) []string {
 	if len(selection) == 0 {
 		return in

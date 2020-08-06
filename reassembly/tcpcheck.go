@@ -23,7 +23,7 @@ type tcpStreamOptions struct {
 	receiveWindow uint
 }
 
-// TCPOptionCheck contains options for the two directions
+// TCPOptionCheck contains options for the two directions.
 type TCPOptionCheck struct {
 	options [2]tcpStreamOptions
 }
@@ -35,7 +35,7 @@ func (t *TCPOptionCheck) getOptions(dir TCPFlowDirection) *tcpStreamOptions {
 	return &t.options[1]
 }
 
-// NewTCPOptionCheck creates default options
+// NewTCPOptionCheck creates default options.
 func NewTCPOptionCheck() TCPOptionCheck {
 	return TCPOptionCheck{
 		options: [2]tcpStreamOptions{
@@ -52,7 +52,7 @@ func NewTCPOptionCheck() TCPOptionCheck {
 	}
 }
 
-// Accept checks whether the packet should be accepted by checking TCP options
+// Accept checks whether the packet should be accepted by checking TCP options.
 func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq Sequence) error {
 	options := t.getOptions(dir)
 	if tcp.SYN {
@@ -115,19 +115,19 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq S
 // Limitations:
 // - packet should be received in-order.
 // - no check on sequence number is performed
-// - no RST
+// - no RST.
 type TCPSimpleFSM struct {
 	state   int
 	dir     TCPFlowDirection
 	options TCPSimpleFSMOptions
 }
 
-// TCPSimpleFSMOptions holds options for TCPSimpleFSM
+// TCPSimpleFSMOptions holds options for TCPSimpleFSM.
 type TCPSimpleFSMOptions struct {
 	SupportMissingEstablishment bool // Allow missing SYN, SYN+ACK, ACK
 }
 
-// Internal values of state machine
+// Internal values of state machine.
 const (
 	TCPStateClosed      = 0
 	TCPStateSynSent     = 1
@@ -137,7 +137,7 @@ const (
 	TCPStateReset       = 5
 )
 
-// NewTCPSimpleFSM creates a new TCPSimpleFSM
+// NewTCPSimpleFSM creates a new TCPSimpleFSM.
 func NewTCPSimpleFSM(options TCPSimpleFSMOptions) *TCPSimpleFSM {
 	return &TCPSimpleFSM{
 		state:   TCPStateClosed,
@@ -163,7 +163,7 @@ func (t *TCPSimpleFSM) String() string {
 	return "?"
 }
 
-// CheckState returns false if tcp is invalid wrt current state or update the state machine's state
+// CheckState returns false if tcp is invalid wrt current state or update the state machine's state.
 func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 	if t.state == TCPStateClosed && t.options.SupportMissingEstablishment && !(tcp.SYN && !tcp.ACK) {
 		/* try to figure out state */
@@ -192,11 +192,13 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 	case TCPStateSynSent:
 		if tcp.RST {
 			t.state = TCPStateReset
+
 			return true
 		}
 
 		if tcp.SYN && tcp.ACK && dir == t.dir.Reverse() {
 			t.state = TCPStateEstablished
+
 			return true
 		}
 		if tcp.SYN && !tcp.ACK && dir == t.dir {
@@ -207,6 +209,7 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 	case TCPStateEstablished:
 		if tcp.RST {
 			t.state = TCPStateReset
+
 			return true
 		}
 
@@ -221,11 +224,13 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 	case TCPStateCloseWait:
 		if tcp.RST {
 			t.state = TCPStateReset
+
 			return true
 		}
 
 		if tcp.FIN && tcp.ACK && dir == t.dir.Reverse() {
 			t.state = TCPStateLastAck
+
 			return true
 		}
 		if tcp.ACK {
@@ -234,11 +239,13 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 	case TCPStateLastAck:
 		if tcp.RST {
 			t.state = TCPStateReset
+
 			return true
 		}
 
 		if tcp.ACK && t.dir == dir {
 			t.state = TCPStateClosed
+
 			return true
 		}
 	}

@@ -32,6 +32,7 @@ func Run() {
 
 	if *flagGenerateConfig {
 		netcap.GenerateConfig(fs, "label")
+
 		return
 	}
 

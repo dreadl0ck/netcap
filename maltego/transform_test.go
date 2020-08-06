@@ -137,7 +137,7 @@ maltego.graph.version=1.2`)
 
 // generate all transforms and pack as archive
 func TestGenerateFullMaltegoConfiguration(t *testing.T) {
-	if !generateMaltegoConfig {
+	if true {
 		return
 	}
 
@@ -174,7 +174,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 // generate all transforms and pack as archive
 func TestGenerateAllTransforms(t *testing.T) {
-	if !generateMaltegoConfig {
+	if true {
 		return
 	}
 
@@ -315,7 +315,7 @@ func genTransformSet(outDir string) {
 }
 
 func TestGenerateTransformServerListing(t *testing.T) {
-	if !generateMaltegoConfig {
+	if true {
 		return
 	}
 
@@ -377,7 +377,7 @@ func TestGenerateTransformServerListing(t *testing.T) {
 }
 
 func TestGenerateTransformSettings(t *testing.T) {
-	if !generateMaltegoConfig {
+	if true {
 		return
 	}
 
@@ -436,7 +436,7 @@ func TestGenerateTransformSettings(t *testing.T) {
 }
 
 func TestGenerateTransform(t *testing.T) {
-	if !generateMaltegoConfig {
+	if true {
 		return
 	}
 

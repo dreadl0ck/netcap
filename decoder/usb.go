@@ -31,6 +31,7 @@ var usbDecoder = newGoPacketDecoder(
 			if c.IncludePayloads {
 				payload = layer.LayerPayload()
 			}
+
 			return &types.USB{
 				Timestamp:              timestamp,
 				ID:                     usb.ID,
@@ -54,6 +55,7 @@ var usbDecoder = newGoPacketDecoder(
 				Payload:                payload,
 			}
 		}
+
 		return nil
 	},
 )

@@ -51,11 +51,11 @@ var (
 )
 
 type (
-	// customDecoderHandler takes a gopacket.Packet and returns a proto.Message
+	// customDecoderHandler takes a gopacket.Packet and returns a proto.Message.
 	customDecoderHandler = func(p gopacket.Packet) proto.Message
 
 	// customDecoder implements custom logic to decode data from a gopacket.Packet
-	// this structure has an optimized field order to avoid excessive padding
+	// this structure has an optimized field order to avoid excessive padding.
 	customDecoder struct {
 
 		// public fields
@@ -76,7 +76,7 @@ type (
 	}
 
 	// CustomDecoderAPI describes an interface that all custom encoder need to implement
-	// this will allow to supply a custom structure and maintain state for advanced protocol analysis
+	// this will allow to supply a custom structure and maintain state for advanced protocol analysis.
 	CustomDecoderAPI interface {
 		Decode(p gopacket.Packet) error
 		PostInit() error
@@ -121,7 +121,7 @@ func (cd *customDecoder) GetDescription() string {
 	return cd.Description
 }
 
-// package level init
+// package level init.
 func init() {
 	// collect all names for custom decoders on startup
 	for _, d := range defaultCustomDecoders {
@@ -133,7 +133,7 @@ func init() {
 	}
 }
 
-// InitCustomDecoders initializes all custom decoders
+// InitCustomDecoders initializes all custom decoders.
 func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 	var (
 		// values from command-line flags
@@ -183,6 +183,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 				if name == e.GetName() {
 					// remove encoder
 					defaultCustomDecoders = append(defaultCustomDecoders[:i], defaultCustomDecoders[i+1:]...)
+
 					break
 				}
 			}
@@ -232,7 +233,7 @@ func isCustomDecoderLoaded(name string) bool {
 	return false
 }
 
-// newCustomDecoder returns a new customDecoder instance
+// newCustomDecoder returns a new customDecoder instance.
 func newCustomDecoder(t types.Type, name string, description string, postinit func(*customDecoder) error, handler customDecoderHandler, deinit func(*customDecoder) error) *customDecoder {
 	return &customDecoder{
 		Name:        name,
@@ -246,7 +247,7 @@ func newCustomDecoder(t types.Type, name string, description string, postinit fu
 
 // Decode is called for each layer
 // this calls the handler function of the encoder
-// and writes the serialized protobuf into the data pipe
+// and writes the serialized protobuf into the data pipe.
 func (cd *customDecoder) Decode(p gopacket.Packet) error {
 	// call the Handler function of the encoder
 	record := cd.Handler(p)
@@ -283,7 +284,7 @@ func (cd *customDecoder) Decode(p gopacket.Packet) error {
 	return nil
 }
 
-// Destroy closes and flushes all writers and calls deinit if set
+// Destroy closes and flushes all writers and calls deinit if set.
 func (cd *customDecoder) Destroy() (name string, size int64) {
 	err := cd.DeInit()
 	if err != nil {
@@ -293,12 +294,12 @@ func (cd *customDecoder) Destroy() (name string, size int64) {
 	return cd.writer.Close()
 }
 
-// GetChan returns a channel to receive serialized protobuf data from the encoder
+// GetChan returns a channel to receive serialized protobuf data from the encoder.
 func (cd *customDecoder) GetChan() <-chan []byte {
 	return cd.writer.GetChan()
 }
 
-// NumRecords returns the number of written records
+// NumRecords returns the number of written records.
 func (cd *customDecoder) NumRecords() int64 {
 	return atomic.LoadInt64(&cd.numRecords)
 }

@@ -58,6 +58,7 @@ func lookupDHCPFingerprint() {
 					log.Println("update addr mapping", dhcp.ClientHWAddr, dhcp.YourClientIP)
 					addrMapping[dhcp.ClientHWAddr] = dhcp.YourClientIP
 				}
+
 				return
 			}
 
@@ -66,9 +67,7 @@ func lookupDHCPFingerprint() {
 				fp = lt.Values["fp"]
 				log.Println("searching for mac", mac, "fp", fp)
 			}
-			if dhcp.ClientHWAddr == mac && dhcp.Fingerprint == fp {
-
-				// deep copy
+			if dhcp.ClientHWAddr == mac && dhcp.Fingerprint == fp { // deep copy
 				messageToFingerprint = &types.DHCPv4{
 					Timestamp:    dhcp.Timestamp,
 					Operation:    dhcp.Operation,
@@ -95,14 +94,13 @@ func lookupDHCPFingerprint() {
 		true,
 	)
 
-	if messageToFingerprint != nil {
-
-		// search vendor class
+	if messageToFingerprint != nil { // search vendor class
 		var vendor string
 		for _, o := range messageToFingerprint.Options {
 			if utils.IsASCII(o.Data) && len(o.Data) > 1 {
 				if o.Type == 60 {
 					vendor = string(o.Data)
+
 					break
 				}
 			}

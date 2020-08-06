@@ -220,7 +220,7 @@ func genEntity(outDir string, entName string, imgName string, description string
 }
 
 // copyFile the source file contents to destination
-// file attributes wont be copied and an existing file will be overwritten
+// file attributes wont be copied and an existing file will be overwritten.
 func copyFile(src, dst string) {
 	in, err := os.Open(src)
 	if err != nil {
@@ -260,7 +260,7 @@ func copyFile(src, dst string) {
 // │       ├── sim_card_alert32.png
 // │       ├── sim_card_alert48.png
 // │       └── sim_card_alert96.png
-// └── version.properties
+// └── version.properties.
 func genEntityArchive() {
 	// clean
 	os.RemoveAll("entities")
@@ -330,7 +330,6 @@ func addFiles(wr *zip.Writer, basePath, baseInZip string) {
 	}
 
 	for _, file := range files {
-
 		path := filepath.Join(basePath, file.Name())
 		fmt.Println(path)
 

@@ -12,12 +12,12 @@ import (
 	"unicode"
 )
 
-// can be used to set the debug mode for all generated maltego transforms
+// can be used to set the debug mode for all generated maltego transforms.
 const transformDebug = false
 
 // Transforms
 
-// XMLTransform <MaltegoTransform name="netcap.ToAuditRecords" displayName="To Audit Records [NETCAP]" abstract="false" template="false" visibility="public" description="Transform PCAP file into audit records" author="Philipp Mieden" requireDisplayInfo="false">
+// XMLTransform <MaltegoTransform name="netcap.ToAuditRecords" displayName="To Audit Records [NETCAP]" abstract="false" template="false" visibility="public" description="Transform PCAP file into audit records" author="Philipp Mieden" requireDisplayInfo="false">.
 type XMLTransform struct {
 	XMLName            xml.Name `xml:"MaltegoTransform"`
 	Name               string   `xml:"name,attr"`
@@ -179,7 +179,7 @@ type transformSet struct {
 	} `xml:"Transforms"`
 }
 
-// e.g. "ToAuditRecords" -> "To Audit Records [NETCAP]"
+// e.g. "ToAuditRecords" -> "To Audit Records [NETCAP]".
 func toTransformDisplayName(in string) string {
 	var b strings.Builder
 
@@ -198,6 +198,7 @@ func toTransformDisplayName(in string) string {
 			// or the string ends
 			if len(in) > i+2 && unicode.IsUpper(rune(in[i+2])) || len(in) == i+2 {
 				b.WriteRune(c)
+
 				continue
 			}
 
@@ -439,7 +440,7 @@ func genTransform(outDir string, name string, description string, inputEntity st
 // │       ├── netcap.ToAuditRecords.transformsettings
 // │       ├── ...
 // │       └── ...
-// └── version.properties
+// └── version.properties.
 func genTransformArchive() {
 	// clean
 	os.RemoveAll("transforms")

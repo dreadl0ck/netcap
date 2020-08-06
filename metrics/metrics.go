@@ -30,10 +30,10 @@ import (
 const metricsRoute = "/metrics"
 
 var (
-	// Start time
+	// Start time.
 	startTime = time.Now()
 
-	// Uptime
+	// Uptime.
 	upTime = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "nc_uptime",
@@ -41,7 +41,7 @@ var (
 		},
 		[]string{},
 	)
-	// NumPackets
+	// NumPackets.
 	numPackets = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "nc_numpackets",
@@ -56,7 +56,7 @@ func init() {
 	prometheus.MustRegister(numPackets)
 }
 
-// ServeMetricsAt exposes the prometheus at the given address
+// ServeMetricsAt exposes the prometheus at the given address.
 func ServeMetricsAt(addr string, c *collector.Collector) {
 	fmt.Println("starting to serve metrics at:", addr+metricsRoute)
 

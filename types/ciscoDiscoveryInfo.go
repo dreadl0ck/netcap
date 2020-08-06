@@ -292,7 +292,7 @@ func (a *CiscoDiscoveryInfo) Inc() {
 
 func (a *CiscoDiscoveryInfo) SetPacketContext(*PacketContext) {}
 
-// Src TODO
+// Src TODO.
 func (a *CiscoDiscoveryInfo) Src() string {
 	return ""
 }

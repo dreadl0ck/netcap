@@ -10,7 +10,6 @@ func toParameterValues() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr {
-
 				param := lt.Values["properties.httpparameter"]
 				for key, val := range http.Parameters {
 					if key == param {

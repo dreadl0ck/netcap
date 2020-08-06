@@ -53,24 +53,24 @@ Network Protocol Analysis Framework               00 |
 created by Philipp Mieden, 2018                   00/
 ` + Version
 
-// PrintLogo prints the netcap logo
+// PrintLogo prints the netcap logo.
 func PrintLogo() {
 	utils.ClearScreen()
 	fmt.Println(logo)
 }
 
-// FPrintLogo PrintLogo prints the netcap logo
+// FPrintLogo PrintLogo prints the netcap logo.
 func FPrintLogo(w io.Writer) {
 	fmt.Fprintln(w, logo)
 }
 
-// PrintBuildInfo displays build information related to netcap to stdout
+// PrintBuildInfo displays build information related to netcap to stdout.
 func PrintBuildInfo() {
 	FPrintLogo(os.Stdout)
 	FPrintBuildInfo(os.Stdout)
 }
 
-// FPrintBuildInfo PrintBuildInfo displays build information related to netcap to the specified io Writer
+// FPrintBuildInfo PrintBuildInfo displays build information related to netcap to the specified io Writer.
 func FPrintBuildInfo(w io.Writer) {
 	fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
 	fmt.Fprintln(w, "> NETCAP build commit:", commit)
@@ -88,7 +88,7 @@ func FPrintBuildInfo(w io.Writer) {
 }
 
 // DumpConfig contains all possible settings for dumping an audit records
-// this structure has an optimized field order to avoid excessive padding
+// this structure has an optimized field order to avoid excessive padding.
 type DumpConfig struct {
 	Path          string
 	Separator     string
@@ -105,7 +105,7 @@ type DumpConfig struct {
 }
 
 // Dump reads the specified netcap file
-// and dumps the output according to the configuration to the specified *io.File
+// and dumps the output according to the configuration to the specified *io.File.
 func Dump(w *os.File, c DumpConfig) error {
 	var (
 		isTTY  = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
@@ -136,7 +136,6 @@ func Dump(w *os.File, c DumpConfig) error {
 	types.UTC = c.UTC
 
 	if !c.Structured && !c.Table && !c.JSON {
-
 		if p, ok := record.(types.AuditRecord); ok {
 			w.WriteString(strings.Join(p.CSVHeader(), c.Separator))
 		} else {
@@ -225,7 +224,7 @@ func Dump(w *os.File, c DumpConfig) error {
 }
 
 // CloseFile closes the netcap file handle
-// and removes files that do only contain a header but no audit records
+// and removes files that do only contain a header but no audit records.
 func CloseFile(outDir string, file *os.File, typ string) (name string, size int64) {
 	i, err := file.Stat()
 	if err != nil {
@@ -244,7 +243,7 @@ func CloseFile(outDir string, file *os.File, typ string) (name string, size int6
 	return i.Name(), RemoveAuditRecordFileIfEmpty(filepath.Join(outDir, i.Name()))
 }
 
-// CreateFile is a wrapper to create new audit record file
+// CreateFile is a wrapper to create new audit record file.
 func CreateFile(name, ext string) *os.File {
 	f, err := os.Create(name + ext)
 	if err != nil {
@@ -253,7 +252,7 @@ func CreateFile(name, ext string) *os.File {
 	return f
 }
 
-// RemoveAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records
+// RemoveAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.
 func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 	if strings.HasSuffix(name, ".csv") || strings.HasSuffix(name, ".csv.gz") {
 		f, err := os.Open(name)
@@ -312,9 +311,7 @@ func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 	// Check if audit record file contains records
 	// Open, read header and the first audit record and return
 	r, err := Open(name, DefaultBufferSize)
-	if err != nil {
-
-		// TODO: cleanup
+	if err != nil { // TODO: cleanup
 		// suppress errors for OSPF because the file handle will be closed twice
 		// since both v2 and v3 have the same gopacket.LayerType == "OSPF"
 		if !strings.HasPrefix(name, "OSPF") {
@@ -355,7 +352,7 @@ func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
 	return s.Size()
 }
 
-// NewHeader creates and returns a new netcap audit file header
+// NewHeader creates and returns a new netcap audit file header.
 func NewHeader(t types.Type, source, version string, includesPayloads bool) *types.Header {
 	// init header
 	header := new(types.Header)
@@ -424,7 +421,6 @@ func colorizeProto(in string, colorMap map[string]string) string {
 	}
 
 	for i, line := range strings.Split(in, "\n") {
-
 		if len(line) == 0 {
 			continue
 		}

@@ -106,6 +106,7 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 		// ensure no alerts with empty name are collected
 		if custom.Name == "" || custom.Name == " " {
 			fmt.Println("skipping entry with empty name", custom)
+
 			continue
 		}
 
@@ -133,7 +134,7 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 	return
 }
 
-// CustomLabels uses info from a csv file to label the data
+// CustomLabels uses info from a csv file to label the data.
 func CustomLabels(pathMappingInfo, outputPath, separator, selection string) error {
 	var (
 		start     = time.Now()
@@ -220,7 +221,7 @@ func CustomLabels(pathMappingInfo, outputPath, separator, selection string) erro
 }
 
 // CustomMap uses info from a csv file to label the data
-// func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {.
 func CustomMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
@@ -310,6 +311,7 @@ func CustomMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 				if numMatches != 2 {
 					// label as normal
 					gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + "normal\n"))
+
 					continue
 				}
 

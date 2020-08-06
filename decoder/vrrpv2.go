@@ -31,6 +31,7 @@ var vrrpv2Decoder = newGoPacketDecoder(
 			for _, a := range vrrpv2.IPAddress {
 				addr = append(addr, a.String())
 			}
+
 			return &types.VRRPv2{
 				Timestamp:    timestamp,
 				Version:      int32(vrrpv2.Version),
@@ -44,6 +45,7 @@ var vrrpv2Decoder = newGoPacketDecoder(
 				IPAddress:    addr,
 			}
 		}
+
 		return nil
 	},
 )

@@ -45,7 +45,7 @@ func (a *atomicPcapGoWriter) writePacket(ci gopacket.CaptureInfo, data []byte) e
 	return err
 }
 
-// newAtomicPcapGoWriter takes a pcapgo.Writer and returns an atomic version
+// newAtomicPcapGoWriter takes a pcapgo.Writer and returns an atomic version.
 func newAtomicPcapGoWriter(w *pcapgo.Writer) *atomicPcapGoWriter {
 	return &atomicPcapGoWriter{
 		w: *w,

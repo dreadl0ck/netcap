@@ -40,6 +40,7 @@ var arpDecoder = newGoPacketDecoder(
 				DstProtAddress:  arp.DstProtAddress,
 			}
 		}
+
 		return nil
 	},
 )

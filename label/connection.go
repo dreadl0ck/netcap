@@ -138,6 +138,7 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 								finalLabel += " | " + a.Classification
 							}
 						}
+
 						continue
 					}
 
@@ -153,6 +154,7 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 				// add final label
 				f.WriteString(strings.Join(conn.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
+
 				goto read
 			}
 

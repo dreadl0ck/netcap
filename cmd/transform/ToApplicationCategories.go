@@ -15,7 +15,6 @@ func toApplicationCategories() {
 
 				for _, ip := range profile.Contacts {
 					if ip.Addr == ipaddr {
-
 						for _, proto := range ip.Protocols {
 							if proto.Category != "" {
 								ent := trx.AddEntity("maltego.Service", proto.Category)
@@ -33,7 +32,6 @@ func toApplicationCategories() {
 				}
 				for _, ip := range profile.DeviceIPs {
 					if ip.Addr == ipaddr {
-
 						for _, proto := range ip.Protocols {
 							if proto.Category != "" {
 								ent := trx.AddEntity("maltego.Service", proto.Category)

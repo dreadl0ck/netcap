@@ -45,6 +45,7 @@ var igmpDecoder = newGoPacketDecoder(
 					SourceAddresses:  srca,
 				})
 			}
+
 			return &types.IGMP{
 				Timestamp:               timestamp,
 				Type:                    int32(igmp.Type),
@@ -61,6 +62,7 @@ var igmpDecoder = newGoPacketDecoder(
 				Version:                 int32(igmp.Version),
 			}
 		}
+
 		return nil
 	},
 )

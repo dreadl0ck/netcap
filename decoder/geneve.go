@@ -39,6 +39,7 @@ var geneveDecoder = newGoPacketDecoder(
 					})
 				}
 			}
+
 			return &types.Geneve{
 				Timestamp:      timestamp,
 				Version:        int32(geneve.Version),
@@ -50,6 +51,7 @@ var geneveDecoder = newGoPacketDecoder(
 				Options:        opts,
 			}
 		}
+
 		return nil
 	},
 )

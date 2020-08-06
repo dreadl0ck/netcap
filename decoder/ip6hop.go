@@ -29,13 +29,12 @@ var ipv6HopByHopDecoder = newGoPacketDecoder(
 		if ip6hop, ok := layer.(*layers.IPv6HopByHop); ok {
 			var options []*types.IPv6HopByHopOption
 			for _, o := range ip6hop.Options {
-				var a *types.IPv6HopByHopOptionAlignment
-				if len(o.OptionAlignment) == 2 {
-					a = &types.IPv6HopByHopOptionAlignment{
-						One: int32(o.OptionAlignment[0]),
-						Two: int32(o.OptionAlignment[1]),
-					}
+
+				a := &types.IPv6HopByHopOptionAlignment{
+					One: int32(o.OptionAlignment[0]),
+					Two: int32(o.OptionAlignment[1]),
 				}
+
 				options = append(options, &types.IPv6HopByHopOption{
 					OptionType:      int32(o.OptionType),
 					OptionLength:    int32(o.OptionLength),
@@ -44,11 +43,13 @@ var ipv6HopByHopDecoder = newGoPacketDecoder(
 					OptionAlignment: a,
 				})
 			}
+
 			return &types.IPv6HopByHop{
 				Timestamp: timestamp,
 				Options:   options,
 			}
 		}
+
 		return nil
 	},
 )

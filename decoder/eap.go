@@ -36,6 +36,7 @@ var eapDecoder = newGoPacketDecoder(
 				TypeData:  eap.TypeData,
 			}
 		}
+
 		return nil
 	},
 )

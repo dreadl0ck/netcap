@@ -50,7 +50,7 @@ func (p *StreamPool) grow() {
 	p.nextAlloc *= 2
 }
 
-// Dump logs all connections
+// Dump logs all connections.
 func (p *StreamPool) Dump() {
 	p.mu.Lock()
 	defer p.mu.Unlock()

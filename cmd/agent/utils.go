@@ -27,7 +27,7 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use
+// usage prints the use.
 func printUsage() {
 	printHeader()
 	fs.PrintDefaults()

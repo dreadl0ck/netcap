@@ -30,9 +30,9 @@ import (
 )
 
 var (
-	// UseProgressBars whether to use the progress bar
+	// UseProgressBars whether to use the progress bar.
 	UseProgressBars = false
-	// ClassificationMap map of classifications
+	// ClassificationMap map of classifications.
 	ClassificationMap = make(map[string]int)
 	excluded          = make(map[string]bool)
 
@@ -87,7 +87,7 @@ func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, o
 		log.Fatal("failed to close", outFileName, ", error:", err)
 	}
 
-	if removeFilesWithoutMatches {
+	if false {
 		// remove file that did not have any matching labels
 		if labelsTotal == 0 {
 			if err := os.Remove(outFileName); err != nil {

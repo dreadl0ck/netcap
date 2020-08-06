@@ -104,9 +104,7 @@ func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 						(http.DstIP == a.SrcIP || http.DstIP == a.DstIP)) &&
 
 						// AND either source or dest port of alert must be port 80
-						(a.SrcPort == 80 || a.DstPort == 80) {
-
-					// fmt.Println("DEBUG: http label match, http TS", http.Timestamp, "alert TS", a.Timestamp)
+						(a.SrcPort == 80 || a.DstPort == 80) { // fmt.Println("DEBUG: http label match, http TS", http.Timestamp, "alert TS", a.Timestamp)
 
 					if CollectLabels {
 						// only if it is not already part of the label
@@ -117,6 +115,7 @@ func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 								finalLabel += " | " + a.Classification
 							}
 						}
+
 						continue
 					}
 
@@ -132,6 +131,7 @@ func HTTP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, sepa
 				// add final label
 				f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
+
 				goto read
 			}
 

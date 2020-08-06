@@ -28,7 +28,7 @@ func Flags() (flags []string) {
 	return
 }
 
-// flags
+// flags.
 var (
 	fs                      = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagGenerateConfig      = fs.Bool("gen-config", false, "generate config")

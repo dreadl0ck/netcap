@@ -45,6 +45,7 @@ var ntpDecoder = newGoPacketDecoder(
 				ExtensionBytes:     ntp.ExtensionBytes,
 			}
 		}
+
 		return nil
 	},
 )

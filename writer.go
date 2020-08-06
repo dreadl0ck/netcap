@@ -82,7 +82,6 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 		}
 
 		if buffer {
-
 			w.bWriter = bufio.NewWriterSize(w.file, memBufferSize)
 
 			if compress {

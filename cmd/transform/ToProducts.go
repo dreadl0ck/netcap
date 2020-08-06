@@ -25,6 +25,7 @@ func toProducts() {
 			for i, f := range soft.Flows {
 				if i == 3 {
 					val += "\n..."
+
 					break
 				}
 				val += "\n" + f

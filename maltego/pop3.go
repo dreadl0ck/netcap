@@ -28,13 +28,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// POP3CountFunc is a function that counts something over multiple POP3 audit records
+// POP3CountFunc is a function that counts something over multiple POP3 audit records.
 type POP3CountFunc func()
 
-// POP3TransformationFunc is a transformation over POP3 audit records
+// POP3TransformationFunc is a transformation over POP3 audit records.
 type POP3TransformationFunc = func(lt LocalTransform, trx *Transform, pop3 *types.POP3, min, max uint64, profilesFile string, ip string)
 
-// POP3Transform applies a maltego transformation over POP3 audit records
+// POP3Transform applies a maltego transformation over POP3 audit records.
 func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
@@ -88,7 +88,6 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(pop3)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

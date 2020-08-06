@@ -171,7 +171,6 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 	}
 
 	for _, f := range files {
-
 		if !strings.HasSuffix(f.Name(), ".ncap.gz") {
 			continue
 		}
@@ -187,6 +186,7 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 		//}
 		if f.IsDir() {
 			utils.DebugLog.Println("not a file: ", err)
+
 			continue
 		}
 

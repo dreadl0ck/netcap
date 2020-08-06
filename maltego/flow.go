@@ -30,11 +30,11 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// FlowCountFunc is a function that counts something over multiple Flow audit records
+// FlowCountFunc is a function that counts something over multiple Flow audit records.
 type FlowCountFunc = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int)
 
 // CountIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
-// seen for all incoming flows for a given ip address
+// seen for all incoming flows for a given ip address.
 var countIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
 
@@ -51,7 +51,7 @@ var countIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uin
 
 // CountIncomingFlowBytesFiltered CountIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all incoming flows for a given ip address
-// filtered against the domain whitelist
+// filtered against the domain whitelist.
 var CountIncomingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
 		name := resolvers.LookupDNSNameLocal(flow.SrcIP)
@@ -81,7 +81,7 @@ var CountIncomingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, 
 }
 
 // CountIncomingFlowPackets returns the lowest and highest number of packets as well as an array of sizes
-// seen for all incoming flows for a given ip address
+// seen for all incoming flows for a given ip address.
 var CountIncomingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
 
@@ -98,7 +98,7 @@ var CountIncomingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *u
 
 // CountOutgoingFlowBytesFiltered returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all outgoing flows from a given ip address
-// filtered against the domain whitelist
+// filtered against the domain whitelist.
 var countOutgoingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.SrcIP == ipaddr {
 
@@ -115,7 +115,7 @@ var countOutgoingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uin
 
 // CountOutgoingFlowBytesFiltered returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all outgoing flows from a given ip address
-// filtered against the domain whitelist
+// filtered against the domain whitelist.
 var CountOutgoingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.SrcIP == ipaddr {
 		name := resolvers.LookupDNSNameLocal(flow.DstIP)
@@ -145,7 +145,7 @@ var CountOutgoingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, 
 }
 
 // CountPacketsDevices returns the lowest and highest number of packets as well as an array of sizes
-// seen for all outgoing flows from a given ip address
+// seen for all outgoing flows from a given ip address.
 var countOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.SrcIP == ipaddr {
 
@@ -160,10 +160,10 @@ var countOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *u
 	}
 }
 
-// FlowTransformationFunc is a transformation over Flow audit records
+// FlowTransformationFunc is a transformation over Flow audit records.
 type FlowTransformationFunc = func(lt LocalTransform, trx *Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ip string, sizes *[]int)
 
-// FlowTransform applies a maltego transformation over Flow audit records
+// FlowTransform applies a maltego transformation over Flow audit records.
 func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
@@ -222,7 +222,6 @@ func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(flow)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

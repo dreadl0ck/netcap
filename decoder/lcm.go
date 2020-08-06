@@ -39,6 +39,7 @@ var lcmDecoder = newGoPacketDecoder(
 				Fragmented:     lcm.Fragmented,
 			}
 		}
+
 		return nil
 	},
 )

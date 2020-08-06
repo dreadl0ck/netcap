@@ -31,7 +31,7 @@ func init() {
 	}
 }
 
-// Init can be used to initialize the resolvers package according to the provided configuration
+// Init can be used to initialize the resolvers package according to the provided configuration.
 func Init(c Config, quietMode bool) {
 	quiet = quietMode
 	CurrentConfig = c

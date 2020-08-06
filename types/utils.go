@@ -41,7 +41,7 @@ type stringable interface {
 // 	return ""
 // }
 
-// this function wraps the ToString() function call with a nil pointer check
+// this function wraps the ToString() function call with a nil pointer check.
 func toString(c stringable) string {
 	// make sure its not a nil pointer
 	// a simple nil check is apparently not enough here

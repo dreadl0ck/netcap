@@ -28,13 +28,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// DHCPCountFunc is a function that counts something over multiple DHCP audit records
+// DHCPCountFunc is a function that counts something over multiple DHCP audit records.
 type DHCPCountFunc func()
 
-// DHCPTransformationFunc is a transformation over DHCP audit records
+// DHCPTransformationFunc is a transformation over DHCP audit records.
 type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ip string)
 
-// DHCPTransform applies a maltego transformation over DHCP audit records
+// DHCPTransform applies a maltego transformation over DHCP audit records.
 func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, continueTransform bool) {
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
@@ -87,7 +87,6 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	)
 
 	if count != nil {
-
 		for {
 			err = r.Next(dhcp)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

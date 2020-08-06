@@ -83,7 +83,7 @@ func (a *ARP) Src() string {
 	return ""
 }
 
-// Dst TODO: preserve source and destination mac adresses for ARP and return them here
+// Dst TODO: preserve source and destination mac adresses for ARP and return them here.
 func (a *ARP) Dst() string {
 	return ""
 }

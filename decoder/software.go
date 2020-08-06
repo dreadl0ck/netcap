@@ -54,7 +54,7 @@ type software struct {
 	sync.Mutex
 }
 
-// atomicDeviceProfileMap contains all connections and provides synchronized access
+// atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicSoftwareMap struct {
 	// mapped product + version to software
 	Items map[string]*software
@@ -69,13 +69,13 @@ var (
 	jaCacheMutex     sync.Mutex
 	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
 	hasshMap         = make(map[string][]SSHSoftware)
-	// Used to store CMS related information, and to do the CMS lookup
+	// Used to store CMS related information, and to do the CMS lookup.
 	cmsDB                = make(map[string]interface{})
 	vulnerabilitiesIndex bleve.Index
 	exploitsIndex        bleve.Index
 )
 
-// Size returns the number of elements in the Items map
+// Size returns the number of elements in the Items map.
 func (a *atomicSoftwareMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
@@ -83,7 +83,7 @@ func (a *atomicSoftwareMap) Size() int {
 }
 
 var (
-	// softwareStore hold all connections
+	// softwareStore hold all connections.
 	softwareStore = &atomicSoftwareMap{
 		Items: make(map[string]*software),
 	}
@@ -135,7 +135,7 @@ type SSHHash struct {
 	Software []SSHSoftware `json:"softwares"` // dont remove this typo, or the hasshdb.json cannot be read!
 }
 
-// process a raw user agent string and returned a structured instance
+// process a raw user agent string and returned a structured instance.
 func parseUserAgent(ua string) *userAgent {
 	var (
 		client                         = parser.Parse(ua)
@@ -199,7 +199,7 @@ func parseUserAgent(ua string) *userAgent {
 	}
 }
 
-// generic version harvester, scans the payload using a regular expression
+// generic version harvester, scans the payload using a regular expression.
 func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (s []*software) {
 	matches := reGenericVersion.FindAll(data, -1)
 
@@ -229,7 +229,7 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 }
 
 // tries to determine the kind of software and version
-// based on the provided input data
+// based on the provided input data.
 func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (s []*software) {
 	var (
 		service string
@@ -301,7 +301,7 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 	return s
 }
 
-// TODO: pass in the device profile
+// TODO: pass in the device profile.
 func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
@@ -410,7 +410,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 
 // analyzeSoftware tries to identify software based on observations from the data
 // this function first gathers as much data as possible and then calls into whatSoftware
-// to determine what software the packet belongs to
+// to determine what software the packet belongs to.
 func analyzeSoftware(i *packetInfo) {
 	var (
 		serviceNameSrc, serviceNameDst string
@@ -425,9 +425,7 @@ func analyzeSoftware(i *packetInfo) {
 	}
 
 	// Lookup Service For Port Numbers
-	if tl := i.p.TransportLayer(); tl != nil {
-
-		// set flow ident
+	if tl := i.p.TransportLayer(); tl != nil { // set flow ident
 		f = i.srcIP + ":" + tl.TransportFlow().Src().String() + "->" + i.dstIP + ":" + tl.TransportFlow().Dst().String()
 
 		// get source port and convert to integer
@@ -546,7 +544,7 @@ func writeSoftware(software []*software, update func(s *software)) {
 	}
 }
 
-// newSoftware creates a new device specific profile
+// newSoftware creates a new device specific profile.
 func newSoftware(i *packetInfo) *software {
 	return &software{
 		Software: &types.Software{
@@ -681,7 +679,7 @@ var softwareDecoder = newCustomDecoder(
 )
 
 // TODO: move into customDecoder and use in other places to remove unnecessary package level decoders
-// writeProfile writes the profile
+// writeProfile writes the profile.
 func (cd *customDecoder) write(r types.AuditRecord) {
 	if c.Export {
 		r.Inc()

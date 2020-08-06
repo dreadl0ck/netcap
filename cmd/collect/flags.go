@@ -41,5 +41,5 @@ var (
 
 	// not configurable at the moment
 	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")
-	// flagBuffer     = flag.Bool("buf", true, "buffer data before writing to disk")
+	// flagBuffer     = flag.Bool("buf", true, "buffer data before writing to disk").
 )

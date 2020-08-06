@@ -26,9 +26,7 @@ func toFilesForContentType() {
 					typ = parts[0]
 				}
 
-				if typ == ct {
-
-					// TODO: make a single file constructor and reuse it in toFiles!
+				if typ == ct { // TODO: make a single file constructor and reuse it in toFiles!
 					var (
 						ent *maltego.EntityObj
 						val = file.Name + "\n" + strconv.FormatInt(file.Length, 10) + " bytes"

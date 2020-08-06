@@ -27,7 +27,7 @@ func toCookieValues() {
 	)
 }
 
-// TODO: set timestamp as property
+// TODO: set timestamp as property.
 func addCookieValue(trx *maltego.Transform, c *types.HTTPCookie) {
 	trx.AddEntity("netcap.HTTPCookieValue", c.Value)
 }

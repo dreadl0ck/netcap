@@ -31,6 +31,7 @@ var ipv6Decoder = newGoPacketDecoder(
 			if c.CalculateEntropy {
 				e = entropy(ip6.Payload)
 			}
+
 			return &types.IPv6{
 				Timestamp:      timestamp,
 				Version:        int32(ip6.Version),
@@ -45,6 +46,7 @@ var ipv6Decoder = newGoPacketDecoder(
 				PayloadEntropy: e,
 			}
 		}
+
 		return nil
 	},
 )

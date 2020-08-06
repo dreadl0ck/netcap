@@ -31,14 +31,14 @@ import (
 const directoryPermission = 0o755
 
 // AuditRecordHandle wraps a file handle of a netcap audit record file
-// contains the original file handle and writers to compress and buffer the data
+// contains the original file handle and writers to compress and buffer the data.
 type AuditRecordHandle struct {
 	gWriter *gzip.Writer
 	bWriter *bufio.Writer
 	f       *os.File
 }
 
-// NewAuditRecordHandle creates a new netcap audit record file
+// NewAuditRecordHandle creates a new netcap audit record file.
 func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 	err := os.MkdirAll(b.ClientID, directoryPermission)
 	if err != nil {

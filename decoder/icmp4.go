@@ -35,6 +35,7 @@ var icmpv4Decoder = newGoPacketDecoder(
 				Seq:       int32(icmp4.Seq),
 			}
 		}
+
 		return nil
 	},
 )

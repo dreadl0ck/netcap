@@ -31,6 +31,7 @@ var fileDecoder = newCustomDecoder(
 	"A file that was transferred over the network",
 	func(d *customDecoder) error {
 		fileDecoderInstance = d
+
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
@@ -41,7 +42,7 @@ var fileDecoder = newCustomDecoder(
 	},
 )
 
-// writeProfile writes the profile
+// writeProfile writes the profile.
 func writeFile(f *types.File) {
 	if c.Export {
 		f.Inc()

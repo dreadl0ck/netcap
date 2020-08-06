@@ -10,7 +10,6 @@ func toSSHServers() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ssh *types.SSH, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if !ssh.IsClient {
-
 				val := ssh.HASSH + "\n" + ssh.Flow
 				if len(ssh.Ident) > 0 {
 					val += "\n" + ssh.Ident

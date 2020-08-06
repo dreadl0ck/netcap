@@ -10,7 +10,6 @@ func toHTTPContentTypes() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
 			if http.SrcIP == ipaddr || http.DstIP == ipaddr {
-
 				if http.ContentTypeDetected != "" {
 					// using ContentTypeDetected instead the one that was set on the HTTP request / response
 					ent := trx.AddEntity("netcap.ContentType", http.ContentTypeDetected)

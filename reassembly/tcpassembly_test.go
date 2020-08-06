@@ -76,7 +76,7 @@ func (t *testFactory) Reassembled(r []Reassembly) {
 	}
 }
 
-func (t *testFactory) ReassembledSG(sg ScatterGather, ac AssemblerContext) {
+func (t *testFactory) ReassembledSG(sg ScatterGather, _ AssemblerContext) {
 	_, start, end, skip := sg.Info()
 	l, _ := sg.Lengths()
 	t.reassembly = append(t.reassembly, Reassembly{
@@ -108,7 +108,7 @@ func (tf *testMemoryFactory) Accept(*layers.TCP, TCPFlowDirection, Sequence) boo
 	return true
 }
 
-func (tf *testMemoryFactory) ReassembledSG(sg ScatterGather, ac AssemblerContext) {
+func (tf *testMemoryFactory) ReassembledSG(sg ScatterGather, _ AssemblerContext) {
 	bytes, _ := sg.Lengths()
 	tf.bytes += bytes
 }
@@ -128,7 +128,7 @@ func test(t *testing.T, s []testSequence) {
 	a.MaxBufferedPagesPerConnection = 4
 	for i, test := range s {
 		fact.reassembly = []Reassembly{}
-		if testDebug {
+		if false {
 			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(test.in.BaseLayer.Payload))
 		}
 		a.Assemble(netFlow, &test.in)
@@ -151,7 +151,7 @@ func test(t *testing.T, s []testSequence) {
 		if !reflect.DeepEqual(fact.reassembly, final) {
 			t.Fatalf("test %v:\nwant: %v\n got: %v\n", i, final, fact.reassembly)
 		}
-		if testDebug {
+		if false {
 			fmt.Printf("test %v passing...(%v)\n", i, final)
 		}
 	}
@@ -736,7 +736,7 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 
 	for i, test := range s {
 		fact.reassembly = []Reassembly{}
-		if testDebug {
+		if false {
 			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(test.in.BaseLayer.Payload))
 		}
 
@@ -773,7 +773,7 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 			t.Errorf("test %v:\nwant: %v\n got: %v\n", i, final, fact.reassembly)
 		}
 
-		if testDebug {
+		if false {
 			fmt.Printf("test %v passing...(%v)\n", i, final)
 		}
 	}
@@ -987,7 +987,7 @@ func testKeep(t *testing.T, s []testKeepSequence) {
 		test.tcp.SetInternalPortsForTesting()
 		fact.keep = test.keep
 		fact.bytes = []byte{}
-		if testDebug {
+		if false {
 			fmt.Printf("#### testKeep: #%d: sending:%s\n", i, hex.EncodeToString(test.tcp.BaseLayer.Payload))
 		}
 		a.Assemble(flow, &test.tcp)
@@ -997,7 +997,7 @@ func testKeep(t *testing.T, s []testKeepSequence) {
 		if fact.skipped != test.skipped {
 			t.Fatalf("#%d: expecting %d skipped bytes, got %d", i, test.skipped, fact.skipped)
 		}
-		if testDebug {
+		if false {
 			fmt.Printf("#### testKeep: #%d: bytes: %s\n", i, hex.EncodeToString(fact.bytes))
 		}
 	}

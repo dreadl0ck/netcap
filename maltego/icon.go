@@ -93,7 +93,6 @@ func generateSizes(newBase string, newPath string) {
 	}
 
 	for _, size := range []uint{16, 24, 32, 48, 96} {
-
 		newImage := resize.Resize(size, size, img, resize.Lanczos3)
 		f, err := os.Create(newBase + strconv.Itoa(int(size)) + ".png")
 		if err != nil {
@@ -184,18 +183,21 @@ func generateAuditRecordIcon(text string) {
 		hinting  = "none"
 		size     = 33.0
 		spacing  = 1.0
-		wonb     = false
+		whiteOnBlack = false
 	)
 
 	// Read the font data.
 	fontBytes, err := ioutil.ReadFile(fontfile)
 	if err != nil {
 		log.Println(err)
+
 		return
 	}
+
 	f, err := freetype.ParseFont(fontBytes)
 	if err != nil {
 		log.Println(err)
+
 		return
 	}
 
@@ -204,7 +206,7 @@ func generateAuditRecordIcon(text string) {
 
 	// Initialize the context.
 	fg, bg := image.Black, image.Transparent
-	if wonb {
+	if whiteOnBlack {
 		fg, bg = image.White, image.Black
 	}
 	rgba := image.NewRGBA(image.Rect(0, 0, 96, 96))

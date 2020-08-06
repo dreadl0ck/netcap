@@ -67,7 +67,7 @@ type cookieForApps struct {
 	CookieValue string
 }
 
-// HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts
+// HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts.
 type HTTPMetaStore struct {
 
 	// mapped ip address to server names
@@ -90,7 +90,7 @@ type HTTPMetaStore struct {
 }
 
 // global store for selected http meta information
-// TODO: add a util to dump
+// TODO: add a util to dump.
 var httpStore = &HTTPMetaStore{
 	ServerNames: make(map[string]string),
 	UserAgents:  make(map[string]string),
@@ -179,9 +179,7 @@ func (h *httpReader) Decode() {
 	//}
 
 	// iterate over responses
-	for _, res := range h.responses {
-
-		// populate types.HTTP with all infos from response
+	for _, res := range h.responses { // populate types.HTTP with all infos from response
 		ht := newHTTPFromResponse(res.response)
 
 		_ = h.findRequest(res.response)
@@ -190,7 +188,6 @@ func (h *httpReader) Decode() {
 
 		// now add request information
 		if res.response.Request != nil {
-
 			if isCustomDecoderLoaded(credentialsDecoderName) {
 				h.searchForLoginParams(res.response.Request)
 				h.searchForBasicAuth(res.response.Request)
@@ -234,7 +231,7 @@ func (h *httpReader) Decode() {
 	}
 }
 
-// search request header field for HTTP basic auth
+// search request header field for HTTP basic auth.
 func (h *httpReader) searchForBasicAuth(req *http.Request) {
 	if u, p, ok := req.BasicAuth(); ok {
 		if u != "" || p != "" {
@@ -249,7 +246,7 @@ func (h *httpReader) searchForBasicAuth(req *http.Request) {
 	}
 }
 
-// search for user name and password in http url params and body params
+// search for user name and password in http url params and body params.
 func (h *httpReader) searchForLoginParams(req *http.Request) {
 	for name, values := range req.Form {
 		if name == "user" || name == "username" {
@@ -332,7 +329,6 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 
 	// If HTTP instructions are sent to set a cookie used by CMSs (of other apps), add the key and possible value to the httpStore
 	if toSet, ok := h.ResponseHeader["Set-Cookie"]; ok {
-
 		var (
 			parsedCookie = strings.Split(toSet, "=")
 			cookieKey    = parsedCookie[0]
@@ -456,7 +452,6 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 
 	// write responses to disk if configured
 	if (err == nil || c.WriteIncomplete) && c.FileStorage != "" {
-
 		h.parent.Lock()
 		var (
 			name         = "unknown"
@@ -468,9 +463,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 		h.parent.Unlock()
 
 		// check if there is a matching request for the current stream
-		if numRequests >= numResponses {
-
-			// fetch it
+		if numRequests >= numResponses { // fetch it
 			h.parent.Lock()
 			req := h.requests[numResponses-1]
 			h.parent.Unlock()
@@ -679,19 +672,17 @@ func trimEncoding(ctype string) string {
 	return ctype
 }
 
-// keep track which paths for content types of extracted files have already been created
+// keep track which paths for content types of extracted files have already been created.
 var (
 	contentTypeMap   = make(map[string]struct{})
 	contentTypeMapMu sync.Mutex
 )
 
 // createContentTypePathIfRequired will create the passed in filesystem path once
-// it is safe for concurrent access and will block until the path has been created on disk
+// it is safe for concurrent access and will block until the path has been created on disk.
 func createContentTypePathIfRequired(fsPath string) {
 	contentTypeMapMu.Lock()
-	if _, ok := contentTypeMap[fsPath]; !ok {
-
-		// the path has not been created yet
+	if _, ok := contentTypeMap[fsPath]; !ok { // the path has not been created yet
 		// add to map
 		contentTypeMap[fsPath] = struct{}{}
 
@@ -705,7 +696,7 @@ func createContentTypePathIfRequired(fsPath string) {
 	contentTypeMapMu.Unlock()
 }
 
-// TODO: write unit tests and cleanup
+// TODO: write unit tests and cleanup.
 func (h *httpReader) saveFile(source, name string, err error, body []byte, encoding []string, contentType string) error {
 	// prevent saving zero bytes
 	if len(body) == 0 {
@@ -841,7 +832,6 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 				fmt.Println("failed to rename file after decompression", err)
 			}
 		}
-
 	} else {
 		hash = hex.EncodeToString(cryptoutils.MD5Data(body))
 		length = len(body)

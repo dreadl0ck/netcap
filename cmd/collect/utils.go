@@ -31,7 +31,7 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use
+// usage prints the use.
 func printUsage() {
 	printHeader()
 	fs.PrintDefaults()
@@ -41,9 +41,7 @@ func cleanup() {
 	fmt.Println("cleanup")
 
 	// cleanup
-	for p, a := range files {
-
-		// flush and close gzip writer
+	for p, a := range files { // flush and close gzip writer
 		err := a.gWriter.Flush()
 		if err != nil {
 			panic(err)

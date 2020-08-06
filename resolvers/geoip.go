@@ -30,7 +30,7 @@ var (
 	logger       = logrus.New()
 )
 
-// GeoRecord is a simple Geolocation Record for fast lookups
+// GeoRecord is a simple Geolocation Record for fast lookups.
 type GeoRecord struct {
 	City struct {
 		Names map[string]string `maxminddb:"names"`
@@ -44,7 +44,7 @@ type GeoRecord struct {
 	}
 }
 
-// InitGeolocationDB opens handles to the geolocation databases
+// InitGeolocationDB opens handles to the geolocation databases.
 func InitGeolocationDB() {
 	if err := initCityReader(); err != nil {
 		logger.WithError(err).Error("failed to open city GeoDB")
@@ -63,6 +63,7 @@ func initCityReader() (err error) {
 
 func initAsnReader() (err error) {
 	asnReader, err = maxminddb.Open(filepath.Join(DataBaseSource, "GeoLite2-ASN.mmdb"))
+
 	return
 }
 
@@ -78,7 +79,7 @@ func (record GeoRecord) repr() (geoloc, asn string) {
 }
 
 // LookupGeolocation returns all associated geolocations for a given address and db handle
-// results are being cached in an atomic map to avoid unnecessary lookups
+// results are being cached in an atomic map to avoid unnecessary lookups.
 func LookupGeolocation(addr string) (string, string) {
 	if asnReader == nil || cityReader == nil {
 		return "", ""
@@ -90,6 +91,7 @@ func LookupGeolocation(addr string) (string, string) {
 	ip := net.ParseIP(addr)
 	if ip == nil {
 		logger.WithField("addr", addr).Error("invalid IP")
+
 		return "", ""
 	}
 
@@ -101,6 +103,7 @@ func LookupGeolocation(addr string) (string, string) {
 	err := cityReader.Lookup(ip, &record)
 	if err != nil {
 		logger.WithError(err).Error("failed to lookup city")
+
 		return "", ""
 	}
 

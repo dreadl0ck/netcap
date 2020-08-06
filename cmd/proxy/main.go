@@ -27,7 +27,7 @@ import (
 )
 
 // a list of all reverse proxies
-// used to close all files handles on exit via OS signals
+// used to close all files handles on exit via OS signals.
 var proxies []*ReverseProxy
 
 func Run() {
@@ -90,9 +90,7 @@ func Run() {
 	)
 
 	// iterate over proxies from config
-	for name, p := range c.Proxies {
-
-		// copy variables to avoid capturing them
+	for name, p := range c.Proxies { // copy variables to avoid capturing them
 		// when dispatching a goroutine
 		var (
 			proxyName = name
@@ -118,9 +116,7 @@ func Run() {
 			// instantiate proxy
 			p := NewReverseProxy(proxyName, targetURL)
 			proxies = append(proxies, p)
-			if tls {
-
-				// check if key and cert file have been specified
+			if tls { // check if key and cert file have been specified
 				if c.CertFile == "" || c.KeyFile == "" {
 					log.Fatal(proxyName, " configured to use TLS for local endpoint, but no missing cert and key in config.")
 				}

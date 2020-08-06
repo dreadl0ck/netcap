@@ -113,6 +113,7 @@ var tlsClientHelloDecoder = newCustomDecoder(
 				Extensions:       extensions,
 			}
 		}
+
 		return nil
 	},
 	nil,

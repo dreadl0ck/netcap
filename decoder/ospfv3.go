@@ -91,6 +91,7 @@ var ospfv3Decoder = newGoPacketDecoder(
 					})
 				}
 			}
+
 			return &types.OSPFv3{
 				Timestamp:    timestamp,
 				Version:      int32(ospf3.Version),
@@ -108,6 +109,7 @@ var ospfv3Decoder = newGoPacketDecoder(
 				LSAs:         lSAs,   // []*LSAheader
 			}
 		}
+
 		return nil
 	},
 )

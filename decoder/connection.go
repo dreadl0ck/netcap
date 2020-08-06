@@ -120,7 +120,6 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		// check if received packet from the same flow
 		// was captured BEFORE the flows first seen timestamp
 		if !utils.StringToTime(conn.TimestampFirst).Before(p.Metadata().Timestamp) {
-
 			calcDuration = true
 
 			// rewrite timestamp
@@ -161,9 +160,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		}
 
 		conn.Unlock()
-	} else {
-
-		// create a new Connection
+	} else { // create a new Connection
 		conn := &types.Connection{}
 		conn.UID = calcMd5(conn.String())
 		conn.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
@@ -195,7 +192,6 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		// flush
 		if c.ConnFlushInterval != 0 && conns%int64(c.ConnFlushInterval) == 0 {
-
 			var selectConns []*types.Connection
 			for id, entry := range cd.Conns.Items {
 				// flush entries whose last timestamp is connTimeOut older than current packet

@@ -34,6 +34,7 @@ var ipSecESPDecoder = newGoPacketDecoder(
 				LenEncrypted: int32(len(ipsecesp.Encrypted)), // int32
 			}
 		}
+
 		return nil
 	},
 )

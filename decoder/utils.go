@@ -41,7 +41,7 @@ var (
 	fieldNameMap = make(map[string]int)
 )
 
-// MarkdownOverview dumps a Markdown summary of all available decoders and their fields
+// MarkdownOverview dumps a Markdown summary of all available decoders and their fields.
 func MarkdownOverview() {
 	fmt.Println("# NETCAP Overview " + netcap.Version)
 	fmt.Println("> Documentation: [docs.netcap.io](https://docs.netcap.io)")
@@ -106,9 +106,7 @@ func countFields(t types.Type) int {
 		auditRecord := reflect.ValueOf(r).Elem()
 
 		// iterate over audit record fields
-		for i := 0; i < auditRecord.NumField(); i++ {
-
-			// get StructField
+		for i := 0; i < auditRecord.NumField(); i++ { // get StructField
 			field := auditRecord.Type().Field(i)
 			fieldNameMap[field.Name]++
 
@@ -152,13 +150,13 @@ func rankByWordCount(wordFrequencies map[string]int) pairList {
 	return pl
 }
 
-// pair describes a key and an associated value
+// pair describes a key and an associated value.
 type pair struct {
 	Key   string
 	Value int
 }
 
-// pairList implements sort.Interface
+// pairList implements sort.Interface.
 type pairList []pair
 
 func (p pairList) Len() int           { return len(p) }
@@ -234,7 +232,7 @@ func entropy(data []byte) (entropy float64) {
 	return entropy
 }
 
-// pad the input up to the given number of space characters
+// pad the input up to the given number of space characters.
 func pad(in interface{}, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
 }

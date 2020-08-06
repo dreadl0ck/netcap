@@ -35,6 +35,7 @@ var linkLayerDiscoveryDecoder = newGoPacketDecoder(
 					Value:  v.Value,
 				})
 			}
+
 			return &types.LinkLayerDiscovery{
 				Timestamp: timestamp,
 				ChassisID: &types.LLDPChassisID{
@@ -49,6 +50,7 @@ var linkLayerDiscoveryDecoder = newGoPacketDecoder(
 				Values: vals,
 			}
 		}
+
 		return nil
 	},
 )

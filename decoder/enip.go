@@ -31,6 +31,7 @@ var ethernetIPDecoder = newGoPacketDecoder(
 				Cmd:  uint32(enip.CommandSpecific.Cmd),
 				Data: enip.CommandSpecific.Data,
 			}
+
 			return &types.ENIP{
 				Timestamp:       timestamp,
 				Command:         uint32(enip.Command),
@@ -42,6 +43,7 @@ var ethernetIPDecoder = newGoPacketDecoder(
 				CommandSpecific: cmdSpecificData,
 			}
 		}
+
 		return nil
 	},
 )

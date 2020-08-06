@@ -16,7 +16,7 @@ const pageBytes = 1900
 // packets).  Unused pages are stored in and returned from a pageCache, which
 // avoids memory allocation.  Used pages are stored in a doubly-linked list in
 // a connection.
-// this structure has an optimized field order to avoid excessive padding
+// this structure has an optimized field order to avoid excessive padding.
 type page struct {
 	buf        [pageBytes]byte
 	bytes      []byte
@@ -40,7 +40,7 @@ func (p *page) assemblerContext() AssemblerContext {
 	return p.ac
 }
 
-func (p *page) convertToPages(pc *pageCache, skip int, ac AssemblerContext) (*page, *page, int) {
+func (p *page) convertToPages(_ *pageCache, skip int, _ AssemblerContext) (*page, *page, int) {
 	if skip != 0 {
 		p.bytes = p.bytes[skip:]
 		p.seq = p.seq.Add(skip)
@@ -57,6 +57,7 @@ func (p *page) length() int {
 
 func (p *page) release(pc *pageCache) int {
 	pc.replace(p)
+
 	return 1
 }
 

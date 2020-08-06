@@ -33,6 +33,7 @@ var icmpv6Decoder = newGoPacketDecoder(
 				Checksum:  int32(icmp6.Checksum),
 			}
 		}
+
 		return nil
 	},
 )

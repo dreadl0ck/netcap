@@ -23,11 +23,11 @@ import (
 )
 
 var (
-	// all initialized service probes at runtime
+	// all initialized service probes at runtime.
 	serviceProbes []*serviceProbe
 
 	// ignored probes for RE2 engine (RE2 does not support backtracking
-	// groups in regexes with backtracking will be replaced by wildcard groups)
+	// groups in regexes with backtracking will be replaced by wildcard groups).
 	ignoredProbesRE2 = map[string]struct{}{
 		"pc-duo-gw":          {},
 		"ventrilo":           {},
@@ -44,7 +44,7 @@ var (
 		"nagios-nsca":        {},
 	}
 
-	// ignored probes for .NET compatible engine (supports backtracking)
+	// ignored probes for .NET compatible engine (supports backtracking).
 	ignoredProbes = map[string]struct{}{
 		"pc-duo-gw": {},
 		"ventrilo":  {},
@@ -53,7 +53,7 @@ var (
 )
 
 // serviceProbe is a regex based probe to fingerprint a network service by looking at its banner
-// the term banner refers to the first X bytes of data (usually 512) that have been sent by the server
+// the term banner refers to the first X bytes of data (usually 512) that have been sent by the server.
 type serviceProbe struct {
 	RegEx           *regexp.Regexp
 	RegExDotNet     *regexp2.Regexp
@@ -218,7 +218,7 @@ func extractGroupDotNet(in *string, m *regexp2.Match) string {
 
 // parseVersionInfo uses the next read byte as a delimiter
 // and reads everything into a buffer until the delimiter appears again
-// it returns the final buffer and an error and advances the passed in *bytes.Reader to the
+// it returns the final buffer and an error and advances the passed in *bytes.Reader to the.
 func parseVersionInfo(r io.ByteReader) (string, error) {
 	var res []byte
 	d, err := r.ReadByte()
@@ -319,9 +319,7 @@ func initServiceProbes() error {
 				}
 				// last part versionInfo: m/[regex]/[opts] [meta]
 				// example: p/Amanda backup system index server/ i/broken: GLib $1 too old/ cpe:/a:amanda:amanda/
-				if parseMeta {
-
-					// skip over whitespace
+				if parseMeta { // skip over whitespace
 					if unicode.IsSpace(rune(b)) {
 						// fmt.Println("parse meta: skip whitespace")
 						continue
@@ -391,9 +389,7 @@ func initServiceProbes() error {
 				// - there can be an optional i for case insensitive matching
 				// - or an 's' to include newlines in the '.' specifier
 				if checkOpts {
-					if unicode.IsSpace(rune(b)) {
-
-						// fmt.Println("options done!")
+					if unicode.IsSpace(rune(b)) { // fmt.Println("options done!")
 						// options done
 						checkOpts = false
 						parseMeta = true
@@ -503,7 +499,7 @@ func colorize(in string, num int) string {
 	return out
 }
 
-// dumpServiceProbes prints all loaded probes as JSON
+// dumpServiceProbes prints all loaded probes as JSON.
 func dumpServiceProbes() {
 	for _, p := range serviceProbes {
 		data, err := json.MarshalIndent(p, " ", "  ")
@@ -516,7 +512,7 @@ func dumpServiceProbes() {
 // clean implements a simple state machine to replace all backtracking operations
 // indicated by (?
 // with a wildcard group match operation (.*)
-// to ensure compatibility with the re2 engine
+// to ensure compatibility with the re2 engine.
 func clean(in string) string {
 	var (
 		r                     = bytes.NewReader([]byte(strings.ReplaceAll(in, "\\1", "(.*)")))
@@ -564,12 +560,10 @@ func clean(in string) string {
 		if ignore {
 			if string(b) == ")" {
 				if !escaped {
-
 					stopCnt++
 					debug("stopCnt++")
 
 					if startCount == stopCnt || nextCloses {
-
 						ignore = false
 						debug("stop ignore", "add missing )", numIgnored > 1 && stopCnt != 0)
 
@@ -613,7 +607,6 @@ func clean(in string) string {
 			continue
 		}
 		if string(b) == "(" {
-
 			debug("got parentheses")
 			if !escaped {
 				startCount++
@@ -628,7 +621,6 @@ func clean(in string) string {
 		}
 		if check {
 			if string(b) == "?" && lastchar == '(' {
-
 				debug("found backtracking")
 				if firstQuestionMark {
 					firstQuestionMark = false

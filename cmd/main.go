@@ -72,6 +72,7 @@ func main() {
 
 	if *flagPrevious != "" {
 		printCompletions(*flagPrevious, *flagCurrent, *flagFull)
+
 		return
 	}
 
@@ -104,7 +105,7 @@ func main() {
 	}
 }
 
-// print builtins
+// print builtins.
 var completions = []string{
 	"capture",
 	"util",
@@ -123,7 +124,7 @@ func debug(args ...interface{}) {
 	fmt.Fprintln(debugHandle, args...)
 }
 
-// print available completions for the bash-completion package
+// print available completions for the bash-completion package.
 func printCompletions(previous, current, full string) {
 	if os.Getenv("NC_COMPLETION_DEBUG") == "1" {
 		var err error

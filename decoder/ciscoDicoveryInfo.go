@@ -52,6 +52,7 @@ var ciscoDiscoveryInfoDecoder = newGoPacketDecoder(
 					IPMask: v.Mask.String(),
 				})
 			}
+
 			return &types.CiscoDiscoveryInfo{
 				Timestamp: timestamp,
 				CDPHello: &types.CDPHello{
@@ -143,6 +144,7 @@ var ciscoDiscoveryInfoDecoder = newGoPacketDecoder(
 				Unknown: cdvs,
 			}
 		}
+
 		return nil
 	},
 )

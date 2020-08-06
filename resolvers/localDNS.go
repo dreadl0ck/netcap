@@ -33,6 +33,7 @@ func InitLocalDNS() {
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "hosts"))
 	if err != nil {
 		log.Println(err)
+
 		return
 	}
 

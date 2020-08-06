@@ -25,6 +25,7 @@ func toDstPorts() {
 						for portStr, port := range ip.DstPorts {
 							addDestinationPort(trx, portStr, port, min, max, ip)
 						}
+
 						break
 					}
 				}
@@ -33,6 +34,7 @@ func toDstPorts() {
 						for portStr, port := range ip.DstPorts {
 							addDestinationPort(trx, portStr, port, min, max, ip)
 						}
+
 						break
 					}
 				}

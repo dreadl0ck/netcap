@@ -22,7 +22,6 @@ func toHostsForService() {
 
 			if service.IP == ip && service.Port == port {
 				for _, f := range service.Flows {
-
 					srcIP, _, _, _ := utils.ParseIdent(f)
 					ent := trx.AddEntity("netcap.IPAddr", srcIP)
 

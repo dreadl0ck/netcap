@@ -61,7 +61,7 @@ func (i *EthernetCTP) Inc() {
 
 func (a *EthernetCTP) SetPacketContext(*PacketContext) {}
 
-// Src TODO
+// Src TODO.
 func (i *EthernetCTP) Src() string {
 	return ""
 }

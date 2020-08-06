@@ -33,6 +33,7 @@ var sipDecoder = newGoPacketDecoder(
 			for k, v := range sip.Headers {
 				headers = append(headers, k+":"+strings.Join(v, ","))
 			}
+
 			return &types.SIP{
 				Timestamp:      timestamp,
 				Version:        int32(sip.Version),
@@ -43,6 +44,7 @@ var sipDecoder = newGoPacketDecoder(
 				ResponseStatus: sip.ResponseStatus,
 			}
 		}
+
 		return nil
 	},
 )

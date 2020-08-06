@@ -31,14 +31,14 @@ type deviceProfile struct {
 	sync.Mutex
 }
 
-// atomicDeviceProfileMap contains all connections and provides synchronized access
+// atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicDeviceProfileMap struct {
 	// SrcMAC to Profiles
 	Items map[string]*deviceProfile
 	sync.Mutex
 }
 
-// Size returns the number of elements in the Items map
+// Size returns the number of elements in the Items map.
 func (a *atomicDeviceProfileMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
@@ -46,7 +46,7 @@ func (a *atomicDeviceProfileMap) Size() int {
 }
 
 var (
-	// Profiles hold all connections
+	// Profiles hold all connections.
 	Profiles = &atomicDeviceProfileMap{
 		Items: make(map[string]*deviceProfile),
 	}
@@ -54,13 +54,13 @@ var (
 	profiles               int64
 
 	// flags for flushing intervals - no flushing for now.
-	// flagProfileFlushInterval = flag.Int("profile-flush-interval", 10000, "flush connections every X flows")
+	// flagProfileFlushInterval = flag.Int("profile-flush-interval", 10000, "flush connections every X flows").
 
 	// profileFlushInterval int64
-	// profileTimeOut       time.Duration
+	// profileTimeOut       time.Duration.
 )
 
-// GetDeviceProfile fetches a known profile and updates it or returns a new one
+// GetDeviceProfile fetches a known profile and updates it or returns a new one.
 func getDeviceProfile(macAddr string, i *packetInfo) *deviceProfile {
 	Profiles.Lock()
 	if p, ok := Profiles.Items[macAddr]; ok {
@@ -80,7 +80,7 @@ func getDeviceProfile(macAddr string, i *packetInfo) *deviceProfile {
 	return p
 }
 
-// updateDeviceProfile can be used to update the profile for the passed identifiers
+// updateDeviceProfile can be used to update the profile for the passed identifiers.
 func updateDeviceProfile(i *packetInfo) {
 	// lookup profile
 	Profiles.Lock()
@@ -93,7 +93,7 @@ func updateDeviceProfile(i *packetInfo) {
 	Profiles.Unlock()
 }
 
-// newDeviceProfile creates a new device specifc profile
+// newDeviceProfile creates a new device specifc profile.
 func newDeviceProfile(i *packetInfo) *deviceProfile {
 	var contacts []*types.IPProfile
 	if ip := getIPProfile(i.dstIP, i); ip != nil {
@@ -195,11 +195,12 @@ var profileDecoder = newCustomDecoder(
 				c.Unlock()
 			}
 		}
+
 		return nil
 	},
 )
 
-// writeProfile writes the profile
+// writeProfile writes the profile.
 func writeProfile(d *types.DeviceProfile) {
 	if c.Export {
 		d.Inc()

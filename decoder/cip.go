@@ -37,6 +37,7 @@ var cipDecoder = newGoPacketDecoder(
 					additional = append(additional, uint32(v))
 				}
 			}
+
 			return &types.CIP{
 				Timestamp:        timestamp,
 				Response:         cip.Response,
@@ -48,6 +49,7 @@ var cipDecoder = newGoPacketDecoder(
 				Data:             payload,
 			}
 		}
+
 		return nil
 	},
 )

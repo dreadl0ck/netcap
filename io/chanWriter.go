@@ -19,7 +19,7 @@ type ChanWriter struct {
 }
 
 // NewChanWriter returns a new channel writer instance.
-// TODO make chan buf size configurable
+// TODO make chan buf size configurable.
 func NewChanWriter() *ChanWriter {
 	return &ChanWriter{make(chan []byte, 1024)}
 }
