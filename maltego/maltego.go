@@ -17,6 +17,7 @@ import (
 )
 
 // Set constants
+//goland:noinspection GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst
 const (
 	BOOKMARK_COLOR_NONE   = "-1"
 	BOOKMARK_COLOR_BLUE   = "0"
