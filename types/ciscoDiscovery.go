@@ -82,7 +82,7 @@ func (cd *CiscoDiscovery) Inc() {
 	ciscoDiscoveryMetric.WithLabelValues(cd.CSVRecord()[1:]...).Inc()
 }
 
-func (a *CiscoDiscovery) SetPacketContext(ctx *PacketContext) {}
+func (a *CiscoDiscovery) SetPacketContext(*PacketContext) {}
 
 // TODO
 func (cd *CiscoDiscovery) Src() string {

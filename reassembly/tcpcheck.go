@@ -70,7 +70,7 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TC
 			// Window scaling
 			if o.OptionType == 3 {
 				if len(o.OptionData) != 1 {
-					return fmt.Errorf("Window scaling length expected: 1, got %d", len(o.OptionData))
+					return fmt.Errorf("window scaling length expected: 1, got %d", len(o.OptionData))
 				}
 				scale = int(o.OptionData[0])
 			}
@@ -88,7 +88,7 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TC
 				// This is probably a Keep-alive
 				// TODO: check byte is ok
 			} else if diff < 0 {
-				return fmt.Errorf("Re-emitted packet (diff:%d,seq:%d,rev-ack:%d)", diff,
+				return fmt.Errorf("re-emitted packet (diff:%d,seq:%d,rev-ack:%d)", diff,
 					tcp.Seq, nextSeq)
 			} else if revOptions.mss > 0 && length > revOptions.mss {
 				return fmt.Errorf("%d > mss (%d)", length, revOptions.mss)
@@ -102,6 +102,7 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TC
 	if options.scale > 0 {
 		options.receiveWindow = options.receiveWindow << (uint(options.scale))
 	}
+
 	return nil
 }
 

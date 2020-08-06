@@ -26,7 +26,7 @@ import (
 
 var localDNSNamesDB = make(map[string]string)
 
-// InitLocalDNS initializes reverse dns resolution via local hosts mapping
+// InitLocalDNS initializes reverse dns resolution via local hosts mapping.
 func InitLocalDNS() {
 	var hosts int
 
@@ -37,7 +37,6 @@ func InitLocalDNS() {
 	}
 
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
-
 		if len(line) == 0 {
 			continue
 		}
@@ -60,7 +59,7 @@ func InitLocalDNS() {
 	}
 }
 
-// LookupDNSNames retrieves the DNS names associated with an IP addr
+// LookupDNSNameLocal retrieves the DNS names associated with an IP addr.
 func LookupDNSNameLocal(ip string) string {
 	// check if ip is valid
 	i := net.ParseIP(ip)
@@ -72,5 +71,6 @@ func LookupDNSNameLocal(ip string) string {
 	if res, ok := localDNSNamesDB[ip]; ok {
 		return res
 	}
+
 	return ""
 }

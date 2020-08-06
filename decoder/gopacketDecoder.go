@@ -88,11 +88,11 @@ var defaultGoPacketDecoders = []*GoPacketDecoder{
 }
 
 type (
-	// GoPacketDecoderHandler is the handler function for a layer encoder
+	// GoPacketDecoderHandler is the handler function for a layer encoder.
 	GoPacketDecoderHandler = func(layer gopacket.Layer, timestamp string) proto.Message
 
 	// GoPacketDecoder represents an encoder for the gopacket.Layer type
-	// this structure has an optimized field order to avoid excessive padding
+	// this structure has an optimized field order to avoid excessive padding.
 	GoPacketDecoder struct {
 		Description string
 		Layer       gopacket.LayerType
@@ -104,7 +104,7 @@ type (
 	}
 )
 
-// InitGoPacketDecoders initializes all gopacket decoders
+// InitGoPacketDecoders initializes all gopacket decoders.
 func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
 
@@ -205,7 +205,7 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 	return decoders, nil
 }
 
-// NewGoPacketDecoder returns a new GoPacketDecoder instance
+// NewGoPacketDecoder returns a new GoPacketDecoder instance.
 func NewGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string, handler GoPacketDecoderHandler) *GoPacketDecoder {
 	return &GoPacketDecoder{
 		Layer:       lt,
@@ -217,7 +217,7 @@ func NewGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string
 
 // Decode is called for each layer
 // this calls the handler function of the encoder
-// and writes the serialized protobuf into the data pipe
+// and writes the serialized protobuf into the data pipe.
 func (e *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
 	record := e.Handler(l, utils.TimeToString(p.Metadata().Timestamp))
 	if record != nil {
@@ -257,15 +257,16 @@ func (e *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l 
 			}
 		}
 	}
+
 	return nil
 }
 
-// GetChan returns a channel to receive serialized protobuf data from the encoder
+// GetChan returns a channel to receive serialized protobuf data from the encoder.
 func (e *GoPacketDecoder) GetChan() <-chan []byte {
 	return e.writer.GetChan()
 }
 
-// Destroy closes and flushes all writers
+// Destroy closes and flushes all writers.
 func (e *GoPacketDecoder) Destroy() (name string, size int64) {
 	return e.writer.Close()
 }

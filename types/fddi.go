@@ -65,7 +65,7 @@ func (a *FDDI) Inc() {
 	fddiMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *FDDI) SetPacketContext(ctx *PacketContext) {}
+func (a *FDDI) SetPacketContext(*PacketContext) {}
 
 func (a *FDDI) Src() string {
 	return a.SrcMAC

@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// Provides primitives for instrumentation via prometheus
+// Package metrics provides primitives for instrumentation via prometheus
 package metrics
 
 import (

@@ -68,7 +68,7 @@ func (a *EAP) Inc() {
 	eapMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *EAP) SetPacketContext(ctx *PacketContext) {}
+func (a *EAP) SetPacketContext(*PacketContext) {}
 
 // TODO: return Mac addr
 func (a *EAP) Src() string {

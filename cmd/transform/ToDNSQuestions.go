@@ -79,7 +79,7 @@ func ToDNSQuestions() {
 			if len(q.Name) != 0 {
 
 				// prevent duplicating results
-				if _, ok := results[string(q.Name)]; ok {
+				if _, exists := results[string(q.Name)]; exists {
 					continue
 				}
 				results[string(q.Name)]++

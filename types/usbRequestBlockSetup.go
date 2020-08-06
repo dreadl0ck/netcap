@@ -67,7 +67,7 @@ func (a *USBRequestBlockSetup) Inc() {
 	usbRequestBlockSetupMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *USBRequestBlockSetup) SetPacketContext(ctx *PacketContext) {}
+func (a *USBRequestBlockSetup) SetPacketContext(*PacketContext) {}
 
 // TODO return source DeviceAddress?
 func (a *USBRequestBlockSetup) Src() string {

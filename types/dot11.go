@@ -198,7 +198,7 @@ func (d *Dot11) Inc() {
 	dot11Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
-func (d *Dot11) SetPacketContext(ctx *PacketContext) {}
+func (d *Dot11) SetPacketContext(*PacketContext) {}
 
 // TODO: return Mac addr
 func (d *Dot11) Src() string {

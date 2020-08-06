@@ -27,11 +27,11 @@ import (
 // optionally a bpf can be supplied.
 // this is the darwin version that uses the pcap lib with c bindings to fetch packets
 // currently there is no other option to do that.
-func (c *Collector) CollectLive(i string, bpf string) error {
+func (c *Collector) CollectLive(iface, bpf string) error {
 	// open interface in live mode
 	// timeout is set to 0
 	// snaplen and promiscuous mode can be configured over the collector instance
-	handle, err := pcap.OpenLive(i, int32(c.config.SnapLen), c.config.Promisc, 0)
+	handle, err := pcap.OpenLive(iface, int32(c.config.SnapLen), c.config.Promisc, 0)
 	if err != nil {
 		return err
 	}
@@ -65,6 +65,7 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			return errors.Wrap(err, "Error reading packet data")
 		}
 
@@ -87,5 +88,6 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 
 	// run cleanup on channel exit
 	c.cleanup(false)
+
 	return nil
 }

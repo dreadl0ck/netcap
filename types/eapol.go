@@ -63,7 +63,7 @@ func (a *EAPOL) Inc() {
 	eapPolMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *EAPOL) SetPacketContext(ctx *PacketContext) {}
+func (a *EAPOL) SetPacketContext(*PacketContext) {}
 
 // TODO: return Mac addr
 func (a *EAPOL) Src() string {

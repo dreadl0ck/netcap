@@ -48,7 +48,6 @@ func main() {
 
 	print("processing packets... ")
 	for {
-
 		// fetch the next packetdata and packetheader
 		// for pcap, currently ZeroCopyReadPacketData() is not supported
 		data, ci, err := r.ReadPacketData()

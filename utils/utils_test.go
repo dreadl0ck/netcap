@@ -117,12 +117,12 @@ func BenchmarkStringToTime(b *testing.B) {
 }
 
 func BenchmarkStringToTimeFieldsFunc(b *testing.B) {
-	tiStr := TimeToString(ti)
+	tiString := TimeToString(ti)
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		StringToTimeFieldsFunc(tiStr)
+		StringToTimeFieldsFunc(tiString)
 	}
 }
 

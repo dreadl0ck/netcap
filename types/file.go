@@ -83,7 +83,7 @@ func (a *File) Inc() {
 	fileMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *File) SetPacketContext(ctx *PacketContext) {}
+func (a *File) SetPacketContext(*PacketContext) {}
 
 func (a *File) Src() string {
 	// prevent accessing nil pointer

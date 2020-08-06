@@ -11,10 +11,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// Implements primitives to resolve various identifiers against external data
+// Package resolvers implements primitives to resolve various identifiers against external data
 package resolvers
 
-// Config contains settings for the resolvers package
+// Config contains settings for the resolvers package.
 type Config struct {
 
 	// Controls whether ip addresses are resolved through the default OS resolver
@@ -36,7 +36,7 @@ type Config struct {
 	GeolocationDB bool
 }
 
-// DefaultConfig is an example configuration
+// DefaultConfig is an example configuration.
 var DefaultConfig = Config{
 	ReverseDNS:    false,
 	LocalDNS:      false,

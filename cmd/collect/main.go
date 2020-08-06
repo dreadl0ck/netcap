@@ -66,17 +66,20 @@ func Run() {
 	if *flagGenKeypair {
 
 		// generate a new keypair
-		pub, priv, err := cryptoutils.GenerateKeypair()
-		if err != nil {
-			panic(err)
+		pub, priv, errGenKey := cryptoutils.GenerateKeypair()
+		if errGenKey != nil {
+			panic(errGenKey)
 		}
 
 		// write public key to file on disk
-		pubFile, err := os.Create("pub.key")
-		if err != nil {
-			panic(err)
+		pubFile, errCreateKey := os.Create("pub.key")
+		if errCreateKey != nil {
+			panic(errCreateKey)
 		}
-		pubFile.WriteString(hex.EncodeToString(pub[:]))
+
+		if _, errWrite := pubFile.WriteString(hex.EncodeToString(pub[:])); errWrite != nil {
+			panic(errWrite)
+		}
 
 		// close file handle
 		err = pubFile.Close()
@@ -85,11 +88,14 @@ func Run() {
 		}
 
 		// write private key to file on disk
-		privFile, err := os.Create("priv.key")
-		if err != nil {
-			panic(err)
+		privFile, errCreatePriv := os.Create("priv.key")
+		if errCreatePriv != nil {
+			panic(errCreatePriv)
 		}
-		privFile.WriteString(hex.EncodeToString(priv[:]))
+
+		if _, errWrite := privFile.WriteString(hex.EncodeToString(priv[:])); errWrite != nil {
+			panic(errWrite)
+		}
 
 		// close file handle
 		err = privFile.Close()
@@ -98,6 +104,7 @@ func Run() {
 		}
 
 		fmt.Println("wrote keys")
+
 		return
 	}
 
@@ -181,10 +188,12 @@ func udpServer(ctx context.Context, address string) (err error) {
 			go func() {
 				// trim off the public key of the peer
 				pubKeyClient := [32]byte{}
+
 				for i, b := range buf.Bytes() {
 					if i == 32 {
 						break
 					}
+
 					pubKeyClient[i] = b
 				}
 
@@ -208,12 +217,15 @@ func udpServer(ctx context.Context, address string) (err error) {
 				// read data
 				var c []byte
 				c, errProcess = ioutil.ReadAll(gr)
+
 				if errors.Is(errProcess, io.EOF) || errors.Is(errProcess, io.ErrUnexpectedEOF) {
 					fmt.Println("failed to decompress batch", errProcess)
+
 					return
 				} else if errProcess != nil {
 					fmt.Println(hex.Dump(buf.Bytes()))
 					fmt.Println("gzip error", errProcess)
+
 					return
 				}
 
@@ -230,6 +242,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 				errProcess = proto.Unmarshal(c, b)
 				if errors.Is(errProcess, io.EOF) || errors.Is(errProcess, io.ErrUnexpectedEOF) {
 					fmt.Println("failed to unmarshal batch", errProcess)
+
 					return
 				} else if errProcess != nil {
 					panic(errProcess)
@@ -241,7 +254,8 @@ func udpServer(ctx context.Context, address string) (err error) {
 					protocol = strings.TrimPrefix(b.MessageType.String(), "NC_")
 					path     = filepath.Join(b.ClientID, protocol+".ncap.gz")
 				)
-				if a, ok := files[path]; ok {
+
+				if a, exists := files[path]; exists {
 					_, errProcess = a.gWriter.Write(b.Data)
 					if errProcess != nil {
 						panic(errProcess)
@@ -256,11 +270,13 @@ func udpServer(ctx context.Context, address string) (err error) {
 	select {
 	case <-ctx.Done():
 		fmt.Println("canceled")
+
 		err = ctx.Err()
 	case err = <-doneChan:
 		if err != nil {
 			log.Println("encountered an error while collecting audit records: ", err)
 		}
+
 		cleanup()
 	}
 

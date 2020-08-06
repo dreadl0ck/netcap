@@ -57,7 +57,7 @@ func (c *Credentials) Inc() {
 	credentialsMetric.WithLabelValues(c.CSVRecord()[1:]...).Inc()
 }
 
-func (a *Credentials) SetPacketContext(ctx *PacketContext) {}
+func (a *Credentials) SetPacketContext(*PacketContext) {}
 
 // TODO: preserve source and destination mac adresses for Credentials and return them here
 func (c *Credentials) Src() string {

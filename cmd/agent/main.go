@@ -172,7 +172,10 @@ func Run() {
 
 		// handle channel goroutine
 		go func() {
-			var leftOverBuf []byte
+			var (
+				leftOverBuf []byte
+				data        []byte
+			)
 
 			// send data loop
 			for {
@@ -240,15 +243,18 @@ func Run() {
 				fmt.Println("\nBatch done!", b.TotalSize, len(b.Data), b.ClientID, b.MessageType)
 
 				// marshal batch
-				d, err := proto.Marshal(b)
+				data, err = proto.Marshal(b)
 				if err != nil {
 					panic(err)
 				}
 
 				// compress data
-				var buf bytes.Buffer
-				gw := gzip.NewWriter(&buf)
-				_, err = gw.Write(d)
+				var (
+					buf bytes.Buffer
+					gw  = gzip.NewWriter(&buf)
+				)
+
+				_, err = gw.Write(data)
 				if err != nil {
 					panic(err)
 				}

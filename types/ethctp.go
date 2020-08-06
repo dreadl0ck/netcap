@@ -59,7 +59,7 @@ func (i *EthernetCTP) Inc() {
 	ethernetCTPMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
-func (a *EthernetCTP) SetPacketContext(ctx *PacketContext) {}
+func (a *EthernetCTP) SetPacketContext(*PacketContext) {}
 
 // TODO
 func (i *EthernetCTP) Src() string {

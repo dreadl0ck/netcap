@@ -76,7 +76,7 @@ func (a *ARP) Inc() {
 	arpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
-func (a *ARP) SetPacketContext(ctx *PacketContext) {}
+func (a *ARP) SetPacketContext(*PacketContext) {}
 
 // TODO: preserve source and destination mac adresses for ARP and return them here
 func (a *ARP) Src() string {

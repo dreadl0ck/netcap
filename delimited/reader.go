@@ -56,9 +56,10 @@ func (r *Reader) Next() ([]byte, error) {
 	}
 
 	// read data from buffer
-	if _, err := io.ReadFull(r.buffer, r.data); err != nil {
+	if _, err = io.ReadFull(r.buffer, r.data); err != nil {
 		return nil, err
 	}
+
 	return r.data, nil
 }
 
