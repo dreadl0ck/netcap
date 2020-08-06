@@ -31,13 +31,13 @@ type XMLTransform struct {
 
 	TransformAdapter string                 `xml:"TransformAdapter"`
 	Properties       XMLTransformProperties `xml:"Properties"`
-	Constraints      InputConstraints       `xml:"InputConstraints"`
+	Constraints      inputConstraints       `xml:"InputConstraints"`
 	OutputEntities   string                 `xml:"OutputEntities"`
-	DefaultSets      DefaultSets            `xml:"defaultSets"`
+	DefaultSets      defaultSets            `xml:"defaultSets"`
 	StealthLevel     string                 `xml:"StealthLevel"`
 }
 
-type DefaultSets struct {
+type defaultSets struct {
 	Items []Set `xml:"Set"`
 }
 
@@ -52,11 +52,11 @@ type XMLTransformProperties struct {
 	Text    string   `xml:",chardata"`
 	Fields  struct {
 		Text     string     `xml:",chardata"`
-		Property []Property `xml:"Property"`
+		Property []property `xml:"Property"`
 	} `xml:"Fields"`
 }
 
-type Property struct {
+type property struct {
 	Text         string `xml:",chardata"`
 	Name         string `xml:"name,attr"`
 	Type         string `xml:"type,attr"`
@@ -73,7 +73,7 @@ type Property struct {
 	SampleValue  string `xml:"SampleValue"`
 }
 
-type InputConstraints struct {
+type inputConstraints struct {
 	XMLName xml.Name `xml:"InputConstraints"`
 	Text    string   `xml:",chardata"`
 	Entity  struct {
@@ -84,7 +84,7 @@ type InputConstraints struct {
 	} `xml:"Entity"`
 }
 
-type TransformCoreInfo struct {
+type transformCoreInfo struct {
 	ID          string // e.g ToAuditRecords
 	InputEntity string
 	Description string
@@ -103,7 +103,7 @@ type TransformCoreInfo struct {
 //    </Properties>
 // </TransformSettings>
 
-type TransformSettingProperty struct {
+type transformSettingProperty struct {
 	XMLName xml.Name `xml:"Property"`
 	Text    string   `xml:",chardata"`
 	Name    string   `xml:"name,attr"`
@@ -111,11 +111,11 @@ type TransformSettingProperty struct {
 	Popup   bool     `xml:"popup,attr"`
 }
 
-type TransformSettingProperties struct {
-	Items []TransformSettingProperty `xml:"Properties"`
+type transformSettingProperties struct {
+	Items []transformSettingProperty `xml:"Properties"`
 }
 
-type TransformSettings struct {
+type transformSettings struct {
 	XMLName            xml.Name                   `xml:"TransformSettings"`
 	Text               string                     `xml:",chardata"`
 	Enabled            bool                       `xml:"enabled,attr"`
@@ -123,7 +123,7 @@ type TransformSettings struct {
 	ShowHelp           bool                       `xml:"showHelp,attr"`
 	RunWithAll         bool                       `xml:"runWithAll,attr"`
 	Favorite           bool                       `xml:"favorite,attr"`
-	Property           TransformSettingProperties `xml:"Properties"`
+	Property           transformSettingProperties `xml:"Properties"`
 }
 
 // File: Servers/Local.tas
@@ -139,7 +139,7 @@ type TransformSettings struct {
 // <Seeds/>
 // </MaltegoServer>
 
-type Server struct {
+type server struct {
 	XMLName     xml.Name `xml:"MaltegoServer"`
 	Text        string   `xml:",chardata"`
 	Name        string   `xml:"name,attr"`
@@ -165,7 +165,7 @@ type Server struct {
 	Seeds string `xml:"Seeds"`
 }
 
-type TransformSet struct {
+type transformSet struct {
 	XMLName     xml.Name `xml:"TransformSet"`
 	Text        string   `xml:",chardata"`
 	Name        string   `xml:"name,attr"`
@@ -212,15 +212,15 @@ func toTransformDisplayName(in string) string {
 	return strings.TrimSpace(b.String() + " [NETCAP]")
 }
 
-func newTransformSettings(id string, debug bool) TransformSettings {
-	trs := TransformSettings{
+func newTransformSettings(id string, debug bool) transformSettings {
+	trs := transformSettings{
 		Enabled:            true,
 		DisclaimerAccepted: false,
 		ShowHelp:           true,
 		RunWithAll:         true,
 		Favorite:           false,
-		Property: TransformSettingProperties{
-			Items: []TransformSettingProperty{
+		Property: transformSettingProperties{
+			Items: []transformSettingProperty{
 				{
 					Name:  "transform.local.command",
 					Type:  "string",
@@ -267,10 +267,10 @@ func newTransform(id string, description string, input string) XMLTransform {
 			Text: "",
 			Fields: struct {
 				Text     string     `xml:",chardata"`
-				Property []Property `xml:"Property"`
+				Property []property `xml:"Property"`
 			}{
 				Text: "",
-				Property: []Property{
+				Property: []property{
 					//<Property name="transform.local.command" type="string" nullable="false" hidden="false" readonly="false" description="The command to execute for this transform" popup="false" abstract="false" visibility="public" auth="false" displayName="Command line">
 					//<SampleValue></SampleValue>
 					//</Property>
@@ -351,7 +351,7 @@ func newTransform(id string, description string, input string) XMLTransform {
 				},
 			},
 		},
-		Constraints: InputConstraints{
+		Constraints: inputConstraints{
 			XMLName: xml.Name{},
 			Text:    "",
 			Entity: struct {
@@ -367,7 +367,7 @@ func newTransform(id string, description string, input string) XMLTransform {
 			},
 		},
 		OutputEntities: "",
-		DefaultSets: DefaultSets{Items: []Set{
+		DefaultSets: defaultSets{Items: []Set{
 			{
 				Name: "NETCAP",
 			},

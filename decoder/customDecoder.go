@@ -37,7 +37,7 @@ var (
 		tlsServerHelloDecoder,
 		httpDecoder,
 		flowDecoder,
-		connectionDecoder,
+		connDecoder,
 		profileDecoder,
 		fileDecoder,
 		pop3Decoder,

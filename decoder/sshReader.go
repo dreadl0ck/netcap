@@ -72,12 +72,12 @@ func (h *sshReader) Decode() {
 	}
 
 	// add new audit records or update existing
-	SoftwareStore.Lock()
+	softwareStore.Lock()
 	for _, s := range h.software {
-		if _, ok := SoftwareStore.Items[s.Product+"/"+s.Version]; ok {
+		if _, ok := softwareStore.Items[s.Product+"/"+s.Version]; ok {
 			// TODO updateSoftwareAuditRecord(dp, p, i)
 		} else {
-			SoftwareStore.Items[s.Product+"/"+s.Version] = &Software{
+			softwareStore.Items[s.Product+"/"+s.Version] = &software{
 				s,
 				sync.Mutex{},
 			}
@@ -86,13 +86,13 @@ func (h *sshReader) Decode() {
 			stats.Unlock()
 		}
 	}
-	SoftwareStore.Unlock()
+	softwareStore.Unlock()
 }
 
 func (h *sshReader) processSSHIdent(ident string, entity string) {
 	i := parseSSHIdent(ident)
 	if i != nil {
-		writeSoftware([]*Software{
+		writeSoftware([]*software{
 			{
 				Software: &types.Software{
 					Timestamp:  h.parent.firstPacket.String(),

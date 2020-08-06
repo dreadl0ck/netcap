@@ -43,14 +43,14 @@ func (a *SMTP) CSVRecord() []string {
 	}
 	var responses []string
 	for _, r := range a.ResponseLines {
-		responses = append(responses, r.GetString())
+		responses = append(responses, r.getString())
 	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.IsEncrypted), // bool
 		strconv.FormatBool(a.IsResponse),  // bool
 		join(responses...),                // []*SMTPResponse
-		a.Command.GetString(),             // *SMTPCommand
+		a.Command.getString(),             // *SMTPCommand
 		a.Context.SrcIP,
 		a.Context.DstIP,
 		a.Context.SrcPort,
@@ -62,7 +62,7 @@ func (a *SMTP) Time() string {
 	return a.Timestamp
 }
 
-func (a SMTPCommand) GetString() string {
+func (a SMTPCommand) getString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(a.Command))
@@ -72,7 +72,7 @@ func (a SMTPCommand) GetString() string {
 	return b.String()
 }
 
-func (a SMTPResponse) GetString() string {
+func (a SMTPResponse) getString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(a.ResponseCode))

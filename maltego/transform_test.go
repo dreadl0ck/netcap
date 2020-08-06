@@ -16,7 +16,7 @@ import (
 const generateMaltegoConfig = false
 
 // additional transforms
-var transforms = []TransformCoreInfo{
+var transforms = []transformCoreInfo{
 	{"ToApplicationCategories", "netcap.IPAddr", "Retrieve categories of classified applications"},
 	{"ToApplications", "netcap.IPAddr", "Show all applications used by the selected host"},
 	{"ToApplicationsForCategory", "maltego.Service", "Retrieve applications seen for a given category"},
@@ -226,7 +226,7 @@ func TestToTransformDisplayName(t *testing.T) {
 //}
 
 func genServerListing(outDir string) {
-	srv := Server{
+	srv := server{
 		Name:        "Local",
 		Enabled:     true,
 		Description: "Local transforms hosted on this machine",
@@ -278,7 +278,7 @@ func genServerListing(outDir string) {
 }
 
 func genTransformSet(outDir string) {
-	set := TransformSet{
+	set := transformSet{
 		Name:        "NETCAP",
 		Description: "Transformations on NETCAP audit records",
 	}
@@ -330,7 +330,7 @@ func TestGenerateTransformServerListing(t *testing.T) {
  <Seeds/>
 </MaltegoServer>`
 
-	srv := Server{
+	srv := server{
 		Name:        "Local",
 		Enabled:     true,
 		Description: "Local transforms hosted on this machine",
@@ -391,14 +391,14 @@ func TestGenerateTransformSettings(t *testing.T) {
  </Properties>
 </TransformSettings>`
 
-	tr := TransformSettings{
+	tr := transformSettings{
 		Enabled:            true,
 		DisclaimerAccepted: false,
 		ShowHelp:           true,
 		RunWithAll:         true,
 		Favorite:           false,
-		Property: TransformSettingProperties{
-			Items: []TransformSettingProperty{
+		Property: transformSettingProperties{
+			Items: []transformSettingProperty{
 				{
 					Name:  "transform.local.command",
 					Type:  "string",

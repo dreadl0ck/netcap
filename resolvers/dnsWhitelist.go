@@ -53,7 +53,7 @@ func InitDNSWhitelist() {
 		hosts++
 	}
 
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", hosts, "whitelisted DNS hosts")
 	}
 }

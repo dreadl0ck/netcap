@@ -71,7 +71,7 @@ func (a *GRE) CSVRecord() []string {
 		formatUint32(a.Key),                     // uint32
 		formatUint32(a.Seq),                     // uint32
 		formatUint32(a.Ack),                     // uint32
-		a.Routing.GetString(),                   // *GRERouting
+		a.Routing.getString(),                   // *GRERouting
 		a.Context.SrcIP,
 		a.Context.DstIP,
 		a.Context.SrcPort,
@@ -83,7 +83,7 @@ func (a *GRE) Time() string {
 	return a.Timestamp
 }
 
-func (r *GRERouting) GetString() string {
+func (r *GRERouting) getString() string {
 	if r == nil {
 		return ""
 	}
@@ -99,7 +99,7 @@ func (r *GRERouting) GetString() string {
 	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(r.RoutingInformation))
 	b.WriteString(Separator)
-	b.WriteString(r.Next.GetString())
+	b.WriteString(r.Next.getString())
 	b.WriteString(End)
 
 	return b.String()

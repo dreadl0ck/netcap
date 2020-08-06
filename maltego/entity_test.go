@@ -14,13 +14,13 @@ import (
 )
 
 // additional entities that are not actual NETCAP audit records
-var entities = []EntityCoreInfo{
+var entities = []entityCoreInfo{
 	{"CaptureProcess", "remove_red_eye", "An operating system NETCAP process that captures traffic from a network interface", "", nil},
 	{"ContentType", "category", "A MIME type describes different multi-media formats", "", nil},
 	{"Credentials", "security", "Credentials for accessing services that require user authentication", "netcap.IPAddr", nil},
 	{"Email", "mail_outline", "An email message", "maltego.Email", nil},
-	{"Interface", "router", "A network interface", "", []PropertyField{newRequiredStringField("name", "Name of the network interface")}},
-	{"PCAP", "sd_storage", "A packet capture dump file", "", []PropertyField{newRequiredStringField("path", "Absolute path to the PCAP file")}},
+	{"Interface", "router", "A network interface", "", []propertyField{newRequiredStringField("name", "Name of the network interface")}},
+	{"PCAP", "sd_storage", "A packet capture dump file", "", []propertyField{newRequiredStringField("path", "Absolute path to the PCAP file")}},
 	{"Device", "devices", "A device seen on the network", "", nil},
 	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},
 	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
@@ -204,14 +204,14 @@ func TestGenerateDHCPClientXMLEntity(t *testing.T) {
 		AllowedRoot:       true,
 		ConversionOrder:   "2147483647",
 		Visible:           true,
-		Properties: EntityProperties{
+		Properties: entityProperties{
 			XMLName:      xml.Name{},
 			Text:         "",
 			Value:        "properties.dhcpclient",
 			DisplayValue: "properties.dhcpclient",
-			Fields: Fields{
+			Fields: fields{
 				Text: "",
-				Items: []PropertyField{
+				Items: []propertyField{
 					{
 						Name:        "properties.dhcpclient",
 						Type:        "string",

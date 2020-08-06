@@ -38,10 +38,10 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// Exploit models information about a software exploit.
+// exploit models information about a software exploit.
 // TODO: can we use the protobuf from types package instead?
-type Exploit struct {
-	Id          string
+type exploit struct {
+	ID          string
 	File        string
 	Description string
 	Date        string
@@ -51,10 +51,10 @@ type Exploit struct {
 	Port        string
 }
 
-// Vulnerability models information about a software Vulnerability.
+// vulnerability models information about a software Vulnerability.
 // TODO: can we use the protobuf from types package instead?
-type Vulnerability struct {
-	Id                    string
+type vulnerability struct {
+	ID                    string
 	Description           string
 	Severity              string
 	V2Score               string
@@ -81,12 +81,14 @@ func intermediatePatchVersions(from string, until string) []string {
 	var out []string
 
 	parts := strings.Split(from, ".")
+
 	patch, err := strconv.Atoi(parts[len(parts)-1])
 	if err != nil {
 		return nil
 	}
 
 	untilParts := strings.Split(until, ".")
+
 	untilInt, err := strconv.Atoi(untilParts[len(untilParts)-1])
 	if err != nil {
 		return nil
@@ -98,6 +100,7 @@ func intermediatePatchVersions(from string, until string) []string {
 	}
 
 	var numRounds int
+
 	for i := patch; i < untilInt; i++ {
 		patch++
 		numRounds++
@@ -176,11 +179,11 @@ func indexData(in string) {
 			count++
 			utils.ClearLine()
 			fmt.Print("processing: ", count, " / ", total)
-			e := Exploit{
-				Id:          rec[0],
+			e := exploit{
+				ID:          rec[0],
 				Description: rec[2],
 			}
-			err = index.Index(e.Id, e)
+			err = index.Index(e.ID, e)
 			if err != nil {
 				fmt.Println(err, r)
 			}
@@ -246,6 +249,7 @@ func indexData(in string) {
 				break
 			} else if err != nil {
 				fmt.Println(err, rec)
+
 				continue
 			}
 			count++
@@ -254,8 +258,8 @@ func indexData(in string) {
 
 			fmt.Print("processing: ", count, " / ", total)
 
-			e := Exploit{
-				Id:          rec[0],
+			e := exploit{
+				ID:          rec[0],
 				File:        rec[1],
 				Description: rec[2],
 				Date:        rec[3],
@@ -265,7 +269,7 @@ func indexData(in string) {
 				Port:        rec[7],
 			}
 
-			err = index.Index(e.Id, e)
+			err = index.Index(e.ID, e)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -372,8 +376,8 @@ func indexData(in string) {
 						}
 						// fmt.Println(" ", v.Cve.CVEDataMeta.ID, entry.Value, " =>", versions)
 
-						e := Vulnerability{
-							Id:                    v.Cve.CVEDataMeta.ID,
+						e := vulnerability{
+							ID:                    v.Cve.CVEDataMeta.ID,
 							Description:           entry.Value,
 							Severity:              v.Impact.BaseMetricV2.Severity,
 							V2Score:               strconv.FormatFloat(v.Impact.BaseMetricV2.CvssV2.BaseScore, 'f', 1, 64),
@@ -390,7 +394,7 @@ func indexData(in string) {
 							Versions:              versions,
 						}
 
-						err = index.Index(e.Id, e)
+						err = index.Index(e.ID, e)
 						if err != nil {
 							fmt.Println(err)
 						}

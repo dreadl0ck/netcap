@@ -31,21 +31,21 @@ type Service struct {
 }
 
 // AtomicDeviceProfileMap contains all connections and provides synchronized access
-type AtomicServiceMap struct {
-	// map Server IP + Port to Service
+type atomicServiceMap struct {
+	// map server IP + Port to Service
 	Items map[string]*Service
 	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map
-func (a *AtomicServiceMap) Size() int {
+func (a *atomicServiceMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
 	return len(a.Items)
 }
 
 // ServiceStore hold all connections
-var ServiceStore = &AtomicServiceMap{
+var ServiceStore = &atomicServiceMap{
 	Items: make(map[string]*Service),
 }
 
@@ -113,7 +113,7 @@ func saveTCPServiceBanner(s StreamReader) {
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	serv := NewService(s.FirstPacket().String(), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
+	serv := newService(s.FirstPacket().String(), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
 	serv.Banner = banner
 	serv.IP = s.Network().Dst().String()
 	serv.Port = s.Transport().Dst().String()
@@ -140,7 +140,7 @@ func saveTCPServiceBanner(s StreamReader) {
 }
 
 // NewDeviceProfile creates a new network service
-func NewService(ts string, numBytesServer int, numBytesClient int, ip string) *Service {
+func newService(ts string, numBytesServer int, numBytesClient int, ip string) *Service {
 	var host string
 	if resolvers.CurrentConfig.ReverseDNS {
 		host = strings.Join(resolvers.LookupDNSNames(ip), "; ")
@@ -162,7 +162,7 @@ var serviceDecoder = NewCustomDecoder(
 	"Service",
 	"A network service",
 	func(d *CustomDecoder) error {
-		return InitServiceProbes()
+		return initServiceProbes()
 	},
 	func(p gopacket.Packet) proto.Message {
 		return nil

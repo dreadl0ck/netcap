@@ -54,7 +54,7 @@ func InitIPWhitelist() {
 		hosts++
 	}
 
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", hosts, "whitelisted IP hosts")
 	}
 }

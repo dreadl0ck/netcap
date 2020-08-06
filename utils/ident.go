@@ -5,13 +5,14 @@ import "strings"
 // ChopTransportIdent returns the transport part of a flow identifier
 // e.g: 192.168.1.47->165.227.109.154-53032->80
 // will return: 53032->80.
-func ChopTransportIdent(in string) string {
-	arr := strings.Split(in, "-")
-	if len(arr) != 4 {
-		return ""
-	}
-	return arr[2] + "-" + arr[3]
-}
+// func ChopTransportIdent(in string) string {
+//	arr := strings.Split(in, "-")
+//	if len(arr) != 4 {
+//		return ""
+//	}
+//
+//	return arr[2] + "-" + arr[3]
+// }
 
 // ReverseIdent reverses the flow identifier
 // e.g: 192.168.1.47->165.227.109.154-53032->80

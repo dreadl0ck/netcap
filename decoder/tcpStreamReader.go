@@ -125,7 +125,7 @@ func (t *tcpStreamReader) ConversationRaw() []byte {
 }
 
 func (t *tcpStreamReader) ConversationColored() []byte {
-	return t.parent.ConversationColored()
+	return t.parent.conversationDataColored()
 }
 
 func (t *tcpStreamReader) IsClient() bool {

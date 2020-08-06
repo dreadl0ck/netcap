@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	Quiet          bool
+	quiet          bool
 	CurrentConfig  Config
 	DataBaseSource string
 )
@@ -33,7 +33,7 @@ func init() {
 
 // Init can be used to initialize the resolvers package according to the provided configuration
 func Init(c Config, quiet bool) {
-	Quiet = quiet
+	quiet = quiet
 	CurrentConfig = c
 
 	if c.ReverseDNS {

@@ -23,7 +23,7 @@ import (
 )
 
 // Icons/Netcap/sim_card_alert.xml
-var Icon = `<Icon>
+var icon = `<Icon>
 <Aliases/>
 </Icon>`
 
@@ -82,7 +82,7 @@ func generateSizes(newBase string, newPath string) {
 		log.Fatal(err)
 	}
 
-	_, err = fXML.WriteString(Icon)
+	_, err = fXML.WriteString(icon)
 	if err != nil {
 		log.Fatal(err)
 	}

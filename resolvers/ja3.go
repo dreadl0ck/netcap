@@ -141,7 +141,7 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 		}
 	}
 
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }
@@ -164,7 +164,7 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 		addToJa3DB(sum, &updated, &sums)
 	}
 
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }
@@ -196,7 +196,7 @@ func parseSummaries(data []byte, f os.FileInfo) {
 
 		addToJa3DB(sum, &updated, &sums)
 	}
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }

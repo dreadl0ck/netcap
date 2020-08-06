@@ -35,7 +35,7 @@ type FlowCountFunc = func(flow *types.Flow, ipaddr string, min, max *uint64, siz
 
 // CountIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all incoming flows for a given ip address
-var CountIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+var countIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
 
 		*sizes = append(*sizes, int(flow.TotalSize))
@@ -99,7 +99,7 @@ var CountIncomingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *u
 // CountOutgoingFlowBytesFiltered returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all outgoing flows from a given ip address
 // filtered against the domain whitelist
-var CountOutgoingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+var countOutgoingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.SrcIP == ipaddr {
 
 		*sizes = append(*sizes, int(flow.TotalSize))
@@ -146,7 +146,7 @@ var CountOutgoingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, 
 
 // CountPacketsDevices returns the lowest and highest number of packets as well as an array of sizes
 // seen for all outgoing flows from a given ip address
-var CountOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+var countOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.SrcIP == ipaddr {
 
 		*sizes = append(*sizes, int(flow.TotalSize))

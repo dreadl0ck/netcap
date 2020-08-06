@@ -37,7 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-type AttackInfo struct {
+type attackInfo struct {
 	Num      int       `csv:"num"`
 	Name     string    `csv:"name"`
 	Start    time.Time `csv:"start"`
@@ -48,7 +48,7 @@ type AttackInfo struct {
 	Category string    `csv:"category"`
 }
 
-func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*AttackInfo) {
+func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*attackInfo) {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
@@ -62,10 +62,10 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 	}
 
 	// alerts that have a duplicate timestamp
-	duplicates := []*AttackInfo{}
+	duplicates := []*attackInfo{}
 
 	// ts:alert
-	labelMap = make(map[string]*AttackInfo)
+	labelMap = make(map[string]*attackInfo)
 
 	for _, record := range records[1:] {
 
@@ -93,7 +93,7 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 			return strings.Split(strings.Trim(input, "\""), ";")
 		}
 
-		custom := &AttackInfo{
+		custom := &attackInfo{
 			Num:      num,              // int
 			Start:    start,            // time.Time
 			End:      end,              // time.Time
@@ -140,7 +140,7 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 func CustomLabels(pathMappingInfo, outputPath, separator, selection string) error {
 	var (
 		start            = time.Now()
-		_, labels = ParseAttackInfos(pathMappingInfo)
+		_, labels = parseAttackInfos(pathMappingInfo)
 	)
 	if len(labels) == 0 {
 		fmt.Println("no labels found.")
@@ -226,7 +226,7 @@ func CustomLabels(pathMappingInfo, outputPath, separator, selection string) erro
 
 // CustomMap uses info from a csv file to label the data
 // func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-func CustomMap(wg *sync.WaitGroup, file, typ string, labels []*AttackInfo, outDir, separator, selection string) *pb.ProgressBar {
+func CustomMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
 		total, errCount = netcap.Count(fname)

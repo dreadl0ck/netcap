@@ -60,7 +60,7 @@ type StreamData struct {
 // StreamDataSlice implements sort.Interface to sort data fragments based on their timestamps
 type StreamDataSlice []*StreamData
 
-func (d StreamDataSlice) Bytes() []byte {
+func (d StreamDataSlice) bytes() []byte {
 	var b bytes.Buffer
 	for _, data := range d {
 		b.Write(data.raw)

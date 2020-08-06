@@ -76,7 +76,7 @@ func InitMACResolver() {
 		macDB[sum.OUI] = sum
 		sums++
 	}
-	if !Quiet {
+	if !quiet {
 		utils.DebugLog.Println("loaded", sums, "OUI summaries")
 	}
 }
