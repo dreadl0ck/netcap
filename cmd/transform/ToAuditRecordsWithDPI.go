@@ -2,10 +2,11 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket/pcap"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/dreadl0ck/gopacket/pcap"
 
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/maltego"
@@ -41,7 +42,7 @@ func toAuditRecordsWithDPI() {
 	os.Stdout = os.Stderr
 
 	// create storage path for audit records
-	//start := time.Now()
+	// start := time.Now()
 
 	// create the output directory in the same place as the input file
 	// the directory for this will be named like the input file with an added .net extension

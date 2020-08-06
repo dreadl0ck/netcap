@@ -71,6 +71,7 @@ func sendUDP(ctx context.Context, address string, reader io.Reader) error {
 	select {
 	case <-ctx.Done():
 		fmt.Println("canceled")
+
 		err = ctx.Err()
 	case err = <-doneChan:
 	}

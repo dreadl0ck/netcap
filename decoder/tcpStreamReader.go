@@ -28,8 +28,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// internal structure that is used to read TCP data streams
-// this structure has an optimized field order to avoid excessive padding
+// tcpStreamReader is an internal structure that is used to read TCP data streams
+// this structure has an optimized field order to avoid excessive padding.
 type tcpStreamReader struct {
 	serviceBanner      bytes.Buffer
 	data               []*streamData
@@ -155,12 +155,14 @@ func (t *tcpStreamReader) FirstPacket() time.Time {
 func (t *tcpStreamReader) Saved() bool {
 	t.parent.Lock()
 	defer t.parent.Unlock()
+
 	return t.saved
 }
 
 func (t *tcpStreamReader) NumBytes() int {
 	t.parent.Lock()
 	defer t.parent.Unlock()
+
 	return t.numBytes
 }
 
@@ -183,6 +185,7 @@ func (t *tcpStreamReader) MarkSaved() {
 func (t *tcpStreamReader) ServiceIdent() string {
 	t.parent.Lock()
 	defer t.parent.Unlock()
+
 	return filepath.Clean(fmt.Sprintf("%s->%s", t.parent.server.Network().Dst(), t.parent.server.Transport().Dst()))
 }
 
@@ -197,6 +200,7 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 			for _, b := range d.raw {
 				t.serviceBanner.WriteByte(b)
 				t.serviceBannerBytes++
+
 				if t.serviceBannerBytes == c.BannerSize {
 					break
 				}
@@ -207,7 +211,7 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 	return t.serviceBanner.Bytes()
 }
 
-// run starts reading TCP traffic in a single direction
+// Run starts reading TCP traffic in a single direction.
 func (t *tcpStreamReader) Run(f *tcpConnectionFactory) {
 	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
 	defer t.Cleanup(f)
@@ -216,10 +220,10 @@ func (t *tcpStreamReader) Run(f *tcpConnectionFactory) {
 		err error
 		b   = bufio.NewReader(t)
 	)
+
 	for {
 		err = t.readStream(b)
 		if err != nil {
-
 			// exit on EOF
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				return
@@ -236,12 +240,14 @@ func (t *tcpStreamReader) Run(f *tcpConnectionFactory) {
 
 func (t *tcpStreamReader) readStream(b io.ByteReader) error {
 	var err error
+
 	for {
 		_, err = b.ReadByte()
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return err
 		} else if err != nil {
 			logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", t.ident, err)
+
 			return err
 		}
 	}

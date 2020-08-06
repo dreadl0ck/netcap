@@ -35,11 +35,11 @@ type streamReader interface {
 	MarkSaved()
 	ServiceIdent() string
 
-	// util functions that provide access to the entire stream via parent
+	// ConversationRaw is a util function that provides access to the entire stream via parent
 	ConversationRaw() []byte
 	ConversationColored() []byte
 
-	// sort all stream fragments based on their timestamp
+	// SortAndMergeFragments sorts all stream fragments based on their timestamp
 	// and generate the conversation buffers
 	SortAndMergeFragments()
 }

@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// Implements decoders to transform network packets into protocol buffers for various protocols
+// Package decoder implements decoders to transform network packets into protocol buffers for various protocols
 package decoder
 
 import (

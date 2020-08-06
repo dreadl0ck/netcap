@@ -303,7 +303,6 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 
 // TODO: pass in the device profile
 func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
-
 	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
 	if len(h.UserAgent) != 0 && h.UserAgent != " " {

@@ -38,6 +38,7 @@ func (a *AtomicDelimitedWriter) PutProto(pb proto.Message) error {
 	a.Lock()
 	err := a.w.PutProto(pb)
 	a.Unlock()
+
 	return err
 }
 

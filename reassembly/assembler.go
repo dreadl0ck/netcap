@@ -176,10 +176,10 @@ type assemblerAction struct {
 //    zero or one call to ReassemblyComplete on the same stream
 func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac AssemblerContext) {
 	var (
-		conn *connection
-		half *halfconnection
-		rev  *halfconnection
-		flowKey  = &key{netFlow, t.TransportFlow()}
+		conn    *connection
+		half    *halfconnection
+		rev     *halfconnection
+		flowKey = &key{netFlow, t.TransportFlow()}
 	)
 
 	// RACE

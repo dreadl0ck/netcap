@@ -59,7 +59,7 @@ func PrintLogo() {
 	fmt.Println(logo)
 }
 
-// PrintLogo prints the netcap logo
+// FPrintLogo PrintLogo prints the netcap logo
 func FPrintLogo(w io.Writer) {
 	fmt.Fprintln(w, logo)
 }
@@ -70,7 +70,7 @@ func PrintBuildInfo() {
 	FPrintBuildInfo(os.Stdout)
 }
 
-// PrintBuildInfo displays build information related to netcap to the specified io Writer
+// FPrintBuildInfo PrintBuildInfo displays build information related to netcap to the specified io Writer
 func FPrintBuildInfo(w io.Writer) {
 	fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
 	fmt.Fprintln(w, "> NETCAP build commit:", commit)

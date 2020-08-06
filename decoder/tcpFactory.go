@@ -68,8 +68,8 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reasse
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
 
 	stream := &tcpConnection{
-		net:       net,
-		transport: transport,
+		net:         net,
+		transport:   transport,
 		tcpstate:    reassembly.NewTCPSimpleFSM(factory.fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),

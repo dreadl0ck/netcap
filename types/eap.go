@@ -70,7 +70,7 @@ func (a *EAP) Inc() {
 
 func (a *EAP) SetPacketContext(*PacketContext) {}
 
-// TODO: return Mac addr
+// Src TODO: return Mac addr
 func (a *EAP) Src() string {
 	return ""
 }

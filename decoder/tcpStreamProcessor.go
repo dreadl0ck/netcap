@@ -10,6 +10,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+
 package decoder
 
 import (
@@ -19,7 +20,7 @@ import (
 )
 
 // internal data structure to parallelize processing of tcp streams
-// when the core engine is stopped and the remaining open connections are processed
+// when the core engine is stopped and the remaining open connections are processed.
 type tcpStreamProcessor struct {
 	workers    []chan streamReader
 	numWorkers int

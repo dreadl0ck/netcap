@@ -45,6 +45,7 @@ var diameterDecoder = newGoPacketDecoder(
 					ValueLen:        a.ValueLen,
 				})
 			}
+
 			return &types.Diameter{
 				Timestamp:     timestamp,
 				Version:       uint32(d.Version),
@@ -57,6 +58,7 @@ var diameterDecoder = newGoPacketDecoder(
 				AVPs:          avps,
 			}
 		}
+
 		return nil
 	},
 )

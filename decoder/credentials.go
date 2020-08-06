@@ -39,14 +39,14 @@ const (
 
 // credentialHarvester is a function that takes the data of a bi-directional network stream over TCP
 // as well as meta information and searches for credentials in the data
-// on success a pointer to a types.Credential is returned, nil otherwise
+// on success a pointer to a types.Credential is returned, nil otherwise.
 type credentialHarvester func(data []byte, ident string, ts time.Time) *types.Credentials
 
 var (
 	useHarvesters = false
 
 	// harvesters to be ran against all seen bi-directional communication in a TCP session
-	// new harvesters must be added here in order to get called
+	// new harvesters must be added here in order to get called.
 	tcpConnectionHarvesters = []credentialHarvester{
 		ftpHarvester,
 		httpHarvester,
@@ -56,7 +56,7 @@ var (
 	}
 
 	// mapped port number to the harvester based on the IANA standards
-	// used for the first guess which harvester to use
+	// used for the first guess which harvester to use.
 	harvesterPortMapping = map[int]credentialHarvester{
 		21:  ftpHarvester,
 		80:  httpHarvester,
@@ -67,7 +67,7 @@ var (
 		143: imapHarvester,
 	}
 
-	// regular expressions for the harvesters
+	// regular expressions for the harvesters.
 	reFTP               = regexp.MustCompile(`220(?:.*?)\r\n(?:.*)\r?\n?(?:.*)\r?\n?USER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
 	reHTTPBasic         = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
 	reHTTPDigest        = regexp.MustCompile(`(?:.*?)Authorization: Digest (.*?)\r\n`)
@@ -83,7 +83,7 @@ var (
 
 	// credStore is used to deduplicate the credentials written to disk
 	// it maps an identifier in the format: c.Service + c.User + c.Password
-	// to the flow ident where the data was observed
+	// to the flow ident where the data was observed.
 	credStore   = make(map[string]string)
 	credStoreMu sync.Mutex
 )
@@ -92,7 +92,7 @@ func harvesterDebug(ident string, data []byte, args ...interface{}) {
 	fmt.Println(ident, "\n", hex.Dump(data), args)
 }
 
-// harvester for the FTP protocol
+// harvester for the FTP protocol.
 func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	// harvesterDebug(ident, data, serviceFTP)
 
@@ -110,7 +110,7 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
-// harvester for the HTTP protocol
+// harvester for the HTTP protocol.
 func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	var (
 		matchesBasic  = reHTTPBasic.FindSubmatch(data)
@@ -185,7 +185,7 @@ func decodeSMTPLogin(in [][]byte, typ string) (user, pass string) {
 	return string(usernameBin), string(passwordBin)
 }
 
-// harvester for the SMTP protocol
+// harvester for the SMTP protocol.
 func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	var (
 		username             string
@@ -227,7 +227,7 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
-// harvester for telnet traffic
+// harvester for telnet traffic.
 func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	matches := reTelnet.FindSubmatch(data)
 	if len(matches) > 1 {
@@ -248,7 +248,7 @@ func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials
 	return nil
 }
 
-// harvester for the IMAP protocol
+// harvester for the IMAP protocol.
 func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	var (
 		username             string
@@ -392,7 +392,7 @@ var credentialsDecoder = newCustomDecoder(
 //}
 
 // writeCredentials is a util that should be used to write credential audit to disk
-// it will deduplicate the audit records to avoid repeating information on disk
+// it will deduplicate the audit records to avoid repeating information on disk.
 func writeCredentials(conn *types.Credentials) {
 	ident := conn.Service + conn.User + conn.Password
 

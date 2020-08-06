@@ -62,12 +62,12 @@ func (a *SSH) Inc() {
 
 func (a *SSH) SetPacketContext(*PacketContext) {}
 
-// TODO: preserve source and destination mac adresses for SSH and return them here
+// Src TODO: preserve source and destination mac adresses for SSH and return them here
 func (a *SSH) Src() string {
 	return ""
 }
 
-// TODO: preserve source and destination mac adresses for SSH and return them here
+// Dst TODO: preserve source and destination mac adresses for SSH and return them here
 func (a *SSH) Dst() string {
 	return ""
 }

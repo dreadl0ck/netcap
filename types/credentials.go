@@ -59,12 +59,12 @@ func (c *Credentials) Inc() {
 
 func (a *Credentials) SetPacketContext(*PacketContext) {}
 
-// TODO: preserve source and destination mac adresses for Credentials and return them here
+// Src TODO: preserve source and destination mac adresses for Credentials and return them here.
 func (c *Credentials) Src() string {
 	return ""
 }
 
-// TODO: preserve source and destination mac adresses for Credentials and return them here
+// Dst TODO: preserve source and destination mac adresses for Credentials and return them here.
 func (c *Credentials) Dst() string {
 	return ""
 }

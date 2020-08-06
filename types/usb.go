@@ -99,12 +99,12 @@ func (u *USB) Inc() {
 
 func (u *USB) SetPacketContext(*PacketContext) {}
 
-// TODO return source DeviceAddress?
+// Src TODO return source DeviceAddress?
 func (u *USB) Src() string {
 	return ""
 }
 
-// TODO return destination DeviceAddress?
+// Dst TODO return destination DeviceAddress?
 func (u *USB) Dst() string {
 	return ""
 }

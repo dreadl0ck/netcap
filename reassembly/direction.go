@@ -8,7 +8,7 @@ package reassembly
 // be interpreted differently.
 type TCPFlowDirection bool
 
-// Value are not really useful
+// Value are not really useful.
 const (
 	TCPDirClientToServer TCPFlowDirection = false
 	TCPDirServerToClient TCPFlowDirection = true
@@ -24,7 +24,7 @@ func (dir TCPFlowDirection) String() string {
 	return ""
 }
 
-// Reverse returns the reversed direction
+// Reverse returns the reversed direction.
 func (dir TCPFlowDirection) Reverse() TCPFlowDirection {
 	return !dir
 }

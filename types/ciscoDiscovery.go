@@ -84,7 +84,7 @@ func (cd *CiscoDiscovery) Inc() {
 
 func (a *CiscoDiscovery) SetPacketContext(*PacketContext) {}
 
-// TODO
+// Src TODO
 func (cd *CiscoDiscovery) Src() string {
 	return ""
 }

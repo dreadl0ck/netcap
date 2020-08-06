@@ -231,7 +231,6 @@ func (fd *flowCustomDecoder) writeFlow(f *types.Flow) {
 
 	atomic.AddInt64(&fd.numRecords, 1)
 	err := fd.writer.Write(f)
-
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

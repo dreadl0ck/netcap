@@ -6,7 +6,7 @@
  *
  */
 
-// Implements primitives for maltego transformations over netcap audit records
+// Package maltego Implements primitives for maltego transformations over netcap audit records
 package maltego
 
 import (
@@ -118,7 +118,7 @@ func newEntityObj(eT string, eV string) *EntityObj {
 	return &EntityObj{entityType: eT, value: eV, weight: 100}
 }
 
-/*Next we handle the MalteoTransform class from Python*/
+// Transform /*Next we handle the MalteoTransform class from Python*/
 type Transform struct {
 	entities   []*EntityObj
 	exceptions [][]string
@@ -356,7 +356,7 @@ func (m *msgObj) getTransformSetting(t string) string {
 	return m.TransformSettings[t]
 }
 
-/* 4. Handle local transform from stdin */
+// LocalTransform /* 4. Handle local transform from stdin */
 type LocalTransform struct {
 	Value  string
 	Values map[string]string
