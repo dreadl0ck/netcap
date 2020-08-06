@@ -64,8 +64,8 @@ func (c *Collector) printProgressLive() {
 	}
 }
 
-// DumpProto prints a protobuf Message.
-func DumpProto(pb proto.Message) {
+// dumpProto prints a protobuf Message.
+func dumpProto(pb proto.Message) {
 	println(proto.MarshalTextString(pb))
 }
 

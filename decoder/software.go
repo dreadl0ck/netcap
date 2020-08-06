@@ -555,8 +555,8 @@ func writeSoftware(software []*Software, update func(s *Software)) {
 	}
 }
 
-// NewDeviceProfile creates a new device specific profile
-func NewSoftware(i *packetInfo) *Software {
+// newSoftware creates a new device specific profile
+func newSoftware(i *packetInfo) *Software {
 	return &Software{
 		Software: &types.Software{
 			Timestamp: i.timestamp,

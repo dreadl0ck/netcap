@@ -6,8 +6,6 @@ import (
 	"log"
 	"sync"
 	"time"
-
-	"github.com/dreadl0ck/gopacket/layers"
 )
 
 /*
@@ -137,7 +135,7 @@ func (p *StreamPool) getHalf(k *key) (*connection, *halfconnection, *halfconnect
 // getConnection returns a connection.  If end is true and a connection
 // does not already exist, returns nil.  This allows us to check for a
 // connection without actually creating one if it doesn't already exist.
-func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, tcp *layers.TCP, ac AssemblerContext) (*connection, *halfconnection, *halfconnection) {
+func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, ac AssemblerContext) (*connection, *halfconnection, *halfconnection) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -147,7 +145,7 @@ func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, tcp *layers.T
 		return conn, half, rev
 	}
 
-	s := p.factory.New(k[0], k[1], tcp, ac)
+	s := p.factory.New(k[0], k[1], ac)
 
 	conn, half, rev = p.newConnection(k, s, ts)
 
@@ -157,9 +155,12 @@ func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, tcp *layers.T
 			fmt.Println(conn.key, conn.c2s)
 			panic("FIXME: other dir added in the meantime...")
 		}
+
 		// FIXME: delete s ?
 		return conn2, half2, rev2
 	}
+
 	p.conns[*k] = conn
+
 	return conn, half, rev
 }

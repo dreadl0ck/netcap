@@ -14,8 +14,8 @@ import (
 //    2) Call ReassembledSG 0 or more times, passing in reassembled TCP data in order
 //    3) Call ReassemblyComplete one time, after which the stream is dereferenced by assembly.
 type Stream interface {
-	// Tell whether the TCP packet should be accepted, start could be modified to force a start even if no SYN have been seen
-	Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TCPFlowDirection, nextSeq Sequence, start *bool, ac AssemblerContext) bool
+	// Accept tells whether the TCP packet should be accepted, start could be modified to force a start even if no SYN have been seen
+	Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq Sequence) bool
 
 	// ReassembledSG is called zero or more times.
 	// ScatterGather is reused after each Reassembled call,
@@ -37,5 +37,5 @@ type Stream interface {
 // new TCP session.
 type StreamFactory interface {
 	// New should return a new stream for the given TCP key.
-	New(netFlow, tcpFlow gopacket.Flow, tcp *layers.TCP, ac AssemblerContext) Stream
+	New(netFlow, tcpFlow gopacket.Flow, ac AssemblerContext) Stream
 }

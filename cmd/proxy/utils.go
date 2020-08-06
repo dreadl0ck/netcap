@@ -71,17 +71,17 @@ func handleSignals() {
 	}()
 }
 
-// TrimPortIPv4 trims the port number from an IPv4 address string
-func TrimPortIPv4(addr string) string {
-	slice := strings.Split(addr, ":")
-	if len(slice) == 2 {
-		return slice[0]
-	}
-	return addr
-}
+// TrimPortIPv4 trims the port number from an IPv4 address string.
+//func TrimPortIPv4(addr string) string {
+//	slice := strings.Split(addr, ":")
+//	if len(slice) == 2 {
+//		return slice[0]
+//	}
+//	return addr
+//}
 
-// DumpHTTPResponse dumps an http.Response for debugging purposes
-func DumpHTTPResponse(resp *http.Response, proxyName string, rawbody []byte) {
+// dumpHTTPResponse dumps an http.Response for debugging purposes.
+func dumpHTTPResponse(resp *http.Response, proxyName string, rawbody []byte) {
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 	fmt.Println(proxyName + " received an HTTP Response:")
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
@@ -90,7 +90,9 @@ func DumpHTTPResponse(resp *http.Response, proxyName string, rawbody []byte) {
 
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		var gzipBuf bytes.Buffer
+
 		gzipBuf.Write(rawbody)
+
 		gr, err := gzip.NewReader(&gzipBuf)
 		if err != nil {
 			log.Fatal("failed to create gzip reader for response: ", err)
@@ -135,7 +137,7 @@ func DumpHTTPResponse(resp *http.Response, proxyName string, rawbody []byte) {
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 }
 
-// DumpHTTPRequest dumps an http.Request for debugging purposes
+// DumpHTTPRequest dumps an http.Request for debugging purposes.
 func DumpHTTPRequest(req *http.Request, proxyName string) {
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 	fmt.Println(proxyName+" received an HTTP Request: ", req.URL)
@@ -154,18 +156,19 @@ func DumpHTTPRequest(req *http.Request, proxyName string) {
 // Get Remote Address, handles load balancers
 // see: https://husobee.github.io/golang/ip-address/2015/12/17/remote-ip-go.html
 
-// ipRange - a structure that holds the start and end of a range of ip addresses
+// ipRange - a structure that holds the start and end of a range of ip addresses.
 type ipRange struct {
 	start net.IP
 	end   net.IP
 }
 
-// inRange - check to see if a given ip address is within a range given
+// inRange - check to see if a given ip address is within a range given.
 func inRange(r ipRange, ipAddress net.IP) bool {
 	// strcmp type byte comparison
 	if bytes.Compare(ipAddress, r.start) >= 0 && bytes.Compare(ipAddress, r.end) < 0 {
 		return true
 	}
+
 	return false
 }
 
@@ -196,7 +199,7 @@ var privateRanges = []ipRange{
 	},
 }
 
-// isPrivateSubnet - check to see if this ip is in a private subnet
+// isPrivateSubnet - check to see if this ip is in a private subnet.
 func isPrivateSubnet(ipAddress net.IP) bool {
 	// my use case is only concerned with ipv4 atm
 	if ipCheck := ipAddress.To4(); ipCheck != nil {
@@ -208,9 +211,11 @@ func isPrivateSubnet(ipAddress net.IP) bool {
 			}
 		}
 	}
+
 	return false
 }
 
+// getIPAddress will retrieve the ip address of a http.Request.
 func getIPAdress(r *http.Request) string {
 	for _, h := range []string{"X-Forwarded-For", "X-Real-Ip"} {
 		addresses := strings.Split(r.Header.Get(h), ",")
@@ -224,8 +229,10 @@ func getIPAdress(r *http.Request) string {
 				// bad address, go to next
 				continue
 			}
+
 			return ip
 		}
 	}
+
 	return ""
 }

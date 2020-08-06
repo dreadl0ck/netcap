@@ -20,7 +20,6 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/ip4defrag"
-	"github.com/dreadl0ck/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/reassembly"
 )
@@ -33,6 +32,7 @@ func newStreamFactory() *tcpConnectionFactory {
 		fsmOptions: reassembly.TCPSimpleFSMOptions{},
 	}
 	f.StreamPool = reassembly.NewStreamPool(f)
+
 	return f
 }
 
@@ -63,14 +63,13 @@ type tcpConnectionFactory struct {
 
 // New handles a new stream received from the assembler
 // this is the entry point for new network streams
-// depending on the used ports, a dedicated stream reader instance will be started and subsequently fed with new data from the stream
-func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
+// depending on the used ports, a dedicated stream reader instance will be started and subsequently fed with new data from the stream.
+func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reassembly.AssemblerContext) reassembly.Stream {
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
 
 	stream := &tcpConnection{
 		net:       net,
 		transport: transport,
-		// isHTTPS:     tcp.SrcPort == 443 || tcp.DstPort == 443,
 		tcpstate:    reassembly.NewTCPSimpleFSM(factory.fsmOptions),
 		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
 		optchecker:  reassembly.NewTCPOptionCheck(),
@@ -78,9 +77,9 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, tcp *laye
 	}
 
 	// do not write encrypted HTTP streams to disk for now
-	//if stream.isHTTPS {
-	//	return stream
-	//}
+	// if stream.isHTTPS {
+	//	 return stream
+	// }
 
 	stream.decoder = &tcpReader{
 		parent: stream,
