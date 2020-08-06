@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ethernetCTPDecoder = NewGoPacketDecoder(
+var ethernetCTPDecoder = newGoPacketDecoder(
 	types.Type_NC_EthernetCTP,
 	layers.LayerTypeEthernetCTP,
 	"Ethernet Configuration Testing Protocol is a diagnostic protocol included in the Xerox Ethernet II specification",

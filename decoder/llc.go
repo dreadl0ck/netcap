@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var llcDecoder = NewGoPacketDecoder(
+var llcDecoder = newGoPacketDecoder(
 	types.Type_NC_LLC,
 	layers.LayerTypeLLC,
 	"The LLC sublayer acts as an interface between the media access control sublayer and the network layer",

@@ -54,7 +54,7 @@ type software struct {
 	sync.Mutex
 }
 
-// AtomicDeviceProfileMap contains all connections and provides synchronized access
+// atomicDeviceProfileMap contains all connections and provides synchronized access
 type atomicSoftwareMap struct {
 	// mapped product + version to software
 	Items map[string]*software
@@ -580,11 +580,11 @@ func updateSoftwareAuditRecord(dp *deviceProfile, p *software, i *packetInfo) {
 	p.Unlock()
 }
 
-var softwareDecoder = NewCustomDecoder(
+var softwareDecoder = newCustomDecoder(
 	types.Type_NC_Software,
 	"Software",
 	"A software product that was observed on the network",
-	func(d *CustomDecoder) error {
+	func(d *customDecoder) error {
 		if errInitUAParser != nil {
 			return errInitUAParser
 		}
@@ -652,7 +652,7 @@ var softwareDecoder = NewCustomDecoder(
 
 		return nil
 	},
-	func(e *CustomDecoder) error {
+	func(e *customDecoder) error {
 		httpStore.Lock()
 		var rows [][]string
 		for ip, ua := range httpStore.UserAgents {
@@ -681,9 +681,9 @@ var softwareDecoder = NewCustomDecoder(
 	},
 )
 
-// TODO: move into CustomDecoder and use in other places to remove unnecessary package level decoders
+// TODO: move into customDecoder and use in other places to remove unnecessary package level decoders
 // writeProfile writes the profile
-func (cd *CustomDecoder) write(r types.AuditRecord) {
+func (cd *customDecoder) write(r types.AuditRecord) {
 	if c.Export {
 		r.Inc()
 	}

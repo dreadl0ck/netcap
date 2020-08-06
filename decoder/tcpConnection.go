@@ -142,14 +142,14 @@ type tcpConnection struct {
 	conversationRaw     bytes.Buffer
 	conversationColored bytes.Buffer
 
-	merged      StreamDataSlice
+	merged      streamDataSlice
 	firstPacket time.Time
 
-	client StreamReader
-	server StreamReader
+	client streamReader
+	server streamReader
 
 	ident    string
-	decoder  StreamDecoder
+	decoder  streamDecoder
 	tcpstate *reassembly.TCPSimpleFSM
 
 	sync.Mutex
@@ -270,13 +270,13 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 
 	// pass data either to client or server
 	if dir == reassembly.TCPDirClientToServer {
-		t.client.DataChan() <- &StreamData{
+		t.client.DataChan() <- &streamData{
 			raw: dataCpy,
 			ac:  ac,
 			dir: dir,
 		}
 	} else {
-		t.server.DataChan() <- &StreamData{
+		t.server.DataChan() <- &streamData{
 			raw: dataCpy,
 			ac:  ac,
 			dir: dir,
@@ -354,7 +354,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 }
 
 // ReassemblyComplete is called when assembly decides there is
-// no more data for this Stream, either because a FIN or RST packet
+// no more data for this stream, either because a FIN or RST packet
 // was seen, or because the stream has timed out without any new
 // packet data (due to a call to FlushCloseOlderThan).
 // It should return true if the connection should be removed from the pool
@@ -531,7 +531,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 
 	// for debugging:
 	// AssembleWithContextTimeout(packet, assembler, tcp)
-	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
+	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
 
@@ -556,7 +556,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
 	done := make(chan bool, 1)
 	go func() {
-		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &Context{
+		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 			CaptureInfo: packet.Metadata().CaptureInfo,
 		})
 		done <- true
@@ -724,7 +724,7 @@ func waitForConns() chan struct{} {
 	go func() {
 		// WaitGoRoutines waits until the goroutines launched to process TCP streams are done
 		// this will block forever if there are streams that are never shutdown (via RST or FIN flags)
-		streamFactory.WaitGoRoutines()
+		streamFactory.waitGoRoutines()
 		out <- struct{}{}
 	}()
 

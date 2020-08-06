@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ipv4Decoder = NewGoPacketDecoder(
+var ipv4Decoder = newGoPacketDecoder(
 	types.Type_NC_IPv4,
 	layers.LayerTypeIPv4,
 	"Internet Protocol version 4 is the fourth version of the Internet Protocol. It is one of the core protocols of standards-based internetworking methods in the Internet and other packet-switched networks",
@@ -29,7 +29,7 @@ var ipv4Decoder = NewGoPacketDecoder(
 		if ip4, ok := layer.(*layers.IPv4); ok {
 			var e float64
 			if c.CalculateEntropy {
-				e = Entropy(ip4.Payload)
+				e = entropy(ip4.Payload)
 			}
 			var opts []*types.IPv4Option
 			for _, o := range ip4.Options {

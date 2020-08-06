@@ -55,14 +55,14 @@ var CMSHeadersList = []string{"powered", "X-CDN-Forward", "X-Pardot-Rsp", "Expir
 // nolint
 var CSMCookiesList = []string{"MRHSHin", "PHPSESSI", "cookie_nam", "dps_site_i", "pyrocm", "_gphw_mod", "OSTSESSI", "i_like_gogit", "koken_referre", "_zendesk_shared_sessio", "cs_secure_sessio", "lm_onlin", "e107_t", "FOSWIKISTRIKEON", "memberstac", "Domai", "bigwareCsi", "vtex_sessio", "LastMRH_Sessio", "OJSSI", "LithiumVisito", "_kjb_sessio", "ekmpowersho", "swell-sessio", "CMSPreferredCultur", "kohanasessio", "iexexchanger_sessio", "NS_VE", "xf_csr", "MoodleSessio", "ASPSESSIO", "ipbWWLsession_i", "OpenGro", "CMSSESSI", "sf_redirec", "F5_S", "laravel_sessio", "MRHSessio", "TI", "ipbWWLmodpid", "PIWIK_SESSI", "_hybri", "botble_sessio", "websale_a", "xi", "MRHSequenc", "ZENDSERVERSESSI", "TWIKISI", "TNE", "_session_i", "__cfdui", "PUBLICCMS_USE", "ci_csrf_toke", "__utm", "_zendesk_cooki", "EPiServe", "nette-browse", "ushahid", "flyspray_projec", "FESESSIONI", "ahoy_trac", "phpb", "F5_HT_shrinke", "InstantCMS[logdate", "VivvoSessionI", "3dvisi", "cpsessio", "ICMSSessio", "AWSAL", "sensorsdata2015jssdkcros", "osCsi", "_solusquar", "JSESSIONI", "i_like_gite", "REVEL_SESSIO", "ImpressCM", "DokuWik", "OCSESSI", "EPiTrac", "MAKACSESSIO", "sensorsdata2015sessio", "ZM_TES", "INVENIOSESSIO", "hotaru_mobil", "wgSessio", "ASP.NET_SessionI", "PrestaSho", "F5_fullW", "com.salesforc", "JTLSHO", "cakeph", "Dynamicwe", "exp_csrf_toke", "_g", "k_visi", "CraftSessionI", "SC_ANALYTICS_GLOBAL_COOKI", "_ga", "graffitibo", "ahoy_visi", "xf_sessio", "_help_center_sessio", "SFOSWIKISI", "YII_CSRF_TOKE", "PLAY_SESSIO", "cprelogi", "fronten", "_gitlab_sessio", "_redmine_sessio", "exp_tracke", "spincms_sessio", "bblastvisi", "ci_sessio", "__derak_use", "REVEL_FLAS", "ARRAffinit", "bf_sessio", "ahoy_visito", "AWSEL", "datadom", "pinoox_sessio", "grwng_ui", "sails.si", "DotNetNukeAnonymou", "blesta_si", "Bugzilla_login_request_cooki", "exp_last_activit", "eZSESSI", "gr_user_i", "ARK_I", "CONCRETE", "_gauges", "TiPMi", "bblastactivit", "uCo", "Grand.custome", "Nop.custome", "AWSALBCOR", "MOODLEID", "VtexWorkspac", "phsi", "__derak_aut", "october_sessio", "bbsessionhas", "MOIN_SESSIO", "VtexFingerPrin", "bigWAdminI"}
 
-// HeaderForApps -> HTTP header structure
-type HeaderForApps struct {
+// headerForApps -> HTTP header structure
+type headerForApps struct {
 	HeaderName  string
 	HeaderValue string
 }
 
-// CookieForApps -> HTTP cookie structure
-type CookieForApps struct {
+// cookieForApps -> HTTP cookie structure
+type cookieForApps struct {
 	CookieName  string
 	CookieValue string
 }
@@ -82,9 +82,9 @@ type HTTPMetaStore struct {
 	// mapped ip address to user agents
 	XPoweredBy map[string]string
 
-	CMSHeaders map[string][]HeaderForApps
+	CMSHeaders map[string][]headerForApps
 
-	CMSCookies map[string][]CookieForApps
+	CMSCookies map[string][]cookieForApps
 
 	sync.Mutex
 }
@@ -96,8 +96,8 @@ var httpStore = &HTTPMetaStore{
 	UserAgents:  make(map[string]string),
 	Vias:        make(map[string]string),
 	XPoweredBy:  make(map[string]string),
-	CMSHeaders:  make(map[string][]HeaderForApps),
-	CMSCookies:  make(map[string][]CookieForApps),
+	CMSHeaders:  make(map[string][]headerForApps),
+	CMSCookies:  make(map[string][]cookieForApps),
 }
 
 /*
@@ -326,7 +326,7 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	// Iterate over the possible CMS headers. If present, add them to the httpStore
 	for _, cmsHeader := range CMSHeadersList {
 		if x, ok := h.ResponseHeader[cmsHeader]; ok {
-			httpStore.CMSHeaders[h.DstIP] = append(httpStore.CMSHeaders[h.DstIP], HeaderForApps{HeaderName: cmsHeader, HeaderValue: x})
+			httpStore.CMSHeaders[h.DstIP] = append(httpStore.CMSHeaders[h.DstIP], headerForApps{HeaderName: cmsHeader, HeaderValue: x})
 		}
 	}
 
@@ -343,7 +343,7 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 		}
 		for _, csmCookie := range CSMCookiesList {
 			if cookieKey == csmCookie {
-				httpStore.CMSCookies[h.DstIP] = append(httpStore.CMSCookies[h.DstIP], CookieForApps{CookieName: cookieKey, CookieValue: cookieValue})
+				httpStore.CMSCookies[h.DstIP] = append(httpStore.CMSCookies[h.DstIP], cookieForApps{CookieName: cookieKey, CookieValue: cookieValue})
 			}
 		}
 	}

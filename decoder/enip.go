@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ethernetIPDecoder = NewGoPacketDecoder(
+var ethernetIPDecoder = newGoPacketDecoder(
 	types.Type_NC_ENIP,
 	layers.LayerTypeENIP,
 	"Industrial network protocol that adapts the Common Industrial Protocol to standard Ethernet",

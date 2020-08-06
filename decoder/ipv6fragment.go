@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ip6FragmentDecoder = NewGoPacketDecoder(
+var ip6FragmentDecoder = newGoPacketDecoder(
 	types.Type_NC_IPv6Fragment,
 	layers.LayerTypeIPv6Fragment,
 	"IPv6 fragmented packet",

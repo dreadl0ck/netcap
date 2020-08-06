@@ -54,7 +54,7 @@ func (c *Collector) Init() (err error) {
 
 	// init logfile if necessary
 	if logFileHandle == nil && c.config.Quiet {
-		err = c.InitLogging()
+		err = c.initLogging()
 		if err != nil {
 			return err
 		}
@@ -123,7 +123,7 @@ func (c *Collector) Init() (err error) {
 
 	if c.config.FreeOSMem != 0 {
 		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
-		go c.FreeOSMemory()
+		go c.freeOSMemory()
 	}
 
 	// create log file

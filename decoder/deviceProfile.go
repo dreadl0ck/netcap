@@ -31,15 +31,15 @@ type deviceProfile struct {
 	sync.Mutex
 }
 
-// AtomicDeviceProfileMap contains all connections and provides synchronized access
-type AtomicDeviceProfileMap struct {
+// atomicDeviceProfileMap contains all connections and provides synchronized access
+type atomicDeviceProfileMap struct {
 	// SrcMAC to Profiles
 	Items map[string]*deviceProfile
 	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map
-func (a *AtomicDeviceProfileMap) Size() int {
+func (a *atomicDeviceProfileMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
 	return len(a.Items)
@@ -47,10 +47,10 @@ func (a *AtomicDeviceProfileMap) Size() int {
 
 var (
 	// Profiles hold all connections
-	Profiles = &AtomicDeviceProfileMap{
+	Profiles = &atomicDeviceProfileMap{
 		Items: make(map[string]*deviceProfile),
 	}
-	profileDecoderInstance *CustomDecoder
+	profileDecoderInstance *customDecoder
 	profiles               int64
 
 	// flags for flushing intervals - no flushing for now.
@@ -71,7 +71,7 @@ func getDeviceProfile(macAddr string, i *packetInfo) *deviceProfile {
 	Profiles.Unlock()
 
 	// create new profile
-	p := NewDeviceProfile(i)
+	p := newDeviceProfile(i)
 
 	Profiles.Lock()
 	Profiles.Items[macAddr] = p
@@ -80,21 +80,21 @@ func getDeviceProfile(macAddr string, i *packetInfo) *deviceProfile {
 	return p
 }
 
-// UpdateDeviceProfile can be used to update the profile for the passed identifiers
-func UpdateDeviceProfile(i *packetInfo) {
+// updateDeviceProfile can be used to update the profile for the passed identifiers
+func updateDeviceProfile(i *packetInfo) {
 	// lookup profile
 	Profiles.Lock()
 	if p, ok := Profiles.Items[i.srcMAC]; ok {
 		applyDeviceProfileUpdate(p, i)
 	} else {
-		Profiles.Items[i.srcMAC] = NewDeviceProfile(i)
+		Profiles.Items[i.srcMAC] = newDeviceProfile(i)
 		profiles++
 	}
 	Profiles.Unlock()
 }
 
-// NewDeviceProfile creates a new device specifc profile
-func NewDeviceProfile(i *packetInfo) *deviceProfile {
+// newDeviceProfile creates a new device specifc profile
+func newDeviceProfile(i *packetInfo) *deviceProfile {
 	var contacts []*types.IPProfile
 	if ip := getIPProfile(i.dstIP, i); ip != nil {
 		contacts = append(contacts, ip.IPProfile)
@@ -168,22 +168,22 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
 	p.Unlock()
 }
 
-var profileDecoder = NewCustomDecoder(
+var profileDecoder = newCustomDecoder(
 	types.Type_NC_DeviceProfile,
 	"DeviceProfile",
 	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
-	func(d *CustomDecoder) error {
+	func(d *customDecoder) error {
 		profileDecoderInstance = d
 
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
 		// handle packet
-		UpdateDeviceProfile(newPacketInfo(p))
+		updateDeviceProfile(newPacketInfo(p))
 
 		return nil
 	},
-	func(e *CustomDecoder) error {
+	func(e *customDecoder) error {
 		// teardown DPI C libs
 		dpi.Destroy()
 

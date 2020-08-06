@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var eapolkeyDecoder = NewGoPacketDecoder(
+var eapolkeyDecoder = newGoPacketDecoder(
 	types.Type_NC_EAPOLKey,
 	layers.LayerTypeEAPOLKey,
 	"Extensible Authentication Protocol is an authentication framework frequently used in network and internet connections",

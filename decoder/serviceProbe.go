@@ -112,7 +112,7 @@ func (s *serviceProbe) String() string {
 	return b.String()
 }
 
-func writeSoftwareFromBanner(serv *Service, ident string, probeIdent string) {
+func writeSoftwareFromBanner(serv *service, ident string, probeIdent string) {
 	writeSoftware([]*software{
 		{
 			Software: &types.Software{
@@ -129,7 +129,7 @@ func writeSoftwareFromBanner(serv *Service, ident string, probeIdent string) {
 	}, nil)
 }
 
-func matchServiceProbes(serv *Service, banner []byte, ident string) {
+func matchServiceProbes(serv *service, banner []byte, ident string) {
 	// match banner against nmap service probes
 	for _, serviceProbe := range serviceProbes {
 		if c.UseRE2 {

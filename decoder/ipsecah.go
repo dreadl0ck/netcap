@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ipSecAHDecoder = NewGoPacketDecoder(
+var ipSecAHDecoder = newGoPacketDecoder(
 	types.Type_NC_IPSecAH,
 	layers.LayerTypeIPSecAH,
 	"IPSec Authentication Header (AH)",

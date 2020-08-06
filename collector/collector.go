@@ -54,10 +54,10 @@ type Collector struct {
 	progressString string
 	next           int
 
-	unkownPcapWriterAtomic   *AtomicPcapGoWriter
+	unkownPcapWriterAtomic   *atomicPcapGoWriter
 	unknownPcapFile          *os.File
 	errorsPcapWriterBuffered *bufio.Writer
-	errorsPcapWriterAtomic   *AtomicPcapGoWriter
+	errorsPcapWriterAtomic   *atomicPcapGoWriter
 
 	errorsPcapFile *os.File
 	errorLogFile   *os.File
@@ -252,8 +252,8 @@ func (c *Collector) closeErrorLogFile() {
 	c.mu.Unlock()
 }
 
-// Stats prints collector statistics.
-func (c *Collector) Stats() {
+// stats prints collector statistics.
+func (c *Collector) stats() {
 	var target io.Writer
 	if c.config.Quiet {
 		target = logFileHandle
@@ -436,7 +436,7 @@ func (c *Collector) GetNumPackets() int64 {
 }
 
 // FreeOSMemory forces freeing memory.
-func (c *Collector) FreeOSMemory() {
+func (c *Collector) freeOSMemory() {
 	for {
 		select {
 		case <-time.After(time.Duration(c.config.FreeOSMem) * time.Minute):
@@ -448,7 +448,7 @@ func (c *Collector) FreeOSMemory() {
 // PrintConfiguration dumps the current collector config to stdout
 func (c *Collector) PrintConfiguration() {
 	// ensure the logfile handle gets opened
-	err := c.InitLogging()
+	err := c.initLogging()
 	if err != nil {
 		log.Fatal("failed to open logfile:", err)
 	}
@@ -497,10 +497,10 @@ func (c *Collector) PrintConfiguration() {
 	fmt.Fprintln(target) // add a newline
 }
 
-// InitLogging can be used to open the logfile before calling Init()
+// initLogging can be used to open the logfile before calling Init()
 // this is used to be able to dump the collector configuration into the netcap.log in quiet mode
 // following calls to Init() will not open the filehandle again.
-func (c *Collector) InitLogging() error {
+func (c *Collector) initLogging() error {
 	// prevent reopen
 	if logFileHandle != nil {
 		return nil
@@ -535,6 +535,6 @@ func (c *Collector) Stop() {
 }
 
 // ForceStop will halt packet collection immediately without waiting for processing to finish.
-func (c *Collector) ForceStop() {
+func (c *Collector) forceStop() {
 	c.cleanup(true)
 }

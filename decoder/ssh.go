@@ -20,18 +20,18 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var sshDecoder = NewCustomDecoder(
+var sshDecoder = newCustomDecoder(
 	types.Type_NC_SSH,
 	serviceSSH,
 	"The Secure Shell Protocol allows controlling remote machines over an encrypted connection",
-	func(d *CustomDecoder) error {
+	func(d *customDecoder) error {
 		streamFactory.decodeSSH = true
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *CustomDecoder) error {
+	func(e *customDecoder) error {
 		return nil
 	},
 )

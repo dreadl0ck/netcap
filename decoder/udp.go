@@ -91,7 +91,7 @@ func (u *UDPStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 	}
 }
 
-var udpDecoder = NewGoPacketDecoder(
+var udpDecoder = newGoPacketDecoder(
 	types.Type_NC_UDP,
 	layers.LayerTypeUDP,
 	"User Datagram Protocol (UDP) is a connectionless communications protocol, that facilitates the exchange of messages between computing devices in a network",
@@ -103,7 +103,7 @@ var udpDecoder = NewGoPacketDecoder(
 			}
 			var e float64
 			if c.CalculateEntropy {
-				e = Entropy(udp.Payload)
+				e = entropy(udp.Payload)
 			}
 			return &types.UDP{
 				Timestamp:      timestamp,

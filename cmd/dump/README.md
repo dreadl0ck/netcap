@@ -4,7 +4,7 @@
 
 ## Description
 
-Output can be formatted as Table or separated by tabs or a custom separator string.
+Output can be formatted as Table or separated by tabs, or a custom separator string.
 Export to CSV and JSON is possible, for CSV fields can be filtered.
 
 Read more about this tool in the documentation: https://docs.netcap.io

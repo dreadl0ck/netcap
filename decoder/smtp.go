@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var smtpDecoder = NewGoPacketDecoder(
+var smtpDecoder = newGoPacketDecoder(
 	types.Type_NC_SMTP,
 	layers.LayerTypeSMTP,
 	"The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission",

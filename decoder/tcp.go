@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var tcpDecoder = NewGoPacketDecoder(
+var tcpDecoder = newGoPacketDecoder(
 	types.Type_NC_TCP,
 	layers.LayerTypeTCP,
 	"The Transmission Control Protocol (TCP) is a connection-oriented communications protocol, that facilitates the exchange of messages between computing devices in a network",
@@ -36,7 +36,7 @@ var tcpDecoder = NewGoPacketDecoder(
 			}
 			var e float64
 			if c.CalculateEntropy {
-				e = Entropy(tcp.Payload)
+				e = entropy(tcp.Payload)
 			}
 			for _, o := range tcp.Options {
 				opts = append(opts, &types.TCPOption{

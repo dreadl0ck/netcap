@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var diameterDecoder = NewGoPacketDecoder(
+var diameterDecoder = newGoPacketDecoder(
 	types.Type_NC_Diameter,
 	layers.LayerTypeDiameter,
 	"Diameter is an authentication, authorization, and accounting protocol for computer networks, it evolved from the earlier RADIUS protocol",

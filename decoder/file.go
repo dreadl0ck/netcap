@@ -23,20 +23,20 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var fileDecoderInstance *CustomDecoder
+var fileDecoderInstance *customDecoder
 
-var fileDecoder = NewCustomDecoder(
+var fileDecoder = newCustomDecoder(
 	types.Type_NC_File,
 	"File",
 	"A file that was transferred over the network",
-	func(d *CustomDecoder) error {
+	func(d *customDecoder) error {
 		fileDecoderInstance = d
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *CustomDecoder) error {
+	func(e *customDecoder) error {
 		return nil
 	},
 )

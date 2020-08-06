@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var geneveDecoder = NewGoPacketDecoder(
+var geneveDecoder = newGoPacketDecoder(
 	types.Type_NC_Geneve,
 	layers.LayerTypeGeneve,
 	"Geneve is a network virtualization overlay encapsulation protocol designed to establish tunnels between network virtualization end points (NVE) over an existing IP network",

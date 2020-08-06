@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var cipDecoder = NewGoPacketDecoder(
+var cipDecoder = newGoPacketDecoder(
 	types.Type_NC_CIP,
 	layers.LayerTypeCIP,
 	"The Common Industrial Protocol (CIP) is an industrial protocol for industrial automation applications",

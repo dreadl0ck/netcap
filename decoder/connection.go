@@ -58,13 +58,13 @@ func (a *atomicConnMap) Size() int {
 	return len(a.Items)
 }
 
-type ConnectionDecoder struct {
-	*CustomDecoder
+type connectionDecoder struct {
+	*customDecoder
 	Conns *atomicConnMap
 }
 
-var connDecoder = &ConnectionDecoder{
-	CustomDecoder: &CustomDecoder{
+var connDecoder = &connectionDecoder{
+	customDecoder: &customDecoder{
 		Type:        types.Type_NC_Connection,
 		Name:        "Connection",
 		Description: "A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
@@ -74,7 +74,7 @@ var connDecoder = &ConnectionDecoder{
 	},
 }
 
-func (cd *ConnectionDecoder) PostInit() error {
+func (cd *connectionDecoder) PostInit() error {
 	// simply overwrite the handler with our custom one
 	// this way the CustomEncoders default Decode() implementation will be used
 	// (it takes care of applying config options and tracking stats)
@@ -85,7 +85,7 @@ func (cd *ConnectionDecoder) PostInit() error {
 }
 
 // Destroy closes and flushes all writers and calls deinit if set
-func (cd *ConnectionDecoder) Destroy() (name string, size int64) {
+func (cd *connectionDecoder) Destroy() (name string, size int64) {
 	// call Deinit on FlowDecoder, instead of CustomDecoder
 	err := cd.DeInit()
 	if err != nil {
@@ -95,7 +95,7 @@ func (cd *ConnectionDecoder) Destroy() (name string, size int64) {
 	return cd.writer.Close()
 }
 
-func (cd *ConnectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
+func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	// assemble connectionID
 	connID := connectionID{}
 	if ll := p.LinkLayer(); ll != nil {
@@ -218,7 +218,7 @@ func (cd *ConnectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	return nil
 }
 
-func (cd *ConnectionDecoder) DeInit() error {
+func (cd *connectionDecoder) DeInit() error {
 	if !cd.writer.IsChanWriter {
 		cd.Conns.Lock()
 		for _, f := range cd.Conns.Items {
@@ -232,7 +232,7 @@ func (cd *ConnectionDecoder) DeInit() error {
 }
 
 // writeConn writes the connection
-func (cd *ConnectionDecoder) writeConn(conn *types.Connection) {
+func (cd *connectionDecoder) writeConn(conn *types.Connection) {
 	if c.Export {
 		conn.Inc()
 	}

@@ -91,7 +91,7 @@ func (c *Collector) cleanup(force bool) {
 	}
 
 	c.closeErrorLogFile()
-	c.Stats()
+	c.stats()
 
 	// encoder.DumpTop5LinkFlows()
 	// encoder.DumpTop5NetworkFlows()

@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var icmpv6NeighborSolicitationDecoder = NewGoPacketDecoder(
+var icmpv6NeighborSolicitationDecoder = newGoPacketDecoder(
 	types.Type_NC_ICMPv6NeighborSolicitation,
 	layers.LayerTypeICMPv6NeighborSolicitation,
 	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",

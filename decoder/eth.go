@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ethernetDecoder = NewGoPacketDecoder(
+var ethernetDecoder = newGoPacketDecoder(
 	types.Type_NC_Ethernet,
 	layers.LayerTypeEthernet,
 	"Ethernet is a family of computer networking technologies commonly used in local area networks, metropolitan area networks and wide area networks",
@@ -29,7 +29,7 @@ var ethernetDecoder = NewGoPacketDecoder(
 		if eth, ok := layer.(*layers.Ethernet); ok {
 			var e float64
 			if c.CalculateEntropy {
-				e = Entropy(eth.Payload)
+				e = entropy(eth.Payload)
 			}
 			return &types.Ethernet{
 				Timestamp:      timestamp,

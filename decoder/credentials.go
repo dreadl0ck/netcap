@@ -37,17 +37,17 @@ const (
 	smtpAuthCramMd5 = "SMTP Auth CRAM-MD5"
 )
 
-// CredentialHarvester is a function that takes the data of a bi-directional network stream over TCP
+// credentialHarvester is a function that takes the data of a bi-directional network stream over TCP
 // as well as meta information and searches for credentials in the data
 // on success a pointer to a types.Credential is returned, nil otherwise
-type CredentialHarvester func(data []byte, ident string, ts time.Time) *types.Credentials
+type credentialHarvester func(data []byte, ident string, ts time.Time) *types.Credentials
 
 var (
 	useHarvesters = false
 
 	// harvesters to be ran against all seen bi-directional communication in a TCP session
 	// new harvesters must be added here in order to get called
-	tcpConnectionHarvesters = []CredentialHarvester{
+	tcpConnectionHarvesters = []credentialHarvester{
 		ftpHarvester,
 		httpHarvester,
 		smtpHarvester,
@@ -57,7 +57,7 @@ var (
 
 	// mapped port number to the harvester based on the IANA standards
 	// used for the first guess which harvester to use
-	harvesterPortMapping = map[int]CredentialHarvester{
+	harvesterPortMapping = map[int]credentialHarvester{
 		21:  ftpHarvester,
 		80:  httpHarvester,
 		587: smtpHarvester,
@@ -336,11 +336,11 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
-var credentialsDecoder = NewCustomDecoder(
+var credentialsDecoder = newCustomDecoder(
 	types.Type_NC_Credentials,
 	credentialsDecoderName,
 	"Credentials represent a user and password combination to authenticate to a service",
-	func(d *CustomDecoder) error {
+	func(d *customDecoder) error {
 		if c.CustomRegex != "" {
 			r, err := regexp.Compile(c.CustomRegex)
 			if err != nil {
@@ -367,7 +367,7 @@ var credentialsDecoder = NewCustomDecoder(
 	func(p gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *CustomDecoder) error {
+	func(e *customDecoder) error {
 		return nil
 	},
 )
