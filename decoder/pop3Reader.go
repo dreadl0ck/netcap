@@ -379,10 +379,10 @@ func validPop3ServerCommand(cmd string) bool {
 type POP3State int
 
 const (
-	StateNotAuthenticated POP3State = iota
-	StateNotIdentified
-	StateAuthenticated
-	StateDataTransfer
+	stateNotAuthenticated POP3State = iota
+	stateAuthenticated
+	// StateNotIdentified
+	// StateDataTransfer
 )
 
 func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string) {
@@ -400,7 +400,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 	}
 
 	var (
-		state    = StateNotAuthenticated
+		state    = stateNotAuthenticated
 		numMails int
 		next     = func() *types.POP3Request {
 			return h.pop3Requests[h.reqIndex]
@@ -418,7 +418,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 		// fmt.Println("CMD", r.Command, r.Argument, "h.resIndex", h.resIndex)
 
 		switch state {
-		case StateAuthenticated:
+		case stateAuthenticated:
 			switch r.Command {
 			case "STAT":
 				h.resIndex++
@@ -467,7 +467,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 			case "QUIT":
 				return
 			}
-		case StateNotAuthenticated:
+		case stateNotAuthenticated:
 			switch r.Command {
 			case "USER":
 				if len(h.pop3Responses) <= h.resIndex+1 {
@@ -497,7 +497,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				}
 				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
-					state = StateAuthenticated
+					state = stateAuthenticated
 					if len(h.pop3Requests) < h.reqIndex {
 						r = h.pop3Requests[h.reqIndex]
 						if r != nil {
@@ -513,7 +513,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				}
 				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
-					state = StateAuthenticated
+					state = stateAuthenticated
 					pass = r.Argument
 				}
 				h.resIndex++
@@ -524,7 +524,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				}
 				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == "+OK" {
-					state = StateAuthenticated
+					state = stateAuthenticated
 					parts := strings.Split(r.Argument, " ")
 					if len(parts) > 1 {
 						user = parts[0]

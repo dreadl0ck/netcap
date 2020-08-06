@@ -13,8 +13,6 @@ import (
 
 const assemblerReturnValueInitialSize = 16
 
-const tf = "2006-02-01 15:04:05.000000"
-
 /*
  * Assembler
  */

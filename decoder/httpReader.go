@@ -43,7 +43,6 @@ const (
 	headerContentEncoding = "Content-Encoding"
 
 	methodPost = "POST"
-	methodGet  = "GET"
 
 	credentialsDecoderName = "Credentials"
 )
