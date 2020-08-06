@@ -9,7 +9,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func ToDHCPClients() {
+func toDHCPClients() {
 	results := map[string]int{}
 
 	maltego.DHCPTransform(

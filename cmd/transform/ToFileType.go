@@ -9,7 +9,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func ToFileType() {
+func toFileType() {
 	lt := maltego.ParseLocalArguments(os.Args)
 	trx := &maltego.Transform{}
 

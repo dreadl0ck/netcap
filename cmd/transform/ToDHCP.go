@@ -11,7 +11,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToDHCP() {
+func toDHCP() {
 	results := map[string]int{}
 
 	maltego.DHCPTransform(

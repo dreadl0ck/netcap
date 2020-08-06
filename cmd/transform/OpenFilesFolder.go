@@ -11,7 +11,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func OpenFilesFolder() {
+func openFilesFolder() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}

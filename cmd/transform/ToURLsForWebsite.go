@@ -8,7 +8,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToURLsForWebsite() {
+func toURLsForWebsite() {
 	urlStats := make(map[string]int)
 
 	maltego.HTTPTransform(
@@ -17,7 +17,7 @@ func ToURLsForWebsite() {
 			host := lt.Value
 			if http.Host == host {
 				if http.URL != "" {
-					bareURL := http.Host + StripQueryString(http.URL)
+					bareURL := http.Host + stripQueryString(http.URL)
 					log.Println(bareURL)
 
 					ent := trx.AddEntity("netcap.URL", bareURL)

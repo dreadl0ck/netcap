@@ -8,7 +8,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func ToHostsForService() {
+func toHostsForService() {
 	var ip, port string
 
 	maltego.ServiceTransform(

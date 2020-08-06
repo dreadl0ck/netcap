@@ -14,13 +14,14 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func ToPhoneNumbersFromFile() {
+func toPhoneNumbersFromFile() {
 	var (
 		lt   = maltego.ParseLocalArguments(os.Args)
 		trx  = &maltego.Transform{}
 		path = lt.Values["location"]
 		err  error
 	)
+
 	log.Println(lt.Values)
 
 	if path == "" {
@@ -39,8 +40,9 @@ func ToPhoneNumbersFromFile() {
 		log.Fatal(err)
 	}
 
-	re := regexp.MustCompile(`(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-. \\/]?)?((?:\(?\d{1,}\)?[\-. \\/]?){0,})(?:[\-. \\/]?(?:#|ext\.?|extension|x)[\-. \\/]?(\d+))?`)
+	re := regexp.MustCompile(`(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-. \\/]?)?((?:\(?\d+\)?[\-. \\/]?)*)(?:[\-. \\/]?(?:#|ext\.?|extension|x)[\-. \\/]?(\d+))?`)
 	results := re.FindAllString(string(data), -1)
+
 	if len(results) == 0 {
 		log.Println("No phone numbers found")
 		trx.AddUIMessage("completed!", "Inform")

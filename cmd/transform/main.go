@@ -19,186 +19,186 @@ func Run() {
 	switch os.Args[2] {
 
 	// core
-	case "ToCaptureProcess":
-		ToCaptureProcess()
-	case "StopCaptureProcess":
-		StopCaptureProcess()
-	case "ToAuditRecords":
-		ToAuditRecords()
-	case "ToLiveAuditRecords":
-		ToLiveAuditRecords()
+	case "toCaptureProcess":
+		toCaptureProcess()
+	case "stopCaptureProcess":
+		stopCaptureProcess()
+	case "toAuditRecords":
+		toAuditRecords()
+	case "toLiveAuditRecords":
+		toLiveAuditRecords()
 	case "ToDeviceProfilesWithDPI":
-		ToAuditRecordsWithDPI()
-	case "OpenNetcapFolder":
-		OpenNetcapFolder()
+		toAuditRecordsWithDPI()
+	case "openNetcapFolder":
+		openNetcapFolder()
 
-	case "ToFileTypesForIP":
-		ToFileTypesForIP()
+	case "toFileTypesForIP":
+		toFileTypesForIP()
 
 	// Exploits
-	case "ToSoftwareExploits":
-		ToSoftwareExploits()
-	case "OpenExploit":
-		OpenExploit()
+	case "toSoftwareExploits":
+		toSoftwareExploits()
+	case "openExploit":
+		openExploit()
 
 	// DHCP
-	case "ToDHCPClients":
-		ToDHCPClients()
-	case "LookupDHCPFingerprint":
-		LookupDHCPFingerprint()
+	case "toDHCPClients":
+		toDHCPClients()
+	case "lookupDHCPFingerprint":
+		lookupDHCPFingerprint()
 
 	// SSH
-	case "ToSSHClients":
-		ToSSHClients()
-	case "ToSSHServers":
-		ToSSHServers()
+	case "toSSHClients":
+		toSSHClients()
+	case "toSSHServers":
+		toSSHServers()
 
 	// Software
-	case "ToProducts":
-		ToProducts()
+	case "toProducts":
+		toProducts()
 
 	// Credentials
-	case "ToCredentialsByService":
-		ToCredentialsByService()
-	case "ToLoginInformation":
-		ToLoginInformation()
+	case "toCredentialsByService":
+		toCredentialsByService()
+	case "toLoginInformation":
+		toLoginInformation()
 
 	// POP3
-	case "ToFetchedMails":
-		ToFetchedMails()
+	case "toFetchedMails":
+		toFetchedMails()
 
 	// HTTP
-	case "ToHTTPHostNames":
-		ToHTTPHostNames()
+	case "toHTTPHostNames":
+		toHTTPHostNames()
 
 	// Vulnerabilities
-	case "ToSoftwareVulnerabilities":
-		ToSoftwareVulnerabilities()
-	case "OpenVulnerability":
-		OpenVulnerability()
+	case "toSoftwareVulnerabilities":
+		toSoftwareVulnerabilities()
+	case "openVulnerability":
+		openVulnerability()
 
 	// DNS
-	case "ToDNSQuestions":
-		ToDNSQuestions()
+	case "toDNSQuestions":
+		toDNSQuestions()
 
 	// Flow
-	case "ToIANAServices":
-		ToIANAServices()
+	case "toIANAServices":
+		toIANAServices()
 	// case "ToHighestVolumeFlows":
 	// ToHighestVolumeFlows()
 
 	// DeviceProfile
-	case "ToDevices":
-		ToDevices()
+	case "toDevices":
+		toDevices()
 
 	case "ToHTTPHostnames":
-		ToHTTPHostNames()
+		toHTTPHostNames()
 
-	case "ToApplicationCategories":
-		ToApplicationCategories()
-	case "ToApplications":
-		ToApplications()
-	case "ToApplicationsForCategory":
-		ToApplicationsForCategory()
-	case "OpenFile":
-		OpenFile()
-	case "ToCookieValues":
-		ToCookieValues()
-	case "ToCookiesForHTTPHost":
-		ToCookiesForHTTPHost()
-	case "ToDHCP":
-		ToDHCP()
-	case "OpenFolder":
-		OpenFolder()
+	case "toApplicationCategories":
+		toApplicationCategories()
+	case "toApplications":
+		toApplications()
+	case "toApplicationsForCategory":
+		toApplicationsForCategory()
+	case "openFile":
+		openFile()
+	case "toCookieValues":
+		toCookieValues()
+	case "toCookiesForHTTPHost":
+		toCookiesForHTTPHost()
+	case "toDHCP":
+		toDHCP()
+	case "openFolder":
+		openFolder()
 
-	case "ToDestinationIPs":
-		ToDestinationIPs()
-	case "ToSourceIPs":
-		ToSourceIPs()
-	case "ToHTTPHostsFiltered":
-		ToHTTPHostsFiltered()
-	case "ToDstPorts":
-		ToDstPorts()
-	case "ToIncomingFlowsFiltered":
-		ToIncomingFlowsFiltered()
-	case "ToFileTypes":
-		ToFileTypes()
-	case "ToFiles":
-		ToFiles()
-	case "ToFileType":
-		ToFileType()
-	case "ToFilesForContentType":
-		ToFilesForContentType()
-	case "ToGeolocation":
-		ToGeolocation()
+	case "toDestinationIPs":
+		toDestinationIPs()
+	case "toSourceIPs":
+		toSourceIPs()
+	case "toHTTPHostsFiltered":
+		toHTTPHostsFiltered()
+	case "toDstPorts":
+		toDstPorts()
+	case "toIncomingFlowsFiltered":
+		toIncomingFlowsFiltered()
+	case "toFileTypes":
+		toFileTypes()
+	case "toFiles":
+		toFiles()
+	case "toFileType":
+		toFileType()
+	case "toFilesForContentType":
+		toFilesForContentType()
+	case "toGeolocation":
+		toGeolocation()
 
-	case "ToParameterValues":
-		ToParameterValues()
-	case "ToParametersForHTTPHost":
-		ToParametersForHTTPHost()
-	case "ToHTTPContentTypes":
-		ToHTTPContentTypes()
-	case "ToHTTPCookies":
-		ToHTTPCookies()
-	case "ToHTTPHosts":
-		ToHTTPHosts()
-	case "ToHTTPParameters":
-		ToHTTPParameters()
-	case "ToHTTPServerNames":
-		ToHTTPServerNames()
-	case "ToHTTPStatusCodes":
-		ToHTTPStatusCodes()
-	case "ToURLsForHost":
-		ToURLsForHost()
-	case "ToHTTPUserAgents":
-		ToHTTPUserAgents()
+	case "toParameterValues":
+		toParameterValues()
+	case "toParametersForHTTPHost":
+		toParametersForHTTPHost()
+	case "toHTTPContentTypes":
+		toHTTPContentTypes()
+	case "toHTTPCookies":
+		toHTTPCookies()
+	case "toHTTPHosts":
+		toHTTPHosts()
+	case "toHTTPParameters":
+		toHTTPParameters()
+	case "toHTTPServerNames":
+		toHTTPServerNames()
+	case "toHTTPStatusCodes":
+		toHTTPStatusCodes()
+	case "toURLsForHost":
+		toURLsForHost()
+	case "toHTTPUserAgents":
+		toHTTPUserAgents()
 
-	case "ToMailAuthTokens":
-		ToMailAuthTokens()
-	case "ToMailFrom":
-		ToMailFrom()
-	case "ToMailTo":
-		ToMailTo()
-	case "ToMailUserPassword":
-		ToMailUserPassword()
-	case "ToMailUsers":
-		ToMailUsers()
-	case "ToMails":
-		ToMails()
+	case "toMailAuthTokens":
+		toMailAuthTokens()
+	case "toMailFrom":
+		toMailFrom()
+	case "toMailTo":
+		toMailTo()
+	case "toMailUserPassword":
+		toMailUserPassword()
+	case "toMailUsers":
+		toMailUsers()
+	case "toMails":
+		toMails()
 
 	case "ToServerNameIndicators":
-		ToSNIs()
-	case "ToSrcPorts":
-		ToSrcPorts()
-	case "ToOutgoingFlowsFiltered":
-		ToOutgoingFlowsFiltered()
-	case "ToURLsForWebsite":
-		ToURLsForWebsite()
-	case "OpenNetcapFolderInTerminal":
-		OpenNetcapFolderInTerminal()
-	case "OpenFilesFolder":
-		OpenFilesFolder()
-	case "OpenContentTypeFolder":
-		OpenContentTypeFolder()
+		toSNIs()
+	case "toSrcPorts":
+		toSrcPorts()
+	case "toOutgoingFlowsFiltered":
+		toOutgoingFlowsFiltered()
+	case "toURLsForWebsite":
+		toURLsForWebsite()
+	case "openNetcapFolderInTerminal":
+		openNetcapFolderInTerminal()
+	case "openFilesFolder":
+		openFilesFolder()
+	case "openContentTypeFolder":
+		openContentTypeFolder()
 
-	case "ToMD5HashesForFile":
-		ToMD5HashesForFile()
+	case "toMD5HashesForFile":
+		toMD5HashesForFile()
 
-	case "ToLinksFromFile":
-		ToLinksFromFile()
-	case "ToEmailsFromFile":
-		ToEmailsFromFile()
-	case "ToPhoneNumbersFromFile":
-		ToPhoneNumbersFromFile()
-	case "ToMD5HashesForImage":
-		ToMD5HashesForImage()
+	case "toLinksFromFile":
+		toLinksFromFile()
+	case "toEmailsFromFile":
+		toEmailsFromFile()
+	case "toPhoneNumbersFromFile":
+		toPhoneNumbersFromFile()
+	case "toMD5HashesForImage":
+		toMD5HashesForImage()
 
-	case "ToExifDataForImage":
-		ToExifDataForImage()
-	case "ToHostsForService":
-		ToHostsForService()
-	case "ToServices":
-		ToServices()
+	case "toExifDataForImage":
+		toExifDataForImage()
+	case "toHostsForService":
+		toHostsForService()
+	case "toServices":
+		toServices()
 
 	default:
 		trx := maltego.Transform{}

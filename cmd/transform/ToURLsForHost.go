@@ -9,7 +9,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToURLsForHost() {
+func toURLsForHost() {
 	urlStats := make(map[string]int)
 
 	maltego.HTTPTransform(
@@ -18,7 +18,7 @@ func ToURLsForHost() {
 			if http.SrcIP == ipaddr {
 				if http.URL != "" {
 
-					bareURL := http.Host + StripQueryString(http.URL)
+					bareURL := http.Host + stripQueryString(http.URL)
 					log.Println(bareURL)
 
 					ent := trx.AddEntity("netcap.URL", bareURL)
@@ -35,7 +35,7 @@ func ToURLsForHost() {
 	)
 }
 
-func StripQueryString(inputUrl string) string {
+func stripQueryString(inputUrl string) string {
 	u, err := url.Parse(inputUrl)
 	if err != nil {
 		panic(err)

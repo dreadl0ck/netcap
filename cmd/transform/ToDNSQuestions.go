@@ -18,7 +18,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToDNSQuestions() {
+func toDNSQuestions() {
 	lt := maltego.ParseLocalArguments(os.Args)
 	dnsAuditRecords := lt.Values["path"]
 

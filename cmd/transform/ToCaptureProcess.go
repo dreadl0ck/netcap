@@ -11,7 +11,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func ToCaptureProcess() {
+func toCaptureProcess() {
 	lt := maltego.ParseLocalArguments(os.Args[1:])
 	log.Println("capture on interface:", lt.Value)
 

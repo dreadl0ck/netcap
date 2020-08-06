@@ -13,7 +13,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func ToLinksFromFile() {
+func toLinksFromFile() {
 	var (
 		lt   = maltego.ParseLocalArguments(os.Args)
 		trx  = &maltego.Transform{}

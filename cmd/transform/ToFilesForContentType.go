@@ -9,7 +9,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToFilesForContentType() {
+func toFilesForContentType() {
 	maltego.FilesTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
@@ -28,7 +28,7 @@ func ToFilesForContentType() {
 
 				if typ == ct {
 
-					// TODO: make a single file constructor and reuse it in ToFiles!
+					// TODO: make a single file constructor and reuse it in toFiles!
 					var (
 						ent *maltego.EntityObj
 						val = file.Name + "\n" + strconv.FormatInt(file.Length, 10) + " bytes"

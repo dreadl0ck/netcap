@@ -10,7 +10,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToDstPorts() {
+func toDstPorts() {
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitServiceDB()

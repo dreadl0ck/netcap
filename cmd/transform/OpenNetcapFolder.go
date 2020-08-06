@@ -10,7 +10,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func OpenNetcapFolder() {
+func openNetcapFolder() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}

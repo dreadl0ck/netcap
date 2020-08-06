@@ -5,7 +5,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToSSHClients() {
+func toSSHClients() {
 	maltego.SSHTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ssh *types.SSH, min, max uint64, profilesFile string, mac string, ipaddr string) {

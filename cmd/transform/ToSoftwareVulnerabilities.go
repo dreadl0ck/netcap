@@ -7,7 +7,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToSoftwareVulnerabilities() {
+func toSoftwareVulnerabilities() {
 	maltego.VulnerabilityTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, vuln *types.Vulnerability, min, max uint64, profilesFile string, mac string, ipaddr string) {

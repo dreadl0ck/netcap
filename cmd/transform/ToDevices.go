@@ -9,7 +9,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func ToDevices() {
+func toDevices() {
 	maltego.DeviceProfileTransform(maltego.CountPacketsDevices, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
 		ident := profile.MacAddr + "\n" + profile.DeviceManufacturer
 		ent := trx.AddEntity("netcap.Device", ident)

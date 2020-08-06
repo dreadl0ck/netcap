@@ -13,7 +13,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func OpenFile() {
+func openFile() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
@@ -69,7 +69,7 @@ func OpenFile() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if ctype == "application/octet-stream" && IsExecAny(stat.Mode()) {
+	if ctype == "application/octet-stream" && isExecAny(stat.Mode()) {
 		log.Println("detected executable file - aborting to prevent accidental execution!")
 		trx.AddUIMessage("completed!", "Inform")
 		fmt.Println(trx.ReturnOutput())
@@ -90,6 +90,6 @@ func OpenFile() {
 	fmt.Println(trx.ReturnOutput())
 }
 
-func IsExecAny(mode os.FileMode) bool {
+func isExecAny(mode os.FileMode) bool {
 	return mode&0o111 != 0
 }
