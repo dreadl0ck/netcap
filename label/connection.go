@@ -103,7 +103,6 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 			// check if flow has a source or destination address matching an alert
 			// if not label it as normal
 			for _, a := range alerts {
-
 				var (
 					alertTime = utils.StringToTime(a.Timestamp)
 					last      = utils.StringToTime(conn.TimestampLast)
@@ -130,7 +129,6 @@ func Connections(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDi
 
 					// AND conn destination port must either be source or destination of alert
 					(conn.DstPort == strconv.Itoa(a.SrcPort) || conn.DstPort == strconv.Itoa(a.DstPort)) {
-
 					if CollectLabels {
 						// only if it is not already part of the label
 						if !strings.Contains(finalLabel, a.Classification) {

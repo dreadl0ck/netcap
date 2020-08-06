@@ -64,7 +64,7 @@ func (s *SNAP) Inc() {
 
 func (s *SNAP) SetPacketContext(*PacketContext) {}
 
-// TODO
+// Src TODO
 func (s *SNAP) Src() string {
 	return ""
 }

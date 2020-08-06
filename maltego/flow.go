@@ -49,7 +49,7 @@ var countIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uin
 	}
 }
 
-// CountIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
+// CountIncomingFlowBytesFiltered CountIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all incoming flows for a given ip address
 // filtered against the domain whitelist
 var CountIncomingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {

@@ -19,20 +19,20 @@ import "sync"
 // Atomic Counter Map //
 ////////////////////////
 
-// AtomicCounterMap maps strings to integers
+// AtomicCounterMap maps strings to integers.
 type AtomicCounterMap struct {
 	Items map[string]int64
 	sync.Mutex
 }
 
-// NewAtomicCounterMap returns a new AtomicCounterMap
+// NewAtomicCounterMap returns a new AtomicCounterMap.
 func NewAtomicCounterMap() *AtomicCounterMap {
 	return &AtomicCounterMap{
 		Items: map[string]int64{},
 	}
 }
 
-// Inc increments a value
+// Inc increments a value.
 func (a *AtomicCounterMap) Inc(val string) {
 	a.Lock()
 	a.Items[val]++

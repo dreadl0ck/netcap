@@ -72,7 +72,7 @@ func (a *NortelDiscovery) Inc() {
 
 func (a *NortelDiscovery) SetPacketContext(*PacketContext) {}
 
-// TODO
+// Src TODO
 func (a *NortelDiscovery) Src() string {
 	return ""
 }

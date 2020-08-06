@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-// Contains the type definitions for the supported network protocols
+// Package types Contains the type definitions for the supported network protocols
 package types
 
 import (
@@ -39,13 +39,13 @@ var (
 // and provides access to the timestamp of the audit record
 type AuditRecord interface {
 
-	// returns CSV values
+	// CSVRecord returns CSV values
 	CSVRecord() []string
 
-	// returns CSV header fields
+	// CSVHeader returns CSV header fields
 	CSVHeader() []string
 
-	// used to retrieve the timestamp of the audit record for labeling
+	// Time used to retrieve the timestamp of the audit record for labeling
 	Time() string
 
 	// Src returns the source of an audit record
@@ -58,13 +58,13 @@ type AuditRecord interface {
 	// for Layer 3+ records this shall be the IP address
 	Dst() string
 
-	// increments the metric for the audit record
+	// Inc increments the metric for the audit record
 	Inc()
 
-	// returns the audit record as JSON
+	// JSON returns the audit record as JSON
 	JSON() (string, error)
 
-	// can be implemented to set additional information for each audit record
+	// SetPacketContext can be implemented to set additional information for each audit record
 	// important:
 	//  - MUST be implemented on a pointer of an instance
 	//  - the passed in packet context MUST be set on the Context field of the current audit record

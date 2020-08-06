@@ -28,7 +28,7 @@ import (
 
 // connectionID is a bidirectional connection
 // between two devices over the network
-// that includes the Link, Network and TransportLayer
+// that includes the Link, Network and TransportLayer.
 type connectionID struct {
 	LinkFlowID      uint64
 	NetworkFlowID   uint64
@@ -44,13 +44,13 @@ type connection struct {
 	sync.Mutex
 }
 
-// atomicConnMap contains all connections and provides synchronized access
+// atomicConnMap contains all connections and provides synchronized access.
 type atomicConnMap struct {
 	Items map[string]*connection
 	sync.Mutex
 }
 
-// Size returns the number of elements in the Items map
+// Size returns the number of elements in the Items map.
 func (a *atomicConnMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
@@ -84,7 +84,7 @@ func (cd *connectionDecoder) PostInit() error {
 	return nil
 }
 
-// Destroy closes and flushes all writers and calls deinit if set
+// Destroy closes and flushes all writers and calls deinit if set.
 func (cd *connectionDecoder) Destroy() (name string, size int64) {
 	// call Deinit on FlowDecoder, instead of CustomDecoder
 	err := cd.DeInit()
@@ -231,7 +231,7 @@ func (cd *connectionDecoder) DeInit() error {
 	return nil
 }
 
-// writeConn writes the connection
+// writeConn writes the connection.
 func (cd *connectionDecoder) writeConn(conn *types.Connection) {
 	if c.Export {
 		conn.Inc()

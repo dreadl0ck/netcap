@@ -200,7 +200,7 @@ func (d *Dot11) Inc() {
 
 func (d *Dot11) SetPacketContext(*PacketContext) {}
 
-// TODO: return Mac addr
+// Src TODO: return Mac addr
 func (d *Dot11) Src() string {
 	return ""
 }

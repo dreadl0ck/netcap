@@ -66,7 +66,7 @@ func (ectpr *EthernetCTPReply) Inc() {
 
 func (ectpr *EthernetCTPReply) SetPacketContext(*PacketContext) {}
 
-// TODO
+// Src TODO
 func (ectpr *EthernetCTPReply) Src() string {
 	return ""
 }

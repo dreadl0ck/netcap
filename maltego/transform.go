@@ -17,7 +17,7 @@ const transformDebug = false
 
 // Transforms
 
-// <MaltegoTransform name="netcap.ToAuditRecords" displayName="To Audit Records [NETCAP]" abstract="false" template="false" visibility="public" description="Transform PCAP file into audit records" author="Philipp Mieden" requireDisplayInfo="false">
+// XMLTransform <MaltegoTransform name="netcap.ToAuditRecords" displayName="To Audit Records [NETCAP]" abstract="false" template="false" visibility="public" description="Transform PCAP file into audit records" author="Philipp Mieden" requireDisplayInfo="false">
 type XMLTransform struct {
 	XMLName            xml.Name `xml:"MaltegoTransform"`
 	Name               string   `xml:"name,attr"`

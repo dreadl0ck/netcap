@@ -68,7 +68,6 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 	labelMap = make(map[string]*attackInfo)
 
 	for _, record := range records[1:] {
-
 		num, err := strconv.Atoi(record[0])
 		if err != nil {
 			log.Fatal(err)
@@ -114,9 +113,7 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 		ClassificationMap[custom.Name]++
 
 		// check if excluded
-		if !excluded[custom.Name] {
-
-			// append to collected alerts
+		if !excluded[custom.Name] { // append to collected alerts
 			labels = append(labels, custom)
 
 			startTSString := strconv.FormatInt(custom.Start.Unix(), 10)
@@ -139,7 +136,7 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 // CustomLabels uses info from a csv file to label the data
 func CustomLabels(pathMappingInfo, outputPath, separator, selection string) error {
 	var (
-		start            = time.Now()
+		start     = time.Now()
 		_, labels = parseAttackInfos(pathMappingInfo)
 	)
 	if len(labels) == 0 {
@@ -197,9 +194,7 @@ func CustomLabels(pathMappingInfo, outputPath, separator, selection string) erro
 	}
 
 	var pool *pb.Pool
-	if UseProgressBars {
-
-		// wait for goroutines to start and initialize
+	if UseProgressBars { // wait for goroutines to start and initialize
 		// otherwise progress bars will bug
 		time.Sleep(3 * time.Second)
 
@@ -303,7 +298,6 @@ func CustomMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 			// check if flow has a source or destination address matching an alert
 			// if not label it as normal
 			for _, l := range labels {
-
 				var numMatches int
 
 				// check if any of the addresses from the labeling info
@@ -327,7 +321,6 @@ func CustomMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 
 					// or matches exactly the one on the audit record
 					l.Start.Equal(auditRecordTime) || l.End.Equal(auditRecordTime) {
-
 					if Debug {
 						fmt.Println("-----------------------", typ, l.Name, l.Category)
 						fmt.Println("flow:", p.Src(), "->", p.Dst(), "addr:", "attack ips:", l.IPs)

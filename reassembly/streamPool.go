@@ -60,7 +60,7 @@ func (p *StreamPool) Dump() {
 	}
 }
 
-// Dump logs all connections and returns a string
+// DumpString logs all connections and returns a string.
 func (p *StreamPool) DumpString() string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -70,6 +70,7 @@ func (p *StreamPool) DumpString() string {
 	for _, conn := range p.conns {
 		b.WriteString(fmt.Sprintf("%v %s\n", conn.key, conn))
 	}
+
 	return b.String()
 }
 
@@ -96,10 +97,13 @@ func NewStreamPool(factory StreamFactory) *StreamPool {
 func (p *StreamPool) connections() []*connection {
 	p.mu.Lock()
 	conns := make([]*connection, 0, len(p.conns))
+
 	for _, conn := range p.conns {
 		conns = append(conns, conn)
 	}
+
 	p.mu.Unlock()
+
 	return conns
 }
 
@@ -110,12 +114,15 @@ func (p *StreamPool) newConnection(k *key, s Stream, ts time.Time) (c *connectio
 			log.Println("StreamPool:", p.newConnectionCount, "requests,", len(p.conns), "used,", len(p.free), "free")
 		}
 	}
+
 	if len(p.free) == 0 {
 		p.grow()
 	}
+
 	index := len(p.free) - 1
 	c, p.free = p.free[index], p.free[:index]
 	c.reset(k, s, ts)
+
 	return c, &c.c2s, &c.s2c
 }
 
@@ -124,11 +131,14 @@ func (p *StreamPool) getHalf(k *key) (*connection, *halfconnection, *halfconnect
 	if conn != nil {
 		return conn, &conn.c2s, &conn.s2c
 	}
+
 	rk := k.reverse()
 	conn = p.conns[rk]
+
 	if conn != nil {
 		return conn, &conn.s2c, &conn.c2s
 	}
+
 	return nil, nil, nil
 }
 

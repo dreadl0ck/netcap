@@ -69,12 +69,12 @@ func (a *USBRequestBlockSetup) Inc() {
 
 func (a *USBRequestBlockSetup) SetPacketContext(*PacketContext) {}
 
-// TODO return source DeviceAddress?
+// Src TODO return source DeviceAddress?
 func (a *USBRequestBlockSetup) Src() string {
 	return ""
 }
 
-// TODO return destination DeviceAddress?
+// Dst TODO return destination DeviceAddress?
 func (a *USBRequestBlockSetup) Dst() string {
 	return ""
 }

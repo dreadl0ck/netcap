@@ -148,13 +148,9 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 	)
 
 	// if there are includes and the first item is not an empty string
-	if len(in) > 0 && in[0] != "" {
-
-		// iterate over includes
+	if len(in) > 0 && in[0] != "" { // iterate over includes
 		for _, name := range in {
-			if name != "" {
-
-				// check if proto exists
+			if name != "" { // check if proto exists
 				if _, ok := allDecoderNames[name]; !ok {
 					return nil, errors.Wrap(ErrInvalidDecoder, name)
 				}
@@ -177,9 +173,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 
 	// iterate over excluded decoders
 	for _, name := range ex {
-		if name != "" {
-
-			// check if proto exists
+		if name != "" { // check if proto exists
 			if _, ok := allDecoderNames[name]; !ok {
 				return nil, errors.Wrap(ErrInvalidDecoder, name)
 			}
@@ -196,9 +190,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 	}
 
 	// initialize decoders
-	for _, d := range defaultCustomDecoders {
-
-		// fmt.Println("init custom encoder", e.name)
+	for _, d := range defaultCustomDecoders { // fmt.Println("init custom encoder", e.name)
 		w := netcap.NewWriter(d.GetName(), c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
 		d.SetWriter(w)
 

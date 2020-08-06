@@ -1,8 +1,8 @@
-// Netcap is a framework for network traffic analysis. Learn more at https://netcap.io.
+// Package netcap is a framework for network traffic analysis. Learn more at https://netcap.io.
 package netcap
 
 // Netcap version.
 var (
 	Version = "v0.5.1"
-	commit  = "cdd726cdd66bf099cfd539864f9ab5b6dccd329f"
+	commit  = "a2b50caa34c8727d9430ffd9a7fb1dd0f2387c73"
 )
