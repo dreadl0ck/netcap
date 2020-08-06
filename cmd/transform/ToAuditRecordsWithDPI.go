@@ -2,12 +2,10 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/gopacket/pcap"
 	"log"
 	"os"
 	"path/filepath"
-	"time"
-
-	"github.com/dreadl0ck/gopacket/pcap"
 
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/maltego"
@@ -28,12 +26,12 @@ func ToAuditRecordsWithDPI() {
 	}
 
 	// check if input PCAP path exists
-	inputStat, err := os.Stat(inputFile)
-	if err != nil {
-		trx.AddUIMessage("Input file path does not exist! error: "+err.Error(), maltego.UIM_FATAL)
-		fmt.Println(trx.ReturnOutput())
-		log.Fatal("input file path does not exist", err)
-	}
+	//inputStat, err := os.Stat(inputFile)
+	//if err != nil {
+	//	trx.AddUIMessage("Input file path does not exist! error: "+err.Error(), maltego.UIM_FATAL)
+	//	fmt.Println(trx.ReturnOutput())
+	//	log.Fatal("input file path does not exist", err)
+	//}
 
 	log.Println("inputFile:", inputFile)
 
@@ -43,7 +41,7 @@ func ToAuditRecordsWithDPI() {
 	os.Stdout = os.Stderr
 
 	// create storage path for audit records
-	start := time.Now()
+	//start := time.Now()
 
 	// create the output directory in the same place as the input file
 	// the directory for this will be named like the input file with an added .net extension
@@ -91,5 +89,5 @@ func ToAuditRecordsWithDPI() {
 	// restore stdout
 	os.Stdout = stdout
 
-	writeAuditRecords(trx, inputStat.Size(), outDir, inputFile, r, start)
+	writeAuditRecords(trx, outDir)
 }

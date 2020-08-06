@@ -37,7 +37,7 @@ type tcpReader struct {
 	parent *tcpConnection
 }
 
-func (h *tcpReader) Decode(c2s, s2c Stream) {
+func (h *tcpReader) Decode() {
 	//fmt.Println("Decode", c2s, s2c)
 	//for _, f := range h.parent.merged {
 	//	fmt.Println(f.dir, f.ac.GetCaptureInfo().Timestamp, len(f.raw))

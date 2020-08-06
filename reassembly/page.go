@@ -45,7 +45,9 @@ func (p *page) convertToPages(pc *pageCache, skip int, ac AssemblerContext) (*pa
 		p.bytes = p.bytes[skip:]
 		p.seq = p.seq.Add(skip)
 	}
+
 	p.prev, p.next = nil, nil
+
 	return p, p, 1
 }
 

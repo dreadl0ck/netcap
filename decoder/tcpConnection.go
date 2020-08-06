@@ -177,7 +177,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir rea
 	}
 
 	// TCP Options
-	err := t.optchecker.Accept(tcp, ci, dir, nextSeq, start)
+	err := t.optchecker.Accept(tcp, dir, nextSeq)
 	if err != nil {
 		logReassemblyError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
 		stats.Lock()
@@ -433,14 +433,6 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 	if t.decoder != nil {
 
-		// create streams
-		var (
-			// client to server
-			c2s = Stream{t.net, t.transport}
-			// server to client
-			s2c = Stream{t.net.Reverse(), t.transport.Reverse()}
-		)
-
 		// try to determine what type of raw tcp stream and update decoder
 		// TODO: move this functionality into a dedicated package and create a voting model
 		if _, ok := t.decoder.(*tcpReader); ok {
@@ -461,7 +453,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		}
 
 		// call the associated decoder
-		t.decoder.Decode(s2c, c2s)
+		t.decoder.Decode()
 	}
 
 	logReassemblyDebug("%s: Stream closed\n", t.ident)

@@ -125,7 +125,7 @@ type httpReader struct {
 	responses []*httpResponse
 }
 
-func (h *httpReader) Decode(s2c Stream, c2s Stream) {
+func (h *httpReader) Decode() {
 	// parse conversation
 	var (
 		buf         bytes.Buffer
@@ -147,11 +147,11 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
 				for err != io.EOF && err != io.ErrUnexpectedEOF {
-					err = h.readRequest(b, c2s)
+					err = h.readRequest(b)
 				}
 			} else {
 				for err != io.EOF && err != io.ErrUnexpectedEOF {
-					err = h.readResponse(b, s2c)
+					err = h.readResponse(b)
 				}
 			}
 			//if err != nil {
@@ -168,11 +168,11 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 	b := bufio.NewReader(&buf)
 	if previousDir == reassembly.TCPDirClientToServer {
 		for err != io.EOF && err != io.ErrUnexpectedEOF {
-			err = h.readRequest(b, c2s)
+			err = h.readRequest(b)
 		}
 	} else {
 		for err != io.EOF && err != io.ErrUnexpectedEOF {
-			err = h.readResponse(b, s2c)
+			err = h.readResponse(b)
 		}
 	}
 	//if err != nil {
@@ -185,7 +185,7 @@ func (h *httpReader) Decode(s2c Stream, c2s Stream) {
 		// populate types.HTTP with all infos from response
 		ht := newHTTPFromResponse(res.response)
 
-		_ = h.findRequest(res.response, s2c)
+		_ = h.findRequest(res.response)
 
 		atomic.AddInt64(&stats.numResponses, 1)
 
@@ -391,7 +391,7 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 		errorMap.Inc(err.Error())
 	}
 
-	software := whatSoftwareHTTP(nil, t.ident, h)
+	software := whatSoftwareHTTP(t.ident, h)
 
 	if len(software) == 0 {
 		return
@@ -403,7 +403,7 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 
 // HTTP Response
 
-func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
+func (h *httpReader) readResponse(b *bufio.Reader) error {
 	// try to read HTTP response from the buffered reader
 	res, err := http.ReadResponse(b, nil)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -461,7 +461,6 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 		h.parent.Lock()
 		var (
 			name         = "unknown"
-			host         string
 			source       = "HTTP RESPONSE"
 			ctype        string
 			numResponses = len(h.responses)
@@ -479,19 +478,18 @@ func (h *httpReader) readResponse(b *bufio.Reader, s2c Stream) error {
 			if req != nil {
 				name = path.Base(req.request.URL.Path)
 				source += " from " + req.request.URL.Path
-				host = req.request.Host
 				ctype = strings.Join(req.request.Header[headerContentType], " ")
 			}
 		}
 
 		// save file to disk
-		return h.saveFile(host, source, name, err, body, encoding, ctype)
+		return h.saveFile(source, name, err, body, encoding, ctype)
 	}
 
 	return nil
 }
 
-func (h *httpReader) findRequest(res *http.Response, s2c Stream) string {
+func (h *httpReader) findRequest(res *http.Response) string {
 	// try to find the matching HTTP request for the response
 	var (
 		req    *http.Request
@@ -709,7 +707,7 @@ func createContentTypePathIfRequired(fsPath string) {
 }
 
 // TODO: write unit tests and cleanup
-func (h *httpReader) saveFile(host, source, name string, err error, body []byte, encoding []string, contentType string) error {
+func (h *httpReader) saveFile(source, name string, err error, body []byte, encoding []string, contentType string) error {
 	// prevent saving zero bytes
 	if len(body) == 0 {
 		return nil
@@ -874,7 +872,7 @@ func (h *httpReader) saveFile(host, source, name string, err error, body []byte,
 
 // HTTP Request
 
-func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
+func (h *httpReader) readRequest(b *bufio.Reader) error {
 	req, err := http.ReadRequest(b)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
@@ -929,15 +927,7 @@ func (h *httpReader) readRequest(b *bufio.Reader, c2s Stream) error {
 	if req.Method == methodPost {
 		// write request payload to disk if configured
 		if (err == nil || c.WriteIncomplete) && c.FileStorage != "" {
-			return h.saveFile(
-				req.Host,
-				"HTTP POST REQUEST to "+req.URL.Path,
-				path.Base(req.URL.Path),
-				err,
-				body,
-				req.Header[headerContentEncoding],
-				strings.Join(req.Header[headerContentType], " "),
-			)
+			return h.saveFile("HTTP POST REQUEST to "+req.URL.Path, path.Base(req.URL.Path), err, body, req.Header[headerContentEncoding], strings.Join(req.Header[headerContentType], " "))
 		}
 	}
 
