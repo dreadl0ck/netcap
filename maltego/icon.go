@@ -178,11 +178,11 @@ func generateAuditRecordIconV2(text string) {
 
 func generateAuditRecordIcon(text string) {
 	var (
-		dpi      = 72.0
-		fontfile = filepath.Join("Roboto", "Roboto-Black.ttf")
-		hinting  = "none"
-		size     = 33.0
-		spacing  = 1.0
+		dpi          = 72.0
+		fontfile     = filepath.Join("Roboto", "Roboto-Black.ttf")
+		hinting      = "none"
+		size         = 33.0
+		spacing      = 1.0
 		whiteOnBlack = false
 	)
 
