@@ -98,13 +98,13 @@ func ToAuditRecords() {
 	}
 
 	// check if input PCAP path exists
-	inputStat, err := os.Stat(inputFile)
-	if err != nil {
-		trx.AddUIMessage("Input file path does not exist! error: "+err.Error(), maltego.UIM_FATAL)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file path does not exist", err)
-		return
-	}
+	//inputStat, err := os.Stat(inputFile)
+	//if err != nil {
+	//	trx.AddUIMessage("Input file path does not exist! error: "+err.Error(), maltego.UIM_FATAL)
+	//	fmt.Println(trx.ReturnOutput())
+	//	log.Println("input file path does not exist", err)
+	//	return
+	//}
 
 	log.Println("inputFile:", inputFile)
 
@@ -114,7 +114,7 @@ func ToAuditRecords() {
 	os.Stdout = os.Stderr
 
 	// create storage path for audit records
-	start := time.Now()
+	// start := time.Now()
 
 	// create the output directory in the same place as the input file
 	// the directory for this will be named like the input file with an added .net extension
@@ -161,10 +161,10 @@ func ToAuditRecords() {
 	// restore stdout
 	os.Stdout = stdout
 
-	writeAuditRecords(trx, inputStat.Size(), outDir, inputFile, r, start)
+	writeAuditRecords(trx, outDir)
 }
 
-func writeAuditRecords(trx maltego.Transform, inputSize int64, outDir string, inputFile string, r *pcap.Handle, start time.Time) {
+func writeAuditRecords(trx maltego.Transform, outDir string) {
 	files, err := ioutil.ReadDir(outDir)
 	if err != nil {
 		log.Fatal(err)

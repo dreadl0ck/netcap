@@ -306,7 +306,7 @@ func whatSoftware(dp *DeviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 }
 
 // TODO: pass in the device profile
-func whatSoftwareHTTP(dp *DeviceProfile, flowIdent string, h *types.HTTP) (software []*Software) {
+func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (software []*Software) {
 	var s []*Software // dpIdent = dp.MacAddr
 	// if dp.DeviceManufacturer != "" {
 	// 	dpIdent += " <" + dp.DeviceManufacturer + ">"

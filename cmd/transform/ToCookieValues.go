@@ -13,12 +13,12 @@ func ToCookieValues() {
 			if http.SrcIP == ipaddr {
 				for _, c := range http.ReqCookies {
 					if c.Name == cookieName {
-						addCookieValue(trx, c, http.Timestamp)
+						addCookieValue(trx, c)
 					}
 				}
 				for _, c := range http.ResCookies {
 					if c.Name == cookieName {
-						addCookieValue(trx, c, http.Timestamp)
+						addCookieValue(trx, c)
 					}
 				}
 			}
@@ -28,6 +28,6 @@ func ToCookieValues() {
 }
 
 // TODO: set timestamp as property
-func addCookieValue(trx *maltego.Transform, c *types.HTTPCookie, timestamp string) {
+func addCookieValue(trx *maltego.Transform, c *types.HTTPCookie) {
 	trx.AddEntity("netcap.HTTPCookieValue", c.Value)
 }

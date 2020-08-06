@@ -45,7 +45,7 @@ type sshReader struct {
 	software      []*types.Software
 }
 
-func (h *sshReader) Decode(s2c Stream, c2s Stream) {
+func (h *sshReader) Decode() {
 	var (
 		serverBuf bytes.Buffer
 		clientBuf bytes.Buffer

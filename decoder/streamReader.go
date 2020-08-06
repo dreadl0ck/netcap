@@ -46,7 +46,7 @@ type StreamReader interface {
 
 // StreamDecoder is the interface for processing a bi-directional network connection
 type StreamDecoder interface {
-	Decode(s2c Stream, c2s Stream)
+	Decode()
 }
 
 // StreamData is a fragment of data we received from a StreamReader

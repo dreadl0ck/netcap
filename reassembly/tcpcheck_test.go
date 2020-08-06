@@ -264,7 +264,7 @@ type testCheckOptionsSequence struct {
 func testCheckOptions(t *testing.T, title string, s []testCheckOptionsSequence) {
 	opt := NewTCPOptionCheck()
 	for i, test := range s {
-		err := opt.Accept(&test.tcp, test.ci, test.dir, test.nextSeq, &test.start)
+		err := opt.Accept(&test.tcp, test.dir, test.nextSeq)
 		res := err == nil
 		if res != test.expected {
 			t.Fatalf("'%v' #%d: packet rejected (%v): got %v, expected %v.", title, i, gopacket.LayerDump(&test.tcp), res, test.expected)

@@ -137,10 +137,10 @@ func ParseAttackInfos(path string) (labelMap map[string]*AttackInfo, labels []*A
 }
 
 // CustomLabels uses info from a csv file to label the data
-func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separator, selection string) error {
+func CustomLabels(pathMappingInfo, outputPath, separator, selection string) error {
 	var (
 		start            = time.Now()
-		labelMap, labels = ParseAttackInfos(pathMappingInfo)
+		_, labels = ParseAttackInfos(pathMappingInfo)
 	)
 	if len(labels) == 0 {
 		fmt.Println("no labels found.")
@@ -192,7 +192,7 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 			)
 
 			// fmt.Println("type", typ)
-			pbs = append(pbs, CustomMap(&wg, filename, typ, labelMap, labels, outputPath, separator, selection))
+			pbs = append(pbs, CustomMap(&wg, filename, typ, labels, outputPath, separator, selection))
 		}
 	}
 
@@ -226,7 +226,7 @@ func CustomLabels(pathMappingInfo, outputPath string, useDescription bool, separ
 
 // CustomMap uses info from a csv file to label the data
 // func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*SuricataAlert, labels []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
-func CustomMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*AttackInfo, labels []*AttackInfo, outDir, separator, selection string) *pb.ProgressBar {
+func CustomMap(wg *sync.WaitGroup, file, typ string, labels []*AttackInfo, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
 		total, errCount = netcap.Count(fname)

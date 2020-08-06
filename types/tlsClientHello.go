@@ -111,7 +111,7 @@ func (t *TLSClientHello) Inc() {
 	tlsClientMetric.WithLabelValues(t.CSVRecord()[1:]...).Inc()
 }
 
-func (t *TLSClientHello) SetPacketContext(ctx *PacketContext) {
+func (t *TLSClientHello) SetPacketContext(*PacketContext) {
 }
 
 func (t *TLSClientHello) Src() string {

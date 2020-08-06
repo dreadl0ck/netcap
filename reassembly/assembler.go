@@ -507,7 +507,7 @@ func (a *Assembler) dump(text string, half *halfconnection) {
 	}
 }
 
-func (a *Assembler) overlapExisting(half *halfconnection, start, end Sequence, bytes []byte) ([]byte, Sequence) {
+func (a *Assembler) overlapExisting(half *halfconnection, start Sequence, bytes []byte) ([]byte, Sequence) {
 	if half.nextSeq == invalidSequence {
 		// no start yet
 		return bytes, start
@@ -568,7 +568,7 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 
 		a.dump("handleBytes after queue", half)
 	} else {
-		a.cacheLP.bytes, a.cacheLP.seq = a.overlapExisting(half, seq, seq.Add(len(bytes)), a.cacheLP.bytes)
+		a.cacheLP.bytes, a.cacheLP.seq = a.overlapExisting(half, seq, a.cacheLP.bytes)
 		a.checkOverlap(half, false, ac)
 		if len(a.cacheLP.bytes) != 0 || end || start {
 			a.ret = append(a.ret, &a.cacheLP)

@@ -56,7 +56,7 @@ type pop3Reader struct {
 	user, pass, token string
 }
 
-func (h *pop3Reader) Decode(c2s, s2c Stream) {
+func (h *pop3Reader) Decode() {
 	var (
 		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
@@ -78,11 +78,11 @@ func (h *pop3Reader) Decode(c2s, s2c Stream) {
 			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
 				for err != io.EOF && err != io.ErrUnexpectedEOF {
-					err = h.readRequest(b, c2s)
+					err = h.readRequest(b)
 				}
 			} else {
 				for err != io.EOF && err != io.ErrUnexpectedEOF {
-					err = h.readResponse(b, s2c)
+					err = h.readResponse(b)
 				}
 			}
 			//if err != nil {
@@ -99,11 +99,11 @@ func (h *pop3Reader) Decode(c2s, s2c Stream) {
 	b := bufio.NewReader(&buf)
 	if previousDir == reassembly.TCPDirClientToServer {
 		for err != io.EOF && err != io.ErrUnexpectedEOF {
-			err = h.readRequest(b, c2s)
+			err = h.readRequest(b)
 		}
 	} else {
 		for err != io.EOF && err != io.ErrUnexpectedEOF {
-			err = h.readResponse(b, s2c)
+			err = h.readResponse(b)
 		}
 	}
 	//if err != nil {
@@ -271,7 +271,7 @@ func mailDebug(args ...interface{}) {
 	}
 }
 
-func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
+func (h *pop3Reader) readRequest(b *bufio.Reader) error {
 	tp := textproto.NewReader(b)
 
 	// Parse the first line of the response.
@@ -301,7 +301,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader, c2s Stream) error {
 	return nil
 }
 
-func (h *pop3Reader) readResponse(b *bufio.Reader, s2c Stream) error {
+func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 	tp := textproto.NewReader(b)
 
 	// Parse the first line of the response.

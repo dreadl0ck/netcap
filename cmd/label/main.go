@@ -59,7 +59,7 @@ func Run() {
 
 	// lets go
 	if *flagCustom != "" {
-		err = label.CustomLabels(*flagCustom, *flagOutDir, *flagDescription, *flagSeparator, "")
+		err = label.CustomLabels(*flagCustom, *flagOutDir, *flagSeparator, "")
 	} else {
 		err = label.Suricata(*flagInput, *flagOutDir, *flagDescription, *flagSeparator, "")
 	}
