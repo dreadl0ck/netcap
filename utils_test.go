@@ -69,12 +69,12 @@ func TestDumpStruc(t *testing.T) {
 }
 
 func TestCloseFile(t *testing.T) {
-	f := CreateFile("tests/TCP", ".ncap.gz")
+	f := createFile("tests/TCP", ".ncap.gz")
 	if f == nil {
 		t.Fatal("nil file handle received")
 	}
 
-	n, s := CloseFile("tests", f, "TCP")
+	n, s := closeFile("tests", f, "TCP")
 	if n != "TCP.ncap.gz" {
 		t.Fatal(n, " != TCP.ncap.gz")
 	}
@@ -85,7 +85,7 @@ func TestCloseFile(t *testing.T) {
 }
 
 func TestCreateFile(t *testing.T) {
-	f := CreateFile("tests/CreateFileTCP", ".ncap.gz")
+	f := createFile("tests/CreateFileTCP", ".ncap.gz")
 	if f == nil {
 		t.Fatal("nil file handle received")
 	}

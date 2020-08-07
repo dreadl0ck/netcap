@@ -37,7 +37,7 @@ func testCheckFSM(t *testing.T, options TCPSimpleFSMOptions, s []testCheckFSMSeq
 			port = testSeq.tcp.SrcPort
 		}
 		if port != testSeq.tcp.SrcPort {
-			dir = dir.Reverse()
+			dir = dir.reverse()
 			flow = flow.Reverse()
 		}
 		res := fsm.CheckState(&testSeq.tcp, dir)

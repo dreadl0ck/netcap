@@ -27,23 +27,23 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// ReverseProxy represents a named reverse proxy
+// reverseProxy represents a named reverse proxy
 // that uses a custom http.Transport to export netcap audit records.
-type ReverseProxy struct {
+type reverseProxy struct {
 	Name   string
 	rp     *httputil.ReverseProxy
 	writer *netcap.Writer
 }
 
 // ServeHTTP implements the http.Handler interface.
-func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *reverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.rp.ServeHTTP(w, r)
 }
 
-// ReverseProxyConfig represents the configuration of a single reverse proxy
+// reverseProxyConfig represents the configuration of a single reverse proxy
 // if the TLS field is set to true
 // paths to the cert and key files must be specified.
-type ReverseProxyConfig struct {
+type reverseProxyConfig struct {
 
 	// Remote endpoint address
 	Remote string `yaml:"remote"`
@@ -55,11 +55,11 @@ type ReverseProxyConfig struct {
 	TLS bool `yaml:"tls"`
 }
 
-// NewReverseProxy creates a ReverseProxy instance for the given target URL
+// newReverseProxy creates a reverseProxy instance for the given target URL
 // and sets the specified name.
-func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
+func newReverseProxy(proxyName string, targetURL *url.URL) *reverseProxy {
 	// instantiate proxy
-	proxy := &ReverseProxy{
+	proxy := &reverseProxy{
 		Name: proxyName,
 		rp:   httputil.NewSingleHostReverseProxy(targetURL),
 	}
@@ -78,7 +78,7 @@ func NewReverseProxy(proxyName string, targetURL *url.URL) *ReverseProxy {
 
 	// overwrite transport for reverse proxy
 	// (needed to implement a custom roundtripper that collects metrics for us)
-	proxy.rp.Transport = &NetcapTransport{
+	proxy.rp.Transport = &netcapTransport{
 
 		targetURL: targetURL,
 		proxyName: proxyName,

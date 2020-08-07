@@ -11,7 +11,7 @@ const (
 // and should never be set.
 type Sequence int64
 
-// Difference defines an ordering for comparing TCP sequences that's safe for
+// difference defines an ordering for comparing TCP sequences that's safe for
 // roll-overs.  It returns:
 //    > 0 : if t comes after s
 //    < 0 : if t comes before s
@@ -22,7 +22,7 @@ type Sequence int64
 // It handles rollovers by considering any sequence in the first quarter of the
 // uint32 space to be after any sequence in the last quarter of that space, thus
 // wrapping the uint32 space.
-func (s Sequence) Difference(t Sequence) int {
+func (s Sequence) difference(t Sequence) int {
 	if s > uint32Max-uint32Max/4 && t < uint32Max/4 {
 		t += uint32Max
 	} else if t > uint32Max-uint32Max/4 && s < uint32Max/4 {
@@ -31,7 +31,7 @@ func (s Sequence) Difference(t Sequence) int {
 	return int(t - s)
 }
 
-// Add adds an integer to a sequence and returns the resulting sequence.
-func (s Sequence) Add(t int) Sequence {
+// add adds an integer to a sequence and returns the resulting sequence.
+func (s Sequence) add(t int) Sequence {
 	return (s + Sequence(t)) & uint32Max
 }

@@ -14,7 +14,7 @@ import (
 )
 
 // additional entities that are not actual NETCAP audit records
-var entities = []entityCoreInfo{
+var maltegoEntities = []entityCoreInfo{
 	{"CaptureProcess", "remove_red_eye", "An operating system NETCAP process that captures traffic from a network interface", "", nil},
 	{"ContentType", "category", "A MIME type describes different multi-media formats", "", nil},
 	{"Credentials", "security", "Credentials for accessing services that require user authentication", "netcap.IPAddr", nil},
@@ -59,14 +59,10 @@ var entities = []entityCoreInfo{
 
 // generate all entities and pack as archive
 func TestGenerateAllEntities(t *testing.T) {
-	if true {
-		return
-	}
-
 	genEntityArchive()
 
 	// generate additional entities
-	for _, e := range entities {
+	for _, e := range maltegoEntities {
 		genEntity("entities", e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
 	}
 
@@ -89,45 +85,29 @@ func TestGenerateAllEntities(t *testing.T) {
 }
 
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
-	if true {
-		return
-	}
-
 	genEntityArchive()
 	genEntity("entities", "Vulnerability", "Vulnerability", "A software vulnerability", "")
 	packEntityArchive()
 }
 
 func TestGenerateAndPackCaptureProcessEntity(t *testing.T) {
-	if true {
-		return
-	}
-
 	genEntityArchive()
 	genEntity("entities", "CaptureProcess", "remove_red_eye", "A capture process", "")
 	packEntityArchive()
 }
 
 func TestGenerateAndPackPCAPEntity(t *testing.T) {
-	if true {
-		return
-	}
-
 	genEntityArchive()
 	genEntity("entities", "PCAP", "sd_storage", "Packet capture file", "", newStringField("path"))
 	packEntityArchive()
 }
 
 func TestGeneratePCAPXMLEntity(t *testing.T) {
-	if true {
-		return
-	}
-
-	expected := `<MaltegoEntity id="netcap.PCAP" displayName="PCAP" displayNamePlural="PCAPs" description="Packet capture file" category="Netcap" smallIconResource="General/SharkAttack" largeIconResource="General/SharkAttack" allowedRoot="true" conversionOrder="2147483647" visible="true">
- <Properties value="properties.filename" displayValue="properties.filename">
-  <Groups/>
+	expected := `<MaltegoEntity id="netcap.PCAP" displayName="PCAP" displayNamePlural="PCAP" description="Packet capture file" category="Netcap" smallIconResource="General/SharkAttack" largeIconResource="General/SharkAttack" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.pcap" displayValue="properties.pcap">
+  <Groups></Groups>
   <Fields>
-   <Field name="properties.filename" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Filename">
+   <Field name="properties.pcap" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="PCAP">
     <SampleValue>-</SampleValue>
    </Field>
    <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Path">
@@ -180,12 +160,9 @@ func compareGeneratedXML(data []byte, expected string, t *testing.T) {
 }
 
 func TestGenerateDHCPClientXMLEntity(t *testing.T) {
-	if true {
-		return
-	}
-
 	expected := `<MaltegoEntity id="netcap.DHCPClient" displayName="DHCPClient" displayNamePlural="DHCPClients" description="A DHCP client" category="Netcap" smallIconResource="Technology/WAN" largeIconResource="Technology/WAN" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dhcpclient" displayValue="properties.dhcpclient">
+  <Groups></Groups>
   <Fields>
    <Field name="properties.dhcpclient" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="DHCPClient">
     <SampleValue>-</SampleValue>

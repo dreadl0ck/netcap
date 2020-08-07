@@ -24,7 +24,7 @@ func (dir TCPFlowDirection) String() string {
 	return ""
 }
 
-// Reverse returns the reversed direction.
-func (dir TCPFlowDirection) Reverse() TCPFlowDirection {
+// reverse returns the reversed direction.
+func (dir TCPFlowDirection) reverse() TCPFlowDirection {
 	return !dir
 }

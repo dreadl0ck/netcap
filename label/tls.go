@@ -31,7 +31,7 @@ import (
 )
 
 // TLS labels type NC_TLSClientHello.
-func TLS(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+func TLS(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
 		total, errCount = netcap.Count(fname)

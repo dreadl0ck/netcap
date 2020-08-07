@@ -25,9 +25,9 @@ import (
 
 var ipWhitelist = make(map[string]struct{})
 
-// InitIPWhitelist initializes the ip address whitelist
+// initIPWhitelist initializes the ip address whitelist
 // TODO: integrate into DeviceProfiles audit record.
-func InitIPWhitelist() {
+func initIPWhitelist() {
 	var hosts int
 
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "ip-whitelist.csv"))
@@ -58,8 +58,8 @@ func InitIPWhitelist() {
 	}
 }
 
-// IsWhitelistedIP checks whether a given ip address is whitelisted.
-func IsWhitelistedIP(ip string) bool {
+// isWhitelistedIP checks whether a given ip address is whitelisted.
+func isWhitelistedIP(ip string) bool {
 	if _, ok := ipWhitelist[ip]; ok {
 		// log.Println(domain, "is whitelisted")
 		return true

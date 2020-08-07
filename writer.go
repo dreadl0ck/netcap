@@ -76,9 +76,9 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 
 		// create file
 		if compress {
-			w.file = CreateFile(filepath.Join(out, w.Name), ".csv.gz")
+			w.file = createFile(filepath.Join(out, w.Name), ".csv.gz")
 		} else {
-			w.file = CreateFile(filepath.Join(out, w.Name), ".csv")
+			w.file = createFile(filepath.Join(out, w.Name), ".csv")
 		}
 
 		if buffer {
@@ -128,9 +128,9 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 		w.cWriter = io.NewChanWriter()
 	} else {
 		if compress {
-			w.file = CreateFile(filepath.Join(out, w.Name), ".ncap.gz")
+			w.file = createFile(filepath.Join(out, w.Name), ".ncap.gz")
 		} else {
-			w.file = CreateFile(filepath.Join(out, w.Name), ".ncap")
+			w.file = createFile(filepath.Join(out, w.Name), ".ncap")
 		}
 	}
 
@@ -205,8 +205,8 @@ func (w *Writer) WriteCSV(msg proto.Message) (int, error) {
 	return w.csvWriter.WriteRecord(msg)
 }
 
-// WriteCSVHeader writes a CSV record.
-func (w *Writer) WriteCSVHeader(msg proto.Message) (int, error) {
+// writeCSVHeader writes a CSV record.
+func (w *Writer) writeCSVHeader(msg proto.Message) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -237,7 +237,7 @@ func (w *Writer) Write(msg proto.Message) error {
 func (w *Writer) WriteHeader(t types.Type, source string, version string, includesPayloads bool) error {
 	if w.csv {
 		// write as csv
-		_, err := w.WriteCSVHeader(InitRecord(t))
+		_, err := w.writeCSVHeader(InitRecord(t))
 		if err != nil {
 			panic(err)
 		}
@@ -291,7 +291,7 @@ func (w *Writer) Close() (name string, size int64) {
 		closeGzipWriters(w.gWriter)
 	}
 
-	return CloseFile(w.out, w.file, w.Name)
+	return closeFile(w.out, w.file, w.Name)
 }
 
 // GetChan returns a channel for receiving bytes.

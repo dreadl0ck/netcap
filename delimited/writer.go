@@ -37,10 +37,10 @@ func NewWriter(w io.Writer) *Writer {
 
 // Put writes the specified record to the writer
 // Note:
-//  - equivalent to WriteRecord, but discards the number of bytes written
+//  - equivalent to writeRecord, but discards the number of bytes written
 func (w Writer) Put(record []byte) error {
 	// ignore the amount of bytes written
-	_, err := w.WriteRecord(record)
+	_, err := w.writeRecord(record)
 
 	return err
 }
@@ -57,10 +57,10 @@ func (w Writer) PutProto(msg proto.Message) error {
 	return w.Put(rec)
 }
 
-// WriteRecord writes the specified record to the underlying writer
+// writeRecord writes the specified record to the underlying writer
 // Note:
 //  - returns the total number of bytes written including the length tag
-func (w Writer) WriteRecord(record []byte) (int, error) {
+func (w Writer) writeRecord(record []byte) (int, error) {
 	var (
 		buffer [binary.MaxVarintLen64]byte
 		varint = binary.PutUvarint(buffer[:], uint64(len(record)))

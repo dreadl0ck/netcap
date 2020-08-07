@@ -30,16 +30,16 @@ import (
 
 const directoryPermission = 0o755
 
-// AuditRecordHandle wraps a file handle of a netcap audit record file
+// auditRecordHandle wraps a file handle of a netcap audit record file
 // contains the original file handle and writers to compress and buffer the data.
-type AuditRecordHandle struct {
+type auditRecordHandle struct {
 	gWriter *gzip.Writer
 	bWriter *bufio.Writer
 	f       *os.File
 }
 
-// NewAuditRecordHandle creates a new netcap audit record file.
-func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
+// newAuditRecordHandle creates a new netcap audit record file.
+func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 	err := os.MkdirAll(b.ClientID, directoryPermission)
 	if err != nil {
 		panic(err)
@@ -79,7 +79,7 @@ func NewAuditRecordHandle(b *types.Batch, path string) *AuditRecordHandle {
 		panic(err)
 	}
 
-	return &AuditRecordHandle{
+	return &auditRecordHandle{
 		bWriter: bWriter,
 		gWriter: gWriter,
 		f:       f,

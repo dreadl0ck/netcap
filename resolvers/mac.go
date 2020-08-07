@@ -39,18 +39,18 @@ import (
 //     "dateUpdated":"2018-11-09"
 // }
 
-// MacSummary contains infos about a specific OUI.
-type MacSummary struct {
+// macSummary contains infos about a specific OUI.
+type macSummary struct {
 	OUI         string `json:"oui"`
 	IsPrivate   bool   `json:"isPrivate"`
 	CompanyName string `json:"companyName"`
 	CountryCode string `json:"countryCode"`
 }
 
-var macDB = make(map[string]MacSummary)
+var macDB = make(map[string]macSummary)
 
-// InitMACResolver loads the JSON mac DB into a map in memory.
-func InitMACResolver() {
+// initMACResolver loads the JSON mac DB into a map in memory.
+func initMACResolver() {
 	var sums int
 
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "macaddress.io-db.json"))
@@ -64,7 +64,7 @@ func InitMACResolver() {
 			continue
 		}
 
-		var sum MacSummary
+		var sum macSummary
 		if err = json.Unmarshal(line, &sum); err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break

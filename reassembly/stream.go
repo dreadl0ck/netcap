@@ -6,11 +6,11 @@ import (
 )
 
 // Stream is implemented by the caller to handle incoming reassembled
-// TCP data.  Callers create a StreamFactory, then StreamPool uses
+// TCP data.  Callers create a streamFactory, then StreamPool uses
 // it to create a new Stream for every TCP stream.
 //
 // assembly will, in order:
-//    1) Create the stream via StreamFactory.New
+//    1) Create the stream via streamFactory.New
 //    2) Call ReassembledSG 0 or more times, passing in reassembled TCP data in order
 //    3) Call ReassemblyComplete one time, after which the stream is dereferenced by assembly.
 type Stream interface {
@@ -33,9 +33,9 @@ type Stream interface {
 	ReassemblyComplete(ac AssemblerContext, firstFlow gopacket.Flow) bool
 }
 
-// StreamFactory is used by assembly to create a new stream for each
+// streamFactory is used by assembly to create a new stream for each
 // new TCP session.
-type StreamFactory interface {
+type streamFactory interface {
 	// New should return a new stream for the given TCP key.
 	New(netFlow, tcpFlow gopacket.Flow, ac AssemblerContext) Stream
 }

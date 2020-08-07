@@ -18,7 +18,7 @@ import (
 )
 
 func TestJa3Resolver(t *testing.T) {
-	InitJa3Resolver()
+	initJa3Resolver()
 
 	res := LookupJa3("5ef08bc989a9fcc18d5011f07d953c14")
 	if res != "Skype (tested 7.18(341) on OSX)" {

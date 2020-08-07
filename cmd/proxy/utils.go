@@ -137,8 +137,8 @@ func dumpHTTPResponse(resp *http.Response, proxyName string, rawbody []byte) {
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 }
 
-// DumpHTTPRequest dumps an http.Request for debugging purposes.
-func DumpHTTPRequest(req *http.Request, proxyName string) {
+// dumpHTTPRequest dumps an http.Request for debugging purposes.
+func dumpHTTPRequest(req *http.Request, proxyName string) {
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 	fmt.Println(proxyName+" received an HTTP Request: ", req.URL)
 	fmt.Println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------")

@@ -298,10 +298,14 @@ commands:
     test:
         exec: go test ./...
 
+    test-verbose:
+        exec: go test -v ./...
+
+    bench:
+        exec: go test -v -bench=. ./...
+
     format-code:
         exec: |
-
-            gci -w -local github.com/dreadl0ck/netcap .
 
             # TODO: recursive ./... does not seem to be supported
             gofumpt -w *.go
@@ -309,3 +313,9 @@ commands:
             gofumpt -w ./*/*/*.go
 
             gofumports -w -v .
+
+            gci -w -local github.com/dreadl0ck/netcap .
+
+    make-icons:
+        exec: |
+            go test -v -run="GenerateAuditRecordIcons" -tags="icons" github.com/dreadl0ck/netcap/maltego

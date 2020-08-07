@@ -30,8 +30,8 @@ var (
 	logger       = logrus.New()
 )
 
-// GeoRecord is a simple Geolocation Record for fast lookups.
-type GeoRecord struct {
+// geoRecord is a simple Geolocation Record for fast lookups.
+type geoRecord struct {
 	City struct {
 		Names map[string]string `maxminddb:"names"`
 	} `maxminddb:"city"`
@@ -44,8 +44,8 @@ type GeoRecord struct {
 	}
 }
 
-// InitGeolocationDB opens handles to the geolocation databases.
-func InitGeolocationDB() {
+// initGeolocationDB opens handles to the geolocation databases.
+func initGeolocationDB() {
 	if err := initCityReader(); err != nil {
 		logger.WithError(err).Error("failed to open city GeoDB")
 	}
@@ -67,7 +67,7 @@ func initAsnReader() (err error) {
 	return
 }
 
-func (record GeoRecord) repr() (geoloc, asn string) {
+func (record geoRecord) repr() (geoloc, asn string) {
 	geoloc = record.Country.ISOCode
 	if city, ok := record.City.Names["en"]; ok {
 		geoloc += fmt.Sprintf(" (%s)", city)
@@ -96,10 +96,10 @@ func LookupGeolocation(addr string) (string, string) {
 	}
 
 	if result, ok := geolocations.Load(ip.String()); ok {
-		return result.(GeoRecord).repr()
+		return result.(geoRecord).repr()
 	}
 
-	record := GeoRecord{}
+	record := geoRecord{}
 	err := cityReader.Lookup(ip, &record)
 	if err != nil {
 		logger.WithError(err).Error("failed to lookup city")

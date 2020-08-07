@@ -58,8 +58,8 @@ var (
 	SuricataConfigPath string
 )
 
-// SuricataAlert is a summary structure for an alert.
-type SuricataAlert struct {
+// suricataAlert is a summary structure for an alert.
+type suricataAlert struct {
 	Timestamp      string
 	Proto          string
 	SrcIP          string
@@ -134,7 +134,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	}
 
 	// extract alerts
-	labelMap, labels, err := ParseSuricataFastLog(contents, useDescription)
+	labelMap, labels, err := parseSuricataFastLog(contents, useDescription)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	fmt.Println("got", len(labels), "labels")
 
 	rows := [][]string{}
-	for c, num := range ClassificationMap {
+	for c, num := range classificationMap {
 		rows = append(rows, []string{c, strconv.Itoa(num)})
 	}
 
@@ -200,9 +200,9 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 			case "IPv6":
 				pbs = append(pbs, IPv6(&wg, filename, labels, outputPath, separator, selection))
 			case "Connection":
-				pbs = append(pbs, Connections(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, connections(&wg, filename, labels, outputPath, separator, selection))
 			case "Flow":
-				pbs = append(pbs, Flows(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, flows(&wg, filename, labels, outputPath, separator, selection))
 			case "HTTP":
 				pbs = append(pbs, HTTP(&wg, filename, labels, outputPath, separator, selection))
 			// TODO: make compatible with new TLS* audit records in v0.5
@@ -211,7 +211,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 			default:
 				if !DisableLayerMapping {
 					// apply labels to all records by timestamp only
-					pbs = append(pbs, Layer(&wg, filename, typ, labelMap, labels, outputPath, separator, selection))
+					pbs = append(pbs, layer(&wg, filename, typ, labelMap, labels, outputPath, separator, selection))
 				}
 			}
 		}
@@ -244,8 +244,8 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 	return nil
 }
 
-// ParseSuricataFastLog returns labels for a given suricata fast.log contents.
-func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[string]*SuricataAlert, arr []*SuricataAlert, err error) {
+// parseSuricataFastLog returns labels for a given suricata fast.log contents.
+func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[string]*suricataAlert, arr []*suricataAlert, err error) {
 	fmt.Println("parsing suricata fast.log")
 
 	if len(excluded) != 0 {
@@ -257,10 +257,10 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 	}
 
 	// alerts that have a duplicate timestamp
-	duplicates := []*SuricataAlert{}
+	duplicates := []*suricataAlert{}
 
 	// ts:alert
-	labelMap = make(map[string]*SuricataAlert)
+	labelMap = make(map[string]*suricataAlert)
 
 	// range fast.log contents line by line
 	for _, l := range strings.Split(string(contents), "\n") {
@@ -343,7 +343,7 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 			}
 
 			// create alert
-			a := &SuricataAlert{
+			a := &suricataAlert{
 				Timestamp:      utils.TimeToString(t),
 				Proto:          nProto,
 				SrcIP:          sourceIP,
@@ -371,7 +371,7 @@ func ParseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 			}
 
 			// count total occurrences of classification
-			ClassificationMap[a.Classification]++
+			classificationMap[a.Classification]++
 
 			// check if excluded
 			if !excluded[a.Classification] { // append to collected alerts

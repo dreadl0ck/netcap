@@ -31,17 +31,17 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// NetcapTransport contains a http.Transport for RoundTrips
+// netcapTransport contains a http.Transport for RoundTrips
 // and the target URL of the associated reverse proxy.
-type NetcapTransport struct {
+type netcapTransport struct {
 	proxyName string
 	rt        http.RoundTripper
 	targetURL *url.URL
-	proxy     *ReverseProxy
+	proxy     *reverseProxy
 }
 
 // RoundTrip implements the http.Transport interface.
-func (t *NetcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+func (t *netcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	// set basic auth on request if present
 	if t.targetURL.User != nil {
 		pass, ok := t.targetURL.User.Password()
@@ -55,7 +55,7 @@ func (t *NetcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err
 	req.Header.Set("Host", t.targetURL.Host)
 
 	if *flagDebug {
-		DumpHTTPRequest(req, t.proxyName)
+		dumpHTTPRequest(req, t.proxyName)
 	}
 
 	// Request Tracing

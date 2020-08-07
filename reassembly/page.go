@@ -43,7 +43,7 @@ func (p *page) assemblerContext() AssemblerContext {
 func (p *page) convertToPages(_ *pageCache, skip int, _ AssemblerContext) (*page, *page, int) {
 	if skip != 0 {
 		p.bytes = p.bytes[skip:]
-		p.seq = p.seq.Add(skip)
+		p.seq = p.seq.add(skip)
 	}
 
 	p.prev, p.next = nil, nil

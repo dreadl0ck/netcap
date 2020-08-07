@@ -19,7 +19,7 @@ import (
 //
 // StreamPool handles the creation and storage of Stream objects used by one or
 // more Assembler objects.  When a new TCP stream is found by an Assembler, it
-// creates an associated Stream by calling its StreamFactory's New method.
+// creates an associated Stream by calling its streamFactory's New method.
 // Thereafter (until the stream is closed), that Stream object will receive
 // assembled TCP data via Assembler's calls to the stream's Reassembled
 // function.
@@ -31,7 +31,7 @@ type StreamPool struct {
 	conns              map[key]*connection
 	users              int
 	mu                 sync.Mutex
-	factory            StreamFactory
+	factory            streamFactory
 	free               []*connection
 	all                [][]connection
 	nextAlloc          int
@@ -50,8 +50,8 @@ func (p *StreamPool) grow() {
 	p.nextAlloc *= 2
 }
 
-// Dump logs all connections.
-func (p *StreamPool) Dump() {
+// dump logs all connections.
+func (p *StreamPool) dump() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	log.Printf("Remaining %d connections: ", len(p.conns))
@@ -84,8 +84,8 @@ func (p *StreamPool) remove(conn *connection) {
 }
 
 // NewStreamPool creates a new connection pool.  Streams will
-// be created as necessary using the passed-in StreamFactory.
-func NewStreamPool(factory StreamFactory) *StreamPool {
+// be created as necessary using the passed-in streamFactory.
+func NewStreamPool(factory streamFactory) *StreamPool {
 	return &StreamPool{
 		conns:     make(map[key]*connection, initialAllocSize),
 		free:      make([]*connection, 0, initialAllocSize),

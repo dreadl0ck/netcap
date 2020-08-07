@@ -137,14 +137,10 @@ maltego.graph.version=1.2`)
 
 // generate all transforms and pack as archive
 func TestGenerateFullMaltegoConfiguration(t *testing.T) {
-	if true {
-		return
-	}
-
 	genFullConfigArchive()
 
 	// generate additional entities
-	for _, e := range entities {
+	for _, e := range maltegoEntities {
 		genEntity("netcap", e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
 	}
 
@@ -174,10 +170,6 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 // generate all transforms and pack as archive
 func TestGenerateAllTransforms(t *testing.T) {
-	if true {
-		return
-	}
-
 	genTransformArchive()
 
 	for _, tr := range transforms {
@@ -315,19 +307,15 @@ func genTransformSet(outDir string) {
 }
 
 func TestGenerateTransformServerListing(t *testing.T) {
-	if true {
-		return
-	}
-
 	// File: Servers/Local.tas
 	expected := `<MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
  <LastSync>2020-06-23 20:47:24.433 CEST</LastSync>
- <Protocol version="0.0"/>
- <Authentication type="none"/>
+ <Protocol version="0.0"></Protocol>
+ <Authentication type="none"></Authentication>
  <Transforms>
-  <Transform name="netcap.ToAuditRecords"/>
+  <Transform name="netcap.ToAuditRecords"></Transform>
  </Transforms>
- <Seeds/>
+ <Seeds></Seeds>
 </MaltegoServer>`
 
 	srv := server{
@@ -377,10 +365,6 @@ func TestGenerateTransformServerListing(t *testing.T) {
 }
 
 func TestGenerateTransformSettings(t *testing.T) {
-	if true {
-		return
-	}
-
 	// File: TransformRepositories/Local/netcap.ToAuditRecords.transformsettings
 	expected := `<TransformSettings enabled="true" disclaimerAccepted="false" showHelp="true" runWithAll="true" favorite="false">
  <Properties>
@@ -436,10 +420,6 @@ func TestGenerateTransformSettings(t *testing.T) {
 }
 
 func TestGenerateTransform(t *testing.T) {
-	if true {
-		return
-	}
-
 	// File: TransformRepositories/Local/netcap.ToAuditRecords.transform
 	expected := `<MaltegoTransform name="netcap.ToAuditRecords" displayName="To Audit Records [NETCAP]" abstract="false" template="false" visibility="public" description="Transform PCAP file into audit records" author="Philipp Mieden" requireDisplayInfo="false">
  <TransformAdapter>com.paterva.maltego.transform.protocol.v2api.LocalTransformAdapterV2</TransformAdapter>
@@ -455,16 +435,18 @@ func TestGenerateTransform(t *testing.T) {
     <DefaultValue>/</DefaultValue>
     <SampleValue></SampleValue>
    </Property>
-   <Property name="transform.local.debug" type="boolean" nullable="true" hidden="false" readonly="false" description="When this is set, the transform&apos;s text output will be printed to the output window" popup="false" abstract="false" visibility="public" auth="false" displayName="Show debug info">
+   <Property name="transform.local.debug" type="boolean" nullable="true" hidden="false" readonly="false" description="When this is set, the transform&amp;apos;s text output will be printed to the output window" popup="false" abstract="false" visibility="public" auth="false" displayName="Show debug info">
     <SampleValue>false</SampleValue>
    </Property>
   </Fields>
  </Properties>
  <InputConstraints>
-  <Entity type="netcap.PCAP" min="1" max="1"/>
+  <Entity type="netcap.PCAP" min="1" max="1"></Entity>
  </InputConstraints>
- <OutputEntities/>
- <defaultSets/>
+ <OutputEntities></OutputEntities>
+ <defaultSets>
+  <Set name="NETCAP"></Set>
+ </defaultSets>
  <StealthLevel>0</StealthLevel>
 </MaltegoTransform>`
 

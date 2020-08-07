@@ -13,7 +13,11 @@
 
 package decoder
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/dreadl0ck/netcap/utils"
+)
 
 func TestInitCustomDecoders(t *testing.T) {
 	conf = &Config{
@@ -66,6 +70,9 @@ func TestInitCustomDecoders(t *testing.T) {
 	if len(decoders) == 0 {
 		t.Fatal("no custom decoders after initialization")
 	}
+
+	utils.CloseBleve(exploitsIndex)
+	utils.CloseBleve(vulnerabilitiesIndex)
 }
 
 func TestCustomDecoder_Decode(t *testing.T) {

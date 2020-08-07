@@ -27,14 +27,14 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// SoftwareTransformationFunc is a transformation over Software profiles for a selected Software.
-type SoftwareTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Software, min, max uint64, profilesFile string, mac string, ip string)
+// softwareTransformationFunc is a transformation over Software profiles for a selected Software.
+type softwareTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Software, min, max uint64, profilesFile string, mac string, ip string)
 
-// CountFunc is a function that counts something over DeviceProfiles.
+// countFunc is a function that counts something over DeviceProfiles.
 type softwareCountFunc = func(software *types.Software, mac string, min, max *uint64)
 
 // SoftwareTransform applies a maltego transformation over Software profiles seen for a target Software.
-func SoftwareTransform(count softwareCountFunc, transform SoftwareTransformationFunc) {
+func SoftwareTransform(count softwareCountFunc, transform softwareTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	softwaresFile := lt.Values["path"]
 	mac := lt.Values["mac"]

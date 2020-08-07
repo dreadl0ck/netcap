@@ -48,7 +48,7 @@ func TestDHCPRemote(t *testing.T) {
 }
 
 func TestInitLocalDHCPFingerprintDB(t *testing.T) {
-	InitDHCPFingerprintDBCSV()
+	initDHCPFingerprintDBCSV()
 	SaveFingerprintDB()
 }
 
@@ -75,7 +75,7 @@ func TestDHCPFingerprintLocal(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res := LookupDHCPFingerprintLocal(test.fingerprint)
+		res := lookupDHCPFingerprintLocal(test.fingerprint)
 		if res == nil {
 			t.Fatal("got not result")
 		}

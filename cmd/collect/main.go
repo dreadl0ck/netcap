@@ -263,7 +263,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 						panic(errProcess)
 					}
 				} else {
-					files[path] = NewAuditRecordHandle(b, path)
+					files[path] = newAuditRecordHandle(b, path)
 				}
 			}()
 		}
