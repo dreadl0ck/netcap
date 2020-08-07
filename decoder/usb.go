@@ -28,7 +28,7 @@ var usbDecoder = newGoPacketDecoder(
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if usb, ok := layer.(*layers.USB); ok {
 			var payload []byte
-			if c.IncludePayloads {
+			if conf.IncludePayloads {
 				payload = layer.LayerPayload()
 			}
 

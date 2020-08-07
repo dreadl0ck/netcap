@@ -31,11 +31,11 @@ var tcpDecoder = newGoPacketDecoder(
 				opts    []*types.TCPOption
 				payload []byte
 			)
-			if c.IncludePayloads {
+			if conf.IncludePayloads {
 				payload = layer.LayerPayload()
 			}
 			var e float64
-			if c.CalculateEntropy {
+			if conf.CalculateEntropy {
 				e = entropy(tcp.Payload)
 			}
 			for _, o := range tcp.Options {

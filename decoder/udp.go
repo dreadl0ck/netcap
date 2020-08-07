@@ -98,11 +98,11 @@ var udpDecoder = newGoPacketDecoder(
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if udp, ok := layer.(*layers.UDP); ok {
 			var payload []byte
-			if c.IncludePayloads {
+			if conf.IncludePayloads {
 				payload = layer.LayerPayload()
 			}
 			var e float64
-			if c.CalculateEntropy {
+			if conf.CalculateEntropy {
 				e = entropy(udp.Payload)
 			}
 
@@ -163,7 +163,7 @@ func (u *UDPStreamPool) saveAllUDPConnections() {
 				// server
 				serverBytes += len(d.raw)
 				for _, b := range d.raw {
-					if serverBanner.Len() == c.BannerSize {
+					if serverBanner.Len() == conf.BannerSize {
 						break
 					}
 					serverBanner.WriteByte(b)
@@ -197,7 +197,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 
 	banner := runHarvesters(raw, transport, ident, firstPacket)
 
-	if !c.SaveConns {
+	if !conf.SaveConns {
 		return nil
 	}
 
@@ -208,7 +208,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 		typ = getServiceName(banner, transport)
 
 		// path for storing the data
-		root = filepath.Join(c.Out, "udpConnections", typ)
+		root = filepath.Join(conf.Out, "udpConnections", typ)
 
 		// file basename
 		base = filepath.Clean(path.Base(ident)) + binaryFileExtension
@@ -259,8 +259,8 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 // and limits the length of the saved data to the BannerSize value from the config.
 func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, firstPacket time.Time, serverBytes int, clientBytes int, net gopacket.Flow, transport gopacket.Flow) {
 	// limit length of data
-	if len(banner) >= c.BannerSize {
-		banner = banner[:c.BannerSize]
+	if len(banner) >= conf.BannerSize {
+		banner = banner[:conf.BannerSize]
 	}
 
 	// check if we already have a banner for the IP + Port combination

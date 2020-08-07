@@ -28,7 +28,7 @@ var ipv4Decoder = newGoPacketDecoder(
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if ip4, ok := layer.(*layers.IPv4); ok {
 			var e float64
-			if c.CalculateEntropy {
+			if conf.CalculateEntropy {
 				e = entropy(ip4.Payload)
 			}
 			var opts []*types.IPv4Option

@@ -172,19 +172,21 @@ func Run() {
 
 		// collect traffic live from named interface
 		if *flagInterface != "" {
-			err := c.CollectLive(*flagInterface, *flagBPF)
+			err = c.CollectLive(*flagInterface, *flagBPF)
 			if err != nil {
 				log.Fatal("failed to collect live packets: ", err)
 			}
+
 			return
 		}
 
 		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
 		// setting BPF filters is not yet supported by the pcapgo package
 		if *flagBPF != "" {
-			if err := c.CollectBPF(*flagInput, *flagBPF); err != nil {
+			if err = c.CollectBPF(*flagInput, *flagBPF); err != nil {
 				log.Fatal("failed to set BPF: ", err)
 			}
+
 			return
 		}
 
@@ -199,11 +201,11 @@ func Run() {
 		// logic is split for both types here
 		// because the pcapng reader offers ZeroCopyReadPacketData()
 		if isPcap {
-			if err := c.CollectPcap(*flagInput); err != nil {
+			if err = c.CollectPcap(*flagInput); err != nil {
 				log.Fatal("failed to collect audit records from pcap file: ", err)
 			}
 		} else {
-			if err := c.CollectPcapNG(*flagInput); err != nil {
+			if err = c.CollectPcapNG(*flagInput); err != nil {
 				log.Fatal("failed to collect audit records from pcapng file: ", err)
 			}
 		}
@@ -214,9 +216,11 @@ func Run() {
 			if err != nil {
 				log.Fatal("failed create memory profile: ", err)
 			}
-			if err := pprof.WriteHeapProfile(f); err != nil {
+
+			if err = pprof.WriteHeapProfile(f); err != nil {
 				log.Fatal("failed to write heap profile: ", err)
 			}
+
 			err = f.Close()
 			if err != nil {
 				panic("failed to write memory profile: " + err.Error())

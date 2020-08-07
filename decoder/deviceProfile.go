@@ -189,10 +189,10 @@ var profileDecoder = newCustomDecoder(
 
 		// flush writer
 		if !e.writer.IsChanWriter {
-			for _, c := range Profiles.Items {
-				c.Lock()
-				writeProfile(c.DeviceProfile)
-				c.Unlock()
+			for _, item := range Profiles.Items {
+				item.Lock()
+				writeProfile(item.DeviceProfile)
+				item.Unlock()
 			}
 		}
 
@@ -202,7 +202,7 @@ var profileDecoder = newCustomDecoder(
 
 // writeProfile writes the profile.
 func writeProfile(d *types.DeviceProfile) {
-	if c.Export {
+	if conf.Export {
 		d.Inc()
 	}
 

@@ -136,7 +136,8 @@ func generateAuditRecordIconV2(text string) {
 	default:
 		fontSize = 15
 	}
-	if err := dc.LoadFontFace(filepath.Join("Roboto", "Roboto-Black.ttf"), fontSize); err != nil {
+
+	if err = dc.LoadFontFace(filepath.Join("Roboto", "Roboto-Black.ttf"), fontSize); err != nil {
 		panic(err)
 	}
 

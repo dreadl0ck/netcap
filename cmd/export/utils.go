@@ -112,13 +112,13 @@ func exportDir(path string) {
 		for p, t := range times {
 			var (
 				// copy to avoid capturing loop variable
-				path = p
+				pathCopy = p
 
 				// calculate delta to first timestamp
 				deltaToBegin = t.Sub(begin)
 			)
 
-			fmt.Println("exporting", p, "in", deltaToBegin)
+			fmt.Println("exporting", pathCopy, "in", deltaToBegin)
 
 			// add to waitgroup
 			wg.Add(1)
@@ -141,7 +141,7 @@ func exportDir(path string) {
 				time.Sleep(sleep)
 
 				// begin exporting the file
-				exportFile(path)
+				exportFile(pathCopy)
 
 				// done
 				wg.Done()

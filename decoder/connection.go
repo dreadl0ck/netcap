@@ -161,41 +161,41 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		conn.Unlock()
 	} else { // create a new Connection
-		conn := &types.Connection{}
-		conn.UID = calcMd5(conn.String())
-		conn.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
+		co := &types.Connection{}
+		co.UID = calcMd5(co.String())
+		co.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
 
 		if ll := p.LinkLayer(); ll != nil {
-			conn.LinkProto = ll.LayerType().String()
-			conn.SrcMAC = ll.LinkFlow().Src().String()
-			conn.DstMAC = ll.LinkFlow().Dst().String()
+			co.LinkProto = ll.LayerType().String()
+			co.SrcMAC = ll.LinkFlow().Src().String()
+			co.DstMAC = ll.LinkFlow().Dst().String()
 		}
 		if nl := p.NetworkLayer(); nl != nil {
-			conn.NetworkProto = nl.LayerType().String()
-			conn.SrcIP = nl.NetworkFlow().Src().String()
-			conn.DstIP = nl.NetworkFlow().Dst().String()
+			co.NetworkProto = nl.LayerType().String()
+			co.SrcIP = nl.NetworkFlow().Src().String()
+			co.DstIP = nl.NetworkFlow().Dst().String()
 		}
 		if tl := p.TransportLayer(); tl != nil {
-			conn.TransportProto = tl.LayerType().String()
-			conn.SrcPort = tl.TransportFlow().Src().String()
-			conn.DstPort = tl.TransportFlow().Dst().String()
+			co.TransportProto = tl.LayerType().String()
+			co.SrcPort = tl.TransportFlow().Src().String()
+			co.DstPort = tl.TransportFlow().Dst().String()
 		}
 		if al := p.ApplicationLayer(); al != nil {
-			conn.ApplicationProto = al.LayerType().String()
-			conn.AppPayloadSize = int32(len(al.Payload()))
+			co.ApplicationProto = al.LayerType().String()
+			co.AppPayloadSize = int32(len(al.Payload()))
 		}
 		cd.Conns.Items[connID.String()] = &connection{
-			Connection: conn,
+			Connection: co,
 		}
 
 		conns := atomic.AddInt64(&stats.numConns, 1)
 
 		// flush
-		if c.ConnFlushInterval != 0 && conns%int64(c.ConnFlushInterval) == 0 {
+		if conf.ConnFlushInterval != 0 && conns%int64(conf.ConnFlushInterval) == 0 {
 			var selectConns []*types.Connection
 			for id, entry := range cd.Conns.Items {
 				// flush entries whose last timestamp is connTimeOut older than current packet
-				if p.Metadata().Timestamp.Sub(utils.StringToTime(entry.TimestampLast)) > c.ConnTimeOut {
+				if p.Metadata().Timestamp.Sub(utils.StringToTime(entry.TimestampLast)) > conf.ConnTimeOut {
 					selectConns = append(selectConns, entry.Connection)
 					// cleanup
 					delete(cd.Conns.Items, id)
@@ -204,8 +204,8 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 			// flush selection in background
 			go func() {
-				for _, c := range selectConns {
-					cd.writeConn(c)
+				for _, selectedConn := range selectConns {
+					cd.writeConn(selectedConn)
 				}
 			}()
 		}
@@ -229,7 +229,7 @@ func (cd *connectionDecoder) DeInit() error {
 
 // writeConn writes the connection.
 func (cd *connectionDecoder) writeConn(conn *types.Connection) {
-	if c.Export {
+	if conf.Export {
 		conn.Inc()
 	}
 

@@ -28,7 +28,7 @@ var ethernetDecoder = newGoPacketDecoder(
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if eth, ok := layer.(*layers.Ethernet); ok {
 			var e float64
-			if c.CalculateEntropy {
+			if conf.CalculateEntropy {
 				e = entropy(eth.Payload)
 			}
 

@@ -58,9 +58,9 @@ func Run() {
 	}
 
 	if *flagEnv {
-		out, err := exec.Command("env").CombinedOutput()
-		if err != nil {
-			log.Fatal(err)
+		out, errEnv := exec.Command("env").CombinedOutput()
+		if errEnv != nil {
+			log.Fatal(errEnv)
 		}
 
 		for _, line := range strings.Split(string(out), "\n") {

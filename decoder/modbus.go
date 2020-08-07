@@ -28,7 +28,7 @@ var modbusDecoder = newGoPacketDecoder(
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if m, ok := layer.(*layers.Modbus); ok {
 			var payload []byte
-			if c.IncludePayloads {
+			if conf.IncludePayloads {
 				payload = m.ReqResp
 			}
 

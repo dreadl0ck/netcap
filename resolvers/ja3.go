@@ -74,6 +74,7 @@ func InitJa3Resolver() {
 		data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, f.Name()))
 		if err != nil {
 			log.Println(err)
+
 			continue
 		}
 

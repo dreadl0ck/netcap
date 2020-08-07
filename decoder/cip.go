@@ -28,7 +28,7 @@ var cipDecoder = newGoPacketDecoder(
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if cip, ok := layer.(*layers.CIP); ok {
 			var payload []byte
-			if c.IncludePayloads {
+			if conf.IncludePayloads {
 				payload = cip.Data
 			}
 			var additional []uint32

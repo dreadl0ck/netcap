@@ -67,7 +67,7 @@ type tcpConnectionFactory struct {
 func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reassembly.AssemblerContext) reassembly.Stream {
 	logReassemblyDebug("* NEW: %s %s\n", net, transport)
 
-	stream := &tcpConnection{
+	str := &tcpConnection{
 		net:         net,
 		transport:   transport,
 		tcpstate:    reassembly.NewTCPSimpleFSM(factory.fsmOptions),
@@ -81,31 +81,31 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reasse
 	//	 return stream
 	// }
 
-	stream.decoder = &tcpReader{
-		parent: stream,
+	str.decoder = &tcpReader{
+		parent: str,
 	}
-	stream.client = stream.newTCPStreamReader(true)
-	stream.server = stream.newTCPStreamReader(false)
+	str.client = str.newTCPStreamReader(true)
+	str.server = str.newTCPStreamReader(false)
 
 	factory.wg.Add(2)
 
 	factory.Lock()
-	factory.streamReaders = append(factory.streamReaders, stream.client)
-	factory.streamReaders = append(factory.streamReaders, stream.client)
+	factory.streamReaders = append(factory.streamReaders, str.client)
+	factory.streamReaders = append(factory.streamReaders, str.client)
 	factory.numActive += 2
 	factory.Unlock()
 
 	// launch stream readers
-	go stream.client.Run(factory)
-	go stream.server.Run(factory)
+	go str.client.Run(factory)
+	go str.server.Run(factory)
 
-	return stream
+	return str
 }
 
 // waitGoRoutines waits until the goroutines launched to process TCP streams are done
 // this will block forever if there are streams that are never shutdown (via RST or FIN flags).
 func (factory *tcpConnectionFactory) waitGoRoutines() {
-	if !c.Quiet {
+	if !conf.Quiet {
 		factory.Lock()
 		fmt.Println("\nwaiting for", factory.numActive, "flows")
 		factory.Unlock()

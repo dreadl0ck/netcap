@@ -132,7 +132,7 @@ func writeSoftwareFromBanner(serv *service, ident string, probeIdent string) {
 func matchServiceProbes(serv *service, banner []byte, ident string) {
 	// match banner against nmap service probes
 	for _, serviceProbe := range serviceProbes {
-		if c.UseRE2 {
+		if conf.UseRE2 {
 			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
@@ -142,7 +142,7 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				serv.OS = addInfo(serv.OS, extractGroup(&serviceProbe.OS, m))
 				serv.Version = addInfo(serv.Version, extractGroup(&serviceProbe.Version, m))
 
-				if c.Debug {
+				if conf.Debug {
 					fmt.Println("\n\nMATCH!", ident)
 					fmt.Println(serviceProbe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
@@ -159,7 +159,7 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				serv.OS = addInfo(serv.OS, extractGroupDotNet(&serviceProbe.OS, m))
 				serv.Version = addInfo(serv.Version, extractGroupDotNet(&serviceProbe.Version, m))
 
-				if c.Debug {
+				if conf.Debug {
 					fmt.Println("\nMATCH!", ident)
 					fmt.Println(serviceProbe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
@@ -272,7 +272,7 @@ func initServiceProbes() error {
 
 			// check if rule ident field has been excluded
 			ident := strings.Fields(line)[1]
-			if c.UseRE2 {
+			if conf.UseRE2 {
 				if _, ok := ignoredProbesRE2[ident]; ok {
 					utils.DebugLog.Println("ignoring probe", ident)
 					continue
@@ -455,7 +455,7 @@ func initServiceProbes() error {
 			finalReg += ")" + strings.TrimSpace(string(regex))
 			before := finalReg
 
-			if c.UseRE2 {
+			if conf.UseRE2 {
 				finalReg = clean(finalReg)
 				s.RegEx, errCompile = regexp.Compile(finalReg)
 			} else {
@@ -463,8 +463,8 @@ func initServiceProbes() error {
 			}
 
 			if errCompile != nil {
-				if c.Debug {
-					if c.UseRE2 {
+				if conf.Debug {
+					if conf.UseRE2 {
 						if before != finalReg {
 							fmt.Println("before != finalReg:", before)
 						}

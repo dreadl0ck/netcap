@@ -42,15 +42,18 @@ func (c *CIP) CSVHeader() []string {
 
 func (c *CIP) CSVRecord() []string {
 	additional := make([]string, len(c.AdditionalStatus))
+
 	if c.Response {
 		for _, v := range c.AdditionalStatus {
 			additional = append(additional, formatUint32(v))
 		}
 	}
+
 	// prevent accessing nil pointer
 	if c.Context == nil {
 		c.Context = &PacketContext{}
 	}
+
 	return filter([]string{
 		formatTimestamp(c.Timestamp),
 		strconv.FormatBool(c.Response), // bool
@@ -75,7 +78,7 @@ func (c *CIP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(c)
 }
 
-var cipMetric = prometheus.NewCounterVec(
+var cipMetric = prometheus.NewCounterVec( //nolint:gochecknoglobals
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_CIP.String()),
 		Help: Type_NC_CIP.String() + " audit records",
@@ -99,6 +102,7 @@ func (c *CIP) Src() string {
 	if c.Context != nil {
 		return c.Context.SrcIP
 	}
+
 	return ""
 }
 
@@ -106,5 +110,6 @@ func (c *CIP) Dst() string {
 	if c.Context != nil {
 		return c.Context.DstIP
 	}
+
 	return ""
 }

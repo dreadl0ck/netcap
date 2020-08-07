@@ -29,20 +29,20 @@ type testCheckFSMSequence struct {
 func testCheckFSM(t *testing.T, options TCPSimpleFSMOptions, s []testCheckFSMSequence) {
 	fsm := NewTCPSimpleFSM(options)
 	port := layers.TCPPort(0)
-	for i, test := range s {
+	for i, testSeq := range s {
 		// Fake some values according to ports
 		flow := netFlow
 		dir := TCPDirClientToServer
 		if port == 0 {
-			port = test.tcp.SrcPort
+			port = testSeq.tcp.SrcPort
 		}
-		if port != test.tcp.SrcPort {
+		if port != testSeq.tcp.SrcPort {
 			dir = dir.Reverse()
 			flow = flow.Reverse()
 		}
-		res := fsm.CheckState(&test.tcp, dir)
-		if res != test.expected {
-			t.Fatalf("#%d: packet rejected (%v): got %v, expected %v. State:%s", i, gopacket.LayerDump(&test.tcp), res, test.expected, fsm.String())
+		res := fsm.CheckState(&testSeq.tcp, dir)
+		if res != testSeq.expected {
+			t.Fatalf("#%d: packet rejected (%v): got %v, expected %v. State:%s", i, gopacket.LayerDump(&testSeq.tcp), res, testSeq.expected, fsm.String())
 		}
 	}
 }
@@ -263,17 +263,17 @@ type testCheckOptionsSequence struct {
 
 func testCheckOptions(t *testing.T, title string, s []testCheckOptionsSequence) {
 	opt := NewTCPOptionCheck()
-	for i, test := range s {
-		err := opt.Accept(&test.tcp, test.dir, test.nextSeq)
+	for i, testSeq := range s {
+		err := opt.Accept(&testSeq.tcp, testSeq.dir, testSeq.nextSeq)
 		res := err == nil
-		if res != test.expected {
-			t.Fatalf("'%v' #%d: packet rejected (%v): got %v, expected %v.", title, i, gopacket.LayerDump(&test.tcp), res, test.expected)
+		if res != testSeq.expected {
+			t.Fatalf("'%v' #%d: packet rejected (%v): got %v, expected %v.", title, i, gopacket.LayerDump(&testSeq.tcp), res, testSeq.expected)
 		}
 	}
 }
 
 func TestCheckOptions(t *testing.T) {
-	for _, test := range []struct {
+	for _, testSeq := range []struct {
 		title    string
 		sequence []testCheckOptionsSequence
 	}{
@@ -412,6 +412,6 @@ func TestCheckOptions(t *testing.T) {
 			},
 		},
 	} {
-		testCheckOptions(t, test.title, test.sequence)
+		testCheckOptions(t, testSeq.title, testSeq.sequence)
 	}
 }

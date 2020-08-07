@@ -357,9 +357,9 @@ func indexData(in string) {
 											// try to get version from cpeURI
 											parts := strings.Split(cpe.Cpe23URI, ":")
 											if len(parts) > 5 {
-												v := parts[5]
-												if v != "*" && v != "-" {
-													versions = append(versions, v)
+												ver := parts[5]
+												if ver != "*" && ver != "-" {
+													versions = append(versions, ver)
 												}
 											}
 										}

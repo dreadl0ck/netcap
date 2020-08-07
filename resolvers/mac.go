@@ -65,7 +65,7 @@ func InitMACResolver() {
 		}
 
 		var sum MacSummary
-		if err := json.Unmarshal(line, &sum); err != nil {
+		if err = json.Unmarshal(line, &sum); err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			}

@@ -86,7 +86,7 @@ func TestWriter(t *testing.T) {
 
 	// write into writer
 	for _, tcp := range tcps {
-		err := w.Write(tcp)
+		err = w.Write(tcp)
 		if err != nil {
 			t.Fatal(err)
 		}

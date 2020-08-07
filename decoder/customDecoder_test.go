@@ -16,7 +16,7 @@ package decoder
 import "testing"
 
 func TestInitCustomDecoders(t *testing.T) {
-	c = &Config{
+	conf = &Config{
 		Out:                     "",
 		Source:                  "",
 		CustomRegex:             "",
@@ -58,7 +58,7 @@ func TestInitCustomDecoders(t *testing.T) {
 		Compression:             false,
 		IgnoreDecoderInitErrors: false,
 	}
-	decoders, err := InitCustomDecoders(c)
+	decoders, err := InitCustomDecoders(conf)
 	if err != nil {
 		t.Fatal(err)
 	}

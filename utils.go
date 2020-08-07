@@ -160,12 +160,14 @@ func Dump(w *os.File, c DumpConfig) error {
 
 			// JSON
 			if c.JSON {
-				marshaled, err := json.Marshal(p)
-				if err != nil {
-					return fmt.Errorf("failed to marshal json: %s", err)
+				marshaled, errMarshal := json.Marshal(p)
+				if errMarshal != nil {
+					return fmt.Errorf("failed to marshal json: %s", errMarshal)
 				}
+
 				w.WriteString(string(marshaled))
 				w.WriteString("\n")
+
 				continue
 			}
 

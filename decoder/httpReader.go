@@ -369,13 +369,13 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	// 	}
 	// }
 
-	if c.IncludePayloads {
+	if conf.IncludePayloads {
 		h.RequestBody = t.client.DataSlice().bytes()
 		h.ResponseBody = t.server.DataSlice().bytes()
 	}
 
 	// export metrics if configured
-	if c.Export {
+	if conf.Export {
 		h.Inc()
 	}
 
@@ -451,7 +451,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	h.parent.Unlock()
 
 	// write responses to disk if configured
-	if (err == nil || c.WriteIncomplete) && c.FileStorage != "" {
+	if (err == nil || conf.WriteIncomplete) && conf.FileStorage != "" {
 		h.parent.Lock()
 		var (
 			name         = "unknown"
@@ -714,7 +714,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		ctype = trimEncoding(http.DetectContentType(body))
 
 		// root path
-		root = path.Join(c.FileStorage, ctype)
+		root = path.Join(conf.FileStorage, ctype)
 
 		// file extension
 		ext = fileExtensionForContentType(ctype)
@@ -739,8 +739,8 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 	if len(base) > 250 {
 		base = base[:250] + "..."
 	}
-	if base == c.FileStorage {
-		base = path.Join(c.FileStorage, "noname")
+	if base == conf.FileStorage {
+		base = path.Join(conf.FileStorage, "noname")
 	}
 	var (
 		target = base
@@ -784,6 +784,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 			logReassemblyError("HTTP-gunzip", "Failed to gzip decode: %s", err)
 		}
 	}
+
 	if err == nil {
 		w, err := io.Copy(f, r)
 		if err != nil {
@@ -797,6 +798,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 			}
 		}
 		err = f.Close()
+		
 		if err != nil {
 			logReassemblyError("HTTP-save", "%s: failed to close %s (l:%d): %s\n", h.parent.ident, target, w, err)
 		} else {
@@ -817,7 +819,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 			ctype = trimEncoding(http.DetectContentType(data))
 
 			// make sure root path exists
-			createContentTypePathIfRequired(path.Join(c.FileStorage, ctype))
+			createContentTypePathIfRequired(path.Join(conf.FileStorage, ctype))
 
 			// switch the file extension and the path for the updated content type
 			ext := filepath.Ext(target)
@@ -915,7 +917,7 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 
 	if req.Method == methodPost {
 		// write request payload to disk if configured
-		if (err == nil || c.WriteIncomplete) && c.FileStorage != "" {
+		if (err == nil || conf.WriteIncomplete) && conf.FileStorage != "" {
 			return h.saveFile("HTTP POST REQUEST to "+req.URL.Path, path.Base(req.URL.Path), err, body, req.Header[headerContentEncoding], strings.Join(req.Header[headerContentType], " "))
 		}
 	}

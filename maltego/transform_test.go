@@ -161,8 +161,8 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 		genEntity("netcap", name, name, e.Description, "")
 	})
 
-	for _, t := range transforms {
-		genTransform("netcap", t.ID, t.Description, t.InputEntity)
+	for _, tr := range transforms {
+		genTransform("netcap", tr.ID, tr.Description, tr.InputEntity)
 	}
 
 	genServerListing("netcap")
@@ -180,8 +180,8 @@ func TestGenerateAllTransforms(t *testing.T) {
 
 	genTransformArchive()
 
-	for _, t := range transforms {
-		genTransform("transforms", t.ID, t.Description, t.InputEntity)
+	for _, tr := range transforms {
+		genTransform("transforms", tr.ID, tr.Description, tr.InputEntity)
 	}
 
 	genServerListing("transforms")

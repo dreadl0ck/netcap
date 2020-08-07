@@ -173,7 +173,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		}
 		stats.Unlock()
 
-		if !c.IgnoreFSMerr {
+		if !conf.IgnoreFSMerr {
 			return false
 		}
 	}
@@ -186,7 +186,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		stats.rejectOpt++
 		stats.Unlock()
 
-		if !c.NoOptCheck {
+		if !conf.NoOptCheck {
 			return false
 		}
 	}
@@ -194,7 +194,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 	// TCP Checksum
 	accept := true
 
-	if c.Checksum {
+	if conf.Checksum {
 		chk, errChk := tcp.ComputeChecksum()
 		if errChk != nil {
 			logReassemblyError("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, errChk)
@@ -324,12 +324,12 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 // so it's important to copy anything you need out of it (or use KeepFrom()).
 func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
 	length, saved := sg.Lengths()
-	dir, start, end, skip := sg.Info()
+	dir, startTime, end, skip := sg.Info()
 
 	// update stats
-	t.updateStats(sg, skip, length, saved, start, end, dir)
+	t.updateStats(sg, skip, length, saved, startTime, end, dir)
 
-	if skip == -1 && c.AllowMissingInit {
+	if skip == -1 && conf.AllowMissingInit {
 		// this is allowed
 	} else if skip != 0 {
 		// Missing bytes in stream: do not even try to parse it
@@ -346,7 +346,7 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	// fmt.Println("got raw data:", len(data), ac.GetCaptureInfo().Timestamp, "\n", hex.Dump(data))
 
 	if length > 0 {
-		if c.HexDump {
+		if conf.HexDump {
 			logReassemblyDebug("Feeding stream reader with:\n%s", hex.Dump(data))
 		}
 		t.feedData(dir, data, ac)
@@ -482,7 +482,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	// defrag the IPv4 packet if desired
 	// TODO: implement defragmentation for IPv6
 	ip4Layer := packet.Layer(layers.LayerTypeIPv4)
-	if ip4Layer != nil && c.DefragIPv4 {
+	if ip4Layer != nil && conf.DefragIPv4 {
 
 		var (
 			ip4         = ip4Layer.(*layers.IPv4)
@@ -503,14 +503,16 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 				panic("Not a PacketBuilder")
 			}
 			nextDecoder := newip4.NextLayerType()
-			if err := nextDecoder.Decode(newip4.Payload, pb); err != nil {
+
+			if err = nextDecoder.Decode(newip4.Payload, pb); err != nil {
 				fmt.Println("failed to decode ipv4:", err)
 			}
 		}
 	}
 
 	tcp := tcpLayer.(*layers.TCP)
-	if c.Checksum {
+
+	if conf.Checksum {
 		err := tcp.SetNetworkLayerForChecksum(packet.NetworkLayer())
 		if err != nil {
 			log.Fatalf("Failed to set network layer for checksum: %s\n", err)
@@ -527,15 +529,15 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	})
 
 	// TODO: refactor and use a ticker model in a goroutine, similar to progress reporting
-	if c.FlushEvery > 0 {
+	if conf.FlushEvery > 0 {
 		stats.Lock()
-		doFlush := stats.count%int64(c.FlushEvery) == 0
+		doFlush := stats.count%int64(conf.FlushEvery) == 0
 		stats.Unlock()
 
 		// flush connections in interval
 		if doFlush {
 			ref := packet.Metadata().CaptureInfo.Timestamp
-			flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-c.ClosePendingTimeOut), TC: ref.Add(-c.CloseInactiveTimeOut)})
+			flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-conf.ClosePendingTimeOut), TC: ref.Add(-conf.CloseInactiveTimeOut)})
 			utils.DebugLog.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref)
 		}
 	}
@@ -564,17 +566,17 @@ func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 
 // CleanupReassembly will shutdown the reassembly.
 func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
-	c.Lock()
-	if c.Debug {
+	conf.Lock()
+	if conf.Debug {
 		utils.ReassemblyLog.Println("StreamPool:")
 		utils.ReassemblyLog.Println(streamFactory.StreamPool.DumpString())
 	}
-	c.Unlock()
+	conf.Unlock()
 
 	// wait for stream reassembly to finish
-	if c.WaitForConnections || wait {
+	if conf.WaitForConnections || wait {
 
-		if !c.Quiet {
+		if !conf.Quiet {
 			fmt.Print("\nwaiting for last streams to finish processing...")
 		}
 
@@ -582,16 +584,16 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		// will wait forever if there are streams that are never shutdown via FIN/RST
 		select {
 		case <-waitForConns():
-			if !c.Quiet {
+			if !conf.Quiet {
 				fmt.Println(" done!")
 			}
 		case <-time.After(netcap.DefaultReassemblyTimeout):
-			if !c.Quiet {
+			if !conf.Quiet {
 				fmt.Println(" timeout after", netcap.DefaultReassemblyTimeout)
 			}
 		}
 
-		if !c.Quiet {
+		if !conf.Quiet {
 			fmt.Println("flushing assemblers...")
 		}
 
@@ -615,33 +617,35 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				sp.handleStream(s)
 			}
 		}
-		if !c.Quiet {
+		if !conf.Quiet {
 			fmt.Println()
 		}
 		sp.wg.Wait()
 
 		// process UDP streams
-		if c.SaveConns {
+		if conf.SaveConns {
 			udpStreams.saveAllUDPConnections()
 		}
 	}
 
 	// create a memory snapshot for debugging
-	if c.MemProfile != "" {
-		f, err := os.Create(c.MemProfile)
+	if conf.MemProfile != "" {
+		f, err := os.Create(conf.MemProfile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := pprof.WriteHeapProfile(f); err != nil {
+
+		if err = pprof.WriteHeapProfile(f); err != nil {
 			log.Fatal("failed to write heap profile:", err)
 		}
-		if err := f.Close(); err != nil {
+
+		if err = f.Close(); err != nil {
 			log.Fatal("failed to close heap profile file:", err)
 		}
 	}
 
 	// print stats if not quiet
-	if !c.Quiet {
+	if !conf.Quiet {
 		errorsMapMutex.Lock()
 		stats.Lock()
 		utils.ReassemblyLog.Printf("HTTPDecoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", stats.count, stats.dataBytes, time.Since(start), stats.numErrors, len(errorsMap))
@@ -651,22 +655,22 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		// print configuration
 		// print configuration as table
 		tui.Table(utils.ReassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
-			{"FlushEvery", strconv.Itoa(c.FlushEvery)},
-			{"CloseInactiveTimeout", c.CloseInactiveTimeOut.String()},
-			{"ClosePendingTimeout", c.ClosePendingTimeOut.String()},
-			{"AllowMissingInit", strconv.FormatBool(c.AllowMissingInit)},
-			{"IgnoreFsmErr", strconv.FormatBool(c.IgnoreFSMerr)},
-			{"NoOptCheck", strconv.FormatBool(c.NoOptCheck)},
-			{"Checksum", strconv.FormatBool(c.Checksum)},
-			{"DefragIPv4", strconv.FormatBool(c.DefragIPv4)},
-			{"WriteIncomplete", strconv.FormatBool(c.WriteIncomplete)},
+			{"FlushEvery", strconv.Itoa(conf.FlushEvery)},
+			{"CloseInactiveTimeout", conf.CloseInactiveTimeOut.String()},
+			{"ClosePendingTimeout", conf.ClosePendingTimeOut.String()},
+			{"AllowMissingInit", strconv.FormatBool(conf.AllowMissingInit)},
+			{"IgnoreFsmErr", strconv.FormatBool(conf.IgnoreFSMerr)},
+			{"NoOptCheck", strconv.FormatBool(conf.NoOptCheck)},
+			{"Checksum", strconv.FormatBool(conf.Checksum)},
+			{"DefragIPv4", strconv.FormatBool(conf.DefragIPv4)},
+			{"WriteIncomplete", strconv.FormatBool(conf.WriteIncomplete)},
 		})
 
 		printProgress(1, 1)
 
 		stats.Lock()
 		rows := [][]string{}
-		if c.DefragIPv4 {
+		if conf.DefragIPv4 {
 			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(stats.ipdefrag, 10)})
 		}
 
@@ -735,7 +739,7 @@ func (t *tcpConnection) sortAndMergeFragments() {
 
 		t.conversationRaw.Write(d.raw)
 		if d.dir == reassembly.TCPDirClientToServer {
-			if c.Debug {
+			if conf.Debug {
 				var ts string
 				if d.ac != nil {
 					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
@@ -745,7 +749,7 @@ func (t *tcpConnection) sortAndMergeFragments() {
 				t.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
 			}
 		} else {
-			if c.Debug {
+			if conf.Debug {
 				var ts string
 				if d.ac != nil {
 					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"

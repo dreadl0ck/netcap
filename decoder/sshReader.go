@@ -130,19 +130,23 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 	if h.clientIdent == "" || h.serverIdent == "" { // read the SSH ident from the buffer
 		var (
-			b        = bytes.NewReader(data)
+			br        = bytes.NewReader(data)
+			b byte
 			ident    []byte
 			lastByte byte
 		)
+
 		for {
-			b, err := b.ReadByte()
+			b, err = br.ReadByte()
 			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			if lastByte == 0x0d && b == 0x0a {
 				offset = len(ident) + 1
 				break
 			}
+
 			lastByte = b
 			ident = append(ident, b)
 		}
@@ -185,7 +189,8 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			// fmt.Println(hex.Dump(data[i:i+length-padding-1]))
 
 			var init sshx.KexInitMsg
-			err := sshx.Unmarshal(data[i:i+length-padding-1], &init)
+
+			err = sshx.Unmarshal(data[i:i+length-padding-1], &init)
 			if err != nil {
 				fmt.Println(err)
 			}

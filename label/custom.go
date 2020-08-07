@@ -211,7 +211,7 @@ func CustomLabels(pathMappingInfo, outputPath, separator, selection string) erro
 
 	if UseProgressBars {
 		// close pool
-		if err := pool.Stop(); err != nil {
+		if err = pool.Stop(); err != nil {
 			fmt.Println("failed to stop progress bar pool:", err)
 		}
 	}
@@ -258,7 +258,7 @@ func CustomMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 		// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
 		// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
 		// your would like to utilize, but about twice the number of blocks would be the best.
-		if err := gzipWriter.SetConcurrency(netcap.DefaultCompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
+		if err = gzipWriter.SetConcurrency(netcap.DefaultCompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
 			log.Fatal("failed to configure compression package: ", err)
 		}
 

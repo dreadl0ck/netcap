@@ -128,10 +128,10 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 			linkLSA            *types.LinkLSA
 			intraAreaPrefixLSA *types.IntraAreaPrefixLSA
 		)
-		switch v := l.Content.(type) {
+		switch val := l.Content.(type) {
 		case layers.RouterLSAV2:
 			var routers []*types.RouterV2
-			for _, r := range v.Routers {
+			for _, r := range val.Routers {
 				routers = append(routers, &types.RouterV2{
 					Type:     int32(r.Type),
 					LinkID:   r.LinkID,
@@ -140,21 +140,21 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 				})
 			}
 			rLSAV2 = &types.RouterLSAV2{
-				Flags:   int32(v.Flags),
-				Links:   int32(v.Links),
+				Flags:   int32(val.Flags),
+				Links:   int32(val.Links),
 				Routers: routers, // []*RouterV2,
 			}
 		case layers.ASExternalLSAV2:
 			asExternalLSAV2 = &types.ASExternalLSAV2{
-				NetworkMask:       v.NetworkMask,
-				ExternalBit:       int32(v.ExternalBit),
-				Metric:            v.Metric,
-				ForwardingAddress: v.ForwardingAddress,
-				ExternalRouteTag:  v.ExternalRouteTag,
+				NetworkMask:       val.NetworkMask,
+				ExternalBit:       int32(val.ExternalBit),
+				Metric:            val.Metric,
+				ForwardingAddress: val.ForwardingAddress,
+				ExternalRouteTag:  val.ExternalRouteTag,
 			}
 		case layers.RouterLSA:
 			var routers []*types.Router
-			for _, r := range v.Routers {
+			for _, r := range val.Routers {
 				routers = append(routers, &types.Router{
 					Type:                int32(r.Type),
 					Metric:              int32(r.Metric),
@@ -164,43 +164,43 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 				})
 			}
 			routerLSA = &types.RouterLSA{
-				Flags:   int32(v.Flags),
-				Options: v.Options,
+				Flags:   int32(val.Flags),
+				Options: val.Options,
 				Routers: routers, // []*Router
 			}
 		case layers.NetworkLSA:
 			networkLSA = &types.NetworkLSA{
-				Options:        v.Options,
-				AttachedRouter: v.AttachedRouter,
+				Options:        val.Options,
+				AttachedRouter: val.AttachedRouter,
 			}
 		case layers.InterAreaPrefixLSA:
 			interAreaPrefixLSA = &types.InterAreaPrefixLSA{
-				Metric:        v.Metric,
-				PrefixLength:  int32(v.PrefixLength),
-				PrefixOptions: int32(v.PrefixOptions),
-				AddressPrefix: v.AddressPrefix,
+				Metric:        val.Metric,
+				PrefixLength:  int32(val.PrefixLength),
+				PrefixOptions: int32(val.PrefixOptions),
+				AddressPrefix: val.AddressPrefix,
 			}
 		case layers.InterAreaRouterLSA:
 			interAreaRouterLSA = &types.InterAreaRouterLSA{
-				Options:             v.Options,
-				Metric:              v.Metric,
-				DestinationRouterID: v.DestinationRouterID,
+				Options:             val.Options,
+				Metric:              val.Metric,
+				DestinationRouterID: val.DestinationRouterID,
 			}
 		case layers.ASExternalLSA:
 			asExternalLSA = &types.ASExternalLSA{
-				Flags:             int32(v.Flags),
-				Metric:            v.Metric,
-				PrefixLength:      int32(v.PrefixLength),
-				PrefixOptions:     int32(v.PrefixOptions),
-				RefLSType:         int32(v.RefLSType),
-				AddressPrefix:     v.AddressPrefix,
-				ForwardingAddress: v.ForwardingAddress,
-				ExternalRouteTag:  v.ExternalRouteTag,
-				RefLinkStateID:    v.RefLinkStateID,
+				Flags:             int32(val.Flags),
+				Metric:            val.Metric,
+				PrefixLength:      int32(val.PrefixLength),
+				PrefixOptions:     int32(val.PrefixOptions),
+				RefLSType:         int32(val.RefLSType),
+				AddressPrefix:     val.AddressPrefix,
+				ForwardingAddress: val.ForwardingAddress,
+				ExternalRouteTag:  val.ExternalRouteTag,
+				RefLinkStateID:    val.RefLinkStateID,
 			}
 		case layers.LinkLSA:
 			var prefixes []*types.LSAPrefix
-			for _, r := range v.Prefixes {
+			for _, r := range val.Prefixes {
 				prefixes = append(prefixes, &types.LSAPrefix{
 					PrefixLength:  int32(r.PrefixLength),
 					PrefixOptions: int32(r.PrefixOptions),
@@ -209,15 +209,15 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 				})
 			}
 			linkLSA = &types.LinkLSA{
-				RtrPriority:      int32(v.RtrPriority),
-				Options:          v.Options,
-				LinkLocalAddress: v.LinkLocalAddress,
-				NumOfPrefixes:    v.NumOfPrefixes,
+				RtrPriority:      int32(val.RtrPriority),
+				Options:          val.Options,
+				LinkLocalAddress: val.LinkLocalAddress,
+				NumOfPrefixes:    val.NumOfPrefixes,
 				Prefixes:         prefixes, // []*LSAPrefix
 			}
 		case layers.IntraAreaPrefixLSA:
 			var prefixes []*types.LSAPrefix
-			for _, r := range v.Prefixes {
+			for _, r := range val.Prefixes {
 				prefixes = append(prefixes, &types.LSAPrefix{
 					PrefixLength:  int32(r.PrefixLength),
 					PrefixOptions: int32(r.PrefixOptions),
@@ -226,10 +226,10 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 				})
 			}
 			intraAreaPrefixLSA = &types.IntraAreaPrefixLSA{
-				NumOfPrefixes:  int32(v.NumOfPrefixes),
-				RefLSType:      int32(v.RefLSType),
-				RefLinkStateID: v.RefLinkStateID,
-				RefAdvRouter:   v.RefAdvRouter,
+				NumOfPrefixes:  int32(val.NumOfPrefixes),
+				RefLSType:      int32(val.RefLSType),
+				RefLinkStateID: val.RefLinkStateID,
+				RefAdvRouter:   val.RefAdvRouter,
 				Prefixes:       prefixes,
 			}
 		}
@@ -255,6 +255,7 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 			IntraAPrefixLSA: intraAreaPrefixLSA,
 		})
 	}
+
 	return &types.LSUpdate{
 		NumOfLSAs: v.NumOfLSAs,
 		LSAs:      lsas, // []*LSA

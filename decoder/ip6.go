@@ -28,7 +28,7 @@ var ipv6Decoder = newGoPacketDecoder(
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if ip6, ok := layer.(*layers.IPv6); ok {
 			var e float64
-			if c.CalculateEntropy {
+			if conf.CalculateEntropy {
 				e = entropy(ip6.Payload)
 			}
 
