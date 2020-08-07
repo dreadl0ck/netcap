@@ -21,10 +21,6 @@ import (
 	"github.com/dreadl0ck/gopacket/pcapgo"
 )
 
-//////////////////////////
-// Atomic PcapGo Writer //
-//////////////////////////
-
 // atomicPcapGoWriter is a synchronized PCAP writer
 // that counts the number of packets written.
 type atomicPcapGoWriter struct {
@@ -42,6 +38,7 @@ func (a *atomicPcapGoWriter) writePacket(ci gopacket.CaptureInfo, data []byte) e
 	a.Unlock()
 
 	atomic.AddInt64(&a.count, 1)
+
 	return err
 }
 

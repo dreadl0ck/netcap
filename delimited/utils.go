@@ -13,26 +13,22 @@
 
 package delimited
 
-import (
-	"fmt"
-	"io"
-)
-
-// copy copies each record read from src to sink sequentially until src.Next()
+// copyData copies each record read from src to sink sequentially until src.Next().
 // Note:
 // - returns io.EOF or another error occurs.
-func copy(sink sink, src dataSource) error {
-	for {
-		record, err := src.Next()
-		switch {
-		case err == io.EOF:
-			return nil
-		case err != nil:
-			return fmt.Errorf("read error while copying: %v", err)
-		default:
-			if err = sink.Put(record); err != nil {
-				return fmt.Errorf("write error while copying: %v", err)
-			}
-		}
-	}
-}
+// func copyData(sink sink, src dataSource) error {
+//	for {
+//		record, err := src.Next()
+//
+//		switch {
+//		case err == io.EOF:
+//			return nil
+//		case err != nil:
+//			return fmt.Errorf("read error while copying: %v", err)
+//		default:
+//			if err = sink.Put(record); err != nil {
+//				return fmt.Errorf("write error while copying: %v", err)
+//			}
+//		}
+//	}
+// }
