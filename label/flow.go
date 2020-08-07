@@ -31,8 +31,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// Flows labels type NC_Flow.
-func Flows(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// flows labels type NC_Flow.
+func flows(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, "Flow.ncap.gz")
 		total, errCount = netcap.Count(fname)

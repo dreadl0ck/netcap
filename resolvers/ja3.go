@@ -27,20 +27,20 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var ja3DB = make(map[string]*Ja3Summary)
+var ja3DB = make(map[string]*ja3Summary)
 
-// Ja3Summary models the Trisul ja3DB json structure
+// ja3Summary models the Trisul ja3DB json structure
 // https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json
 // the format is also compatible with ja3er.com, but comes as an array of records
 // whereas trisul uses newline delimited summary structures.
-type Ja3Summary struct {
+type ja3Summary struct {
 	Desc string `json:"desc"`
 	Hash string `json:"ja3_hash"`
 }
 
-// Ja3UserAgent DB from ja3er.com
+// ja3UserAgent DB from ja3er.com
 // entry example: {"User-Agent": "-", "Count": 1, "md5": "e05744a5eb9f795f148ed77cb471f725", "Last_seen": "2019-11-19 21:10:04"},.
-type Ja3UserAgent struct {
+type ja3UserAgent struct {
 	UserAgent string `json:"User-Agent"`
 	Hash      string `json:"md5"`
 }
@@ -55,8 +55,8 @@ func LookupJa3(hash string) string {
 	return ""
 }
 
-// InitJa3Resolver loads the JSON mac DB into a map in memory.
-func InitJa3Resolver() {
+// initJa3Resolver loads the JSON mac DB into a map in memory.
+func initJa3Resolver() {
 	// read database dir
 	files, err := ioutil.ReadDir(DataBaseSource)
 	if err != nil {
@@ -96,14 +96,14 @@ func InitJa3Resolver() {
  * Utils
  */
 
-func addToJa3DB(sum Ja3Summary, updated *int, sums *int) {
+func addToJa3DB(sum ja3Summary, updated *int, sums *int) {
 	if e, ok := ja3DB[sum.Hash]; ok {
 		if !strings.Contains(e.Desc, sum.Desc) {
 			e.Desc += "; " + sum.Desc
 			*updated++
 		}
 	} else {
-		ja3DB[sum.Hash] = &Ja3Summary{
+		ja3DB[sum.Hash] = &ja3Summary{
 			Desc: sum.Desc,
 			Hash: sum.Hash,
 		}
@@ -115,7 +115,7 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 	var (
 		sums       = 0
 		updated    = 0
-		userAgents []Ja3UserAgent
+		userAgents []ja3UserAgent
 	)
 
 	if err := json.Unmarshal(data, &userAgents); err != nil {
@@ -132,7 +132,7 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 				updated++
 			}
 		} else {
-			ja3DB[sum.Hash] = &Ja3Summary{
+			ja3DB[sum.Hash] = &ja3Summary{
 				Desc: sum.UserAgent,
 				Hash: sum.Hash,
 			}
@@ -149,7 +149,7 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 	var (
 		sums      = 0
 		updated   = 0
-		summaries []Ja3Summary
+		summaries []ja3Summary
 	)
 
 	if err := json.Unmarshal(data, &summaries); err != nil {
@@ -184,7 +184,7 @@ func parseSummaries(data []byte, f os.FileInfo) {
 			continue
 		}
 
-		var sum Ja3Summary
+		var sum ja3Summary
 		if err := json.Unmarshal(line, &sum); err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break

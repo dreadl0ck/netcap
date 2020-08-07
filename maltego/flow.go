@@ -30,10 +30,10 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// FlowCountFunc is a function that counts something over multiple Flow audit records.
-type FlowCountFunc = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int)
+// flowCountFunc is a function that counts something over multiple Flow audit records.
+type flowCountFunc = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int)
 
-// CountIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
+// countIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all incoming flows for a given ip address.
 var countIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
@@ -49,7 +49,7 @@ var countIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uin
 	}
 }
 
-// CountIncomingFlowBytesFiltered CountIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
+// CountIncomingFlowBytesFiltered countIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all incoming flows for a given ip address
 // filtered against the domain whitelist.
 var CountIncomingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
@@ -80,9 +80,9 @@ var CountIncomingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, 
 	}
 }
 
-// CountIncomingFlowPackets returns the lowest and highest number of packets as well as an array of sizes
+// countIncomingFlowPackets returns the lowest and highest number of packets as well as an array of sizes
 // seen for all incoming flows for a given ip address.
-var CountIncomingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
+var countIncomingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
 
 		*sizes = append(*sizes, int(flow.TotalSize))
@@ -160,11 +160,11 @@ var countOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *u
 	}
 }
 
-// FlowTransformationFunc is a transformation over Flow audit records.
-type FlowTransformationFunc = func(lt LocalTransform, trx *Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ip string, sizes *[]int)
+// flowTransformationFunc is a transformation over Flow audit records.
+type flowTransformationFunc = func(lt LocalTransform, trx *Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ip string, sizes *[]int)
 
 // FlowTransform applies a maltego transformation over Flow audit records.
-func FlowTransform(count FlowCountFunc, transform FlowTransformationFunc) {
+func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 	mac := lt.Values["mac"]

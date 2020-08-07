@@ -38,10 +38,10 @@ type XMLTransform struct {
 }
 
 type defaultSets struct {
-	Items []Set `xml:"Set"`
+	Items []set `xml:"Set"`
 }
 
-type Set struct {
+type set struct {
 	XMLName xml.Name `xml:"Set"`
 	Text    string   `xml:",chardata"`
 	Name    string   `xml:"name,attr"`
@@ -368,7 +368,7 @@ func newTransform(id string, description string, input string) XMLTransform {
 			},
 		},
 		OutputEntities: "",
-		DefaultSets: defaultSets{Items: []Set{
+		DefaultSets: defaultSets{Items: []set{
 			{
 				Name: "NETCAP",
 			},

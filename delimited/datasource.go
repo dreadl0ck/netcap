@@ -13,8 +13,8 @@
 
 package delimited
 
-// A DataSource represents a sequence of records.
-type DataSource interface {
+// A dataSource represents a sequence of records.
+type dataSource interface {
 	// Next will return the next record in the sequence
 	// Note:
 	// - io.EOF is returned when no further records are available

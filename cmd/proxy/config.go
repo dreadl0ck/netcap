@@ -24,13 +24,13 @@ import (
 )
 
 // config for the commandline application.
-var c = new(Config)
+var c = new(config)
 
-// Config represents the proxy configuration.
-type Config struct {
+// config represents the proxy configuration.
+type config struct {
 
 	// Proxies map holds all reverse proxies
-	Proxies map[string]ReverseProxyConfig `yaml:"proxies"`
+	Proxies map[string]reverseProxyConfig `yaml:"proxies"`
 
 	// CertFile for TLS secured connections
 	CertFile string `yaml:"certFile"`
@@ -42,8 +42,8 @@ type Config struct {
 	Logdir string `yaml:"logdir"`
 }
 
-// Dump prints the current configuration.
-func (c Config) Dump(w io.Writer) {
+// dump prints the current configuration.
+func (c config) dump(w io.Writer) {
 	fmt.Println("logDir:", c.Logdir)
 
 	// init rows for table
@@ -59,8 +59,8 @@ func (c Config) Dump(w io.Writer) {
 	fmt.Println()
 }
 
-// ParseConfiguration reads the config file and returns a config instance.
-func ParseConfiguration(path string) (*Config, error) {
+// parseConfiguration reads the config file and returns a config instance.
+func parseConfiguration(path string) (*config, error) {
 	// read file at path
 	b, err := ioutil.ReadFile(path)
 	if err != nil {

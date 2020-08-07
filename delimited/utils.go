@@ -18,10 +18,10 @@ import (
 	"io"
 )
 
-// Copy copies each record read from src to sink sequentially until src.Next()
+// copy copies each record read from src to sink sequentially until src.Next()
 // Note:
 // - returns io.EOF or another error occurs.
-func Copy(sink Sink, src DataSource) error {
+func copy(sink sink, src dataSource) error {
 	for {
 		record, err := src.Next()
 		switch {

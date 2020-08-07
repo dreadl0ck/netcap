@@ -227,9 +227,9 @@ func InitDHCPFingerprintDB() {
 	}
 }
 
-// InitDHCPFingerprintDBCSV initializes the DHCP fingerprint database from a CSV formatted source
+// initDHCPFingerprintDBCSV initializes the DHCP fingerprint database from a CSV formatted source
 // initial database source: https://raw.githubusercontent.com/karottc/fingerbank/master/upstream/startup/fingerprints.csv
-func InitDHCPFingerprintDBCSV() {
+func initDHCPFingerprintDBCSV() {
 	dhcpDBinitialized = true
 
 	var fingerprints int
@@ -266,8 +266,8 @@ func InitDHCPFingerprintDBCSV() {
 	}
 }
 
-// LookupDHCPFingerprintLocal retrieves the data associated with an DHCP fingerprint.
-func LookupDHCPFingerprintLocal(fp string) *DHCPResult {
+// lookupDHCPFingerprintLocal retrieves the data associated with an DHCP fingerprint.
+func lookupDHCPFingerprintLocal(fp string) *DHCPResult {
 	if len(fp) == 0 {
 		return nil
 	}

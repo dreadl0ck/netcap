@@ -27,14 +27,14 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// CredentialsTransformationFunc is a transformation over Credentials profiles for a selected Credentials.
-type CredentialsTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Credentials, min, max uint64, profilesFile string, mac string, ip string)
+// credentialsTransformationFunc is a transformation over Credentials profiles for a selected Credentials.
+type credentialsTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Credentials, min, max uint64, profilesFile string, mac string, ip string)
 
-// CountFunc is a function that counts something over DeviceProfiles.
+// countFunc is a function that counts something over DeviceProfiles.
 type credentialsCountFunc = func(credentials *types.Credentials, mac string, min, max *uint64)
 
 // CredentialsTransform applies a maltego transformation over Credentials profiles seen for a target Credentials.
-func CredentialsTransform(count credentialsCountFunc, transform CredentialsTransformationFunc) {
+func CredentialsTransform(count credentialsCountFunc, transform credentialsTransformationFunc) {
 	lt := ParseLocalArguments(os.Args[1:])
 	credentialsFile := lt.Values["path"]
 	mac := lt.Values["mac"]

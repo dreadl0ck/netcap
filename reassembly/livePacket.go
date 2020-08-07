@@ -53,7 +53,7 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, ac AssemblerContex
 	current.prev = nil
 	first.ac = ac
 	numPages := 1
-	seq, bytes := lp.seq.Add(skip), lp.bytes[skip:]
+	seq, bytes := lp.seq.add(skip), lp.bytes[skip:]
 	for {
 		length := min(len(bytes), pageBytes)
 		current.bytes = current.buf[:length]
@@ -65,7 +65,7 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, ac AssemblerContex
 			current.next = nil
 			break
 		}
-		seq = seq.Add(length)
+		seq = seq.add(length)
 		current.next = pc.next(ts)
 		current.next.prev = current
 		current = current.next

@@ -247,7 +247,7 @@ func copyFile(src, dst string) {
 
 // Directory structure:
 // .
-// ├── Entities
+// ├── entities
 // │   ├── ...
 // │   └── netcap.VulnerabilityAuditRecords.entity
 // ├── EntityCategories

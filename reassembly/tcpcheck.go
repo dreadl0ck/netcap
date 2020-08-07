@@ -78,11 +78,11 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq S
 		options.scale = scale
 	} else {
 		if nextSeq != invalidSequence {
-			revOptions := t.getOptions(dir.Reverse())
+			revOptions := t.getOptions(dir.reverse())
 			length := len(tcp.Payload)
 
 			// Check packet is in the correct window
-			diff := nextSeq.Difference(Sequence(tcp.Seq))
+			diff := nextSeq.difference(Sequence(tcp.Seq))
 			if diff == -1 && (length == 1 || length == 0) {
 				// This is probably a Keep-alive
 				// TODO: check byte is ok
@@ -170,12 +170,12 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 		switch true {
 		case tcp.SYN && tcp.ACK:
 			t.state = TCPStateSynSent
-			t.dir = dir.Reverse()
+			t.dir = dir.reverse()
 		case tcp.FIN && !tcp.ACK:
 			t.state = TCPStateEstablished
 		case tcp.FIN && tcp.ACK:
 			t.state = TCPStateCloseWait
-			t.dir = dir.Reverse()
+			t.dir = dir.reverse()
 		default:
 			t.state = TCPStateEstablished
 		}
@@ -196,7 +196,7 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 			return true
 		}
 
-		if tcp.SYN && tcp.ACK && dir == t.dir.Reverse() {
+		if tcp.SYN && tcp.ACK && dir == t.dir.reverse() {
 			t.state = TCPStateEstablished
 
 			return true
@@ -228,7 +228,7 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 			return true
 		}
 
-		if tcp.FIN && tcp.ACK && dir == t.dir.Reverse() {
+		if tcp.FIN && tcp.ACK && dir == t.dir.reverse() {
 			t.state = TCPStateLastAck
 
 			return true

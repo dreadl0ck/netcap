@@ -285,14 +285,14 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		if err != nil {
 			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesLogin[1]))
 		}
-		
+
 		var (
 			newDataAuthCID  []byte
 			newDataAuthZID  []byte
 			newDataPassword []byte
 			step            = 0
 		)
-		
+
 		for _, b := range extractedData {
 			if b == byte(0) {
 				step++

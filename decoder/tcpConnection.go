@@ -138,9 +138,9 @@ func NumSavedUDPConns() int64 {
 type tcpConnection struct {
 	net, transport gopacket.Flow
 
-	optchecker          reassembly.TCPOptionCheck
-	conversationRaw     bytes.Buffer
-	conversationColored bytes.Buffer
+	optchecker             reassembly.TCPOptionCheck
+	conversationRawBuf     bytes.Buffer
+	conversationColoredBuf bytes.Buffer
 
 	merged      streamDataSlice
 	firstPacket time.Time
@@ -403,7 +403,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		t.client.MarkSaved()
 
 		// client
-		err := saveConnection(t.ConversationRaw(), t.conversationDataColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
+		err := saveConnection(t.conversationRaw(), t.conversationDataColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
 		if err != nil {
 			fmt.Println("failed to save stream", err)
 		}
@@ -737,16 +737,16 @@ func (t *tcpConnection) sortAndMergeFragments() {
 	// create the buffer with the entire conversation
 	for _, d := range t.merged { // fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
 
-		t.conversationRaw.Write(d.raw)
+		t.conversationRawBuf.Write(d.raw)
 		if d.dir == reassembly.TCPDirClientToServer {
 			if conf.Debug {
 				var ts string
 				if d.ac != nil {
 					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
 				}
-				t.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset + ts)
+				t.conversationColoredBuf.WriteString(ansi.Red + string(d.raw) + ansi.Reset + ts)
 			} else {
-				t.conversationColored.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
+				t.conversationColoredBuf.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
 			}
 		} else {
 			if conf.Debug {
@@ -754,29 +754,29 @@ func (t *tcpConnection) sortAndMergeFragments() {
 				if d.ac != nil {
 					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
 				}
-				t.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + ts)
+				t.conversationColoredBuf.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + ts)
 			} else {
-				t.conversationColored.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
+				t.conversationColoredBuf.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
 			}
 		}
 	}
 }
 
-func (t *tcpConnection) ConversationRaw() []byte {
+func (t *tcpConnection) conversationRaw() []byte {
 	t.Lock()
 	defer t.Unlock()
 
 	// do this only once, this method will be called once for each side of a connection
-	if len(t.conversationRaw.Bytes()) == 0 {
+	if len(t.conversationRawBuf.Bytes()) == 0 {
 		t.sortAndMergeFragments()
 	}
 
-	return t.conversationRaw.Bytes()
+	return t.conversationRawBuf.Bytes()
 }
 
 func (t *tcpConnection) conversationDataColored() []byte {
 	t.Lock()
 	defer t.Unlock()
 
-	return t.conversationColored.Bytes()
+	return t.conversationColoredBuf.Bytes()
 }

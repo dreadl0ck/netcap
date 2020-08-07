@@ -798,7 +798,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 			}
 		}
 		err = f.Close()
-		
+
 		if err != nil {
 			logReassemblyError("HTTP-save", "%s: failed to close %s (l:%d): %s\n", h.parent.ident, target, w, err)
 		} else {

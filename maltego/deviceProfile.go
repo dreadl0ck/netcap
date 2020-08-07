@@ -67,20 +67,23 @@ var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min,
 	}
 }
 
-// CountFunc is a function that counts something over DeviceProfiles.
-type CountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64)
+// countFunc is a function that counts something over DeviceProfiles.
+type countFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64)
 
-// DeviceProfileTransformationFunc is transform over DeviceProfiles.
-type DeviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
+// deviceProfileTransformationFunc is transform over DeviceProfiles.
+type deviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
 
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records.
-func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
-	mac := lt.Values["mac"]
+func DeviceProfileTransform(count countFunc, transform deviceProfileTransformationFunc) {
+	var (
+		lt           = ParseLocalArguments(os.Args[1:])
+		profilesFile = lt.Values["path"]
+		mac          = lt.Values["mac"]
+		stdout       = os.Stdout
+	)
 
-	stdout := os.Stdout
 	os.Stdout = os.Stderr
+
 	netcap.PrintBuildInfo()
 
 	f, err := os.Open(profilesFile)
@@ -105,6 +108,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 	if errFileHeader != nil {
 		log.Fatal(errFileHeader)
 	}
+
 	if header.Type != types.Type_NC_DeviceProfile {
 		panic("file does not contain DeviceProfile records: " + header.Type.String())
 	}
@@ -115,6 +119,7 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 		ok      bool
 		trx     = Transform{}
 	)
+
 	pm = profile
 
 	if _, ok = pm.(types.AuditRecord); !ok {
@@ -148,8 +153,8 @@ func DeviceProfileTransform(count CountFunc, transform DeviceProfileTransformati
 			panic(err)
 		}
 
-		// read netcap header - ignore err as it has been checked before
-		r.ReadHeader()
+		// read off netcap header - ignore err as it has been checked before
+		_, _ = r.ReadHeader()
 	}
 
 	for {

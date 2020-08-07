@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-// Set constants
+// set constants
 //goland:noinspection GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst
 const (
 	BOOKMARK_COLOR_NONE   = "-1"
@@ -276,11 +276,11 @@ type message struct {
 
 type transformRequestMessage struct {
 	XMLName  xml.Name `xml:"MaltegoTransformRequestMessage"`
-	Entities Entities `xml:"Entities"`
+	Entities entities `xml:"Entities"`
 	Limits   limit    `xml:"Limits"`
 }
 
-type Entities struct {
+type entities struct {
 	EntityList []entity `xml:"Entity"`
 }
 

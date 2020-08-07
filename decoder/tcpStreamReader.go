@@ -121,7 +121,7 @@ func (t *tcpStreamReader) ServerStream() []byte {
 }
 
 func (t *tcpStreamReader) ConversationRaw() []byte {
-	return t.parent.ConversationRaw()
+	return t.parent.conversationRaw()
 }
 
 func (t *tcpStreamReader) ConversationColored() []byte {

@@ -31,7 +31,7 @@ import (
 )
 
 // UDP labels type NC_UDP.
-func UDP(wg *sync.WaitGroup, file string, alerts []*SuricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+func UDP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, "UDP.ncap.gz")
 		total, errCount = netcap.Count(fname)

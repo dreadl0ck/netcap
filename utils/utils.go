@@ -23,6 +23,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/blevesearch/bleve"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/evilsocket/islazy/tui"
@@ -32,6 +33,25 @@ import (
 var noPluralsMap = map[string]struct{}{
 	"Software": {},
 	"Ethernet": {},
+}
+
+func OpenBleve(path string) (bleve.Index, error) {
+	fmt.Println("open", path)
+
+	return bleve.Open(path)
+}
+
+func CloseBleve(index bleve.Index) {
+	if index == nil {
+		return
+	}
+
+	fmt.Println("close", index)
+
+	err := index.Close()
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 // Pluralize returns the plural for a given noun.

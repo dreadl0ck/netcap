@@ -17,20 +17,20 @@ const assemblerReturnValueInitialSize = 16
  * Assembler
  */
 
-// DefaultAssemblerOptions provides default options for an assembler.
+// defaultAssemblerOptions provides default options for an assembler.
 // These options are used by default when calling NewAssembler, so if
 // modified before a NewAssembler call they'll affect the resulting Assembler.
 //
 // Note that the default options can result in ever-increasing memory usage
 // unless one of the Flush* methods is called on a regular basis.
-var DefaultAssemblerOptions = AssemblerOptions{
+var defaultAssemblerOptions = assemblerOptions{
 	MaxBufferedPagesPerConnection: 0, // unlimited
 	MaxBufferedPagesTotal:         0, // unlimited
 }
 
-// AssemblerOptions controls the behavior of each assembler.  Modify the
+// assemblerOptions controls the behavior of each assembler.  Modify the
 // options of each assembler you create to change their behavior.
-type AssemblerOptions struct {
+type assemblerOptions struct {
 	// MaxBufferedPagesTotal is an upper limit on the total number of pages to
 	// buffer while waiting for out-of-order packets.  Once this limit is
 	// reached, the assembler will degrade to flushing every connection it
@@ -44,8 +44,8 @@ type AssemblerOptions struct {
 }
 
 // Assembler handles reassembling TCP streams.  It is not safe for
-// concurrency... after passing a packet in via the Assemble call, the caller
-// must wait for that call to return before calling Assemble again.  Callers can
+// concurrency... after passing a packet in via the assemble call, the caller
+// must wait for that call to return before calling assemble again.  Callers can
 // get around this by creating multiple assemblers that share a StreamPool.  In
 // that case, each individual stream will still be handled serially (each stream
 // has an individual mutex associated with it), however multiple assemblers can
@@ -94,7 +94,7 @@ type AssemblerOptions struct {
 //
 // Internal representations for connection objects are also reused over time.
 // Because of this, the most common memory allocation done by the Assembler is
-// generally what's done by the caller in StreamFactory.New.  If no allocation
+// generally what's done by the caller in streamFactory.New.  If no allocation
 // is done there, then very little allocation is done ever, mostly to handle
 // large increases in bandwidth or numbers of connections.
 //
@@ -103,7 +103,7 @@ type AssemblerOptions struct {
 // traffic spikes can result in large memory usage which isn't garbage
 // collected when typical traffic levels return.
 type Assembler struct {
-	AssemblerOptions
+	assemblerOptions
 	ret      []byteContainer
 	pc       *pageCache
 	connPool *StreamPool
@@ -117,7 +117,7 @@ type Assembler struct {
 // to use, may be shared across assemblers.
 //
 // This sets some sane defaults for the assembler options,
-// see DefaultAssemblerOptions for details.
+// see defaultAssemblerOptions for details.
 func NewAssembler(pool *StreamPool) *Assembler {
 	pool.mu.Lock()
 	pool.users++
@@ -126,7 +126,7 @@ func NewAssembler(pool *StreamPool) *Assembler {
 		ret:              make([]byteContainer, 0, assemblerReturnValueInitialSize),
 		pc:               newPageCache(),
 		connPool:         pool,
-		AssemblerOptions: DefaultAssemblerOptions,
+		assemblerOptions: defaultAssemblerOptions,
 	}
 }
 
@@ -149,9 +149,9 @@ func (asc *assemblerSimpleContext) GetCaptureInfo() gopacket.CaptureInfo {
 	return gopacket.CaptureInfo(*asc)
 }
 
-// Assemble calls AssembleWithContext with the current timestamp, useful for
+// assemble calls AssembleWithContext with the current timestamp, useful for
 // packets being read directly off the wire.
-func (a *Assembler) Assemble(netFlow gopacket.Flow, t *layers.TCP) {
+func (a *Assembler) assemble(netFlow gopacket.Flow, t *layers.TCP) {
 	ctx := assemblerSimpleContext(gopacket.CaptureInfo{Timestamp: time.Now()})
 	a.AssembleWithContext(netFlow, t, &ctx)
 }
@@ -167,11 +167,11 @@ type assemblerAction struct {
 // The timestamp passed in must be the timestamp the packet was seen.
 // For packets read off the wire, time.Now() should be fine.  For packets read
 // from PCAP files, CaptureInfo.Timestamp should be passed in.  This timestamp
-// will affect which streams are flushed by a call to FlushCloseOlderThan.
+// will affect which streams are flushed by a call to flushCloseOlderThan.
 //
 // Each AssembleWithContext call results in, in order:
 //
-//    zero or one call to StreamFactory.New, creating a stream
+//    zero or one call to streamFactory.New, creating a stream
 //    zero or one call to ReassembledSG on a single stream
 //    zero or one call to ReassemblyComplete on the same stream
 func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac AssemblerContext) {
@@ -254,7 +254,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 			if Debug {
 				log.Printf("%v saw first SYN packet, returning immediately, seq=%v", flowKey, seq)
 			}
-			seq = seq.Add(1)
+			seq = seq.add(1)
 			half.nextSeq = seq
 			action.queue = false
 		} else if a.start {
@@ -269,7 +269,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 			}
 		}
 	} else {
-		diff := half.nextSeq.Difference(seq)
+		diff := half.nextSeq.difference(seq)
 		if diff > 0 {
 			if Debug {
 				log.Printf("%v gap in sequence numbers (%v, %v) diff %v, storing into connection", flowKey, half.nextSeq, seq, diff)
@@ -290,7 +290,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	if action.nextSeq != invalidSequence {
 		half.nextSeq = action.nextSeq
 		if t.FIN {
-			half.nextSeq = half.nextSeq.Add(1)
+			half.nextSeq = half.nextSeq.add(1)
 		}
 	}
 
@@ -316,7 +316,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 		cur   = half.last
 		bytes = a.cacheLP.bytes
 		start = a.cacheLP.seq
-		end   = start.Add(len(bytes))
+		end   = start.add(len(bytes))
 	)
 
 	a.dump("before checkOverlap", half)
@@ -330,7 +330,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 		}
 
 		// end < cur.start: continue (5)
-		if end.Difference(cur.seq) > 0 {
+		if end.difference(cur.seq) > 0 {
 			if Debug {
 				log.Printf("case 5\n")
 			}
@@ -341,9 +341,9 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 			continue
 		}
 
-		curEnd := cur.seq.Add(len(cur.bytes))
+		curEnd := cur.seq.add(len(cur.bytes))
 		// start > cur.end: stop (1)
-		if start.Difference(curEnd) <= 0 {
+		if start.difference(curEnd) <= 0 {
 			if Debug {
 				log.Printf("case 1\n")
 			}
@@ -351,8 +351,8 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 		}
 
 		var (
-			diffStart = start.Difference(cur.seq)
-			diffEnd   = end.Difference(curEnd)
+			diffStart = start.difference(cur.seq)
+			diffEnd   = end.difference(curEnd)
 		)
 
 		// end > cur.end && start < cur.start: drop (3)
@@ -383,23 +383,23 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 		}
 
 		// end > cur.end && start < cur.end: drop cur's end (2)
-		if diffEnd < 0 && start.Difference(curEnd) > 0 {
+		if diffEnd < 0 && start.difference(curEnd) > 0 {
 			if Debug {
 				log.Printf("case 2\n")
 			}
 
-			cur.bytes = cur.bytes[:-start.Difference(cur.seq)]
+			cur.bytes = cur.bytes[:-start.difference(cur.seq)]
 
 			break
 		} else
 
 		// start < cur.start && end > cur.start: drop cur's start (4)
-		if diffStart > 0 && end.Difference(cur.seq) < 0 {
+		if diffStart > 0 && end.difference(cur.seq) < 0 {
 			if Debug {
 				log.Printf("case 4\n")
 			}
-			cur.bytes = cur.bytes[-end.Difference(cur.seq):]
-			cur.seq = cur.seq.Add(-end.Difference(cur.seq))
+			cur.bytes = cur.bytes[-end.difference(cur.seq):]
+			cur.seq = cur.seq.add(-end.difference(cur.seq))
 			next = cur
 		} else
 
@@ -511,7 +511,7 @@ func (a *Assembler) overlapExisting(half *halfconnection, start Sequence, bytes 
 		return bytes, start
 	}
 
-	diff := start.Difference(half.nextSeq)
+	diff := start.difference(half.nextSeq)
 	if diff == 0 {
 		return bytes, start
 	}
@@ -556,7 +556,7 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 		if (a.MaxBufferedPagesPerConnection > 0 && half.pages >= a.MaxBufferedPagesPerConnection) ||
 			(a.MaxBufferedPagesTotal > 0 && a.pc.used >= a.MaxBufferedPagesTotal) {
 			if Debug {
-				log.Printf("hit max buffer size: %+v, %v, %v", a.AssemblerOptions, half.pages, a.pc.used)
+				log.Printf("hit max buffer size: %+v, %v, %v", a.assemblerOptions, half.pages, a.pc.used)
 			}
 
 			action.queue = false
@@ -595,10 +595,10 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	// find if there are skipped bytes
 	skip := -1
 	if half.nextSeq != invalidSequence {
-		skip = half.nextSeq.Difference(a.ret[0].getSeq())
+		skip = half.nextSeq.difference(a.ret[0].getSeq())
 	}
 
-	last := a.ret[0].getSeq().Add(a.ret[0].length())
+	last := a.ret[0].getSeq().add(a.ret[0].length())
 
 	// Prepend saved bytes
 	saved := a.addPending(half, a.ret[0].getSeq())
@@ -632,7 +632,7 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 	} else {
 
 		var (
-			bc   byteContainer
+			bc    byteContainer
 			found = false
 		)
 
@@ -758,7 +758,7 @@ func (a *Assembler) addPending(half *halfconnection, firstSeq Sequence) int {
 		s += len(p.bytes)
 	}
 
-	if half.saved.seq.Add(s) != firstSeq {
+	if half.saved.seq.add(s) != firstSeq {
 		// non-continuous saved: drop them
 		var next *page
 		for p := half.saved; p != nil; p = next {
@@ -791,12 +791,12 @@ func (a *Assembler) addContiguous(half *halfconnection, lastSeq Sequence) Sequen
 		lastSeq = firstPage.seq
 	}
 
-	for firstPage != nil && lastSeq.Difference(firstPage.seq) == 0 {
+	for firstPage != nil && lastSeq.difference(firstPage.seq) == 0 {
 		if Debug {
 			log.Printf("addContiguous: lastSeq: %d, first.seq=%d, page.seq=%d\n", half.nextSeq, half.first.seq, firstPage.seq)
 		}
 
-		lastSeq = lastSeq.Add(len(firstPage.bytes))
+		lastSeq = lastSeq.add(len(firstPage.bytes))
 		a.ret = append(a.ret, firstPage)
 		half.first = firstPage.next
 
@@ -913,7 +913,7 @@ type FlushOptions struct {
 // contiguous byte-sets out to the Stream's Reassembled function.  In this case,
 // it will push [15-20), but also [20-25), since that's contiguous.  It will
 // only push [30-50) if its timestamp is also older than the passed-in time,
-// otherwise it will wait until the next FlushCloseOlderThan to see if bytes
+// otherwise it will wait until the next flushCloseOlderThan to see if bytes
 // [25-30) come in.
 //
 // Returns the number of connections flushed, and of those, the number closed
@@ -954,8 +954,8 @@ func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 	return flushes, closes
 }
 
-// FlushCloseOlderThan flushes and closes streams older than given time.
-func (a *Assembler) FlushCloseOlderThan(t time.Time) (flushed, closed int) {
+// flushCloseOlderThan flushes and closes streams older than given time.
+func (a *Assembler) flushCloseOlderThan(t time.Time) (flushed, closed int) {
 	return a.FlushWithOptions(FlushOptions{T: t, TC: t})
 }
 

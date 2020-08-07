@@ -225,9 +225,9 @@ func Dump(w *os.File, c DumpConfig) error {
 	return nil
 }
 
-// CloseFile closes the netcap file handle
+// closeFile closes the netcap file handle
 // and removes files that do only contain a header but no audit records.
-func CloseFile(outDir string, file *os.File, typ string) (name string, size int64) {
+func closeFile(outDir string, file *os.File, typ string) (name string, size int64) {
 	i, err := file.Stat()
 	if err != nil {
 		fmt.Println("[ERROR] failed to stat file:", err, "type", typ)
@@ -242,11 +242,11 @@ func CloseFile(outDir string, file *os.File, typ string) (name string, size int6
 		fmt.Println("error while closing", i.Name(), "errSync", errSync, "errClose", errClose)
 	}
 
-	return i.Name(), RemoveAuditRecordFileIfEmpty(filepath.Join(outDir, i.Name()))
+	return i.Name(), removeAuditRecordFileIfEmpty(filepath.Join(outDir, i.Name()))
 }
 
-// CreateFile is a wrapper to create new audit record file.
-func CreateFile(name, ext string) *os.File {
+// createFile is a wrapper to create new audit record file.
+func createFile(name, ext string) *os.File {
 	f, err := os.Create(name + ext)
 	if err != nil {
 		panic(err)
@@ -254,8 +254,8 @@ func CreateFile(name, ext string) *os.File {
 	return f
 }
 
-// RemoveAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.
-func RemoveAuditRecordFileIfEmpty(name string) (size int64) {
+// removeAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.
+func removeAuditRecordFileIfEmpty(name string) (size int64) {
 	if strings.HasSuffix(name, ".csv") || strings.HasSuffix(name, ".csv.gz") {
 		f, err := os.Open(name)
 		if err != nil {

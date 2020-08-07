@@ -12,7 +12,7 @@
 // (github.com/dreadl0ck/gopacket, github.com/dreadl0ck/gopacket/layers).
 //
 // The Assembler uses a user-supplied
-// StreamFactory to create a user-defined Stream interface, then passes packet
+// streamFactory to create a user-defined Stream interface, then passes packet
 // data in stream order to that object.  A concurrency-safe StreamPool keeps
 // track of all current Streams being reassembled, so multiple Assemblers may
 // run at once to assemble packets while taking advantage of multiple cores.

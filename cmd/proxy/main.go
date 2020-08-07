@@ -28,7 +28,7 @@ import (
 
 // a list of all reverse proxies
 // used to close all files handles on exit via OS signals.
-var proxies []*ReverseProxy
+var proxies []*reverseProxy
 
 func Run() {
 	// parse commandline flags
@@ -55,14 +55,14 @@ func Run() {
 	if *flagLocal == "" || *flagRemote == "" {
 		// parse config file
 		var errParseConfig error
-		c, errParseConfig = ParseConfiguration(*flagProxyConfig)
+		c, errParseConfig = parseConfiguration(*flagProxyConfig)
 		if errParseConfig != nil {
 			log.Fatal("failed to parse config: ", errParseConfig)
 		}
 	} else {
 		// setup single proxy instance
-		c = &Config{
-			Proxies: map[string]ReverseProxyConfig{
+		c = &config{
+			Proxies: map[string]reverseProxyConfig{
 				"customproxy": {
 					Remote: *flagRemote,
 					Local:  *flagLocal,
@@ -76,16 +76,16 @@ func Run() {
 
 	// print configuration
 	fmt.Println("Configuration:")
-	c.Dump(os.Stdout)
+	c.dump(os.Stdout)
 
 	// configure logger
-	ConfigureLogger(*flagDebug, filepath.Join(c.Logdir, LogFileName))
+	configureLogger(*flagDebug, filepath.Join(c.Logdir, logFileName))
 
 	// synchronize the logger on exit
 	defer Log.Sync()
 
 	Log.Info("setup complete",
-		zap.String("logfile", LogFileName),
+		zap.String("logfile", logFileName),
 		zap.String("config", *flagProxyConfig),
 	)
 
@@ -114,7 +114,7 @@ func Run() {
 			}
 
 			// instantiate proxy
-			proxy := NewReverseProxy(proxyName, targetURL)
+			proxy := newReverseProxy(proxyName, targetURL)
 			proxies = append(proxies, proxy)
 
 			if tls { // check if key and cert file have been specified

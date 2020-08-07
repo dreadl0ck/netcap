@@ -51,15 +51,15 @@ func Init(c Config, quietMode bool) {
 	}
 
 	if c.MACDB {
-		InitMACResolver()
+		initMACResolver()
 	}
 	if c.Ja3DB {
-		InitJa3Resolver()
+		initJa3Resolver()
 	}
 	if c.ServiceDB {
 		InitServiceDB()
 	}
 	if c.GeolocationDB {
-		InitGeolocationDB()
+		initGeolocationDB()
 	}
 }

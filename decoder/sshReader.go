@@ -130,8 +130,8 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 	if h.clientIdent == "" || h.serverIdent == "" { // read the SSH ident from the buffer
 		var (
-			br        = bytes.NewReader(data)
-			b byte
+			br       = bytes.NewReader(data)
+			b        byte
 			ident    []byte
 			lastByte byte
 		)

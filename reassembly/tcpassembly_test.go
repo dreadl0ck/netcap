@@ -131,7 +131,7 @@ func test(t *testing.T, s []testSequence) {
 		if false {
 			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.in.BaseLayer.Payload))
 		}
-		a.Assemble(netFlow, &testSeq.in)
+		a.assemble(netFlow, &testSeq.in)
 		final := []Reassembly{}
 		if len(testSeq.want) > 0 {
 			final = append(final, Reassembly{})
@@ -750,7 +750,7 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 		ctx := assemblerSimpleContext(gopacket.CaptureInfo{Timestamp: simTime})
 		a.AssembleWithContext(flow, &testSeq.in, &ctx)
 		simTime = simTime.Add(delay)
-		a.FlushCloseOlderThan(simTime.Add(-1 * flushInterval))
+		a.flushCloseOlderThan(simTime.Add(-1 * flushInterval))
 
 		final := []Reassembly{}
 		if len(testSeq.want) > 0 {
@@ -981,7 +981,7 @@ func testKeep(t *testing.T, s []testKeepSequence) {
 			port = testSeq.tcp.SrcPort
 		}
 		if port != testSeq.tcp.SrcPort {
-			dir = dir.Reverse()
+			dir = dir.reverse()
 			flow = flow.Reverse()
 		}
 		testSeq.tcp.SetInternalPortsForTesting()
@@ -990,7 +990,7 @@ func testKeep(t *testing.T, s []testKeepSequence) {
 		if false {
 			fmt.Printf("#### testKeep: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.tcp.BaseLayer.Payload))
 		}
-		a.Assemble(flow, &testSeq.tcp)
+		a.assemble(flow, &testSeq.tcp)
 		if !reflect.DeepEqual(fact.bytes, testSeq.want) {
 			t.Fatalf("#%d: invalid bytes: got %v, expected %v", i, fact.bytes, testSeq.want)
 		}
@@ -1256,7 +1256,7 @@ func testFSM(t *testing.T, s []testFSMSequence) {
 			port = testSeq.tcp.SrcPort
 		}
 		if port != testSeq.tcp.SrcPort {
-			dir = dir.Reverse()
+			dir = dir.reverse()
 			flow = flow.Reverse()
 		}
 		testSeq.tcp.SetInternalPortsForTesting()
@@ -1688,7 +1688,7 @@ func TestMemoryShrink(t *testing.T) {
 	run := 1050
 	// Allocate > initial
 	for i := 0; i < run; i++ {
-		a.Assemble(netFlow, &tcp)
+		a.assemble(netFlow, &tcp)
 		if tcp.SYN {
 			tcp.SYN = false
 			tcp.Seq += 1 + 1
@@ -1706,7 +1706,7 @@ func TestMemoryShrink(t *testing.T) {
 	// Do ~ initial allocs+free()
 	run *= 2
 	for i := 0; i < run; i++ {
-		a.Assemble(netFlow, &tcp)
+		a.assemble(netFlow, &tcp)
 		if i%50 == 0 {
 			a.FlushAll()
 		}
@@ -1732,7 +1732,7 @@ func BenchmarkSingleStreamNo(b *testing.B) {
 	}
 	a := NewAssembler(NewStreamPool(&testFactoryBench{}))
 	for i := 0; i < b.N; i++ {
-		a.Assemble(netFlow, &t)
+		a.assemble(netFlow, &t)
 		if t.SYN {
 			t.SYN = false
 			t.Seq++
@@ -1758,7 +1758,7 @@ func BenchmarkSingleStreamSkips(b *testing.B) {
 		} else if skipped {
 			t.Seq -= 20
 		}
-		a.Assemble(netFlow, &t)
+		a.assemble(netFlow, &t)
 		if t.SYN {
 			t.SYN = false
 			t.Seq++
@@ -1781,7 +1781,7 @@ func BenchmarkSingleStreamLoss(b *testing.B) {
 	}
 	a := NewAssembler(NewStreamPool(&testFactoryBench{}))
 	for i := 0; i < b.N; i++ {
-		a.Assemble(netFlow, &t)
+		a.assemble(netFlow, &t)
 		t.SYN = false
 		t.Seq += 11
 	}
@@ -1797,7 +1797,7 @@ func BenchmarkMultiStreamGrow(b *testing.B) {
 	a := NewAssembler(NewStreamPool(&testFactoryBench{}))
 	for i := 0; i < b.N; i++ {
 		t.SrcPort = layers.TCPPort(i)
-		a.Assemble(netFlow, &t)
+		a.assemble(netFlow, &t)
 		t.Seq += 10
 	}
 }
@@ -1813,7 +1813,7 @@ func BenchmarkMultiStreamConn(b *testing.B) {
 	a := NewAssembler(NewStreamPool(&testFactoryBench{}))
 	for i := 0; i < b.N; i++ {
 		t.SrcPort = layers.TCPPort(i)
-		a.Assemble(netFlow, &t)
+		a.assemble(netFlow, &t)
 		if i%65536 == 65535 {
 			if t.SYN {
 				t.SYN = false
@@ -1867,7 +1867,7 @@ func TestFullyOrderedAndCompleteStreamDoesNotAlloc(t *testing.T) {
 		s2c.Ack += 10
 		a.AssembleWithContext(netFlow, &c2s, ctx)
 		a.AssembleWithContext(netFlow.Reverse(), &s2c, ctx)
-	}); n > 2 { // TODO: reduce allocations to 0 again
+	}); n > 4 { // TODO: reduce allocations to 0 again
 		t.Error(n, "mallocs for normal TCP stream")
 	}
 	// Ensure all bytes have been through the stream

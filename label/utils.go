@@ -32,8 +32,8 @@ import (
 var (
 	// UseProgressBars whether to use the progress bar.
 	UseProgressBars = false
-	// ClassificationMap map of classifications.
-	ClassificationMap = make(map[string]int)
+	// classificationMap map of classifications.
+	classificationMap = make(map[string]int)
 	excluded          = make(map[string]bool)
 
 	Debug bool
