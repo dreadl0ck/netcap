@@ -138,37 +138,38 @@ type SSHHash struct {
 // process a raw user agent string and returned a structured instance.
 func parseUserAgent(ua string) *userAgent {
 	var (
-		client                         = parser.Parse(ua)
+		uaClient                       = parser.Parse(ua)
 		full, product, vendor, version string
 	)
-	if client.UserAgent != nil {
-		vendor = client.UserAgent.Family
-		version = client.UserAgent.Major
-		if client.UserAgent.Minor != "" {
-			version += "." + client.UserAgent.Minor
+
+	if uaClient.UserAgent != nil {
+		vendor = uaClient.UserAgent.Family
+		version = uaClient.UserAgent.Major
+		if uaClient.UserAgent.Minor != "" {
+			version += "." + uaClient.UserAgent.Minor
 		}
-		if client.UserAgent.Patch != "" {
-			version += "." + client.UserAgent.Patch
+		if uaClient.UserAgent.Patch != "" {
+			version += "." + uaClient.UserAgent.Patch
 		}
-		full += " " + client.UserAgent.Family
-		full += " " + client.UserAgent.Major
-		full += " " + client.UserAgent.Minor
-		full += " " + client.UserAgent.Patch
+		full += " " + uaClient.UserAgent.Family
+		full += " " + uaClient.UserAgent.Major
+		full += " " + uaClient.UserAgent.Minor
+		full += " " + uaClient.UserAgent.Patch
 
 		if vendor == "Other" {
 			vendor = ""
 		}
 	}
-	if client.Os != nil {
-		full += " " + client.Os.Family
-		full += " " + client.Os.Major
-		full += " " + client.Os.Minor
-		full += " " + client.Os.Patch
-		full += " " + client.Os.PatchMinor
+	if uaClient.Os != nil {
+		full += " " + uaClient.Os.Family
+		full += " " + uaClient.Os.Major
+		full += " " + uaClient.Os.Minor
+		full += " " + uaClient.Os.Patch
+		full += " " + uaClient.Os.PatchMinor
 	}
-	if client.Device != nil {
-		product = client.Device.Family
-		full += " " + client.Device.Family
+	if uaClient.Device != nil {
+		product = uaClient.Device.Family
+		full += " " + uaClient.Device.Family
 
 		if product == "Other" {
 			product = ""
@@ -191,7 +192,7 @@ func parseUserAgent(ua string) *userAgent {
 	}
 
 	return &userAgent{
-		client:  client,
+		client:  uaClient,
 		product: product,
 		vendor:  vendor,
 		version: version,
@@ -495,7 +496,7 @@ func analyzeSoftware(i *packetInfo) {
 }
 
 func writeSoftware(software []*software, update func(s *software)) {
-	var newSoftware []*types.Software
+	var newSoftwareProducts []*types.Software
 
 	// add new audit records or update existing
 	softwareStore.Lock()
@@ -528,15 +529,15 @@ func writeSoftware(software []*software, update func(s *software)) {
 			stats.numSoftware++
 			stats.Unlock()
 
-			newSoftware = append(newSoftware, s.Software)
+			newSoftwareProducts = append(newSoftwareProducts, s.Software)
 		}
 	}
 	softwareStore.Unlock()
 
-	if len(newSoftware) > 0 {
+	if len(newSoftwareProducts) > 0 {
 		// lookup known issues with identified software in the background
 		go func() {
-			for _, s := range newSoftware {
+			for _, s := range newSoftwareProducts {
 				vulnerabilitiesLookup(s)
 				exploitsLookup(s)
 			}
@@ -668,12 +669,13 @@ var softwareDecoder = newCustomDecoder(
 
 		// flush writer
 		if !e.writer.IsChanWriter {
-			for _, c := range softwareStore.Items {
-				c.Lock()
-				e.write(c.Software)
-				c.Unlock()
+			for _, item := range softwareStore.Items {
+				item.Lock()
+				e.write(item.Software)
+				item.Unlock()
 			}
 		}
+
 		return nil
 	},
 )
@@ -681,7 +683,7 @@ var softwareDecoder = newCustomDecoder(
 // TODO: move into customDecoder and use in other places to remove unnecessary package level decoders
 // writeProfile writes the profile.
 func (cd *customDecoder) write(r types.AuditRecord) {
-	if c.Export {
+	if conf.Export {
 		r.Inc()
 	}
 

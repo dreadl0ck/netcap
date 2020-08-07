@@ -619,7 +619,6 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 
 func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 	var (
-		r    byteContainer
 		cur  = 0
 		ndx  = 0
 		skip = 0
@@ -631,16 +630,21 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 	if a.cacheSG.toKeep < 0 {
 		ndx = len(a.cacheSG.all)
 	} else {
+
+		var (
+			bc   byteContainer
+			found = false
+		)
+
 		skip = a.cacheSG.toKeep
-		found := false
-		for ndx, r = range a.cacheSG.all {
-			if a.cacheSG.toKeep < cur+r.length() {
+		for ndx, bc = range a.cacheSG.all {
+			if a.cacheSG.toKeep < cur+bc.length() {
 				found = true
 				break
 			}
-			cur += r.length()
-			if skip >= r.length() {
-				skip -= r.length()
+			cur += bc.length()
+			if skip >= bc.length() {
+				skip -= bc.length()
 			}
 		}
 		if !found {
@@ -927,12 +931,12 @@ func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 		conn.mu.Lock()
 
 		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
-			flushed, closed := a.flushClose(conn, half, opt.T, opt.TC)
-			if flushed {
+			isFlushed, isClosed := a.flushClose(conn, half, opt.T, opt.TC)
+			if isFlushed {
 				flushes++
 			}
 
-			if closed {
+			if isClosed {
 				closes++
 			}
 		}

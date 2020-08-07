@@ -126,16 +126,16 @@ func test(t *testing.T, s []testSequence) {
 	p := NewStreamPool(fact)
 	a := NewAssembler(p)
 	a.MaxBufferedPagesPerConnection = 4
-	for i, test := range s {
+	for i, testSeq := range s {
 		fact.reassembly = []Reassembly{}
 		if false {
-			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(test.in.BaseLayer.Payload))
+			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.in.BaseLayer.Payload))
 		}
-		a.Assemble(netFlow, &test.in)
+		a.Assemble(netFlow, &testSeq.in)
 		final := []Reassembly{}
-		if len(test.want) > 0 {
+		if len(testSeq.want) > 0 {
 			final = append(final, Reassembly{})
-			for _, w := range test.want {
+			for _, w := range testSeq.want {
 				final[0].Bytes = append(final[0].Bytes, w.Bytes...)
 				if w.End {
 					final[0].End = true
@@ -734,28 +734,28 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 
 	simTime := time.Unix(0, 0)
 
-	for i, test := range s {
+	for i, testSeq := range s {
 		fact.reassembly = []Reassembly{}
 		if false {
-			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(test.in.BaseLayer.Payload))
+			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.in.BaseLayer.Payload))
 		}
 
 		flow := netFlow
 		if port == 0 {
-			port = test.in.SrcPort
+			port = testSeq.in.SrcPort
 		}
-		if port != test.in.SrcPort {
+		if port != testSeq.in.SrcPort {
 			flow = flow.Reverse()
 		}
 		ctx := assemblerSimpleContext(gopacket.CaptureInfo{Timestamp: simTime})
-		a.AssembleWithContext(flow, &test.in, &ctx)
+		a.AssembleWithContext(flow, &testSeq.in, &ctx)
 		simTime = simTime.Add(delay)
 		a.FlushCloseOlderThan(simTime.Add(-1 * flushInterval))
 
 		final := []Reassembly{}
-		if len(test.want) > 0 {
+		if len(testSeq.want) > 0 {
 			final = append(final, Reassembly{})
-			for _, w := range test.want {
+			for _, w := range testSeq.want {
 				final[0].Bytes = append(final[0].Bytes, w.Bytes...)
 				if w.End {
 					final[0].End = true
@@ -780,7 +780,7 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 }
 
 func TestFlush(t *testing.T) {
-	for _, test := range []struct {
+	for _, testSeq := range []struct {
 		seq                   []testSequence
 		delay, flushOlderThan time.Duration
 	}{
@@ -926,7 +926,7 @@ func TestFlush(t *testing.T) {
 			flushOlderThan: time.Millisecond * 50,
 		},
 	} {
-		testFlush(t, test.seq, test.delay, test.flushOlderThan)
+		testFlush(t, testSeq.seq, testSeq.delay, testSeq.flushOlderThan)
 	}
 }
 
@@ -973,29 +973,29 @@ func testKeep(t *testing.T, s []testKeepSequence) {
 	a := NewAssembler(p)
 	a.MaxBufferedPagesPerConnection = 4
 	port := layers.TCPPort(0)
-	for i, test := range s {
+	for i, testSeq := range s {
 		// Fake some values according to ports
 		flow := netFlow
 		dir := TCPDirClientToServer
 		if port == 0 {
-			port = test.tcp.SrcPort
+			port = testSeq.tcp.SrcPort
 		}
-		if port != test.tcp.SrcPort {
+		if port != testSeq.tcp.SrcPort {
 			dir = dir.Reverse()
 			flow = flow.Reverse()
 		}
-		test.tcp.SetInternalPortsForTesting()
-		fact.keep = test.keep
+		testSeq.tcp.SetInternalPortsForTesting()
+		fact.keep = testSeq.keep
 		fact.bytes = []byte{}
 		if false {
-			fmt.Printf("#### testKeep: #%d: sending:%s\n", i, hex.EncodeToString(test.tcp.BaseLayer.Payload))
+			fmt.Printf("#### testKeep: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.tcp.BaseLayer.Payload))
 		}
-		a.Assemble(flow, &test.tcp)
-		if !reflect.DeepEqual(fact.bytes, test.want) {
-			t.Fatalf("#%d: invalid bytes: got %v, expected %v", i, fact.bytes, test.want)
+		a.Assemble(flow, &testSeq.tcp)
+		if !reflect.DeepEqual(fact.bytes, testSeq.want) {
+			t.Fatalf("#%d: invalid bytes: got %v, expected %v", i, fact.bytes, testSeq.want)
 		}
-		if fact.skipped != test.skipped {
-			t.Fatalf("#%d: expecting %d skipped bytes, got %d", i, test.skipped, fact.skipped)
+		if fact.skipped != testSeq.skipped {
+			t.Fatalf("#%d: expecting %d skipped bytes, got %d", i, testSeq.skipped, fact.skipped)
 		}
 		if false {
 			fmt.Printf("#### testKeep: #%d: bytes: %s\n", i, hex.EncodeToString(fact.bytes))
@@ -1248,21 +1248,21 @@ func testFSM(t *testing.T, s []testFSMSequence) {
 	// a.MaxBufferedPagesPerConnection = 4
 	fact.nb = 0
 	port := layers.TCPPort(0)
-	for i, test := range s {
+	for i, testSeq := range s {
 		// Fake some values according to ports
 		flow := netFlow
 		dir := TCPDirClientToServer
 		if port == 0 {
-			port = test.tcp.SrcPort
+			port = testSeq.tcp.SrcPort
 		}
-		if port != test.tcp.SrcPort {
+		if port != testSeq.tcp.SrcPort {
 			dir = dir.Reverse()
 			flow = flow.Reverse()
 		}
-		test.tcp.SetInternalPortsForTesting()
-		a.AssembleWithContext(flow, &test.tcp, &test)
-		if fact.nb != test.nb {
-			t.Fatalf("#%d: packet rejected: got %d, expected %d", i, fact.nb, test.nb)
+		testSeq.tcp.SetInternalPortsForTesting()
+		a.AssembleWithContext(flow, &testSeq.tcp, &testSeq)
+		if fact.nb != testSeq.nb {
+			t.Fatalf("#%d: packet rejected: got %d, expected %d", i, fact.nb, testSeq.nb)
 		}
 	}
 }

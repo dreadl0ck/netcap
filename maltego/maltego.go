@@ -132,8 +132,7 @@ func (m *Transform) AddEntity(enType, enValue string) *EntityObj {
 }
 
 func (m *Transform) AddUIMessage(message, messageType string) {
-	msg := []string{messageType, message}
-	m.UIMessages = append(m.UIMessages, msg)
+	m.UIMessages = append(m.UIMessages, []string{messageType, message})
 }
 
 func (m *Transform) addException(exceptionString, code string) {

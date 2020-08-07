@@ -52,7 +52,7 @@ var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, 
 	}
 }
 
-// CountPacketsDevices returns the lowest and highest number of packets
+// CountPacketsContactIPs returns the lowest and highest number of packets
 // seen for all ContactIPs of a given DeviceProfile.
 var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
 	if profile.MacAddr == mac {

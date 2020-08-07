@@ -202,8 +202,7 @@ func Run() {
 				// read chan loop
 				for {
 					select {
-					case data := <-info.Chan:
-
+					case data = <-info.Chan:
 						// message complete
 						if len(size) != 0 {
 							fmt.Println("got", len(data), "bytes of type", info.Type, "expected", size)
@@ -227,6 +226,7 @@ func Run() {
 
 							// reset size slice
 							size = []byte{}
+
 							continue
 						}
 

@@ -46,9 +46,9 @@ type tcpStreamReader struct {
 
 func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 	return &tcpStreamReader{
-		dataChan: make(chan *streamData, c.StreamDecoderBufSize),
+		dataChan: make(chan *streamData, conf.StreamDecoderBufSize),
 		ident:    t.ident,
-		hexdump:  c.HexDump,
+		hexdump:  conf.HexDump,
 		parent:   t,
 		isClient: client,
 	}
@@ -201,7 +201,7 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 				t.serviceBanner.WriteByte(b)
 				t.serviceBannerBytes++
 
-				if t.serviceBannerBytes == c.BannerSize {
+				if t.serviceBannerBytes == conf.BannerSize {
 					break
 				}
 			}

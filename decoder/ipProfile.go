@@ -80,7 +80,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 					atomic.AddUint64(&port.NumUDP, 1)
 				}
 			} else {
-				port := &types.Port{
+				port = &types.Port{
 					NumTotal: dataLen,
 				}
 				if tl.LayerType() == layers.LayerTypeTCP {

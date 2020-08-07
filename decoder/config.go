@@ -22,7 +22,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var c *Config
+var conf *Config
 
 const (
 	defaultDirectoryPermission = 0o700
@@ -31,15 +31,15 @@ const (
 
 // SetConfig can be used to set a configuration for the package.
 func SetConfig(cfg *Config) {
-	c = cfg
+	conf = cfg
 
 	streamFactory.fsmOptions = reassembly.TCPSimpleFSMOptions{
-		SupportMissingEstablishment: c.AllowMissingInit,
+		SupportMissingEstablishment: conf.AllowMissingInit,
 	}
 
 	// setup loggers
-	if c.Debug {
-		utils.InitLoggers(c.Out)
+	if conf.Debug {
+		utils.InitLoggers(conf.Out)
 		pop3Debug = true
 	}
 }

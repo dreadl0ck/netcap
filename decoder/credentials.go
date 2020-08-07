@@ -120,11 +120,11 @@ func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	)
 
 	if len(matchesBasic) > 1 {
-		data, err := base64.StdEncoding.DecodeString(string(matchesBasic[1]))
+		extractedData, err := base64.StdEncoding.DecodeString(string(matchesBasic[1]))
 		if err != nil {
 			fmt.Println("Captured HTTP Basic Auth credentials, but could not decode them")
 		}
-		creds := strings.Split(string(data), ":")
+		creds := strings.Split(string(extractedData), ":")
 		username = creds[0]
 		password = creds[1]
 	}
@@ -190,7 +190,7 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	var (
 		username             string
 		password             string
-		service              string
+		serv                 string
 		matchesPlainSeparate = reSMTPPlainSeparate.FindSubmatch(data)
 		matchesPlainSingle   = reSMTPPlainSingle.FindSubmatch(data)
 		matchesLogin         = reSMTPLogin.FindSubmatch(data)
@@ -200,25 +200,25 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	switch {
 	case len(matchesPlainSeparate) > 1:
 		username, password = decodeSMTPAuthPlain(string(matchesPlainSeparate[1]))
-		service = smtpAuthPlain
+		serv = smtpAuthPlain
 
 	case len(matchesPlainSingle) > 1:
 		username, password = decodeSMTPAuthPlain(string(matchesPlainSingle[1]))
-		service = smtpAuthPlain
+		serv = smtpAuthPlain
 
 	case len(matchesLogin) > 1:
 		username, password = decodeSMTPLogin(matchesLogin, smtpAuthLogin)
-		service = smtpAuthLogin
+		serv = smtpAuthLogin
 
 	case len(matchesCramMd5) > 1:
 		username, password = decodeSMTPLogin(matchesCramMd5, smtpAuthCramMd5)
-		service = smtpAuthCramMd5
+		serv = smtpAuthCramMd5
 	}
 
 	if len(username) > 0 || len(password) > 0 {
 		return &types.Credentials{
 			Timestamp: ts.String(),
-			Service:   service,
+			Service:   serv,
 			Flow:      ident,
 			User:      username,
 			Password:  password,
@@ -253,7 +253,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	var (
 		username             string
 		password             string
-		service              string
+		serv                 string
 		matchesPlainSeparate = reIMATPlainSeparate.FindSubmatch(data)
 		matchesPlainSingle   = reIMAPPlainSingle.FindSubmatch(data)
 		matchesLogin         = reIMAPPlainAuth.FindSubmatch(data)
@@ -263,7 +263,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(matchesPlainSingle) > 1 {
 		username = string(matchesPlainSingle[1])
 		password = string(matchesPlainSingle[2])
-		service = "IMAP Plain Single Line"
+		serv = "IMAP Plain Single Line"
 	}
 
 	if len(matchesPlainSeparate) > 1 {
@@ -277,21 +277,23 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		}
 		username = string(usernameBin)
 		password = string(passwordBin)
-		service = "IMAP Plain Separate Line"
+		serv = "IMAP Plain Separate Line"
 	}
 
 	if len(matchesLogin) > 1 {
-		data, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
+		extractedData, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
 		if err != nil {
 			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesLogin[1]))
 		}
+		
 		var (
 			newDataAuthCID  []byte
 			newDataAuthZID  []byte
 			newDataPassword []byte
 			step            = 0
 		)
-		for _, b := range data {
+		
+		for _, b := range extractedData {
 			if b == byte(0) {
 				step++
 			} else {
@@ -307,7 +309,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		}
 		username = string(newDataAuthCID) + " | " + string(newDataAuthZID)
 		password = string(newDataPassword)
-		service = "IMAP Login"
+		serv = "IMAP Login"
 	}
 
 	if len(matchesCramMd5) > 1 {
@@ -321,13 +323,13 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesCramMd5[2]))
 		}
 		password = string(passwordBin) // And this is the hash
-		service = "IMAP CRAM-MD5"
+		serv = "IMAP CRAM-MD5"
 	}
 
 	if len(username) > 0 {
 		return &types.Credentials{
 			Timestamp: ts.String(),
-			Service:   service,
+			Service:   serv,
 			Flow:      ident,
 			User:      username,
 			Password:  password,
@@ -341,8 +343,8 @@ var credentialsDecoder = newCustomDecoder(
 	credentialsDecoderName,
 	"Credentials represent a user and password combination to authenticate to a service",
 	func(d *customDecoder) error {
-		if c.CustomRegex != "" {
-			r, err := regexp.Compile(c.CustomRegex)
+		if conf.CustomRegex != "" {
+			r, err := regexp.Compile(conf.CustomRegex)
 			if err != nil {
 				return err
 			}
@@ -408,7 +410,7 @@ func writeCredentials(conn *types.Credentials) {
 	credStore[ident] = conn.Flow
 	credStoreMu.Unlock()
 
-	if c.Export {
+	if conf.Export {
 		conn.Inc()
 	}
 

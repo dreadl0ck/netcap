@@ -56,19 +56,22 @@ func (c *pageCache) grow() {
 // Remove references to unused pages to let GC collect them
 // Note: memory used by c.free itself it not collected.
 func (c *pageCache) tryShrink() {
-	min := c.pcSize / 2
-	if min < initialAllocSize {
-		min = initialAllocSize
+	minimum := c.pcSize / 2
+	if minimum < initialAllocSize {
+		minimum = initialAllocSize
 	}
-	if len(c.free) <= min {
+
+	if len(c.free) <= minimum {
 		return
 	}
-	for i := range c.free[min:] {
-		c.free[min+i] = nil
+
+	for i := range c.free[minimum:] {
+		c.free[minimum+i] = nil
 	}
-	c.size -= len(c.free) - min
-	c.free = c.free[:min]
-	c.pcSize = min
+
+	c.size -= len(c.free) - minimum
+	c.free = c.free[:minimum]
+	c.pcSize = minimum
 }
 
 // next returns a clean, ready-to-use page object.

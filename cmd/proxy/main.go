@@ -114,21 +114,22 @@ func Run() {
 			}
 
 			// instantiate proxy
-			p := NewReverseProxy(proxyName, targetURL)
-			proxies = append(proxies, p)
+			proxy := NewReverseProxy(proxyName, targetURL)
+			proxies = append(proxies, proxy)
+
 			if tls { // check if key and cert file have been specified
 				if c.CertFile == "" || c.KeyFile == "" {
 					log.Fatal(proxyName, " configured to use TLS for local endpoint, but no missing cert and key in config.")
 				}
 
 				// start serving HTTPS
-				err := http.ListenAndServeTLS(local, c.CertFile, c.KeyFile, p)
+				err = http.ListenAndServeTLS(local, c.CertFile, c.KeyFile, proxy)
 				if err != nil {
 					log.Fatal(proxyName, " failed. error: ", err)
 				}
 			} else {
 				// start serving HTTP
-				err := http.ListenAndServe(local, p)
+				err = http.ListenAndServe(local, proxy)
 				if err != nil {
 					log.Fatal(proxyName, " failed. error: ", err)
 				}

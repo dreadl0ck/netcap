@@ -135,7 +135,7 @@ func (h *pop3Reader) Decode() {
 	}
 
 	// export metrics if configured
-	if c.Export {
+	if conf.Export {
 		pop3Msg.Inc()
 	}
 
@@ -168,7 +168,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		ctype = http.DetectContentType(body)
 
 		// root path
-		root = path.Join(c.FileStorage, ctype)
+		root = path.Join(conf.FileStorage, ctype)
 
 		// file extension
 		ext = fileExtensionForContentType(ctype)
@@ -191,8 +191,8 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	if len(base) > 250 {
 		base = base[:250] + "..."
 	}
-	if base == c.FileStorage {
-		base = path.Join(c.FileStorage, "noname")
+	if base == conf.FileStorage {
+		base = path.Join(conf.FileStorage, "noname")
 	}
 	var (
 		target = base
@@ -233,14 +233,15 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 			logReassemblyError("POP3-gunzip", "Failed to gzip decode: %s", err)
 		}
 	}
+
 	if err == nil {
-		w, err := io.Copy(f, r)
+		w, errCopy := io.Copy(f, r)
 		if _, ok := r.(*gzip.Reader); ok {
 			r.(*gzip.Reader).Close()
 		}
 		f.Close()
-		if err != nil {
-			logReassemblyError("POP3-save", "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, err)
+		if errCopy != nil {
+			logReassemblyError("POP3-save", "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, errCopy)
 		} else {
 			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, w)
 		}

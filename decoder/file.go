@@ -44,7 +44,7 @@ var fileDecoder = newCustomDecoder(
 
 // writeProfile writes the profile.
 func writeFile(f *types.File) {
-	if c.Export {
+	if conf.Export {
 		f.Inc()
 	}
 

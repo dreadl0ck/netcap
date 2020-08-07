@@ -234,12 +234,13 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 
 	if UseProgressBars {
 		// close pool
-		if err := pool.Stop(); err != nil {
+		if err = pool.Stop(); err != nil {
 			fmt.Println("failed to stop progress bar pool:", err)
 		}
 	}
 
 	fmt.Println("\ndone in", time.Since(start))
+
 	return nil
 }
 

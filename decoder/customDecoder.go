@@ -196,7 +196,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 		d.SetWriter(w)
 
 		// call postinit func if set
-		err := d.PostInit()
+		err = d.PostInit()
 		if err != nil {
 			if c.IgnoreDecoderInitErrors {
 				fmt.Println(ansi.Red, err, ansi.Reset)
@@ -270,17 +270,18 @@ func (cd *customDecoder) Decode(p gopacket.Packet) error {
 		}
 
 		// export metrics if configured
-		if c.Export {
+		if conf.Export {
 			// assert to audit record
-			if p, ok := record.(types.AuditRecord); ok {
+			if r, ok := record.(types.AuditRecord); ok {
 				// export metrics
-				p.Inc()
+				r.Inc()
 			} else {
 				fmt.Printf("type: %#v\n", record)
 				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 		}
 	}
+
 	return nil
 }
 

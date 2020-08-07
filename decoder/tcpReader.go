@@ -76,7 +76,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 	}
 
 	var (
-		banner = make([]byte, 0, c.HarvesterBannerSize)
+		banner = make([]byte, 0, conf.HarvesterBannerSize)
 		found  bool
 		tried  *credentialHarvester
 	)
@@ -84,7 +84,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 	// copy c.HarvesterBannerSize number of bytes from the raw conversation
 	// to use for the credential harvesters
 	for i, b := range raw {
-		if i >= c.HarvesterBannerSize {
+		if i >= conf.HarvesterBannerSize {
 			break
 		}
 		banner = append(banner, b)
@@ -107,7 +107,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 			writeCredentials(creds)
 
 			// we found a match and will stop processing
-			if c.StopAfterHarvesterMatch {
+			if conf.StopAfterHarvesterMatch {
 				found = true
 			}
 		}
@@ -121,7 +121,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 			writeCredentials(creds)
 
 			// we found a match and will stop processing
-			if c.StopAfterHarvesterMatch {
+			if conf.StopAfterHarvesterMatch {
 				found = true
 			}
 		}
@@ -141,7 +141,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 					writeCredentials(creds)
 
 					// stop after a match for now
-					if c.StopAfterHarvesterMatch {
+					if conf.StopAfterHarvesterMatch {
 						break
 					}
 				}
@@ -160,7 +160,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 
 	banner := runHarvesters(raw, transport, ident, firstPacket)
 
-	if !c.SaveConns {
+	if !conf.SaveConns {
 		return nil
 	}
 
@@ -171,7 +171,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		typ = getServiceName(banner, transport)
 
 		// path for storing the data
-		root = filepath.Join(c.Out, "tcpConnections", typ)
+		root = filepath.Join(conf.Out, "tcpConnections", typ)
 
 		// file basename
 		base = filepath.Clean(path.Base(ident)) + binaryFileExtension
@@ -219,7 +219,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 }
 
 func tcpDebug(args ...interface{}) {
-	if c.TCPDebug {
+	if conf.TCPDebug {
 		utils.DebugLog.Println(args...)
 	}
 }

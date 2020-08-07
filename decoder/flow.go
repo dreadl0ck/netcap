@@ -184,11 +184,11 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		flows := atomic.AddInt64(&stats.numFlows, 1)
 
 		// continuously flush flows
-		if c.FlowFlushInterval != 0 && flows%int64(c.FlowFlushInterval) == 0 {
+		if conf.FlowFlushInterval != 0 && flows%int64(conf.FlowFlushInterval) == 0 {
 			var selectFlows []*types.Flow
 			for id, flw := range fd.Flows.Items {
 				// flush entries whose last timestamp is flowTimeOut older than current packet
-				if p.Metadata().Timestamp.Sub(utils.StringToTime(fl.TimestampLast)) > c.FlowTimeOut {
+				if p.Metadata().Timestamp.Sub(utils.StringToTime(fl.TimestampLast)) > conf.FlowTimeOut {
 					selectFlows = append(selectFlows, flw.Flow)
 					// cleanup
 					delete(fd.Flows.Items, id)
@@ -224,7 +224,7 @@ func (fd *flowCustomDecoder) DeInit() error {
 }
 
 func (fd *flowCustomDecoder) writeFlow(f *types.Flow) {
-	if c.Export {
+	if conf.Export {
 		f.Inc()
 	}
 

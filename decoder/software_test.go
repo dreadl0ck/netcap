@@ -53,13 +53,13 @@ func (r regexTest) testSoftwareHarvester(t *testing.T) {
 		t.Fatal("Expected:", len(parts), " found: ", len(s), " results", "expected value", r.expected, "input", r.input)
 	}
 
-	for i, c := range parts {
-		if c != s[i].Notes {
-			fmt.Println("length expected", len(c))
-			fmt.Println(hex.Dump([]byte(c)))
+	for i, p := range parts {
+		if p != s[i].Notes {
+			fmt.Println("length expected", len(p))
+			fmt.Println(hex.Dump([]byte(p)))
 			fmt.Println("length received", len(s[i].Notes))
 			fmt.Println(hex.Dump([]byte(s[i].Notes)))
-			t.Fatal("Expected: ", c, " Received: ", s[i].Notes, "all:", s[i])
+			t.Fatal("Expected: ", conf, " Received: ", s[i].Notes, "all:", s[i])
 		}
 	}
 }

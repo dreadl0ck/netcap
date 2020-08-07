@@ -77,8 +77,8 @@ func saveTCPServiceBanner(s streamReader) {
 	banner := s.ServiceBanner()
 
 	// limit length of data
-	if len(banner) >= c.BannerSize {
-		banner = banner[:c.BannerSize]
+	if len(banner) >= conf.BannerSize {
+		banner = banner[:conf.BannerSize]
 	}
 
 	ident := s.Ident()
@@ -172,10 +172,10 @@ var serviceDecoder = newCustomDecoder(
 	func(e *customDecoder) error {
 		// flush writer
 		if !e.writer.IsChanWriter {
-			for _, c := range ServiceStore.Items {
-				c.Lock()
-				e.write(c.Service)
-				c.Unlock()
+			for _, item := range ServiceStore.Items {
+				item.Lock()
+				e.write(item.Service)
+				item.Unlock()
 			}
 		}
 
