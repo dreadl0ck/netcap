@@ -86,6 +86,7 @@ func SaveFingerprintDB() {
 
 var apiKey string
 
+// InitDHCPFingerprintAPIKey initializes the DHCP fingerprinting API key
 func InitDHCPFingerprintAPIKey() {
 	k := os.Getenv("FINGERPRINT_API_KEY")
 
@@ -125,6 +126,7 @@ type DHCPResult struct {
 	Version    string `json:"version"`
 }
 
+// DHCPFingerprintRequest models a request for a DHCP fingerprint query.
 type DHCPFingerprintRequest struct {
 	Fingerprint string   `json:"dhcp_fingerprint"`
 	Vendor      string   `json:"dhcp_vendor"`
@@ -132,8 +134,8 @@ type DHCPFingerprintRequest struct {
 }
 
 // LookupDHCPFingerprint retrieves the data associated with an DHCP fingerprint.
-func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCPResult, error) {
-	if len(fp) == 0 {
+func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*DHCPResult, error) {
+	if fp == "" {
 		return nil, nil
 	}
 
@@ -141,6 +143,7 @@ func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCP
 	dhcpFingerprintMu.Lock()
 	if res, ok := dhcpFingerprintDB[fp]; ok {
 		dhcpFingerprintMu.Unlock()
+
 		return res, nil
 	}
 	dhcpFingerprintMu.Unlock()
@@ -151,6 +154,7 @@ func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCP
 		Vendor:      vendor,
 		UserAgents:  userAgents,
 	}
+
 	reqData, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -164,10 +168,12 @@ func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCP
 
 	// send request
 	r.Header.Set("Content-Type", "application/json")
+
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
 	// read response body
@@ -183,6 +189,7 @@ func LookupDHCPFingerprint(fp string, vendor string, userAgents []string) (*DHCP
 
 	// parse JSON response
 	res := new(DHCPResult)
+
 	err = json.Unmarshal(data, res)
 	if err != nil {
 		return nil, err
@@ -214,10 +221,12 @@ func InitDHCPFingerprintDB() {
 	}
 
 	dhcpFingerprintMu.Lock()
+
 	err = json.Unmarshal(data, &dhcpFingerprintDB)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	dhcpFingerprintMu.Unlock()
 
 	if !quiet {
@@ -268,7 +277,7 @@ func initDHCPFingerprintDBCSV() {
 
 // lookupDHCPFingerprintLocal retrieves the data associated with an DHCP fingerprint.
 func lookupDHCPFingerprintLocal(fp string) *DHCPResult {
-	if len(fp) == 0 {
+	if fp == "" {
 		return nil
 	}
 
@@ -276,6 +285,7 @@ func lookupDHCPFingerprintLocal(fp string) *DHCPResult {
 	dhcpFingerprintMu.Lock()
 	if res, ok := dhcpFingerprintDB[fp]; ok {
 		dhcpFingerprintMu.Unlock()
+
 		return res
 	}
 	dhcpFingerprintMu.Unlock()
