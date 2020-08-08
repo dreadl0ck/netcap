@@ -145,7 +145,7 @@ func indexData(in string) {
 			// count total number of lines
 			total int
 			tr    = textproto.NewReader(bufio.NewReader(file))
-			line string
+			line  string
 		)
 
 		for {
@@ -170,9 +170,9 @@ func indexData(in string) {
 		defer file.Close()
 
 		var (
-			r = csv.NewReader(file)
+			r     = csv.NewReader(file)
 			count int
-			rec []string
+			rec   []string
 		)
 		for {
 			rec, err = r.Read()

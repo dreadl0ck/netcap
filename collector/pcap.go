@@ -15,13 +15,13 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
 	"io"
 	"log"
 	"os"
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/gopacket/pcapgo"
 	"github.com/dustin/go-humanize"

@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	netFlow gopacket.Flow
+	netFlow   gopacket.Flow
 	testDebug = false
 )
 

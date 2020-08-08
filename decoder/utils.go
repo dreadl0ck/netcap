@@ -159,38 +159,50 @@ type pair struct {
 // pairList implements sort.Interface.
 type pairList []pair
 
-func (p pairList) Len() int           { return len(p) }
-func (p pairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
-func (p pairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+// Len will return the length.
+func (p pairList) Len() int { return len(p) }
 
+// Less will return true if the value at index i is smaller than the other one.
+func (p pairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+
+// Swap will switch the values.
+func (p pairList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+
+// ApplyActionToCustomDecoders can be used to run custom code for all custom decoders.
 func ApplyActionToCustomDecoders(action func(CustomDecoderAPI)) {
 	for _, d := range defaultCustomDecoders {
 		action(d)
 	}
 }
 
+// ApplyActionToGoPacketDecoders can be used to run custom code for all gopacket decoders.
 func ApplyActionToGoPacketDecoders(action func(*GoPacketDecoder)) {
 	for _, e := range defaultGoPacketDecoders {
 		action(e)
 	}
 }
 
+// ShowDecoders will dump all decoders to stdout.
 func ShowDecoders(verbose bool) {
 	var totalFields, totalAuditRecords int
 
 	fmt.Println("Custom Audit Records: Total", len(defaultCustomDecoders), "Format: DecoderName ( Number of Fields )")
+
 	for _, d := range defaultCustomDecoders {
 		totalAuditRecords++
 		f := countFields(d.GetType())
 		totalFields += f
 		fmt.Println(pad("+ "+d.GetType().String()+" ( "+strconv.Itoa(f)+" )", 35), d.GetDescription())
 	}
+
 	fmt.Println("> custom encoder fields: ", totalFields)
 	fmt.Println("> custom encoder audit records:", totalAuditRecords)
 
 	fmt.Println("\nLayer Audit Records: Total", len(defaultGoPacketDecoders), "Format: DecoderName ( Number of Fields )")
+
 	for _, e := range defaultGoPacketDecoders {
 		totalAuditRecords++
+
 		f := countFields(e.Type)
 		totalFields += f
 		fmt.Println(pad("+ "+e.Layer.String()+" ( "+strconv.Itoa(f)+" )", 35), e.Description)
@@ -201,6 +213,7 @@ func ShowDecoders(verbose bool) {
 		for _, p := range rankByWordCount(typeMap)[:10] {
 			rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
 		}
+
 		fmt.Println("\nTypes with highest number of fields (Top Ten):")
 		tui.Table(os.Stdout, []string{"Type", "NumFields"}, rows)
 
@@ -208,6 +221,7 @@ func ShowDecoders(verbose bool) {
 		for _, p := range rankByWordCount(fieldNameMap)[:10] {
 			rows = append(rows, []string{p.Key, strconv.Itoa(p.Value)})
 		}
+
 		fmt.Println("\nFields with highest number of occurrences (Top Ten):")
 		tui.Table(os.Stdout, []string{"Name", "Count"}, rows)
 

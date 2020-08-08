@@ -37,38 +37,41 @@ import (
 
 var udpStreams = newUDPStreamPool()
 
-type UDPStream struct {
+// udpData represents a udp data stream.
+type udpStream struct {
 	data UDPDataSlice
 	sync.Mutex
 }
 
-type UDPData struct {
+// udpData represents a data fragment received from an UDP stream.
+type udpData struct {
 	raw       []byte
 	ci        gopacket.CaptureInfo
 	net       gopacket.Flow
 	transport gopacket.Flow
 }
 
-type UDPStreamPool struct {
-	streams map[uint64]*UDPStream
+// udpStreamPool holds a pool of UDP streams.
+type udpStreamPool struct {
+	streams map[uint64]*udpStream
 	sync.Mutex
 }
 
-func newUDPStreamPool() *UDPStreamPool {
-	return &UDPStreamPool{
-		streams: make(map[uint64]*UDPStream),
+func newUDPStreamPool() *udpStreamPool {
+	return &udpStreamPool{
+		streams: make(map[uint64]*udpStream),
 	}
 }
 
 // takes a udp packet and tracks the data seen for the conversation.
-func (u *UDPStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
+func (u *udpStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
 	u.Lock()
 	if s, ok := u.streams[packet.TransportLayer().TransportFlow().FastHash()]; ok {
 		u.Unlock()
 
 		// update existing
 		s.Lock()
-		s.data = append(s.data, &UDPData{
+		s.data = append(s.data, &udpData{
 			raw:       udpLayer.LayerPayload(),
 			ci:        packet.Metadata().CaptureInfo,
 			transport: packet.TransportLayer().TransportFlow(),
@@ -77,8 +80,8 @@ func (u *UDPStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 		s.Unlock()
 	} else {
 		// add new
-		u.streams[packet.TransportLayer().TransportFlow().FastHash()] = &UDPStream{
-			data: []*UDPData{
+		u.streams[packet.TransportLayer().TransportFlow().FastHash()] = &udpStream{
+			data: []*udpData{
 				{
 					raw:       udpLayer.LayerPayload(),
 					ci:        packet.Metadata().CaptureInfo,
@@ -122,7 +125,7 @@ var udpDecoder = newGoPacketDecoder(
 	},
 )
 
-func (u *UDPStreamPool) saveAllUDPConnections() {
+func (u *udpStreamPool) saveAllUDPConnections() {
 	u.Lock()
 	for _, s := range u.streams {
 		s.Lock()

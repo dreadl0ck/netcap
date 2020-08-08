@@ -54,6 +54,7 @@ func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 	}
 }
 
+// Read data from stream.
 func (t *tcpStreamReader) Read(p []byte) (int, error) {
 	data, ok := <-t.dataChan
 	if data == nil || !ok {
@@ -71,10 +72,12 @@ func (t *tcpStreamReader) Read(p []byte) (int, error) {
 	return l, nil
 }
 
+// DataChan returns a channel for sending stream data.
 func (t *tcpStreamReader) DataChan() chan *streamData {
 	return t.dataChan
 }
 
+// Cleanup will tear down the stream processing.
 func (t *tcpStreamReader) Cleanup(f *tcpConnectionFactory) {
 	// signal wait group
 	f.wg.Done()
@@ -83,10 +86,12 @@ func (t *tcpStreamReader) Cleanup(f *tcpConnectionFactory) {
 	f.Unlock()
 }
 
+// DataSlice will return all gathered data fragments.
 func (t *tcpStreamReader) DataSlice() streamDataSlice {
 	return t.data
 }
 
+// ClientStream will return the client side of the stream.
 func (t *tcpStreamReader) ClientStream() []byte {
 	var buf bytes.Buffer
 
@@ -103,6 +108,7 @@ func (t *tcpStreamReader) ClientStream() []byte {
 	return buf.Bytes()
 }
 
+// ServerStream will return the server side of the stream.
 func (t *tcpStreamReader) ServerStream() []byte {
 	var buf bytes.Buffer
 
@@ -120,38 +126,48 @@ func (t *tcpStreamReader) ServerStream() []byte {
 	return buf.Bytes()
 }
 
+// ConversationRaw provides access to the raw entire conversation.
 func (t *tcpStreamReader) ConversationRaw() []byte {
 	return t.parent.conversationRaw()
 }
 
+// ConversationColored provides access to the ANSI colored entire conversation.
 func (t *tcpStreamReader) ConversationColored() []byte {
 	return t.parent.conversationDataColored()
 }
 
+// IsClient will return true if the stream is acting as the client.
 func (t *tcpStreamReader) IsClient() bool {
 	return t.isClient
 }
 
+// SortAndMergeFragments sorts all stream fragments based on their timestamp
+// and generate the conversation buffers.
 func (t *tcpStreamReader) SortAndMergeFragments() {
 	t.parent.sortAndMergeFragments()
 }
 
+// Ident returns the stream identifier.
 func (t *tcpStreamReader) Ident() string {
 	return t.parent.ident
 }
 
+// Network returns the network flow.
 func (t *tcpStreamReader) Network() gopacket.Flow {
 	return t.parent.net
 }
 
+// Transport returns the transport flow.
 func (t *tcpStreamReader) Transport() gopacket.Flow {
 	return t.parent.transport
 }
 
+// FirstPacket returns the timestamp of the first packet seen.
 func (t *tcpStreamReader) FirstPacket() time.Time {
 	return t.parent.firstPacket
 }
 
+// Saved indicates whether the stream has already been persisted on disk.
 func (t *tcpStreamReader) Saved() bool {
 	t.parent.Lock()
 	defer t.parent.Unlock()
@@ -159,6 +175,7 @@ func (t *tcpStreamReader) Saved() bool {
 	return t.saved
 }
 
+// NumBytes returns the number of bytes processed.
 func (t *tcpStreamReader) NumBytes() int {
 	t.parent.Lock()
 	defer t.parent.Unlock()
@@ -166,22 +183,26 @@ func (t *tcpStreamReader) NumBytes() int {
 	return t.numBytes
 }
 
+// Client returns the client streamReader.
 func (t *tcpStreamReader) Client() streamReader {
 	return t.parent.client
 }
 
+// SetClient will mark this stream as the client.
 func (t *tcpStreamReader) SetClient(v bool) {
 	t.parent.Lock()
 	defer t.parent.Unlock()
 	t.isClient = v
 }
 
+// MarkSaved will mark this stream as persisted on disk.
 func (t *tcpStreamReader) MarkSaved() {
 	t.parent.Lock()
 	defer t.parent.Unlock()
 	t.saved = true
 }
 
+// ServiceIdent will return the identifier of the service (serverIP:serverPort).
 func (t *tcpStreamReader) ServiceIdent() string {
 	t.parent.Lock()
 	defer t.parent.Unlock()
@@ -189,6 +210,7 @@ func (t *tcpStreamReader) ServiceIdent() string {
 	return filepath.Clean(fmt.Sprintf("%s->%s", t.parent.server.Network().Dst(), t.parent.server.Transport().Dst()))
 }
 
+// ServiceBanner will return the banner received from the server.
 func (t *tcpStreamReader) ServiceBanner() []byte {
 	t.parent.Lock()
 	defer t.parent.Unlock()
