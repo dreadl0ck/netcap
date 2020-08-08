@@ -50,6 +50,6 @@ func returnCaptureProcessEntity(pid int, path string, iface string) {
 	ent.AddProperty("path", "Path", "strict", path)
 	ent.AddProperty("iface", "Interface", "strict", iface)
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

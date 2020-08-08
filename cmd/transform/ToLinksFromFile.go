@@ -43,7 +43,7 @@ func toLinksFromFile() {
 
 	if len(results) == 0 {
 		log.Println("No links found")
-		trx.AddUIMessage("completed!", "Inform")
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 		os.Exit(0)
 	}
@@ -57,6 +57,6 @@ func toLinksFromFile() {
 		ent.AddProperty("properties.url", "URL", "strict", r)
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

@@ -31,6 +31,7 @@ func lookupDHCPFingerprint() {
 
 	// read HTTP audit records and create a map of ips to useragents
 	userAgentStore := make(map[string][]string)
+
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
@@ -139,6 +140,6 @@ func lookupDHCPFingerprint() {
 		ent.AddProperty("serverIP", "ServerIP", "strict", messageToFingerprint.NextServerIP)
 	}
 
-	mtrx.AddUIMessage("completed!", "Inform")
+	mtrx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(mtrx.ReturnOutput())
 }

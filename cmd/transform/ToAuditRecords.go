@@ -91,7 +91,7 @@ func toAuditRecords() {
 
 	// check if input PCAP path is set
 	if inputFile == "" {
-		trx.AddUIMessage("Input file path property not set!", maltego.UIM_FATAL)
+		trx.AddUIMessage("Input file path property not set!", maltego.UIMessageFatal)
 		fmt.Println(trx.ReturnOutput())
 		log.Println("input file path property not set")
 		return
@@ -214,6 +214,6 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 		}
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

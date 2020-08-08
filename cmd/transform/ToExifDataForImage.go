@@ -41,7 +41,7 @@ func toExifDataForImage() {
 	if err != nil {
 		if err == exif.ErrNoExif {
 			log.Println("No EXIF data found")
-			trx.AddUIMessage("completed!", "Inform")
+			trx.AddUIMessage("completed!", maltego.UIMessageInform)
 			fmt.Println(trx.ReturnOutput())
 			os.Exit(0)
 		}
@@ -57,6 +57,6 @@ func toExifDataForImage() {
 		trx.AddEntity("netcap.ExifEntry", entry.TagName+" ("+entry.TagTypeName+") = "+entry.Formatted)
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

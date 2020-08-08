@@ -39,7 +39,9 @@ var noPluralsMap = map[string]struct{}{
 // OpenBleve is a simple wrapper for the bleve open call
 // it's used to log any open operations.
 func OpenBleve(path string) (bleve.Index, error) {
-	fmt.Println("open", path)
+	if DebugLogFileHandle != nil {
+		DebugLog.Println("opening bleve db at path:", path)
+	}
 
 	return bleve.Open(path)
 }
@@ -51,7 +53,9 @@ func CloseBleve(index io.Closer) {
 		return
 	}
 
-	fmt.Println("close", index)
+	if DebugLogFileHandle != nil {
+		DebugLog.Println("closing bleve db:", index)
+	}
 
 	err := index.Close()
 	if err != nil {
@@ -152,9 +156,9 @@ func Pad(in interface{}, length int) string {
 }
 
 // DumpProto prints a protobuf message formatted.
-//func DumpProto(pb proto.Message) {
-//	fmt.Println(proto.MarshalTextString(pb))
-//}
+// func DumpProto(pb proto.Message) {
+// 	fmt.Println(proto.MarshalTextString(pb))
+// }
 
 // ClearScreen prints ANSI escape to flush screen.
 func ClearScreen() {
@@ -181,14 +185,14 @@ func Progress(current, total int64) string {
 }
 
 // GetPercentage returns the value in percent as a string.
-//func GetPercentage(current, total int64) string {
-//	if total == 0 {
-//		return strconv.FormatInt(current, 10)
-//	}
-//	var b []byte
-//	b = strconv.AppendInt(b, int64((float64(current)/float64(total))*100), 10)
-//	return string(b)
-//}
+// func GetPercentage(current, total int64) string {
+// 	if total == 0 {
+// 		return strconv.FormatInt(current, 10)
+// 	}
+// 	var b []byte
+// 	b = strconv.AppendInt(b, int64((float64(current)/float64(total))*100), 10)
+// 	return string(b)
+// }
 
 // TrimFileExtension returns the netcap file name without file extension.
 func TrimFileExtension(file string) string {

@@ -84,7 +84,7 @@ func TestCaptureLive(t *testing.T) {
 	}()
 
 	iface := "lo"
-	if runtime.GOOS == "darwin" {
+	if runtime.GOOS == platformDarwin {
 		iface = "lo0"
 	}
 

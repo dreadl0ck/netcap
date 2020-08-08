@@ -30,6 +30,7 @@ func Run() {
 	}
 
 	log.Println("os.Args:", os.Args)
+
 	switch os.Args[2] {
 	// core
 	case "toCaptureProcess":
@@ -215,9 +216,10 @@ func Run() {
 
 	default:
 		trx := maltego.Transform{}
-		trx.AddUIMessage("Unknown transform: "+os.Args[2], maltego.UIM_FATAL)
+		trx.AddUIMessage("Unknown transform: "+os.Args[2], maltego.UIMessageFatal)
 		fmt.Println(trx.ReturnOutput())
 		// log.Fatal("unknown transform: ", os.Args[2])
+
 		return
 	}
 }

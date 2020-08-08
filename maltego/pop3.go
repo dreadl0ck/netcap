@@ -129,6 +129,6 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

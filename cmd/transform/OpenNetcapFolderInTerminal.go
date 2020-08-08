@@ -23,11 +23,10 @@ func openNetcapFolderInTerminal() {
 	// - open for macOS
 	// - gio open for linux
 	if openCommandName == "" {
-		if runtime.GOOS == "darwin" {
+		if runtime.GOOS == platformDarwin {
 			openCommandName = "/Applications/iTerm.app/Contents/MacOS/iTerm2"
 		} else { // linux TODO:
-			openCommandName = "gio"
-			args = append(args, "open")
+			openCommandName, args = makeLinuxCommand(defaultOpenCommandLinux, args)
 		}
 	}
 
@@ -46,6 +45,6 @@ func openNetcapFolderInTerminal() {
 	}
 	log.Println(string(out))
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
