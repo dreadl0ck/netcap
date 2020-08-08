@@ -59,7 +59,7 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 		log.Fatal(err)
 	}
 
-	if cType == "application/octet-stream" && isExecAny(stat.Mode()) {
+	if cType == octetStream && isExecAny(stat.Mode()) {
 		log.Println("detected executable file - aborting to prevent accidental execution!")
 		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
