@@ -1,3 +1,16 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 package transform
 
 import (
@@ -40,12 +53,15 @@ func openFile() {
 	// if there is an extension for known executable formats - abort
 	ext := filepath.Ext(loc)
 	log.Println("file extension", ext)
+
 	if ext == ".exe" || ext == ".bin" {
 		log.Println("detected known executable file extension - aborting to prevent accidental execution!")
 		trx.AddUIMessage("completed!", "Inform")
 		fmt.Println(trx.ReturnOutput())
+
 		return
 	}
+
 	// if there is no extension, use content type detection to determine if its an executable
 	// TODO: improve and test content type check and executable file detection
 	log.Println("open path for determining content type:", loc)
@@ -53,9 +69,11 @@ func openFile() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer f.Close()
 
 	buf := make([]byte, 512)
+
 	_, err = io.ReadFull(f, buf)
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		log.Fatal(err)
@@ -69,10 +87,12 @@ func openFile() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if ctype == "application/octet-stream" && isExecAny(stat.Mode()) {
 		log.Println("detected executable file - aborting to prevent accidental execution!")
 		trx.AddUIMessage("completed!", "Inform")
 		fmt.Println(trx.ReturnOutput())
+
 		return
 	}
 
@@ -84,6 +104,7 @@ func openFile() {
 		log.Println(string(out))
 		log.Fatal(err)
 	}
+
 	log.Println(string(out))
 
 	trx.AddUIMessage("completed!", "Inform")
