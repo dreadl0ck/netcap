@@ -18,6 +18,7 @@ var (
 	errorMap        *AtomicCounterMap
 )
 
+// SetErrorMap allows to set the AtomicCounterMap to use for the errors inside the decoder package
 func SetErrorMap(m *AtomicCounterMap) {
 	errorMap = m
 }

@@ -124,7 +124,7 @@ type httpReader struct {
 	responses []*httpResponse
 }
 
-// Decode parses the http streams.
+// Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
 	// parse conversation
 	var (

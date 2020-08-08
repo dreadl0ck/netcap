@@ -56,6 +56,7 @@ type pop3Reader struct {
 	user, pass, token string
 }
 
+// Decode parses the stream according to the POP3 protocol.
 func (h *pop3Reader) Decode() {
 	var (
 		buf         bytes.Buffer
