@@ -32,6 +32,7 @@ func (t *TCPOptionCheck) getOptions(dir TCPFlowDirection) *tcpStreamOptions {
 	if dir == TCPDirClientToServer {
 		return &t.options[0]
 	}
+
 	return &t.options[1]
 }
 
