@@ -233,15 +233,18 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 // based on the provided input data.
 func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (s []*software) {
 	var (
-		service string
-		dpIdent = dp.MacAddr
+		serviceIdent string
+		dpIdent      = dp.MacAddr
 	)
+
 	if serviceNameSrc != "" {
-		service = serviceNameSrc
+		serviceIdent = serviceNameSrc
 	}
+
 	if serviceNameDst != "" {
-		service = serviceNameDst
+		serviceIdent = serviceNameDst
 	}
+
 	if dp.DeviceManufacturer != "" {
 		dpIdent += " <" + dp.DeviceManufacturer + ">"
 	}
@@ -249,15 +252,19 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 	// Only do JA3 fingerprinting when both ja3 and ja3s are present, aka when the server Hello is captured
 	// TODO: improve this loops efficiency
 	if len(JA3) > 0 && len(JA3s) > 0 {
-		for _, server := range ja3db.Servers {
-			serverName := server.Server
-			for _, client := range server.Clients {
-				clientName := client.Os + "(" + client.Arch + ")"
-				for _, process := range client.Processes {
-					processName := process.Process
-					if process.JA3 == JA3 && process.JA3s == JA3s {
+		for _, serverIdent := range ja3db.Servers {
+			serverName := serverIdent.Server
+
+			for _, clientIdent := range serverIdent.Clients {
+				clientName := clientIdent.Os + "(" + clientIdent.Arch + ")"
+
+				for _, processInstance := range clientIdent.Processes {
+					processName := processInstance.Process
+
+					if processInstance.JA3 == JA3 && processInstance.JA3s == JA3s {
 						pMu.Lock()
 						values := regExpServerName.FindStringSubmatch(serverName)
+
 						s = append(s, &software{
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
@@ -267,12 +274,11 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 								DeviceProfiles: []string{dpIdent},
 								SourceName:     "JA3s",
 								SourceData:     JA3s,
-								Service:        service,
+								Service:        serviceIdent,
 								DPIResults:     protos,
 								Flows:          []string{flowIdent},
 							},
-						})
-						s = append(s, &software{
+						}, &software{
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
 								Product:        processName, // Name of the browser, including version
@@ -281,7 +287,7 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 								DeviceProfiles: []string{dpIdent},
 								SourceName:     "JA3",
 								SourceData:     JA3,
-								Service:        service,
+								Service:        serviceIdent,
 								DPIResults:     protos,
 								Flows:          []string{flowIdent},
 							},
@@ -296,7 +302,7 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 	// if nothing was found with all above attempts, try to throw the generic version number harvester at it
 	// and see if this delivers anything interesting
 	if len(s) == 0 {
-		return softwareHarvester(i.p.Data(), flowIdent, i.p.Metadata().CaptureInfo.Timestamp, service, dpIdent, protos)
+		return softwareHarvester(i.p.Data(), flowIdent, i.p.Metadata().CaptureInfo.Timestamp, serviceIdent, dpIdent, protos)
 	}
 
 	return s
@@ -375,27 +381,32 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 	httpStore.Lock()
 	if receivedHeaders, ok := httpStore.CMSHeaders[h.DstIP]; ok {
 		httpStore.Unlock()
+
+		var (
+			headers map[string]interface{}
+			hdrs    interface{}
+		)
+
 		for k, v := range cmsDB {
-			if headers, ok := v.(map[string]interface{}); ok {
-				if hdrs, ok := headers["headers"]; ok {
+			if headers, ok = v.(map[string]interface{}); ok {
+				if hdrs, ok = headers["headers"]; ok {
 					for key, val := range hdrs.(map[string]interface{}) {
 						for _, receivedHeader := range receivedHeaders {
 							re, err := regexp.Compile(val.(string))
 							if err != nil {
 								fmt.Println("Failed to compile:    " + val.(string))
-							} else {
-								if strings.ToLower(receivedHeader.HeaderName) == strings.ToLower(key) && (re.MatchString(receivedHeader.HeaderValue) || val == "") {
-									s = append(s, &software{
-										Software: &types.Software{
-											Timestamp:  h.Timestamp,
-											Product:    k,
-											Version:    "",
-											SourceName: key,
-											Service:    serviceHTTP,
-											Flows:      []string{flowIdent},
-										},
-									})
-								}
+							} else if strings.EqualFold(receivedHeader.HeaderName, key) &&
+								(re.MatchString(receivedHeader.HeaderValue) || val == "") {
+								s = append(s, &software{
+									Software: &types.Software{
+										Timestamp:  h.Timestamp,
+										Product:    k,
+										Version:    "",
+										SourceName: key,
+										Service:    serviceHTTP,
+										Flows:      []string{flowIdent},
+									},
+								})
 							}
 						}
 					}
@@ -421,6 +432,7 @@ func analyzeSoftware(i *packetInfo) {
 		protos                         []string
 		f                              string
 	)
+
 	if ja3Hash == "" {
 		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
 	}

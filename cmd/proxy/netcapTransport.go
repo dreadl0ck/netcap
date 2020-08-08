@@ -137,11 +137,12 @@ makeHTTPRequest:
 		reqCookies []string
 		resCookies []string
 	)
-	for _, c := range req.Cookies() {
-		reqCookies = append(reqCookies, c.String())
+	for _, cookie := range req.Cookies() {
+		reqCookies = append(reqCookies, cookie.String())
 	}
-	for _, c := range resp.Cookies() {
-		resCookies = append(resCookies, c.String())
+
+	for _, cookie := range resp.Cookies() {
+		resCookies = append(resCookies, cookie.String())
 	}
 
 	// read the raw bytes of the response body
@@ -150,9 +151,11 @@ makeHTTPRequest:
 	if err != nil {
 		return nil, err
 	}
+
 	if len(rawbody) != 0 {
 		// restore resp body or dumping it will fail later
 		var b bytes.Buffer
+
 		b.Write(rawbody)
 		resp.Body = ioutil.NopCloser(&b)
 
@@ -213,14 +216,15 @@ makeHTTPRequest:
 
 	// dump as JSON if configured
 	if *flagDump {
-		j, err := r.JSON()
-		if err != nil {
-			log.Fatal(err)
+		j, errJSON := r.JSON()
+		if errJSON != nil {
+			log.Fatal(errJSON)
 		}
 
 		// pretty print if configured
 		if *flagDumpFormatted {
 			var b bytes.Buffer
+
 			err = json.Indent(&b, []byte(j), "", " ")
 			if err != nil {
 				log.Fatal(err)

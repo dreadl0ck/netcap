@@ -115,10 +115,12 @@ func (t *transport) readPacket() (p []byte, err error) {
 		if err != nil {
 			break
 		}
+
 		if len(p) == 0 || (p[0] != MsgIgnore && p[0] != MsgDebug) {
 			break
 		}
 	}
+
 	if debugTransport {
 		t.printPacket(p, false)
 	}
@@ -129,6 +131,7 @@ func (t *transport) readPacket() (p []byte, err error) {
 func (s *connectionState) readPacket(r *bufio.Reader) ([]byte, error) {
 	packet, err := s.packetCipher.readCipherPacket(s.seqNum, r)
 	s.seqNum++
+
 	if err == nil && len(packet) == 0 {
 		err = errors.New("ssh: zero length packet")
 	}
@@ -153,6 +156,7 @@ func (s *connectionState) readPacket(r *bufio.Reader) ([]byte, error) {
 			if err := Unmarshal(packet, &msg); err != nil {
 				return nil, err
 			}
+
 			return nil, &msg
 		}
 	}
@@ -169,6 +173,7 @@ func (t *transport) writePacket(packet []byte) error {
 	if debugTransport {
 		t.printPacket(packet, true)
 	}
+
 	return t.writer.writePacket(t.bufWriter, t.rand, packet)
 }
 
@@ -179,10 +184,13 @@ func (s *connectionState) writePacket(w *bufio.Writer, rand io.Reader, packet []
 	if err != nil {
 		return err
 	}
+
 	if err = w.Flush(); err != nil {
 		return err
 	}
+
 	s.seqNum++
+
 	if changeKeys {
 		select {
 		case cipher := <-s.pendingKeyChange:
@@ -191,6 +199,7 @@ func (s *connectionState) writePacket(w *bufio.Writer, rand io.Reader, packet []
 			panic("ssh: no key material for msgNewKeys")
 		}
 	}
+
 	return err
 }
 

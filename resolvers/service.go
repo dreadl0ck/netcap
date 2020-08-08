@@ -25,6 +25,11 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+const (
+	tcp = "tcp"
+	udp = "udp"
+)
+
 // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
 
 // excerpt:
@@ -92,45 +97,57 @@ func InitServiceDB() {
 			parts := strings.Split(r[1], "-")
 			if len(parts) != 2 {
 				fmt.Println("invalid parts length", parts)
+
 				continue
 			}
-			start, err := strconv.Atoi(parts[0])
-			if err != nil {
-				fmt.Println(err)
+
+			start, errConvertStart := strconv.Atoi(parts[0])
+			if errConvertStart != nil {
+				fmt.Println(errConvertStart)
+
 				continue
 			}
-			end, err := strconv.Atoi(parts[1])
-			if err != nil {
-				fmt.Println(err)
+
+			end, errConvertEnd := strconv.Atoi(parts[1])
+			if errConvertEnd != nil {
+				fmt.Println(errConvertEnd)
+
 				continue
 			}
+
 			if end < start {
 				fmt.Println("invalid range", parts)
+
 				continue
 			}
+
 			if r[3] == "Reserved" {
 				continue
 			}
-			for i := start; i <= end; i++ {
+
+			for index := start; index <= end; index++ {
 				p := port{
 					service: getServiceName(r[3]),
-					num:     i,
+					num:     index,
 				}
-				if r[2] == "tcp" {
-					tcpPortMap[i] = p
-				} else if r[2] == "udp" {
-					udpPortMap[i] = p
+
+				if r[2] == tcp {
+					tcpPortMap[index] = p
+				} else if r[2] == udp {
+					udpPortMap[index] = p
 				} else {
 					utils.DebugLog.Println("ignoring service probe:", r)
 				}
 			}
 		} else {
 			// add port
-			num, err := strconv.Atoi(r[1])
-			if err != nil {
-				fmt.Println(err)
+			num, errPort := strconv.Atoi(r[1])
+			if errPort != nil {
+				fmt.Println(errPort)
+
 				continue
 			}
+
 			if r[3] == "Reserved" {
 				continue
 			}
@@ -138,9 +155,10 @@ func InitServiceDB() {
 				service: getServiceName(r[3]),
 				num:     num,
 			}
-			if r[2] == "tcp" {
+
+			if r[2] == tcp {
 				tcpPortMap[num] = p
-			} else if r[2] == "udp" {
+			} else if r[2] == udp {
 				udpPortMap[num] = p
 			} else {
 				utils.DebugLog.Println("ignoring service probe:", r)
@@ -165,5 +183,6 @@ func LookupServiceByPort(port int, typ string) string {
 			return res.service
 		}
 	}
+
 	return ""
 }

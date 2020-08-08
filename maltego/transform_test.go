@@ -268,13 +268,13 @@ func genServerListing(outDir string) {
 }
 
 func genTransformSet(outDir string) {
-	set := transformSet{
+	tSet := transformSet{
 		Name:        "NETCAP",
 		Description: "Transformations on NETCAP audit records",
 	}
 
 	for _, t := range transforms {
-		set.Transforms.Transform = append(set.Transforms.Transform, struct {
+		tSet.Transforms.Transform = append(tSet.Transforms.Transform, struct {
 			Text string `xml:",chardata"`
 			Name string `xml:"name,attr"`
 		}{
@@ -282,7 +282,7 @@ func genTransformSet(outDir string) {
 		})
 	}
 
-	data, err := xml.MarshalIndent(set, "", " ")
+	data, err := xml.MarshalIndent(tSet, "", " ")
 	if err != nil {
 		log.Fatal(err)
 	}

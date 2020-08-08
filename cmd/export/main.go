@@ -33,6 +33,7 @@ import (
 
 const netcapFileExtension = ".ncap"
 
+// Run parses the subcommand flags and handles the arguments.
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
@@ -84,9 +85,9 @@ func Run() {
 
 		if *flagInput != "" {
 			// stat file
-			stat, err := os.Stat(*flagInput)
-			if err != nil {
-				log.Fatal("failed to stat input:", err)
+			stat, errStat := os.Stat(*flagInput)
+			if errStat != nil {
+				log.Fatal("failed to stat input:", errStat)
 			}
 
 			// check if its a directory
@@ -191,10 +192,10 @@ func Run() {
 		}
 
 		// if not, use native pcapgo version
-		isPcap, err := collector.IsPcap(*flagInput)
-		if err != nil {
+		isPcap, errCheck := collector.IsPcap(*flagInput)
+		if errCheck != nil {
 			// invalid path
-			fmt.Println("failed to open file:", err)
+			fmt.Println("failed to open file:", errCheck)
 			os.Exit(1)
 		}
 
@@ -212,9 +213,9 @@ func Run() {
 
 		// memory profiling
 		if *flagMemProfile {
-			f, err := os.Create("netcap-" + netcap.Version + ".mem.profile")
-			if err != nil {
-				log.Fatal("failed create memory profile: ", err)
+			f, errProfile := os.Create("netcap-" + netcap.Version + ".mem.profile")
+			if errProfile != nil {
+				log.Fatal("failed create memory profile: ", errProfile)
 			}
 
 			if err = pprof.WriteHeapProfile(f); err != nil {

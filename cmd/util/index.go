@@ -104,9 +104,11 @@ func intermediatePatchVersions(from string, until string) []string {
 	for i := patch; i < untilInt; i++ {
 		patch++
 		numRounds++
+
 		if patch == untilInt || numRounds > 20 {
 			break
 		}
+
 		parts[len(parts)-1] = strconv.Itoa(patch)
 		out = append(out, strings.Join(parts, "."))
 	}
@@ -143,10 +145,11 @@ func indexData(in string) {
 			// count total number of lines
 			total int
 			tr    = textproto.NewReader(bufio.NewReader(file))
+			line string
 		)
 
 		for {
-			line, err := tr.ReadLine()
+			line, err = tr.ReadLine()
 			if errors.Is(err, io.EOF) {
 				break
 			}
@@ -166,10 +169,13 @@ func indexData(in string) {
 		}
 		defer file.Close()
 
-		r := csv.NewReader(file)
-		var count int
+		var (
+			r = csv.NewReader(file)
+			count int
+			rec []string
+		)
 		for {
-			rec, err := r.Read()
+			rec, err = r.Read()
 			if errors.Is(err, io.EOF) {
 				break
 			} else if err != nil {

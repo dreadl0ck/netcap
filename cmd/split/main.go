@@ -46,11 +46,17 @@ func main() {
 
 	fmt.Println("detected link type:", r.LinkType())
 
+	var (
+		data []byte
+		ci   gopacket.CaptureInfo
+	)
+
 	print("processing packets... ")
+
 	for {
 		// fetch the next packetdata and packetheader
 		// for pcap, currently ZeroCopyReadPacketData() is not supported
-		data, ci, err := r.ReadPacketData()
+		data, ci, err = r.ReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break

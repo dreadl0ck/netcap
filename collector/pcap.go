@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"github.com/dreadl0ck/gopacket"
 	"io"
 	"log"
 	"os"
@@ -39,6 +40,7 @@ func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return r, f, nil
 }
 
@@ -58,6 +60,7 @@ func IsPcap(file string) (bool, error) {
 		// dont return error in this case
 		return false, nil
 	}
+
 	return true, nil
 }
 
@@ -72,7 +75,7 @@ func countPackets(path string) (count int64, err error) {
 
 	for {
 		// loop over packets and discard all data
-		_, _, err := r.ReadPacketData()
+		_, _, err = r.ReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -84,7 +87,7 @@ func countPackets(path string) (count int64, err error) {
 		count++
 	}
 
-	return
+	return count, nil
 }
 
 // CollectPcap implements parallel decoding of incoming packets.
@@ -104,7 +107,9 @@ func (c *Collector) CollectPcap(path string) error {
 
 	// display total packet count
 	start := time.Now()
+
 	c.printStdOut("counting packets...")
+
 	c.numPackets, err = countPackets(path)
 	if err != nil {
 		return err
@@ -113,6 +118,7 @@ func (c *Collector) CollectPcap(path string) error {
 	if !c.config.Quiet {
 		clearLine()
 	}
+
 	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
 	r, f, err := OpenPCAP(path)
@@ -145,19 +151,24 @@ func (c *Collector) CollectPcap(path string) error {
 	}
 
 	// initialize collector
-	if err := c.Init(); err != nil {
+	if err = c.Init(); err != nil {
 		return err
 	}
 
-	stopProgress := c.printProgressInterval()
+	var (
+		data         []byte
+		ci           gopacket.CaptureInfo
+		stopProgress = c.printProgressInterval()
+	)
 
 	for { // fetch the next packetdata and packetheader
 		// for pcap, currently ZeroCopyReadPacketData() is not supported
-		data, ci, err := r.ReadPacketData()
+		data, ci, err = r.ReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			return errors.Wrap(err, "Error reading packet data: ")
 		}
 
@@ -179,5 +190,6 @@ func (c *Collector) CollectPcap(path string) error {
 	stopProgress <- struct{}{}
 
 	c.cleanup(false)
+
 	return nil
 }

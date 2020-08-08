@@ -30,6 +30,7 @@ import (
 // used to close all files handles on exit via OS signals.
 var proxies []*reverseProxy
 
+// Run parses the subcommand flags and handles the arguments.
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage

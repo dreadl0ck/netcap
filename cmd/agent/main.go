@@ -34,6 +34,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+// Run parses the subcommand flags and handles the arguments.
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
@@ -272,7 +273,9 @@ func Run() {
 				}
 
 				// encrypt payload
-				encData, err := cryptoutils.AsymmetricEncrypt(buf.Bytes(), &serverPubKey, priv)
+				var encData []byte
+
+				encData, err = cryptoutils.AsymmetricEncrypt(buf.Bytes(), &serverPubKey, priv)
 				if err != nil {
 					panic(err)
 				}

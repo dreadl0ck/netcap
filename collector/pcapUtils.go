@@ -43,17 +43,18 @@ func (c *Collector) closePcapFiles() error {
 			return err
 		}
 
-		if err := c.unknownPcapFile.Sync(); err != nil {
+		if err = c.unknownPcapFile.Sync(); err != nil {
 			return err
 		}
-		if err := c.unknownPcapFile.Close(); err != nil {
+
+		if err = c.unknownPcapFile.Close(); err != nil {
 			return err
 		}
 
 		// if file is empty, or a pcap with just the header
 		if i.Size() == 0 || i.Size() == 24 {
 			// println("removing", fd.Name())
-			err := os.Remove(c.unknownPcapFile.Name())
+			err = os.Remove(c.unknownPcapFile.Name())
 			if err != nil {
 				return errors.Wrap(err, "failed to remove file: "+c.unknownPcapFile.Name())
 			}
@@ -69,22 +70,25 @@ func (c *Collector) closePcapFiles() error {
 	}
 
 	if c.errorsPcapFile != nil {
-		i, err := c.errorsPcapFile.Stat()
+
+		info, err := c.errorsPcapFile.Stat()
 		if err != nil {
 			return err
 		}
 
-		if err := c.errorsPcapFile.Sync(); err != nil {
+		if err = c.errorsPcapFile.Sync(); err != nil {
 			return err
 		}
-		if err := c.errorsPcapFile.Close(); err != nil {
+
+		if err = c.errorsPcapFile.Close(); err != nil {
 			return err
 		}
 
 		// if file is empty, or a pcap with just the header
-		if i.Size() == 0 || i.Size() == 24 {
+		if info.Size() == 0 || info.Size() == 24 {
 			// println("removing", fd.Name())
-			if err := os.Remove(c.errorsPcapFile.Name()); err != nil {
+
+			if err = os.Remove(c.errorsPcapFile.Name()); err != nil {
 				return err
 			}
 		}
@@ -108,9 +112,11 @@ func (c *Collector) createUnknownPcap() error {
 
 	// set global pcap writer
 	c.unkownPcapWriterAtomic = newAtomicPcapGoWriter(pcapWriter)
-	if err := pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
+
+	if err = pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -129,9 +135,11 @@ func (c *Collector) createErrorsPcap() error {
 
 	// set global pcap writer
 	c.errorsPcapWriterAtomic = newAtomicPcapGoWriter(pcapWriter)
-	if err := pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
+
+	if err = pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet); err != nil {
 		return err
 	}
+
 	return nil
 }
 

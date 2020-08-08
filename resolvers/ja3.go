@@ -61,6 +61,7 @@ func initJa3Resolver() {
 	files, err := ioutil.ReadDir(DataBaseSource)
 	if err != nil {
 		log.Println(err)
+
 		return
 	}
 
@@ -71,9 +72,9 @@ func initJa3Resolver() {
 		}
 
 		// read file contents into memory
-		data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, f.Name()))
-		if err != nil {
-			log.Println(err)
+		data, errRead := ioutil.ReadFile(filepath.Join(DataBaseSource, f.Name()))
+		if errRead != nil {
+			log.Println(errRead)
 
 			continue
 		}
