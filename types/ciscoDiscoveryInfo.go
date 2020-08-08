@@ -64,27 +64,27 @@ func (a *CiscoDiscoveryInfo) CSVRecord() []string {
 	)
 
 	for _, v := range a.IPPrefixes {
-		ipNets = append(ipNets, v.ToString())
+		ipNets = append(ipNets, v.toString())
 	}
 
 	for _, v := range a.Unknown {
-		vals = append(vals, v.ToString())
+		vals = append(vals, v.toString())
 	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.CDPHello.ToString(),            //  *CDPHello
+		a.CDPHello.toString(),            //  *CDPHello
 		a.DeviceID,                       //  string
 		join(a.Addresses...),             //  []string
 		a.PortID,                         //  string
-		a.Capabilities.ToString(),        //  *CDPCapabilities
+		a.Capabilities.toString(),        //  *CDPCapabilities
 		a.Version,                        //  string
 		a.Platform,                       //  string
 		join(ipNets...),                  //  []*IPNet
 		a.VTPDomain,                      //  string
 		formatInt32(a.NativeVLAN),        //  int32
 		strconv.FormatBool(a.FullDuplex), //  bool
-		a.VLANReply.ToString(),           //  *CDPVLANDialogue
-		a.VLANQuery.ToString(),           //  *CDPVLANDialogue
+		a.VLANReply.toString(),           //  *CDPVLANDialogue
+		a.VLANQuery.toString(),           //  *CDPVLANDialogue
 		formatInt32(a.PowerConsumption),  //  int32
 		formatUint32(a.MTU),              //  uint32
 		formatInt32(a.ExtendedTrust),     //  int32
@@ -92,11 +92,11 @@ func (a *CiscoDiscoveryInfo) CSVRecord() []string {
 		a.SysName,                        //  string
 		a.SysOID,                         //  string
 		join(a.MgmtAddresses...),         //  []string
-		a.Location.ToString(),            //  *CDPLocation
-		a.PowerRequest.ToString(),        //  *CDPPowerDialogue
-		a.PowerAvailable.ToString(),      //  *CDPPowerDialogue
-		a.SparePairPoe.ToString(),        //  *CDPSparePairPoE
-		a.EnergyWise.ToString(),          //  *CDPEnergyWise
+		a.Location.toString(),            //  *CDPLocation
+		a.PowerRequest.toString(),        //  *CDPPowerDialogue
+		a.PowerAvailable.toString(),      //  *CDPPowerDialogue
+		a.SparePairPoe.toString(),        //  *CDPSparePairPoE
+		a.EnergyWise.toString(),          //  *CDPEnergyWise
 		join(vals...),                    //  []*CiscoDiscoveryValue
 	})
 }
@@ -106,7 +106,7 @@ func (a *CiscoDiscoveryInfo) Time() string {
 	return a.Timestamp
 }
 
-func (c *CDPHello) ToString() string {
+func (c *CDPHello) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -138,7 +138,7 @@ func (c *CDPHello) ToString() string {
 	return b.String()
 }
 
-func (c *CDPCapabilities) ToString() string {
+func (c *CDPCapabilities) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -165,7 +165,7 @@ func (c *CDPCapabilities) ToString() string {
 	return b.String()
 }
 
-func (i *IPNet) ToString() string {
+func (i *IPNet) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -177,7 +177,7 @@ func (i *IPNet) ToString() string {
 	return b.String()
 }
 
-func (c *CDPVLANDialogue) ToString() string {
+func (c *CDPVLANDialogue) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -189,7 +189,7 @@ func (c *CDPVLANDialogue) ToString() string {
 	return b.String()
 }
 
-func (c *CDPPowerDialogue) ToString() string {
+func (c *CDPPowerDialogue) toString() string {
 	var vals []string
 
 	for _, v := range c.Values {
@@ -209,7 +209,7 @@ func (c *CDPPowerDialogue) ToString() string {
 	return b.String()
 }
 
-func (c *CDPSparePairPoE) ToString() string {
+func (c *CDPSparePairPoE) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -225,7 +225,7 @@ func (c *CDPSparePairPoE) ToString() string {
 	return b.String()
 }
 
-func (c *CDPEnergyWise) ToString() string {
+func (c *CDPEnergyWise) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -265,7 +265,7 @@ func (c *CDPEnergyWise) ToString() string {
 	return b.String()
 }
 
-func (c *CDPLocation) ToString() string {
+func (c *CDPLocation) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)

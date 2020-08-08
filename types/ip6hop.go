@@ -36,7 +36,7 @@ func (l *IPv6HopByHop) CSVHeader() []string {
 func (l *IPv6HopByHop) CSVRecord() []string {
 	opts := make([]string, len(l.Options))
 	for i, v := range l.Options {
-		opts[i] = v.ToString()
+		opts[i] = v.toString()
 	}
 	// prevent accessing nil pointer
 	if l.Context == nil {
@@ -55,19 +55,19 @@ func (l *IPv6HopByHop) Time() string {
 	return l.Timestamp
 }
 
-func (o *IPv6HopByHopOption) ToString() string {
+func (o *IPv6HopByHopOption) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(o.OptionType))        // int32
 	b.WriteString(formatInt32(o.OptionLength))      // int32
 	b.WriteString(formatInt32(o.ActualLength))      // int32
 	b.WriteString(hex.EncodeToString(o.OptionData)) // []byte
-	b.WriteString(o.OptionAlignment.ToString())     //  *IPv6HopByHopOptionAlignment
+	b.WriteString(o.OptionAlignment.toString())     //  *IPv6HopByHopOptionAlignment
 	b.WriteString(End)
 	return b.String()
 }
 
-func (a *IPv6HopByHopOptionAlignment) ToString() string {
+func (a *IPv6HopByHopOptionAlignment) toString() string {
 	return join(formatInt32(a.One), formatInt32(a.Two))
 }
 

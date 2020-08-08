@@ -36,7 +36,7 @@ func (i *ICMPv6RouterSolicitation) CSVHeader() []string {
 func (i *ICMPv6RouterSolicitation) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
-		opts = append(opts, o.ToString())
+		opts = append(opts, o.toString())
 	}
 	// prevent accessing nil pointer
 	if i.Context == nil {
@@ -55,7 +55,7 @@ func (i *ICMPv6RouterSolicitation) Time() string {
 	return i.Timestamp
 }
 
-func (o ICMPv6Option) ToString() string {
+func (o ICMPv6Option) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(o.Type))

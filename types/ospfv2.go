@@ -85,7 +85,7 @@ func (a *OSPFv2) Time() string {
 	return a.Timestamp
 }
 
-func (l LSReq) ToString() string {
+func (l LSReq) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -99,7 +99,7 @@ func (l LSReq) ToString() string {
 	return b.String()
 }
 
-func (r *RouterLSAV2) ToString() string {
+func (r *RouterLSAV2) toString() string {
 	var routers []string
 	for _, e := range r.Routers {
 		routers = append(routers, toString(e))
@@ -118,7 +118,7 @@ func (r *RouterLSAV2) ToString() string {
 	return b.String()
 }
 
-func (r *ASExternalLSAV2) ToString() string {
+func (r *ASExternalLSAV2) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -136,7 +136,7 @@ func (r *ASExternalLSAV2) ToString() string {
 	return b.String()
 }
 
-func (r *RouterLSA) ToString() string {
+func (r *RouterLSA) toString() string {
 	var routers []string
 	for _, e := range r.Routers {
 		routers = append(routers, toString(e))
@@ -155,7 +155,7 @@ func (r *RouterLSA) ToString() string {
 	return b.String()
 }
 
-func (r *NetworkLSA) ToString() string {
+func (r *NetworkLSA) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -167,7 +167,7 @@ func (r *NetworkLSA) ToString() string {
 	return b.String()
 }
 
-func (r *InterAreaPrefixLSA) ToString() string {
+func (r *InterAreaPrefixLSA) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -183,7 +183,7 @@ func (r *InterAreaPrefixLSA) ToString() string {
 	return b.String()
 }
 
-func (r *InterAreaRouterLSA) ToString() string {
+func (r *InterAreaRouterLSA) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -197,7 +197,7 @@ func (r *InterAreaRouterLSA) ToString() string {
 	return b.String()
 }
 
-func (r *ASExternalLSA) ToString() string {
+func (r *ASExternalLSA) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -223,7 +223,7 @@ func (r *ASExternalLSA) ToString() string {
 	return b.String()
 }
 
-func (r *LinkLSA) ToString() string {
+func (r *LinkLSA) toString() string {
 	var prefixes []string
 	for _, p := range r.Prefixes {
 		prefixes = append(prefixes, toString(p))
@@ -246,7 +246,7 @@ func (r *LinkLSA) ToString() string {
 	return b.String()
 }
 
-func (r *IntraAreaPrefixLSA) ToString() string {
+func (r *IntraAreaPrefixLSA) toString() string {
 	var prefixes []string
 	for _, p := range r.Prefixes {
 		prefixes = append(prefixes, toString(p))
@@ -269,7 +269,7 @@ func (r *IntraAreaPrefixLSA) ToString() string {
 	return b.String()
 }
 
-func (r *Router) ToString() string {
+func (r *Router) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -289,7 +289,7 @@ func (r *Router) ToString() string {
 	return b.String()
 }
 
-func (r *RouterV2) ToString() string {
+func (r *RouterV2) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -305,7 +305,7 @@ func (r *RouterV2) ToString() string {
 	return b.String()
 }
 
-func (l *LSA) ToString() string {
+func (l *LSA) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -335,7 +335,7 @@ func (l *LSA) ToString() string {
 	return b.String()
 }
 
-func (l LSUpdate) ToString() string {
+func (l LSUpdate) toString() string {
 	var lsas []string
 	for _, lsa := range l.LSAs {
 		lsas = append(lsas, toString(lsa))
@@ -352,7 +352,7 @@ func (l LSUpdate) ToString() string {
 	return b.String()
 }
 
-func (l DbDescPkg) ToString() string {
+func (l DbDescPkg) toString() string {
 	var headers []string
 	for _, lsa := range l.LSAinfo {
 		headers = append(headers, toString(lsa))
@@ -375,7 +375,7 @@ func (l DbDescPkg) ToString() string {
 	return b.String()
 }
 
-func (l HelloPkgV2) ToString() string {
+func (l HelloPkgV2) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -401,7 +401,7 @@ func (l HelloPkgV2) ToString() string {
 	return b.String()
 }
 
-func (l LSAPrefix) ToString() string {
+func (l LSAPrefix) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)
@@ -417,7 +417,7 @@ func (l LSAPrefix) ToString() string {
 	return b.String()
 }
 
-func (l LSAheader) ToString() string {
+func (l LSAheader) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)

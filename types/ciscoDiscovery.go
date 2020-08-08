@@ -35,10 +35,10 @@ func (cd *CiscoDiscovery) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (cd *CiscoDiscovery) CSVRecord() []string {
-	var vals []string
+	values := make([]string, len(cd.Values))
 
-	for _, v := range cd.Values {
-		vals = append(vals, v.ToString())
+	for i, v := range cd.Values {
+		values[i] = v.toString()
 	}
 
 	return filter([]string{
@@ -46,7 +46,7 @@ func (cd *CiscoDiscovery) CSVRecord() []string {
 		formatInt32(cd.Version),  // int32
 		formatInt32(cd.TTL),      // int32
 		formatInt32(cd.Checksum), // int32
-		join(vals...),            // []*CiscoDiscoveryValue
+		join(values...),          // []*CiscoDiscoveryValue
 	})
 }
 
@@ -55,7 +55,7 @@ func (cd *CiscoDiscovery) Time() string {
 	return cd.Timestamp
 }
 
-func (v CiscoDiscoveryValue) ToString() string {
+func (v CiscoDiscoveryValue) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)

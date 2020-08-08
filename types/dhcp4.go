@@ -52,7 +52,7 @@ func (d *DHCPv4) CSVHeader() []string {
 func (d *DHCPv4) CSVRecord() []string {
 	var opts []string
 	for _, o := range d.Options {
-		opts = append(opts, o.ToString())
+		opts = append(opts, o.toString())
 	}
 	// prevent accessing nil pointer
 	if d.Context == nil {
@@ -87,7 +87,7 @@ func (d *DHCPv4) Time() string {
 	return d.Timestamp
 }
 
-func (d DHCPOption) ToString() string {
+func (d DHCPOption) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(d.Type))

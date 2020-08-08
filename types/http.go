@@ -50,11 +50,11 @@ func (h *HTTP) CSVHeader() []string {
 func (h *HTTP) CSVRecord() []string {
 	var reqCookies []string
 	for _, c := range h.ReqCookies {
-		reqCookies = append(reqCookies, c.ToString())
+		reqCookies = append(reqCookies, c.toString())
 	}
 	var resCookies []string
 	for _, c := range h.ResCookies {
-		resCookies = append(resCookies, c.ToString())
+		resCookies = append(resCookies, c.toString())
 	}
 	return filter([]string{
 		formatTimestamp(h.Timestamp),
@@ -78,7 +78,7 @@ func (h *HTTP) CSVRecord() []string {
 	})
 }
 
-func (c *HTTPCookie) ToString() string {
+func (c *HTTPCookie) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)

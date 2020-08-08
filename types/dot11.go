@@ -57,8 +57,8 @@ func (d *Dot11) CSVRecord() []string {
 		formatInt32(d.SequenceNumber), // int32
 		formatInt32(d.FragmentNumber), // int32
 		formatUint32(d.Checksum),      // uint32
-		d.QOS.ToString(),              // *Dot11QOS
-		d.HTControl.ToString(),        // *Dot11HTControl
+		d.QOS.toString(),              // *Dot11QOS
+		d.HTControl.toString(),        // *Dot11HTControl
 	})
 }
 
@@ -67,7 +67,7 @@ func (d *Dot11) Time() string {
 	return d.Timestamp
 }
 
-func (d Dot11QOS) ToString() string {
+func (d Dot11QOS) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(d.TID))
@@ -81,21 +81,21 @@ func (d Dot11QOS) ToString() string {
 	return b.String()
 }
 
-func (d Dot11HTControl) ToString() string {
+func (d Dot11HTControl) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(strconv.FormatBool(d.ACConstraint))
 	b.WriteString(Separator)
 	b.WriteString(strconv.FormatBool(d.RDGMorePPDU))
 	b.WriteString(Separator)
-	b.WriteString(d.VHT.ToString())
+	b.WriteString(d.VHT.toString())
 	b.WriteString(Separator)
-	b.WriteString(d.HT.ToString())
+	b.WriteString(d.HT.toString())
 	b.WriteString(End)
 	return b.String()
 }
 
-func (d *Dot11HTControlVHT) ToString() string {
+func (d *Dot11HTControlVHT) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(strconv.FormatBool(d.MRQ))
@@ -104,7 +104,7 @@ func (d *Dot11HTControlVHT) ToString() string {
 	b.WriteString(Separator)
 	b.WriteString(formatInt32(d.MSI))
 	b.WriteString(Separator)
-	b.WriteString(d.MFB.ToString())
+	b.WriteString(d.MFB.toString())
 	b.WriteString(Separator)
 	b.WriteString(formatInt32(d.CompressedMSI))
 	b.WriteString(Separator)
@@ -121,7 +121,7 @@ func (d *Dot11HTControlVHT) ToString() string {
 	return b.String()
 }
 
-func (d *Dot11HTControlMFB) ToString() string {
+func (d *Dot11HTControlMFB) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(d.NumSTS))
@@ -135,10 +135,10 @@ func (d *Dot11HTControlMFB) ToString() string {
 	return b.String()
 }
 
-func (d *Dot11HTControlHT) ToString() string {
+func (d *Dot11HTControlHT) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
-	b.WriteString(d.LinkAdapationControl.ToString())
+	b.WriteString(d.LinkAdapationControl.toString())
 	b.WriteString(Separator)
 	b.WriteString(formatInt32(d.CalibrationPosition))
 	b.WriteString(Separator)
@@ -153,7 +153,7 @@ func (d *Dot11HTControlHT) ToString() string {
 	return b.String()
 }
 
-func (d *Dot11LinkAdapationControl) ToString() string {
+func (d *Dot11LinkAdapationControl) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(strconv.FormatBool(d.TRQ))
@@ -166,12 +166,12 @@ func (d *Dot11LinkAdapationControl) ToString() string {
 	b.WriteString(Separator)
 	b.WriteString(formatInt32(d.MFB))
 	b.WriteString(Separator)
-	b.WriteString(d.ASEL.ToString())
+	b.WriteString(d.ASEL.toString())
 	b.WriteString(End)
 	return b.String()
 }
 
-func (d *Dot11ASEL) ToString() string {
+func (d *Dot11ASEL) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(d.Command))

@@ -36,7 +36,7 @@ func (i *ICMPv6NeighborSolicitation) CSVHeader() []string {
 func (i *ICMPv6NeighborSolicitation) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
-		opts = append(opts, o.ToString())
+		opts = append(opts, o.toString())
 	}
 	// prevent accessing nil pointer
 	if i.Context == nil {

@@ -37,12 +37,12 @@ func (l *LinkLayerDiscovery) CSVHeader() []string {
 func (l *LinkLayerDiscovery) CSVRecord() []string {
 	values := make([]string, len(l.Values))
 	for i, v := range l.Values {
-		values[i] = v.ToString()
+		values[i] = v.toString()
 	}
 	return filter([]string{
 		formatTimestamp(l.Timestamp),
-		l.ChassisID.ToString(), // *LLDPChassisID
-		l.PortID.ToString(),    // *LLDPPortID
+		l.ChassisID.toString(), // *LLDPChassisID
+		l.PortID.toString(),    // *LLDPPortID
 		formatInt32(l.TTL),     // int32
 		join(values...),        // []*LinkLayerDiscoveryValue
 	})
@@ -53,11 +53,11 @@ func (l *LinkLayerDiscovery) Time() string {
 	return l.Timestamp
 }
 
-func (l LLDPChassisID) ToString() string {
+func (l LLDPChassisID) toString() string {
 	return join(formatInt32(l.Subtype), hex.EncodeToString(l.ID))
 }
 
-func (l LLDPPortID) ToString() string {
+func (l LLDPPortID) toString() string {
 	return join(formatInt32(l.Subtype), hex.EncodeToString(l.ID))
 }
 
