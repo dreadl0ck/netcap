@@ -97,6 +97,8 @@ type streamReader interface {
 
 // streamDecoder is the interface for processing a bi-directional network connection.
 type streamDecoder interface {
+
+	// Decode parses the stream according to the identified protocol.
 	Decode()
 }
 

@@ -36,7 +36,7 @@ type atomicFlowMap struct {
 	sync.Mutex
 }
 
-func (a *atomicFlowMap) Size() int {
+func (a *atomicFlowMap) size() int {
 	a.Lock()
 	defer a.Unlock()
 

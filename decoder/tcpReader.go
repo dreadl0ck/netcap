@@ -37,11 +37,12 @@ type tcpReader struct {
 	parent *tcpConnection
 }
 
+// Decode is a dummy to implement the streamReader interface
 func (h *tcpReader) Decode() {
-	//fmt.Println("Decode", c2s, s2c)
-	//for _, f := range h.parent.merged {
-	//	fmt.Println(f.dir, f.ac.GetCaptureInfo().Timestamp, len(f.raw))
-	//}
+	// fmt.Println("Decode", c2s, s2c)
+	// for _, f := range h.parent.merged {
+	// 	fmt.Println(f.dir, f.ac.GetCaptureInfo().Timestamp, len(f.raw))
+	// }
 }
 
 func getServiceName(data []byte, flow gopacket.Flow) string {
@@ -49,6 +50,7 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 		dstPort, _ = strconv.Atoi(flow.Dst().String())
 		s          = resolvers.LookupServiceByPort(dstPort, typeTCP)
 	)
+
 	if s != "" {
 		return s
 	}
@@ -56,6 +58,7 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 	// what about the source port?
 	srcPort, _ := strconv.Atoi(flow.Src().String())
 	s = resolvers.LookupServiceByPort(srcPort, typeTCP)
+
 	if s != "" {
 		return s
 	}
@@ -87,6 +90,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 		if i >= conf.HarvesterBannerSize {
 			break
 		}
+
 		banner = append(banner, b)
 	}
 
@@ -207,6 +211,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	// save the colored version
 	// assign a new buffer
 	r := bytes.NewBuffer(colored)
+
 	w, err := io.Copy(f, r)
 	if err != nil {
 		logReassemblyError("TCP stream", "%s: failed to save TCP connection %s (l:%d): %s\n", ident, base, w, err)

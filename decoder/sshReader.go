@@ -45,6 +45,7 @@ type sshReader struct {
 	software      []*types.Software
 }
 
+// Decode parses the stream according to the SSH protocol.
 func (h *sshReader) Decode() {
 	var (
 		serverBuf bytes.Buffer
