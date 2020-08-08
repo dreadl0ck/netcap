@@ -50,7 +50,7 @@ func (i *IPv4) CSVHeader() []string {
 func (i *IPv4) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
-		opts = append(opts, o.ToString())
+		opts = append(opts, o.toString())
 	}
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
@@ -78,7 +78,7 @@ func (i *IPv4) Time() string {
 	return i.Timestamp
 }
 
-func (i IPv4Option) ToString() string {
+func (i IPv4Option) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(i.OptionType))

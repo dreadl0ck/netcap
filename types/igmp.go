@@ -48,7 +48,7 @@ func (i *IGMP) CSVHeader() []string {
 func (i *IGMP) CSVRecord() []string {
 	var records []string
 	for _, r := range i.GroupRecords {
-		records = append(records, r.ToString())
+		records = append(records, r.toString())
 	}
 	// prevent accessing nil pointer
 	if i.Context == nil {
@@ -78,7 +78,7 @@ func (i *IGMP) Time() string {
 	return i.Timestamp
 }
 
-func (i IGMPv3GroupRecord) ToString() string {
+func (i IGMPv3GroupRecord) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(i.Type))

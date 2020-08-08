@@ -44,18 +44,18 @@ func (l *LinkLayerDiscoveryInfo) CSVRecord() []string {
 		values = make([]string, len(l.Unknown))
 	)
 	for i, v := range l.OrgTLVs {
-		tlvs[i] = v.ToString()
+		tlvs[i] = v.toString()
 	}
 	for i, v := range l.Unknown {
-		values[i] = v.ToString()
+		values[i] = v.toString()
 	}
 	return filter([]string{
 		formatTimestamp(l.Timestamp),
 		l.PortDescription,            // string
 		l.SysName,                    // string
 		l.SysDescription,             // string
-		l.SysCapabilities.ToString(), // *LLDPSysCapabilities
-		l.MgmtAddress.ToString(),     // *LLDPMgmtAddress
+		l.SysCapabilities.toString(), // *LLDPSysCapabilities
+		l.MgmtAddress.toString(),     // *LLDPMgmtAddress
 		strings.Join(tlvs, ""),       // []*LLDPOrgSpecificTLV
 		strings.Join(values, ""),     // []*LinkLayerDiscoveryValue
 	})
@@ -66,11 +66,11 @@ func (l *LinkLayerDiscoveryInfo) Time() string {
 	return l.Timestamp
 }
 
-func (lldsc *LLDPSysCapabilities) ToString() string {
-	return lldsc.SystemCap.ToString() + lldsc.EnabledCap.ToString()
+func (lldsc *LLDPSysCapabilities) toString() string {
+	return lldsc.SystemCap.toString() + lldsc.EnabledCap.toString()
 }
 
-func (lldma *LLDPMgmtAddress) ToString() string {
+func (lldma *LLDPMgmtAddress) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(lldma.Subtype)) // int32   // byte
@@ -86,7 +86,7 @@ func (lldma *LLDPMgmtAddress) ToString() string {
 	return b.String()
 }
 
-func (lldst *LLDPOrgSpecificTLV) ToString() string {
+func (lldst *LLDPOrgSpecificTLV) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(strconv.FormatUint(uint64(lldst.OUI), 10))
@@ -98,7 +98,7 @@ func (lldst *LLDPOrgSpecificTLV) ToString() string {
 	return b.String()
 }
 
-func (lldv *LinkLayerDiscoveryValue) ToString() string {
+func (lldv *LinkLayerDiscoveryValue) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(lldv.Type))
@@ -110,7 +110,7 @@ func (lldv *LinkLayerDiscoveryValue) ToString() string {
 	return b.String()
 }
 
-func (c *LLDPCapabilities) ToString() string {
+func (c *LLDPCapabilities) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(strconv.FormatBool(c.Other))

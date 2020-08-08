@@ -50,10 +50,10 @@ func (a *OSPFv3) CSVRecord() []string {
 		lsreqs []string
 	)
 	for _, l := range a.LSAs {
-		lsas = append(lsas, l.ToString())
+		lsas = append(lsas, l.toString())
 	}
 	for _, l := range a.LSR {
-		lsreqs = append(lsreqs, l.ToString())
+		lsreqs = append(lsreqs, l.toString())
 	}
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -84,7 +84,7 @@ func (a *OSPFv3) Time() string {
 	return a.Timestamp
 }
 
-func (l HelloPkg) ToString() string {
+func (l HelloPkg) toString() string {
 	var b strings.Builder
 
 	b.WriteString(Begin)

@@ -4,10 +4,11 @@
 - remove init function usage
 - error messages iteration
 
-- flowid format from zeek
+- communityID format from zeek
 - unify flow ident string: src:port -> dst:port
 - net dump -stats: show value distribution per field
 - review all log.Fatal usages
+- check TODOs
 
 - reassembly: reduce allocs per stream to 0 again
 - add a die(msg string) function and use instead of panic(err) 

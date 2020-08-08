@@ -60,16 +60,16 @@ func (d *DNS) CSVRecord() []string {
 		additionals = make([]string, len(d.Additionals))
 	)
 	for _, q := range d.Questions {
-		questions = append(questions, q.ToString())
+		questions = append(questions, q.toString())
 	}
 	for _, q := range d.Answers {
-		answers = append(questions, q.ToString())
+		answers = append(questions, q.toString())
 	}
 	for _, q := range d.Authorities {
-		authorities = append(questions, q.ToString())
+		authorities = append(questions, q.toString())
 	}
 	for _, q := range d.Additionals {
-		additionals = append(questions, q.ToString())
+		additionals = append(questions, q.toString())
 	}
 	// prevent accessing nil pointer
 	if d.Context == nil {
@@ -106,7 +106,7 @@ func (d *DNS) Time() string {
 	return d.Timestamp
 }
 
-func (q *DNSQuestion) ToString() string {
+func (q *DNSQuestion) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(string(q.Name))
@@ -118,7 +118,7 @@ func (q *DNSQuestion) ToString() string {
 	return b.String()
 }
 
-func (q *DNSResourceRecord) ToString() string {
+func (q *DNSResourceRecord) toString() string {
 	var txts []string
 	for _, t := range q.TXTs {
 		txts = append(txts, string(t))
@@ -145,18 +145,18 @@ func (q *DNSResourceRecord) ToString() string {
 	b.WriteString(Separator)
 	b.WriteString(string(q.PTR))
 	b.WriteString(Separator)
-	b.WriteString(q.SOA.ToString())
+	b.WriteString(q.SOA.toString())
 	b.WriteString(Separator)
-	b.WriteString(q.SRV.ToString())
+	b.WriteString(q.SRV.toString())
 	b.WriteString(Separator)
-	b.WriteString(q.MX.ToString())
+	b.WriteString(q.MX.toString())
 	b.WriteString(Separator)
 	b.WriteString(join(txts...))
 	b.WriteString(End)
 	return b.String()
 }
 
-func (q *DNSSOA) ToString() string {
+func (q *DNSSOA) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(string(q.MName))
@@ -176,7 +176,7 @@ func (q *DNSSOA) ToString() string {
 	return b.String()
 }
 
-func (q *DNSSRV) ToString() string {
+func (q *DNSSRV) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(q.Priority))
@@ -190,7 +190,7 @@ func (q *DNSSRV) ToString() string {
 	return b.String()
 }
 
-func (q *DNSMX) ToString() string {
+func (q *DNSMX) toString() string {
 	var b strings.Builder
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(q.Preference))

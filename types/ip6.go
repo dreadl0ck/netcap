@@ -44,7 +44,7 @@ func (i *IPv6) CSVHeader() []string {
 func (i *IPv6) CSVRecord() []string {
 	var hop string
 	if i.HopByHop != nil {
-		hop = i.HopByHop.ToString()
+		hop = i.HopByHop.toString()
 	}
 
 	return filter([]string{
@@ -68,10 +68,10 @@ func (i *IPv6) Time() string {
 	return i.Timestamp
 }
 
-func (h IPv6HopByHop) ToString() string {
+func (h IPv6HopByHop) toString() string {
 	var opts []string
 	for _, o := range h.Options {
-		opts = append(opts, o.ToString())
+		opts = append(opts, o.toString())
 	}
 
 	return h.Timestamp + Separator + join(opts...)

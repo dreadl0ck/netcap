@@ -30,18 +30,18 @@ var (
 )
 
 type stringable interface {
-	ToString() string
+	toString() string
 }
 
 // panic: value method github.com/dreadl0ck/netcap/types.LSUpdate.ToString called using nil *LSUpdate pointer
 // func toString(v Stringable) string {
 // 	if v != nil {
-// 		return v.ToString()
+// 		return v.toString()
 // 	}
 // 	return ""
 // }
 
-// this function wraps the ToString() function call with a nil pointer check.
+// this function wraps the toString() function call with a nil pointer check.
 func toString(c stringable) string {
 	// make sure its not a nil pointer
 	// a simple nil check is apparently not enough here
@@ -51,7 +51,7 @@ func toString(c stringable) string {
 
 	// now check if the Stringable interface is implemented
 	if str, ok := c.(stringable); ok {
-		return str.ToString()
+		return str.toString()
 	}
 
 	// in case the Stringable interface is not implemented: fail
