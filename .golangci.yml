@@ -8,12 +8,12 @@ linters-settings:
   #packages-with-error-message:
   #  - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
   dupl:
-    threshold: 100
+    threshold: 150
   exhaustive:
     default-signifies-exhaustive: false
   funlen:
-    lines: 100
-    statements: 50
+    lines: 125
+    statements: 60
   goconst:
     min-len: 2
     min-occurrences: 2
@@ -32,9 +32,9 @@ linters-settings:
       #- whyNoLint
       #- wrapperFunc
   gocyclo:
-    min-complexity: 15
+    min-complexity: 20
   goimports:
-    local-prefixes: github.com/golangci/golangci-lint
+    local-prefixes: github.com/dreadl0ck/netcap
   golint:
     min-confidence: 0
   gomnd:
@@ -52,7 +52,7 @@ linters-settings:
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
   lll:
-    line-length: 250
+    line-length: 300
   maligned:
     suggest-new: true
   misspell:
@@ -65,7 +65,6 @@ linters-settings:
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
-  disable-all: true
   enable:
     - bodyclose
     - depguard
@@ -103,9 +102,9 @@ linters:
     - maligned
     - prealloc
     - wsl
-    - gochecknoglobals
+    #- gochecknoglobals
     - funlen
-    - gomnd
+    #- gomnd
     - lll
     - deadcode
     - unused
@@ -143,9 +142,10 @@ run:
     - (^|/)tls($|/) # TODO
     - test/testdata_etc
   allow-parallel-runners: true
+
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
-service:
-  golangci-lint-version: 1.23.x # use the fixed version to not introduce new linters unexpectedly
-  prepare:
-    - echo "here I can run custom commands, but no preparation needed for this repo"
+#service:
+  #golangci-lint-version: 1.23.x # use the fixed version to not introduce new linters unexpectedly
+  #prepare:
+  #  - echo "here I can run custom commands, but no preparation needed for this repo"
