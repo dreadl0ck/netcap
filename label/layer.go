@@ -41,6 +41,7 @@ func labelLayer(wg *sync.WaitGroup, file string, typ string, labelMap map[string
 		outFileName     = filepath.Join(outDir, typ+"_labeled.csv")
 		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
 	)
+
 	if errCount != nil {
 		log.Fatal("failed to count audit records:", errCount)
 	}
@@ -134,13 +135,13 @@ func labelLayer(wg *sync.WaitGroup, file string, typ string, labelMap map[string
 			} else {
 				// layers are mapped by timestamp
 				// this preserves only the first label seen for each timestamp
-				if a, ok := labelMap[p.Time()]; ok {
+				if a, exists := labelMap[p.Time()]; exists {
 					// add label
-					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + a.Classification + "\n")
+					_, _ = f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
 				} else {
 					// label as normal
-					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
+					_, _ = f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
 				}
 			}
 		}

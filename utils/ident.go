@@ -22,10 +22,12 @@ func ReverseIdent(i string) string {
 	if len(arr) != 3 {
 		return ""
 	}
+
 	middle := strings.Split(arr[1], "-")
 	if len(middle) != 2 {
 		return ""
 	}
+
 	return middle[0] + "->" + arr[0] + "-" + arr[2] + "->" + middle[1]
 }
 
@@ -37,9 +39,11 @@ func ParseIdent(i string) (srcIP, srcPort, dstIP, dstPort string) {
 	if len(arr) != 3 {
 		return
 	}
+
 	middle := strings.Split(arr[1], "-")
 	if len(middle) != 2 {
 		return
 	}
+
 	return arr[0], middle[1], middle[0], arr[2]
 }

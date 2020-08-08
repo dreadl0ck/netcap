@@ -94,9 +94,9 @@ func generateSizes(newBase string, newPath string) {
 
 	for _, size := range []uint{16, 24, 32, 48, 96} {
 		newImage := resize.Resize(size, size, img, resize.Lanczos3)
-		f, err := os.Create(newBase + strconv.Itoa(int(size)) + ".png")
-		if err != nil {
-			log.Fatal(err)
+		f, errCreate := os.Create(newBase + strconv.Itoa(int(size)) + ".png")
+		if errCreate != nil {
+			log.Fatal(errCreate)
 		}
 
 		err = png.Encode(f, newImage)
@@ -207,7 +207,8 @@ func generateAuditRecordIcon(text string) {
 
 	// Initialize the context.
 	fg, bg := image.Black, image.Transparent
-	if whiteOnBlack {
+	if //goland:noinspection GoBoolExpressions
+	whiteOnBlack {
 		fg, bg = image.White, image.Black
 	}
 

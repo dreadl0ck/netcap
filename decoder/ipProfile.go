@@ -72,8 +72,10 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 		// Transport Layer
 		if tl := i.p.TransportLayer(); tl != nil { // log.Println(i.p.NetworkLayer().NetworkFlow().String() + " " + tl.TransportFlow().String())
 
-			if port, ok := p.SrcPorts[tl.TransportFlow().Src().String()]; ok {
+			var port *types.Port
+			if port, ok = p.SrcPorts[tl.TransportFlow().Src().String()]; ok {
 				atomic.AddUint64(&port.NumTotal, dataLen)
+
 				if tl.LayerType() == layers.LayerTypeTCP {
 					atomic.AddUint64(&port.NumTCP, 1)
 				} else if tl.LayerType() == layers.LayerTypeUDP {
@@ -91,7 +93,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 				p.SrcPorts[tl.TransportFlow().Src().String()] = port
 			}
 
-			if port, ok := p.DstPorts[tl.TransportFlow().Dst().String()]; ok {
+			if port, ok = p.DstPorts[tl.TransportFlow().Dst().String()]; ok {
 				port.NumTotal += dataLen
 				if tl.LayerType() == layers.LayerTypeTCP {
 					port.NumTCP++
@@ -99,7 +101,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 					port.NumUDP++
 				}
 			} else {
-				port := &types.Port{
+				port = &types.Port{
 					NumTotal: dataLen,
 				}
 				if tl.LayerType() == layers.LayerTypeTCP {
@@ -126,7 +128,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 
 		if ja3Hash != "" {
 			// add hash to profile if not already present
-			if _, ok := p.Ja3[ja3Hash]; !ok {
+			if _, ok = p.Ja3[ja3Hash]; !ok {
 				p.Ja3[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 			}
 		}
@@ -135,7 +137,8 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 		uniqueResults := dpi.GetProtocols(i.p)
 		for proto, res := range uniqueResults {
 			// check if proto exists already
-			if prot, ok := p.Protocols[proto]; ok {
+			var prot *types.Protocol
+			if prot, ok = p.Protocols[proto]; ok {
 				prot.Packets++
 			} else {
 				// add new

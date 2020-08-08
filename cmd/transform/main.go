@@ -10,6 +10,7 @@ import (
 
 var outDirPermission os.FileMode = 0o755
 
+// Run parses the subcommand flags and handles the arguments.
 func Run() {
 	if len(os.Args) < 3 {
 		log.Fatal("expecting transform name")

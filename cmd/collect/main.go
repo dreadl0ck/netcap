@@ -42,6 +42,7 @@ const (
 	maxBufferSize = 10 * 1024
 )
 
+// Run parses the subcommand flags and handles the arguments.
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage

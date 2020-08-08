@@ -131,40 +131,40 @@ func writeSoftwareFromBanner(serv *service, ident string, probeIdent string) {
 
 func matchServiceProbes(serv *service, banner []byte, ident string) {
 	// match banner against nmap service probes
-	for _, serviceProbe := range serviceProbes {
+	for _, probe := range serviceProbes {
 		if conf.UseRE2 {
-			if m := serviceProbe.RegEx.FindStringSubmatch(string(banner)); m != nil {
+			if m := probe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
-				serv.Product = addInfo(serv.Product, extractGroup(&serviceProbe.Product, m))
-				serv.Vendor = addInfo(serv.Vendor, extractGroup(&serviceProbe.Vendor, m))
-				serv.Hostname = addInfo(serv.Hostname, extractGroup(&serviceProbe.Hostname, m))
-				serv.OS = addInfo(serv.OS, extractGroup(&serviceProbe.OS, m))
-				serv.Version = addInfo(serv.Version, extractGroup(&serviceProbe.Version, m))
+				serv.Product = addInfo(serv.Product, extractGroup(&probe.Product, m))
+				serv.Vendor = addInfo(serv.Vendor, extractGroup(&probe.Vendor, m))
+				serv.Hostname = addInfo(serv.Hostname, extractGroup(&probe.Hostname, m))
+				serv.OS = addInfo(serv.OS, extractGroup(&probe.OS, m))
+				serv.Version = addInfo(serv.Version, extractGroup(&probe.Version, m))
 
 				if conf.Debug {
 					fmt.Println("\n\nMATCH!", ident)
-					fmt.Println(serviceProbe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+					fmt.Println(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
-				writeSoftwareFromBanner(serv, ident, serviceProbe.Ident)
+				writeSoftwareFromBanner(serv, ident, probe.Ident)
 			}
 		} else { // use the .NET compatible regex implementation
-			if m, err := serviceProbe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
+			if m, err := probe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
-				serv.Product = addInfo(serv.Product, extractGroupDotNet(&serviceProbe.Product, m))
-				serv.Vendor = addInfo(serv.Vendor, extractGroupDotNet(&serviceProbe.Vendor, m))
-				serv.Hostname = addInfo(serv.Hostname, extractGroupDotNet(&serviceProbe.Hostname, m))
-				serv.OS = addInfo(serv.OS, extractGroupDotNet(&serviceProbe.OS, m))
-				serv.Version = addInfo(serv.Version, extractGroupDotNet(&serviceProbe.Version, m))
+				serv.Product = addInfo(serv.Product, extractGroupDotNet(&probe.Product, m))
+				serv.Vendor = addInfo(serv.Vendor, extractGroupDotNet(&probe.Vendor, m))
+				serv.Hostname = addInfo(serv.Hostname, extractGroupDotNet(&probe.Hostname, m))
+				serv.OS = addInfo(serv.OS, extractGroupDotNet(&probe.OS, m))
+				serv.Version = addInfo(serv.Version, extractGroupDotNet(&probe.Version, m))
 
 				if conf.Debug {
 					fmt.Println("\nMATCH!", ident)
-					fmt.Println(serviceProbe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+					fmt.Println(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
-				writeSoftwareFromBanner(serv, ident, serviceProbe.Ident)
+				writeSoftwareFromBanner(serv, ident, probe.Ident)
 			}
 		}
 	}
@@ -220,21 +220,27 @@ func extractGroupDotNet(in *string, m *regexp2.Match) string {
 // and reads everything into a buffer until the delimiter appears again
 // it returns the final buffer and an error and advances the passed in *bytes.Reader to the.
 func parseVersionInfo(r io.ByteReader) (string, error) {
-	var res []byte
 	d, err := r.ReadByte()
 	if err != nil {
 		return "", err
 	}
 
+	var (
+		res []byte
+		b   byte
+	 )
+
 	for {
-		bb, err := r.ReadByte()
+		b, err = r.ReadByte()
 		if err != nil {
 			return "", err
 		}
-		if bb == d {
+
+		if b == d {
 			break
 		}
-		res = append(res, bb)
+
+		res = append(res, b)
 	}
 
 	// fmt.Println("parsed meta", string(res))
@@ -298,8 +304,9 @@ func initServiceProbes() error {
 			// useful to see which rule matched exactly, since multiple rules for the same protocol / service are usually present
 			s.Ident = enumerate(ident)
 
+			var b byte
 			for {
-				b, err := r.ReadByte()
+				b, err = r.ReadByte()
 				if errors.Is(err, io.EOF) {
 					break
 				} else if err != nil {
@@ -315,6 +322,7 @@ func initServiceProbes() error {
 						// collect whitespace when parsing the regex string
 						regex = append(regex, b)
 					}
+
 					continue
 				}
 				// last part versionInfo: m/[regex]/[opts] [meta]
@@ -322,11 +330,13 @@ func initServiceProbes() error {
 				if parseMeta { // skip over whitespace
 					if unicode.IsSpace(rune(b)) {
 						// fmt.Println("parse meta: skip whitespace")
+
 						continue
 					}
 
 					// parse a version info block
 					var errParse error
+
 					switch string(b) {
 					case "p":
 						s.Product, errParse = parseVersionInfo(r)
@@ -362,6 +372,7 @@ func initServiceProbes() error {
 
 						// Common Platform Enumeration Tags
 						var buf bytes.Buffer
+
 						buf.WriteString("c")
 
 						// read until the EOF of the line
@@ -370,15 +381,19 @@ func initServiceProbes() error {
 							if errors.Is(err, io.EOF) {
 								// TODO: split by fields, might be multiple cpes
 								var i *cpe.Item
+
 								i, err = cpe.NewItemFromUri(buf.String())
 								if err != nil {
 									utils.DebugLog.Println("error while parsing cpe tag for service probe:", err, "probe:", s.Ident)
+
 									goto next
 								}
 								// set vendor
 								s.Vendor = i.Vendor().String()
+
 								goto next
 							}
+
 							buf.WriteByte(b)
 						}
 					}
@@ -393,14 +408,17 @@ func initServiceProbes() error {
 						// options done
 						checkOpts = false
 						parseMeta = true
+
 						continue
 					}
+
 					switch string(b) {
 					case "i":
 						s.CaseInsensitive = true
 					case "s":
 						s.IncludeNewlines = true
 					}
+
 					continue
 				}
 				// check if delimiter was already found
@@ -413,7 +431,9 @@ func initServiceProbes() error {
 
 						continue
 					}
+
 					regex = append(regex, b)
+					
 					continue
 				}
 				// start of regex
@@ -433,6 +453,7 @@ func initServiceProbes() error {
 					// fmt.Println("read delim", string(b))
 
 					delim = b
+					
 					continue
 				}
 			}
@@ -448,6 +469,7 @@ func initServiceProbes() error {
 			if s.CaseInsensitive {
 				finalReg += "i"
 			}
+			
 			if s.IncludeNewlines {
 				finalReg += "s"
 			}
@@ -492,6 +514,7 @@ func colorize(in string, num int) string {
 	for i, c := range in {
 		if i == num-1 {
 			out = in[:i] + ansi.Red + string(c) + ansi.Reset + in[i+1:]
+			
 			break
 		}
 	}
@@ -527,36 +550,38 @@ func clean(in string) string {
 		nextCloses            bool
 		numIgnored            int
 	)
+
 	for {
 		b, err := r.ReadByte()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			} else {
-				break
-			}
+		if errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			fmt.Println(err)
+			break
 		}
 		count++
+
 		debug := func(args ...interface{}) {
 			// TODO: make debug mode configurable
 			// fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, colorize(in, count), numIgnored)
 		}
+
 		if string(b) == "\\" && !escaped {
 			debug("set escaped to true")
+			
 			escaped = true
-		} else {
-			if escaped {
-				if resetEscaped {
-					debug("reset escaped")
-					// reset
-					escaped = false
-					resetEscaped = false
-				} else {
-					// reset escaped next round
-					resetEscaped = true
-				}
+		} else if escaped {
+			if resetEscaped {
+				debug("reset escaped")
+				// reset
+				escaped = false
+				resetEscaped = false
+			} else {
+				// reset escaped next round
+				resetEscaped = true
 			}
 		}
+
 		if ignore {
 			if string(b) == ")" {
 				if !escaped {
@@ -565,20 +590,24 @@ func clean(in string) string {
 
 					if startCount == stopCnt || nextCloses {
 						ignore = false
+
 						debug("stop ignore", "add missing )", numIgnored > 1 && stopCnt != 0)
 
 						if numIgnored > 1 && stopCnt != 0 {
 							missing := stopCnt - numIgnored
 							debug("missing )", missing)
+
 							if missing > 0 {
 								for i := 0; i < missing; i++ {
 									debug("add missing )", missing, numIgnored)
+
 									out = append(out, byte(')'))
 								}
 							}
 						}
 
 						debug("add trailing )")
+
 						out = append(out, byte(')'))
 						check = false
 
@@ -586,14 +615,17 @@ func clean(in string) string {
 						startCount = 0
 
 						lastchar = b
+
 						continue
 					}
+
 					debug("numIgnored++")
 					numIgnored++
 				} else {
 					debug("ignoring because escaped")
 				}
 			}
+
 			if string(b) == "(" {
 				if !escaped && lastchar != '^' {
 					startCount++
@@ -601,15 +633,20 @@ func clean(in string) string {
 					nextCloses = false
 				}
 			}
+
 			debug("ignore")
 
 			lastchar = b
+
 			continue
 		}
+
 		if string(b) == "(" {
 			debug("got parentheses")
+
 			if !escaped {
 				startCount++
+
 				debug("startCount++")
 			}
 
@@ -617,8 +654,10 @@ func clean(in string) string {
 			check = true
 
 			lastchar = b
+
 			continue
 		}
+
 		if check {
 			if string(b) == "?" && lastchar == '(' {
 				debug("found backtracking")
@@ -627,30 +666,38 @@ func clean(in string) string {
 				} else {
 					nextCloses = true
 					debug("write .*")
-					out = append(out, byte('.'))
-					out = append(out, byte('*'))
+
+					out = append(out, byte('.'), byte('*'))
 					ignore = true
 
 					lastchar = b
+
 					continue
 				}
 			}
 		}
+
 		if string(b) == ")" {
 			if !escaped {
 				stopCnt++
+
 				debug("stopCnt++")
 			}
 		}
+
 		if string(b) == "(" {
 			if !escaped {
 				startCount++
+
 				debug("startCount++")
 			}
 		}
+
 		debug("collect")
+
 		out = append(out, b)
 		lastchar = b
 	}
+
 	return string(out)
 }

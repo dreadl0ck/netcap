@@ -15,6 +15,7 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -35,13 +36,17 @@ var noPluralsMap = map[string]struct{}{
 	"Ethernet": {},
 }
 
+// OpenBleve is a simple wrapper for the bleve open call
+// it's used to log any open operations.
 func OpenBleve(path string) (bleve.Index, error) {
 	fmt.Println("open", path)
 
 	return bleve.Open(path)
 }
 
-func CloseBleve(index bleve.Index) {
+// CloseBleve is a simple wrapper for the bleve close call
+// it's used to log any close operations.
+func CloseBleve(index io.Closer) {
 	if index == nil {
 		return
 	}

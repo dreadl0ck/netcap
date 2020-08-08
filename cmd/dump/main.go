@@ -29,6 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+// Run parses the subcommand flags and handles the arguments.
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
@@ -65,9 +66,9 @@ func Run() {
 
 	// read dumpfile header and exit
 	if *flagHeader { // open input file for reading
-		r, err := netcap.Open(*flagInput, *flagMemBufferSize)
-		if err != nil {
-			panic(err)
+		r, errOpen := netcap.Open(*flagInput, *flagMemBufferSize)
+		if errOpen != nil {
+			panic(errOpen)
 		}
 
 		// get header

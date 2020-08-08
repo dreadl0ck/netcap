@@ -56,6 +56,7 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 	defer f.Close()
 
 	r := csv.NewReader(f)
+
 	records, err := r.ReadAll()
 	if err != nil {
 		log.Fatal(err)
@@ -68,19 +69,19 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 	labelMap = make(map[string]*attackInfo)
 
 	for _, record := range records[1:] {
-		num, err := strconv.Atoi(record[0])
-		if err != nil {
-			log.Fatal(err)
+		num, errConvert := strconv.Atoi(record[0])
+		if errConvert != nil {
+			log.Fatal(errConvert)
 		}
 
-		start, err := time.Parse("2006/1/2 15:04:05", record[2])
-		if err != nil {
-			log.Fatal(err)
+		start, errParseStart := time.Parse("2006/1/2 15:04:05", record[2])
+		if errParseStart != nil {
+			log.Fatal(errParseStart)
 		}
 
-		end, err := time.Parse("2006/1/2 15:04:05", record[3])
-		if err != nil {
-			log.Fatal(err)
+		end, errParseEnd := time.Parse("2006/1/2 15:04:05", record[3])
+		if errParseEnd != nil {
+			log.Fatal(errParseEnd)
 		}
 
 		//duration, err := time.ParseDuration(record[4])

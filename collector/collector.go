@@ -148,6 +148,7 @@ func (c *Collector) handlePacket(p *packet) {
 	// make it work for 1 worker only, can be used for debugging
 	if c.numWorkers == 1 {
 		c.workers[0] <- p
+
 		return
 	}
 
@@ -351,6 +352,7 @@ func (c *Collector) printProgress() {
 			// TODO: add Builder to collector and flush it every cycle to reduce allocations
 			// also only print flows and collections when the corresponding decoders are active
 			var b strings.Builder
+
 			b.Grow(65)
 			b.WriteString("decoding packets... (")
 			b.WriteString(utils.Progress(c.current, c.numPackets))
@@ -401,6 +403,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 					last = atomic.LoadInt64(&c.numPacketsLast)
 					pps  = (curr - last) / interval
 				)
+
 				atomic.StoreInt64(&c.numPacketsLast, curr)
 
 				if !c.config.Quiet { // print
@@ -507,18 +510,18 @@ func (c *Collector) initLogging() error {
 	if len(c.config.DecoderConfig.Out) != 0 {
 		if stat, err := os.Stat(c.config.DecoderConfig.Out); err != nil {
 			os.MkdirAll(c.config.DecoderConfig.Out, os.FileMode(outDirPermissionDefault))
+
 			_, err = os.Stat(c.config.DecoderConfig.Out)
 			if err != nil {
 				return err
 			}
-		} else {
-			if !stat.IsDir() {
-				return errors.New("expected a directory, but got a file for output path")
-			}
+		} else if !stat.IsDir() {
+			return errors.New("expected a directory, but got a file for output path")
 		}
 	}
 
 	var err error
+
 	logFileHandle, err = os.OpenFile(filepath.Join(c.config.DecoderConfig.Out, "netcap.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, c.config.OutDirPermission)
 	if err != nil {
 		return err

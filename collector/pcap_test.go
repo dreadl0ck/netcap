@@ -23,7 +23,7 @@ func BenchmarkReadPcapNG(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _, err := r.ReadPacketData()
+		_, _, err = r.ReadPacketData()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -40,7 +40,7 @@ func BenchmarkReadPcapNGZeroCopy(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _, err := r.ZeroCopyReadPacketData()
+		_, _, err = r.ZeroCopyReadPacketData()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -73,7 +73,7 @@ func BenchmarkReadPcap(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _, err := r.ReadPacketData()
+		_, _, err = r.ReadPacketData()
 		if err != nil && err != io.EOF {
 			b.Fatal(err)
 		}

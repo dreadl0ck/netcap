@@ -23,6 +23,7 @@ func (c *Collector) cleanup(force bool) {
 	// this will block until all workers are stopped
 	// all packets left in the packet queues will be processed
 	c.stopWorkers()
+
 	waitForCollector := func() chan struct{} {
 		ch := make(chan struct{})
 

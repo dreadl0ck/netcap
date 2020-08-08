@@ -301,7 +301,8 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	}
 
 	if val, ok := h.ResponseHeader["Via"]; ok {
-		if sn, ok := httpStore.Vias[h.DstIP]; ok {
+		var sn string
+		if sn, ok = httpStore.Vias[h.DstIP]; ok {
 			if !strings.Contains(sn, val) {
 				httpStore.Vias[h.DstIP] = sn + "| " + val
 			}
@@ -311,7 +312,8 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	}
 
 	if val, ok := h.ResponseHeader["X-Powered-By"]; ok {
-		if sn, ok := httpStore.XPoweredBy[h.DstIP]; ok {
+		var sn string
+		if sn, ok = httpStore.XPoweredBy[h.DstIP]; ok {
 			if !strings.Contains(sn, val) {
 				httpStore.XPoweredBy[h.DstIP] = sn + "| " + val
 			}
@@ -386,14 +388,14 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 		errorMap.Inc(err.Error())
 	}
 
-	software := whatSoftwareHTTP(t.ident, h)
+	soft := whatSoftwareHTTP(t.ident, h)
 
-	if len(software) == 0 {
+	if len(soft) == 0 {
 		return
 	}
 
 	// TODO: pass update func
-	writeSoftware(software, nil)
+	writeSoftware(soft, nil)
 }
 
 // HTTP Response
@@ -786,27 +788,31 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 	}
 
 	if err == nil {
-		w, err := io.Copy(f, r)
+		var written int64
+		written, err = io.Copy(f, r)
+
 		if err != nil {
-			logReassemblyError("HTTP-save", "%s: failed to copy %s (l:%d): %s\n", h.parent.ident, target, w, err)
+			logReassemblyError("HTTP-save", "%s: failed to copy %s (l:%d): %s\n", h.parent.ident, target, written, err)
 		}
 
 		if _, ok := r.(*gzip.Reader); ok {
 			err = r.(*gzip.Reader).Close()
 			if err != nil {
-				logReassemblyError("HTTP-save", "%s: failed to close gzip reader %s (l:%d): %s\n", h.parent.ident, target, w, err)
+				logReassemblyError("HTTP-save", "%s: failed to close gzip reader %s (l:%d): %s\n", h.parent.ident, target, written, err)
 			}
 		}
-		err = f.Close()
 
+		err = f.Close()
 		if err != nil {
-			logReassemblyError("HTTP-save", "%s: failed to close %s (l:%d): %s\n", h.parent.ident, target, w, err)
+			logReassemblyError("HTTP-save", "%s: failed to close %s (l:%d): %s\n", h.parent.ident, target, written, err)
 		} else {
-			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, w)
+			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, written)
 		}
 
+		var data []byte
+
 		// TODO: refactor to avoid reading the file contents into memory again
-		data, err := ioutil.ReadFile(target)
+		data, err = ioutil.ReadFile(target)
 		if err == nil {
 			// set hash to value for decompressed content and update size
 			hash = hex.EncodeToString(cryptoutils.MD5Data(data))
@@ -822,11 +828,12 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 			createContentTypePathIfRequired(path.Join(conf.FileStorage, ctype))
 
 			// switch the file extension and the path for the updated content type
-			ext := filepath.Ext(target)
+			ext = filepath.Ext(target)
 
 			// create new target: trim extension from old one and replace
 			// and replace the old content type in the path
 			newTarget := strings.Replace(strings.TrimSuffix(target, ext), ctypeOld, ctype, 1) + fileExtensionForContentType(ctype)
+
 			err = os.Rename(target, newTarget)
 			if err == nil {
 				target = newTarget

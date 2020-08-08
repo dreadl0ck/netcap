@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"github.com/dreadl0ck/gopacket"
 	"io"
 	"os"
 	"sync/atomic"
@@ -52,11 +53,12 @@ func countPacketsNG(path string) (count int64, err error) {
 
 	for {
 		// loop over packets and discard all data
-		_, _, err := r.ZeroCopyReadPacketData()
+		_, _, err = r.ZeroCopyReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			return count, errors.Wrap(err, "Error reading packet data: ")
 		}
 
@@ -99,19 +101,24 @@ func (c *Collector) CollectPcapNG(path string) error {
 	defer f.Close()
 
 	// initialize collector
-	if err := c.Init(); err != nil {
+	if err = c.Init(); err != nil {
 		return err
 	}
 
-	stopProgress := c.printProgressInterval()
+	var (
+		data         []byte
+		ci           gopacket.CaptureInfo
+		stopProgress = c.printProgressInterval()
+	)
 
 	for {
 		// fetch the next packetdata and packetheader
-		data, ci, err := r.ReadPacketData()
+		data, ci, err = r.ReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			return errors.Wrap(err, "Error reading packet data")
 		}
 
@@ -131,6 +138,8 @@ func (c *Collector) CollectPcapNG(path string) error {
 	}
 
 	stopProgress <- struct{}{}
+
 	c.cleanup(false)
+
 	return nil
 }

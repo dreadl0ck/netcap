@@ -211,8 +211,9 @@ func exportFile(path string) {
 		// initialize a record instance for the type from the header
 		record = netcap.InitRecord(header.Type)
 
-		firstTimestamp time.Time
+		firstTimestampValue time.Time
 	)
+
 	if errFileHeader != nil {
 		log.Fatal(errFileHeader)
 	}
@@ -234,10 +235,10 @@ func exportFile(path string) {
 			if *flagReplay {
 				t := utils.StringToTime(p.Time())
 				if count == 1 {
-					firstTimestamp = t
+					firstTimestampValue = t
 				} else {
 					go func() {
-						sleep := t.Sub(firstTimestamp)
+						sleep := t.Sub(firstTimestampValue)
 
 						// fmt.Println(sleep)
 
@@ -251,10 +252,11 @@ func exportFile(path string) {
 
 			if *flagDumpJSON {
 				// dump as JSON
-				j, err := p.JSON()
-				if err != nil {
-					log.Fatal(err)
+				j, errJSON := p.JSON()
+				if errJSON != nil {
+					log.Fatal(errJSON)
 				}
+
 				fmt.Println(j)
 			}
 

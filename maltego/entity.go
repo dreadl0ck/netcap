@@ -334,16 +334,17 @@ func addFiles(wr *zip.Writer, basePath, baseInZip string) {
 		fmt.Println(path)
 
 		if !file.IsDir() {
-			data, err := ioutil.ReadFile(path)
-			if err != nil {
-				fmt.Println(err)
+			data, errRead := ioutil.ReadFile(path)
+			if errRead != nil {
+				fmt.Println(errRead)
 			}
 
 			// add files to the archive
-			f, err := wr.Create(filepath.Join(baseInZip, file.Name()))
-			if err != nil {
-				log.Fatal(err)
+			f, errCreate := wr.Create(filepath.Join(baseInZip, file.Name()))
+			if errCreate != nil {
+				log.Fatal(errCreate)
 			}
+
 			_, err = f.Write(data)
 			if err != nil {
 				log.Fatal(err)
