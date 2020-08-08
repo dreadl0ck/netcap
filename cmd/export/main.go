@@ -15,8 +15,6 @@ package export
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,12 +22,14 @@ import (
 	"strconv"
 
 	"github.com/evilsocket/islazy/tui"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/metrics"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 

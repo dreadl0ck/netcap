@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"os"
 	"path/filepath"
@@ -13,10 +11,12 @@ import (
 	"strings"
 
 	"github.com/mgutz/ansi"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -122,6 +122,7 @@ func (c *Collector) Init() (err error) {
 	if err = c.createUnknownPcap(); err != nil {
 		log.Fatal("failed to create pcap file for unknown packets: ", err)
 	}
+
 	if err = c.createErrorsPcap(); err != nil {
 		log.Fatal("failed to create pcap decoding errors file: ", err)
 	}
@@ -131,6 +132,7 @@ func (c *Collector) Init() (err error) {
 
 	if c.config.FreeOSMem != 0 {
 		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
+
 		go c.freeOSMemory()
 	}
 
@@ -147,6 +149,7 @@ func confirm(s string) bool {
 	r := bufio.NewReader(os.Stdin)
 
 	fmt.Printf("%s [Y/n]: ", s)
+
 	res, err := r.ReadString('\n')
 	if err != nil {
 		log.Fatal(err)
