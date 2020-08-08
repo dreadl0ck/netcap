@@ -32,6 +32,7 @@ import (
 var Debug = false
 
 // TCPAssemblyStats provides some figures for a ScatterGather.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type TCPAssemblyStats struct {
 	// For this ScatterGather
 	Chunks  int

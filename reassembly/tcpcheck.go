@@ -55,15 +55,18 @@ func NewTCPOptionCheck() TCPOptionCheck {
 // Accept checks whether the packet should be accepted by checking TCP options.
 func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq Sequence) error {
 	options := t.getOptions(dir)
+
 	if tcp.SYN {
 		mss := -1
 		scale := -1
+
 		for _, o := range tcp.Options {
 			// MSS
 			if o.OptionType == 2 {
 				if len(o.OptionData) != 2 {
 					return fmt.Errorf("MSS option data length expected 2, got %d", len(o.OptionData))
 				}
+
 				mss = int(binary.BigEndian.Uint16(o.OptionData[:2]))
 			}
 			// Window scaling
@@ -71,35 +74,35 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, dir TCPFlowDirection, nextSeq S
 				if len(o.OptionData) != 1 {
 					return fmt.Errorf("window scaling length expected: 1, got %d", len(o.OptionData))
 				}
+
 				scale = int(o.OptionData[0])
 			}
 		}
+
 		options.mss = mss
 		options.scale = scale
-	} else {
-		if nextSeq != invalidSequence {
-			revOptions := t.getOptions(dir.reverse())
-			length := len(tcp.Payload)
+	} else if nextSeq != invalidSequence {
+		revOptions := t.getOptions(dir.reverse())
+		length := len(tcp.Payload)
 
-			// Check packet is in the correct window
-			diff := nextSeq.difference(Sequence(tcp.Seq))
-			if diff == -1 && (length == 1 || length == 0) {
-				// This is probably a Keep-alive
-				// TODO: check byte is ok
-			} else if diff < 0 {
-				return fmt.Errorf("re-emitted packet (diff:%d,seq:%d,rev-ack:%d)", diff,
-					tcp.Seq, nextSeq)
-			} else if revOptions.mss > 0 && length > revOptions.mss {
-				return fmt.Errorf("%d > mss (%d)", length, revOptions.mss)
-			} else if revOptions.receiveWindow != 0 && revOptions.scale < 0 && diff > int(revOptions.receiveWindow) {
-				return fmt.Errorf("%d > receiveWindow(%d)", diff, revOptions.receiveWindow)
-			}
+		// Check packet is in the correct window
+		diff := nextSeq.difference(Sequence(tcp.Seq))
+		if diff == -1 && (length == 1 || length == 0) {
+			// This is probably a Keep-alive
+			// TODO: check byte is ok
+		} else if diff < 0 {
+			return fmt.Errorf("re-emitted packet (diff:%d,seq:%d,rev-ack:%d)", diff,
+				tcp.Seq, nextSeq)
+		} else if revOptions.mss > 0 && length > revOptions.mss {
+			return fmt.Errorf("%d > mss (%d)", length, revOptions.mss)
+		} else if revOptions.receiveWindow != 0 && revOptions.scale < 0 && diff > int(revOptions.receiveWindow) {
+			return fmt.Errorf("%d > receiveWindow(%d)", diff, revOptions.receiveWindow)
 		}
 	}
 	// Compute receiveWindow
 	options.receiveWindow = uint(tcp.Window)
 	if options.scale > 0 {
-		options.receiveWindow = options.receiveWindow << (uint(options.scale))
+		options.receiveWindow <<= uint(options.scale)
 	}
 
 	return nil
@@ -128,6 +131,7 @@ type TCPSimpleFSMOptions struct {
 }
 
 // Internal values of state machine.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 const (
 	TCPStateClosed      = 0
 	TCPStateSynSent     = 1
@@ -160,6 +164,7 @@ func (t *TCPSimpleFSM) String() string {
 	case TCPStateReset:
 		return "Reset"
 	}
+
 	return "?"
 }
 
@@ -167,7 +172,7 @@ func (t *TCPSimpleFSM) String() string {
 func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 	if t.state == TCPStateClosed && t.options.SupportMissingEstablishment && !(tcp.SYN && !tcp.ACK) {
 		/* try to figure out state */
-		switch true {
+		switch {
 		case tcp.SYN && tcp.ACK:
 			t.state = TCPStateSynSent
 			t.dir = dir.reverse()
@@ -187,6 +192,7 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 		if tcp.SYN && !tcp.ACK {
 			t.dir = dir
 			t.state = TCPStateSynSent
+
 			return true
 		}
 	case TCPStateSynSent:
@@ -201,6 +207,7 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 
 			return true
 		}
+
 		if tcp.SYN && !tcp.ACK && dir == t.dir {
 			// re-transmission
 			return true
@@ -216,6 +223,7 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 		if tcp.FIN {
 			t.state = TCPStateCloseWait
 			t.dir = dir
+
 			return true
 		}
 		// accept any packet
@@ -233,6 +241,7 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 
 			return true
 		}
+
 		if tcp.ACK {
 			return true
 		}
@@ -249,5 +258,6 @@ func (t *TCPSimpleFSM) CheckState(tcp *layers.TCP, dir TCPFlowDirection) bool {
 			return true
 		}
 	}
+
 	return false
 }

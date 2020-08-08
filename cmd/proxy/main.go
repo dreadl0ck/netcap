@@ -83,9 +83,9 @@ func Run() {
 	configureLogger(*flagDebug, filepath.Join(c.Logdir, logFileName))
 
 	// synchronize the logger on exit
-	defer Log.Sync()
+	defer logger.Sync()
 
-	Log.Info("setup complete",
+	logger.Info("setup complete",
 		zap.String("logfile", logFileName),
 		zap.String("config", *flagProxyConfig),
 	)
@@ -102,7 +102,7 @@ func Run() {
 
 		// spawn a goroutine for each proxy
 		go func() {
-			Log.Info("initializing proxy",
+			logger.Info("initializing proxy",
 				zap.String("local", local),
 				zap.String("remote", remote),
 				zap.String("proxyName", proxyName),

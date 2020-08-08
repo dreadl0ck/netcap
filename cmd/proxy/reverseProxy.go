@@ -68,7 +68,7 @@ func newReverseProxy(proxyName string, targetURL *url.URL) *reverseProxy {
 	proxy.rp.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		// reply with BadGateway
 		w.WriteHeader(http.StatusBadGateway)
-		Log.Error("reverse proxy encountered an error",
+		logger.Error("reverse proxy encountered an error",
 			zap.String("host", r.URL.Host),
 			zap.String("path", r.URL.Path),
 			zap.String("method", r.Method),
