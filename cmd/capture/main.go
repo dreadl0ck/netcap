@@ -18,7 +18,7 @@ import (
 	"log"
 	"net/http"
 
-	//_ "net/http/pprof"
+	// _ "net/http/pprof"
 	"os"
 	"runtime/pprof"
 	"strings"
@@ -40,6 +40,7 @@ import (
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
+
 	err := fs.Parse(os.Args[2:])
 	if err != nil {
 		log.Fatal(err)
@@ -78,22 +79,27 @@ func Run() {
 				if errCPUProfile != nil {
 					log.Fatalf("could not open cpu profile file %q, error: %s\n", "netcap.cpu.profile", errCPUProfile)
 				}
+
 				if errCPUProfile = pprof.StartCPUProfile(f); errCPUProfile != nil {
 					log.Fatalf("failed to start CPU profiling, error: %s\n", errCPUProfile)
 				}
+
 				return func() {
 					pprof.StopCPUProfile()
+
 					errCPUProfile = f.Close()
-					if err != nil {
+					if errCPUProfile != nil {
 						panic("failed to write CPU profile: " + errCPUProfile.Error())
 					}
 				}
 			}
+
 			return func() {}
 		}()
 
 		// fgprof allows to analyze On-CPU as well as Off-CPU (e.g. I/O) time
 		http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
+
 		go func() {
 			log.Println(http.ListenAndServe(":6060", nil))
 		}()
@@ -213,6 +219,7 @@ func Run() {
 		if err != nil {
 			log.Fatal("failed to collect live packets: ", err)
 		}
+
 		return
 	}
 
@@ -225,6 +232,7 @@ func Run() {
 		if err = c.CollectBPF(*flagInput, *flagBPF); err != nil {
 			log.Fatal("failed to set BPF: ", err)
 		}
+
 		return
 	}
 

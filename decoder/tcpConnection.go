@@ -669,7 +669,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		printProgress(1, 1)
 
 		stats.Lock()
-		rows := [][]string{}
+		var rows [][]string
 		if conf.DefragIPv4 {
 			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(stats.ipdefrag, 10)})
 		}

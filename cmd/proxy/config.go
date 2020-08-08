@@ -47,11 +47,15 @@ func (c config) dump(w io.Writer) {
 	fmt.Println("logDir:", c.Logdir)
 
 	// init rows for table
-	rows := [][]string{}
+	var (
+		rows  = make([][]string, len(c.Proxies))
+		index int
+	)
 
 	// gather infos from proxies
 	for name, p := range c.Proxies {
-		rows = append(rows, []string{name, p.Local, p.Remote, strconv.FormatBool(p.TLS)})
+		rows[index] = []string{name, p.Local, p.Remote, strconv.FormatBool(p.TLS)}
+		index++
 	}
 
 	// print table

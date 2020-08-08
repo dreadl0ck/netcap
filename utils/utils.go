@@ -106,7 +106,7 @@ func ListAllNetworkInterfaces() {
 		log.Fatal("failed to get network interfaces: ", err)
 	}
 
-	rows := [][]string{}
+	var rows [][]string
 	for _, nic := range interfaces {
 		rows = append(rows, []string{strconv.Itoa(nic.Index), nic.Name, nic.Flags.String(), nic.HardwareAddr.String(), strconv.Itoa(nic.MTU)})
 	}

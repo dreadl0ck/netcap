@@ -63,7 +63,7 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 	}
 
 	// alerts that have a duplicate timestamp
-	duplicates := []*attackInfo{}
+	var duplicates []*attackInfo
 
 	// ts:alert
 	labelMap = make(map[string]*attackInfo)
@@ -148,7 +148,7 @@ func CustomLabels(pathMappingInfo, outputPath, separator, selection string) erro
 
 	fmt.Println("got", len(labels), "labels")
 
-	rows := [][]string{}
+	var rows [][]string
 	for i, c := range labels {
 		rows = append(rows, []string{strconv.Itoa(i + 1), c.Name})
 	}

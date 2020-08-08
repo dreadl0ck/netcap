@@ -262,7 +262,7 @@ func (c *Collector) stats() {
 		target = io.MultiWriter(os.Stderr, logFileHandle)
 	}
 
-	rows := [][]string{}
+	var rows [][]string
 
 	c.unknownProtosAtomic.Lock()
 
