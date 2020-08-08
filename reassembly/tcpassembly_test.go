@@ -134,6 +134,7 @@ func test(t *testing.T, s []testSequence) {
 			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.in.BaseLayer.Payload))
 		}
 		a.assemble(netFlow, &testSeq.in)
+		//goland:noinspection GoPreferNilSlice
 		final := []Reassembly{}
 		if len(testSeq.want) > 0 {
 			final = append(final, Reassembly{})
@@ -756,6 +757,7 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 		simTime = simTime.Add(delay)
 		a.flushCloseOlderThan(simTime.Add(-1 * flushInterval))
 
+		//goland:noinspection GoPreferNilSlice
 		final := []Reassembly{} //nolint:gocritic
 		if len(testSeq.want) > 0 {
 			final = append(final, Reassembly{})
