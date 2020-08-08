@@ -36,6 +36,7 @@ var (
 	classificationMap = make(map[string]int)
 	excluded          = make(map[string]bool)
 
+	// Debug mode.
 	Debug bool
 
 	removeFilesWithoutMatches = false
