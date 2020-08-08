@@ -122,6 +122,7 @@ func NewAssembler(pool *StreamPool) *Assembler {
 	pool.mu.Lock()
 	pool.users++
 	pool.mu.Unlock()
+
 	return &Assembler{
 		ret:              make([]byteContainer, 0, assemblerReturnValueInitialSize),
 		pc:               newPageCache(),
@@ -134,6 +135,7 @@ func NewAssembler(pool *StreamPool) *Assembler {
 func (a *Assembler) Dump() string {
 	s := ""
 	s += fmt.Sprintf("pageCache: used: %d, size: %d, free: %d", a.pc.used, a.pc.size, len(a.pc.free))
+
 	return s
 }
 
@@ -255,7 +257,9 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 			if Debug {
 				log.Printf("%v saw first SYN packet, returning immediately, seq=%v", flowKey, seq)
 			}
+
 			seq = seq.add(1)
+
 			half.nextSeq = seq
 			action.queue = false
 		} else if a.start {
@@ -749,7 +753,7 @@ func (a *Assembler) addPending(half *halfconnection, firstSeq Sequence) int {
 	}
 
 	s := 0
-	ret := []byteContainer{}
+	var ret []byteContainer
 
 	for p := half.saved; p != nil; p = p.next {
 		if Debug {

@@ -31,7 +31,7 @@ type BatchInfo struct {
 // InitBatching initializes batching mode and returns an array of Batchinfos and the pcap handle
 // closing the handle must be done by the caller.
 func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Handle, error) {
-	chans := []BatchInfo{}
+	var chans []BatchInfo
 
 	// open live handle
 	handle, err := pcap.OpenLive(in, int32(c.config.SnapLen), true, 30*time.Minute)

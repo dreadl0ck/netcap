@@ -29,7 +29,7 @@ var sipDecoder = newGoPacketDecoder(
 	"The Session Initiation Protocol is a signaling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications",
 	func(layer gopacket.Layer, timestamp string) proto.Message {
 		if sip, ok := layer.(*layers.SIP); ok {
-			headers := []string{}
+			var headers []string
 			for k, v := range sip.Headers {
 				headers = append(headers, k+":"+strings.Join(v, ","))
 			}

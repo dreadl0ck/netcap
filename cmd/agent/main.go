@@ -38,6 +38,7 @@ import (
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
+
 	err := fs.Parse(os.Args[2:])
 	if err != nil {
 		log.Fatal(err)
@@ -71,6 +72,7 @@ func Run() {
 
 	// decode server public key
 	var serverPubKey [cryptoutils.KeySize]byte
+
 	_, err = hex.Decode(serverPubKey[:], pubKeyContents)
 	if err != nil {
 		panic(err)
@@ -214,7 +216,7 @@ func Run() {
 							// if the new size would exceed the maximum size
 							if newSize > int32(*flagMaxSize) {
 								// buffer and break from loop
-								leftOverBuf = append(size, data...)
+								leftOverBuf = append(size, data...) //nolint:gocritic append to different slice is intended here!
 
 								goto send
 							}

@@ -35,11 +35,34 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/util"
 )
 
+const (
+	cmdCapture   = "capture"
+	cmdUtil      = "util"
+	cmdProxy     = "proxy"
+	cmdLabel     = "label"
+	cmdExport    = "export"
+	cmdDump      = "dump"
+	cmdCollect   = "collect"
+	cmdTransform = "transform"
+	cmdAgent     = "agent"
+	cmdVersion   = "version"
+	cmdHelp      = "help"
+
+	nameReadFlag   = "-read"
+	nameConfigFlag = "-config"
+
+	extPCAP   = ".pcap"
+	extPCAPNG = ".pcapng"
+	extConfig = ".conf"
+	extNetcap = ".ncap"
+	extGzip   = ".gz"
+)
+
 var (
 	flagPrevious = flag.String("previous", "", "internal for bash-completion")
 	flagCurrent  = flag.String("current", "", "internal for bash-completion")
 	flagFull     = flag.String("full", "", "internal for bash-completion")
-	flagVersion  = flag.Bool("version", false, "print version")
+	flagVersion  = flag.Bool(cmdVersion, false, "print version")
 )
 
 func help() {
@@ -79,43 +102,46 @@ func main() {
 	if len(os.Args) < 2 {
 		help()
 	}
+
 	switch os.Args[1] {
-	case "capture":
+	case cmdCapture:
 		capture.Run()
-	case "util":
+	case cmdUtil:
 		util.Run()
-	case "proxy":
+	case cmdProxy:
 		proxy.Run()
-	case "label":
+	case cmdLabel:
 		label.Run()
-	case "export":
+	case cmdExport:
 		export.Run()
-	case "dump":
+	case cmdDump:
 		dump.Run()
-	case "collect":
+	case cmdCollect:
 		collect.Run()
-	case "transform":
+	case cmdTransform:
 		transform.Run()
-	case "agent":
+	case cmdAgent:
 		agent.Run()
-	case "version":
+	case cmdVersion:
 		fmt.Println(netcap.Version)
-	case "help", "-h", "--help":
+	case cmdHelp, "-h", "--help":
 		help()
 	}
 }
 
 // print builtins.
 var completions = []string{
-	"capture",
-	"util",
-	"proxy",
-	"label",
-	"export",
-	"dump",
-	"collect",
-	"transform",
-	"help",
+	cmdCapture,
+	cmdUtil,
+	cmdProxy,
+	cmdLabel,
+	cmdExport,
+	cmdDump,
+	cmdCollect,
+	cmdTransform,
+	cmdHelp,
+	cmdAgent,
+	cmdVersion,
 }
 
 var debugHandle = ioutil.Discard
@@ -139,24 +165,24 @@ func printCompletions(previous, current, full string) {
 
 	// show flags for subcommands
 	switch previous {
-	case "capture":
+	case cmdCapture:
 		printFlags(capture.Flags())
-	case "util":
+	case cmdUtil:
 		printFlags(util.Flags())
-	case "proxy":
+	case cmdProxy:
 		printFlags(proxy.Flags())
-	case "label":
+	case cmdLabel:
 		printFlags(label.Flags())
-	case "export":
+	case cmdExport:
 		printFlags(export.Flags())
-	case "dump":
+	case cmdDump:
 		printFlags(dump.Flags())
-	case "collect":
+	case cmdCollect:
 		printFlags(collect.Flags())
-	case "agent":
+	case cmdAgent:
 		printFlags(agent.Flags())
-	case "help":
-	case "transform":
+	case cmdHelp:
+	case cmdTransform:
 		return
 	}
 
@@ -165,47 +191,54 @@ func printCompletions(previous, current, full string) {
 	if previous != "net" {
 		subCmd := getSubCmd(full)
 		debug("subcommand:", subCmd)
+
 		switch subCmd {
-		case "capture":
-			if previous == "-read" {
-				printFileForExt(".pcap", ".pcapng")
+		case cmdCapture:
+			if previous == nameReadFlag {
+				printFileForExt(extPCAP, extPCAPNG)
 			}
+
 			handleConfigFlag()
 			printFlagsFiltered(capture.Flags())
-		case "util":
-			if previous == "-read" {
-				printFileForExt(".ncap", ".gz")
+		case cmdUtil:
+			if previous == nameReadFlag {
+				printFileForExt(extNetcap, extGzip)
 			}
+
 			handleConfigFlag()
 			printFlagsFiltered(util.Flags())
-		case "proxy":
+		case cmdProxy:
 			handleConfigFlag()
 			printFlagsFiltered(proxy.Flags())
-		case "label":
-			if previous == "-read" {
-				printFileForExt(".pcap", ".pcapng")
+		case cmdLabel:
+			if previous == nameReadFlag {
+				printFileForExt(extPCAP, extPCAPNG)
 			}
+
 			if previous == "-custom" {
 				printFileForExt(".csv")
 			}
+
 			handleConfigFlag()
 			printFlagsFiltered(label.Flags())
-		case "export":
-			if previous == "-read" {
-				printFileForExt(".ncap", ".gz", ".pcap", ".pcapng")
+		case cmdExport:
+			if previous == nameReadFlag {
+				printFileForExt(extNetcap, extGzip, extPCAP, extPCAPNG)
 			}
+
 			handleConfigFlag()
 			printFlagsFiltered(export.Flags())
-		case "dump":
-			if previous == "-read" {
-				printFileForExt(".ncap", ".gz")
+		case cmdDump:
+			if previous == nameReadFlag {
+				printFileForExt(extNetcap, extGzip)
 			}
+
 			handleConfigFlag()
 			printFlagsFiltered(dump.Flags())
-		case "collect":
+		case cmdCollect:
 			handleConfigFlag()
 			printFlagsFiltered(collect.Flags())
-		case "agent":
+		case cmdAgent:
 			handleConfigFlag()
 			printFlagsFiltered(agent.Flags())
 		}
@@ -215,18 +248,22 @@ func printCompletions(previous, current, full string) {
 	for _, name := range completions {
 		fmt.Print(name + " ")
 	}
+
 	fmt.Println()
 }
 
 func handleConfigFlag() {
-	if *flagPrevious == "-config" {
-		printFileForExt(".conf")
+	if *flagPrevious == nameConfigFlag {
+		printFileForExt(extConfig)
 	}
 }
 
 func printFileForExt(exts ...string) {
-	path := "."
-	var currBase string
+	var (
+		path     = "."
+		currBase string
+	)
+
 	if *flagCurrent != "" {
 		currBase = filepath.Dir(*flagCurrent)
 		if s, err := os.Stat(currBase); err == nil {
@@ -236,12 +273,11 @@ func printFileForExt(exts ...string) {
 			}
 		}
 	}
+
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// debug("got", len(files), "results")
 
 	for _, f := range files {
 		for _, e := range exts {
@@ -252,11 +288,12 @@ func printFileForExt(exts ...string) {
 				}
 
 				fmt.Print(p + " ")
-				// debug("output", p)
+
 				break
 			}
 		}
 	}
+
 	fmt.Println()
 	os.Exit(0)
 }
@@ -265,12 +302,14 @@ func printFlags(arr []string) {
 	for _, f := range arr {
 		fmt.Print("-" + f + " ")
 	}
+
 	fmt.Println()
 	os.Exit(0)
 }
 
 func printFlagsFiltered(arr []string) {
 	hide := make(map[string]struct{})
+
 	for _, f := range strings.Fields(*flagFull) {
 		if strings.HasPrefix(f, "-") {
 			hide[strings.TrimPrefix(f, "-")] = struct{}{}

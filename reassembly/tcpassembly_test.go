@@ -756,7 +756,7 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 		simTime = simTime.Add(delay)
 		a.flushCloseOlderThan(simTime.Add(-1 * flushInterval))
 
-		final := []Reassembly{}
+		final := []Reassembly{} //nolint:gocritic
 		if len(testSeq.want) > 0 {
 			final = append(final, Reassembly{})
 			for _, w := range testSeq.want {
