@@ -8,14 +8,13 @@ require (
 	github.com/cznic/b v0.0.0-20181122101859-a26611c4d92d // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/cznic/strutil v0.0.0-20181122101858-275e90344537 // indirect
-	github.com/daixiang0/gci v0.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dlclark/regexp2 v1.2.0
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
 	github.com/dreadl0ck/go-dpi v0.0.0-20200429152202-653b4f217bbf
 	github.com/dreadl0ck/gopacket v1.1.16-0.20200720213952-a34b63701790
-	github.com/dreadl0ck/ja3 v0.0.0-20200410220751-76a43d92a16b
-	github.com/dreadl0ck/tlsx v0.0.0-20200410220656-a855823cba0b
+	github.com/dreadl0ck/ja3 v1.0.0-dreadl0ck-gopacket
+	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
 	github.com/dsoprea/go-exif/v2 v2.0.0-20200717071058-9393e7afd446
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.0
@@ -31,6 +30,7 @@ require (
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
+	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99 // indirect
 	github.com/imdario/mergo v0.3.10 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
@@ -43,6 +43,8 @@ require (
 	github.com/namsral/flag v1.7.4-pre
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nyaruka/phonenumbers v1.0.56
+	github.com/onsi/ginkgo v1.10.1 // indirect
+	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/oschwald/maxminddb-golang v1.7.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
@@ -54,15 +56,26 @@ require (
 	github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23
 	go.etcd.io/bbolt v1.3.5 // indirect
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/image v0.0.0-20200618115811-c13761719519
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
-	golang.org/x/sys v0.0.0-20200806125547-5acd03effb82 // indirect
+	golang.org/x/sys v0.0.0-20200808120158-1030fc2bf1d9 // indirect
+	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/tools v0.0.0-20200806022845-90696ccdc692 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.3.0
-	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
-	mvdan.cc/gofumpt v0.0.0-20200802201014-ab5a8192947d // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
 	mvdan.cc/xurls/v2 v2.2.0
+)
+
+// Pin k8s deps to 1.17.6
+// needed for simplecert dependency
+replace (
+	k8s.io/api => k8s.io/api v0.17.6
+	k8s.io/apimachinery => k8s.io/apimachinery v0.17.6
+	k8s.io/client-go => k8s.io/client-go v0.17.6
 )
