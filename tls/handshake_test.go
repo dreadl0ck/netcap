@@ -384,7 +384,7 @@ func runMain(m *testing.M) int {
 			panic("failed to open -keylog file: " + err.Error())
 		}
 		testConfig.KeyLogWriter = f
-		defer f.Close()
+		defer func() {}()
 	}
 
 	return m.Run()

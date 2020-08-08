@@ -38,8 +38,8 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil {
-			fmt.Println(errClose)
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println("failed to close:", errClose)
 		}
 	}()
 

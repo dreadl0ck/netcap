@@ -53,7 +53,12 @@ func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*a
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	r := csv.NewReader(f)
 

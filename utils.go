@@ -241,6 +241,7 @@ func closeFile(outDir string, file *os.File, typ string) (name string, size int6
 	i, err := file.Stat()
 	if err != nil {
 		fmt.Println("[ERROR] failed to stat file:", err, "type", typ)
+
 		return "", 0
 	}
 
@@ -271,7 +272,12 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 		if err != nil {
 			panic(err)
 		}
-		defer f.Close()
+		defer func() {
+			errClose := f.Close()
+			if errClose != nil && errClose != io.EOF {
+				fmt.Println(errClose)
+			}
+		}()
 
 		var r *bufio.Reader
 		if strings.HasSuffix(name, ".csv.gz") {
@@ -412,6 +418,7 @@ func colorizeProto(in string, colorMap map[string]string) string {
 			}
 			if line == "\n" {
 				b.WriteString("\n")
+
 				continue
 			}
 
@@ -438,6 +445,7 @@ func colorizeProto(in string, colorMap map[string]string) string {
 		}
 		if line == "\n" {
 			b.WriteString("\n")
+
 			continue
 		}
 

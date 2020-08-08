@@ -294,6 +294,7 @@ func initServiceProbes() error {
 			if conf.UseRE2 {
 				if _, ok := ignoredProbesRE2[ident]; ok {
 					utils.DebugLog.Println("ignoring probe", ident)
+
 					continue
 				}
 			} else {

@@ -149,6 +149,7 @@ func (c *Collector) writePacketToUnknownPcap(p gopacket.Packet) error {
 	if c.config.WriteUnknownPackets {
 		return c.unkownPcapWriterAtomic.writePacket(p.Metadata().CaptureInfo, p.Data())
 	}
+
 	return nil
 }
 
@@ -162,7 +163,7 @@ func (c *Collector) logPacketError(p gopacket.Packet, err string) error {
 	}
 
 	// write entry to errors.log
-	c.errorLogFile.WriteString(p.Metadata().Timestamp.String() + "\nError: " + err + "\nPacket:\n" + p.Dump() + "\n")
+	_, _ = c.errorLogFile.WriteString(p.Metadata().Timestamp.String() + "\nError: " + err + "\nPacket:\n" + p.Dump() + "\n")
 
 	// write packet to errors.pcap
 	return c.writePacketToErrorsPcap(p)

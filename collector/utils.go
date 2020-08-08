@@ -86,10 +86,12 @@ func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	raw := make([]bpf.RawInstruction, len(pcapBPF))
 	for i, ri := range pcapBPF {
 		raw[i] = bpf.RawInstruction{Op: ri.Code, Jt: ri.Jt, Jf: ri.Jf, K: ri.K}
 	}
+
 	return raw, nil
 }
 

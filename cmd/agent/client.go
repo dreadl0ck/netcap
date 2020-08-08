@@ -45,8 +45,8 @@ func sendUDP(ctx context.Context, address string, reader io.Reader) error {
 	// socket so that it no longer refers to any file.
 	defer func() {
 		errClose := conn.Close()
-		if errClose != nil {
-			fmt.Println(errClose)
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println("failed to close:", errClose)
 		}
 	}()
 

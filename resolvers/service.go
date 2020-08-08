@@ -16,6 +16,7 @@ package resolvers
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,8 +27,9 @@ import (
 )
 
 const (
-	tcp = "tcp"
-	udp = "udp"
+	tcp      = "tcp"
+	udp      = "udp"
+	reserved = "Reserved"
 )
 
 // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
@@ -71,6 +73,7 @@ func InitServiceDB() {
 		f, err    = os.Open(filepath.Join(DataBaseSource, "service-names-port-numbers.csv"))
 		csvReader = csv.NewReader(f)
 	)
+
 	if err != nil {
 		log.Println(err)
 		return
@@ -78,8 +81,8 @@ func InitServiceDB() {
 
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil {
-			fmt.Println(errClose)
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println("failed to close:", errClose)
 		}
 	}()
 
@@ -127,7 +130,7 @@ func InitServiceDB() {
 				continue
 			}
 
-			if r[3] == "Reserved" {
+			if r[3] == reserved {
 				continue
 			}
 
@@ -137,11 +140,12 @@ func InitServiceDB() {
 					num:     index,
 				}
 
-				if r[2] == tcp {
+				switch {
+				case r[2] == tcp:
 					tcpPortMap[index] = p
-				} else if r[2] == udp {
+				case r[2] == udp:
 					udpPortMap[index] = p
-				} else {
+				default:
 					utils.DebugLog.Println("ignoring service probe:", r)
 				}
 			}
@@ -154,7 +158,7 @@ func InitServiceDB() {
 				continue
 			}
 
-			if r[3] == "Reserved" {
+			if r[3] == reserved {
 				continue
 			}
 			p := port{
@@ -162,11 +166,12 @@ func InitServiceDB() {
 				num:     num,
 			}
 
-			if r[2] == tcp {
+			switch {
+			case r[2] == tcp:
 				tcpPortMap[num] = p
-			} else if r[2] == udp {
+			case r[2] == udp:
 				udpPortMap[num] = p
-			} else {
+			default:
 				utils.DebugLog.Println("ignoring service probe:", r)
 			}
 		}

@@ -18,7 +18,12 @@ func BenchmarkReadPcapNG(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -35,7 +40,12 @@ func BenchmarkReadPcapNGZeroCopy(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -68,7 +78,12 @@ func BenchmarkReadPcap(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	b.ReportAllocs()
 	b.ResetTimer()
