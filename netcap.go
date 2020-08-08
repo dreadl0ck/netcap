@@ -169,6 +169,7 @@ func InitRecord(typ types.Type) (record proto.Message) {
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
+
 	return record
 }
 
@@ -181,6 +182,7 @@ func Count(filename string) (count int64, err error) {
 	if err != nil {
 		return 0, err
 	}
+
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
@@ -192,9 +194,11 @@ func Count(filename string) (count int64, err error) {
 		header, errFileHeader = r.ReadHeader()
 		rec                   = InitRecord(header.Type)
 	)
+
 	if errFileHeader != nil {
 		return 0, errFileHeader
 	}
+
 	for {
 		// read next record
 		err = r.Next(rec)
@@ -205,5 +209,6 @@ func Count(filename string) (count int64, err error) {
 		}
 		count++
 	}
+
 	return count, nil
 }

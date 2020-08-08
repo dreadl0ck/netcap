@@ -1,6 +1,8 @@
 # TODOs
 
-- remove: if true {
+- create constants for env variables
+- remove init function usage
+- error messages iteration
 
 - reassembly: reduce allocs per stream to 0 again
 - add a die(msg string) function and use instead of panic(err) 
