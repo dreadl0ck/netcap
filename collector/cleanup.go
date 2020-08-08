@@ -107,10 +107,6 @@ func (c *Collector) cleanup(force bool) {
 	c.closeErrorLogFile()
 	c.stats()
 
-	// encoder.DumpTop5LinkFlows()
-	// encoder.DumpTop5NetworkFlows()
-	// encoder.DumpTop5TransportFlows()
-
 	if c.config.DecoderConfig.Debug {
 		c.printErrors()
 	}

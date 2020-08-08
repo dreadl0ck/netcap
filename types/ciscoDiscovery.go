@@ -57,6 +57,7 @@ func (cd *CiscoDiscovery) Time() string {
 
 func (v CiscoDiscoveryValue) ToString() string {
 	var b strings.Builder
+
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(v.Type))
 	b.WriteString(Separator)

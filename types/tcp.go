@@ -185,12 +185,6 @@ func (t *TCP) metricValues() []string {
 	}
 }
 
-func init() {
-	prometheus.MustRegister(tcpMetric)
-	prometheus.MustRegister(tcpPayloadEntropy)
-	prometheus.MustRegister(tcpPayloadSize)
-}
-
 // Inc increments the metrics for the audit record.
 func (t *TCP) Inc() {
 	tcpMetric.WithLabelValues(t.metricValues()...).Inc()

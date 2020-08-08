@@ -109,12 +109,6 @@ func (u *UDP) metricValues() []string {
 	}
 }
 
-func init() {
-	prometheus.MustRegister(udpMetric)
-	prometheus.MustRegister(udpPayloadEntropy)
-	prometheus.MustRegister(udpPayloadSize)
-}
-
 // Inc increments the metrics for the audit record.
 func (u *UDP) Inc() {
 	udpMetric.WithLabelValues(u.metricValues()...).Inc()

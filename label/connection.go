@@ -40,6 +40,7 @@ func labelConnections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, 
 		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
 		outFileName     = filepath.Join(outDir, "Connection_labeled.csv")
 	)
+
 	if errCount != nil {
 		log.Fatal("failed to count audit records:", errCount)
 	}
@@ -55,6 +56,7 @@ func labelConnections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, 
 		if errFileHeader != nil {
 			log.Fatal(errFileHeader)
 		}
+
 		if header.Type != types.Type_NC_Connection {
 			panic("file does not contain Connection records: " + header.Type.String())
 		}
@@ -71,6 +73,7 @@ func labelConnections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, 
 			pm   proto.Message
 			ok   bool
 		)
+
 		pm = conn
 
 		types.Select(conn, selection)
@@ -143,7 +146,7 @@ func labelConnections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, 
 					}
 
 					// add label
-					f.WriteString(strings.Join(conn.CSVRecord(), separator) + separator + a.Classification + "\n")
+					_, _ = f.WriteString(strings.Join(conn.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
 
 					goto read
@@ -152,14 +155,14 @@ func labelConnections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, 
 
 			if len(finalLabel) != 0 {
 				// add final label
-				f.WriteString(strings.Join(conn.CSVRecord(), separator) + separator + finalLabel + "\n")
+				_, _ = f.WriteString(strings.Join(conn.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
 
 				goto read
 			}
 
 			// label as normal
-			f.WriteString(strings.Join(conn.CSVRecord(), separator) + separator + "normal\n")
+			_, _ = f.WriteString(strings.Join(conn.CSVRecord(), separator) + separator + "normal\n")
 		}
 
 		finish(wg, r, f, labelsTotal, outFileName, progress)

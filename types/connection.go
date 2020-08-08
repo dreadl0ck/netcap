@@ -147,14 +147,6 @@ func (c *Connection) metricValues() []string {
 	}
 }
 
-func init() {
-	prometheus.MustRegister(connectionsMetric)
-	prometheus.MustRegister(connTotalSize)
-	prometheus.MustRegister(connAppPayloadSize)
-	prometheus.MustRegister(connNumPackets)
-	prometheus.MustRegister(connDuration)
-}
-
 // Inc increments the metrics for the audit record.
 func (c *Connection) Inc() {
 	connectionsMetric.WithLabelValues(c.metricValues()...).Inc()
