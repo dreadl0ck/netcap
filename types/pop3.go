@@ -66,10 +66,6 @@ var pop3Metric = prometheus.NewCounterVec(
 	fieldsPOP3[1:],
 )
 
-func init() {
-	prometheus.MustRegister(pop3Metric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *POP3) Inc() {
 	pop3Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

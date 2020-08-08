@@ -72,10 +72,6 @@ var arpMetric = prometheus.NewCounterVec(
 	fieldsARP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(arpMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *ARP) Inc() {
 	arpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

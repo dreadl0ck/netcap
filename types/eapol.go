@@ -59,10 +59,6 @@ var eapPolMetric = prometheus.NewCounterVec(
 	fieldsEAPOL[1:],
 )
 
-func init() {
-	prometheus.MustRegister(eapPolMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *EAPOL) Inc() {
 	eapPolMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

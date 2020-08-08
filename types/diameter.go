@@ -85,10 +85,6 @@ var diameterMetric = prometheus.NewCounterVec(
 	fieldsDiameter[1:],
 )
 
-func init() {
-	prometheus.MustRegister(diameterMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (d *Diameter) Inc() {
 	diameterMetric.WithLabelValues(d.CSVRecord()[1:]...).Inc()

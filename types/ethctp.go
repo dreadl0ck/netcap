@@ -55,10 +55,6 @@ var ethernetCTPMetric = prometheus.NewCounterVec(
 	fieldsEthernetCTP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(ethernetCTPMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (i *EthernetCTP) Inc() {
 	ethernetCTPMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()

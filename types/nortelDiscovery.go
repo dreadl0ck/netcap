@@ -66,10 +66,6 @@ var nortelDiscoveryMetric = prometheus.NewCounterVec(
 	fieldsNortelDiscovery[1:],
 )
 
-func init() {
-	prometheus.MustRegister(nortelDiscoveryMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *NortelDiscovery) Inc() {
 	nortelDiscoveryMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

@@ -15,6 +15,8 @@ package export
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"os"
 	"path/filepath"
@@ -68,6 +70,11 @@ func Run() {
 		source = *flagInterface
 	} else {
 		source = "unknown"
+	}
+
+	// register metrics
+	for _, m := range types.Metrics {
+		prometheus.MustRegister(m)
 	}
 
 	switch {

@@ -80,10 +80,6 @@ var enipMetric = prometheus.NewCounterVec(
 	fieldsENIP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(enipMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (en *ENIP) Inc() {
 	enipMetric.WithLabelValues(en.CSVRecord()[1:]...).Inc()

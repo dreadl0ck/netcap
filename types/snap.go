@@ -58,10 +58,6 @@ var snapMetric = prometheus.NewCounterVec(
 	fieldsSNAP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(snapMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (s *SNAP) Inc() {
 	snapMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()

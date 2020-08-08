@@ -98,10 +98,6 @@ var smtpMetric = prometheus.NewCounterVec(
 	fieldsSMTP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(smtpMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *SMTP) Inc() {
 	smtpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

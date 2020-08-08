@@ -213,10 +213,6 @@ var dnsMetric = prometheus.NewCounterVec(
 	fieldsDNS[1:],
 )
 
-func init() {
-	prometheus.MustRegister(dnsMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (d *DNS) Inc() {
 	dnsMetric.WithLabelValues(d.CSVRecord()[1:]...).Inc()

@@ -121,10 +121,6 @@ var greMetric = prometheus.NewCounterVec(
 	fieldsGRE[1:],
 )
 
-func init() {
-	prometheus.MustRegister(greMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *GRE) Inc() {
 	greMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

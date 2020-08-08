@@ -70,10 +70,6 @@ var sctpMetric = prometheus.NewCounterVec(
 	fieldsSCTP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(sctpMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (s *SCTP) Inc() {
 	sctpMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()

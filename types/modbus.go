@@ -81,10 +81,6 @@ var modbusTCPMetric = prometheus.NewCounterVec(
 	fieldsModbus[1:],
 )
 
-func init() {
-	prometheus.MustRegister(modbusTCPMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *Modbus) Inc() {
 	modbusTCPMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

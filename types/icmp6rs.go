@@ -79,10 +79,6 @@ var icmp6rsMetric = prometheus.NewCounterVec(
 	fieldsICMPv6RouterSolicitation[1:],
 )
 
-func init() {
-	prometheus.MustRegister(icmp6rsMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (i *ICMPv6RouterSolicitation) Inc() {
 	icmp6rsMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()

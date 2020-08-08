@@ -64,10 +64,6 @@ var llcMetric = prometheus.NewCounterVec(
 	fieldsLLC[1:],
 )
 
-func init() {
-	prometheus.MustRegister(llcMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (l *LLC) Inc() {
 	llcMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()

@@ -71,10 +71,6 @@ var icmp6naMetric = prometheus.NewCounterVec(
 	fieldsICMPv6NeighborAdvertisement[1:],
 )
 
-func init() {
-	prometheus.MustRegister(icmp6naMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (i *ICMPv6NeighborAdvertisement) Inc() {
 	icmp6naMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()

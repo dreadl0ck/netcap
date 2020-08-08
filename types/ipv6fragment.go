@@ -74,10 +74,6 @@ var ipv6fragMetric = prometheus.NewCounterVec(
 	fieldsIPv6Fragment[1:],
 )
 
-func init() {
-	prometheus.MustRegister(ipv6fragMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *IPv6Fragment) Inc() {
 	ipv6fragMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

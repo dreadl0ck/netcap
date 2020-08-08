@@ -53,10 +53,6 @@ var credentialsMetric = prometheus.NewCounterVec(
 	fieldsCredentials[1:],
 )
 
-func init() {
-	prometheus.MustRegister(credentialsMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (c *Credentials) Inc() {
 	credentialsMetric.WithLabelValues(c.CSVRecord()[1:]...).Inc()

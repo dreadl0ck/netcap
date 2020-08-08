@@ -79,10 +79,6 @@ var fileMetric = prometheus.NewCounterVec(
 	fieldsARP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(fileMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *File) Inc() {
 	fileMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

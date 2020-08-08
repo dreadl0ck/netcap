@@ -56,10 +56,6 @@ var sshMetric = prometheus.NewCounterVec(
 	fieldsSSH[1:],
 )
 
-func init() {
-	prometheus.MustRegister(sshMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *SSH) Inc() {
 	sshMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

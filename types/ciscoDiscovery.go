@@ -81,10 +81,6 @@ var ciscoDiscoveryMetric = prometheus.NewCounterVec(
 	fieldsCiscoDiscovery[1:],
 )
 
-func init() {
-	prometheus.MustRegister(ciscoDiscoveryMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (cd *CiscoDiscovery) Inc() {
 	ciscoDiscoveryMetric.WithLabelValues(cd.CSVRecord()[1:]...).Inc()

@@ -67,10 +67,6 @@ var ipSecEspMetric = prometheus.NewCounterVec(
 	fieldsIPSecESP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(ipSecEspMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *IPSecESP) Inc() {
 	ipSecEspMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

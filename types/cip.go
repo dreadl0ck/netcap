@@ -90,10 +90,6 @@ var cipMetric = prometheus.NewCounterVec( //nolint:gochecknoglobals
 	fieldsCIP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(cipMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (c *CIP) Inc() {
 	cipMetric.WithLabelValues(c.CSVRecord()[1:]...).Inc()

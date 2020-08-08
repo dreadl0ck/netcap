@@ -107,10 +107,6 @@ var tlsServerMetric = prometheus.NewCounterVec(
 	fieldsTLSServerHello[1:],
 )
 
-func init() {
-	prometheus.MustRegister(tlsServerMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (t *TLSServerHello) Inc() {
 	tlsServerMetric.WithLabelValues(t.CSVRecord()[1:]...).Inc()
