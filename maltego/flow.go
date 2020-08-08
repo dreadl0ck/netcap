@@ -33,7 +33,7 @@ import (
 // flowCountFunc is a function that counts something over multiple Flow audit records.
 type flowCountFunc = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int)
 
-// countIncomingFlowPackets returns the lowest and highest number of bytes transferred as well as an array of sizes
+// countIncomingFlowBytes returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all incoming flows for a given ip address.
 var countIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
@@ -172,6 +172,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
+
 	netcap.PrintBuildInfo()
 
 	dir := filepath.Dir(profilesFile)

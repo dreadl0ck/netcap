@@ -36,18 +36,22 @@ type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *type
 
 // HTTPTransform applies a maltego transformation over HTTP audit records.
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
-	ipaddr := lt.Values["ipaddr"]
+	var (
+		lt               = ParseLocalArguments(os.Args[1:])
+		profilesFile     = lt.Values["path"]
+		ipaddr           = lt.Values["ipaddr"]
+		dir              = filepath.Dir(profilesFile)
+		httpAuditRecords = filepath.Join(dir, "HTTP.ncap.gz")
+	)
 
-	dir := filepath.Dir(profilesFile)
-	httpAuditRecords := filepath.Join(dir, "HTTP.ncap.gz")
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
 		// write an empty reply if the audit record file was not found.
 		log.Println(err)
+
 		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
+
 		return
 	}
 
@@ -66,6 +70,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	if errFileHeader != nil {
 		log.Fatal(errFileHeader)
 	}
+
 	if header.Type != types.Type_NC_HTTP {
 		panic("file does not contain HTTP records: " + header.Type.String())
 	}
@@ -76,6 +81,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 		ok   bool
 		trx  = Transform{}
 	)
+
 	pm = http
 
 	if _, ok = pm.(types.AuditRecord); !ok {
@@ -111,7 +117,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	}
 
 	// read netcap header - ignore err as it has been checked before
-	r.ReadHeader()
+	_, _ = r.ReadHeader()
 
 	for {
 		err = r.Next(http)
