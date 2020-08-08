@@ -62,9 +62,11 @@ func (a *CiscoDiscoveryInfo) CSVRecord() []string {
 		ipNets []string
 		vals   []string
 	)
+
 	for _, v := range a.IPPrefixes {
 		ipNets = append(ipNets, v.ToString())
 	}
+
 	for _, v := range a.Unknown {
 		vals = append(vals, v.ToString())
 	}
@@ -189,11 +191,13 @@ func (c *CDPVLANDialogue) ToString() string {
 
 func (c *CDPPowerDialogue) ToString() string {
 	var vals []string
+
 	for _, v := range c.Values {
 		vals = append(vals, formatUint32(v))
 	}
 
 	var b strings.Builder
+
 	b.WriteString(Begin)
 	b.WriteString(formatInt32(c.ID))
 	b.WriteString(Separator)

@@ -36,9 +36,11 @@ func (cd *CiscoDiscovery) CSVHeader() []string {
 // CSVRecord returns the CSV record for the audit record.
 func (cd *CiscoDiscovery) CSVRecord() []string {
 	var vals []string
+
 	for _, v := range cd.Values {
 		vals = append(vals, v.ToString())
 	}
+
 	return filter([]string{
 		formatTimestamp(cd.Timestamp),
 		formatInt32(cd.Version),  // int32
@@ -62,6 +64,7 @@ func (v CiscoDiscoveryValue) ToString() string {
 	b.WriteString(Separator)
 	b.WriteString(hex.EncodeToString(v.Value))
 	b.WriteString(End)
+
 	return b.String()
 }
 
@@ -88,7 +91,7 @@ func (cd *CiscoDiscovery) Inc() {
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (a *CiscoDiscovery) SetPacketContext(*PacketContext) {}
+func (cd *CiscoDiscovery) SetPacketContext(*PacketContext) {}
 
 // Src TODO.
 // Src returns the source address of the audit record.

@@ -2,12 +2,13 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 // dieIfExecutable can be used to check if the file at the passed in location is executable

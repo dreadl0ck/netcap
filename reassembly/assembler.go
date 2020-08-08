@@ -467,7 +467,9 @@ func (a *Assembler) dump(text string, half *halfconnection) {
 	if !Debug {
 		return
 	}
+
 	log.Printf("%s: dump\n", text)
+
 	if half != nil {
 		p := half.first
 		if p == nil {
@@ -713,9 +715,9 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Seq
 	end, nextSeq := a.buildSG(half)
 
 	// for debugging
-	//for _, b := range a.ret {
-	//	fmt.Println(ansi.Yellow, conn.key.String(), ansi.Blue, b.length(), ansi.Reset, b.assemblerContext().GetCaptureInfo().Timestamp.Format(tf))
-	//}
+	// for _, b := range a.ret {
+	// 	fmt.Println(ansi.Yellow, conn.key.String(), ansi.Blue, b.length(), ansi.Reset, b.assemblerContext().GetCaptureInfo().Timestamp.Format(tf))
+	// }
 
 	var ac AssemblerContext
 	// use the context from the first non empty bytecontainer
@@ -969,9 +971,12 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 
 	for half.first != nil && half.first.seen.Before(t) {
 		flushed = true
+
 		a.skipFlush(conn, half)
+
 		if half.closed {
 			closed = true
+
 			return flushed, closed
 		}
 	}
