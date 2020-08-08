@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"sync/atomic"
@@ -49,7 +50,12 @@ func countPacketsNG(path string) (count int64, err error) {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	for {
 		// loop over packets and discard all data
@@ -98,7 +104,13 @@ func (c *Collector) CollectPcapNG(path string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	// initialize collector
 	if err = c.Init(); err != nil {

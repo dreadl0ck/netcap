@@ -216,7 +216,7 @@ func Run() {
 							// if the new size would exceed the maximum size
 							if newSize > int32(*flagMaxSize) {
 								// buffer and break from loop
-								leftOverBuf = append(size, data...) //nolint:gocritic append to different slice is intended here!
+								leftOverBuf = append(size, data...) //nolint:gocritic // append to different slice is intended here!
 
 								goto send
 							}

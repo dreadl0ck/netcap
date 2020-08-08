@@ -317,7 +317,12 @@ func packEntityArchive() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	w := zip.NewWriter(f)
 

@@ -137,8 +137,8 @@ func udpServer(ctx context.Context, address string) (err error) {
 	// allocated for holding information about the listening socket.
 	defer func() {
 		errClose := pc.Close()
-		if errClose != nil {
-			fmt.Println(errClose)
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println("failed to close:", errClose)
 		}
 	}()
 

@@ -65,6 +65,7 @@ func (h *sshReader) Decode() {
 			}
 		}
 	}
+
 	h.searchKexInit(bufio.NewReader(&clientBuf), reassembly.TCPDirClientToServer)
 	h.searchKexInit(bufio.NewReader(&serverBuf), reassembly.TCPDirServerToClient)
 
@@ -145,6 +146,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 			if lastByte == 0x0d && b == 0x0a {
 				offset = len(ident) + 1
+
 				break
 			}
 
@@ -164,81 +166,87 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 	// search the entire data fragment for the KexInit
 	for i, b := range data {
 		// 0x14 marks the beginning of the SSH KexInitMsg
-		if b == 0x14 {
+		if !(b == 0x14) {
+			continue
+		}
 
-			// fmt.Println(dir, offset, len(data), i-1, "data[",offset,":",i-1,"]")
-			// fmt.Println(hex.Dump(data))
+		// fmt.Println(dir, offset, len(data), i-1, "data[",offset,":",i-1,"]")
+		// fmt.Println(hex.Dump(data))
 
-			// check if length would have correct length
-			if (i-1)-offset != 4 {
-				break
-			}
-
-			// check if array access is safe
-			if offset > i-1 || len(data) <= i-1 {
-				break
-			}
-
-			length := int(binary.BigEndian.Uint32(data[offset : i-1]))
-			padding := int(data[i-1])
-			if len(data) < i+length-padding-1 {
-				// fmt.Println("break: len(data) < i+length-padding-1")
-				break
-			}
-
-			// fmt.Println("padding", padding, "length", length)
-			// fmt.Println(hex.Dump(data[i:i+length-padding-1]))
-
-			var init sshx.KexInitMsg
-
-			err = sshx.Unmarshal(data[i:i+length-padding-1], &init)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			// spew.Dump("found SSH KexInit", h.parent.ident, init)
-			hash, raw := computeHASSH(init)
-			if dir == reassembly.TCPDirClientToServer {
-				sshDecoder.write(&types.SSH{
-					Timestamp:  h.parent.client.FirstPacket().String(),
-					HASSH:      hash,
-					Flow:       h.parent.ident,
-					Ident:      h.clientIdent,
-					Algorithms: raw,
-					IsClient:   true,
-				})
-				h.clientKexInit = &init
-			} else {
-				sshDecoder.write(&types.SSH{
-					Timestamp:  h.parent.client.FirstPacket().String(),
-					HASSH:      hash,
-					Flow:       utils.ReverseIdent(h.parent.ident),
-					Ident:      h.serverIdent,
-					Algorithms: raw,
-					IsClient:   false,
-				})
-				h.serverKexInit = &init
-			}
-
-			// TODO fetch device profile
-			for _, soft := range hashDBMap[hash] {
-				sshVersion, product, version, os := parseSSHInfoFromHasshDB(soft.Version)
-				h.software = append(h.software, &types.Software{
-					Timestamp: h.parent.client.FirstPacket().String(),
-					Product:   product,
-					Vendor:    "", // do not set the vendor for now
-					Version:   version,
-					// DeviceProfiles: []string{dpIdent},
-					SourceName: "HASSH Lookup",
-					SourceData: hash,
-					Service:    serviceSSH,
-					// DPIResults:     protos,
-					Flows: []string{h.parent.ident},
-					Notes: "Likelihood: " + soft.Likelihood + " Possible OS: " + os + "SSH Version: " + sshVersion,
-				})
-			}
+		// check if length would have correct length
+		if (i-1)-offset != 4 {
 			break
 		}
+
+		// check if array access is safe
+		if offset > i-1 || len(data) <= i-1 {
+			break
+		}
+
+		length := int(binary.BigEndian.Uint32(data[offset : i-1]))
+		padding := int(data[i-1])
+
+		if len(data) < i+length-padding-1 {
+			// fmt.Println("break: len(data) < i+length-padding-1")
+			break
+		}
+
+		// fmt.Println("padding", padding, "length", length)
+		// fmt.Println(hex.Dump(data[i:i+length-padding-1]))
+
+		var init sshx.KexInitMsg
+
+		err = sshx.Unmarshal(data[i:i+length-padding-1], &init)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// spew.Dump("found SSH KexInit", h.parent.ident, init)
+		hash, raw := computeHASSH(init)
+
+		if dir == reassembly.TCPDirClientToServer {
+			sshDecoder.write(&types.SSH{
+				Timestamp:  h.parent.client.FirstPacket().String(),
+				HASSH:      hash,
+				Flow:       h.parent.ident,
+				Ident:      h.clientIdent,
+				Algorithms: raw,
+				IsClient:   true,
+			})
+
+			h.clientKexInit = &init
+		} else {
+			sshDecoder.write(&types.SSH{
+				Timestamp:  h.parent.client.FirstPacket().String(),
+				HASSH:      hash,
+				Flow:       utils.ReverseIdent(h.parent.ident),
+				Ident:      h.serverIdent,
+				Algorithms: raw,
+				IsClient:   false,
+			})
+			h.serverKexInit = &init
+		}
+
+		// TODO fetch device profile
+		for _, soft := range hashDBMap[hash] {
+			sshVersion, product, version, os := parseSSHInfoFromHasshDB(soft.Version)
+
+			h.software = append(h.software, &types.Software{
+				Timestamp: h.parent.client.FirstPacket().String(),
+				Product:   product,
+				Vendor:    "", // do not set the vendor for now
+				Version:   version,
+				// DeviceProfiles: []string{dpIdent},
+				SourceName: "HASSH Lookup",
+				SourceData: hash,
+				Service:    serviceSSH,
+				// DPIResults:     protos,
+				Flows: []string{h.parent.ident},
+				Notes: "Likelihood: " + soft.Likelihood + " Possible OS: " + os + "SSH Version: " + sshVersion,
+			})
+		}
+
+		break
 	}
 }
 
@@ -252,11 +260,14 @@ func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, ve
 
 	if len(firstSplit) > 1 {
 		os = firstSplit[len(firstSplit)-1]
+
 		return sshVersionArr[0], vendorVersion[0], vendorVersion[1], os
 	}
+
 	if len(vendorVersion) > 1 {
 		version = vendorVersion[1]
 	}
+
 	return sshVersionArr[0], vendorVersion[0], version, os
 }
 
@@ -275,6 +286,7 @@ func parseSSHIdent(ident string) *sshVersionInfo {
 		if len(m) > 4 {
 			os = m[4]
 		}
+
 		return &sshVersionInfo{
 			sshVersion:     m[1],
 			productName:    m[2],
@@ -282,6 +294,7 @@ func parseSSHIdent(ident string) *sshVersionInfo {
 			os:             os,
 		}
 	}
+
 	return nil
 }
 
@@ -289,6 +302,7 @@ func parseSSHIdent(ident string) *sshVersionInfo {
 // TODO: move this functionality into standalone package.
 func computeHASSH(init sshx.KexInitMsg) (hash string, raw string) {
 	var b strings.Builder
+
 	b.WriteString(strings.Join(init.KexAlgos, ","))
 	b.WriteString(";")
 	b.WriteString(strings.Join(init.CiphersClientServer, ","))

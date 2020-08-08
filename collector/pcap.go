@@ -55,8 +55,8 @@ func IsPcap(file string) (bool, error) {
 
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil {
-			fmt.Println(errClose)
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println("failed to close:", errClose)
 		}
 	}()
 
@@ -78,7 +78,12 @@ func countPackets(path string) (count int64, err error) {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	for {
 		// loop over packets and discard all data
@@ -132,7 +137,12 @@ func (c *Collector) CollectPcap(path string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && errClose != io.EOF {
+			fmt.Println(errClose)
+		}
+	}()
 
 	c.printlnStdOut("detected link type:", r.LinkType())
 
