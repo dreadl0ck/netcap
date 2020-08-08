@@ -37,6 +37,8 @@ import (
 
 var udpStreams = newUDPStreamPool()
 
+const typeUDP = "udp"
+
 // udpData represents a udp data stream.
 type udpStream struct {
 	data UDPDataSlice
@@ -218,7 +220,10 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 	)
 
 	// make sure root path exists
-	os.MkdirAll(root, defaultDirectoryPermission)
+	err := os.MkdirAll(root, defaultDirectoryPermission)
+	if err != nil {
+		utils.DebugLog.Println("failed to create directory:", root, defaultDirectoryPermission)
+	}
 	base = path.Join(root, base)
 
 	utils.ReassemblyLog.Println("saveConnection", base)
@@ -294,7 +299,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	dst, err := strconv.Atoi(transport.Dst().String())
 	if err == nil {
 		serv.Protocol = "UDP"
-		serv.Name = resolvers.LookupServiceByPort(dst, "udp")
+		serv.Name = resolvers.LookupServiceByPort(dst, typeUDP)
 	}
 
 	matchServiceProbes(serv, banner, flowIdent)

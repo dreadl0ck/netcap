@@ -25,6 +25,7 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // reverseProxy represents a named reverse proxy
@@ -109,7 +110,11 @@ func newReverseProxy(proxyName string, targetURL *url.URL) *reverseProxy {
 	}
 
 	proxy.writer = netcap.NewWriter("HTTP["+targetURL.Host+"]", true, true, false, "", false, *flagMemBufferSize)
-	proxy.writer.WriteHeader(types.Type_NC_HTTP, targetURL.String(), netcap.Version, false)
+
+	err := proxy.writer.WriteHeader(types.Type_NC_HTTP, targetURL.String(), netcap.Version, false)
+	if err != nil {
+		utils.DebugLog.Println("failed to write file header:", err)
+	}
 
 	return proxy
 }

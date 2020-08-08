@@ -167,7 +167,13 @@ func indexData(in string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer file.Close()
+
+		defer func() {
+			errClose := file.Close()
+			if errClose != nil {
+				fmt.Println(errClose)
+			}
+		}()
 
 		var (
 			r     = csv.NewReader(file)
@@ -244,7 +250,13 @@ func indexData(in string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer file.Close()
+
+		defer func() {
+			errClose := file.Close()
+			if errClose != nil {
+				fmt.Println(errClose)
+			}
+		}()
 
 		var (
 			r     = csv.NewReader(file)
@@ -295,7 +307,13 @@ func indexData(in string) {
 		} else {
 			index = makeBleveIndex(indexPath) // To create a new index
 		}
-		defer index.Close()
+
+		defer func() {
+			errClose := index.Close()
+			if errClose != nil {
+				fmt.Println(errClose)
+			}
+		}()
 
 		var (
 			years = []string{

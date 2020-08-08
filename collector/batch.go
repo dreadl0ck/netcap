@@ -56,8 +56,6 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 		return chans, nil, err
 	}
 
-	// defer c.cleanup()
-
 	// read packets in background routine
 	go func() {
 		for p := range ps.Packets() {

@@ -29,6 +29,7 @@ import (
 // - implement chunked (cheap) reads and Reader() interface
 // - better organize file: split files: 'mem', 'misc' (seq + flow)
 
+// Debug controls verbose logging.
 var Debug = false
 
 // TCPAssemblyStats provides some figures for a ScatterGather.

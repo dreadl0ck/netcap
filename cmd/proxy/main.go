@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // a list of all reverse proxies
@@ -83,7 +84,12 @@ func Run() {
 	configureLogger(*flagDebug, filepath.Join(c.Logdir, logFileName))
 
 	// synchronize the logger on exit
-	defer logger.Sync()
+	defer func() {
+		errClose := logger.Sync()
+		if errClose != nil {
+			utils.DebugLog.Println("failed to sync logger:", errClose)
+		}
+	}()
 
 	logger.Info("setup complete",
 		zap.String("logfile", logFileName),

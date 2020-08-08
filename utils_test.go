@@ -23,7 +23,12 @@ func TestDumpCSV(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			t.Fatal("failed to close file:", errClose)
+		}
+	}()
 
 	err = Dump(f, DumpConfig{
 		Path:      "tests/testdata/TCP.ncap.gz",
@@ -41,7 +46,12 @@ func TestDumpJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			t.Fatal("failed to close file:", errClose)
+		}
+	}()
 
 	err = Dump(f, DumpConfig{
 		Path: "tests/testdata/TCP.ncap.gz",
@@ -57,7 +67,12 @@ func TestDumpStruc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			t.Fatal("failed to close file:", errClose)
+		}
+	}()
 
 	err = Dump(f, DumpConfig{
 		Path:       "tests/testdata/TCP.ncap.gz",

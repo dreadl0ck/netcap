@@ -110,6 +110,7 @@ func saveTCPServiceBanner(s streamReader) {
 			sv.Banner = banner
 			sv.Timestamp = s.FirstPacket().String()
 		}
+
 		return
 	}
 	ServiceStore.Unlock()
@@ -126,7 +127,7 @@ func saveTCPServiceBanner(s streamReader) {
 	dst, err := strconv.Atoi(s.Transport().Dst().String())
 	if err == nil {
 		serv.Protocol = protoTCP
-		serv.Name = resolvers.LookupServiceByPort(dst, "tcp")
+		serv.Name = resolvers.LookupServiceByPort(dst, typeTCP)
 	}
 
 	matchServiceProbes(serv, banner, s.Ident())
@@ -149,6 +150,7 @@ func newService(ts string, numBytesServer int, numBytesClient int, ip string) *s
 	} else if resolvers.CurrentConfig.LocalDNS {
 		host = resolvers.LookupDNSNameLocal(ip)
 	}
+
 	return &service{
 		Service: &types.Service{
 			Timestamp:   ts,

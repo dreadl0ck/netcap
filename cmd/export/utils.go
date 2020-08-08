@@ -162,7 +162,13 @@ func firstTimestamp(path string) time.Time {
 	if err != nil {
 		log.Fatal("failed to open netcap file:", err)
 	}
-	defer r.Close()
+
+	defer func() {
+		errClose := r.Close()
+		if errClose != nil {
+			utils.DebugLog.Println("failed to close file:", errClose)
+		}
+	}()
 
 	var (
 		// read netcap file header
@@ -199,10 +205,17 @@ func exportFile(path string) {
 		count  = 0
 		r, err = netcap.Open(path, *flagMemBufferSize)
 	)
+
 	if err != nil {
 		log.Fatal("failed to open netcap file:", err)
 	}
-	defer r.Close()
+
+	defer func() {
+		errClose := r.Close()
+		if errClose != nil {
+			utils.DebugLog.Println("failed to close file:", errClose)
+		}
+	}()
 
 	var (
 		// read netcap file header

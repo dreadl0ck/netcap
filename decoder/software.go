@@ -446,9 +446,9 @@ func analyzeSoftware(i *packetInfo) {
 		if err == nil {
 			switch tl.LayerType() {
 			case layers.LayerTypeTCP:
-				serviceNameSrc = resolvers.LookupServiceByPort(src, "tcp")
+				serviceNameSrc = resolvers.LookupServiceByPort(src, typeTCP)
 			case layers.LayerTypeUDP:
-				serviceNameSrc = resolvers.LookupServiceByPort(src, "udp")
+				serviceNameSrc = resolvers.LookupServiceByPort(src, typeUDP)
 			default:
 			}
 		}
@@ -456,9 +456,9 @@ func analyzeSoftware(i *packetInfo) {
 		if err == nil {
 			switch tl.LayerType() {
 			case layers.LayerTypeTCP:
-				serviceNameDst = resolvers.LookupServiceByPort(dst, "tcp")
+				serviceNameDst = resolvers.LookupServiceByPort(dst, typeTCP)
 			case layers.LayerTypeUDP:
-				serviceNameDst = resolvers.LookupServiceByPort(dst, "udp")
+				serviceNameDst = resolvers.LookupServiceByPort(dst, typeUDP)
 			default:
 			}
 		}

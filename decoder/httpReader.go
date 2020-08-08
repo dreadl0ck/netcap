@@ -124,12 +124,14 @@ type httpReader struct {
 	responses []*httpResponse
 }
 
+// Decode parses the http streams.
 func (h *httpReader) Decode() {
 	// parse conversation
 	var (
 		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
 	)
+	
 	if len(h.parent.merged) > 0 {
 		previousDir = h.parent.merged[0].dir
 	}
@@ -153,18 +155,21 @@ func (h *httpReader) Decode() {
 					err = h.readResponse(b)
 				}
 			}
-			//if err != nil {
-			//	fmt.Println(err)
-			//}
+			if err != nil {
+				fmt.Println(err)
+			}
 			buf.Reset()
 			previousDir = d.dir
 
 			buf.Write(d.raw)
+
 			continue
 		}
 	}
+
 	var err error
 	b := bufio.NewReader(&buf)
+
 	if previousDir == reassembly.TCPDirClientToServer {
 		for err != io.EOF && err != io.ErrUnexpectedEOF {
 			err = h.readRequest(b)
@@ -204,6 +209,7 @@ func (h *httpReader) Decode() {
 			// response without matching request
 			// dont add to output for now
 			atomic.AddInt64(&stats.numUnmatchedResp, 1)
+
 			continue
 		}
 
@@ -249,31 +255,33 @@ func (h *httpReader) searchForBasicAuth(req *http.Request) {
 // search for user name and password in http url params and body params.
 func (h *httpReader) searchForLoginParams(req *http.Request) {
 	for name, values := range req.Form {
-		if name == "user" || name == "username" {
-
-			var (
-				pass string
-				arr  []string
-				ok   bool
-			)
-
-			arr, ok = req.Form["pass"]
-			if !ok {
-				arr, _ = req.Form["password"]
-			}
-			if len(arr) > 0 {
-				pass = strings.Join(arr, "; ")
-			}
-
-			writeCredentials(&types.Credentials{
-				Timestamp: h.parent.firstPacket.String(),
-				Service:   serviceHTTP,
-				Flow:      h.parent.ident,
-				User:      strings.Join(values, "; "),
-				Password:  pass,
-				Notes:     "Login Parameters",
-			})
+		if !(name == "user" || name == "username") {
+			continue
 		}
+
+		var (
+			pass string
+			arr  []string
+			ok   bool
+		)
+
+		arr, ok = req.Form["pass"]
+		if !ok {
+			arr = req.Form["password"]
+		}
+
+		if len(arr) > 0 {
+			pass = strings.Join(arr, "; ")
+		}
+
+		writeCredentials(&types.Credentials{
+			Timestamp: h.parent.firstPacket.String(),
+			Service:   serviceHTTP,
+			Flow:      h.parent.ident,
+			User:      strings.Join(values, "; "),
+			Password:  pass,
+			Notes:     "Login Parameters",
+		})
 	}
 }
 
@@ -354,9 +362,9 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	// if err == nil {
 	// 	switch tl.LayerType() {
 	// 	case layers.LayerTypeTCP:
-	// 		serviceNameSrc = resolvers.LookupServiceByPort(src, "tcp")
+	// 		serviceNameSrc = resolvers.LookupServiceByPort(src, typeTCP)
 	// 	case layers.LayerTypeUDP:
-	// 		serviceNameSrc = resolvers.LookupServiceByPort(src, "udp")
+	// 		serviceNameSrc = resolvers.LookupServiceByPort(src, typeUDP)
 	// 	default:
 	// 	}
 	// }
@@ -364,9 +372,9 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	// if err == nil {
 	// 	switch tl.LayerType() {
 	// 	case layers.LayerTypeTCP:
-	// 		serviceNameDst = resolvers.LookupServiceByPort(dst, "tcp")
+	// 		serviceNameDst = resolvers.LookupServiceByPort(dst, typeTCP)
 	// 	case layers.LayerTypeUDP:
-	// 		serviceNameDst = resolvers.LookupServiceByPort(dst, "udp")
+	// 		serviceNameDst = resolvers.LookupServiceByPort(dst, typeUDP)
 	// 	default:
 	// 	}
 	// }
@@ -415,7 +423,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	if err != nil {
 		logReassemblyError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.parent.ident, s, err)
 	} else {
-		res.Body.Close()
+		_ = res.Body.Close()
 
 		// Restore body so it can be read again
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -885,7 +893,7 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 		logReassemblyError("HTTP-request-body", "Got body err: %s\n", err)
 		// continue execution
 	} else {
-		req.Body.Close()
+		_ = req.Body.Close()
 
 		// Restore body so it can be read again
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))

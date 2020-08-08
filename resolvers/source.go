@@ -19,8 +19,13 @@ import (
 )
 
 var (
-	quiet          bool
-	CurrentConfig  Config
+	quiet bool
+
+	// CurrentConfig holds the current configuration.
+	CurrentConfig Config
+
+	// DataBaseSource holds the path to the NETCAP database folder
+	// usually /usr/local/etc/netcap/dbs.
 	DataBaseSource string
 )
 

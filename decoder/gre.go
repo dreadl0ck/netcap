@@ -53,14 +53,14 @@ var greDecoder = newGoPacketDecoder(
 	},
 )
 
-func encodeGRERouting(AddressFamily uint16, SREOffset, SRELength uint8, RoutingInformation []byte, next *layers.GRERouting) *types.GRERouting {
+func encodeGRERouting(addressFamily uint16, SREOffset, SRELength uint8, RoutingInformation []byte, next *layers.GRERouting) *types.GRERouting {
 	var r *types.GRERouting
 	if next != nil {
 		r = encodeGRERouting(next.AddressFamily, next.SREOffset, next.SRELength, next.RoutingInformation, next.Next)
 	}
 
 	return &types.GRERouting{
-		AddressFamily:      int32(AddressFamily),
+		AddressFamily:      int32(addressFamily),
 		SREOffset:          int32(SREOffset),
 		SRELength:          int32(SRELength),
 		RoutingInformation: RoutingInformation,

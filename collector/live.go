@@ -19,6 +19,7 @@ import (
 	"io"
 	"sync/atomic"
 
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/pcap"
 	"github.com/pkg/errors"
 )
@@ -57,10 +58,15 @@ func (c *Collector) CollectLive(iface, bpf string) error {
 	c.isLive = true
 	c.mu.Unlock()
 
+	var (
+		data []byte
+		ci   gopacket.CaptureInfo
+	)
+
 	// read packets from channel
 	for {
 		// read next packet
-		data, ci, err := handle.ZeroCopyReadPacketData()
+		data, ci, err = handle.ZeroCopyReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break

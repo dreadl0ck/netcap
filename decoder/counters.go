@@ -15,10 +15,6 @@ package decoder
 
 import "sync"
 
-////////////////////////
-// Atomic Counter Map //
-////////////////////////
-
 // AtomicCounterMap maps strings to integers.
 type AtomicCounterMap struct {
 	Items map[string]int64

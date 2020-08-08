@@ -42,7 +42,13 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to open pcap:", err)
 	}
-	defer f.Close()
+
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	fmt.Println("detected link type:", r.LinkType())
 

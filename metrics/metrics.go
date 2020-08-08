@@ -51,13 +51,11 @@ var (
 	)
 )
 
-func init() {
-	prometheus.MustRegister(upTime)
-	prometheus.MustRegister(numPackets)
-}
-
 // ServeMetricsAt exposes the prometheus at the given address.
 func ServeMetricsAt(addr string, c *collector.Collector) {
+	prometheus.MustRegister(upTime)
+	prometheus.MustRegister(numPackets)
+
 	fmt.Println("starting to serve metrics at:", addr+metricsRoute)
 
 	go func() {
