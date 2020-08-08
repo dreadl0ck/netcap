@@ -134,7 +134,12 @@ func udpServer(ctx context.Context, address string) (err error) {
 
 	// `Close`ing the packet "connection" means cleaning the data structures
 	// allocated for holding information about the listening socket.
-	defer pc.Close()
+	defer func() {
+		errClose := pc.Close()
+		if errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	var (
 		doneChan        = make(chan error, 1)

@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"fmt"
 	"github.com/dreadl0ck/gopacket"
 	"io"
 	"log"
@@ -51,7 +52,13 @@ func IsPcap(file string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	// try to create pcap reader
 	_, err = pcapgo.NewReader(f)

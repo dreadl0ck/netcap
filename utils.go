@@ -61,7 +61,7 @@ func PrintLogo() {
 
 // FPrintLogo PrintLogo prints the netcap logo.
 func FPrintLogo(w io.Writer) {
-	fmt.Fprintln(w, logo)
+	_, _ = fmt.Fprintln(w, logo)
 }
 
 // PrintBuildInfo displays build information related to netcap to stdout.
@@ -72,16 +72,16 @@ func PrintBuildInfo() {
 
 // FPrintBuildInfo PrintBuildInfo displays build information related to netcap to the specified io Writer.
 func FPrintBuildInfo(w io.Writer) {
-	fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
-	fmt.Fprintln(w, "> NETCAP build commit:", commit)
-	fmt.Fprintln(w, "> go runtime version:", runtime.Version())
-	fmt.Fprintln(w, "> number of cores:", runtime.NumCPU(), "cores")
+	_, _ = fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
+	_, _ = fmt.Fprintln(w, "> NETCAP build commit:", commit)
+	_, _ = fmt.Fprintln(w, "> go runtime version:", runtime.Version())
+	_, _ = fmt.Fprintln(w, "> number of cores:", runtime.NumCPU(), "cores")
 
 	b, ok := debug.ReadBuildInfo()
 	if ok {
 		for _, d := range b.Deps {
 			if path.Base(d.Path) == "gopacket" {
-				fmt.Fprintln(w, "> gopacket:", d.Path, "version:", d.Version)
+				_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", d.Version)
 			}
 		}
 	}
