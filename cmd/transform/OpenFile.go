@@ -15,12 +15,9 @@ package transform
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 
 	"github.com/dreadl0ck/netcap/maltego"
@@ -48,54 +45,7 @@ func openFile() {
 	}
 
 	loc := lt.Values["location"]
-
-	// the open tool uses the file extension to decide which program to pass the file to
-	// if there is an extension for known executable formats - abort
-	ext := filepath.Ext(loc)
-	log.Println("file extension", ext)
-
-	if ext == ".exe" || ext == ".bin" {
-		log.Println("detected known executable file extension - aborting to prevent accidental execution!")
-		trx.AddUIMessage("completed!", maltego.UIMessageInform)
-		fmt.Println(trx.ReturnOutput())
-
-		return
-	}
-
-	// if there is no extension, use content type detection to determine if its an executable
-	// TODO: improve and test content type check and executable file detection
-	log.Println("open path for determining content type:", loc)
-
-	f, err := os.OpenFile(lt.Values["location"], os.O_RDONLY, outDirPermission)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer f.Close()
-
-	buf := make([]byte, 512)
-
-	_, err = io.ReadFull(f, buf)
-	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
-		log.Fatal(err)
-	}
-
-	// check if file is executable to prevent accidental execution
-	cType := http.DetectContentType(buf)
-	log.Println("cType:", cType)
-
-	stat, err := os.Stat(lt.Values["location"])
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if cType == "application/octet-stream" && isExecAny(stat.Mode()) {
-		log.Println("detected executable file - aborting to prevent accidental execution!")
-		trx.AddUIMessage("completed!", maltego.UIMessageInform)
-		fmt.Println(trx.ReturnOutput())
-
-		return
-	}
+	dieIfExecutable(trx, loc)
 
 	args = append(args, loc)
 	log.Println("final command for opening files:", openCommandName, args)
