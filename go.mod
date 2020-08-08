@@ -72,10 +72,3 @@ require (
 	mvdan.cc/xurls/v2 v2.2.0
 )
 
-// Pin k8s deps to 1.17.6
-// needed for simplecert dependency
-replace (
-	k8s.io/api => k8s.io/api v0.17.6
-	k8s.io/apimachinery => k8s.io/apimachinery v0.17.6
-	k8s.io/client-go => k8s.io/client-go v0.17.6
-)
