@@ -23,20 +23,24 @@ var fieldsService = []string{
 	"Timestamp",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *Service) CSVHeader() []string {
 	return filter(fieldsService)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *Service) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *Service) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *Service) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -53,16 +57,20 @@ func init() {
 	prometheus.MustRegister(serviceMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *Service) Inc() {
 	serviceMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *Service) SetPacketContext(*PacketContext) {}
 
+// Src returns the source address of the audit record.
 func (a *Service) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *Service) Dst() string {
 	return ""
 }

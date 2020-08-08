@@ -51,10 +51,12 @@ var fieldsCiscoDiscoveryInfo = []string{
 	"Unknown",          // []*CiscoDiscoveryValue
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *CiscoDiscoveryInfo) CSVHeader() []string {
 	return filter(fieldsCiscoDiscoveryInfo)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *CiscoDiscoveryInfo) CSVRecord() []string {
 	var (
 		ipNets []string
@@ -97,6 +99,7 @@ func (a *CiscoDiscoveryInfo) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *CiscoDiscoveryInfo) Time() string {
 	return a.Timestamp
 }
@@ -270,6 +273,7 @@ func (c *CDPLocation) ToString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *CiscoDiscoveryInfo) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -286,17 +290,21 @@ func init() {
 	prometheus.MustRegister(ciscoDiscoveryInfoMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *CiscoDiscoveryInfo) Inc() {
 	ciscoDiscoveryInfoMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *CiscoDiscoveryInfo) SetPacketContext(*PacketContext) {}
 
 // Src TODO.
+// Src returns the source address of the audit record.
 func (a *CiscoDiscoveryInfo) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *CiscoDiscoveryInfo) Dst() string {
 	return ""
 }

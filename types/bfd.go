@@ -45,10 +45,12 @@ var fieldsBFD = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (b *BFD) CSVHeader() []string {
 	return filter(fieldsBFD)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (b *BFD) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if b.Context == nil {
@@ -80,6 +82,7 @@ func (b *BFD) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (b *BFD) Time() string {
 	return b.Timestamp
 }
@@ -100,6 +103,7 @@ func (bah BFDAuthHeader) getString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (b *BFD) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(b)
 }
@@ -116,14 +120,17 @@ func init() {
 	prometheus.MustRegister(bfdMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (b *BFD) Inc() {
 	bfdMetric.WithLabelValues(b.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (b *BFD) SetPacketContext(ctx *PacketContext) {
 	b.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (b *BFD) Src() string {
 	if b.Context != nil {
 		return b.Context.SrcIP
@@ -131,6 +138,7 @@ func (b *BFD) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (b *BFD) Dst() string {
 	if b.Context != nil {
 		return b.Context.DstIP

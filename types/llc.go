@@ -29,10 +29,12 @@ var fieldsLLC = []string{
 	"Control",   // int32
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (l *LLC) CSVHeader() []string {
 	return filter(fieldsLLC)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (l *LLC) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(l.Timestamp),
@@ -44,10 +46,12 @@ func (l *LLC) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (l *LLC) Time() string {
 	return l.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (l *LLC) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(l)
 }
@@ -64,17 +68,21 @@ func init() {
 	prometheus.MustRegister(llcMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (l *LLC) Inc() {
 	llcMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (l *LLC) SetPacketContext(*PacketContext) {}
 
 // Src TODO.
+// Src returns the source address of the audit record.
 func (l *LLC) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (l *LLC) Dst() string {
 	return ""
 }

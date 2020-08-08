@@ -44,10 +44,12 @@ var fieldsUSB = []string{
 	"Payload",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (u *USB) CSVHeader() []string {
 	return filter(fieldsUSB)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (u *USB) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(u.Timestamp), // string
@@ -73,10 +75,12 @@ func (u *USB) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (u *USB) Time() string {
 	return u.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (u *USB) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(u)
 }
@@ -93,18 +97,22 @@ func init() {
 	prometheus.MustRegister(usbMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (u *USB) Inc() {
 	usbMetric.WithLabelValues(u.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (u *USB) SetPacketContext(*PacketContext) {}
 
 // Src TODO return source DeviceAddress?
+// Src returns the source address of the audit record.
 func (u *USB) Src() string {
 	return ""
 }
 
 // Dst TODO return destination DeviceAddress?
+// Dst returns the destination address of the audit record.
 func (u *USB) Dst() string {
 	return ""
 }

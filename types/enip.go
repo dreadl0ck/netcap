@@ -35,10 +35,12 @@ var fieldsENIP = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (en *ENIP) CSVHeader() []string {
 	return filter(fieldsENIP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (en *ENIP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if en.Context == nil {
@@ -60,10 +62,12 @@ func (en *ENIP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (en *ENIP) Time() string {
 	return en.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (en *ENIP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(en)
 }
@@ -80,14 +84,17 @@ func init() {
 	prometheus.MustRegister(enipMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (en *ENIP) Inc() {
 	enipMetric.WithLabelValues(en.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (en *ENIP) SetPacketContext(ctx *PacketContext) {
 	en.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (en *ENIP) Src() string {
 	if en.Context != nil {
 		return en.Context.SrcIP
@@ -95,6 +102,7 @@ func (en *ENIP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (en *ENIP) Dst() string {
 	if en.Context != nil {
 		return en.Context.DstIP

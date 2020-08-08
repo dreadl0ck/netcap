@@ -36,10 +36,12 @@ var fieldsGeneve = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (i *Geneve) CSVHeader() []string {
 	return filter(fieldsGeneve)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (i *Geneve) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
@@ -65,6 +67,7 @@ func (i *Geneve) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (i *Geneve) Time() string {
 	return i.Timestamp
 }
@@ -86,6 +89,7 @@ func (i GeneveOption) ToString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (i *Geneve) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(i)
 }
@@ -102,14 +106,17 @@ func init() {
 	prometheus.MustRegister(geneveMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (i *Geneve) Inc() {
 	geneveMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (i *Geneve) SetPacketContext(ctx *PacketContext) {
 	i.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (i *Geneve) Src() string {
 	if i.Context != nil {
 		return i.Context.SrcIP
@@ -117,6 +124,7 @@ func (i *Geneve) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (i *Geneve) Dst() string {
 	if i.Context != nil {
 		return i.Context.DstIP

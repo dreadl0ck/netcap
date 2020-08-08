@@ -30,10 +30,12 @@ var fieldsSCTP = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (s *SCTP) CSVHeader() []string {
 	return filter(fieldsSCTP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (s *SCTP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if s.Context == nil {
@@ -50,10 +52,12 @@ func (s *SCTP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (s *SCTP) Time() string {
 	return s.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (u SCTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
 }
@@ -70,10 +74,12 @@ func init() {
 	prometheus.MustRegister(sctpMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (s *SCTP) Inc() {
 	sctpMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (s *SCTP) SetPacketContext(ctx *PacketContext) {
 	// create new context and only add information that is
 	// not yet present on the audit record type
@@ -83,6 +89,7 @@ func (s *SCTP) SetPacketContext(ctx *PacketContext) {
 	}
 }
 
+// Src returns the source address of the audit record.
 func (s *SCTP) Src() string {
 	if s.Context != nil {
 		return s.Context.SrcIP
@@ -90,6 +97,7 @@ func (s *SCTP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (s *SCTP) Dst() string {
 	if s.Context != nil {
 		return s.Context.DstIP

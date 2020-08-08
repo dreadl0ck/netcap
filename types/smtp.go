@@ -32,10 +32,12 @@ var fieldsSMTP = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *SMTP) CSVHeader() []string {
 	return filter(fieldsSMTP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *SMTP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -58,6 +60,7 @@ func (a *SMTP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *SMTP) Time() string {
 	return a.Timestamp
 }
@@ -82,6 +85,7 @@ func (a SMTPResponse) getString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *SMTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -98,14 +102,17 @@ func init() {
 	prometheus.MustRegister(smtpMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *SMTP) Inc() {
 	smtpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *SMTP) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *SMTP) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -113,6 +120,7 @@ func (a *SMTP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *SMTP) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

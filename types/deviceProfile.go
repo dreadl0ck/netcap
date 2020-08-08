@@ -25,10 +25,12 @@ var fieldsDeviceProfile = []string{
 	"Bytes",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (d *DeviceProfile) CSVHeader() []string {
 	return filter(fieldsDeviceProfile)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (d *DeviceProfile) CSVRecord() []string {
 	return filter([]string{
 		d.Timestamp,
@@ -41,22 +43,28 @@ func (d *DeviceProfile) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (d *DeviceProfile) Time() string {
 	return ""
 }
 
+// JSON returns the JSON representation of the audit record.
 func (d *DeviceProfile) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(d)
 }
 
+// Inc increments the metrics for the audit record.
 func (d *DeviceProfile) Inc() {}
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (d *DeviceProfile) SetPacketContext(*PacketContext) {}
 
+// Src returns the source address of the audit record.
 func (d *DeviceProfile) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (d *DeviceProfile) Dst() string {
 	return ""
 }

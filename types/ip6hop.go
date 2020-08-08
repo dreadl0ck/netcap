@@ -27,10 +27,12 @@ var fieldsIPv6HopByHop = []string{
 	"DstIP", // string
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (l *IPv6HopByHop) CSVHeader() []string {
 	return filter(fieldsIPv6HopByHop)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (l *IPv6HopByHop) CSVRecord() []string {
 	opts := make([]string, len(l.Options))
 	for i, v := range l.Options {
@@ -48,6 +50,7 @@ func (l *IPv6HopByHop) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (l *IPv6HopByHop) Time() string {
 	return l.Timestamp
 }
@@ -68,6 +71,7 @@ func (a *IPv6HopByHopOptionAlignment) ToString() string {
 	return join(formatInt32(a.One), formatInt32(a.Two))
 }
 
+// JSON returns the JSON representation of the audit record.
 func (l *IPv6HopByHop) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(l)
 }
@@ -84,14 +88,17 @@ func init() {
 	prometheus.MustRegister(ip6hopMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (l *IPv6HopByHop) Inc() {
 	ip6hopMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (l *IPv6HopByHop) SetPacketContext(ctx *PacketContext) {
 	l.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (l *IPv6HopByHop) Src() string {
 	if l.Context != nil {
 		return l.Context.SrcIP
@@ -99,6 +106,7 @@ func (l *IPv6HopByHop) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (l *IPv6HopByHop) Dst() string {
 	if l.Context != nil {
 		return l.Context.DstIP

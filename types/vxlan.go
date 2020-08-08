@@ -32,10 +32,12 @@ var fieldsVXLAN = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *VXLAN) CSVHeader() []string {
 	return filter(fieldsVXLAN)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *VXLAN) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -54,10 +56,12 @@ func (a *VXLAN) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *VXLAN) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *VXLAN) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -74,14 +78,17 @@ func init() {
 	prometheus.MustRegister(vxlanMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *VXLAN) Inc() {
 	vxlanMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *VXLAN) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *VXLAN) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -89,6 +96,7 @@ func (a *VXLAN) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *VXLAN) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

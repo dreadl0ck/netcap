@@ -34,10 +34,12 @@ var fieldsUDP = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (u *UDP) CSVHeader() []string {
 	return filter(fieldsUDP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (u *UDP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if u.Context == nil {
@@ -57,10 +59,12 @@ func (u *UDP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (u *UDP) Time() string {
 	return u.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (u *UDP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(u)
 }
@@ -111,12 +115,14 @@ func init() {
 	prometheus.MustRegister(udpPayloadSize)
 }
 
+// Inc increments the metrics for the audit record.
 func (u *UDP) Inc() {
 	udpMetric.WithLabelValues(u.metricValues()...).Inc()
 	udpPayloadEntropy.WithLabelValues().Observe(u.PayloadEntropy)
 	udpPayloadSize.WithLabelValues().Observe(float64(u.PayloadSize))
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (u *UDP) SetPacketContext(ctx *PacketContext) {
 	// create new context and only add information that is
 	// not yet present on the audit record type
@@ -126,6 +132,7 @@ func (u *UDP) SetPacketContext(ctx *PacketContext) {
 	}
 }
 
+// Src returns the source address of the audit record.
 func (u *UDP) Src() string {
 	if u.Context != nil {
 		return u.Context.SrcIP
@@ -133,6 +140,7 @@ func (u *UDP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (u *UDP) Dst() string {
 	if u.Context != nil {
 		return u.Context.DstIP

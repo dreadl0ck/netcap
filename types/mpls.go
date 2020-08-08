@@ -30,10 +30,12 @@ var fieldsMPLS = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *MPLS) CSVHeader() []string {
 	return filter(fieldsMPLS)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *MPLS) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -50,10 +52,12 @@ func (a *MPLS) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *MPLS) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *MPLS) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -70,14 +74,17 @@ func init() {
 	prometheus.MustRegister(mplsMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *MPLS) Inc() {
 	mplsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *MPLS) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *MPLS) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -85,6 +92,7 @@ func (a *MPLS) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *MPLS) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

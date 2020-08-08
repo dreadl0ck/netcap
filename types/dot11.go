@@ -37,10 +37,12 @@ var fieldsDot11 = []string{
 	"HTControl",      // *Dot11HTControl
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (d *Dot11) CSVHeader() []string {
 	return filter(fieldsDot11)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (d *Dot11) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(d.Timestamp),
@@ -60,6 +62,7 @@ func (d *Dot11) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (d *Dot11) Time() string {
 	return d.Timestamp
 }
@@ -178,6 +181,7 @@ func (d *Dot11ASEL) ToString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (d *Dot11) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(d)
 }
@@ -194,17 +198,21 @@ func init() {
 	prometheus.MustRegister(dot11Metric)
 }
 
+// Inc increments the metrics for the audit record.
 func (d *Dot11) Inc() {
 	dot11Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (d *Dot11) SetPacketContext(*PacketContext) {}
 
 // Src TODO: return Mac addr.
+// Src returns the source address of the audit record.
 func (d *Dot11) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (d *Dot11) Dst() string {
 	return ""
 }

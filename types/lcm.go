@@ -36,10 +36,12 @@ var fieldsLCM = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *LCM) CSVHeader() []string {
 	return filter(fieldsLCM)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *LCM) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -62,10 +64,12 @@ func (a *LCM) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *LCM) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *LCM) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -82,14 +86,17 @@ func init() {
 	prometheus.MustRegister(lcmMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *LCM) Inc() {
 	lcmMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *LCM) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *LCM) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -97,6 +104,7 @@ func (a *LCM) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *LCM) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

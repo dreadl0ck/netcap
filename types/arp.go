@@ -33,10 +33,12 @@ var fieldsARP = []string{
 	"DstProtAddress",  // []byte
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *ARP) CSVHeader() []string {
 	return filter(fieldsARP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *ARP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
@@ -52,10 +54,12 @@ func (a *ARP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *ARP) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *ARP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -72,18 +76,22 @@ func init() {
 	prometheus.MustRegister(arpMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *ARP) Inc() {
 	arpMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *ARP) SetPacketContext(*PacketContext) {}
 
 // Src TODO: preserve source and destination mac adresses for ARP and return them here.
+// Src returns the source address of the audit record.
 func (a *ARP) Src() string {
 	return ""
 }
 
 // Dst TODO: preserve source and destination mac adresses for ARP and return them here.
+// Dst returns the destination address of the audit record.
 func (a *ARP) Dst() string {
 	return ""
 }

@@ -51,10 +51,12 @@ var fieldsTLSServerHello = []string{
 	"Ja3S",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (t *TLSServerHello) CSVHeader() []string {
 	return filter(fieldsTLSServerHello)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (t *TLSServerHello) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(t.Timestamp),
@@ -87,10 +89,12 @@ func (t *TLSServerHello) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (t *TLSServerHello) Time() string {
 	return t.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (t *TLSServerHello) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(t)
 }
@@ -107,17 +111,21 @@ func init() {
 	prometheus.MustRegister(tlsServerMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (t *TLSServerHello) Inc() {
 	tlsServerMetric.WithLabelValues(t.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (t *TLSServerHello) SetPacketContext(*PacketContext) {
 }
 
+// Src returns the source address of the audit record.
 func (t *TLSServerHello) Src() string {
 	return t.SrcIP
 }
 
+// Dst returns the destination address of the audit record.
 func (t *TLSServerHello) Dst() string {
 	return t.DstIP
 }

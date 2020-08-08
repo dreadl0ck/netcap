@@ -46,10 +46,12 @@ var fieldsEAPOLKey = []string{
 	"EncryptedKeyData",     // []byte
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *EAPOLKey) CSVHeader() []string {
 	return filter(fieldsEAPOLKey)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *EAPOLKey) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
@@ -77,10 +79,12 @@ func (a *EAPOLKey) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *EAPOLKey) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *EAPOLKey) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -97,17 +101,21 @@ func init() {
 	prometheus.MustRegister(eapPolKeyMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *EAPOLKey) Inc() {
 	eapPolKeyMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *EAPOLKey) SetPacketContext(*PacketContext) {}
 
 // Src TODO: return Mac addr.
+// Src returns the source address of the audit record.
 func (a *EAPOLKey) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *EAPOLKey) Dst() string {
 	return ""
 }

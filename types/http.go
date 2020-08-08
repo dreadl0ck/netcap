@@ -41,10 +41,12 @@ var fieldsHTTP = []string{
 	"ServerName",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (h *HTTP) CSVHeader() []string {
 	return filter(fieldsHTTP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (h *HTTP) CSVRecord() []string {
 	var reqCookies []string
 	for _, c := range h.ReqCookies {
@@ -102,10 +104,12 @@ func (c *HTTPCookie) ToString() string {
 	return b.String()
 }
 
+// Time returns the timestamp associated with the audit record.
 func (h *HTTP) Time() string {
 	return h.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (h *HTTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(h)
 }
@@ -122,16 +126,20 @@ func init() {
 	prometheus.MustRegister(httpMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (h *HTTP) Inc() {
 	httpMetric.WithLabelValues(h.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (h *HTTP) SetPacketContext(*PacketContext) {}
 
+// Src returns the source address of the audit record.
 func (h *HTTP) Src() string {
 	return h.SrcIP
 }
 
+// Dst returns the destination address of the audit record.
 func (h *HTTP) Dst() string {
 	return h.DstIP
 }

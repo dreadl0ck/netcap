@@ -29,10 +29,12 @@ var fieldsEAP = []string{
 	"TypeData", // []byte
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *EAP) CSVHeader() []string {
 	return filter(fieldsEAP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *EAP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
@@ -44,10 +46,12 @@ func (a *EAP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *EAP) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *EAP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -64,17 +68,21 @@ func init() {
 	prometheus.MustRegister(eapMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *EAP) Inc() {
 	eapMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *EAP) SetPacketContext(*PacketContext) {}
 
 // Src TODO: return Mac addr.
+// Src returns the source address of the audit record.
 func (a *EAP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *EAP) Dst() string {
 	return ""
 }

@@ -27,10 +27,12 @@ var fieldsICMPv6 = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (i *ICMPv6) CSVHeader() []string {
 	return filter(fieldsICMPv6)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (i *ICMPv6) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if i.Context == nil {
@@ -45,10 +47,12 @@ func (i *ICMPv6) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (i *ICMPv6) Time() string {
 	return i.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (i *ICMPv6) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(i)
 }
@@ -65,14 +69,17 @@ func init() {
 	prometheus.MustRegister(icmp6Metric)
 }
 
+// Inc increments the metrics for the audit record.
 func (i *ICMPv6) Inc() {
 	icmp6Metric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (i *ICMPv6) SetPacketContext(ctx *PacketContext) {
 	i.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (i *ICMPv6) Src() string {
 	if i.Context != nil {
 		return i.Context.SrcIP
@@ -80,6 +87,7 @@ func (i *ICMPv6) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (i *ICMPv6) Dst() string {
 	if i.Context != nil {
 		return i.Context.DstIP

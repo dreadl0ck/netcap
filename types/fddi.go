@@ -27,10 +27,12 @@ var fieldsFDDI = []string{
 	"DstMAC",       //  string
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *FDDI) CSVHeader() []string {
 	return filter(fieldsFDDI)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *FDDI) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
@@ -41,10 +43,12 @@ func (a *FDDI) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *FDDI) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *FDDI) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -61,16 +65,20 @@ func init() {
 	prometheus.MustRegister(fddiMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *FDDI) Inc() {
 	fddiMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *FDDI) SetPacketContext(*PacketContext) {}
 
+// Src returns the source address of the audit record.
 func (a *FDDI) Src() string {
 	return a.SrcMAC
 }
 
+// Dst returns the destination address of the audit record.
 func (a *FDDI) Dst() string {
 	return a.DstMAC
 }

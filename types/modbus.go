@@ -36,10 +36,12 @@ var fieldsModbus = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *Modbus) CSVHeader() []string {
 	return filter(fieldsModbus)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *Modbus) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -61,10 +63,12 @@ func (a *Modbus) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *Modbus) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *Modbus) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -81,14 +85,17 @@ func init() {
 	prometheus.MustRegister(modbusTCPMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *Modbus) Inc() {
 	modbusTCPMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *Modbus) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *Modbus) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -96,6 +103,7 @@ func (a *Modbus) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *Modbus) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

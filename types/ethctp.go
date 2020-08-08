@@ -24,10 +24,12 @@ var fieldsEthernetCTP = []string{
 	"SkipCount", // int32
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (i *EthernetCTP) CSVHeader() []string {
 	return filter(fieldsEthernetCTP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (i *EthernetCTP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
@@ -35,10 +37,12 @@ func (i *EthernetCTP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (i *EthernetCTP) Time() string {
 	return i.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (i *EthernetCTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(i)
 }
@@ -55,17 +59,21 @@ func init() {
 	prometheus.MustRegister(ethernetCTPMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (i *EthernetCTP) Inc() {
 	ethernetCTPMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *EthernetCTP) SetPacketContext(*PacketContext) {}
 
 // Src TODO.
+// Src returns the source address of the audit record.
 func (i *EthernetCTP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (i *EthernetCTP) Dst() string {
 	return ""
 }

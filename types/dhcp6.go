@@ -34,10 +34,12 @@ var fieldsDHCPv6 = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (d *DHCPv6) CSVHeader() []string {
 	return filter(fieldsDHCPv6)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (d *DHCPv6) CSVRecord() []string {
 	var opts []string
 	for _, o := range d.Options {
@@ -62,6 +64,7 @@ func (d *DHCPv6) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (d *DHCPv6) Time() string {
 	return d.Timestamp
 }
@@ -78,6 +81,7 @@ func (d DHCPv6Option) ToString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (d *DHCPv6) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(d)
 }
@@ -94,14 +98,17 @@ func init() {
 	prometheus.MustRegister(dhcp6Metric)
 }
 
+// Inc increments the metrics for the audit record.
 func (d *DHCPv6) Inc() {
 	dhcp6Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (d *DHCPv6) SetPacketContext(ctx *PacketContext) {
 	d.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (d *DHCPv6) Src() string {
 	if d.Context != nil {
 		return d.Context.SrcIP
@@ -109,6 +116,7 @@ func (d *DHCPv6) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (d *DHCPv6) Dst() string {
 	if d.Context != nil {
 		return d.Context.DstIP

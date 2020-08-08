@@ -43,10 +43,12 @@ var fieldsNTP = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (n *NTP) CSVHeader() []string {
 	return filter(fieldsNTP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (n *NTP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if n.Context == nil {
@@ -75,10 +77,12 @@ func (n *NTP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (n *NTP) Time() string {
 	return n.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (n *NTP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(n)
 }
@@ -95,14 +99,17 @@ func init() {
 	prometheus.MustRegister(ntpMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (n *NTP) Inc() {
 	ntpMetric.WithLabelValues(n.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (n *NTP) SetPacketContext(ctx *PacketContext) {
 	n.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (n *NTP) Src() string {
 	if n.Context != nil {
 		return n.Context.SrcIP
@@ -110,6 +117,7 @@ func (n *NTP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (n *NTP) Dst() string {
 	if n.Context != nil {
 		return n.Context.DstIP

@@ -45,10 +45,12 @@ var fieldsGRE = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *GRE) CSVHeader() []string {
 	return filter(fieldsGRE)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *GRE) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -79,6 +81,7 @@ func (a *GRE) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *GRE) Time() string {
 	return a.Timestamp
 }
@@ -105,6 +108,7 @@ func (r *GRERouting) getString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *GRE) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -121,14 +125,17 @@ func init() {
 	prometheus.MustRegister(greMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *GRE) Inc() {
 	greMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *GRE) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *GRE) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -136,6 +143,7 @@ func (a *GRE) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *GRE) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

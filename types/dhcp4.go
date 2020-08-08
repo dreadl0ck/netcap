@@ -43,10 +43,12 @@ var fieldsDHCPv4 = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (d *DHCPv4) CSVHeader() []string {
 	return filter(fieldsDHCPv4)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (d *DHCPv4) CSVRecord() []string {
 	var opts []string
 	for _, o := range d.Options {
@@ -80,6 +82,7 @@ func (d *DHCPv4) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (d *DHCPv4) Time() string {
 	return d.Timestamp
 }
@@ -96,6 +99,7 @@ func (d DHCPOption) ToString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (d *DHCPv4) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(d)
 }
@@ -112,14 +116,17 @@ func init() {
 	prometheus.MustRegister(dhcp4Metric)
 }
 
+// Inc increments the metrics for the audit record.
 func (d *DHCPv4) Inc() {
 	dhcp4Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (d *DHCPv4) SetPacketContext(ctx *PacketContext) {
 	d.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (d *DHCPv4) Src() string {
 	if d.Context != nil {
 		return d.Context.SrcIP
@@ -127,6 +134,7 @@ func (d *DHCPv4) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (d *DHCPv4) Dst() string {
 	if d.Context != nil {
 		return d.Context.DstIP
