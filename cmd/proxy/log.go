@@ -22,10 +22,8 @@ import (
 // logFileName holds name of the logfile.
 const logFileName = "net.proxy.log"
 
-var (
-	// Log instance.
-	Log   *zap.Logger
-)
+// Log instance.
+var Log *zap.Logger
 
 // configureLogger configures the logging instance.
 func configureLogger(debug bool, outputPath string) {

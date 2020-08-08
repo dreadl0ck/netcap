@@ -228,7 +228,7 @@ func parseVersionInfo(r io.ByteReader) (string, error) {
 	var (
 		res []byte
 		b   byte
-	 )
+	)
 
 	for {
 		b, err = r.ReadByte()
@@ -433,7 +433,7 @@ func initServiceProbes() error {
 					}
 
 					regex = append(regex, b)
-					
+
 					continue
 				}
 				// start of regex
@@ -453,7 +453,7 @@ func initServiceProbes() error {
 					// fmt.Println("read delim", string(b))
 
 					delim = b
-					
+
 					continue
 				}
 			}
@@ -469,7 +469,7 @@ func initServiceProbes() error {
 			if s.CaseInsensitive {
 				finalReg += "i"
 			}
-			
+
 			if s.IncludeNewlines {
 				finalReg += "s"
 			}
@@ -514,7 +514,7 @@ func colorize(in string, num int) string {
 	for i, c := range in {
 		if i == num-1 {
 			out = in[:i] + ansi.Red + string(c) + ansi.Reset + in[i+1:]
-			
+
 			break
 		}
 	}
@@ -568,7 +568,7 @@ func clean(in string) string {
 
 		if string(b) == "\\" && !escaped {
 			debug("set escaped to true")
-			
+
 			escaped = true
 		} else if escaped {
 			if resetEscaped {
