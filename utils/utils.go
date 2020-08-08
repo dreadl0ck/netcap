@@ -124,6 +124,7 @@ func GetBaseLayer(value string) (t gopacket.LayerType) {
 	default:
 		log.Fatal("invalid baseLayer:", value)
 	}
+
 	return
 }
 
@@ -141,6 +142,7 @@ func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 	default:
 		log.Fatal("invalid decode options:", value)
 	}
+
 	return
 }
 
@@ -236,6 +238,7 @@ func StringToTime(val string) time.Time {
 		if err != nil {
 			panic(err)
 		}
+
 		return time.Unix(seconds, micro*1000)
 	}
 
@@ -248,6 +251,7 @@ func TimeToString(t time.Time) string {
 	b = strconv.AppendInt(b, t.Unix(), 10)
 	b = append(b, byte(46)) // 46 dec == "." FULL_STOP
 	b = strconv.AppendInt(b, int64(t.Nanosecond()/1000), 10)
+
 	return string(b)
 }
 

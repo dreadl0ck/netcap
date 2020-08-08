@@ -21,16 +21,19 @@ var (
 
 func InitLoggers(outpath string) {
 	var err error
+
 	DebugLogFileHandle, err = os.OpenFile(filepath.Join(outpath, "debug.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	DebugLog.SetOutput(DebugLogFileHandle)
 
 	ReassemblyLogFileHandle, err = os.OpenFile(filepath.Join(outpath, "reassembly.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	ReassemblyLog.SetOutput(ReassemblyLogFileHandle)
 }
 
@@ -44,6 +47,7 @@ func CloseLogFiles() []error {
 			errs = append(errs, err)
 		}
 	}
+
 	if DebugLogFileHandle != nil {
 		err := DebugLogFileHandle.Close()
 		if err != nil {

@@ -135,6 +135,7 @@ func (b *BFD) Src() string {
 	if b.Context != nil {
 		return b.Context.SrcIP
 	}
+
 	return ""
 }
 
@@ -143,5 +144,6 @@ func (b *BFD) Dst() string {
 	if b.Context != nil {
 		return b.Context.DstIP
 	}
+
 	return ""
 }

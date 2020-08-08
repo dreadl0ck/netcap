@@ -36,6 +36,7 @@ func openContentTypeFolder() {
 	log.Println("open path:", path)
 
 	log.Println("command for opening path:", openCommandName)
+
 	args = append(args, path)
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
@@ -43,6 +44,7 @@ func openContentTypeFolder() {
 		log.Println(string(out))
 		log.Fatal(err)
 	}
+
 	log.Println(string(out))
 
 	trx.AddUIMessage("completed!", "Inform")
