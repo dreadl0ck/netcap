@@ -44,10 +44,12 @@ func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 	if err != nil {
 		panic(err)
 	}
+
 	f, err := os.Create(path)
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Println("new audit record handle", path)
 
 	conf := decoder.DefaultConfig
@@ -61,6 +63,7 @@ func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 		// create gzip writer that writes into the buffered writer
 		gWriter, errGzipWriter = gzip.NewWriterLevel(bWriter, netcap.DefaultCompressionLevel)
 	)
+
 	if errGzipWriter != nil {
 		panic(errGzipWriter)
 	}

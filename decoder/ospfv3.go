@@ -115,8 +115,9 @@ var ospfv3Decoder = newGoPacketDecoder(
 )
 
 func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
-	var lsas []*types.LSA
-	for _, l := range v.LSAs {
+	lsas := make([]*types.LSA, len(v.LSAs))
+
+	for i, l := range v.LSAs {
 		var (
 			rLSAV2             *types.RouterLSAV2
 			asExternalLSAV2    *types.ASExternalLSAV2
@@ -128,6 +129,7 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 			linkLSA            *types.LinkLSA
 			intraAreaPrefixLSA *types.IntraAreaPrefixLSA
 		)
+
 		switch val := l.Content.(type) {
 		case layers.RouterLSAV2:
 			var routers []*types.RouterV2
@@ -139,6 +141,7 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 					Metric:   uint32(r.Metric),
 				})
 			}
+
 			rLSAV2 = &types.RouterLSAV2{
 				Flags:   int32(val.Flags),
 				Links:   int32(val.Links),
@@ -163,6 +166,7 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 					NeighborRouterID:    r.NeighborRouterID,
 				})
 			}
+
 			routerLSA = &types.RouterLSA{
 				Flags:   int32(val.Flags),
 				Options: val.Options,
@@ -208,6 +212,7 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 					AddressPrefix: r.AddressPrefix,
 				})
 			}
+
 			linkLSA = &types.LinkLSA{
 				RtrPriority:      int32(val.RtrPriority),
 				Options:          val.Options,
@@ -233,7 +238,7 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 				Prefixes:       prefixes,
 			}
 		}
-		lsas = append(lsas, &types.LSA{
+		lsas[i] = &types.LSA{
 			Header: &types.LSAheader{
 				LSAge:       int32(l.LSAge),
 				LSType:      int32(l.LSType),
@@ -253,7 +258,7 @@ func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 			ASELSA:          asExternalLSA,
 			LLSA:            linkLSA,
 			IntraAPrefixLSA: intraAreaPrefixLSA,
-		})
+		}
 	}
 
 	return &types.LSUpdate{

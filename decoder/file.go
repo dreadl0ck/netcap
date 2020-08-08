@@ -49,6 +49,7 @@ func writeFile(f *types.File) {
 	}
 
 	atomic.AddInt64(&fileDecoderInstance.numRecords, 1)
+
 	err := fileDecoderInstance.writer.Write(f)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)

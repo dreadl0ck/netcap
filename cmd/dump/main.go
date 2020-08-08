@@ -33,6 +33,7 @@ import (
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
+
 	err := fs.Parse(os.Args[2:])
 	if err != nil {
 		log.Fatal(err)
@@ -114,6 +115,7 @@ func Run() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		return
 	}
 }

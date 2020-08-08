@@ -46,6 +46,7 @@ const (
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
+
 	err := fs.Parse(os.Args[2:])
 	if err != nil {
 		log.Fatal(err)
@@ -158,6 +159,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 
 	// hex decode private key
 	var serverPrivKey [cryptoutils.KeySize]byte
+
 	_, err = hex.Decode(serverPrivKey[:], privKeyContents)
 	if err != nil {
 		log.Fatal("failed to decode private key: ", err)
@@ -219,6 +221,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 				if errProcess != nil {
 					fmt.Println(hex.Dump(decryptedBuf.Bytes()))
 					fmt.Println("gzip error", errProcess)
+
 					return
 				}
 

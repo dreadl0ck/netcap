@@ -45,6 +45,7 @@ func Init() {
 	// init DPI
 	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{lPI, nDPI}})
 	godpi.SetModules([]Module{wm, goDPI})
+
 	if err := godpi.Initialize(); err != nil {
 		log.Fatal("goDPI initialization returned error: ", err)
 	}
@@ -86,7 +87,7 @@ func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 	return protocols
 }
 
-// NewProto initializes a new protocol
+// NewProto initializes a new protocol.
 func NewProto(res *ClassificationResult) *types.Protocol {
 	return &types.Protocol{
 		Packets:  1,

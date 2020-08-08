@@ -21,6 +21,8 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+const typeTCP = "tcp"
+
 var tcpDecoder = newGoPacketDecoder(
 	types.Type_NC_TCP,
 	layers.LayerTypeTCP,

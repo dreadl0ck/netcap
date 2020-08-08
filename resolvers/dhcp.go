@@ -53,7 +53,13 @@ func SaveFingerprintDB() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			utils.DebugLog.Println(errClose)
+		}
+	}()
 
 	_, err = f.Write(data)
 	if err != nil {
@@ -174,7 +180,12 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*DHCPResult,
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		errClose := resp.Body.Close()
+		if errClose != nil {
+			utils.DebugLog.Println("failed to close DHCP fingerprint API response body:", errClose)
+		}
+	}()
 
 	// read response body
 	data, err := ioutil.ReadAll(resp.Body)

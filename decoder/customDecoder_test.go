@@ -14,14 +14,17 @@
 package decoder
 
 import (
+	"os"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func TestInitCustomDecoders(t *testing.T) {
+	_ = os.MkdirAll("tests/customDecoders", defaultDirectoryPermission)
+
 	conf = &Config{
-		Out:                     "",
+		Out:                     "tests/customDecoders",
 		Source:                  "",
 		CustomRegex:             "",
 		MemProfile:              "",
@@ -59,7 +62,7 @@ func TestInitCustomDecoders(t *testing.T) {
 		DefragIPv4:              false,
 		Export:                  false,
 		IncludePayloads:         false,
-		Compression:             false,
+		Compression:             true,
 		IgnoreDecoderInitErrors: false,
 	}
 	decoders, err := InitCustomDecoders(conf)

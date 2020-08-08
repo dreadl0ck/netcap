@@ -47,7 +47,7 @@ func (h *tcpReader) Decode() {
 func getServiceName(data []byte, flow gopacket.Flow) string {
 	var (
 		dstPort, _ = strconv.Atoi(flow.Dst().String())
-		s          = resolvers.LookupServiceByPort(dstPort, "tcp")
+		s          = resolvers.LookupServiceByPort(dstPort, typeTCP)
 	)
 	if s != "" {
 		return s
@@ -55,7 +55,7 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 
 	// what about the source port?
 	srcPort, _ := strconv.Atoi(flow.Src().String())
-	s = resolvers.LookupServiceByPort(srcPort, "tcp")
+	s = resolvers.LookupServiceByPort(srcPort, typeTCP)
 	if s != "" {
 		return s
 	}
@@ -178,7 +178,11 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	)
 
 	// make sure root path exists
-	os.MkdirAll(root, defaultDirectoryPermission)
+	err := os.MkdirAll(root, defaultDirectoryPermission)
+	if err != nil {
+		utils.DebugLog.Println("failed to create directory:", root, defaultDirectoryPermission)
+	}
+
 	base = path.Join(root, base)
 
 	utils.ReassemblyLog.Println("saveConnection", base)

@@ -341,6 +341,7 @@ func (c *Collector) printProgress() {
 	// dont print message when collector is about to shutdown
 	if c.shutdown {
 		c.statMutex.Unlock()
+
 		return
 	}
 	c.statMutex.Unlock()
@@ -367,6 +368,7 @@ func (c *Collector) printProgress() {
 
 			// print
 			clearLine()
+
 			_, _ = os.Stdout.WriteString(b.String())
 		}
 	}
@@ -408,6 +410,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 
 				if !c.config.Quiet { // print
 					clearLine()
+
 					_, _ = fmt.Fprintf(os.Stdout,
 						c.progressString,
 						utils.Progress(curr, num),
@@ -438,11 +441,8 @@ func (c *Collector) GetNumPackets() int64 {
 
 // FreeOSMemory forces freeing memory.
 func (c *Collector) freeOSMemory() {
-	for {
-		select {
-		case <-time.After(time.Duration(c.config.FreeOSMem) * time.Minute):
-			debug.FreeOSMemory()
-		}
+	for range time.After(time.Duration(c.config.FreeOSMem) * time.Minute) {
+		debug.FreeOSMemory()
 	}
 }
 
@@ -507,9 +507,13 @@ func (c *Collector) initLogging() error {
 		return nil
 	}
 
-	if len(c.config.DecoderConfig.Out) != 0 {
+	if c.config.DecoderConfig.Out != "" {
 		if stat, err := os.Stat(c.config.DecoderConfig.Out); err != nil {
-			os.MkdirAll(c.config.DecoderConfig.Out, os.FileMode(outDirPermissionDefault))
+
+			err = os.MkdirAll(c.config.DecoderConfig.Out, os.FileMode(outDirPermissionDefault))
+			if err != nil {
+				fmt.Println(err)
+			}
 
 			_, err = os.Stat(c.config.DecoderConfig.Out)
 			if err != nil {

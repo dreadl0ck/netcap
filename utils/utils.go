@@ -106,9 +106,14 @@ func ListAllNetworkInterfaces() {
 		log.Fatal("failed to get network interfaces: ", err)
 	}
 
-	var rows [][]string
+	var (
+		rows  = make([][]string, len(interfaces))
+		index int
+	)
+
 	for _, nic := range interfaces {
-		rows = append(rows, []string{strconv.Itoa(nic.Index), nic.Name, nic.Flags.String(), nic.HardwareAddr.String(), strconv.Itoa(nic.MTU)})
+		rows[index] = []string{strconv.Itoa(nic.Index), nic.Name, nic.Flags.String(), nic.HardwareAddr.String(), strconv.Itoa(nic.MTU)}
+		index++
 	}
 
 	tui.Table(os.Stdout, []string{"Index", "Name", "Flags", "HardwareAddr", "MTU"}, rows)

@@ -75,7 +75,13 @@ func InitServiceDB() {
 		log.Println(err)
 		return
 	}
-	defer f.Close()
+
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	records, err := csvReader.ReadAll()
 	if err != nil {

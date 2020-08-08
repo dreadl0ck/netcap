@@ -49,7 +49,10 @@ func toAuditRecordsWithDPI() {
 	outDir := inputFile + ".net"
 
 	// error explicitly ignored, files will be overwritten if there are any
-	os.MkdirAll(outDir, outDirPermission)
+	err := os.MkdirAll(outDir, outDirPermission)
+	if err != nil {
+		log.Println(err)
+	}
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
 	maltegoBaseConfig.DecoderConfig.Source = inputFile

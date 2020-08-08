@@ -112,10 +112,17 @@ func Dump(w *os.File, c DumpConfig) error {
 		count  = 0
 		r, err = Open(c.Path, c.MemBufferSize)
 	)
+
 	if err != nil {
 		return fmt.Errorf("failed to open audit record file: %s", err)
 	}
-	defer r.Close()
+
+	defer func() {
+		errClose := r.Close()
+		if errClose != nil {
+			utils.DebugLog.Println("failed to close file:", errClose)
+		}
+	}()
 
 	if c.Separator == "\\t" || c.TabSeparated {
 		c.Separator = "\t"
@@ -128,6 +135,7 @@ func Dump(w *os.File, c DumpConfig) error {
 		rows     [][]string
 		colorMap map[string]string
 	)
+
 	if errFileHeader != nil {
 		return errFileHeader
 	}
@@ -137,7 +145,7 @@ func Dump(w *os.File, c DumpConfig) error {
 
 	if !c.Structured && !c.Table && !c.JSON {
 		if p, ok := record.(types.AuditRecord); ok {
-			w.WriteString(strings.Join(p.CSVHeader(), c.Separator))
+			_, _ = w.WriteString(strings.Join(p.CSVHeader(), c.Separator))
 		} else {
 			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)
 		}
@@ -165,8 +173,8 @@ func Dump(w *os.File, c DumpConfig) error {
 					return fmt.Errorf("failed to marshal json: %s", errMarshal)
 				}
 
-				w.WriteString(string(marshaled))
-				w.WriteString("\n")
+				_, _ = w.WriteString(string(marshaled))
+				_, _ = w.WriteString("\n")
 
 				continue
 			}
@@ -179,29 +187,31 @@ func Dump(w *os.File, c DumpConfig) error {
 					tui.Table(w, p.CSVHeader(), rows)
 					rows = [][]string{}
 				}
+
 				continue
 			}
 
 			// CSV
 			if c.CSV {
-				w.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
+				_, _ = w.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
+
 				continue
 			}
 
 			// default: if TTY, dump structured with colors
 			if isTTY {
-				w.WriteString(ansi.White)
-				w.WriteString(header.Type.String())
-				w.WriteString(ansi.Reset)
-				w.WriteString("\n")
-				w.WriteString(colorizeProto(proto.MarshalTextString(record), colorMap))
+				_, _ = w.WriteString(ansi.White)
+				_, _ = w.WriteString(header.Type.String())
+				_, _ = w.WriteString(ansi.Reset)
+				_, _ = w.WriteString("\n")
+				_, _ = w.WriteString(colorizeProto(proto.MarshalTextString(record), colorMap))
 			} else { // structured without colors
-				w.WriteString(header.Type.String())
-				w.WriteString("\n")
-				w.WriteString(proto.MarshalTextString(record))
+				_, _ = w.WriteString(header.Type.String())
+				_, _ = w.WriteString("\n")
+				_, _ = w.WriteString(proto.MarshalTextString(record))
 			}
 
-			w.WriteString("\n")
+			_, _ = w.WriteString("\n")
 		} else {
 			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)
 		}
@@ -219,7 +229,7 @@ func Dump(w *os.File, c DumpConfig) error {
 
 	// avoid breaking JSON parsers by appending number of records
 	if !c.JSON {
-		w.WriteString(strconv.Itoa(count) + " records.")
+		_, _ = w.WriteString(strconv.Itoa(count) + " records.")
 	}
 
 	return nil

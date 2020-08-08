@@ -120,7 +120,10 @@ func toAuditRecords() {
 	// the directory for this will be named like the input file with an added .net extension
 	outDir := inputFile + ".net"
 
-	os.MkdirAll(outDir, outDirPermission)
+	err := os.MkdirAll(outDir, outDirPermission)
+	if err != nil {
+		log.Println(err)
+	}
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
 	maltegoBaseConfig.DecoderConfig.Source = inputFile

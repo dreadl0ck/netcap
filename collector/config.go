@@ -25,7 +25,8 @@ import (
 
 var outDirPermissionDefault = 0o755
 
-var defaultConfig = Config{
+// DefaultConfig is a sane example configuration.
+var DefaultConfig = Config{ //goland:noinspection GoUnnecessarilyExportedIdentifiers,GoUnusedGlobalVariable
 	Workers:             1000,
 	PacketBufferSize:    100,
 	WriteUnknownPackets: false,
@@ -40,7 +41,8 @@ var defaultConfig = Config{
 	LogErrors:           false,
 }
 
-var defaultConfigDPI = Config{
+// DefaultConfigDPI is a sane example configuration for use with Deep Packet Inspection.
+var DefaultConfigDPI = Config{ //goland:noinspection GoUnnecessarilyExportedIdentifiers,GoUnusedGlobalVariable
 	Workers:             1000,
 	PacketBufferSize:    100,
 	WriteUnknownPackets: false,

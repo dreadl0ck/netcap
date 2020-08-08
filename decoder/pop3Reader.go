@@ -186,18 +186,26 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	}
 
 	// make sure root path exists
-	os.MkdirAll(root, defaultDirectoryPermission)
+	err = os.MkdirAll(root, defaultDirectoryPermission)
+	if err != nil {
+		utils.DebugLog.Println("failed to create directory:", root, defaultDirectoryPermission)
+	}
+
 	base = path.Join(root, base)
+
 	if len(base) > 250 {
 		base = base[:250] + "..."
 	}
+
 	if base == conf.FileStorage {
 		base = path.Join(conf.FileStorage, "noname")
 	}
+
 	var (
 		target = base
 		n      = 0
 	)
+
 	for {
 		_, errStat := os.Stat(target)
 		if errStat != nil {
@@ -236,10 +244,12 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 	if err == nil {
 		w, errCopy := io.Copy(f, r)
+
 		if _, ok := r.(*gzip.Reader); ok {
 			r.(*gzip.Reader).Close()
 		}
 		f.Close()
+
 		if errCopy != nil {
 			logReassemblyError("POP3-save", "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, errCopy)
 		} else {

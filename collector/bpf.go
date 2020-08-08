@@ -16,6 +16,7 @@ package collector
 import (
 	"io"
 
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/pcap"
 	"github.com/pkg/errors"
 )
@@ -36,10 +37,15 @@ func (c *Collector) CollectBPF(path, bpf string) error {
 		return err
 	}
 
+	var (
+		data []byte
+		ci   gopacket.CaptureInfo
+	)
+
 	// read packets
 	for {
 		// fetch the next packetdata and packetheader
-		data, ci, err := handle.ZeroCopyReadPacketData()
+		data, ci, err = handle.ZeroCopyReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break

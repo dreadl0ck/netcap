@@ -39,6 +39,7 @@ const netcapFileExtension = ".ncap"
 func Run() {
 	// parse commandline flags
 	fs.Usage = printUsage
+
 	err := fs.Parse(os.Args[2:])
 	if err != nil {
 		log.Fatal(err)
@@ -85,7 +86,6 @@ func Run() {
 		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
 		exportDir(*flagDir)
 	case *flagInput != "" || *flagInterface != "":
-
 		if *flagReplay {
 			log.Fatal("replay flag is set, but replaying the audit records is only possible when exporting audit records.")
 		}
