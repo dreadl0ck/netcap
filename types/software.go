@@ -53,10 +53,6 @@ var softwareMetric = prometheus.NewCounterVec(
 	fieldsSoftware[1:],
 )
 
-func init() {
-	prometheus.MustRegister(softwareMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *Software) Inc() {
 	softwareMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

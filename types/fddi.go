@@ -61,10 +61,6 @@ var fddiMetric = prometheus.NewCounterVec(
 	fieldsFDDI[1:],
 )
 
-func init() {
-	prometheus.MustRegister(fddiMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *FDDI) Inc() {
 	fddiMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

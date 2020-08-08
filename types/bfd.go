@@ -116,10 +116,6 @@ var bfdMetric = prometheus.NewCounterVec(
 	fieldsBFD[1:],
 )
 
-func init() {
-	prometheus.MustRegister(bfdMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (b *BFD) Inc() {
 	bfdMetric.WithLabelValues(b.CSVRecord()[1:]...).Inc()

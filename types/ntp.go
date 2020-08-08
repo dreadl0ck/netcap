@@ -95,10 +95,6 @@ var ntpMetric = prometheus.NewCounterVec(
 	fieldsNTP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(ntpMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (n *NTP) Inc() {
 	ntpMetric.WithLabelValues(n.CSVRecord()[1:]...).Inc()

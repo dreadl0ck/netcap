@@ -63,10 +63,6 @@ var usbRequestBlockSetupMetric = prometheus.NewCounterVec(
 	fieldsUSBRequestBlockSetup[1:],
 )
 
-func init() {
-	prometheus.MustRegister(usbRequestBlockSetupMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *USBRequestBlockSetup) Inc() {
 	usbRequestBlockSetupMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

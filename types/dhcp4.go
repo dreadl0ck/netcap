@@ -112,10 +112,6 @@ var dhcp4Metric = prometheus.NewCounterVec(
 	fieldsDHCPv4[1:],
 )
 
-func init() {
-	prometheus.MustRegister(dhcp4Metric)
-}
-
 // Inc increments the metrics for the audit record.
 func (d *DHCPv4) Inc() {
 	dhcp4Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()

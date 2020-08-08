@@ -82,10 +82,6 @@ var lcmMetric = prometheus.NewCounterVec(
 	fieldsLCM[1:],
 )
 
-func init() {
-	prometheus.MustRegister(lcmMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *LCM) Inc() {
 	lcmMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

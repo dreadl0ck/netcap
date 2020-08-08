@@ -70,10 +70,6 @@ var mplsMetric = prometheus.NewCounterVec(
 	fieldsMPLS[1:],
 )
 
-func init() {
-	prometheus.MustRegister(mplsMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *MPLS) Inc() {
 	mplsMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

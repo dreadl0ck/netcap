@@ -122,10 +122,6 @@ var httpMetric = prometheus.NewCounterVec(
 	fieldsHTTP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(httpMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (h *HTTP) Inc() {
 	httpMetric.WithLabelValues(h.CSVRecord()[1:]...).Inc()

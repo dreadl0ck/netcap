@@ -102,10 +102,6 @@ var geneveMetric = prometheus.NewCounterVec(
 	fieldsGeneve[1:],
 )
 
-func init() {
-	prometheus.MustRegister(geneveMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (i *Geneve) Inc() {
 	geneveMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()

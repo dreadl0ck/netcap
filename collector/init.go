@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"os"
 	"path/filepath"
@@ -95,6 +97,12 @@ func (c *Collector) Init() (err error) {
 	}
 
 	c.printStdOut("initializing decoders... ")
+
+	if c.config.DecoderConfig.Export {
+		for _, m := range types.Metrics {
+			prometheus.MustRegister(m)
+		}
+	}
 
 	// initialize decoders
 	c.goPacketDecoders, err = decoder.InitGoPacketDecoders(c.config.DecoderConfig)

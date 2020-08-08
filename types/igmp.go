@@ -108,10 +108,6 @@ var igmpMetric = prometheus.NewCounterVec(
 	fieldsIGMP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(igmpMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (i *IGMP) Inc() {
 	igmpMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()

@@ -93,10 +93,6 @@ var usbMetric = prometheus.NewCounterVec(
 	fieldsUSB[1:],
 )
 
-func init() {
-	prometheus.MustRegister(usbMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (u *USB) Inc() {
 	usbMetric.WithLabelValues(u.CSVRecord()[1:]...).Inc()

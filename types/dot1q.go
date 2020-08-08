@@ -62,10 +62,6 @@ var dot1qMetric = prometheus.NewCounterVec(
 	fieldsDot1Q[1:],
 )
 
-func init() {
-	prometheus.MustRegister(dot1qMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (d *Dot1Q) Inc() {
 	dot1qMetric.WithLabelValues(d.CSVRecord()[1:]...).Inc()

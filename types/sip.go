@@ -78,10 +78,6 @@ var sipMetric = prometheus.NewCounterVec(
 	fieldsSIP[1:],
 )
 
-func init() {
-	prometheus.MustRegister(sipMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (s *SIP) Inc() {
 	sipMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()

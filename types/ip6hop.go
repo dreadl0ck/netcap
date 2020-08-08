@@ -84,10 +84,6 @@ var ip6hopMetric = prometheus.NewCounterVec(
 	fieldsIPv6HopByHop[1:],
 )
 
-func init() {
-	prometheus.MustRegister(ip6hopMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (l *IPv6HopByHop) Inc() {
 	ip6hopMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()

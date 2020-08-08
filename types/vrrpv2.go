@@ -79,10 +79,6 @@ var vrrp2Metric = prometheus.NewCounterVec(
 	fieldsVRRPv2[1:],
 )
 
-func init() {
-	prometheus.MustRegister(vrrp2Metric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *VRRPv2) Inc() {
 	vrrp2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

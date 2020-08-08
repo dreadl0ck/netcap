@@ -65,10 +65,6 @@ var icmp6eMetric = prometheus.NewCounterVec(
 	fieldsICMPv6Echo[1:],
 )
 
-func init() {
-	prometheus.MustRegister(icmp6eMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (i *ICMPv6Echo) Inc() {
 	icmp6eMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()

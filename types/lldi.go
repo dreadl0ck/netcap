@@ -151,10 +151,6 @@ var lldiMetric = prometheus.NewCounterVec(
 	fieldsLLDI[1:],
 )
 
-func init() {
-	prometheus.MustRegister(lldiMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (l *LinkLayerDiscoveryInfo) Inc() {
 	lldiMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()

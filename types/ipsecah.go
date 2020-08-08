@@ -70,10 +70,6 @@ var ipSecAhMetric = prometheus.NewCounterVec(
 	fieldsIPSecAH[1:],
 )
 
-func init() {
-	prometheus.MustRegister(ipSecAhMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *IPSecAH) Inc() {
 	ipSecAhMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

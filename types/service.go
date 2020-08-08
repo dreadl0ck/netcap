@@ -53,10 +53,6 @@ var serviceMetric = prometheus.NewCounterVec(
 	fieldsService[1:],
 )
 
-func init() {
-	prometheus.MustRegister(serviceMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *Service) Inc() {
 	serviceMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

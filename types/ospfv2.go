@@ -449,10 +449,6 @@ var ospf2Metric = prometheus.NewCounterVec(
 	fieldsOSPFv2[1:],
 )
 
-func init() {
-	prometheus.MustRegister(ospf2Metric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *OSPFv2) Inc() {
 	ospf2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()

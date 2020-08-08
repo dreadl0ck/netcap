@@ -74,10 +74,6 @@ var vxlanMetric = prometheus.NewCounterVec(
 	fieldsVXLAN[1:],
 )
 
-func init() {
-	prometheus.MustRegister(vxlanMetric)
-}
-
 // Inc increments the metrics for the audit record.
 func (a *VXLAN) Inc() {
 	vxlanMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
