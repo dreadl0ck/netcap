@@ -83,12 +83,12 @@ func TestCaptureLive(t *testing.T) {
 		os.Exit(0)
 	}()
 
-	iface := "lo"
-	if runtime.GOOS == platformDarwin {
-		iface = "lo0"
+	interfaceName := "lo"
+	if runtime.GOOS == "darwin" {
+		interfaceName = "lo0"
 	}
 
-	err := c.CollectLive(iface, "")
+	err := c.CollectLive(interfaceName, "")
 	if err != nil {
 		t.Fatal("failed to collect live packets: ", err)
 	}

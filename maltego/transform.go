@@ -272,9 +272,9 @@ func newTransform(id string, description string, input string) XMLTransform {
 			}{
 				Text: "",
 				Property: []property{
-					//<Property name="transform.local.command" type="string" nullable="false" hidden="false" readonly="false" description="The command to execute for this transform" popup="false" abstract="false" visibility="public" auth="false" displayName="Command line">
-					//<SampleValue></SampleValue>
-					//</Property>
+					// <Property name="transform.local.command" type="string" nullable="false" hidden="false" readonly="false" description="The command to execute for this transform" popup="false" abstract="false" visibility="public" auth="false" displayName="Command line">
+					// <SampleValue></SampleValue>
+					// </Property>
 					{
 						Text:         "",
 						Name:         "transform.local.command",
@@ -291,9 +291,9 @@ func newTransform(id string, description string, input string) XMLTransform {
 						SampleValue:  "",
 						DefaultValue: "",
 					},
-					//<Property name="transform.local.parameters" type="string" nullable="true" hidden="false" readonly="false" description="The parameters to pass to the transform command" popup="false" abstract="false" visibility="public" auth="false" displayName="Command parameters">
-					//<SampleValue></SampleValue>
-					//</Property>
+					// <Property name="transform.local.parameters" type="string" nullable="true" hidden="false" readonly="false" description="The parameters to pass to the transform command" popup="false" abstract="false" visibility="public" auth="false" displayName="Command parameters">
+					// <SampleValue></SampleValue>
+					// </Property>
 					{
 						Text:         "",
 						Name:         "transform.local.parameters",
@@ -310,10 +310,10 @@ func newTransform(id string, description string, input string) XMLTransform {
 						SampleValue:  "",
 						DefaultValue: "",
 					},
-					//<Property name="transform.local.working-directory" type="string" nullable="true" hidden="false" readonly="false" description="The working directory used when invoking the executable" popup="false" abstract="false" visibility="public" auth="false" displayName="Working directory">
-					//<DefaultValue>/</DefaultValue>
-					//<SampleValue></SampleValue>
-					//</Property>
+					// <Property name="transform.local.working-directory" type="string" nullable="true" hidden="false" readonly="false" description="The working directory used when invoking the executable" popup="false" abstract="false" visibility="public" auth="false" displayName="Working directory">
+					// <DefaultValue>/</DefaultValue>
+					// <SampleValue></SampleValue>
+					// </Property>
 					{
 						Text:         "",
 						Name:         "transform.local.working-directory",
@@ -330,9 +330,9 @@ func newTransform(id string, description string, input string) XMLTransform {
 						SampleValue:  "",
 						DefaultValue: "/",
 					},
-					//<Property name="transform.local.debug" type="boolean" nullable="true" hidden="false" readonly="false" description="When this is set, the transform&apos;s text output will be printed to the output window" popup="false" abstract="false" visibility="public" auth="false" displayName="Show debug info">
-					//<SampleValue>false</SampleValue>
-					//</Property>
+					// <Property name="transform.local.debug" type="boolean" nullable="true" hidden="false" readonly="false" description="When this is set, the transform&apos;s text output will be printed to the output window" popup="false" abstract="false" visibility="public" auth="false" displayName="Show debug info">
+					// <SampleValue>false</SampleValue>
+					// </Property>
 					{
 						Text:         "",
 						Name:         "transform.local.debug",
@@ -382,7 +382,7 @@ func newTransform(id string, description string, input string) XMLTransform {
 func genTransform(outDir string, name string, description string, inputEntity string) {
 	var (
 		tr  = newTransform(name, description, inputEntity)
-		trs = newTransformSettings(name, transformDebug)
+		trs = newTransformSettings(strings.ToLower(string(name[0]))+name[1:], transformDebug)
 	)
 
 	// write Transform
