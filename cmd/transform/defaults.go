@@ -33,7 +33,7 @@ const (
 )
 
 // adds arguments for different programs to the passed in arguments.
-func makeLinuxCommand(commandName string, args []string) (string, []string) {
+func makeLinuxCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
 	if commandName == "gio" {
 		args = append(args, "open")
 	}

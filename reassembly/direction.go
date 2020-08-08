@@ -21,6 +21,7 @@ func (dir TCPFlowDirection) String() string {
 	case TCPDirServerToClient:
 		return "server->client"
 	}
+
 	return ""
 }
 

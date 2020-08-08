@@ -147,14 +147,6 @@ func (f *Flow) metricValues() []string {
 	}
 }
 
-func init() {
-	prometheus.MustRegister(flowMetric)
-	prometheus.MustRegister(flowTotalSize)
-	prometheus.MustRegister(flowAppPayloadSize)
-	prometheus.MustRegister(flowNumPackets)
-	prometheus.MustRegister(flowDuration)
-}
-
 // Inc increments the metrics for the audit record.
 func (f *Flow) Inc() {
 	flowMetric.WithLabelValues(f.metricValues()...).Inc()

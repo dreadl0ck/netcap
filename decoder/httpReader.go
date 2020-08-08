@@ -131,7 +131,7 @@ func (h *httpReader) Decode() {
 		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
 	)
-	
+
 	if len(h.parent.merged) > 0 {
 		previousDir = h.parent.merged[0].dir
 	}

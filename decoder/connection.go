@@ -101,15 +101,18 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	if ll := p.LinkLayer(); ll != nil {
 		connID.LinkFlowID = ll.LinkFlow().FastHash()
 	}
+
 	if nl := p.NetworkLayer(); nl != nil {
 		connID.NetworkFlowID = nl.NetworkFlow().FastHash()
 	}
+
 	if tl := p.TransportLayer(); tl != nil {
 		connID.TransportFlowID = tl.TransportFlow().FastHash()
 	}
 
 	// lookup flow
 	cd.Conns.Lock()
+
 	if conn, ok := cd.Conns.Items[connID.String()]; ok {
 
 		// connID exists. update fields

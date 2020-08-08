@@ -8,7 +8,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 )
 
-/* Bi-directional connection */
+// Bi-directional TCP network connection.
 type connection struct {
 	key      *key // client->server
 	c2s, s2c halfconnection

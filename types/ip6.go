@@ -132,12 +132,6 @@ func (i *IPv6) metricValues() []string {
 	}
 }
 
-func init() {
-	prometheus.MustRegister(ip6Metric)
-	prometheus.MustRegister(ip6PayloadEntropy)
-	prometheus.MustRegister(ip6PayloadSize)
-}
-
 // Inc increments the metrics for the audit record.
 func (i *IPv6) Inc() {
 	ip6Metric.WithLabelValues(i.metricValues()...).Inc()

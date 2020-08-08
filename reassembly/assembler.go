@@ -253,22 +253,21 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	a.dump("AssembleWithContext()", half)
 
 	if half.nextSeq == invalidSequence {
-		if t.SYN {
+		switch {
+		case t.SYN:
 			if Debug {
 				log.Printf("%v saw first SYN packet, returning immediately, seq=%v", flowKey, seq)
 			}
-
 			seq = seq.add(1)
-
 			half.nextSeq = seq
 			action.queue = false
-		} else if a.start {
+		case a.start:
 			if Debug {
 				log.Printf("%v start forced", flowKey)
 			}
 			half.nextSeq = seq
 			action.queue = false
-		} else {
+		default:
 			if Debug {
 				log.Printf("%v waiting for start, storing into connection", flowKey)
 			}
@@ -388,34 +387,27 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 		}
 
 		// end > cur.end && start < cur.end: drop cur's end (2)
-		if diffEnd < 0 && start.difference(curEnd) > 0 {
+		switch {
+		case diffEnd < 0 && start.difference(curEnd) > 0:
 			if Debug {
 				log.Printf("case 2\n")
 			}
-
 			cur.bytes = cur.bytes[:-start.difference(cur.seq)]
-
 			break
-		} else
-
-		// start < cur.start && end > cur.start: drop cur's start (4)
-		if diffStart > 0 && end.difference(cur.seq) < 0 {
+		case diffStart > 0 && end.difference(cur.seq) < 0:
 			if Debug {
 				log.Printf("case 4\n")
 			}
 			cur.bytes = cur.bytes[-end.difference(cur.seq):]
 			cur.seq = cur.seq.add(-end.difference(cur.seq))
 			next = cur
-		} else
-
-		// end < cur.end && start > cur.start: replace bytes inside cur (6)
-		if diffEnd > 0 && diffStart < 0 {
+		case diffEnd > 0 && diffStart < 0:
 			if Debug {
 				log.Printf("case 6\n")
 			}
 			copy(cur.bytes[-diffStart:-diffStart+len(bytes)], bytes)
 			bytes = bytes[:0]
-		} else {
+		default:
 			if Debug {
 				log.Printf("no overlap\n")
 			}

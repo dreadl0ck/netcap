@@ -154,12 +154,6 @@ func (i *IPv4) metricValues() []string {
 	}
 }
 
-func init() {
-	prometheus.MustRegister(ip4Metric)
-	prometheus.MustRegister(ip4PayloadEntropy)
-	prometheus.MustRegister(ip4PayloadSize)
-}
-
 // Inc increments the metrics for the audit record.
 func (i *IPv4) Inc() {
 	ip4Metric.WithLabelValues(i.metricValues()...).Inc()

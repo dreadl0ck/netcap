@@ -97,12 +97,6 @@ func (eth *Ethernet) metricValues() []string {
 	}
 }
 
-func init() {
-	prometheus.MustRegister(ethernetMetric)
-	prometheus.MustRegister(ethernetPayloadEntropy)
-	prometheus.MustRegister(ethernetPayloadSize)
-}
-
 // Inc increments the metrics for the audit record.
 func (eth *Ethernet) Inc() {
 	ethernetMetric.WithLabelValues(eth.metricValues()...).Inc()
