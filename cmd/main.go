@@ -121,13 +121,14 @@ var completions = []string{
 var debugHandle = ioutil.Discard
 
 func debug(args ...interface{}) {
-	fmt.Fprintln(debugHandle, args...)
+	_, _ = fmt.Fprintln(debugHandle, args...)
 }
 
 // print available completions for the bash-completion package.
 func printCompletions(previous, current, full string) {
 	if os.Getenv("NC_COMPLETION_DEBUG") == "1" {
 		var err error
+
 		debugHandle, err = os.OpenFile("completion-debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o744)
 		if err != nil {
 			log.Fatal(err)

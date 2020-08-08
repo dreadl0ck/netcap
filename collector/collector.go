@@ -321,8 +321,8 @@ func (c *Collector) stats() {
 	}
 
 	if c.config.DecoderConfig.SaveConns {
-		fmt.Fprintln(target, "saved TCP connections:", decoder.NumSavedTCPConns())
-		fmt.Fprintln(target, "saved UDP connections:", decoder.NumSavedUDPConns())
+		_, _ = fmt.Fprintln(target, "saved TCP connections:", decoder.NumSavedTCPConns())
+		_, _ = fmt.Fprintln(target, "saved UDP connections:", decoder.NumSavedUDPConns())
 	}
 }
 
@@ -367,7 +367,7 @@ func (c *Collector) printProgress() {
 
 			// print
 			clearLine()
-			os.Stdout.WriteString(b.String())
+			_, _ = os.Stdout.WriteString(b.String())
 		}
 	}
 }
@@ -408,7 +408,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 
 				if !c.config.Quiet { // print
 					clearLine()
-					fmt.Fprintf(os.Stdout,
+					_, _ = fmt.Fprintf(os.Stdout,
 						c.progressString,
 						utils.Progress(curr, num),
 						// decoder.Flows.Size(), // TODO: fetch this info from stats?
@@ -466,7 +466,7 @@ func (c *Collector) PrintConfiguration() {
 		log.Fatal(err)
 	}
 	// always write the entire configuration into the logfile
-	logFileHandle.Write(cdata)
+	_, _ = logFileHandle.Write(cdata)
 
 	netcap.FPrintLogo(target)
 
@@ -482,7 +482,7 @@ func (c *Collector) PrintConfiguration() {
 	netcap.FPrintBuildInfo(target)
 
 	// print build information
-	fmt.Fprintln(target, "> PID:", os.Getpid())
+	_, _ = fmt.Fprintln(target, "> PID:", os.Getpid())
 
 	// print configuration as table
 	tui.Table(target, []string{"Setting", "Value"}, [][]string{
@@ -495,7 +495,7 @@ func (c *Collector) PrintConfiguration() {
 		{"Payloads", strconv.FormatBool(c.config.DecoderConfig.IncludePayloads)},
 		{"FileStorage", c.config.DecoderConfig.FileStorage},
 	})
-	fmt.Fprintln(target) // add a newline
+	_, _ = fmt.Fprintln(target) // add a newline
 }
 
 // initLogging can be used to open the logfile before calling Init()

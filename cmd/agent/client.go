@@ -43,7 +43,12 @@ func sendUDP(ctx context.Context, address string, reader io.Reader) error {
 
 	// Closes the underlying file descriptor associated with the,
 	// socket so that it no longer refers to any file.
-	defer conn.Close()
+	defer func() {
+		errClose := conn.Close()
+		if errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	var (
 		doneChan = make(chan error, 1)

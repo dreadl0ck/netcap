@@ -95,9 +95,9 @@ func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 
 func (c *Collector) printlnStdOut(args ...interface{}) {
 	if c.config.Quiet {
-		fmt.Fprintln(logFileHandle, args...)
+		_, _ = fmt.Fprintln(logFileHandle, args...)
 	} else {
-		fmt.Fprintln(os.Stdout, args...)
+		_, _ = fmt.Fprintln(os.Stdout, args...)
 	}
 }
 

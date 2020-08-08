@@ -85,12 +85,12 @@ func (c *Collector) Init() (err error) {
 		}
 
 		// wipe extracted files
-		os.RemoveAll(filepath.Join(c.config.DecoderConfig.Out, "files"))
+		_ = os.RemoveAll(filepath.Join(c.config.DecoderConfig.Out, "files"))
 
 		// clear streams if present
 		if errStreams == nil || errConns == nil {
-			os.RemoveAll(udpPath)
-			os.RemoveAll(tcpPath)
+			_ = os.RemoveAll(udpPath)
+			_ = os.RemoveAll(tcpPath)
 		}
 	}
 
