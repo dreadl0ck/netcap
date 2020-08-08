@@ -26,10 +26,12 @@ var fieldsEAPOL = []string{
 	"Length",  //  int32
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *EAPOL) CSVHeader() []string {
 	return filter(fieldsEAPOL)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *EAPOL) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
@@ -39,10 +41,12 @@ func (a *EAPOL) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *EAPOL) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *EAPOL) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -59,17 +63,21 @@ func init() {
 	prometheus.MustRegister(eapPolMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *EAPOL) Inc() {
 	eapPolMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *EAPOL) SetPacketContext(*PacketContext) {}
 
 // Src TODO: return Mac addr.
+// Src returns the source address of the audit record.
 func (a *EAPOL) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *EAPOL) Dst() string {
 	return ""
 }

@@ -28,10 +28,12 @@ var fieldsLLD = []string{
 	"Values",    // []*LinkLayerDiscoveryValue
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (l *LinkLayerDiscovery) CSVHeader() []string {
 	return filter(fieldsLLD)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (l *LinkLayerDiscovery) CSVRecord() []string {
 	values := make([]string, len(l.Values))
 	for i, v := range l.Values {
@@ -46,6 +48,7 @@ func (l *LinkLayerDiscovery) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (l *LinkLayerDiscovery) Time() string {
 	return l.Timestamp
 }
@@ -58,6 +61,7 @@ func (l LLDPPortID) ToString() string {
 	return join(formatInt32(l.Subtype), hex.EncodeToString(l.ID))
 }
 
+// JSON returns the JSON representation of the audit record.
 func (l *LinkLayerDiscovery) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(l)
 }
@@ -74,17 +78,21 @@ func init() {
 	prometheus.MustRegister(lldMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (l *LinkLayerDiscovery) Inc() {
 	lldMetric.WithLabelValues(l.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (l *LinkLayerDiscovery) SetPacketContext(*PacketContext) {}
 
 // Src TODO.
+// Src returns the source address of the audit record.
 func (l *LinkLayerDiscovery) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (l *LinkLayerDiscovery) Dst() string {
 	return ""
 }

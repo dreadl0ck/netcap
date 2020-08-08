@@ -39,10 +39,12 @@ var fieldsOSPFv2 = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *OSPFv2) CSVHeader() []string {
 	return filter(fieldsOSPFv2)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *OSPFv2) CSVRecord() []string {
 	var (
 		lsas   []string
@@ -78,6 +80,7 @@ func (a *OSPFv2) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *OSPFv2) Time() string {
 	return a.Timestamp
 }
@@ -450,18 +453,22 @@ func init() {
 	prometheus.MustRegister(ospf2Metric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *OSPFv2) Inc() {
 	ospf2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *OSPFv2) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *OSPFv2) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *OSPFv2) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -469,6 +476,7 @@ func (a *OSPFv2) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *OSPFv2) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

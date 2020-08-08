@@ -30,10 +30,12 @@ var fieldsNortelDiscovery = []string{
 	"NumLinks",  // int32
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *NortelDiscovery) CSVHeader() []string {
 	return filter(fieldsNortelDiscovery)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *NortelDiscovery) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
@@ -46,10 +48,12 @@ func (a *NortelDiscovery) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *NortelDiscovery) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *NortelDiscovery) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -66,17 +70,21 @@ func init() {
 	prometheus.MustRegister(nortelDiscoveryMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *NortelDiscovery) Inc() {
 	nortelDiscoveryMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *NortelDiscovery) SetPacketContext(*PacketContext) {}
 
 // Src TODO.
+// Src returns the source address of the audit record.
 func (a *NortelDiscovery) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *NortelDiscovery) Dst() string {
 	return ""
 }

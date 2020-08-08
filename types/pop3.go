@@ -30,10 +30,12 @@ var fieldsPOP3 = []string{
 	"NumMails",  // []*Mail
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *POP3) CSVHeader() []string {
 	return filter(fieldsPOP3)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *POP3) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
@@ -46,10 +48,12 @@ func (a *POP3) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *POP3) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *POP3) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -66,16 +70,20 @@ func init() {
 	prometheus.MustRegister(pop3Metric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *POP3) Inc() {
 	pop3Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *POP3) SetPacketContext(*PacketContext) {}
 
+// Src returns the source address of the audit record.
 func (a *POP3) Src() string {
 	return a.ClientIP
 }
 
+// Dst returns the destination address of the audit record.
 func (a *POP3) Dst() string {
 	return a.ServerIP
 }

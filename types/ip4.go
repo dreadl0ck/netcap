@@ -41,10 +41,12 @@ var fieldsIPv4 = []string{
 	"PayloadSize",    // int32
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (i *IPv4) CSVHeader() []string {
 	return filter(fieldsIPv4)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (i *IPv4) CSVRecord() []string {
 	var opts []string
 	for _, o := range i.Options {
@@ -71,6 +73,7 @@ func (i *IPv4) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (i *IPv4) Time() string {
 	return i.Timestamp
 }
@@ -88,6 +91,7 @@ func (i IPv4Option) ToString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (i *IPv4) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(i)
 }
@@ -156,12 +160,14 @@ func init() {
 	prometheus.MustRegister(ip4PayloadSize)
 }
 
+// Inc increments the metrics for the audit record.
 func (i *IPv4) Inc() {
 	ip4Metric.WithLabelValues(i.metricValues()...).Inc()
 	ip4PayloadEntropy.WithLabelValues().Observe(i.PayloadEntropy)
 	ip4PayloadSize.WithLabelValues().Observe(float64(i.PayloadSize))
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (i *IPv4) SetPacketContext(ctx *PacketContext) {
 	// create new context and only add information that is
 	// not yet present on the audit record type
@@ -171,10 +177,12 @@ func (i *IPv4) SetPacketContext(ctx *PacketContext) {
 	}
 }
 
+// Src returns the source address of the audit record.
 func (i *IPv4) Src() string {
 	return i.SrcIP
 }
 
+// Dst returns the destination address of the audit record.
 func (i *IPv4) Dst() string {
 	return i.DstIP
 }

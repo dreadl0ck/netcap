@@ -49,10 +49,12 @@ var fieldsTCP = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (t *TCP) CSVHeader() []string {
 	return filter(fieldsTCP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (t *TCP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if t.Context == nil {
@@ -101,10 +103,12 @@ func (t *TCP) getOptionString() string {
 	return b.String()
 }
 
+// Time returns the timestamp associated with the audit record.
 func (t *TCP) Time() string {
 	return t.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (t *TCP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(t)
 }
@@ -187,12 +191,14 @@ func init() {
 	prometheus.MustRegister(tcpPayloadSize)
 }
 
+// Inc increments the metrics for the audit record.
 func (t *TCP) Inc() {
 	tcpMetric.WithLabelValues(t.metricValues()...).Inc()
 	tcpPayloadEntropy.WithLabelValues().Observe(t.PayloadEntropy)
 	tcpPayloadSize.WithLabelValues().Observe(float64(t.PayloadSize))
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (t *TCP) SetPacketContext(ctx *PacketContext) {
 	// create new context and only add information that is
 	// not yet present on the audit record type
@@ -202,6 +208,7 @@ func (t *TCP) SetPacketContext(ctx *PacketContext) {
 	}
 }
 
+// Src returns the source address of the audit record.
 func (t *TCP) Src() string {
 	if t.Context != nil {
 		return t.Context.SrcIP
@@ -209,6 +216,7 @@ func (t *TCP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (t *TCP) Dst() string {
 	if t.Context != nil {
 		return t.Context.DstIP

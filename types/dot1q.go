@@ -28,10 +28,12 @@ var fieldsDot1Q = []string{
 	"Type",           //  int32
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (d *Dot1Q) CSVHeader() []string {
 	return filter(fieldsDot1Q)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (d *Dot1Q) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(d.Timestamp),
@@ -42,10 +44,12 @@ func (d *Dot1Q) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (d *Dot1Q) Time() string {
 	return d.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (d *Dot1Q) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(d)
 }
@@ -62,17 +66,21 @@ func init() {
 	prometheus.MustRegister(dot1qMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (d *Dot1Q) Inc() {
 	dot1qMetric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (d *Dot1Q) SetPacketContext(*PacketContext) {}
 
 // Src TODO: return Mac addr.
+// Src returns the source address of the audit record.
 func (d *Dot1Q) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (d *Dot1Q) Dst() string {
 	return ""
 }

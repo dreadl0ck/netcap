@@ -26,20 +26,24 @@ var fieldsSSH = []string{
 	"Notes",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *SSH) CSVHeader() []string {
 	return filter(fieldsSSH)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *SSH) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *SSH) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *SSH) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -56,18 +60,22 @@ func init() {
 	prometheus.MustRegister(sshMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *SSH) Inc() {
 	sshMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *SSH) SetPacketContext(*PacketContext) {}
 
 // Src TODO: preserve source and destination mac adresses for SSH and return them here.
+// Src returns the source address of the audit record.
 func (a *SSH) Src() string {
 	return ""
 }
 
 // Dst TODO: preserve source and destination mac adresses for SSH and return them here.
+// Dst returns the destination address of the audit record.
 func (a *SSH) Dst() string {
 	return ""
 }

@@ -34,10 +34,12 @@ var fieldsVRRPv2 = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *VRRPv2) CSVHeader() []string {
 	return filter(fieldsVRRPv2)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *VRRPv2) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -59,10 +61,12 @@ func (a *VRRPv2) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *VRRPv2) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *VRRPv2) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -79,14 +83,17 @@ func init() {
 	prometheus.MustRegister(vrrp2Metric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *VRRPv2) Inc() {
 	vrrp2Metric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *VRRPv2) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *VRRPv2) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -94,6 +101,7 @@ func (a *VRRPv2) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *VRRPv2) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

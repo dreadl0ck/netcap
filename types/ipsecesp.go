@@ -28,10 +28,12 @@ var fieldsIPSecESP = []string{
 	"DstIP", // string
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *IPSecESP) CSVHeader() []string {
 	return filter(fieldsIPSecESP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *IPSecESP) CSVRecord() []string {
 	// prevent accessing nil pointer
 	if a.Context == nil {
@@ -47,10 +49,12 @@ func (a *IPSecESP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *IPSecESP) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *IPSecESP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -67,14 +71,17 @@ func init() {
 	prometheus.MustRegister(ipSecEspMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *IPSecESP) Inc() {
 	ipSecEspMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *IPSecESP) SetPacketContext(ctx *PacketContext) {
 	a.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (a *IPSecESP) Src() string {
 	if a.Context != nil {
 		return a.Context.SrcIP
@@ -82,6 +89,7 @@ func (a *IPSecESP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *IPSecESP) Dst() string {
 	if a.Context != nil {
 		return a.Context.DstIP

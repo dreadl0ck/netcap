@@ -46,10 +46,12 @@ var fieldsDNS = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (d *DNS) CSVHeader() []string {
 	return filter(fieldsDNS)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (d *DNS) CSVRecord() []string {
 	var (
 		questions   = make([]string, len(d.Questions))
@@ -99,6 +101,7 @@ func (d *DNS) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (d *DNS) Time() string {
 	return d.Timestamp
 }
@@ -197,6 +200,7 @@ func (q *DNSMX) ToString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (d *DNS) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(d)
 }
@@ -213,14 +217,17 @@ func init() {
 	prometheus.MustRegister(dnsMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (d *DNS) Inc() {
 	dnsMetric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (d *DNS) SetPacketContext(ctx *PacketContext) {
 	d.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (d *DNS) Src() string {
 	if d.Context != nil {
 		return d.Context.SrcIP
@@ -228,6 +235,7 @@ func (d *DNS) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (d *DNS) Dst() string {
 	if d.Context != nil {
 		return d.Context.DstIP

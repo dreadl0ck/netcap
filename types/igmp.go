@@ -39,10 +39,12 @@ var fieldsIGMP = []string{
 	"DstIP",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (i *IGMP) CSVHeader() []string {
 	return filter(fieldsIGMP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (i *IGMP) CSVRecord() []string {
 	var records []string
 	for _, r := range i.GroupRecords {
@@ -71,6 +73,7 @@ func (i *IGMP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (i *IGMP) Time() string {
 	return i.Timestamp
 }
@@ -92,6 +95,7 @@ func (i IGMPv3GroupRecord) ToString() string {
 	return b.String()
 }
 
+// JSON returns the JSON representation of the audit record.
 func (i *IGMP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(i)
 }
@@ -108,14 +112,17 @@ func init() {
 	prometheus.MustRegister(igmpMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (i *IGMP) Inc() {
 	igmpMetric.WithLabelValues(i.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (i *IGMP) SetPacketContext(ctx *PacketContext) {
 	i.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (i *IGMP) Src() string {
 	if i.Context != nil {
 		return i.Context.SrcIP
@@ -123,6 +130,7 @@ func (i *IGMP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (i *IGMP) Dst() string {
 	if i.Context != nil {
 		return i.Context.DstIP

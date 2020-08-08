@@ -27,10 +27,12 @@ var fieldsEthernetCTPReply = []string{
 	"Data",          // bytes
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (ectpr *EthernetCTPReply) CSVHeader() []string {
 	return filter(fieldsEthernetCTPReply)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (ectpr *EthernetCTPReply) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(ectpr.Timestamp),
@@ -40,10 +42,12 @@ func (ectpr *EthernetCTPReply) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (ectpr *EthernetCTPReply) Time() string {
 	return ectpr.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (ectpr *EthernetCTPReply) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(ectpr)
 }
@@ -60,17 +64,21 @@ func init() {
 	prometheus.MustRegister(ethernetCTPReplyMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (ectpr *EthernetCTPReply) Inc() {
 	ethernetCTPReplyMetric.WithLabelValues(ectpr.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (ectpr *EthernetCTPReply) SetPacketContext(*PacketContext) {}
 
 // Src TODO.
+// Src returns the source address of the audit record.
 func (ectpr *EthernetCTPReply) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (ectpr *EthernetCTPReply) Dst() string {
 	return ""
 }

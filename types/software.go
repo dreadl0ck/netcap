@@ -23,20 +23,24 @@ var fieldsSoftware = []string{
 	"Timestamp",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (a *Software) CSVHeader() []string {
 	return filter(fieldsSoftware)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (a *Software) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (a *Software) Time() string {
 	return a.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (a *Software) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
@@ -53,16 +57,20 @@ func init() {
 	prometheus.MustRegister(softwareMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (a *Software) Inc() {
 	softwareMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (a *Software) SetPacketContext(*PacketContext) {}
 
+// Src returns the source address of the audit record.
 func (a *Software) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (a *Software) Dst() string {
 	return ""
 }

@@ -39,10 +39,12 @@ var fieldsFlow = []string{
 	"TimestampLast",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (f *Flow) CSVHeader() []string {
 	return filter(fieldsFlow)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (f *Flow) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(f.TimestampFirst),
@@ -65,10 +67,12 @@ func (f *Flow) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (f *Flow) Time() string {
 	return f.TimestampFirst
 }
 
+// JSON returns the JSON representation of the audit record.
 func (f *Flow) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(f)
 }
@@ -151,6 +155,7 @@ func init() {
 	prometheus.MustRegister(flowDuration)
 }
 
+// Inc increments the metrics for the audit record.
 func (f *Flow) Inc() {
 	flowMetric.WithLabelValues(f.metricValues()...).Inc()
 	flowTotalSize.WithLabelValues(f.SrcMAC, f.DstMAC).Observe(float64(f.TotalSize))
@@ -159,12 +164,15 @@ func (f *Flow) Inc() {
 	flowDuration.WithLabelValues(f.SrcMAC, f.DstMAC).Observe(float64(f.Duration))
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (f *Flow) SetPacketContext(*PacketContext) {}
 
+// Src returns the source address of the audit record.
 func (f *Flow) Src() string {
 	return f.SrcIP
 }
 
+// Dst returns the destination address of the audit record.
 func (f *Flow) Dst() string {
 	return f.DstIP
 }

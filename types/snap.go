@@ -26,10 +26,12 @@ var fieldsSNAP = []string{
 	"Type",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (s *SNAP) CSVHeader() []string {
 	return filter(fieldsSNAP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (s *SNAP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(s.Timestamp),
@@ -38,10 +40,12 @@ func (s *SNAP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (s *SNAP) Time() string {
 	return s.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (u SNAP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(&u)
 }
@@ -58,17 +62,21 @@ func init() {
 	prometheus.MustRegister(snapMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (s *SNAP) Inc() {
 	snapMetric.WithLabelValues(s.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (s *SNAP) SetPacketContext(*PacketContext) {}
 
 // Src TODO.
+// Src returns the source address of the audit record.
 func (s *SNAP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (s *SNAP) Dst() string {
 	return ""
 }

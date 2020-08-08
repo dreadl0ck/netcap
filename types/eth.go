@@ -28,10 +28,12 @@ var fieldsEthernet = []string{
 	"PayloadSize",    // int32
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (eth *Ethernet) CSVHeader() []string {
 	return filter(fieldsEthernet)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (eth *Ethernet) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(eth.Timestamp),
@@ -43,10 +45,12 @@ func (eth *Ethernet) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (eth *Ethernet) Time() string {
 	return eth.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (eth *Ethernet) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(eth)
 }
@@ -99,18 +103,22 @@ func init() {
 	prometheus.MustRegister(ethernetPayloadSize)
 }
 
+// Inc increments the metrics for the audit record.
 func (eth *Ethernet) Inc() {
 	ethernetMetric.WithLabelValues(eth.metricValues()...).Inc()
 	ethernetPayloadEntropy.WithLabelValues().Observe(eth.PayloadEntropy)
 	ethernetPayloadSize.WithLabelValues().Observe(float64(eth.PayloadSize))
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (eth *Ethernet) SetPacketContext(*PacketContext) {}
 
+// Src returns the source address of the audit record.
 func (eth *Ethernet) Src() string {
 	return eth.SrcMAC
 }
 
+// Dst returns the destination address of the audit record.
 func (eth *Ethernet) Dst() string {
 	return eth.DstMAC
 }

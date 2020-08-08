@@ -36,10 +36,12 @@ var fieldsCIP = []string{
 	"DstPort",
 }
 
+// CSVHeader returns the CSV header for the audit record.
 func (c *CIP) CSVHeader() []string {
 	return filter(fieldsCIP)
 }
 
+// CSVRecord returns the CSV record for the audit record.
 func (c *CIP) CSVRecord() []string {
 	additional := make([]string, len(c.AdditionalStatus))
 
@@ -70,10 +72,12 @@ func (c *CIP) CSVRecord() []string {
 	})
 }
 
+// Time returns the timestamp associated with the audit record.
 func (c *CIP) Time() string {
 	return c.Timestamp
 }
 
+// JSON returns the JSON representation of the audit record.
 func (c *CIP) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(c)
 }
@@ -90,14 +94,17 @@ func init() {
 	prometheus.MustRegister(cipMetric)
 }
 
+// Inc increments the metrics for the audit record.
 func (c *CIP) Inc() {
 	cipMetric.WithLabelValues(c.CSVRecord()[1:]...).Inc()
 }
 
+// SetPacketContext sets the associated packet context for the audit record.
 func (c *CIP) SetPacketContext(ctx *PacketContext) {
 	c.Context = ctx
 }
 
+// Src returns the source address of the audit record.
 func (c *CIP) Src() string {
 	if c.Context != nil {
 		return c.Context.SrcIP
@@ -106,6 +113,7 @@ func (c *CIP) Src() string {
 	return ""
 }
 
+// Dst returns the destination address of the audit record.
 func (c *CIP) Dst() string {
 	if c.Context != nil {
 		return c.Context.DstIP
