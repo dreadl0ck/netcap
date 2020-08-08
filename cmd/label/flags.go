@@ -19,17 +19,19 @@ import (
 	"github.com/namsral/flag"
 )
 
+// Flags returns all flags.
 func Flags() (flags []string) {
 	fs.VisitAll(func(f *flag.Flag) {
 		flags = append(flags, f.Name)
 	})
+
 	return
 }
 
 var (
 	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
-	flagConfig         = fs.String("config", "", "read configuration from file at path")
+	_                  = fs.String("config", "", "read configuration from file at path")
 	flagDebug          = fs.Bool("debug", false, "toggle debug mode")
 	flagInput          = fs.String("read", "", "use specified pcap file to scan with suricata")
 	flagSeparator      = fs.String("sep", ",", "set separator string for csv output")

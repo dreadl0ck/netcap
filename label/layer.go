@@ -32,8 +32,8 @@ import (
 // CollectLabels indicates whether labels should be collected.
 var CollectLabels bool
 
-// layer labels packets of a given gopacket.LayerType string.
-func layer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*suricataAlert, labels []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// labelLayer labels packets of a given gopacket.LayerType string.
+func labelLayer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*suricataAlert, labels []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
 		total, errCount = netcap.Count(fname)

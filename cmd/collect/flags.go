@@ -21,17 +21,19 @@ import (
 	"github.com/dreadl0ck/netcap"
 )
 
+// Flags returns all flags.
 func Flags() (flags []string) {
 	fs.VisitAll(func(f *flag.Flag) {
 		flags = append(flags, f.Name)
 	})
+
 	return
 }
 
 var (
 	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
-	flagConfig         = fs.String("config", "", "read configuration from file at path")
+	_                  = fs.String("config", "", "read configuration from file at path")
 	flagGenKeypair     = fs.Bool("gen-keypair", false, "generate keypair")
 	flagPrivKey        = fs.String("privkey", "", "path to the hex encoded server private key")
 	flagAddr           = fs.String("addr", "127.0.0.1:1335", "specify an address and port to listen for incoming traffic")

@@ -21,10 +21,12 @@ import (
 	"github.com/dreadl0ck/netcap"
 )
 
+// Flags returns all flags.
 func Flags() (flags []string) {
 	fs.VisitAll(func(f *flag.Flag) {
 		flags = append(flags, f.Name)
 	})
+
 	return
 }
 
@@ -32,7 +34,7 @@ var (
 	// util.
 	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
-	flagConfig         = fs.String("config", "", "read configuration from file at path")
+	_                  = fs.String("config", "", "read configuration from file at path")
 	flagCheckFields    = fs.Bool("check", false, "check number of occurrences of the separator, in fields of an audit record file")
 	flagToUTC          = fs.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
 	flagInput          = fs.String("read", "", "read specified audit record file")

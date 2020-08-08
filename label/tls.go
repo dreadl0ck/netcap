@@ -30,8 +30,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// TLS labels type NC_TLSClientHello.
-func TLS(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// labelTLS labels type NC_TLSClientHello.
+func labelTLS(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
 		total, errCount = netcap.Count(fname)

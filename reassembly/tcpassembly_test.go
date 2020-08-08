@@ -19,9 +19,10 @@ import (
 	"github.com/dreadl0ck/gopacket/layers"
 )
 
-var netFlow gopacket.Flow
-
-var testDebug = false
+var (
+	netFlow gopacket.Flow
+	testDebug = false
+)
 
 func init() {
 	netFlow, _ = gopacket.FlowFromEndpoints(
@@ -128,7 +129,7 @@ func test(t *testing.T, s []testSequence) {
 	a.MaxBufferedPagesPerConnection = 4
 	for i, testSeq := range s {
 		fact.reassembly = []Reassembly{}
-		if false {
+		if testDebug {
 			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.in.BaseLayer.Payload))
 		}
 		a.assemble(netFlow, &testSeq.in)
@@ -151,7 +152,7 @@ func test(t *testing.T, s []testSequence) {
 		if !reflect.DeepEqual(fact.reassembly, final) {
 			t.Fatalf("test %v:\nwant: %v\n got: %v\n", i, final, fact.reassembly)
 		}
-		if false {
+		if testDebug {
 			fmt.Printf("test %v passing...(%v)\n", i, final)
 		}
 	}
@@ -736,7 +737,7 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 
 	for i, testSeq := range s {
 		fact.reassembly = []Reassembly{}
-		if false {
+		if testDebug {
 			fmt.Printf("#### test: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.in.BaseLayer.Payload))
 		}
 
@@ -773,7 +774,7 @@ func testFlush(t *testing.T, s []testSequence, delay time.Duration, flushInterva
 			t.Errorf("test %v:\nwant: %v\n got: %v\n", i, final, fact.reassembly)
 		}
 
-		if false {
+		if testDebug {
 			fmt.Printf("test %v passing...(%v)\n", i, final)
 		}
 	}
@@ -987,7 +988,7 @@ func testKeep(t *testing.T, s []testKeepSequence) {
 		testSeq.tcp.SetInternalPortsForTesting()
 		fact.keep = testSeq.keep
 		fact.bytes = []byte{}
-		if false {
+		if testDebug {
 			fmt.Printf("#### testKeep: #%d: sending:%s\n", i, hex.EncodeToString(testSeq.tcp.BaseLayer.Payload))
 		}
 		a.assemble(flow, &testSeq.tcp)
@@ -997,7 +998,7 @@ func testKeep(t *testing.T, s []testKeepSequence) {
 		if fact.skipped != testSeq.skipped {
 			t.Fatalf("#%d: expecting %d skipped bytes, got %d", i, testSeq.skipped, fact.skipped)
 		}
-		if false {
+		if testDebug {
 			fmt.Printf("#### testKeep: #%d: bytes: %s\n", i, hex.EncodeToString(fact.bytes))
 		}
 	}

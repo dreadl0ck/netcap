@@ -86,6 +86,7 @@ func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 	return protocols
 }
 
+// NewProto initializes a new protocol
 func NewProto(res *ClassificationResult) *types.Protocol {
 	return &types.Protocol{
 		Packets:  1,

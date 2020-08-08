@@ -22,17 +22,19 @@ import (
 	"github.com/dreadl0ck/netcap"
 )
 
+// Flags returns all flags.
 func Flags() (flags []string) {
 	fs.VisitAll(func(f *flag.Flag) {
 		flags = append(flags, f.Name)
 	})
+
 	return
 }
 
 var (
 	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
-	flagConfig         = fs.String("config", "", "read configuration from file at path")
+	_                  = fs.String("config", "", "read configuration from file at path")
 	flagInterface      = fs.String("iface", "en0", "interface")
 	flagMaxSize        = fs.Int("max", 10*1024, "max size of packet") // max 65,507 bytes
 	flagLogErrors      = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")

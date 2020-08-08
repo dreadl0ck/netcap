@@ -30,8 +30,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// UDP labels type NC_UDP.
-func UDP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// labelUDP labels type NC_UDP.
+func labelUDP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, "UDP.ncap.gz")
 		total, errCount = netcap.Count(fname)

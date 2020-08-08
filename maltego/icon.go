@@ -210,8 +210,10 @@ func generateAuditRecordIcon(text string) {
 	if whiteOnBlack {
 		fg, bg = image.White, image.Black
 	}
+
 	rgba := image.NewRGBA(image.Rect(0, 0, 96, 96))
 	draw.Draw(rgba, rgba.Bounds(), bg, image.Point{}, draw.Src)
+
 	c := freetype.NewContext()
 	c.SetDPI(dpi)
 	c.SetFont(f)

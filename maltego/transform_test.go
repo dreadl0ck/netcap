@@ -13,8 +13,6 @@ import (
 	"github.com/dreadl0ck/netcap/decoder"
 )
 
-const generateMaltegoConfig = false
-
 // additional transforms
 var transforms = []transformCoreInfo{
 	{"ToApplicationCategories", "netcap.IPAddr", "Retrieve categories of classified applications"},

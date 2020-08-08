@@ -192,32 +192,33 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 			// because the mapping logic differs for them
 			switch typ {
 			case "UDP":
-				pbs = append(pbs, UDP(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, labelUDP(&wg, filename, labels, outputPath, separator, selection))
 			case "TCP":
-				pbs = append(pbs, TCP(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, labelTCP(&wg, filename, labels, outputPath, separator, selection))
 			case "IPv4":
-				pbs = append(pbs, IPv4(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, labelIPv4(&wg, filename, labels, outputPath, separator, selection))
 			case "IPv6":
-				pbs = append(pbs, IPv6(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, labelIPv6(&wg, filename, labels, outputPath, separator, selection))
 			case "Connection":
-				pbs = append(pbs, connections(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, labelConnections(&wg, filename, labels, outputPath, separator, selection))
 			case "Flow":
-				pbs = append(pbs, flows(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, labelFlows(&wg, filename, labels, outputPath, separator, selection))
 			case "HTTP":
-				pbs = append(pbs, HTTP(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, labelHTTP(&wg, filename, labels, outputPath, separator, selection))
 			// TODO: make compatible with new TLS* audit records in v0.5
 			case "TLS":
-				pbs = append(pbs, TLS(&wg, filename, labels, outputPath, separator, selection))
+				pbs = append(pbs, labelTLS(&wg, filename, labels, outputPath, separator, selection))
 			default:
 				if !DisableLayerMapping {
 					// apply labels to all records by timestamp only
-					pbs = append(pbs, layer(&wg, filename, typ, labelMap, labels, outputPath, separator, selection))
+					pbs = append(pbs, labelLayer(&wg, filename, typ, labelMap, labels, outputPath, separator, selection))
 				}
 			}
 		}
 	}
 
 	var pool *pb.Pool
+
 	if UseProgressBars { // wait for goroutines to start and initialize
 		// otherwise progress bars will bug
 		time.Sleep(3 * time.Second)
@@ -227,6 +228,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 		if err != nil {
 			return err
 		}
+
 		utils.ClearScreen()
 	}
 
