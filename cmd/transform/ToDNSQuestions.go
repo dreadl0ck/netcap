@@ -22,7 +22,7 @@ func toDNSQuestions() {
 	lt := maltego.ParseLocalArguments(os.Args)
 	dnsAuditRecords := lt.Values["path"]
 
-	log.Println("open", dnsAuditRecords)
+	log.Println(defaultOpenCommand, dnsAuditRecords)
 
 	f, err := os.Open(dnsAuditRecords)
 	if err != nil {
@@ -91,6 +91,6 @@ func toDNSQuestions() {
 		}
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

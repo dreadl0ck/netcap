@@ -130,7 +130,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	}
 
 	if !continueTransform {
-		trx.AddUIMessage("completed!", "Inform")
+		trx.AddUIMessage("completed!", UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 	}
 }

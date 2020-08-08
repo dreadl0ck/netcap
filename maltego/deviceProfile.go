@@ -173,6 +173,6 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

@@ -45,7 +45,7 @@ func toPhoneNumbersFromFile() {
 
 	if len(results) == 0 {
 		log.Println("No phone numbers found")
-		trx.AddUIMessage("completed!", "Inform")
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 		os.Exit(0)
 	}
@@ -62,6 +62,6 @@ func toPhoneNumbersFromFile() {
 		}
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

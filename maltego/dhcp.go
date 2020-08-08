@@ -129,7 +129,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	}
 
 	if !continueTransform {
-		trx.AddUIMessage("completed!", "Inform")
+		trx.AddUIMessage("completed!", UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 	}
 }

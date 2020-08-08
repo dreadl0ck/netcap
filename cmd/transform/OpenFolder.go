@@ -24,11 +24,10 @@ func openFolder() {
 	// - open for macOS
 	// - gio open for linux
 	if openCommandName == "" {
-		if runtime.GOOS == "darwin" {
-			openCommandName = "open"
+		if runtime.GOOS == platformDarwin {
+			openCommandName = defaultOpenCommand
 		} else { // linux
-			openCommandName = "gio"
-			args = append(args, "open")
+			openCommandName, args = makeLinuxCommand(defaultOpenCommandLinux, args)
 		}
 	}
 
@@ -45,6 +44,6 @@ func openFolder() {
 	}
 	log.Println(string(out))
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

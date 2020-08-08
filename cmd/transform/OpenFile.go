@@ -30,7 +30,7 @@ func openFile() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
-		openCommandName = os.Getenv("NC_MALTEGO_OPEN_FILE_CMD")
+		openCommandName = os.Getenv(envOpenFileCommand)
 		args            []string
 	)
 
@@ -39,10 +39,10 @@ func openFile() {
 	// - open for macOS
 	// - gio open for linux
 	if openCommandName == "" {
-		if runtime.GOOS == "darwin" {
-			openCommandName = "open"
+		if runtime.GOOS == platformDarwin {
+			openCommandName = defaultOpenCommand
 		} else { // linux
-			openCommandName = "gio"
+			openCommandName = defaultOpenCommandLinux
 			args = append(args, "open")
 		}
 	}
@@ -56,7 +56,7 @@ func openFile() {
 
 	if ext == ".exe" || ext == ".bin" {
 		log.Println("detected known executable file extension - aborting to prevent accidental execution!")
-		trx.AddUIMessage("completed!", "Inform")
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 
 		return
@@ -65,6 +65,7 @@ func openFile() {
 	// if there is no extension, use content type detection to determine if its an executable
 	// TODO: improve and test content type check and executable file detection
 	log.Println("open path for determining content type:", loc)
+
 	f, err := os.OpenFile(lt.Values["location"], os.O_RDONLY, outDirPermission)
 	if err != nil {
 		log.Fatal(err)
@@ -80,17 +81,17 @@ func openFile() {
 	}
 
 	// check if file is executable to prevent accidental execution
-	ctype := http.DetectContentType(buf)
-	log.Println("ctype:", ctype)
+	cType := http.DetectContentType(buf)
+	log.Println("cType:", cType)
 
 	stat, err := os.Stat(lt.Values["location"])
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if ctype == "application/octet-stream" && isExecAny(stat.Mode()) {
+	if cType == "application/octet-stream" && isExecAny(stat.Mode()) {
 		log.Println("detected executable file - aborting to prevent accidental execution!")
-		trx.AddUIMessage("completed!", "Inform")
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 
 		return
@@ -107,7 +108,7 @@ func openFile() {
 
 	log.Println(string(out))
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
 

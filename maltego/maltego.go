@@ -17,24 +17,24 @@ import (
 )
 
 // set constants
-//goland:noinspection GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst,GoUnusedConst
+//goland:noinspection GoUnusedConst
 const (
-	BOOKMARK_COLOR_NONE   = "-1"
-	BOOKMARK_COLOR_BLUE   = "0"
-	BOOKMARK_COLOR_GREEN  = "1"
-	BOOKMARK_COLOR_YELLOW = "2"
-	BOOKMARK_COLOR_ORANGE = "3"
-	BOOKMARK_COLOR_RED    = "4"
+	BookMarkColorNone   = "-1"
+	BookMarkColorBlue   = "0"
+	BookMarkColorGreen  = "1"
+	BookMarkColorYellow = "2"
+	BookMarkColorOrange = "3"
+	BookMarkColorRed    = "4"
 
-	LINK_STYLE_NORMAL  = "0"
-	LINK_STYLE_DASHED  = "1"
-	LINK_STYLE_DOTTED  = "2"
-	LINK_STYLE_DASHDOT = "3"
+	LinkStyleNormal  = "0"
+	LinkStyleDashed  = "1"
+	LinkStyleDotted  = "2"
+	LinkStyleDashdot = "3"
 
-	UIM_FATAL   = "FatalError"
-	UIM_PARTIAL = "PartialError"
-	UIM_INFORM  = "Inform"
-	UIM_DEBUG   = "Debug"
+	UIMessageFatal        = "FatalError"
+	UIMessagePartialError = "PartialError"
+	UIMessageInform       = "Inform"
+	UIMessageDebug        = "Debug"
 )
 
 func getThicknessInterval(val, min, max uint64) int {
@@ -125,31 +125,32 @@ type Transform struct {
 	UIMessages [][]string
 }
 
-func (m *Transform) AddEntity(enType, enValue string) *EntityObj {
+func (tr *Transform) AddEntity(enType, enValue string) *EntityObj {
 	me := &EntityObj{entityType: enType, value: EscapeText(enValue), weight: 100}
-	m.entities = append(m.entities, me)
+	tr.entities = append(tr.entities, me)
+
 	return me
 }
 
-func (m *Transform) AddUIMessage(message, messageType string) {
-	m.UIMessages = append(m.UIMessages, []string{messageType, message})
+func (tr *Transform) AddUIMessage(message, messageType string) {
+	tr.UIMessages = append(tr.UIMessages, []string{messageType, message})
 }
 
-func (m *Transform) addException(exceptionString, code string) {
+func (tr *Transform) addException(exceptionString, code string) {
 	exc := []string{exceptionString, code}
-	m.exceptions = append(m.exceptions, exc)
+	tr.exceptions = append(tr.exceptions, exc)
 }
 
-func (m *Transform) ReturnOutput() string {
+func (tr *Transform) ReturnOutput() string {
 	r := "<MaltegoMessage>\n"
 	r += "<MaltegoTransformResponseMessage>\n"
 	r += "<Entities>\n"
-	for _, e := range m.entities {
+	for _, e := range tr.entities {
 		r += e.returnEntity()
 	}
 	r += "</Entities>\n"
 	r += "<UIMessages>\n"
-	for _, e := range m.UIMessages {
+	for _, e := range tr.UIMessages {
 		mType, mVal := e[0], e[1]
 		r += "<UIMessage MessageType=\"" + mType + "\">" + mVal + "</UIMessage>\n"
 	}
@@ -159,11 +160,11 @@ func (m *Transform) ReturnOutput() string {
 	return r
 }
 
-func (m *Transform) throwExceptions() string {
+func (tr *Transform) throwExceptions() string {
 	r := "<MaltegoMessage>\n"
 	r += "<MaltegoTransformExceptionMessage>\n"
 	r += "<Exceptions>\n"
-	for _, e := range m.exceptions {
+	for _, e := range tr.exceptions {
 		code, ex := e[0], e[1]
 		r += "<Exception code='" + code + "'>" + ex + "</Exception>\n"
 	}

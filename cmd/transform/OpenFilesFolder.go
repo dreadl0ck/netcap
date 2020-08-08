@@ -1,3 +1,16 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 package transform
 
 import (
@@ -15,7 +28,7 @@ func openFilesFolder() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
-		openCommandName = os.Getenv("NETCAP_MALTEGO_OPEN_FILE_CMD")
+		openCommandName = os.Getenv(envOpenFileCommand)
 		args            []string
 	)
 
@@ -24,11 +37,10 @@ func openFilesFolder() {
 	// - open for macOS
 	// - gio open for linux
 	if openCommandName == "" {
-		if runtime.GOOS == "darwin" {
-			openCommandName = "open"
+		if runtime.GOOS == platformDarwin {
+			openCommandName = defaultOpenCommand
 		} else { // linux
-			openCommandName = "gio"
-			args = append(args, "open")
+			openCommandName, args = makeLinuxCommand(defaultOpenCommandLinux, args)
 		}
 	}
 
@@ -36,6 +48,7 @@ func openFilesFolder() {
 	log.Println("open path:", path)
 
 	log.Println("command for opening path:", openCommandName)
+
 	args = append(args, path)
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
@@ -43,8 +56,9 @@ func openFilesFolder() {
 		log.Println(string(out))
 		log.Fatal(err)
 	}
+
 	log.Println(string(out))
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

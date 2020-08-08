@@ -41,7 +41,7 @@ func toEmailsFromFile() {
 	results := emailaddress.Find(data, false)
 	if len(results) == 0 {
 		log.Println("No emails found")
-		trx.AddUIMessage("completed!", "Inform")
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 		os.Exit(0)
 	}
@@ -52,6 +52,6 @@ func toEmailsFromFile() {
 		trx.AddEntity("netcap.Email", r.String())
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

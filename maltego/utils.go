@@ -22,9 +22,11 @@ import (
 // EscapeText ensures that the input text is safe to embed within XML.
 func EscapeText(text string) string {
 	var buf bytes.Buffer
+
 	err := xml.EscapeText(&buf, []byte(text))
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	return buf.String()
 }

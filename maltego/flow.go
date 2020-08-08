@@ -176,7 +176,8 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 
 	dir := filepath.Dir(profilesFile)
 	flowAuditRecords := filepath.Join(dir, "Flow.ncap.gz")
-	log.Println("open", flowAuditRecords)
+	log.Println("opening", flowAuditRecords)
+
 	f, err := os.Open(flowAuditRecords)
 	if err != nil {
 		log.Fatal(err)
@@ -199,6 +200,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 	if errFileHeader != nil {
 		log.Fatal(errFileHeader)
 	}
+
 	if header.Type != types.Type_NC_Flow {
 		panic("file does not contain Flow records: " + header.Type.String())
 	}
@@ -209,6 +211,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 		ok   bool
 		trx  = Transform{}
 	)
+
 	pm = flow
 
 	if _, ok = pm.(types.AuditRecord); !ok {
@@ -247,12 +250,13 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 	}
 
 	// read netcap header - ignore err as it has been checked before
-	r.ReadHeader()
+	_, _ = r.ReadHeader()
 
 	var top12 []int
 	if len(sizes) > 12 {
 		top12 = sizes[len(sizes)-12:]
 	}
+
 	log.Println("==> top12", top12)
 
 	for {
@@ -271,6 +275,6 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

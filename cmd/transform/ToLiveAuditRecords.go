@@ -81,7 +81,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		}
 	}
 
-	trx.AddUIMessage("completed!", "Inform")
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
 
