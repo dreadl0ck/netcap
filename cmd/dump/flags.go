@@ -21,10 +21,12 @@ import (
 	"github.com/dreadl0ck/netcap"
 )
 
+// Flags returns all flags.
 func Flags() (flags []string) {
 	fs.VisitAll(func(f *flag.Flag) {
 		flags = append(flags, f.Name)
 	})
+
 	return
 }
 

@@ -30,8 +30,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// IPv6 labels type NC_IPv6.
-func IPv6(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// labelIPv6 labels type NC_IPv6.
+func labelIPv6(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, "IPv6.ncap.gz")
 		total, errCount = netcap.Count(fname)

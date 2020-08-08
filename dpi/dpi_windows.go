@@ -31,6 +31,7 @@ func Destroy() {}
 
 func GetProtocols(packet gopacket.Packet) map[string]struct{} {
 	uniqueResults := make(map[string]struct{})
+
 	return uniqueResults
 }
 

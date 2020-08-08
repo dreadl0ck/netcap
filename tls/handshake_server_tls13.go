@@ -391,6 +391,7 @@ func (hs *serverHandshakeStateTLS13) sendDummyChangeCipherSpec() error {
 	hs.sentDummyCCS = true
 
 	_, err := hs.c.writeRecord(recordTypeChangeCipherSpec, []byte{1})
+
 	return err
 }
 

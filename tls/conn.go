@@ -780,6 +780,7 @@ func (c *Conn) readFromUntil(r io.Reader, n int) error {
 	// "predict" closeNotify alerts.
 	c.rawInput.Grow(needs + bytes.MinRead)
 	_, err := c.rawInput.ReadFrom(&atLeastReader{r, int64(needs)})
+
 	return err
 }
 

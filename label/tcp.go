@@ -30,8 +30,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// TCP labels type NC_TCP.
-func TCP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// labelTCP labels type NC_TCP.
+func labelTCP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, "TCP.ncap.gz")
 		total, errCount = netcap.Count(fname)

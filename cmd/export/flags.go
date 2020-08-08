@@ -22,27 +22,29 @@ import (
 	"github.com/dreadl0ck/netcap"
 )
 
+// Flags returns all flags.
 func Flags() (flags []string) {
 	fs.VisitAll(func(f *flag.Flag) {
 		flags = append(flags, f.Name)
 	})
+
 	return
 }
 
 var (
-	fs                       = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
-	flagGenerateConfig       = fs.Bool("gen-config", false, "generate config")
-	flagConfig               = fs.String("config", "", "read configuration from file at path")
-	flagMetricsAddress       = fs.String("address", "127.0.0.1:7777", "set address for exposing metrics")
-	flagDumpJSON             = fs.Bool("dumpJson", false, "dump as JSON")
-	flagReplay               = fs.Bool("replay", false, "replay traffic (only works when exporting audit records directly!)")
-	flagDir                  = fs.String("dir", "", "path to directory with netcap audit records")
-	flagInput                = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
-	flagInterface            = fs.String("iface", "", "attach to network interface and capture in live mode")
-	flagWorkers              = fs.Int("workers", runtime.NumCPU(), "number of workers")
-	flagPacketBuffer         = fs.Int("pbuf", netcap.DefaultPacketBuffer, "set packet buffer size, for channels that feed data to workers")
-	flagIngoreUnknown        = fs.Bool("ignore-unknown", false, "disable writing unknown packets into a pcap file")
-	flagPromiscMode          = fs.Bool("promisc", true, "toggle promiscuous mode for live capture")
+	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
+	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
+	_                  = fs.String("config", "", "read configuration from file at path")
+	flagMetricsAddress = fs.String("address", "127.0.0.1:7777", "set address for exposing metrics")
+	flagDumpJSON       = fs.Bool("dumpJson", false, "dump as JSON")
+	flagReplay         = fs.Bool("replay", false, "replay traffic (only works when exporting audit records directly!)")
+	flagDir            = fs.String("dir", "", "path to directory with netcap audit records")
+	flagInput          = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagInterface      = fs.String("iface", "", "attach to network interface and capture in live mode")
+	flagWorkers        = fs.Int("workers", runtime.NumCPU(), "number of workers")
+	flagPacketBuffer   = fs.Int("pbuf", netcap.DefaultPacketBuffer, "set packet buffer size, for channels that feed data to workers")
+	flagIngoreUnknown  = fs.Bool("ignore-unknown", false, "disable writing unknown packets into a pcap file")
+	flagPromiscMode    = fs.Bool("promisc", true, "toggle promiscuous mode for live capture")
 	flagLogErrors            = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
 	flagFileStorage          = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
 	flagCalcEntropy          = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")

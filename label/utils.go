@@ -87,7 +87,7 @@ func finish(wg *sync.WaitGroup, r *netcap.Reader, f *os.File, labelsTotal int, o
 		log.Fatal("failed to close", outFileName, ", error:", err)
 	}
 
-	if false {
+	if removeFilesWithoutMatches {
 		// remove file that did not have any matching labels
 		if labelsTotal == 0 {
 			if err := os.Remove(outFileName); err != nil {

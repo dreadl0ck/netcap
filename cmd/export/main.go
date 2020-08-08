@@ -31,7 +31,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-const _a_good_name = ".ncap"
+const netcapFileExtension = ".ncap"
 
 func Run() {
 	// parse commandline flags
@@ -70,7 +70,7 @@ func Run() {
 	}
 
 	switch {
-	case filepath.Ext(*flagInput) == _a_good_name || filepath.Ext(*flagInput) == ".gz":
+	case filepath.Ext(*flagInput) == netcapFileExtension || filepath.Ext(*flagInput) == ".gz":
 		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
 		exportFile(*flagInput)
 	case *flagDir != "":

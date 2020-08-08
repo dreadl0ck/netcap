@@ -25,7 +25,6 @@ const logFileName = "net.proxy.log"
 var (
 	// Log instance.
 	Log   *zap.Logger
-	debug bool
 )
 
 // configureLogger configures the logging instance.

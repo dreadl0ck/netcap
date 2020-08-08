@@ -21,10 +21,12 @@ import (
 	"github.com/dreadl0ck/netcap"
 )
 
+// Flags returns all flags.
 func Flags() (flags []string) {
 	fs.VisitAll(func(f *flag.Flag) {
 		flags = append(flags, f.Name)
 	})
+
 	return
 }
 
@@ -32,7 +34,7 @@ func Flags() (flags []string) {
 var (
 	fs                      = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
 	flagGenerateConfig      = fs.Bool("gen-config", false, "generate config")
-	flagConfig              = fs.String("config", "", "read configuration from file at path")
+	_                       = fs.String("config", "", "read configuration from file at path")
 	flagDialTimeout         = fs.Int("dialTimeout", 30, "seconds until dialing to the backend times out")
 	flagIdleConnTimeout     = fs.Int("idleConnTimeout", 90, "seconds until a connection times out")
 	flagTLSHandshakeTimeout = fs.Int("tlsTimeout", 15, "seconds until a TLS handshake times out")

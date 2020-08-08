@@ -31,7 +31,7 @@ import (
 )
 
 // IPv4 labels type NC_IPv4.
-func IPv4(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+func labelIPv4(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, "IPv4.ncap.gz")
 		total, errCount = netcap.Count(fname)

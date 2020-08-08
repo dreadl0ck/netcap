@@ -145,6 +145,7 @@ type AssemblerContext interface {
 // Implements AssemblerContext for Assemble().
 type assemblerSimpleContext gopacket.CaptureInfo
 
+// GetCaptureInfo return the underlying gopacket.CaptureInfo.
 func (asc *assemblerSimpleContext) GetCaptureInfo() gopacket.CaptureInfo {
 	return gopacket.CaptureInfo(*asc)
 }

@@ -31,8 +31,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// connections labels type NC_Connection.
-func connections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+// labelConnections labels type NC_Connection.
+func labelConnections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
 		total, errCount = netcap.Count(fname)

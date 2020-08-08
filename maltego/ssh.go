@@ -35,13 +35,16 @@ type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
 
 // SSHTransform applies a maltego transformation over SSH sshs seen for a target SSH.
 func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	sshFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
+	var (
+		lt      = ParseLocalArguments(os.Args[1:])
+		sshFile = lt.Values["path"]
+		mac     = lt.Values["mac"]
+		ipaddr  = lt.Values["ipaddr"]
+		stdout  = os.Stdout
+	)
 
-	stdout := os.Stdout
 	os.Stdout = os.Stderr
+
 	netcap.PrintBuildInfo()
 
 	f, err := os.Open(sshFile)
@@ -66,6 +69,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	if errFileHeader != nil {
 		log.Fatal(errFileHeader)
 	}
+
 	if header.Type != types.Type_NC_SSH {
 		panic("file does not contain SSH records: " + header.Type.String())
 	}
@@ -76,6 +80,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		ok  bool
 		trx = Transform{}
 	)
+
 	pm = ssh
 
 	if _, ok = pm.(types.AuditRecord); !ok {
@@ -111,7 +116,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	}
 
 	// read netcap header - ignore err as it has been checked before
-	r.ReadHeader()
+	_, _ = r.ReadHeader()
 
 	for {
 		err = r.Next(ssh)
