@@ -45,6 +45,33 @@ import (
 
 var pop3Debug = false
 
+// pop3State describes a state in the POP3 state machine.
+type pop3State int
+
+const (
+	stateNotAuthenticated pop3State = iota
+	stateAuthenticated
+	// StateNotIdentified
+	// StateDataTransfer.
+)
+
+const (
+	// POP3 commands.
+	pop3OK             = "+OK"
+	pop3Err            = "-ERR"
+	pop3Dot            = "."
+	pop3Plus           = "+"
+	pop3Implementation = "IMPLEMENTATION"
+	pop3Top            = "TOP"
+	pop3User           = "USER"
+	pop3UIDL           = "UIDL"
+	pop3STLS           = "STLS"
+	pop3SASL           = "SASL"
+
+	//POP3 logging constants.
+	opPop3Save = "POP3-save"
+)
+
 type pop3Reader struct {
 	parent *tcpConnection
 
@@ -56,12 +83,22 @@ type pop3Reader struct {
 	user, pass, token string
 }
 
+func validPop3ServerCommand(cmd string) bool {
+	switch cmd {
+	case pop3Dot, pop3Plus, pop3OK, pop3Err, pop3Top, pop3User, pop3UIDL, pop3STLS, pop3SASL, pop3Implementation:
+		return true
+	default:
+		return false
+	}
+}
+
 // Decode parses the stream according to the POP3 protocol.
 func (h *pop3Reader) Decode() {
 	var (
 		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
 	)
+
 	if len(h.parent.merged) > 0 {
 		previousDir = h.parent.merged[0].dir
 	}
@@ -86,9 +123,9 @@ func (h *pop3Reader) Decode() {
 					err = h.readResponse(b)
 				}
 			}
-			//if err != nil {
-			//	fmt.Println(err)
-			//}
+			// if err != nil {
+			// 	fmt.Println(err)
+			// }
 			buf.Reset()
 			previousDir = d.dir
 
@@ -99,6 +136,7 @@ func (h *pop3Reader) Decode() {
 	}
 	var err error
 	b := bufio.NewReader(&buf)
+
 	if previousDir == reassembly.TCPDirClientToServer {
 		for err != io.EOF && err != io.ErrUnexpectedEOF {
 			err = h.readRequest(b)
@@ -108,9 +146,9 @@ func (h *pop3Reader) Decode() {
 			err = h.readResponse(b)
 		}
 	}
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 
 	// fmt.Println(servicePOP3, h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
 
@@ -142,6 +180,7 @@ func (h *pop3Reader) Decode() {
 
 	// write record to disk
 	atomic.AddInt64(&pop3Decoder.numRecords, 1)
+
 	err = pop3Decoder.writer.Write(pop3Msg)
 	if err != nil {
 		errorMap.Inc(err.Error())
@@ -166,20 +205,22 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		fileName string
 
 		// detected content type
-		ctype = http.DetectContentType(body)
+		cType = http.DetectContentType(body)
 
 		// root path
-		root = path.Join(conf.FileStorage, ctype)
+		root = path.Join(conf.FileStorage, cType)
 
 		// file extension
-		ext = fileExtensionForContentType(ctype)
+		ext = fileExtensionForContentType(cType)
 
 		// file basename
 		base = filepath.Clean(name+"-"+path.Base(h.parent.ident)) + ext
 	)
+
 	if err != nil {
 		base = "incomplete-" + base
 	}
+
 	if filepath.Ext(name) == "" {
 		fileName = name + ext
 	} else {
@@ -214,9 +255,9 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		}
 
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+h.parent.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+h.parent.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(cType))
 		} else {
-			target = path.Join(root, filepath.Clean(name+"-"+h.parent.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean(name+"-"+h.parent.ident)+"-"+strconv.Itoa(n)+fileExtensionForContentType(cType))
 		}
 
 		n++
@@ -245,16 +286,22 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 	if err == nil {
 		w, errCopy := io.Copy(f, r)
-
-		if _, ok := r.(*gzip.Reader); ok {
-			r.(*gzip.Reader).Close()
-		}
-		f.Close()
-
 		if errCopy != nil {
-			logReassemblyError("POP3-save", "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, errCopy)
+			logReassemblyError(opPop3Save, "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, errCopy)
 		} else {
 			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, w)
+		}
+
+		if _, ok := r.(*gzip.Reader); ok {
+			errClose := r.(*gzip.Reader).Close()
+			if errClose != nil {
+				logReassemblyError(opPop3Save, "%s: failed to close gzip reader %s (l:%d): %s\n", h.parent.ident, target, w, errClose)
+			}
+		}
+
+		errClose := f.Close()
+		if errClose != nil {
+			logReassemblyError(opPop3Save, "%s: failed to close file handle %s (l:%d): %s\n", h.parent.ident, target, w, errClose)
 		}
 	}
 
@@ -267,7 +314,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		Location:    target,
 		Ident:       h.parent.ident,
 		Source:      source,
-		ContentType: ctype,
+		ContentType: cType,
 		Context: &types.PacketContext{
 			SrcIP:   h.parent.net.Src().String(),
 			DstIP:   h.parent.net.Dst().String(),
@@ -362,45 +409,9 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 func getCommand(line string) (string, []string) {
 	line = strings.Trim(line, "\r \n")
 	cmd := strings.Split(line, " ")
+
 	return cmd[0], cmd[1:]
 }
-
-func validPop3ServerCommand(cmd string) bool {
-	switch cmd {
-	case ".":
-		fallthrough
-	case "+":
-		fallthrough
-	case "+OK":
-		fallthrough
-	case "-ERR":
-		fallthrough
-	case "TOP":
-		fallthrough
-	case "USER":
-		fallthrough
-	case "UIDL":
-		fallthrough
-	case "STLS":
-		fallthrough
-	case "SASL":
-		fallthrough
-	case "IMPLEMENTATION":
-		return true
-	default:
-		return false
-	}
-}
-
-// pop3State describes a state in the POP3 state machine.
-type pop3State int
-
-const (
-	stateNotAuthenticated pop3State = iota
-	stateAuthenticated
-	// StateNotIdentified
-	// StateDataTransfer.
-)
 
 func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string) {
 	if len(h.pop3Responses) == 0 || len(h.pop3Requests) == 0 {
@@ -409,9 +420,10 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 
 	// check if server hello
 	serverHello := h.pop3Responses[0]
-	if serverHello.Command != "+OK" {
+	if serverHello.Command != pop3OK {
 		return
 	}
+
 	if !strings.HasPrefix(serverHello.Message, "POP server ready") {
 		return
 	}
@@ -430,6 +442,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 		if h.reqIndex == len(h.pop3Requests) {
 			return
 		}
+
 		r = next()
 		h.reqIndex++
 		// fmt.Println("CMD", r.Command, r.Argument, "h.resIndex", h.resIndex)
@@ -441,80 +454,99 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				h.resIndex++
 
 				continue
-			case "LIST", "UIDL":
+			case "LIST", pop3UIDL:
 				var n int
 				// ensure safe array access
 				if len(h.pop3Responses) < h.resIndex {
 					time.Sleep(100 * time.Millisecond) // not there yet? wait a little and retry
+
 					if len(h.pop3Responses) < h.resIndex {
 						continue
 					}
 				}
+
 				for _, reply := range h.pop3Responses[h.resIndex:] {
-					if reply.Command == "." {
+					if reply.Command == pop3Dot {
 						numMails++
 						h.resIndex++
+
 						break
 					}
 					n++
 				}
-				h.resIndex = h.resIndex + n
+
+				h.resIndex += n
+
 				continue
 			case "RETR":
 				var n int
 				// ensure safe array access
 				if len(h.pop3Responses) < h.resIndex {
 					time.Sleep(100 * time.Millisecond) // not there yet? wait a little and retry
+
 					if len(h.pop3Responses) < h.resIndex {
 						continue
 					}
 				}
+
 				for _, reply := range h.pop3Responses[h.resIndex:] {
-					if reply.Command == "." {
+					if reply.Command == pop3Dot {
 						mails = append(mails, h.parseMail([]byte(mailBuf)))
 						mailBuf = ""
 						numMails++
 						h.resIndex++
+
 						break
 					}
+
 					mailBuf += reply.Message + "\n"
 					n++
 				}
+
 				h.resIndex = h.resIndex + n
+
 				continue
 			case "QUIT":
 				return
 			}
 		case stateNotAuthenticated:
 			switch r.Command {
-			case "USER":
+			case pop3User:
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
+
 				reply := h.pop3Responses[h.resIndex+1]
-				if reply.Command == "+OK" {
+				if reply.Command == pop3OK {
 					user = r.Argument
 				}
+
 				h.resIndex++
+
 				continue
 			case "CAPA":
 				var n int
+
 				for _, reply := range h.pop3Responses[h.resIndex:] {
-					if reply.Command == "." {
+					if reply.Command == pop3Dot {
 						numMails++
 						h.resIndex++
+
 						break
 					}
 					n++
 				}
-				h.resIndex = h.resIndex + n
+
+				h.resIndex += n
+
 				continue
 			case "AUTH":
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
+
 				reply := h.pop3Responses[h.resIndex+1]
-				if reply.Command == "+OK" {
+				if reply.Command == pop3OK {
 					state = stateAuthenticated
 					if len(h.pop3Requests) < h.reqIndex {
 						r = h.pop3Requests[h.reqIndex]
@@ -523,33 +555,42 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 						}
 					}
 				}
+
 				h.resIndex++
+
 				continue
 			case "PASS":
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
+
 				reply := h.pop3Responses[h.resIndex+1]
-				if reply.Command == "+OK" {
+				if reply.Command == pop3OK {
 					state = stateAuthenticated
 					pass = r.Argument
 				}
+
 				h.resIndex++
+
 				continue
 			case "APOP": // example: APOP mrose c4c9334bac560ecc979e58001b3e22fb
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
+
 				reply := h.pop3Responses[h.resIndex+1]
-				if reply.Command == "+OK" {
+				if reply.Command == pop3OK {
 					state = stateAuthenticated
 					parts := strings.Split(r.Argument, " ")
+
 					if len(parts) > 1 {
 						user = parts[0]
 						token = parts[1]
 					}
 				}
+
 				h.resIndex++
+
 				continue
 			case "QUIT":
 				return

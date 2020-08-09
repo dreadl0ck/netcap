@@ -111,7 +111,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	}
 
 	// read netcap header - ignore err as it has been checked before
-	r.ReadHeader()
+	_, _ = r.ReadHeader()
 
 	for {
 		err = r.Next(pop3)

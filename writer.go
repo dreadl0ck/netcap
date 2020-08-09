@@ -231,10 +231,13 @@ func (w *Writer) Write(msg proto.Message) error {
 			panic(err)
 		}
 	}
+
 	return nil
 }
 
-func (w *Writer) WriteHeader(t types.Type, source string, version string, includesPayloads bool) error {
+// WriteHeader writes a netcap file header for protobuf encoded audit record files
+// or a CSV header for CSV output files.
+func (w *Writer) WriteHeader(t types.Type, source, version string, includesPayloads bool) error {
 	if w.csv {
 		// write as csv
 		_, err := w.writeCSVHeader(InitRecord(t))
@@ -271,6 +274,7 @@ func closeGzipWriters(writers ...*pgzip.Writer) {
 		if err != nil {
 			panic(err)
 		}
+
 		err = w.Close()
 		if err != nil {
 			panic(err)
@@ -278,6 +282,7 @@ func closeGzipWriters(writers ...*pgzip.Writer) {
 	}
 }
 
+// Close flushes and closes the writer and the associated file handles.
 func (w *Writer) Close() (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -299,6 +304,7 @@ func (w *Writer) GetChan() <-chan []byte {
 	return w.cWriter.Chan()
 }
 
+// IsCSV returns whether the writer is CSV writer.
 func (w *Writer) IsCSV() bool {
 	return w.csv
 }

@@ -458,19 +458,24 @@ func genTransform(outDir string, name string, description string, inputEntity st
 // └── version.properties.
 func genTransformArchive() {
 	// clean
-	os.RemoveAll("transforms")
+	_ = os.RemoveAll("transforms")
 
 	// create directories
-	os.MkdirAll("transforms/Servers", 0o700)
-	os.MkdirAll("transforms/TransformRepositories/Local", 0o700)
+	_ = os.MkdirAll("transforms/Servers", 0o700)
+	_ = os.MkdirAll("transforms/TransformRepositories/Local", 0o700)
 
 	fVersion, err := os.Create("transforms/version.properties")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fVersion.Close()
 
-	fVersion.WriteString(`#
+	defer func(){
+		if errClose := fVersion.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
+
+	_, _ = fVersion.WriteString(`#
 #Sat Jun 13 21:48:54 CEST 2020
 maltego.client.version=4.2.11.13104
 maltego.client.subtitle=

@@ -111,7 +111,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 	}
 
 	// read netcap header - ignore err as it has been checked before
-	r.ReadHeader()
+	_, _ = r.ReadHeader()
 
 	for {
 		err = r.Next(credentials)

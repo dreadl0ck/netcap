@@ -155,10 +155,12 @@ func toAuditRecords() {
 
 	// open PCAP file
 	var r *pcap.Handle
+
 	r, err = pcap.OpenOffline(inputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer r.Close()
 
 	// restore stdout

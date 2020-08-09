@@ -1,5 +1,7 @@
 # TODOs
 
+- add constants for logReassemblyError(
+
 - remove init function usage
 - error messages iteration
 

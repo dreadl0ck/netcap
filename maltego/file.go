@@ -112,7 +112,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 	}
 
 	// read netcap header - ignore err as it has been checked before
-	r.ReadHeader()
+	_, _ = r.ReadHeader()
 
 	for {
 		err = r.Next(file)
