@@ -16,12 +16,11 @@ package decoder
 
 import (
 	"fmt"
-	"log"
-	"strings"
-
 	"github.com/dreadl0ck/gopacket"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
+	"log"
+	"strings"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -210,39 +209,40 @@ func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string
 // Decode is called for each layer
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe.
-func (e *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
-	record := e.Handler(l, utils.TimeToString(p.Metadata().Timestamp))
+func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
+
+	record := dec.Handler(l, utils.TimeToString(p.Metadata().Timestamp))
 	if record != nil {
 
 		if ctx != nil {
 			// assert to audit record
-			if r, ok := record.(types.AuditRecord); ok {
-				r.SetPacketContext(ctx)
+			if auditRecord, ok := record.(types.AuditRecord); ok {
+				auditRecord.SetPacketContext(ctx)
 			} else {
 				fmt.Printf("type: %#v\n", record)
 				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 		}
 
-		if e.writer.IsCSV() {
-			_, err := e.writer.WriteCSV(record)
+		if dec.writer.IsCSV() {
+			_, err := dec.writer.WriteCSV(record)
 			if err != nil {
 				return err
 			}
 		} else {
 			// write record
-			err := e.writer.WriteProto(record)
+			err := dec.writer.WriteProto(record)
 			if err != nil {
 				return err
 			}
 		}
 
 		// export metrics if configured
-		if e.export {
+		if dec.export {
 			// assert to audit record
-			if r, ok := record.(types.AuditRecord); ok {
+			if auditRecord, ok := record.(types.AuditRecord); ok {
 				// export metrics
-				r.Inc()
+				auditRecord.Inc()
 			} else {
 				fmt.Printf("type: %#v\n", record)
 				log.Fatal("type does not implement the types.AuditRecord interface")
@@ -254,11 +254,11 @@ func (e *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l 
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder.
-func (e *GoPacketDecoder) GetChan() <-chan []byte {
-	return e.writer.GetChan()
+func (dec *GoPacketDecoder) GetChan() <-chan []byte {
+	return dec.writer.GetChan()
 }
 
 // Destroy closes and flushes all writers.
-func (e *GoPacketDecoder) Destroy() (name string, size int64) {
-	return e.writer.Close()
+func (dec *GoPacketDecoder) Destroy() (name string, size int64) {
+	return dec.writer.Close()
 }

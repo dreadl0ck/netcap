@@ -78,6 +78,7 @@ func countPackets(path string) (count int64, err error) {
 	if err != nil {
 		return
 	}
+
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil && !errors.Is(errClose, io.EOF) {
@@ -92,7 +93,7 @@ func countPackets(path string) (count int64, err error) {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal("Error reading packet data: ", err)
+			log.Fatal("error reading packet data: ", err)
 		}
 
 		// increment counter
@@ -123,7 +124,7 @@ func (c *Collector) CollectPcap(path string) error {
 	c.printStdOut("counting packets...")
 
 	c.numPackets, err = countPackets(path)
-	if err != nil {
+	if err != nil && !(errors.Is(err, io.EOF)) {
 		return err
 	}
 
@@ -137,6 +138,7 @@ func (c *Collector) CollectPcap(path string) error {
 	if err != nil {
 		return err
 	}
+
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil && !errors.Is(errClose, io.EOF) {
@@ -178,7 +180,7 @@ func (c *Collector) CollectPcap(path string) error {
 		stopProgress = c.printProgressInterval()
 	)
 
-	for { // fetch the next packetdata and packetheader
+	for { // fetch the next packet data and packet header
 		// for pcap, currently ZeroCopyReadPacketData() is not supported
 		data, ci, err = r.ReadPacketData()
 		if err != nil {
@@ -186,7 +188,7 @@ func (c *Collector) CollectPcap(path string) error {
 				break
 			}
 
-			return errors.Wrap(err, "Error reading packet data: ")
+			return errors.Wrap(err, "error reading packet data")
 		}
 
 		// increment atomic packet counter
