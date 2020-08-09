@@ -105,8 +105,8 @@ func (c *Collector) printlnStdOut(args ...interface{}) {
 
 func (c *Collector) printStdOut(args ...interface{}) {
 	if c.config.Quiet {
-		fmt.Fprint(logFileHandle, args...)
+		_, _ = fmt.Fprint(logFileHandle, args...)
 	} else {
-		fmt.Fprint(os.Stdout, args...)
+		_, _ = fmt.Fprint(os.Stdout, args...)
 	}
 }

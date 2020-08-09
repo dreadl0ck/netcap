@@ -350,7 +350,12 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 		return 0
 	}
 
-	defer r.Close()
+	defer func() {
+		errClose := r.Close()
+		if errClose != nil {
+			fmt.Println("failed to close netcap.Reader:", errClose)
+		}
+	}()
 
 	var (
 		header, errFileHeader = r.ReadHeader()

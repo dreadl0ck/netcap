@@ -127,7 +127,7 @@ func labelTCP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, 
 					}
 
 					// add label
-					f.WriteString(strings.Join(tcp.CSVRecord(), separator) + separator + a.Classification + "\n")
+					_, _ = f.WriteString(strings.Join(tcp.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
 
 					goto read
@@ -141,16 +141,17 @@ func labelTCP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, 
 				}
 
 				// add final label
-				f.WriteString(strings.Join(tcp.CSVRecord(), separator) + separator + finalLabel + "\n")
+				_, _ = f.WriteString(strings.Join(tcp.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
 
 				goto read
 			}
 
 			// label as normal
-			f.WriteString(strings.Join(tcp.CSVRecord(), separator) + separator + "normal\n")
+			_, _ = f.WriteString(strings.Join(tcp.CSVRecord(), separator) + separator + "normal\n")
 		}
 		finish(wg, r, f, labelsTotal, outFileName, progress)
 	}()
+
 	return progress
 }

@@ -108,31 +108,41 @@ var transforms = []transformCoreInfo{
 
 func genFullConfigArchive() {
 	// clean
-	os.RemoveAll("netcap")
+	_ = os.RemoveAll("netcap")
 
 	// create directories
-	os.MkdirAll("netcap/Servers", 0o700)
-	os.MkdirAll("netcap/TransformRepositories/Local", 0o700)
+	_ = os.MkdirAll("netcap/Servers", 0o700)
+	_ = os.MkdirAll("netcap/TransformRepositories/Local", 0o700)
 
 	// create directories
-	os.MkdirAll("netcap/Entities", 0o700)
-	os.MkdirAll("netcap/EntityCategories", 0o700)
-	os.MkdirAll("netcap/Icons", 0o700)
+	_ = os.MkdirAll("netcap/Entities", 0o700)
+	_ = os.MkdirAll("netcap/EntityCategories", 0o700)
+	_ = os.MkdirAll("netcap/Icons", 0o700)
 
 	fVersion, err := os.Create("netcap/version.properties")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fVersion.Close()
+
+	defer func(){
+		if errClose := fVersion.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	fCategory, err := os.Create("netcap/EntityCategories/netcap.category")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fCategory.Close()
+
+	defer func(){
+		if errClose := fCategory.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	// Sat Jun 13 21:48:54 CEST 2020
-	fVersion.WriteString(`#
+	_, _ = fVersion.WriteString(`#
 #` + time.Now().Format(time.UnixDate) + `
 maltego.client.version=4.2.11.13104
 maltego.client.subtitle=
@@ -141,7 +151,7 @@ maltego.client.name=Maltego Classic Eval
 maltego.mtz.version=1.0
 maltego.graph.version=1.2`)
 
-	fCategory.WriteString("<EntityCategory name=\"Netcap\"/>")
+	_, _ = fCategory.WriteString("<EntityCategory name=\"Netcap\"/>")
 
 	fmt.Println("bootstrapped netcap configuration archive for Maltego")
 }
@@ -300,7 +310,7 @@ func genTransformSet(outDir string) {
 		log.Fatal(err)
 	}
 
-	os.MkdirAll(filepath.Join(outDir, "TransformSets"), 0o700)
+	_ = os.MkdirAll(filepath.Join(outDir, "TransformSets"), 0o700)
 	f, err := os.Create(filepath.Join(outDir, "TransformSets", "netcap.set"))
 	if err != nil {
 		log.Fatal(err)
