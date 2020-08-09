@@ -316,7 +316,7 @@ func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 				}
 				if numMatches != 2 {
 					// label as normal
-					gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + "normal\n"))
+					_, _ = gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + "normal\n"))
 
 					continue
 				}
@@ -357,21 +357,24 @@ func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 				}
 
 				// add label
-				gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + label + "\n"))
+				_, _ = gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + label + "\n"))
 				labelsTotal++
 			} else {
 				// label as normal
-				gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + "normal\n"))
+				_, _ = gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + "normal\n"))
 			}
 		}
+
 		err = gzipWriter.Flush()
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		err = gzipWriter.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		finish(wg, r, f, labelsTotal, outFileName, progress)
 	}()
 

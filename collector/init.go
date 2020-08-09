@@ -20,6 +20,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+var errAborted = errors.New("operation aborted by user")
+
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
@@ -83,7 +85,7 @@ func (c *Collector) Init() (err error) {
 			}
 
 			if !confirm(msg) {
-				return errors.New("aborted")
+				return errAborted
 			}
 		}
 

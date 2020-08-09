@@ -70,6 +70,7 @@ func (a *CiscoDiscoveryInfo) CSVRecord() []string {
 	for _, v := range a.Unknown {
 		vals = append(vals, v.toString())
 	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		a.CDPHello.toString(),            //  *CDPHello

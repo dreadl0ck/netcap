@@ -120,7 +120,7 @@ func labelHTTP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir,
 					}
 
 					// add label
-					f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + a.Classification + "\n")
+					_, _ = f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + a.Classification + "\n")
 					labelsTotal++
 
 					goto read
@@ -129,14 +129,14 @@ func labelHTTP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir,
 
 			if len(finalLabel) != 0 {
 				// add final label
-				f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + finalLabel + "\n")
+				_, _ = f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + finalLabel + "\n")
 				labelsTotal++
 
 				goto read
 			}
 
 			// label as normal
-			f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + "normal\n")
+			_, _ = f.WriteString(strings.Join(http.CSVRecord(), separator) + separator + "normal\n")
 		}
 		finish(wg, r, f, labelsTotal, outFileName, progress)
 	}()

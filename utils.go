@@ -116,7 +116,7 @@ func Dump(w *os.File, c DumpConfig) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to open audit record file: %s", err)
+		return fmt.Errorf("failed to open audit record file: %w", err)
 	}
 
 	defer func() {
@@ -162,7 +162,7 @@ func Dump(w *os.File, c DumpConfig) error {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
-			return fmt.Errorf("failed to read next audit record: %s", err)
+			return fmt.Errorf("failed to read next audit record: %w", err)
 		}
 		count++
 
@@ -172,7 +172,7 @@ func Dump(w *os.File, c DumpConfig) error {
 			if c.JSON {
 				marshaled, errMarshal := json.Marshal(p)
 				if errMarshal != nil {
-					return fmt.Errorf("failed to marshal json: %s", errMarshal)
+					return fmt.Errorf("failed to marshal json: %w", errMarshal)
 				}
 
 				_, _ = w.WriteString(string(marshaled))
@@ -463,7 +463,7 @@ func colorizeProto(in string, colorMap map[string]string) string {
 		}
 	}
 
-	for i, line := range strings.Split(in, newline) {
+	for _, line := range strings.Split(in, newline) {
 		if line == "" {
 			continue
 		}
@@ -472,12 +472,6 @@ func colorizeProto(in string, colorMap map[string]string) string {
 			b.WriteString(newline)
 
 			continue
-		}
-
-		if i >= numColors {
-			index = i % numColors
-		} else {
-			index = i
 		}
 
 		parts := strings.Split(line, ":")

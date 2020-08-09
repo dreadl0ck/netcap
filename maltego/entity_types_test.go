@@ -215,7 +215,8 @@ func genEntity(outDir string, entName string, imgName string, description string
 	}
 
 	// add icon files
-	os.MkdirAll(filepath.Join(outDir, "Icons", ident), 0o700)
+	_ = os.MkdirAll(filepath.Join(outDir, "Icons", ident), 0o700)
+
 	copyFile(
 		filepath.Join("/tmp", "icons", "renamed", imgName+".xml"),
 		filepath.Join(outDir, "Icons", ident, imgName+".xml"),
@@ -240,13 +241,23 @@ func copyFile(src, dst string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer in.Close()
+
+	defer func() {
+		if errClose := in.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	out, err := os.Create(dst)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer out.Close()
+
+	defer func() {
+		if errClose := out.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	_, err = io.Copy(out, in)
 	if err != nil {
@@ -277,26 +288,36 @@ func copyFile(src, dst string) {
 // └── version.properties.
 func genEntityArchive() {
 	// clean
-	os.RemoveAll("entities")
+	_ = os.RemoveAll("entities")
 
 	// create directories
-	os.MkdirAll("entities/Entities", 0o700)
-	os.MkdirAll("entities/EntityCategories", 0o700)
-	os.MkdirAll("entities/Icons", 0o700)
+	_ = os.MkdirAll("entities/Entities", 0o700)
+	_ = os.MkdirAll("entities/EntityCategories", 0o700)
+	_ = os.MkdirAll("entities/Icons", 0o700)
 
 	fVersion, err := os.Create("entities/version.properties")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fVersion.Close()
+
+	defer func(){
+		if errClose := fVersion.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	fCategory, err := os.Create("entities/EntityCategories/netcap.category")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer fCategory.Close()
 
-	fVersion.WriteString(`#
+	defer func(){
+		if errClose := fCategory.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
+
+	_, _ = fVersion.WriteString(`#
 #Sat Jun 13 21:48:54 CEST 2020
 maltego.client.version=4.2.11.13104
 maltego.client.subtitle=
@@ -305,7 +326,7 @@ maltego.client.name=Maltego Classic Eval
 maltego.mtz.version=1.0
 maltego.graph.version=1.2`)
 
-	fCategory.WriteString("<EntityCategory name=\"Netcap\"/>")
+	_, _ = fCategory.WriteString("<EntityCategory name=\"Netcap\"/>")
 
 	fmt.Println("generated maltego entity archive")
 }
