@@ -74,6 +74,7 @@ func joinInts(a []int32) string {
 
 	for i, num := range a {
 		b.WriteString(formatInt32(num))
+
 		if i != lastIndex {
 			b.WriteString(FieldSeparator)
 		}
@@ -94,6 +95,7 @@ func joinUints(a []uint32) string {
 
 	for i, num := range a {
 		b.WriteString(formatUint32(num))
+
 		if i != lastIndex {
 			b.WriteString(FieldSeparator)
 		}
@@ -114,6 +116,7 @@ func join(a ...string) string {
 
 	for i, v := range a {
 		b.WriteString(v)
+
 		if i != lastIndex {
 			b.WriteString(FieldSeparator)
 		}
@@ -128,6 +131,7 @@ func formatTimestamp(ts string) string {
 	if UTC {
 		return utils.TimeToUTC(ts)
 	}
+
 	return ts
 }
 
