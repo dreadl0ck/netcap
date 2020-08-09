@@ -392,6 +392,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 				for _, d := range t.client.DataSlice() {
 					d.dir = reassembly.TCPDirClientToServer
 				}
+
 				for _, d := range t.server.DataSlice() {
 					d.dir = reassembly.TCPDirServerToClient
 				}
@@ -494,21 +495,26 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 			l           = ip4.Length
 			newip4, err = streamFactory.defragger.DefragIPv4(ip4)
 		)
+
 		if err != nil {
-			log.Fatalln("Error while de-fragmenting", err)
+			log.Fatalln("error while de-fragmenting", err)
 		} else if newip4 == nil {
-			logReassemblyDebug("Fragment...\n")
+			logReassemblyDebug("fragment received...\n")
+
 			return
 		}
+
 		if newip4.Length != l {
 			stats.ipdefrag++
+
 			logReassemblyDebug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
+
 			pb, ok := packet.(gopacket.PacketBuilder)
 			if !ok {
 				panic("Not a PacketBuilder")
 			}
-			nextDecoder := newip4.NextLayerType()
 
+			nextDecoder := newip4.NextLayerType()
 			if err = nextDecoder.Decode(newip4.Payload, pb); err != nil {
 				fmt.Println("failed to decode ipv4:", err)
 			}
@@ -523,6 +529,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 			log.Fatalf("Failed to set network layer for checksum: %s\n", err)
 		}
 	}
+
 	stats.Lock()
 	stats.totalsz += int64(len(tcp.Payload))
 	stats.Unlock()
@@ -553,6 +560,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 // used for debugging.
 func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
 	done := make(chan bool, 1)
+
 	go func() {
 		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 			CaptureInfo: packet.Metadata().CaptureInfo,
@@ -622,9 +630,11 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				sp.handleStream(s)
 			}
 		}
+
 		if !conf.Quiet {
 			fmt.Println()
 		}
+
 		sp.wg.Wait()
 
 		// process UDP streams
@@ -674,29 +684,32 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		printProgress(1, 1)
 
 		stats.Lock()
+
 		var rows [][]string
 		if conf.DefragIPv4 {
 			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(stats.ipdefrag, 10)})
 		}
 
-		rows = append(rows, []string{"missed bytes", strconv.FormatInt(stats.missedBytes, 10)})
-		rows = append(rows, []string{"total packets", strconv.FormatInt(stats.pkt, 10)})
-		rows = append(rows, []string{"rejected FSM", strconv.FormatInt(stats.rejectFsm, 10)})
-		rows = append(rows, []string{"rejected Options", strconv.FormatInt(stats.rejectOpt, 10)})
-		rows = append(rows, []string{"reassembled bytes", strconv.FormatInt(stats.sz, 10)})
-		rows = append(rows, []string{"total TCP bytes", strconv.FormatInt(stats.totalsz, 10)})
-		rows = append(rows, []string{"connection rejected FSM", strconv.FormatInt(stats.rejectConnFsm, 10)})
-		rows = append(rows, []string{"reassembled chunks", strconv.FormatInt(stats.reassembled, 10)})
-		rows = append(rows, []string{"out-of-order packets", strconv.FormatInt(stats.outOfOrderPackets, 10)})
-		rows = append(rows, []string{"out-of-order bytes", strconv.FormatInt(stats.outOfOrderBytes, 10)})
-		rows = append(rows, []string{"biggest-chunk packets", strconv.FormatInt(stats.biggestChunkPackets, 10)})
-		rows = append(rows, []string{"biggest-chunk bytes", strconv.FormatInt(stats.biggestChunkBytes, 10)})
-		rows = append(rows, []string{"overlap packets", strconv.FormatInt(stats.overlapPackets, 10)})
-		rows = append(rows, []string{"overlap bytes", strconv.FormatInt(stats.overlapBytes, 10)})
-		rows = append(rows, []string{"saved TCP connections", strconv.FormatInt(stats.savedTCPConnections, 10)})
-		rows = append(rows, []string{"saved UDP connections", strconv.FormatInt(stats.savedUDPConnections, 10)})
-		rows = append(rows, []string{"numSoftware", strconv.FormatInt(stats.numSoftware, 10)})
-		rows = append(rows, []string{"numServices", strconv.FormatInt(stats.numServices, 10)})
+		rows = append(rows,
+			[]string{"missed bytes", strconv.FormatInt(stats.missedBytes, 10)},
+			[]string{"total packets", strconv.FormatInt(stats.pkt, 10)},
+			[]string{"rejected FSM", strconv.FormatInt(stats.rejectFsm, 10)},
+			[]string{"rejected Options", strconv.FormatInt(stats.rejectOpt, 10)},
+			[]string{"reassembled bytes", strconv.FormatInt(stats.sz, 10)},
+			[]string{"total TCP bytes", strconv.FormatInt(stats.totalsz, 10)},
+			[]string{"connection rejected FSM", strconv.FormatInt(stats.rejectConnFsm, 10)},
+			[]string{"reassembled chunks", strconv.FormatInt(stats.reassembled, 10)},
+			[]string{"out-of-order packets", strconv.FormatInt(stats.outOfOrderPackets, 10)},
+			[]string{"out-of-order bytes", strconv.FormatInt(stats.outOfOrderBytes, 10)},
+			[]string{"biggest-chunk packets", strconv.FormatInt(stats.biggestChunkPackets, 10)},
+			[]string{"biggest-chunk bytes", strconv.FormatInt(stats.biggestChunkBytes, 10)},
+			[]string{"overlap packets", strconv.FormatInt(stats.overlapPackets, 10)},
+			[]string{"overlap bytes", strconv.FormatInt(stats.overlapBytes, 10)},
+			[]string{"saved TCP connections", strconv.FormatInt(stats.savedTCPConnections, 10)},
+			[]string{"saved UDP connections", strconv.FormatInt(stats.savedUDPConnections, 10)},
+			[]string{"numSoftware", strconv.FormatInt(stats.numSoftware, 10)},
+			[]string{"numServices", strconv.FormatInt(stats.numServices, 10)},
+		)
 		stats.Unlock()
 
 		tui.Table(utils.ReassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
@@ -749,6 +762,7 @@ func (t *tcpConnection) sortAndMergeFragments() {
 				if d.ac != nil {
 					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
 				}
+
 				t.conversationColoredBuf.WriteString(ansi.Red + string(d.raw) + ansi.Reset + ts)
 			} else {
 				t.conversationColoredBuf.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
@@ -759,6 +773,7 @@ func (t *tcpConnection) sortAndMergeFragments() {
 				if d.ac != nil {
 					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
 				}
+
 				t.conversationColoredBuf.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + ts)
 			} else {
 				t.conversationColoredBuf.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
