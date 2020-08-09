@@ -95,9 +95,9 @@ func (c *Collector) CollectPcapNG(path string) error {
 	c.printStdOut("counting packets...")
 
 	start := time.Now()
-	c.numPackets, err = countPacketsNG(path)
 
-	if err != nil {
+	c.numPackets, err = countPacketsNG(path)
+	if err != nil && !(errors.Is(err, io.EOF)) {
 		return err
 	}
 
@@ -128,14 +128,14 @@ func (c *Collector) CollectPcapNG(path string) error {
 	)
 
 	for {
-		// fetch the next packetdata and packetheader
+		// fetch the next packet data and packet header
 		data, ci, err = r.ReadPacketData()
 		if err != nil {
-			if errors.Is(err, io.EOF) {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			}
 
-			return errors.Wrap(err, "Error reading packet data")
+			return errors.Wrap(err, "error reading packet data")
 		}
 
 		// increment atomic packet counter

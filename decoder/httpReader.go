@@ -138,12 +138,9 @@ func (h *httpReader) Decode() {
 
 	for _, d := range h.parent.merged {
 		if d.dir == previousDir {
-			// fmt.Println(d.dir, "collect", len(d.raw), d.ac.GetCaptureInfo().Timestamp)
 			buf.Write(d.raw)
 		} else {
 			var err error
-
-			// fmt.Println(hex.Dump(buf.Bytes()))
 
 			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
@@ -155,8 +152,8 @@ func (h *httpReader) Decode() {
 					err = h.readResponse(b)
 				}
 			}
-			if err != nil && !errors.Is(err, io.EOF) {
-				fmt.Println(err)
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+				utils.DebugLog.Println("error reading HTTP", err, h.parent.ident)
 			}
 			buf.Reset()
 			previousDir = d.dir
