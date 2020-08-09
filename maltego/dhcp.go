@@ -29,9 +29,11 @@ import (
 )
 
 // DHCPCountFunc is a function that counts something over multiple DHCP audit records.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type DHCPCountFunc func()
 
 // DHCPTransformationFunc is a transformation over DHCP audit records.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ip string)
 
 // DHCPTransform applies a maltego transformation over DHCP audit records.

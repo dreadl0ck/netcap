@@ -17,7 +17,7 @@ import (
 )
 
 // set constants
-//goland:noinspection GoUnusedConst,GoUnnecessarilyExportConstant
+//goland:noinspection GoUnusedConst,GoUnnecessarilyExportConstant,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers,GoUnnecessarilyExportedIdentifiers
 const (
 	BookMarkColorNone   = "-1"
 	BookMarkColorBlue   = "0"

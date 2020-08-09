@@ -469,7 +469,7 @@ func genTransformArchive() {
 		log.Fatal(err)
 	}
 
-	defer func(){
+	defer func() {
 		if errClose := fVersion.Close(); errClose != nil {
 			fmt.Println(errClose)
 		}

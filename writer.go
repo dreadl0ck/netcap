@@ -87,9 +87,11 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 			if compress {
 				var errGzipWriter error
 				w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.bWriter, DefaultCompressionLevel)
+
 				if errGzipWriter != nil {
 					panic(errGzipWriter)
 				}
+
 				w.csvWriter = io.NewCSVWriter(w.gWriter)
 			} else {
 				w.csvWriter = io.NewCSVWriter(w.bWriter)
@@ -140,6 +142,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 			// experiment: pgzip -> file
 			var errGzipWriter error
 			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, DefaultCompressionLevel)
+
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
@@ -168,6 +171,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 			}
 		}
 	}
+
 	w.aWriter = io.NewAtomicDelimitedWriter(w.dWriter)
 
 	if w.gWriter != nil {
@@ -190,6 +194,7 @@ func NewWriter(name string, buffer, compress, csv bool, out string, writeChan bo
 func (w *Writer) WriteProto(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
 	return w.aWriter.PutProto(msg)
 }
 

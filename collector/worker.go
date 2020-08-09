@@ -182,6 +182,8 @@ func (c *Collector) initWorkers() []chan *packet {
 		c.assemblers = append(c.assemblers, a)
 		workers[i] = c.worker(a)
 	}
+
 	c.numWorkers = len(workers)
+
 	return workers
 }

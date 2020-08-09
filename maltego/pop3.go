@@ -29,9 +29,11 @@ import (
 )
 
 // POP3CountFunc is a function that counts something over multiple POP3 audit records.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type POP3CountFunc func()
 
 // POP3TransformationFunc is a transformation over POP3 audit records.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type POP3TransformationFunc = func(lt LocalTransform, trx *Transform, pop3 *types.POP3, min, max uint64, profilesFile string, ip string)
 
 // POP3Transform applies a maltego transformation over POP3 audit records.
