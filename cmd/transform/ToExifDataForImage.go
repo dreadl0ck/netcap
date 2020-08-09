@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -39,7 +40,7 @@ func toExifDataForImage() {
 
 	rawExif, err := exif.SearchAndExtractExif(data)
 	if err != nil {
-		if err == exif.ErrNoExif {
+		if errors.Is(err, exif.ErrNoExif) {
 			log.Println("No EXIF data found")
 			trx.AddUIMessage("completed!", maltego.UIMessageInform)
 			fmt.Println(trx.ReturnOutput())

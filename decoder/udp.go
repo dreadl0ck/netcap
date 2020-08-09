@@ -41,7 +41,7 @@ const typeUDP = "udp"
 
 // udpData represents a udp data stream.
 type udpStream struct {
-	data UDPDataSlice
+	data udpDataSlice
 	sync.Mutex
 }
 

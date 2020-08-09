@@ -126,11 +126,11 @@ func labelLayer(wg *sync.WaitGroup, file string, typ string, labelMap map[string
 					}
 
 					// add label
-					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + label + "\n")
+					_, _ = f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + label + "\n")
 					labelsTotal++
 				} else {
 					// label as normal
-					f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
+					_, _ = f.WriteString(strings.Join(p.CSVRecord(), separator) + separator + "normal\n")
 				}
 			} else {
 				// layers are mapped by timestamp

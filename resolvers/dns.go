@@ -15,7 +15,8 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -44,7 +45,7 @@ func init() {
 	} {
 		_, block, err := net.ParseCIDR(cidr)
 		if err != nil {
-			panic(fmt.Errorf("parse error on %q: %v", cidr, err))
+			log.Fatalf("failed to parse cidr notation %q: %v\n", cidr, err)
 		}
 		privateIPBlocks = append(privateIPBlocks, block)
 	}
@@ -95,11 +96,11 @@ func LookupDNSNames(ip string) []string {
 	defer cancelCtx()
 
 	var r net.Resolver
+
 	names, err := r.LookupAddr(ctx, ip)
 	if err != nil {
-		// fmt.Println("net.LookupAddr failed:", err)
-		// failed values are added to the DB as well so we don't try to resolve them again
-	}
+		utils.DebugLog.Println("net.LookupAddr failed:", err)
+	} // failed values are added to the DB as well so we don't try to resolve them again
 
 	// add to DB
 	dnsNamesMu.Lock()

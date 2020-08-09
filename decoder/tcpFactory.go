@@ -48,18 +48,16 @@ func GetStreamPool() *reassembly.StreamPool {
 // internal data structure to handle new network streams
 // and spawn the stream decoder routines for processing the data.
 type tcpConnectionFactory struct {
-	wg            sync.WaitGroup
-	decodeHTTP    bool
-	decodePOP3    bool
-	decodeSSH     bool
-	numActive     int64
 	streamReaders []streamReader
-
-	defragger  *ip4defrag.IPv4Defragmenter
-	StreamPool *reassembly.StreamPool
-	fsmOptions reassembly.TCPSimpleFSMOptions
-
+	numActive     int64
+	defragger     *ip4defrag.IPv4Defragmenter
+	StreamPool    *reassembly.StreamPool
+	wg            sync.WaitGroup
 	sync.Mutex
+	decodeHTTP bool
+	decodePOP3 bool
+	decodeSSH  bool
+	fsmOptions reassembly.TCPSimpleFSMOptions
 }
 
 // New handles a new stream received from the assembler

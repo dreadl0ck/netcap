@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -36,6 +37,8 @@ var (
 
 	dhcpDBinitialized bool
 	dhcpDBFile        = "dhcp-fingerprints.json"
+
+	errFingerbankQueryFailed = errors.New("fingerbank query failed")
 )
 
 // SaveFingerprintDB will persist the fingerprint database on disk.
@@ -196,7 +199,7 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*DHCPResult,
 
 	// check status
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unexpected status code from fingerbank API: " + resp.Status)
+		return nil, fmt.Errorf("unexpected status code from fingerbank API: %s %w", resp.Status, errFingerbankQueryFailed)
 	}
 
 	// parse JSON response

@@ -393,7 +393,6 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 				log.Printf("case 2\n")
 			}
 			cur.bytes = cur.bytes[:-start.difference(cur.seq)]
-			break
 		case diffStart > 0 && end.difference(cur.seq) < 0:
 			if Debug {
 				log.Printf("case 4\n")

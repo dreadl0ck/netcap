@@ -18,14 +18,19 @@ const pageBytes = 1900
 // a connection.
 // this structure has an optimized field order to avoid excessive padding.
 type page struct {
-	buf        [pageBytes]byte
-	bytes      []byte
-	seen       time.Time
-	ac         AssemblerContext // only set for the first page of a packet
-	seq        Sequence
-	prev, next *page
+	bytes []byte
+	seen  time.Time
+	ac    AssemblerContext
+	seq   Sequence
+	prev  *page
+	next  *page
 	sync.Mutex
-	start, end bool
+	buf   [pageBytes]byte
+	start bool
+	end   bool
+
+	// only set for the first page of a packet
+
 }
 
 func (p *page) getBytes() []byte {

@@ -3,6 +3,7 @@ package maltego
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -28,19 +29,21 @@ var icon = `<Icon>
 </Icon>`
 
 func generateIcons() {
-	os.RemoveAll("/tmp/icons")
+	_ = os.RemoveAll("/tmp/icons")
+
 	_, err := git.PlainClone("/tmp/icons", false, &git.CloneOptions{
 		URL:      "https://github.com/material-icons/material-icons-png.git",
 		Progress: os.Stdout,
 	})
-	if err != nil && err != git.ErrRepositoryAlreadyExists {
+	
+	if err != nil && !errors.Is(err, git.ErrRepositoryAlreadyExists) {
 		log.Fatal(err)
 	}
 
 	fmt.Println("cloned icon repository to", "/tmp/icons")
 
 	// rename icons
-	os.Mkdir("/tmp/icons/renamed", 0o700)
+	_ = os.Mkdir("/tmp/icons/renamed", 0o700)
 
 	files, err := ioutil.ReadDir("/tmp/icons/png/black")
 	if err != nil {
@@ -55,6 +58,7 @@ func generateIcons() {
 			newBase = filepath.Join("/tmp", "icons", "renamed", filepath.Base(f.Name()))
 			newPath = newBase + ".png"
 		)
+
 		err = os.Rename(oldPath, newPath)
 		if err != nil {
 			log.Fatal(err)
@@ -94,6 +98,7 @@ func generateSizes(newBase string, newPath string) {
 
 	for _, size := range []uint{16, 24, 32, 48, 96} {
 		newImage := resize.Resize(size, size, img, resize.Lanczos3)
+
 		f, errCreate := os.Create(newBase + strconv.Itoa(int(size)) + ".png")
 		if errCreate != nil {
 			log.Fatal(errCreate)
@@ -113,6 +118,7 @@ func generateSizes(newBase string, newPath string) {
 
 func generateAuditRecordIconV2(text string) {
 	const size = 96
+
 	im, err := gg.LoadPNG("/tmp/icons/renamed/check_box_outline_blank.png")
 	if err != nil {
 		log.Fatal(err)
@@ -124,6 +130,7 @@ func generateAuditRecordIconV2(text string) {
 	dc.SetRGB(0, 0, 0)
 
 	var fontSize float64
+
 	switch {
 	case len(text) > 12:
 		fontSize = 8
@@ -276,17 +283,24 @@ func generateAuditRecordIcon(text string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer outFile.Close()
+	defer func() {
+		if errClose := outFile.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
 
 	b := bufio.NewWriter(outFile)
+
 	err = png.Encode(b, rgba)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	err = b.Flush()
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println("wrote " + text + ".png")
 
 	generateSizes(imgBase, imgPath)

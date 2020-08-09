@@ -147,11 +147,11 @@ func (h *httpReader) Decode() {
 
 			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
-				for err != io.EOF && err != io.ErrUnexpectedEOF {
+				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 					err = h.readRequest(b)
 				}
 			} else {
-				for err != io.EOF && err != io.ErrUnexpectedEOF {
+				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 					err = h.readResponse(b)
 				}
 			}
@@ -172,11 +172,11 @@ func (h *httpReader) Decode() {
 	b := bufio.NewReader(&buf)
 
 	if previousDir == reassembly.TCPDirClientToServer {
-		for err != io.EOF && err != io.ErrUnexpectedEOF {
+		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 			err = h.readRequest(b)
 		}
 	} else {
-		for err != io.EOF && err != io.ErrUnexpectedEOF {
+		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 			err = h.readResponse(b)
 		}
 	}

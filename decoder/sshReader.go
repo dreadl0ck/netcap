@@ -279,7 +279,7 @@ type sshVersionInfo struct {
 	os             string
 }
 
-var regSSHIdent = regexp.MustCompile("^(SSH-[0-9]\\.?[0-9]?)-(.*[[:word:]]*)_([0-9]\\.[0-9]?\\.?[[:alnum:]]?[[:alnum:]]?)[[:space:]]?([[:alnum:]]*)")
+var regSSHIdent = regexp.MustCompile(`^(SSH-[0-9]\.?[0-9]?)-(.*[[:word:]]*)_([0-9]\.[0-9]?\.?[[:alnum:]]?[[:alnum:]]?)[[:space:]]?([[:alnum:]]*)`)
 
 func parseSSHIdent(ident string) *sshVersionInfo {
 	if m := regSSHIdent.FindStringSubmatch(ident); len(m) > 0 {

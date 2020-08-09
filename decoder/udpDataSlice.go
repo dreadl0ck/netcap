@@ -13,20 +13,20 @@
 
 package decoder
 
-// UDPDataSlice implements sort.Interface to sort data fragments based on their timestamps.
-type UDPDataSlice []*udpData
+// udpDataSlice implements sort.Interface to sort data fragments based on their timestamps.
+type udpDataSlice []*udpData
 
 // Len will return the length.
-func (d UDPDataSlice) Len() int {
+func (d udpDataSlice) Len() int {
 	return len(d)
 }
 
 // Less will return true if the value at index i is smaller than the other one.
-func (d UDPDataSlice) Less(i, j int) bool {
+func (d udpDataSlice) Less(i, j int) bool {
 	return d[i].ci.Timestamp.Before(d[j].ci.Timestamp)
 }
 
 // Swap will switch the values.
-func (d UDPDataSlice) Swap(i, j int) {
+func (d udpDataSlice) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }

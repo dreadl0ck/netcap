@@ -43,48 +43,42 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+// errInvalidOutputDirectory indicates that a file path was supplied instead of a directory.
+var errInvalidOutputDirectory = errors.New("expected a directory, but got a file for output path")
+
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
-	wg sync.WaitGroup
-
-	workers        []chan *packet
-	start          time.Time
-	assemblers     []*reassembly.Assembler
-	progressString string
-	next           int
-
+	workers                  []chan *packet
+	start                    time.Time
+	assemblers               []*reassembly.Assembler
+	customDecoders           []decoder.CustomDecoderAPI
+	progressString           string
+	next                     int
 	unkownPcapWriterAtomic   *atomicPcapGoWriter
 	unknownPcapFile          *os.File
 	errorsPcapWriterBuffered *bufio.Writer
 	errorsPcapWriterAtomic   *atomicPcapGoWriter
-
-	errorsPcapFile *os.File
-	errorLogFile   *os.File
-
-	unknownProtosAtomic *decoder.AtomicCounterMap
-	allProtosAtomic     *decoder.AtomicCounterMap
-	current             int64
-
-	numWorkers        int
-	numPacketsLast    int64
-	totalBytesWritten int64
-
+	errorsPcapFile           *os.File
+	errorLogFile             *os.File
+	unknownProtosAtomic      *decoder.AtomicCounterMap
+	allProtosAtomic          *decoder.AtomicCounterMap
+	current                  int64
+	numWorkers               int
+	numPacketsLast           int64
+	totalBytesWritten        int64
 	files                    map[string]string
 	inputSize                int64
 	unkownPcapWriterBuffered *bufio.Writer
 	numPackets               int64
 	config                   *Config
 	errorMap                 *decoder.AtomicCounterMap
-
-	mu        sync.Mutex
-	statMutex sync.Mutex
-
-	shutdown bool
-	isLive   bool
-
-	goPacketDecoders map[gopacket.LayerType][]*decoder.GoPacketDecoder
-	customDecoders   []decoder.CustomDecoderAPI
+	goPacketDecoders         map[gopacket.LayerType][]*decoder.GoPacketDecoder
+	wg                       sync.WaitGroup
+	mu                       sync.Mutex
+	statMutex                sync.Mutex
+	shutdown                 bool
+	isLive                   bool
 }
 
 // New returns a new Collector instance.
@@ -520,7 +514,7 @@ func (c *Collector) initLogging() error {
 				return err
 			}
 		} else if !stat.IsDir() {
-			return errors.New("expected a directory, but got a file for output path")
+			return errInvalidOutputDirectory
 		}
 	}
 
