@@ -14,6 +14,7 @@
 package resolvers
 
 import (
+	"github.com/dreadl0ck/netcap/env"
 	"os"
 	"path/filepath"
 )
@@ -30,7 +31,7 @@ var (
 )
 
 func init() {
-	DataBaseSource = os.Getenv("NC_DATABASE_SOURCE")
+	DataBaseSource = os.Getenv(env.DatabaseSource)
 	if DataBaseSource == "" {
 		DataBaseSource = "/usr/local/etc/netcap/dbs"
 	}

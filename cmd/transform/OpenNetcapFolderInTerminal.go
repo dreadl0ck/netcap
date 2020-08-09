@@ -2,6 +2,7 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/env"
 	"log"
 	"os"
 	"os/exec"
@@ -14,7 +15,7 @@ func openNetcapFolderInTerminal() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
-		openCommandName = os.Getenv("NETCAP_MALTEGO_OPEN_TERMINAL_CMD")
+		openCommandName = os.Getenv(env.MaltegoOpenTerminalCommand)
 		args            []string
 	)
 

@@ -26,10 +26,6 @@ const (
 	// default linux command to open files from maltego
 	// you could also set it to xdg-open.
 	defaultOpenCommandLinux = "gio"
-
-	// Environment variables for the various OS interaction commands.
-	envOpenFileCommand  = "NC_MALTEGO_OPEN_FILE_CMD"
-	envExploitDirectory = "NC_MALTEGO_EXPLOIT_DIRECTORY"
 )
 
 // adds arguments for different programs to the passed in arguments.
