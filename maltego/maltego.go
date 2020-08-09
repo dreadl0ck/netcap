@@ -17,7 +17,7 @@ import (
 )
 
 // set constants
-//goland:noinspection GoUnusedConst
+//goland:noinspection GoUnusedConst,GoUnnecessarilyExportConstant
 const (
 	BookMarkColorNone   = "-1"
 	BookMarkColorBlue   = "0"
@@ -73,6 +73,7 @@ func getThicknessInterval(val, min, max uint64) int {
 //	os.Stderr.WriteString("%" + strconv.Itoa(percentage) + "\n")
 //}
 
+// GetThickness can be used to calculate the line thickness.
 func GetThickness(val, min, max uint64) int {
 	if min == max {
 		min = 0
@@ -104,6 +105,7 @@ func GetThickness(val, min, max uint64) int {
 
 /* First we handle the MaltegoEntity conversion from Python */
 
+// EntityObj models a Maltego entity.
 type EntityObj struct {
 	entityType         string
 	value              string
@@ -145,18 +147,23 @@ func (tr *Transform) ReturnOutput() string {
 	r := "<MaltegoMessage>\n"
 	r += "<MaltegoTransformResponseMessage>\n"
 	r += "<Entities>\n"
+
 	for _, e := range tr.entities {
 		r += e.returnEntity()
 	}
+
 	r += "</Entities>\n"
 	r += "<UIMessages>\n"
+
 	for _, e := range tr.UIMessages {
 		mType, mVal := e[0], e[1]
 		r += "<UIMessage MessageType=\"" + mType + "\">" + mVal + "</UIMessage>\n"
 	}
+
 	r += "</UIMessages>\n"
 	r += "</MaltegoTransformResponseMessage>\n"
 	r += "</MaltegoMessage>\n"
+
 	return r
 }
 
@@ -164,13 +171,16 @@ func (tr *Transform) throwExceptions() string {
 	r := "<MaltegoMessage>\n"
 	r += "<MaltegoTransformExceptionMessage>\n"
 	r += "<Exceptions>\n"
+
 	for _, e := range tr.exceptions {
 		code, ex := e[0], e[1]
 		r += "<Exception code='" + code + "'>" + ex + "</Exception>\n"
 	}
+
 	r += "</Exceptions>\n"
 	r += "</MaltegoTransformExceptionMessage>\n"
 	r += "</MaltegoMessage>\n"
+
 	return r
 }
 
@@ -187,15 +197,18 @@ func (m *EntityObj) setWeight(w int) {
 	m.weight = w
 }
 
+// SetIconURL sets the icon URL.
 func (m *EntityObj) SetIconURL(iU string) {
 	m.iconURL = iU
 }
 
+// AddProperty adds a property.
 func (m *EntityObj) AddProperty(fieldName, displayName, matchingRule, value string) {
 	prop := []string{fieldName, displayName, matchingRule, EscapeText(value)}
 	m.AdditionalFields = append(m.AdditionalFields, prop)
 }
 
+// AddDisplayInformation adds display information.
 func (m *EntityObj) AddDisplayInformation(di, dl string) {
 	info := []string{dl, di}
 	m.displayInformation = append(m.displayInformation, info)
@@ -209,11 +222,13 @@ func (m *EntityObj) setLinkStyle(style string) {
 	m.AddProperty("link#maltego.link.style", "LinkStyle", "", style)
 }
 
+// SetLinkThickness sets the link thickness.
 func (m *EntityObj) SetLinkThickness(thick int) {
 	thickInt := strconv.Itoa(thick)
 	m.AddProperty("link#maltego.link.thickness", "LinkThickness", "", thickInt)
 }
 
+// SetLinkLabel sets the link label.
 func (m *EntityObj) SetLinkLabel(label string) {
 	m.AddProperty("link#maltego.link.label", "Label", "", label)
 }
@@ -235,17 +250,21 @@ func (m *EntityObj) returnEntity() string {
 	r := "<Entity Type=\"" + m.entityType + "\">\n"
 	r += "<Value>" + m.value + "</Value>\n"
 	r += "<Weight>" + strconv.Itoa(m.weight) + "</Weight>\n"
+
 	if len(m.displayInformation) > 0 {
 		r += "<DisplayInformation>\n"
+
 		for _, e := range m.displayInformation {
 			name_, type_ := e[0], e[1]
 			r += "<Label Name=\"" + name_ + "\" Type=\"text/html\"><![CDATA[" + type_ + "]]></Label>\n"
 		}
+
 		r += "</DisplayInformation>\n"
 	}
 
 	if len(m.AdditionalFields) > 0 {
 		r += "<AdditionalFields>\n"
+
 		for _, e := range m.AdditionalFields {
 			fieldName_, displayName_, matchingRule_, value_ := e[0], e[1], e[2], e[3]
 			if matchingRule_ == "strict" {
@@ -254,18 +273,18 @@ func (m *EntityObj) returnEntity() string {
 				r += "<Field MatchingRule=\"" + matchingRule_ + "\" Name=\"" + fieldName_ + "\" DisplayName=\"" + displayName_ + "\">" + value_ + "</Field>\n"
 			}
 		}
+
 		r += "</AdditionalFields>\n"
 	}
 
 	if len(m.iconURL) > 0 {
 		r += "<IconURL>" + m.iconURL + "</IconURL>\n"
 	}
+
 	r += "</Entity>"
 
 	return r
 }
-
-/***/
 
 /* 3. MaltegoMsg Python class implementation */
 
@@ -325,6 +344,7 @@ type msgObj struct {
 // Constructor for MaltegoMsg.
 func msg(MaltegoXML string) msgObj {
 	v := message{}
+
 	err := xml.Unmarshal([]byte(MaltegoXML), &v)
 	if err != nil {
 		panic(err)
@@ -332,19 +352,20 @@ func msg(MaltegoXML string) msgObj {
 
 	// Copying the Python code it seems there can be only one Entity Value in
 	// the entity list. So we just hardcode the [0] index here.
-	Value := v.MTRM.Entities.EntityList[0].Value
-	Weight := v.MTRM.Entities.EntityList[0].Weight
-	Type := v.MTRM.Entities.EntityList[0].Type
-	Slider := v.MTRM.Limits.HardLimit
-	FieldList := v.MTRM.Entities.EntityList[0].AddF.FieldList
+	var (
+		value     = v.MTRM.Entities.EntityList[0].Value
+		weight    = v.MTRM.Entities.EntityList[0].Weight
+		typ       = v.MTRM.Entities.EntityList[0].Type
+		slider    = v.MTRM.Limits.HardLimit
+		fieldList = v.MTRM.Entities.EntityList[0].AddF.FieldList
+		props     = make(map[string]string)
+	)
 
-	Props := make(map[string]string)
-	for _, f := range FieldList {
-		Props[f.FieldName] = f.FieldValue
+	for _, f := range fieldList {
+		props[f.FieldName] = f.FieldValue
 	}
 
-	m := msgObj{Value: Value, Weight: Weight, Type: Type, Slider: Slider, Properties: Props}
-	return m
+	return msgObj{Value: value, Weight: weight, Type: typ, Slider: slider, Properties: props}
 }
 
 func (m *msgObj) getProperty(p string) string {
@@ -361,12 +382,17 @@ type LocalTransform struct {
 	Values map[string]string
 }
 
+// ParseLocalArguments parses the arguments supplied on the commandline.
 func ParseLocalArguments(args []string) LocalTransform {
 	if len(args) < 3 {
 		log.Fatal("need at least 3 arguments, got ", len(args), ": ", args)
 	}
-	Value := args[2]
-	Vals := make(map[string]string)
+
+	var (
+		value  = args[2]
+		values = make(map[string]string)
+	)
+
 	if len(args) > 3 {
 		// search the remaining arguments for variables
 		for _, arg := range args[3:] {
@@ -375,13 +401,14 @@ func ParseLocalArguments(args []string) LocalTransform {
 				for _, x := range vars {
 					kv := strings.Split(x, "=")
 					if len(kv) == 2 {
-						Vals[kv[0]] = kv[1]
+						values[kv[0]] = kv[1]
 					} else {
-						Vals[kv[0]] = ""
+						values[kv[0]] = ""
 					}
 				}
 			}
 		}
 	}
-	return LocalTransform{Value: Value, Values: Vals}
+
+	return LocalTransform{Value: value, Values: values}
 }
