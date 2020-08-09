@@ -26,12 +26,14 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// LocalDNS controls whether the DNS names shall be resolved locally
+// without contacting a nameserver.
 var LocalDNS = true
 
 // atomicIPProfileMap contains all connections and provides synchronized access.
 type atomicIPProfileMap struct {
 	// SrcIP to Profiles
-	Items map[string]*IPProfile
+	Items map[string]*ipProfile
 	sync.Mutex
 }
 
@@ -43,16 +45,17 @@ func (a *atomicIPProfileMap) Size() int {
 }
 
 var ipProfiles = &atomicIPProfileMap{
-	Items: make(map[string]*IPProfile),
+	Items: make(map[string]*ipProfile),
 }
 
-type IPProfile struct {
+// wrapper for the types.IPProfile that can be locked.
+type ipProfile struct {
 	*types.IPProfile
 	sync.Mutex
 }
 
 // GetIPProfile fetches a known profile and updates it or returns a new one.
-func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
+func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 	if len(ipAddr) == 0 {
 		return nil
 	}
@@ -221,7 +224,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *IPProfile {
 	}
 
 	// create new profile
-	p := &IPProfile{
+	p := &ipProfile{
 		IPProfile: &types.IPProfile{
 			Addr:           ipAddr,
 			NumPackets:     1,

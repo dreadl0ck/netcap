@@ -68,8 +68,16 @@ const (
 
 	// DefaultAllowMissingInit TCP State Machine.
 	DefaultAllowMissingInit = true
-	DefaultDefragIPv4       = true
-	DefaultNoOptCheck       = true
-	DefaultChecksum         = false
-	DefaultIgnoreFSMErr     = true
+
+	// DefaultDefragIPv4 controls defragmentation for IPv4.
+	DefaultDefragIPv4 = true
+
+	// DefaultNoOptCheck controls TCP option checking for the reassembly state machine.
+	DefaultNoOptCheck = true
+
+	// DefaultChecksum controls whether the TCP checksum shall be validated.
+	DefaultChecksum = false
+
+	// DefaultIgnoreFSMErr controls if TCP state machine errors should be ignored.
+	DefaultIgnoreFSMErr = true
 )

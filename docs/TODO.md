@@ -1,6 +1,5 @@
 # TODOs
 
-- create constants for env variables
 - remove init function usage
 - error messages iteration
 

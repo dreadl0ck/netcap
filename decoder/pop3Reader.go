@@ -392,10 +392,11 @@ func validPop3ServerCommand(cmd string) bool {
 	}
 }
 
-type POP3State int
+// pop3State describes a state in the POP3 state machine.
+type pop3State int
 
 const (
-	stateNotAuthenticated POP3State = iota
+	stateNotAuthenticated pop3State = iota
 	stateAuthenticated
 	// StateNotIdentified
 	// StateDataTransfer.

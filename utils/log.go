@@ -25,13 +25,20 @@ const (
 )
 
 var (
-	ReassemblyLog           = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
+	// ReassemblyLog is the reassembly logger.
+	ReassemblyLog = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
+
+	// ReassemblyLogFileHandle is the file handle for the reassembly logger.
 	ReassemblyLogFileHandle *os.File
 
-	DebugLog           = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
+	// DebugLog is the debug logger.
+	DebugLog = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
+
+	// DebugLogFileHandle is the file handle for the debug logger.
 	DebugLogFileHandle *os.File
 )
 
+// InitLoggers initializes the loggers for the given output path.
 func InitLoggers(outpath string) {
 	var err error
 
