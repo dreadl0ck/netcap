@@ -80,13 +80,13 @@ func (i *IPv4) Time() string {
 
 func (i IPv4Option) toString() string {
 	var b strings.Builder
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(i.OptionType))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(i.OptionLength))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(i.OptionData))
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }

@@ -93,17 +93,17 @@ func (r *GRERouting) getString() string {
 
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(r.AddressFamily))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(r.SREOffset))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(r.SRELength))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(r.RoutingInformation))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(r.Next.getString())
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }

@@ -67,21 +67,21 @@ func (a *SMTP) Time() string {
 
 func (a SMTPCommand) getString() string {
 	var b strings.Builder
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(a.Command))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(a.Parameter)
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 	return b.String()
 }
 
 func (a SMTPResponse) getString() string {
 	var b strings.Builder
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(a.ResponseCode))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(a.Parameter)
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 	return b.String()
 }
 

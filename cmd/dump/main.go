@@ -90,9 +90,9 @@ func Run() {
 	}
 
 	// set separators for sub structures in CSV
-	types.Begin = *flagBegin
-	types.End = *flagEnd
-	types.Separator = *flagStructSeparator
+	types.StructureBegin = *flagBegin
+	types.StructureEnd = *flagEnd
+	types.FieldSeparator = *flagStructSeparator
 
 	// read ncap file and print to stdout
 	if filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz" {

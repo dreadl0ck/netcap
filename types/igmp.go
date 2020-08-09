@@ -80,17 +80,17 @@ func (i *IGMP) Time() string {
 
 func (i IGMPv3GroupRecord) toString() string {
 	var b strings.Builder
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(i.Type))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(i.AuxDataLen))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(i.NumberOfSources))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(i.MulticastAddress)
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(join(i.SourceAddresses...))
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }

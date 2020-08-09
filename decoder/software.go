@@ -68,7 +68,7 @@ var (
 	ja3Cache         = make(map[string]string)
 	jaCacheMutex     sync.Mutex
 	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
-	hasshMap         = make(map[string][]SSHSoftware)
+	hasshMap         = make(map[string][]sshSoftware)
 	// Used to store CMS related information, and to do the CMS lookup.
 	cmsDB                = make(map[string]interface{})
 	vulnerabilitiesIndex bleve.Index
@@ -92,8 +92,8 @@ var (
 	pMu                     sync.Mutex
 
 	ja3db     ja3CombinationsDB
-	hasshDB   []SSHHash
-	hashDBMap map[string][]SSHSoftware
+	hasshDB   []sshHash
+	hashDBMap map[string][]sshSoftware
 )
 
 type userAgent struct {
@@ -125,14 +125,14 @@ type ja3CombinationsDB struct {
 	Servers []server `json:"servers"`
 }
 
-type SSHSoftware struct {
+type sshSoftware struct {
 	Version    string `json:"name"`
 	Likelihood string `json:"likelyhood"` // dont remove this typo, or the hasshdb.json cannot be read!
 }
 
-type SSHHash struct {
+type sshHash struct {
 	Hash     string        `json:"hash"`
-	Software []SSHSoftware `json:"softwares"` // dont remove this typo, or the hasshdb.json cannot be read!
+	Software []sshSoftware `json:"softwares"` // dont remove this typo, or the hasshdb.json cannot be read!
 }
 
 // process a raw user agent string and returned a structured instance.
@@ -623,7 +623,7 @@ var softwareDecoder = newCustomDecoder(
 			return err
 		}
 
-		hashDBMap = make(map[string][]SSHSoftware)
+		hashDBMap = make(map[string][]sshSoftware)
 
 		for _, v := range hasshDB {
 			hashDBMap[v.Hash] = v.Software

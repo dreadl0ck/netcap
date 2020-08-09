@@ -92,13 +92,13 @@ func (t *TCP) CSVRecord() []string {
 func (t *TCP) getOptionString() string {
 	var b strings.Builder
 	for _, o := range t.Options {
-		b.WriteString(Begin)
+		b.WriteString(StructureBegin)
 		b.WriteString(strconv.Itoa(int(o.OptionType)))
-		b.WriteString(Separator)
+		b.WriteString(FieldSeparator)
 		b.WriteString(strconv.Itoa(int(o.OptionLength)))
-		b.WriteString(Separator)
+		b.WriteString(FieldSeparator)
 		b.WriteString(hex.EncodeToString(o.OptionData))
-		b.WriteString(End)
+		b.WriteString(StructureEnd)
 	}
 	return b.String()
 }

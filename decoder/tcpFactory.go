@@ -36,6 +36,7 @@ func newStreamFactory() *tcpConnectionFactory {
 	return f
 }
 
+// GetStreamPool returns the stream pool.
 func GetStreamPool() *reassembly.StreamPool {
 	return streamFactory.StreamPool
 }

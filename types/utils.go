@@ -24,17 +24,22 @@ import (
 )
 
 var (
-	Begin     = "("
-	End       = ")"
-	Separator = "-"
+	// StructureBegin marks the beginning of a structure in CSV.
+	StructureBegin = "("
+
+	// StructureEnd marks the end of a structure in CSV.
+	StructureEnd = ")"
+
+	// FieldSeparator separates fields within a structure in CSV.
+	FieldSeparator = "-"
 )
 
-type stringable interface {
+type stringer interface {
 	toString() string
 }
 
 // panic: value method github.com/dreadl0ck/netcap/types.LSUpdate.ToString called using nil *LSUpdate pointer
-// func toString(v Stringable) string {
+// func toString(v stringer) string {
 // 	if v != nil {
 // 		return v.toString()
 // 	}
@@ -42,21 +47,21 @@ type stringable interface {
 // }
 
 // this function wraps the toString() function call with a nil pointer check.
-func toString(c stringable) string {
+func toString(c stringer) string {
 	// make sure its not a nil pointer
 	// a simple nil check is apparently not enough here
 	if c == nil || (reflect.ValueOf(c).Kind() == reflect.Ptr && reflect.ValueOf(c).IsNil()) {
 		return ""
 	}
 
-	// now check if the Stringable interface is implemented
-	if str, ok := c.(stringable); ok {
+	// now check if the stringer interface is implemented
+	if str, ok := c.(stringer); ok {
 		return str.toString()
 	}
 
-	// in case the Stringable interface is not implemented: fail
+	// in case the stringer interface is not implemented: fail
 	spew.Dump(c)
-	panic("toString called with an instance that does not implement the Stringable interface")
+	panic("toString called with an instance that does not implement the types.stringer interface")
 }
 
 func joinInts(a []int32) string {
@@ -64,14 +69,18 @@ func joinInts(a []int32) string {
 		b         strings.Builder
 		lastIndex = len(a) - 1
 	)
-	b.WriteString(Begin)
+
+	b.WriteString(StructureBegin)
+
 	for i, num := range a {
 		b.WriteString(formatInt32(num))
 		if i != lastIndex {
-			b.WriteString(Separator)
+			b.WriteString(FieldSeparator)
 		}
 	}
-	b.WriteString(End)
+
+	b.WriteString(StructureEnd)
+
 	return b.String()
 }
 
@@ -80,14 +89,18 @@ func joinUints(a []uint32) string {
 		b         strings.Builder
 		lastIndex = len(a) - 1
 	)
-	b.WriteString(Begin)
+
+	b.WriteString(StructureBegin)
+
 	for i, num := range a {
 		b.WriteString(formatUint32(num))
 		if i != lastIndex {
-			b.WriteString(Separator)
+			b.WriteString(FieldSeparator)
 		}
 	}
-	b.WriteString(End)
+
+	b.WriteString(StructureEnd)
+
 	return b.String()
 }
 
@@ -96,14 +109,18 @@ func join(a ...string) string {
 		b         strings.Builder
 		lastIndex = len(a) - 1
 	)
-	b.WriteString(Begin)
+
+	b.WriteString(StructureBegin)
+
 	for i, v := range a {
 		b.WriteString(v)
 		if i != lastIndex {
-			b.WriteString(Separator)
+			b.WriteString(FieldSeparator)
 		}
 	}
-	b.WriteString(End)
+
+	b.WriteString(StructureEnd)
+
 	return b.String()
 }
 

@@ -74,7 +74,7 @@ func (h IPv6HopByHop) toString() string {
 		opts = append(opts, o.toString())
 	}
 
-	return h.Timestamp + Separator + join(opts...)
+	return h.Timestamp + FieldSeparator + join(opts...)
 }
 
 // JSON returns the JSON representation of the audit record.

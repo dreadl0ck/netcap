@@ -109,31 +109,31 @@ func (a *CiscoDiscoveryInfo) Time() string {
 func (c *CDPHello) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(hex.EncodeToString(c.OUI)) // []byte
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.ProtocolID)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.ClusterMaster) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.Unknown1) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.Version)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.SubVersion)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.Status)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.Unknown2)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.ClusterCommander) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.SwitchMAC) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.Unknown3)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.ManagementVLAN)) // int32
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }
@@ -141,26 +141,26 @@ func (c *CDPHello) toString() string {
 func (c *CDPCapabilities) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 
 	b.WriteString(strconv.FormatBool(c.L3Router)) // bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.TBBridge)) // bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.SPBridge)) // bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.L2Switch)) // bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.IsHost)) // bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.IGMPFilter)) // bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.L1Repeater)) // bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.IsPhone)) // bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.RemotelyManaged)) // bool
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }
@@ -168,11 +168,11 @@ func (c *CDPCapabilities) toString() string {
 func (i *IPNet) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(i.IP)
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(i.IPMask)
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }
@@ -180,11 +180,11 @@ func (i *IPNet) toString() string {
 func (c *CDPVLANDialogue) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(c.ID))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.VLAN))
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }
@@ -198,13 +198,13 @@ func (c *CDPPowerDialogue) toString() string {
 
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(c.ID))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.MgmtID))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(join(vals...))
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }
@@ -212,15 +212,15 @@ func (c *CDPPowerDialogue) toString() string {
 func (c *CDPSparePairPoE) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(strconv.FormatBool(c.PSEFourWire)) //  bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.PDArchShared)) //  bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.PDRequestOn)) //  bool
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(strconv.FormatBool(c.PSEOn)) //  bool
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }
@@ -228,39 +228,39 @@ func (c *CDPSparePairPoE) toString() string {
 func (c *CDPEnergyWise) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(hex.EncodeToString(c.EncryptedData)) // []byte
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatUint32(c.Unknown1)) // uint32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatUint32(c.SequenceNumber)) // uint32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.ModelNumber) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(c.Unknown2)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.HardwareID) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.SerialNum) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(c.Unknown3)) // []byte
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.Role) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.Domain) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.Name) // string
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(c.ReplyUnknown1)) // []byte
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(c.ReplyPort)) // []byte
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(c.ReplyAddress)) // []byte
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(c.ReplyUnknown2)) // []byte
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(c.ReplyUnknown3)) // []byte
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }
@@ -268,11 +268,11 @@ func (c *CDPEnergyWise) toString() string {
 func (c *CDPLocation) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(c.Type))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(c.Location)
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }

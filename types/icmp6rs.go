@@ -57,11 +57,11 @@ func (i *ICMPv6RouterSolicitation) Time() string {
 
 func (o ICMPv6Option) toString() string {
 	var b strings.Builder
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(o.Type))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(o.Data))
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }
