@@ -42,6 +42,8 @@ import (
 
 const newline = "\n"
 
+var errMissingInterface = errors.New("type does not implement the types.AuditRecord interface")
+
 var logo = `                       / |
  _______    ______   _10 |_     _______   ______    ______
 /     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
@@ -149,11 +151,11 @@ func Dump(w *os.File, c DumpConfig) error {
 		if p, ok := record.(types.AuditRecord); ok {
 			_, _ = w.WriteString(strings.Join(p.CSVHeader(), c.Separator))
 		} else {
-			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)
+			return fmt.Errorf("%w, invalid type: %#v", errMissingInterface, record)
 		}
 
 		if c.Fields {
-			os.Exit(0)
+			return nil
 		}
 	}
 
@@ -331,6 +333,7 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 		s, err := os.Stat(name)
 		if err != nil {
 			fmt.Println("failed to stat file:", name, err)
+
 			return
 		}
 

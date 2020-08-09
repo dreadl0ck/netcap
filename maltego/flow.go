@@ -35,6 +35,7 @@ type flowCountFunc = func(flow *types.Flow, ipaddr string, min, max *uint64, siz
 
 // countIncomingFlowBytes returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all incoming flows for a given ip address.
+//goland:noinspection GoUnusedGlobalVariable
 var countIncomingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
 
@@ -82,6 +83,7 @@ var CountIncomingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, 
 
 // countIncomingFlowPackets returns the lowest and highest number of packets as well as an array of sizes
 // seen for all incoming flows for a given ip address.
+//goland:noinspection GoUnusedGlobalVariable
 var countIncomingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.DstIP == ipaddr {
 
@@ -99,6 +101,7 @@ var countIncomingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *u
 // CountOutgoingFlowBytesFiltered returns the lowest and highest number of bytes transferred as well as an array of sizes
 // seen for all outgoing flows from a given ip address
 // filtered against the domain whitelist.
+//goland:noinspection GoUnusedGlobalVariable
 var countOutgoingFlowBytes = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.SrcIP == ipaddr {
 
@@ -146,6 +149,7 @@ var CountOutgoingFlowBytesFiltered = func(flow *types.Flow, ipaddr string, min, 
 
 // CountPacketsDevices returns the lowest and highest number of packets as well as an array of sizes
 // seen for all outgoing flows from a given ip address.
+//goland:noinspection GoUnusedGlobalVariable
 var countOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *uint64, sizes *[]int) {
 	if flow.SrcIP == ipaddr {
 

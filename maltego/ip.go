@@ -28,6 +28,7 @@ import (
 )
 
 // IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ip string)
 
 // IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile.

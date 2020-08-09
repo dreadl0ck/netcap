@@ -44,7 +44,7 @@ func (c *Collector) CollectBPF(path, bpf string) error {
 
 	// read packets
 	for {
-		// fetch the next packetdata and packetheader
+		// fetch the next packet data and packet header
 		data, ci, err = handle.ZeroCopyReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {

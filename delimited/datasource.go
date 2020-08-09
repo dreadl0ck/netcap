@@ -13,8 +13,9 @@
 
 package delimited
 
-// A dataSource represents a sequence of records.
-type dataSource interface {
+// DataSource represents a sequence of records.
+//goland:noinspection GoUnusedType,GoUnnecessarilyExportedIdentifiers
+type DataSource interface {
 	// Next will return the next record in the sequence
 	// Note:
 	// - io.EOF is returned when no further records are available

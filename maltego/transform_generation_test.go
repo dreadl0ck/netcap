@@ -124,7 +124,7 @@ func genFullConfigArchive() {
 		log.Fatal(err)
 	}
 
-	defer func(){
+	defer func() {
 		if errClose := fVersion.Close(); errClose != nil {
 			fmt.Println(errClose)
 		}
@@ -135,7 +135,7 @@ func genFullConfigArchive() {
 		log.Fatal(err)
 	}
 
-	defer func(){
+	defer func() {
 		if errClose := fCategory.Close(); errClose != nil {
 			fmt.Println(errClose)
 		}

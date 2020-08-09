@@ -1,10 +1,30 @@
-package maltego
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+package maltego_test
 
 import (
 	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/fogleman/gg"
+	"github.com/go-git/go-git/v5"
+	"github.com/golang/freetype"
+	"github.com/nfnt/resize"
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
 	"image"
 	"image/draw"
 	"image/png"
@@ -14,19 +34,30 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/fogleman/gg"
-	"github.com/go-git/go-git/v5"
-	"github.com/golang/freetype"
-	"github.com/nfnt/resize"
-	"golang.org/x/image/font"
-	"golang.org/x/image/math/fixed"
+	"testing"
 )
 
 // Icons/Netcap/sim_card_alert.xml
 var icon = `<Icon>
 <Aliases/>
 </Icon>`
+
+func TestGenerateAuditRecordIcons(t *testing.T) {
+	generateIcons()
+
+	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+		fmt.Println(d.GetName())
+		generateAuditRecordIconV2(d.GetName())
+	})
+
+	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
+		name := strings.ReplaceAll(e.Layer.String(), "/", "")
+		fmt.Println(name)
+		generateAuditRecordIconV2(name)
+	})
+}
+
+// Utils
 
 func generateIcons() {
 	_ = os.RemoveAll("/tmp/icons")
@@ -35,7 +66,7 @@ func generateIcons() {
 		URL:      "https://github.com/material-icons/material-icons-png.git",
 		Progress: os.Stdout,
 	})
-	
+
 	if err != nil && !errors.Is(err, git.ErrRepositoryAlreadyExists) {
 		log.Fatal(err)
 	}
@@ -187,7 +218,7 @@ func generateAuditRecordIconV2(text string) {
 func generateAuditRecordIcon(text string) {
 	var (
 		dpi          = 72.0
-		fontfile     = filepath.Join("Roboto", "Roboto-Black.ttf")
+		fontFile     = filepath.Join("Roboto", "Roboto-Black.ttf")
 		hinting      = "none"
 		size         = 33.0
 		spacing      = 1.0
@@ -195,7 +226,7 @@ func generateAuditRecordIcon(text string) {
 	)
 
 	// Read the font data.
-	fontBytes, err := ioutil.ReadFile(fontfile)
+	fontBytes, err := ioutil.ReadFile(fontFile)
 	if err != nil {
 		log.Println(err)
 
@@ -232,6 +263,7 @@ func generateAuditRecordIcon(text string) {
 	fmt.Println(t, len(t))
 
 	var pt fixed.Point26_6
+
 	switch len(t) {
 	case 12, 13:
 		fSize = 11
@@ -257,6 +289,7 @@ func generateAuditRecordIcon(text string) {
 	c.SetClip(rgba.Bounds())
 	c.SetDst(rgba)
 	c.SetSrc(fg)
+
 	switch hinting {
 	default:
 		c.SetHinting(font.HintingNone)
@@ -268,6 +301,7 @@ func generateAuditRecordIcon(text string) {
 	_, err = c.DrawString(t, pt)
 	if err != nil {
 		log.Println(err)
+
 		return
 	}
 
@@ -283,6 +317,7 @@ func generateAuditRecordIcon(text string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer func() {
 		if errClose := outFile.Close(); errClose != nil {
 			fmt.Println(errClose)

@@ -29,9 +29,11 @@ import (
 )
 
 // HTTPCountFunc is a function that counts something over multiple HTTP audit records.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type HTTPCountFunc = func(http *types.HTTP, min, max *uint64)
 
 // HTTPTransformationFunc is a transformation over HTTP audit records.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
 
 // HTTPTransform applies a maltego transformation over HTTP audit records.

@@ -133,7 +133,7 @@ func lookupDHCPFingerprint() {
 		// log.Println("got result", res.DeviceName, "for", messageToFingerprint.ClientHWAddr)
 
 		val := strings.ReplaceAll(res.DeviceName, "/", "\n") + "\n" + ip
-		ent := mtrx.AddEntity("netcap.DHCPResult", val)
+		ent := mtrx.AddEntity("netcap.dhcpResult", val)
 
 		ent.AddProperty("timestamp", "Timestamp", "strict", messageToFingerprint.Timestamp)
 		ent.AddProperty("clientIP", "ClientIP", "strict", messageToFingerprint.ClientIP)

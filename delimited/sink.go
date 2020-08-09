@@ -13,8 +13,9 @@
 
 package delimited
 
-// sink models a receiver of delimited records.
-type sink interface {
+// Sink models a receiver of delimited records.
+//goland:noinspection GoUnusedType,GoUnnecessarilyExportedIdentifiers
+type Sink interface {
 	// Put delivers a record to the sink.
 	Put([]byte) error
 }
