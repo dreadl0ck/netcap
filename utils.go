@@ -40,6 +40,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+const newline = "\n"
+
 var logo = `                       / |
  _______    ______   _10 |_     _______   ______    ______
 /     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
@@ -174,7 +176,7 @@ func Dump(w *os.File, c DumpConfig) error {
 				}
 
 				_, _ = w.WriteString(string(marshaled))
-				_, _ = w.WriteString("\n")
+				_, _ = w.WriteString(newline)
 
 				continue
 			}
@@ -193,7 +195,7 @@ func Dump(w *os.File, c DumpConfig) error {
 
 			// CSV
 			if c.CSV {
-				_, _ = w.WriteString(strings.Join(p.CSVRecord(), c.Separator) + "\n")
+				_, _ = w.WriteString(strings.Join(p.CSVRecord(), c.Separator) + newline)
 
 				continue
 			}
@@ -203,15 +205,15 @@ func Dump(w *os.File, c DumpConfig) error {
 				_, _ = w.WriteString(ansi.White)
 				_, _ = w.WriteString(header.Type.String())
 				_, _ = w.WriteString(ansi.Reset)
-				_, _ = w.WriteString("\n")
+				_, _ = w.WriteString(newline)
 				_, _ = w.WriteString(colorizeProto(proto.MarshalTextString(record), colorMap))
 			} else { // structured without colors
 				_, _ = w.WriteString(header.Type.String())
-				_, _ = w.WriteString("\n")
+				_, _ = w.WriteString(newline)
 				_, _ = w.WriteString(proto.MarshalTextString(record))
 			}
 
-			_, _ = w.WriteString("\n")
+			_, _ = w.WriteString(newline)
 		} else {
 			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)
 		}
@@ -249,6 +251,7 @@ func closeFile(outDir string, file *os.File, typ string) (name string, size int6
 		errSync  = file.Sync()
 		errClose = file.Close()
 	)
+
 	if errSync != nil || errClose != nil {
 		fmt.Println("error while closing", i.Name(), "errSync", errSync, "errClose", errClose)
 	}
@@ -262,6 +265,7 @@ func createFile(name, ext string) *os.File {
 	if err != nil {
 		panic(err)
 	}
+
 	return f
 }
 
@@ -272,6 +276,7 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 		if err != nil {
 			panic(err)
 		}
+
 		defer func() {
 			errClose := f.Close()
 			if errClose != nil && !errors.Is(errClose, io.EOF) {
@@ -280,18 +285,22 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 		}()
 
 		var r *bufio.Reader
+
 		if strings.HasSuffix(name, ".csv.gz") {
 			var gr *gzip.Reader
+
 			gr, err = gzip.NewReader(f)
 			if err != nil {
 				panic(err)
 			}
+
 			r = bufio.NewReader(gr)
 		} else {
 			r = bufio.NewReader(f)
 		}
 
 		count := 0
+
 		for {
 			_, _, err = r.ReadLine()
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -300,6 +309,7 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 				panic(err)
 			}
 			count++
+
 			if count > 1 {
 				break
 			}
@@ -323,6 +333,7 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 			fmt.Println("failed to stat file:", name, err)
 			return
 		}
+
 		return s.Size()
 	}
 
@@ -335,14 +346,17 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 		if !strings.HasPrefix(name, "OSPF") {
 			fmt.Println("unable to open file:", name, "error", err)
 		}
+
 		return 0
 	}
+
 	defer r.Close()
 
 	var (
 		header, errFileHeader = r.ReadHeader()
 		record                = InitRecord(header.Type)
 	)
+
 	if errFileHeader != nil {
 		log.Fatal(errFileHeader)
 	}
@@ -357,6 +371,7 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 			// return file size of zero
 			return 0
 		}
+
 		return
 	}
 
@@ -365,8 +380,10 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 	s, err := os.Stat(name)
 	if err != nil {
 		fmt.Println("failed to stat file:", name, err)
+
 		return
 	}
+
 	return s.Size()
 }
 
@@ -413,12 +430,13 @@ func colorizeProto(in string, colorMap map[string]string) string {
 	if colorMap == nil {
 		colorMap = make(map[string]string)
 
-		for i, line := range strings.Split(in, "\n") {
-			if len(line) == 0 {
+		for i, line := range strings.Split(in, newline) {
+			if line == "" {
 				continue
 			}
-			if line == "\n" {
-				b.WriteString("\n")
+
+			if line == newline {
+				b.WriteString(newline)
 
 				continue
 			}
@@ -440,12 +458,13 @@ func colorizeProto(in string, colorMap map[string]string) string {
 		}
 	}
 
-	for i, line := range strings.Split(in, "\n") {
-		if len(line) == 0 {
+	for i, line := range strings.Split(in, newline) {
+		if line == "" {
 			continue
 		}
-		if line == "\n" {
-			b.WriteString("\n")
+
+		if line == newline {
+			b.WriteString(newline)
 
 			continue
 		}
@@ -459,21 +478,25 @@ func colorizeProto(in string, colorMap map[string]string) string {
 		parts := strings.Split(line, ":")
 		if len(parts) > 1 {
 			b.WriteString(colorMap[parts[0]])
+
 			if strings.Contains(line, "<") {
 				b.WriteString(utils.Pad(parts[0], max-1))
 			} else {
 				b.WriteString(utils.Pad(parts[0], max))
 			}
+
 			b.WriteString(ansi.Reset)
-			//if !strings.Contains(line, "<") {
-			//	b.WriteString(":")
-			//}
+
+			// if !strings.Contains(line, "<") {
+			// 	b.WriteString(":")
+			// }
 			b.WriteString(strings.Join(parts[1:], ":"))
-			b.WriteString("\n")
+			b.WriteString(newline)
 		} else {
 			b.WriteString(line)
-			b.WriteString("\n")
+			b.WriteString(newline)
 		}
 	}
+
 	return b.String()
 }
