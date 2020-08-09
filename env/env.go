@@ -15,20 +15,20 @@ package env
 
 const (
 	// CompletionDebug can be used to debug the commandline completions.
-	CompletionDebug  = "NC_COMPLETION_DEBUG"
+	CompletionDebug = "NC_COMPLETION_DEBUG"
 
 	// DatabaseSource is the path on the filesystem that stores all netcap databases.
-	DatabaseSource   = "NC_DATABASE_SOURCE"
+	DatabaseSource = "NC_DATABASE_SOURCE"
 
 	// FingerbankAPIKey is the authorization token fingerbank.org.
 	FingerbankAPIKey = "FINGERPRINT_API_KEY"
 
 	// MaltegoExploitDirectory is used to search for exploit PoC code.
-	MaltegoExploitDirectory    = "NC_MALTEGO_EXPLOIT_DIRECTORY"
+	MaltegoExploitDirectory = "NC_MALTEGO_EXPLOIT_DIRECTORY"
 
 	// MaltegoOpenTerminalCommand is the default terminal used when requesting to open a folder from Maltego.
 	MaltegoOpenTerminalCommand = "NETCAP_MALTEGO_OPEN_TERMINAL_CMD"
 
 	// MaltegoOpenFileCommand is the default file handler used when opening files from Maltego.
-	MaltegoOpenFileCommand     = "NETCAP_MALTEGO_OPEN_FILE_CMD"
+	MaltegoOpenFileCommand = "NETCAP_MALTEGO_OPEN_FILE_CMD"
 )

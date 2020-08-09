@@ -15,13 +15,13 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/env"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 
+	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/maltego"
 )
 

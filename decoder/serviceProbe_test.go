@@ -15,13 +15,14 @@ package decoder
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 	"path/filepath"
 	"regexp"
 	"testing"
 
 	"github.com/mgutz/ansi"
+
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 type regexTest struct {
@@ -123,7 +124,6 @@ var serviceBanners = []bannerTest{
 
 // use one global var for the vuln index so it can be shared between tests?
 func TestClassifyBanners(t *testing.T) {
-
 	// Load vulnerabilities DB index
 	indexName := filepath.Join(resolvers.DataBaseSource, "nvd-v2.bleve")
 	var err error

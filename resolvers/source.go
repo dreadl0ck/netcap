@@ -14,9 +14,10 @@
 package resolvers
 
 import (
-	"github.com/dreadl0ck/netcap/env"
 	"os"
 	"path/filepath"
+
+	"github.com/dreadl0ck/netcap/env"
 )
 
 var (
