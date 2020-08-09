@@ -16,7 +16,9 @@ package maltego_test
 import (
 	"archive/zip"
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -490,7 +492,7 @@ func packTransformArchive() {
 	}
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()
@@ -522,7 +524,7 @@ func packMaltegoArchive(name string) {
 	}
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()

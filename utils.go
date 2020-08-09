@@ -274,7 +274,7 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 		}
 		defer func() {
 			errClose := f.Close()
-			if errClose != nil && errClose != io.EOF {
+			if errClose != nil && !errors.Is(errClose, io.EOF) {
 				fmt.Println(errClose)
 			}
 		}()

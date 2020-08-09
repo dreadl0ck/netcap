@@ -30,6 +30,7 @@ import (
 )
 
 var (
+	// ErrInvalidDecoder occurs when a decoder name is unknown during initialization.
 	ErrInvalidDecoder = errors.New("invalid decoder")
 
 	defaultCustomDecoders = []CustomDecoderAPI{
@@ -58,65 +59,102 @@ type (
 	// this structure has an optimized field order to avoid excessive padding.
 	customDecoder struct {
 
-		// public fields
-		Name        string
-		Description string
-		Icon        string
+		// Name of the decoder
+		Name string
 
-		Handler  customDecoderHandler
-		postinit func(*customDecoder) error
-		deinit   func(*customDecoder) error
+		// Description of the decoder
+		Description string
+
+		// Icon name for the decoder (for Maltego)
+		Icon string
+
+		// Handler to process packets
+		Handler customDecoderHandler
+
+		// init functions
+		postInit func(*customDecoder) error
+		deInit   func(*customDecoder) error
 
 		// used to keep track of the number of generated audit records
 		numRecords int64
 
+		// writer for audit records
 		writer *netcap.Writer
 
+		// Type of the audit records produced by this decoder
 		Type types.Type
 	}
 
 	// CustomDecoderAPI describes an interface that all custom encoder need to implement
-	// this will allow to supply a custom structure and maintain state for advanced protocol analysis.
+	// this allows to supply a custom structure and maintain state for advanced protocol analysis.
 	CustomDecoderAPI interface {
+
+		// Decode parses a gopacket and returns an error
 		Decode(p gopacket.Packet) error
+
+		// PostInit is called after the decoder has been initialized
 		PostInit() error
+
+		// DeInit is called prior to teardown
 		DeInit() error
+
+		// GetName returns the name of the decoder
 		GetName() string
+
+		// SetWriter sets the netcap writer to use for the decoder
 		SetWriter(*netcap.Writer)
+
+		// GetType returns the netcap type of the decoder
 		GetType() types.Type
+
+		// GetDescription returns the description of the decoder
 		GetDescription() string
+
+		// GetChan returns a channel to receive serialized audit records from the decoder
 		GetChan() <-chan []byte
+
+		// Destroy initiates teardown
 		Destroy() (string, int64)
+
+		// NumRecords returns the number of processed audit records
 		NumRecords() int64
 	}
 )
 
+// PostInit is called after the decoder has been initialized.
 func (cd *customDecoder) PostInit() error {
-	if cd.postinit == nil {
+	if cd.postInit == nil {
 		return nil
 	}
-	return cd.postinit(cd)
+
+	return cd.postInit(cd)
 }
 
+// DeInit is called prior to teardown.
 func (cd *customDecoder) DeInit() error {
-	if cd.deinit == nil {
+	if cd.deInit == nil {
 		return nil
 	}
-	return cd.deinit(cd)
+
+	return cd.deInit(cd)
 }
 
+// GetName returns the name of the decoder.
 func (cd *customDecoder) GetName() string {
 	return cd.Name
 }
 
+// SetWriter sets the netcap writer to use for the decoder.
 func (cd *customDecoder) SetWriter(w *netcap.Writer) {
 	cd.writer = w
 }
 
+// GetType returns the netcap type of the decoder.
 func (cd *customDecoder) GetType() types.Type {
 	return cd.Type
 }
 
+// GetDescription returns the description of the decoder.
 func (cd *customDecoder) GetDescription() string {
 	return cd.Description
 }
@@ -230,16 +268,17 @@ func isCustomDecoderLoaded(name string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 // newCustomDecoder returns a new customDecoder instance.
-func newCustomDecoder(t types.Type, name string, description string, postinit func(*customDecoder) error, handler customDecoderHandler, deinit func(*customDecoder) error) *customDecoder {
+func newCustomDecoder(t types.Type, name, description string, postinit func(*customDecoder) error, handler customDecoderHandler, deinit func(*customDecoder) error) *customDecoder {
 	return &customDecoder{
 		Name:        name,
 		Handler:     handler,
-		deinit:      deinit,
-		postinit:    postinit,
+		deInit:      deinit,
+		postInit:    postinit,
 		Type:        t,
 		Description: description,
 	}

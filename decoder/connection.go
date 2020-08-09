@@ -74,6 +74,7 @@ var connDecoder = &connectionDecoder{
 	},
 }
 
+// PostInit is called after the decoder has been initialized.
 func (cd *connectionDecoder) PostInit() error {
 	// simply overwrite the handler with our custom one
 	// this way the CustomEncoders default Decode() implementation will be used
@@ -217,6 +218,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	return nil
 }
 
+// DeInit is called prior to teardown.
 func (cd *connectionDecoder) DeInit() error {
 	if !cd.writer.IsChanWriter {
 		cd.Conns.Lock()

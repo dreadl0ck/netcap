@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -38,7 +39,7 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println("failed to close:", errClose)
 		}
 	}()
@@ -46,7 +47,7 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 	buf := make([]byte, 512)
 
 	_, err = io.ReadFull(f, buf)
-	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		log.Fatal(err)
 	}
 

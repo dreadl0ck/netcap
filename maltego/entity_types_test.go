@@ -16,6 +16,7 @@ package maltego_test
 import (
 	"archive/zip"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -319,7 +320,7 @@ func packEntityArchive() {
 	}
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()

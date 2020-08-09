@@ -571,6 +571,7 @@ func clean(in string) string {
 			break
 		} else if err != nil {
 			fmt.Println(err)
+
 			break
 		}
 		count++

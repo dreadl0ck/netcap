@@ -50,9 +50,10 @@ func countPacketsNG(path string) (count int64, err error) {
 	if err != nil {
 		return
 	}
+
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()
@@ -92,11 +93,14 @@ func (c *Collector) CollectPcapNG(path string) error {
 
 	// display total packet count
 	c.printStdOut("counting packets...")
+
 	start := time.Now()
 	c.numPackets, err = countPacketsNG(path)
+
 	if err != nil {
 		return err
 	}
+
 	clearLine()
 	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
@@ -107,7 +111,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()

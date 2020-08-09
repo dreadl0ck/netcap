@@ -72,6 +72,7 @@ func checkFields() {
 		err = r.Next(record)
 		if err != nil {
 			fmt.Println(err)
+
 			break
 		}
 

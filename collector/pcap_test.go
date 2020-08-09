@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -20,7 +22,7 @@ func BenchmarkReadPcapNG(b *testing.B) {
 	}
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()
@@ -42,7 +44,7 @@ func BenchmarkReadPcapNGZeroCopy(b *testing.B) {
 	}
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()
@@ -80,7 +82,7 @@ func BenchmarkReadPcap(b *testing.B) {
 	}
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()
@@ -89,7 +91,7 @@ func BenchmarkReadPcap(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		_, _, err = r.ReadPacketData()
-		if err != nil && err != io.EOF {
+		if err != nil && !errors.Is(err, io.EOF) {
 			b.Fatal(err)
 		}
 	}

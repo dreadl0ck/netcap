@@ -6745,6 +6745,7 @@ func (m *HTTPCookie) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HTTPCookie proto.InternalMessageInfo
 
+// GetName returns the name of the decoder.
 func (m *HTTPCookie) GetName() string {
 	if m != nil {
 		return m.Name
@@ -12391,6 +12392,7 @@ func (m *CDPEnergyWise) GetDomain() string {
 	return ""
 }
 
+// GetName returns the name of the decoder.
 func (m *CDPEnergyWise) GetName() string {
 	if m != nil {
 		return m.Name
@@ -13425,6 +13427,7 @@ func (m *File) GetTimestamp() string {
 	return ""
 }
 
+// GetName returns the name of the decoder.
 func (m *File) GetName() string {
 	if m != nil {
 		return m.Name
@@ -14635,6 +14638,7 @@ func (m *Service) GetPort() string {
 	return ""
 }
 
+// GetName returns the name of the decoder.
 func (m *Service) GetName() string {
 	if m != nil {
 		return m.Name
