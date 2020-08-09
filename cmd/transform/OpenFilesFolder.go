@@ -15,6 +15,7 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/env"
 	"log"
 	"os"
 	"os/exec"
@@ -28,7 +29,7 @@ func openFilesFolder() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
-		openCommandName = os.Getenv(envOpenFileCommand)
+		openCommandName = os.Getenv(env.MaltegoOpenFileCommand)
 		args            []string
 	)
 

@@ -15,6 +15,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/env"
 	"io/ioutil"
 	"log"
 	"os"
@@ -152,7 +153,7 @@ func debug(args ...interface{}) {
 
 // print available completions for the bash-completion package.
 func printCompletions(previous, current, full string) {
-	if os.Getenv("NC_COMPLETION_DEBUG") == "1" {
+	if os.Getenv(env.CompletionDebug) == "1" {
 		var err error
 
 		debugHandle, err = os.OpenFile("completion-debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o744)

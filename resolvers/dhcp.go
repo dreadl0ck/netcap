@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/dreadl0ck/netcap/env"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -94,7 +95,7 @@ var apiKey string
 
 // InitDHCPFingerprintAPIKey initializes the DHCP fingerprinting API key
 func InitDHCPFingerprintAPIKey() {
-	k := os.Getenv("FINGERPRINT_API_KEY")
+	k := os.Getenv(env.FingerbankAPIKey)
 
 	if k != "" {
 		apiKey = "?key=" + k
