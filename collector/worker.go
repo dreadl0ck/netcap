@@ -35,13 +35,14 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 		errLayer gopacket.ErrorLayer
 		err      error
 
-		decoders []*decoder.GoPacketDecoder
-		dec      *decoder.GoPacketDecoder
+		decoders  []*decoder.GoPacketDecoder
+		dec       *decoder.GoPacketDecoder
 		customDec decoder.CustomDecoderAPI
-		ok       bool
+		ok        bool
 
 		netLayer       gopacket.NetworkLayer
 		transportLayer gopacket.TransportLayer
+		layer          gopacket.Layer
 	)
 
 	// start worker
@@ -84,7 +85,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 			}
 
 			// iterate over all layers
-			for _, layer := range goPacket.Layers() {
+			for _, layer = range goPacket.Layers() {
 				// increment counter for layer type
 				c.allProtosAtomic.Inc(layer.LayerType().String())
 
