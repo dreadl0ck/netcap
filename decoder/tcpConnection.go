@@ -115,15 +115,19 @@ var stats struct {
 	sync.Mutex
 }
 
+// NumSavedTCPConns returns the number of saved TCP connections.
 func NumSavedTCPConns() int64 {
 	stats.Lock()
 	defer stats.Unlock()
+
 	return stats.savedTCPConnections
 }
 
+// NumSavedUDPConns returns the number of saved UDP connections.
 func NumSavedUDPConns() int64 {
 	stats.Lock()
 	defer stats.Unlock()
+
 	return stats.savedUDPConnections
 }
 
@@ -461,6 +465,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	return false
 }
 
+// ReassemblePacket takes care of submitting a TCP packet to the reassembly.
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	// prevent passing any non TCP packets in here
 	tcpLayer := packet.Layer(layers.LayerTypeTCP)

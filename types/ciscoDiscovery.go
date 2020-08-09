@@ -58,13 +58,13 @@ func (cd *CiscoDiscovery) Time() string {
 func (v CiscoDiscoveryValue) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(v.Type))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(v.Length))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(v.Value))
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }

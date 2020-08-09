@@ -127,6 +127,7 @@ type Transform struct {
 	UIMessages [][]string
 }
 
+// AddEntity adds an entity to the transform.
 func (tr *Transform) AddEntity(enType, enValue string) *EntityObj {
 	me := &EntityObj{entityType: enType, value: EscapeText(enValue), weight: 100}
 	tr.entities = append(tr.entities, me)
@@ -134,6 +135,7 @@ func (tr *Transform) AddEntity(enType, enValue string) *EntityObj {
 	return me
 }
 
+// AddUIMessage adds a UI message to the transform.
 func (tr *Transform) AddUIMessage(message, messageType string) {
 	tr.UIMessages = append(tr.UIMessages, []string{messageType, message})
 }
@@ -143,6 +145,7 @@ func (tr *Transform) addException(exceptionString, code string) {
 	tr.exceptions = append(tr.exceptions, exc)
 }
 
+// ReturnOutput returns the transformations XML representation.
 func (tr *Transform) ReturnOutput() string {
 	r := "<MaltegoMessage>\n"
 	r += "<MaltegoTransformResponseMessage>\n"
@@ -237,10 +240,13 @@ func (m *EntityObj) setBookmark(bookmark string) {
 	m.AddProperty("bookmark#", "Bookmark", "", bookmark)
 }
 
+// SetNote sets a note on the entity.
 func (m *EntityObj) SetNote(note string) {
 	m.AddProperty("notes#", "Notes", "", note)
 }
 
+// SetLinkDirection sets the link direction
+// TODO: add constants for dirs!
 func (m *EntityObj) SetLinkDirection(dir string) {
 	m.AddProperty("link#maltego.link.direction", "Direction", "loose", dir)
 	// me.addProperty('link#maltego.link.direction','link#maltego.link.direction','loose','output-to-input')
@@ -255,8 +261,8 @@ func (m *EntityObj) returnEntity() string {
 		r += "<DisplayInformation>\n"
 
 		for _, e := range m.displayInformation {
-			name_, type_ := e[0], e[1]
-			r += "<Label Name=\"" + name_ + "\" Type=\"text/html\"><![CDATA[" + type_ + "]]></Label>\n"
+			name, typ := e[0], e[1]
+			r += "<Label Name=\"" + name + "\" Type=\"text/html\"><![CDATA[" + typ + "]]></Label>\n"
 		}
 
 		r += "</DisplayInformation>\n"

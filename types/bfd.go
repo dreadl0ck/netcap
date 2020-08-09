@@ -90,15 +90,15 @@ func (b *BFD) Time() string {
 func (bah BFDAuthHeader) getString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(bah.AuthType))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(bah.KeyID))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(bah.SequenceNumber))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(bah.Data))
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }

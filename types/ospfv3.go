@@ -87,23 +87,23 @@ func (a *OSPFv3) Time() string {
 func (l HelloPkg) toString() string {
 	var b strings.Builder
 
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatUint32(l.InterfaceID)) // uint32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(l.RtrPriority)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatUint32(l.Options)) // uint32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(l.HelloInterval)) // int32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatUint32(l.RouterDeadInterval)) // uint32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatUint32(l.DesignatedRouterID)) // uint32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatUint32(l.BackupDesignatedRouterID)) // uint32
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(joinUints(l.NeighborID)) // []uint32
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 
 	return b.String()
 }

@@ -57,13 +57,13 @@ func (l *IPv6HopByHop) Time() string {
 
 func (o *IPv6HopByHopOption) toString() string {
 	var b strings.Builder
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(o.OptionType))        // int32
 	b.WriteString(formatInt32(o.OptionLength))      // int32
 	b.WriteString(formatInt32(o.ActualLength))      // int32
 	b.WriteString(hex.EncodeToString(o.OptionData)) // []byte
 	b.WriteString(o.OptionAlignment.toString())     //  *IPv6HopByHopOptionAlignment
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 	return b.String()
 }
 

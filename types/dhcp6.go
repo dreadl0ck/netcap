@@ -71,13 +71,13 @@ func (d *DHCPv6) Time() string {
 
 func (d DHCPv6Option) toString() string {
 	var b strings.Builder
-	b.WriteString(Begin)
+	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(d.Code))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(d.Length))
-	b.WriteString(Separator)
+	b.WriteString(FieldSeparator)
 	b.WriteString(hex.EncodeToString(d.Data))
-	b.WriteString(End)
+	b.WriteString(StructureEnd)
 	return b.String()
 }
 
