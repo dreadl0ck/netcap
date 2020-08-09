@@ -170,9 +170,9 @@ func indexData(in string) {
 
 		defer func() {
 			errClose := file.Close()
-			if errClose != nil && errClose != io.EOF {
-			fmt.Println("failed to close:", errClose)
-		}
+			if errClose != nil && !errors.Is(errClose, io.EOF) {
+				fmt.Println("failed to close:", errClose)
+			}
 		}()
 
 		var (
@@ -253,9 +253,9 @@ func indexData(in string) {
 
 		defer func() {
 			errClose := file.Close()
-			if errClose != nil && errClose != io.EOF {
-			fmt.Println("failed to close:", errClose)
-		}
+			if errClose != nil && !errors.Is(errClose, io.EOF) {
+				fmt.Println("failed to close:", errClose)
+			}
 		}()
 
 		var (
@@ -310,9 +310,9 @@ func indexData(in string) {
 
 		defer func() {
 			errClose := index.Close()
-			if errClose != nil && errClose != io.EOF {
-			fmt.Println("failed to close:", errClose)
-		}
+			if errClose != nil && !errors.Is(errClose, io.EOF) {
+				fmt.Println("failed to close:", errClose)
+			}
 		}()
 
 		var (

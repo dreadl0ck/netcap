@@ -59,6 +59,7 @@ var flowDecoder = &flowCustomDecoder{
 	},
 }
 
+// PostInit is called after the decoder has been initialized.
 func (fd *flowCustomDecoder) PostInit() error {
 	// simply overwrite the handler with our custom one
 	// this way the CustomEncoders default Decode() implementation will be used
@@ -209,6 +210,7 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 }
 
 // DeInit will teardown and flush all remaining records.
+// DeInit is called prior to teardown.
 func (fd *flowCustomDecoder) DeInit() error {
 	if !fd.writer.IsChanWriter {
 		fd.Flows.Lock()

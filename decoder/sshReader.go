@@ -117,8 +117,9 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 	}
 
 	data, err := ioutil.ReadAll(r)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		fmt.Println(err)
+
 		return
 	}
 	// fmt.Println(dir, len(data), "\n", hex.Dump(data))

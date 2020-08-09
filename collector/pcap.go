@@ -55,7 +55,7 @@ func IsPcap(file string) (bool, error) {
 
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println("failed to close:", errClose)
 		}
 	}()
@@ -80,7 +80,7 @@ func countPackets(path string) (count int64, err error) {
 	}
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()
@@ -139,7 +139,7 @@ func (c *Collector) CollectPcap(path string) error {
 	}
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println(errClose)
 		}
 	}()

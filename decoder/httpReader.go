@@ -67,8 +67,8 @@ type cookieForApps struct {
 	CookieValue string
 }
 
-// HTTPMetaStore is a thread safe in-memory store for interesting HTTP artifacts.
-type HTTPMetaStore struct {
+// httpMetaStore is a thread safe in-memory store for interesting HTTP artifacts.
+type httpMetaStore struct {
 
 	// mapped ip address to server names
 	ServerNames map[string]string
@@ -91,7 +91,7 @@ type HTTPMetaStore struct {
 
 // global store for selected http meta information
 // TODO: add a util to dump.
-var httpStore = &HTTPMetaStore{
+var httpStore = &httpMetaStore{
 	ServerNames: make(map[string]string),
 	UserAgents:  make(map[string]string),
 	Vias:        make(map[string]string),
@@ -155,7 +155,7 @@ func (h *httpReader) Decode() {
 					err = h.readResponse(b)
 				}
 			}
-			if err != nil {
+			if err != nil && !errors.Is(err, io.EOF) {
 				fmt.Println(err)
 			}
 			buf.Reset()
@@ -168,6 +168,7 @@ func (h *httpReader) Decode() {
 	}
 
 	var err error
+
 	b := bufio.NewReader(&buf)
 
 	if previousDir == reassembly.TCPDirClientToServer {
@@ -179,9 +180,9 @@ func (h *httpReader) Decode() {
 			err = h.readResponse(b)
 		}
 	}
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response

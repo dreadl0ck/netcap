@@ -15,6 +15,7 @@ package resolvers
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -81,7 +82,7 @@ func InitServiceDB() {
 
 	defer func() {
 		errClose := f.Close()
-		if errClose != nil && errClose != io.EOF {
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
 			fmt.Println("failed to close:", errClose)
 		}
 	}()
