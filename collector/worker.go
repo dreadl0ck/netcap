@@ -26,14 +26,27 @@ import (
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
 func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
-	// init channel to receive input packets
-	chanInput := make(chan *packet, c.config.PacketBufferSize)
+
+	var (
+		in       = make(chan *packet, c.config.PacketBufferSize)
+		pkt      *packet
+		goPacket gopacket.Packet
+
+		errLayer gopacket.ErrorLayer
+		err      error
+
+		decoders []*decoder.GoPacketDecoder
+		dec      *decoder.GoPacketDecoder
+		customDec decoder.CustomDecoderAPI
+		ok       bool
+
+		netLayer       gopacket.NetworkLayer
+		transportLayer gopacket.TransportLayer
+	)
 
 	// start worker
 	go func() {
-		for {
-			pkt := <-chanInput
-
+		for pkt = range in {
 			// nil packet is used to exit goroutine
 			if pkt == nil {
 				return
@@ -41,25 +54,23 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 			// create a new gopacket
 			// base layer is by default Ethernet
-			p := gopacket.NewPacket(pkt.data, c.config.BaseLayer, c.config.DecodeOptions)
-			p.Metadata().Timestamp = pkt.ci.Timestamp
-			p.Metadata().CaptureInfo = pkt.ci
-			p.Metadata().Length = pkt.ci.Length
-			p.Metadata().CaptureLength = pkt.ci.CaptureLength
+			goPacket = gopacket.NewPacket(pkt.data, c.config.BaseLayer, c.config.DecodeOptions)
+			goPacket.Metadata().Timestamp = pkt.ci.Timestamp
+			goPacket.Metadata().CaptureInfo = pkt.ci
+			goPacket.Metadata().Length = pkt.ci.Length
+			goPacket.Metadata().CaptureLength = pkt.ci.CaptureLength
 
 			// pass packet to reassembly
 			if c.config.ReassembleConnections {
-				decoder.ReassemblePacket(p, assembler)
+				decoder.ReassemblePacket(goPacket, assembler)
 			}
 
 			// create context for packet
 			ctx := &types.PacketContext{}
 
 			if c.config.DecoderConfig.AddContext {
-				var (
-					netLayer       = p.NetworkLayer()
-					transportLayer = p.TransportLayer()
-				)
+				netLayer = goPacket.NetworkLayer()
+				transportLayer = goPacket.TransportLayer()
 
 				if netLayer != nil {
 					ctx.SrcIP = netLayer.NetworkFlow().Src().String()
@@ -73,7 +84,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 			}
 
 			// iterate over all layers
-			for _, layer := range p.Layers() {
+			for _, layer := range goPacket.Layers() {
 				// increment counter for layer type
 				c.allProtosAtomic.Inc(layer.LayerType().String())
 
@@ -92,7 +103,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					}
 
 					// write to unknown.pcap file
-					if err := c.writePacketToUnknownPcap(p); err != nil {
+					if err = c.writePacketToUnknownPcap(goPacket); err != nil {
 						fmt.Println("failed to write packet to unknown.pcap file:", err)
 					}
 
@@ -104,15 +115,15 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				}
 
 				// pick decoders from the encoderMap by looking up the layer type
-				if decoders, ok := c.goPacketDecoders[layer.LayerType()]; ok {
-					for _, e := range decoders {
-						err := e.Decode(ctx, p, layer)
+				if decoders, ok = c.goPacketDecoders[layer.LayerType()]; ok {
+					for _, dec = range decoders {
+						err = dec.Decode(ctx, goPacket, layer)
 						if err != nil {
 							if c.config.DecoderConfig.Export {
 								decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
 							}
 
-							if err = c.logPacketError(p, "GoPacketDecoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
+							if err = c.logPacketError(goPacket, "GoPacketDecoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
 								fmt.Println("failed to log packet error:", err)
 							}
 
@@ -128,22 +139,22 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 					// if its not a payload layer, write to unknown .pcap file
 					if layer.LayerType() != gopacket.LayerTypePayload {
-						if err := c.writePacketToUnknownPcap(p); err != nil {
+						if err = c.writePacketToUnknownPcap(goPacket); err != nil {
 							fmt.Println("failed to write packet to unknown.pcap file:", err)
 						}
 					}
 				}
-			} // END packet.Layers()
+			} // END goPacket.Layers()
 
 		done:
 			// call custom decoders
-			for _, d := range c.customDecoders {
-				err := d.Decode(p)
+			for _, customDec = range c.customDecoders {
+				err = customDec.Decode(goPacket)
 				if err != nil {
 					if c.config.DecoderConfig.Export {
-						decodingErrorsTotal.WithLabelValues(d.GetName(), err.Error()).Inc()
+						decodingErrorsTotal.WithLabelValues(customDec.GetName(), err.Error()).Inc()
 					}
-					if err = c.logPacketError(p, "CustomDecoder Error: "+d.GetName()+": "+err.Error()); err != nil {
+					if err = c.logPacketError(goPacket, "CustomDecoder Error: "+customDec.GetName()+": "+err.Error()); err != nil {
 						fmt.Println("failed to log packet error:", err)
 					}
 
@@ -154,8 +165,8 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 			// Check for errors after decoding all layers
 			// if an error has occurred while decoding the packet
 			// it will be logged and written into the errors.pcap file
-			if errLayer := p.ErrorLayer(); errLayer != nil {
-				if err := c.logPacketError(p, errLayer.Error().Error()); err != nil {
+			if errLayer = goPacket.ErrorLayer(); errLayer != nil {
+				if err = c.logPacketError(goPacket, errLayer.Error().Error()); err != nil {
 					fmt.Println("failed to log packet error:", err)
 				}
 
@@ -171,7 +182,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 	}()
 
 	// return input channel
-	return chanInput
+	return in
 }
 
 // spawn the configured number of workers.
