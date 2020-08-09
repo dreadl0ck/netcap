@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/dreadl0ck/netcap/env"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -27,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
