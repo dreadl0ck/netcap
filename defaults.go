@@ -81,6 +81,6 @@ const (
 	// DefaultIgnoreFSMErr controls if TCP state machine errors should be ignored.
 	DefaultIgnoreFSMErr = true
 
-	// DefaultFileStorage is the default location for storing extracted files
+	// DefaultFileStorage is the default location for storing extracted files.
 	DefaultFileStorage = "files"
 )

@@ -227,6 +227,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	return nil
 }
 
+//goland:noinspection GoUnusedFunction
 func tcpDebug(args ...interface{}) {
 	if conf.TCPDebug {
 		utils.DebugLog.Println(args...)
