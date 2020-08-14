@@ -76,7 +76,7 @@ var DefaultConfig = &Config{
 	FlowTimeOut:             10 * time.Second,
 	CloseInactiveTimeOut:    24 * time.Hour,
 	ClosePendingTimeOut:     5 * time.Second,
-	FileStorage:             "files",
+	FileStorage:             netcap.DefaultFileStorage,
 	CalculateEntropy:        false,
 	SaveConns:               false,
 	TCPDebug:                false,

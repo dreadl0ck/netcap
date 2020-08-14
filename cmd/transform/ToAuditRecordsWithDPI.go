@@ -2,6 +2,7 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap"
 	"log"
 	"os"
 	"path/filepath"
@@ -56,7 +57,7 @@ func toAuditRecordsWithDPI() {
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
 	maltegoBaseConfig.DecoderConfig.Source = inputFile
-	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, "files")
+	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, netcap.DefaultFileStorage)
 	maltegoBaseConfig.DPI = true
 
 	// init collector

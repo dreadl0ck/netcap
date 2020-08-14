@@ -149,7 +149,7 @@ func Run() {
 			},
 			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
-			// FileStorage:   "files", // TODO:
+			// FileStorage:   netcap.DefaultFileStorage, // TODO:
 			Quiet: false,
 			DPI:   *flagDPI,
 			ResolverConfig: resolvers.Config{
