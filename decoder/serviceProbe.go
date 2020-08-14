@@ -91,32 +91,40 @@ func (s *serviceProbe) String() string {
 	b.WriteString(s.Ident)
 	b.WriteString("\nRegEx: ")
 	b.WriteString(s.RegExRaw)
+
 	if len(s.Vendor) > 0 {
 		b.WriteString("\nVendor: ")
 		b.WriteString(s.Vendor)
 	}
+
 	if len(s.Version) > 0 {
 		b.WriteString("\nVersion: ")
 		b.WriteString(s.Version)
 	}
+
 	if len(s.Info) > 0 {
 		b.WriteString("\nInfo: ")
 		b.WriteString(s.Info)
 	}
+
 	if len(s.Hostname) > 0 {
 		b.WriteString("\nHostname: ")
 		b.WriteString(s.Hostname)
 	}
+
 	if len(s.OS) > 0 {
 		b.WriteString("\nOS: ")
 		b.WriteString(s.OS)
 	}
+
 	if len(s.DeviceType) > 0 {
 		b.WriteString("\nDeviceType: ")
 		b.WriteString(s.DeviceType)
 	}
+
 	// b.WriteString("\nCPEs: ")
 	// b.WriteString(s.CPEs)
+
 	b.WriteString("\nCaseInsensitive: ")
 	b.WriteString(strconv.FormatBool(s.CaseInsensitive))
 	b.WriteString("\nIncludeNewlines: ")
@@ -125,7 +133,7 @@ func (s *serviceProbe) String() string {
 	return b.String()
 }
 
-func writeSoftwareFromBanner(serv *service, ident string, probeIdent string) {
+func writeSoftwareFromBanner(serv *service, ident, probeIdent string) {
 	writeSoftware([]*software{
 		{
 			Software: &types.Software{
@@ -197,6 +205,7 @@ func extractGroup(in *string, m []string) string {
 			}
 		}
 	}
+
 	return *in
 }
 
@@ -212,6 +221,7 @@ func extractGroupDotNet(in *string, m *regexp2.Match) string {
 			}
 		}
 	}
+
 	return *in
 }
 

@@ -69,3 +69,53 @@ func TestGenericVersionHarvester(t *testing.T) {
 		r.testSoftwareHarvester(t)
 	}
 }
+
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server
+func TestRegexpServerName(t *testing.T) {
+	values := regExpServerName.FindStringSubmatch("Apache/2.4.1 (Unix)")
+
+	if values[1] != "Apache" {
+		t.Fatal("expected value Apache, got:", values[1])
+	}
+
+	if values[2] != "2.4.1" {
+		t.Fatal("expected value 2.4.1, got:", values[2])
+	}
+
+	if values[3] != "Unix" {
+		t.Fatal("expected value Unix, got:", values[3])
+	}
+}
+
+func TestRegexpXPoweredBy(t *testing.T) {
+
+	values := regexpXPoweredBy.FindStringSubmatch("PHP/5.2.17")
+
+	if values[1] != "PHP" {
+		t.Fatal("expected value PHP, got:", values[1])
+	}
+
+	if values[2] != "5.2.17" {
+		t.Fatal("expected value 5.2.17, got:", values[2])
+	}
+
+	values = regexpXPoweredBy.FindStringSubmatch("ASP.NET")
+
+	if values[1] != "ASP.NET" {
+		t.Fatal("expected value ASP.NET, got:", values[1])
+	}
+
+	if values[2] != "" {
+		t.Fatal("expected value empty string, got:", values[2])
+	}
+
+	values = regexpXPoweredBy.FindStringSubmatch("UrlRewriter.NET 2.0.0")
+
+	if values[1] != "UrlRewriter.NET" {
+		t.Fatal("expected value UrlRewriter.NET, got:", values[1])
+	}
+
+	if values[2] != "2.0.0" {
+		t.Fatal("expected value 2.0.0, got:", values[2])
+	}
+}

@@ -15,6 +15,7 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap"
 	"log"
 	"os"
 	"os/exec"
@@ -45,7 +46,7 @@ func openContentTypeFolder() {
 		}
 	}
 
-	path := filepath.Join(filepath.Dir(lt.Values["path"]), "files", lt.Values["properties.contenttype"])
+	path := filepath.Join(filepath.Dir(lt.Values["path"]), netcap.DefaultFileStorage, lt.Values["properties.contenttype"])
 	log.Println("open path:", path)
 
 	log.Println("command for opening path:", openCommandName)

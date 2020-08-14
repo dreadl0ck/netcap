@@ -68,7 +68,7 @@ var maltegoBaseConfig = collector.Config{
 		FlowTimeOut:             10 * time.Second,
 		CloseInactiveTimeOut:    24 * time.Hour,
 		ClosePendingTimeOut:     5 * time.Second,
-		FileStorage:             "files",
+		FileStorage:             netcap.DefaultFileStorage,
 		CalculateEntropy:        false,
 		SaveConns:               false,
 		TCPDebug:                false,
@@ -141,7 +141,7 @@ func toAuditRecords() {
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
 	maltegoBaseConfig.DecoderConfig.Source = inputFile
-	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, "files")
+	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, netcap.DefaultFileStorage)
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)

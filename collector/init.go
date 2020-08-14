@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap"
 	"log"
 	"os"
 	"path/filepath"
@@ -90,7 +91,7 @@ func (c *Collector) Init() (err error) {
 		}
 
 		// wipe extracted files
-		_ = os.RemoveAll(filepath.Join(c.config.DecoderConfig.Out, "files"))
+		_ = os.RemoveAll(filepath.Join(c.config.DecoderConfig.Out, netcap.DefaultFileStorage))
 
 		// clear streams if present
 		if errStreams == nil || errConns == nil {

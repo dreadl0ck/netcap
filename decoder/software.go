@@ -63,11 +63,11 @@ type atomicSoftwareMap struct {
 
 var (
 	userAgentCaching = make(map[string]*userAgent)
-	regExpServerName = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?(?:\s*?)(?:(?:\()(.*?)(?:\)))?$`)
-	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:/)(.*?))?$`)
+	regExpServerName = regexp.MustCompile(`(.*?)(?:/(.*?))?(?:\s*?)(?:\((.*?)\))?$`)
+	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:\s|/)(.*?))?$`)
 	ja3Cache         = make(map[string]string)
 	jaCacheMutex     sync.Mutex
-	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)([0-9]+)\.([0-9]+)\.([0-9]+)(.*?)(?:$)`)
+	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)(\d+)\.(\d+)\.(\d+)(.*?)(?:$)`)
 	hasshMap         = make(map[string][]sshSoftware)
 	// Used to store CMS related information, and to do the CMS lookup.
 	cmsDB                = make(map[string]interface{})
@@ -79,6 +79,7 @@ var (
 func (a *atomicSoftwareMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
+
 	return len(a.Items)
 }
 
@@ -269,8 +270,8 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
 								Product:        values[1], // Name of the server (Apache, Nginx, ...)
-								Vendor:         values[3], // Unfitting name, but operating system
 								Version:        values[2], // Version as found after the '/'
+								Vendor:         values[3], // Often the operating system
 								DeviceProfiles: []string{dpIdent},
 								SourceName:     "JA3s",
 								SourceData:     JA3s,
