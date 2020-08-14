@@ -14,19 +14,14 @@
 package maltego_test
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/fogleman/gg"
 	"github.com/go-git/go-git/v5"
-	"github.com/golang/freetype"
 	"github.com/nfnt/resize"
-	"golang.org/x/image/font"
-	"golang.org/x/image/math/fixed"
 	"image"
-	"image/draw"
 	"image/png"
 	"io/ioutil"
 	"log"
@@ -47,13 +42,13 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
 		fmt.Println(d.GetName())
-		generateAuditRecordIconV2(d.GetName())
+		generateAuditRecordIcon(d.GetName())
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		fmt.Println(name)
-		generateAuditRecordIconV2(name)
+		generateAuditRecordIcon(name)
 	})
 }
 
@@ -147,7 +142,7 @@ func generateSizes(newBase string, newPath string) {
 	}
 }
 
-func generateAuditRecordIconV2(text string) {
+func generateAuditRecordIcon(text string) {
 	const size = 96
 
 	im, err := gg.LoadPNG("/tmp/icons/renamed/check_box_outline_blank.png")
@@ -211,132 +206,6 @@ func generateAuditRecordIconV2(text string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	generateSizes(imgBase, imgPath)
-}
-
-func generateAuditRecordIcon(text string) {
-	var (
-		dpi          = 72.0
-		fontFile     = filepath.Join("Roboto", "Roboto-Black.ttf")
-		hinting      = "none"
-		size         = 33.0
-		spacing      = 1.0
-		whiteOnBlack = false
-	)
-
-	// Read the font data.
-	fontBytes, err := ioutil.ReadFile(fontFile)
-	if err != nil {
-		log.Println(err)
-
-		return
-	}
-
-	f, err := freetype.ParseFont(fontBytes)
-	if err != nil {
-		log.Println(err)
-
-		return
-	}
-
-	// ensure all chars are the same width
-	t := strings.ToUpper(text)
-
-	// Initialize the context.
-	fg, bg := image.Black, image.Transparent
-	if //goland:noinspection GoBoolExpressions
-	whiteOnBlack {
-		fg, bg = image.White, image.Black
-	}
-
-	rgba := image.NewRGBA(image.Rect(0, 0, 96, 96))
-	draw.Draw(rgba, rgba.Bounds(), bg, image.Point{}, draw.Src)
-
-	c := freetype.NewContext()
-	c.SetDPI(dpi)
-	c.SetFont(f)
-
-	var fSize float64
-	fSize = size
-
-	fmt.Println(t, len(t))
-
-	var pt fixed.Point26_6
-
-	switch len(t) {
-	case 12, 13:
-		fSize = 11
-		pt = freetype.Pt(3, 48+int(c.PointToFixed(fSize)>>6))
-	case 9, 10, 11:
-		fSize = 13
-		pt = freetype.Pt(3, 45+int(c.PointToFixed(fSize)>>6))
-	case 8:
-		fSize = 17
-		pt = freetype.Pt(3, 38+int(c.PointToFixed(fSize)>>6))
-	case 5, 6, 7:
-		fSize = 20
-		pt = freetype.Pt(5, 33+int(c.PointToFixed(fSize)>>6))
-	case 4:
-		pt = freetype.Pt(3, 27+int(c.PointToFixed(fSize)>>6))
-	case 3:
-		pt = freetype.Pt(15, 27+int(c.PointToFixed(fSize)>>6))
-	default:
-		pt = freetype.Pt(3, 27+int(c.PointToFixed(fSize)>>6))
-	}
-
-	c.SetFontSize(fSize)
-	c.SetClip(rgba.Bounds())
-	c.SetDst(rgba)
-	c.SetSrc(fg)
-
-	switch hinting {
-	default:
-		c.SetHinting(font.HintingNone)
-	case "full":
-		c.SetHinting(font.HintingFull)
-	}
-
-	// Draw the text.
-	_, err = c.DrawString(t, pt)
-	if err != nil {
-		log.Println(err)
-
-		return
-	}
-
-	pt.Y += c.PointToFixed(fSize * spacing)
-
-	var (
-		imgBase = filepath.Join("/tmp", "icons", "renamed", text)
-		imgPath = imgBase + ".png"
-	)
-
-	// Save that RGBA image to disk.
-	outFile, err := os.Create(imgPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer func() {
-		if errClose := outFile.Close(); errClose != nil {
-			fmt.Println(errClose)
-		}
-	}()
-
-	b := bufio.NewWriter(outFile)
-
-	err = png.Encode(b, rgba)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = b.Flush()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("wrote " + text + ".png")
 
 	generateSizes(imgBase, imgPath)
 }

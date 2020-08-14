@@ -65,6 +65,8 @@ var (
 	}
 )
 
+const debugRegexClean = false
+
 // serviceProbe is a regex based probe to fingerprint a network service by looking at its banner
 // the term banner refers to the first X bytes of data (usually 512) that have been sent by the server.
 type serviceProbe struct {
@@ -514,6 +516,7 @@ func initServiceProbes() error {
 						if before != finalReg {
 							fmt.Println("before != finalReg:", before)
 						}
+
 						fmt.Println("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
 					} else {
 						fmt.Println("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.Reset)
@@ -587,8 +590,11 @@ func clean(in string) string {
 		count++
 
 		debug := func(args ...interface{}) {
-			// TODO: make debug mode configurable
-			// fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, colorize(in, count), numIgnored)
+			if !debugRegexClean {
+				return
+			}
+
+			fmt.Println(string(lastchar), ansi.Blue, string(b), ansi.Red, startCount, stopCnt, ansi.Green, string(out), ansi.White, args, ansi.Reset, colorize(in, count), numIgnored)
 		}
 
 		if string(b) == "\\" && !escaped {
@@ -611,6 +617,7 @@ func clean(in string) string {
 			if string(b) == ")" {
 				if !escaped {
 					stopCnt++
+
 					debug("stopCnt++")
 
 					if startCount == stopCnt || nextCloses {
@@ -654,7 +661,9 @@ func clean(in string) string {
 			if string(b) == "(" {
 				if !escaped && lastchar != '^' {
 					startCount++
+
 					debug("startCount++")
+
 					nextCloses = false
 				}
 			}
@@ -686,6 +695,7 @@ func clean(in string) string {
 		if check {
 			if string(b) == "?" && lastchar == '(' {
 				debug("found backtracking")
+
 				if firstQuestionMark {
 					firstQuestionMark = false
 				} else {

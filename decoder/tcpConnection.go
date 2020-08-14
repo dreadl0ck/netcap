@@ -535,7 +535,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	stats.Unlock()
 
 	// for debugging:
-	// AssembleWithContextTimeout(packet, assembler, tcp)
+	// assembleWithContextTimeout(packet, assembler, tcp)
 	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
@@ -558,6 +558,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 // assembleWithContextTimeout is a function that times out with a log message after a specified interval
 // when the stream reassembly gets stuck
 // used for debugging.
+//goland:noinspection GoUnusedFunction
 func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
 	done := make(chan bool, 1)
 

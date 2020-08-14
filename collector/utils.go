@@ -66,6 +66,7 @@ func (c *Collector) printProgressLive() {
 }
 
 // dumpProto prints a protobuf Message.
+//goland:noinspection GoUnusedFunction
 func dumpProto(pb proto.Message) {
 	println(proto.MarshalTextString(pb))
 }

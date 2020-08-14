@@ -115,9 +115,9 @@ type EntityObj struct {
 	AdditionalFields   [][]string
 }
 
-// Constructor for MaltegoEntityObj.
-func newEntityObj(eT string, eV string) *EntityObj {
-	return &EntityObj{entityType: eT, value: eV, weight: 100}
+// NewEntityObj is the constructor for an EntityObj.
+func NewEntityObj(typ, value string, weight int) *EntityObj {
+	return &EntityObj{entityType: typ, value: value, weight: weight}
 }
 
 // Transform /*Next we handle the MalteoTransform class from Python*/.
@@ -129,10 +129,10 @@ type Transform struct {
 
 // AddEntity adds an entity to the transform.
 func (tr *Transform) AddEntity(enType, enValue string) *EntityObj {
-	me := &EntityObj{entityType: enType, value: EscapeText(enValue), weight: 100}
-	tr.entities = append(tr.entities, me)
+	ent := NewEntityObj(enType, EscapeText(enValue), 100)
+	tr.entities = append(tr.entities, ent)
 
-	return me
+	return ent
 }
 
 // AddUIMessage adds a UI message to the transform.
