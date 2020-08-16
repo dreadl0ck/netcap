@@ -174,7 +174,7 @@ func (h *pop3Reader) Decode() {
 	}
 
 	// export metrics if configured
-	if conf.Export {
+	if conf.ExportMetrics {
 		pop3Msg.Inc()
 	}
 

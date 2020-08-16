@@ -383,7 +383,7 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 	}
 
 	// export metrics if configured
-	if conf.Export {
+	if conf.ExportMetrics {
 		h.Inc()
 	}
 

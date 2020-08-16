@@ -58,7 +58,7 @@ var DefaultConfig = &Config{
 	Proto:                   true,
 	Source:                  "",
 	IncludePayloads:         false,
-	Export:                  false,
+	ExportMetrics:           false,
 	AddContext:              true,
 	FlushEvery:              100,
 	DefragIPv4:              false,
@@ -211,8 +211,8 @@ type Config struct {
 	// Defragment IPv4 packets
 	DefragIPv4 bool
 
-	// Export metrics
-	Export bool
+	// ExportMetrics will export prometheus metrics
+	ExportMetrics bool
 
 	// Add payload data to supported audit records
 	IncludePayloads bool

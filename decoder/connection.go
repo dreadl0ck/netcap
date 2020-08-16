@@ -234,7 +234,7 @@ func (cd *connectionDecoder) DeInit() error {
 
 // writeConn writes the connection.
 func (cd *connectionDecoder) writeConn(conn *types.Connection) {
-	if conf.Export {
+	if conf.ExportMetrics {
 		conn.Inc()
 	}
 

@@ -49,7 +49,7 @@ var maltegoBaseConfig = collector.Config{
 		ExcludeDecoders:         "",
 		Chan:                    false,
 		IncludePayloads:         false,
-		Export:                  false,
+		ExportMetrics:           false,
 		AddContext:              true,
 		FlushEvery:              100,
 		DefragIPv4:              netcap.DefaultDefragIPv4,

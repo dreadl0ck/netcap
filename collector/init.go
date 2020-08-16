@@ -102,7 +102,7 @@ func (c *Collector) Init() (err error) {
 
 	c.printStdOut("initializing decoders... ")
 
-	if c.config.DecoderConfig.Export {
+	if c.config.DecoderConfig.ExportMetrics {
 		for _, m := range types.Metrics {
 			prometheus.MustRegister(m)
 		}

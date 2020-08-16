@@ -200,7 +200,7 @@ var profileDecoder = newCustomDecoder(
 
 // writeProfile writes the profile.
 func writeProfile(d *types.DeviceProfile) {
-	if conf.Export {
+	if conf.ExportMetrics {
 		d.Inc()
 	}
 
