@@ -17,10 +17,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
-	"github.com/fogleman/gg"
-	"github.com/go-git/go-git/v5"
-	"github.com/nfnt/resize"
 	"image"
 	"image/png"
 	"io/ioutil"
@@ -30,6 +26,12 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/fogleman/gg"
+	"github.com/go-git/go-git/v5"
+	"github.com/nfnt/resize"
+
+	"github.com/dreadl0ck/netcap/decoder"
 )
 
 // Icons/Netcap/sim_card_alert.xml

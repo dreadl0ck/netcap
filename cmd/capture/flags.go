@@ -66,7 +66,7 @@ var (
 	flagPayload       = fs.Bool("payload", false, "capture payload for supported layers")
 
 	flagCSV     = fs.Bool("csv", false, "output data as CSV")
-	flagNull     = fs.Bool("null", false, "write no data to disk")
+	flagNull    = fs.Bool("null", false, "write no data to disk")
 	flagProto   = fs.Bool("proto", true, "output data as protobuf")
 	flagJSON    = fs.Bool("json", false, "output data as JSON")
 	flagContext = fs.Bool("context", true, "add packet flow context to selected audit records")

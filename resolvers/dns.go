@@ -15,11 +15,12 @@ package resolvers
 
 import (
 	"context"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (

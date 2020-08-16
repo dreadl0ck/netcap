@@ -88,7 +88,6 @@ func TestRegexpServerName(t *testing.T) {
 }
 
 func TestRegexpXPoweredBy(t *testing.T) {
-
 	values := regexpXPoweredBy.FindStringSubmatch("PHP/5.2.17")
 
 	if values[1] != "PHP" {

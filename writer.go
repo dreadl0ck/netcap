@@ -15,8 +15,6 @@ package netcap
 
 import (
 	"bufio"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,11 +22,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // AuditRecordWriter is an interface for writing netcap audit records.
@@ -53,7 +53,7 @@ type WriterConfig struct {
 	Chan  bool
 
 	// The Null writer will write nothing to disk and discard all data.
-	Null  bool
+	Null bool
 
 	Name          string
 	Buffer        bool
@@ -521,7 +521,7 @@ func (w *JSONWriter) Close() (name string, size int64) {
 }
 
 // NullWriter is a writer that writes nothing to disk.
-type NullWriter struct {}
+type NullWriter struct{}
 
 // NewNullWriter initializes and configures a new NullWriter instance.
 func NewNullWriter() *NullWriter {

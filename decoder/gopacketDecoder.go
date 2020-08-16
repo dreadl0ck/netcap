@@ -16,12 +16,13 @@ package decoder
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/gogo/protobuf/proto"
+	"github.com/pkg/errors"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -225,7 +226,6 @@ func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe.
 func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
-
 	record := dec.Handler(l, utils.TimeToString(p.Metadata().Timestamp))
 	if record != nil {
 

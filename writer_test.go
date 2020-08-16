@@ -73,7 +73,6 @@ var tcps = []*types.TCP{
 }
 
 func TestWriter(t *testing.T) {
-
 	// create a new writer
 	w := NewProtoWriter(&WriterConfig{
 		Proto:            true,
