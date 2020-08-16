@@ -27,6 +27,7 @@ func TestCaptureLive(t *testing.T) {
 			Buffer:               true,
 			Compression:          true,
 			CSV:                  false,
+			Proto:                true,
 			IncludeDecoders:      "",
 			ExcludeDecoders:      "",
 			Out:                  "../tests/collector-test-live",

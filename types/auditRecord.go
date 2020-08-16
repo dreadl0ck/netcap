@@ -79,6 +79,7 @@ func selectFields(all []string, selection string) (s []int) {
 	)
 
 	s = make([]int, len(fields))
+
 	for i, val := range fields {
 		for index, name := range all {
 			if name == val {
@@ -87,6 +88,7 @@ func selectFields(all []string, selection string) (s []int) {
 				break
 			}
 		}
+
 		if !ok {
 			fmt.Println("invalid field: ", ansi.Red+val+ansi.Reset)
 			fmt.Println("available fields: ", ansi.Yellow+strings.Join(all, ",")+ansi.Reset)

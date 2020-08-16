@@ -220,15 +220,13 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 // DeInit is called prior to teardown.
 func (cd *connectionDecoder) DeInit() error {
-	if !cd.writer.IsChanWriter {
-		cd.Conns.Lock()
-		for _, f := range cd.Conns.Items {
-			f.Lock()
-			cd.writeConn(f.Connection)
-			f.Unlock()
-		}
-		cd.Conns.Unlock()
+	cd.Conns.Lock()
+	for _, f := range cd.Conns.Items {
+		f.Lock()
+		cd.writeConn(f.Connection)
+		f.Unlock()
 	}
+	cd.Conns.Unlock()
 	return nil
 }
 

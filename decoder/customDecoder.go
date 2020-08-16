@@ -18,6 +18,7 @@ import (
 	"log"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/gogo/protobuf/proto"
@@ -79,7 +80,7 @@ type (
 		numRecords int64
 
 		// writer for audit records
-		writer *netcap.Writer
+		writer netcap.AuditRecordWriter
 
 		// Type of the audit records produced by this decoder
 		Type types.Type
@@ -102,7 +103,7 @@ type (
 		GetName() string
 
 		// SetWriter sets the netcap writer to use for the decoder
-		SetWriter(*netcap.Writer)
+		SetWriter(netcap.AuditRecordWriter)
 
 		// GetType returns the netcap type of the decoder
 		GetType() types.Type
@@ -145,7 +146,7 @@ func (cd *customDecoder) GetName() string {
 }
 
 // SetWriter sets the netcap writer to use for the decoder.
-func (cd *customDecoder) SetWriter(w *netcap.Writer) {
+func (cd *customDecoder) SetWriter(w netcap.AuditRecordWriter) {
 	cd.writer = w
 }
 
@@ -229,8 +230,23 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 	}
 
 	// initialize decoders
-	for _, d := range defaultCustomDecoders { // fmt.Println("init custom encoder", e.name)
-		w := netcap.NewWriter(d.GetName(), c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
+	for _, d := range defaultCustomDecoders {
+
+		w := netcap.NewAuditRecordWriter(&netcap.WriterConfig{
+			CSV:              c.CSV,
+			Proto:            c.Proto,
+			JSON:             c.JSON,
+			Name:             d.GetName(),
+			Buffer:           c.Buffer,
+			Compress:         c.Compression,
+			Out:              c.Out,
+			Chan:             c.Chan,
+			MemBufferSize:    c.MemBufferSize,
+			Source:           c.Source,
+			Version:          netcap.Version,
+			IncludesPayloads: c.IncludePayloads,
+			StartTime:        time.Now(),
+		})
 		d.SetWriter(w)
 
 		// call postinit func if set
@@ -244,7 +260,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 		}
 
 		// write header
-		err = w.WriteHeader(d.GetType(), c.Source, netcap.Version, c.IncludePayloads)
+		err = w.WriteHeader(d.GetType())
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to write header for audit record "+d.GetName())
 		}
@@ -295,17 +311,9 @@ func (cd *customDecoder) Decode(p gopacket.Packet) error {
 		// increase counter
 		atomic.AddInt64(&cd.numRecords, 1)
 
-		if cd.writer.IsCSV() {
-			_, err := cd.writer.WriteCSV(record)
-			if err != nil {
-				return err
-			}
-		} else {
-			// write record
-			err := cd.writer.WriteProto(record)
-			if err != nil {
-				return err
-			}
+		err := cd.writer.Write(record)
+		if err != nil {
+			return err
 		}
 
 		// export metrics if configured
@@ -336,7 +344,11 @@ func (cd *customDecoder) Destroy() (name string, size int64) {
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder.
 func (cd *customDecoder) GetChan() <-chan []byte {
-	return cd.writer.GetChan()
+	if cw, ok := cd.writer.(netcap.ChannelAuditRecordWriter); ok {
+		return cw.GetChan()
+	}
+
+	return nil
 }
 
 // NumRecords returns the number of written records.

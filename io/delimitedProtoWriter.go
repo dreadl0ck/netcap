@@ -27,14 +27,14 @@ import (
  * A primitive for a concurrency safe writer for length delimited binary data
  */
 
-// AtomicDelimitedWriter writes length delimited protobuf messages synchronized.
-type AtomicDelimitedWriter struct {
+// DelimitedProtoWriter writes length delimited protobuf messages synchronized.
+type DelimitedProtoWriter struct {
 	w delimited.Writer
 	sync.Mutex
 }
 
 // PutProto writes a protocol buffer into the writer and returns an error.
-func (a *AtomicDelimitedWriter) PutProto(pb proto.Message) error {
+func (a *DelimitedProtoWriter) PutProto(pb proto.Message) error {
 	a.Lock()
 	err := a.w.PutProto(pb)
 	a.Unlock()
@@ -42,9 +42,9 @@ func (a *AtomicDelimitedWriter) PutProto(pb proto.Message) error {
 	return err
 }
 
-// NewAtomicDelimitedWriter takes a delimited.WriterAtomic and returns an atomic version.
-func NewAtomicDelimitedWriter(w *delimited.Writer) *AtomicDelimitedWriter {
-	return &AtomicDelimitedWriter{
+// NewDelimitedProtoWriter takes a delimited.WriterAtomic and returns an atomic version.
+func NewDelimitedProtoWriter(w *delimited.Writer) *DelimitedProtoWriter {
+	return &DelimitedProtoWriter{
 		w: *w,
 	}
 }

@@ -15,6 +15,7 @@ package netcap
 
 import (
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -72,14 +73,26 @@ var tcps = []*types.TCP{
 }
 
 func TestWriter(t *testing.T) {
+
 	// create a new writer
-	w := NewWriter("TCP-writer-test", true, true, false, "tests", false, DefaultBufferSize)
+	w := NewProtoWriter(&WriterConfig{
+		Proto:            true,
+		Name:             "TCP-writer-test",
+		Buffer:           true,
+		Compress:         true,
+		Out:              "tests",
+		MemBufferSize:    DefaultBufferSize,
+		Source:           "unit tests",
+		Version:          Version,
+		IncludesPayloads: false,
+		StartTime:        time.Now(),
+	})
 	if w == nil {
 		t.Fatal("got nil writer")
 	}
 
 	// write netcap header
-	err := w.WriteHeader(types.Type_NC_TCP, "unit tests", Version, false)
+	err := w.WriteHeader(types.Type_NC_TCP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,13 +114,24 @@ func TestWriter(t *testing.T) {
 
 func BenchmarkWriter(b *testing.B) {
 	// create a new writer
-	w := NewWriter("TCP-writer-test", true, true, false, "tests", false, DefaultBufferSize)
+	w := NewProtoWriter(&WriterConfig{
+		Proto:            true,
+		Name:             "TCP-writer-test",
+		Buffer:           true,
+		Compress:         true,
+		Out:              "tests",
+		MemBufferSize:    DefaultBufferSize,
+		Source:           "unit tests",
+		Version:          Version,
+		IncludesPayloads: false,
+		StartTime:        time.Now(),
+	})
 	if w == nil {
 		b.Fatal("got nil writer")
 	}
 
 	// write netcap header
-	err := w.WriteHeader(types.Type_NC_TCP, "unit tests", Version, false)
+	err := w.WriteHeader(types.Type_NC_TCP)
 	if err != nil {
 		b.Fatal(err)
 	}

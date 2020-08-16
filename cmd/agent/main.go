@@ -105,17 +105,15 @@ func Run() {
 		SnapLen:             *flagSnapLen,
 		LogErrors:           *flagLogErrors,
 		DecoderConfig: &decoder.Config{
-			// needs to be disabled for batch mode
 			Buffer:          false,
 			Compression:     false,
 			CSV:             false,
+			Chan:            true,
 			IncludeDecoders: *flagInclude,
 			ExcludeDecoders: *flagExclude,
 			Out:             "",
 			Source:          *flagInterface,
 
-			// set channel writer
-			WriteChan:            true,
 			IncludePayloads:      *flagPayload,
 			AddContext:           *flagContext,
 			MemBufferSize:        *flagMemBufferSize,

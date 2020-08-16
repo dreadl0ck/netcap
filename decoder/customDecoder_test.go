@@ -14,69 +14,68 @@
 package decoder
 
 import (
-	"os"
 	"testing"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
-func TestInitCustomDecoders(t *testing.T) {
-	_ = os.MkdirAll("tests/customDecoders", defaultDirectoryPermission)
-
-	conf = &Config{
-		Out:                     "tests/customDecoders",
-		Source:                  "",
-		CustomRegex:             "",
-		MemProfile:              "",
-		IncludeDecoders:         "",
-		ExcludeDecoders:         "",
-		FileStorage:             "",
-		ConnFlushInterval:       0,
-		MemBufferSize:           0,
-		FlowTimeOut:             0,
-		StreamDecoderBufSize:    0,
-		CloseInactiveTimeOut:    0,
-		FlushEvery:              0,
-		HarvesterBannerSize:     0,
-		BannerSize:              0,
-		ClosePendingTimeOut:     0,
-		FlowFlushInterval:       0,
-		ConnTimeOut:             0,
-		UseRE2:                  false,
-		StopAfterHarvesterMatch: false,
-		Buffer:                  false,
-		WriteIncomplete:         false,
-		WriteChan:               false,
-		CSV:                     false,
-		AddContext:              false,
-		WaitForConnections:      false,
-		HexDump:                 false,
-		Debug:                   false,
-		AllowMissingInit:        false,
-		IgnoreFSMerr:            false,
-		CalculateEntropy:        false,
-		SaveConns:               false,
-		TCPDebug:                false,
-		NoOptCheck:              false,
-		Checksum:                false,
-		DefragIPv4:              false,
-		Export:                  false,
-		IncludePayloads:         false,
-		Compression:             true,
-		IgnoreDecoderInitErrors: false,
-	}
-	decoders, err := InitCustomDecoders(conf)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(decoders) == 0 {
-		t.Fatal("no custom decoders after initialization")
-	}
-
-	utils.CloseBleve(exploitsIndex)
-	utils.CloseBleve(vulnerabilitiesIndex)
-}
+// Overwriting the package level conf when executing other tests in parallel is a bad idea...
+//func TestInitCustomDecoders(t *testing.T) {
+//	_ = os.MkdirAll("tests/customDecoders", defaultDirectoryPermission)
+//
+//	conf = &Config{
+//		Out:                     "tests/customDecoders",
+//		Source:                  "",
+//		CustomRegex:             "",
+//		MemProfile:              "",
+//		IncludeDecoders:         "",
+//		ExcludeDecoders:         "",
+//		FileStorage:             "",
+//		ConnFlushInterval:       0,
+//		MemBufferSize:           0,
+//		FlowTimeOut:             0,
+//		StreamDecoderBufSize:    0,
+//		CloseInactiveTimeOut:    0,
+//		FlushEvery:              0,
+//		HarvesterBannerSize:     0,
+//		BannerSize:              0,
+//		ClosePendingTimeOut:     0,
+//		FlowFlushInterval:       0,
+//		ConnTimeOut:             0,
+//		UseRE2:                  false,
+//		StopAfterHarvesterMatch: false,
+//		Buffer:                  false,
+//		WriteIncomplete:         false,
+//		Chan:                    false,
+//		CSV:                     false,
+//		Proto:                   true,
+//		AddContext:              false,
+//		WaitForConnections:      false,
+//		HexDump:                 false,
+//		Debug:                   false,
+//		AllowMissingInit:        false,
+//		IgnoreFSMerr:            false,
+//		CalculateEntropy:        false,
+//		SaveConns:               false,
+//		TCPDebug:                false,
+//		NoOptCheck:              false,
+//		Checksum:                false,
+//		DefragIPv4:              false,
+//		Export:                  false,
+//		IncludePayloads:         false,
+//		Compression:             true,
+//		IgnoreDecoderInitErrors: false,
+//	}
+//	decoders, err := InitCustomDecoders(conf)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	if len(decoders) == 0 {
+//		t.Fatal("no custom decoders after initialization")
+//	}
+//
+//	utils.CloseBleve(exploitsIndex)
+//	utils.CloseBleve(vulnerabilitiesIndex)
+//}
 
 func TestCustomDecoder_Decode(t *testing.T) {
 }

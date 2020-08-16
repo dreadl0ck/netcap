@@ -65,7 +65,9 @@ var (
 	flagDecodeOptions = fs.String("opts", "datagrams", "select decoding options")
 	flagPayload       = fs.Bool("payload", false, "capture payload for supported layers")
 
-	flagCSV     = fs.Bool("csv", false, "output data as CSV instead of audit records")
+	flagCSV     = fs.Bool("csv", false, "output data as CSV")
+	flagProto   = fs.Bool("proto", true, "output data as protobuf")
+	flagJSON    = fs.Bool("json", false, "output data as JSON")
 	flagContext = fs.Bool("context", true, "add packet flow context to selected audit records")
 
 	flagMemBufferSize  = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")
