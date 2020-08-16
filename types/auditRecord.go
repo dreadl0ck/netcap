@@ -94,8 +94,10 @@ func selectFields(all []string, selection string) (s []int) {
 			fmt.Println("available fields: ", ansi.Yellow+strings.Join(all, ",")+ansi.Reset)
 			os.Exit(1)
 		}
+
 		ok = false
 	}
+
 	return s
 }
 
@@ -116,9 +118,11 @@ func filter(in []string) []string {
 	if len(selection) == 0 {
 		return in
 	}
+
 	r := make([]string, len(selection))
 	for i, v := range selection {
 		r[i] = in[v]
 	}
+
 	return r
 }

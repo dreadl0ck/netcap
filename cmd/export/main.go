@@ -65,11 +65,12 @@ func Run() {
 
 	// set data source
 	var source string
-	if *flagInput != "" {
+	switch {
+	case *flagInput != "":
 		source = *flagInput
-	} else if *flagInterface != "" {
+	case *flagInterface != "":
 		source = *flagInterface
-	} else {
+	default:
 		source = "unknown"
 	}
 
