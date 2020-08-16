@@ -40,7 +40,6 @@ func NewJSONProtoWriter(w io.Writer) *JSONProtoWriter {
 
 // WriteHeader writes the CSV header to the underlying file.
 func (w *JSONProtoWriter) WriteHeader(h *types.Header) (int, error) {
-
 	w.Lock()
 	defer w.Unlock()
 

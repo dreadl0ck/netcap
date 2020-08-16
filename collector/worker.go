@@ -26,7 +26,6 @@ import (
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
 func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
-
 	var (
 		in       = make(chan *packet, c.config.PacketBufferSize)
 		pkt      *packet

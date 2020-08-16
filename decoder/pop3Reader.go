@@ -68,7 +68,7 @@ const (
 	pop3STLS           = "STLS"
 	pop3SASL           = "SASL"
 
-	//POP3 logging constants.
+	// POP3 logging constants.
 	opPop3Save = "POP3-save"
 )
 
