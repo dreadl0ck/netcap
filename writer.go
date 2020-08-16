@@ -45,22 +45,29 @@ type ChannelAuditRecordWriter interface {
 	GetChan() <-chan []byte
 }
 
-// WriterConfig contains config parameters for all writers.
+// WriterConfig contains config parameters for a audit record writer.
 type WriterConfig struct {
-	CSV   bool
-	Proto bool
-	JSON  bool
-	Chan  bool
 
+	// Writer Types:
+	// Comma Separated Values writer
+	CSV bool
+	// Protobuf writer
+	Proto bool
+	// JSON writer
+	JSON bool
+	// Channel writer
+	Chan bool
 	// The Null writer will write nothing to disk and discard all data.
 	Null bool
 
+	// Netcap header information
 	Name          string
 	Buffer        bool
 	Compress      bool
 	Out           string
 	MemBufferSize int
 
+	// Netcap header information
 	Source           string
 	Version          string
 	IncludesPayloads bool
@@ -86,13 +93,14 @@ func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 		panic("invalid WriterConfig")
 	}
 
-	return nil
+	return nil //nolint:govet
 }
 
 /*
  *	Type Definitions
  */
 
+// ChanWriter writes length delimited, serialized protobuf records into a channel.
 type ChanWriter struct {
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
@@ -101,7 +109,6 @@ type ChanWriter struct {
 
 	file *os.File
 	mu   sync.Mutex
-
 	wc *WriterConfig
 }
 

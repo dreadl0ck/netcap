@@ -80,6 +80,7 @@ func exportDir(path string) {
 
 				continue
 			}
+
 			times[fName] = firstTimestamp(fName)
 		}
 	}
@@ -90,12 +91,14 @@ func exportDir(path string) {
 			begin     = time.Now()
 			beginPath string
 		)
+
 		for p, t := range times {
 			if t.Before(begin) {
 				begin = t
 				beginPath = p
 			}
 		}
+
 		fmt.Println("exporting", beginPath)
 		wg.Add(1)
 		count++
@@ -177,6 +180,7 @@ func firstTimestamp(path string) time.Time {
 		// initialize a record instance for the type from the header
 		record = netcap.InitRecord(header.Type)
 	)
+
 	if errFileHeader != nil {
 		log.Fatal(errFileHeader)
 	}
@@ -247,6 +251,7 @@ func exportFile(path string) {
 
 			if *flagReplay {
 				t := utils.StringToTime(p.Time())
+
 				if count == 1 {
 					firstTimestampValue = t
 				} else {
@@ -259,6 +264,7 @@ func exportFile(path string) {
 						// increment metric
 						p.Inc()
 					}()
+
 					continue
 				}
 			}
