@@ -97,7 +97,7 @@ func (h *sshReader) processSSHIdent(ident string, entity string) {
 		writeSoftware([]*software{
 			{
 				Software: &types.Software{
-					Timestamp:  h.parent.firstPacket.String(),
+					Timestamp:  utils.TimeToString(h.parent.firstPacket),
 					Product:    i.productName,
 					Version:    i.productVersion,
 					SourceName: "SSH " + entity + " Ident",
@@ -233,7 +233,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			sshVersion, product, version, os := parseSSHInfoFromHasshDB(soft.Version)
 
 			h.software = append(h.software, &types.Software{
-				Timestamp: h.parent.client.FirstPacket().String(),
+				Timestamp: utils.TimeToString(h.parent.client.FirstPacket()),
 				Product:   product,
 				Vendor:    "", // do not set the vendor for now
 				Version:   version,

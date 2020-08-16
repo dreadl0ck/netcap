@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -46,8 +47,9 @@ func (s *SNAP) Time() string {
 }
 
 // JSON returns the JSON representation of the audit record.
-func (u SNAP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (u *SNAP) JSON() (string, error) {
+	u.Timestamp = utils.TimeToUnixMilli(u.Timestamp)
+	return jsonMarshaler.MarshalToString(u)
 }
 
 var snapMetric = prometheus.NewCounterVec(

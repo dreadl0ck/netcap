@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -66,6 +67,7 @@ func (u *UDP) Time() string {
 
 // JSON returns the JSON representation of the audit record.
 func (u *UDP) JSON() (string, error) {
+	u.Timestamp = utils.TimeToUnixMilli(u.Timestamp)
 	return jsonMarshaler.MarshalToString(u)
 }
 

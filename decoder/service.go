@@ -14,6 +14,7 @@
 package decoder
 
 import (
+	"github.com/dreadl0ck/netcap/utils"
 	"strconv"
 	"strings"
 	"sync"
@@ -108,7 +109,7 @@ func saveTCPServiceBanner(s streamReader) {
 		// more data means more information and is therefore preferred for identification purposes
 		if len(sv.Banner) < len(banner) {
 			sv.Banner = banner
-			sv.Timestamp = s.FirstPacket().String()
+			sv.Timestamp = utils.TimeToString(s.FirstPacket())
 		}
 
 		return
@@ -116,7 +117,7 @@ func saveTCPServiceBanner(s streamReader) {
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	serv := newService(s.FirstPacket().String(), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
+	serv := newService(utils.TimeToString(s.FirstPacket()), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
 	serv.Banner = banner
 	serv.IP = s.Network().Dst().String()
 	serv.Port = s.Transport().Dst().String()

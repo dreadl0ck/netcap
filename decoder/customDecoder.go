@@ -237,6 +237,8 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 			Proto:            c.Proto,
 			JSON:             c.JSON,
 			Name:             d.GetName(),
+			Null:             c.Null,
+			Elastic:          c.Elastic,
 			Buffer:           c.Buffer,
 			Compress:         c.Compression,
 			Out:              c.Out,

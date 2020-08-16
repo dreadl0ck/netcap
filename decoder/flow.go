@@ -87,16 +87,20 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		net       gopacket.Flow
 		transport gopacket.Flow
 	)
+
 	if nl := p.NetworkLayer(); nl != nil {
 		net = nl.NetworkFlow()
 	}
+
 	if tl := p.TransportLayer(); tl != nil {
 		transport = tl.TransportFlow()
 	}
+
 	flowID := fmt.Sprintf("%s:%s", net, transport)
 
 	// lookup flow
 	fd.Flows.Lock()
+
 	if f, ok := fd.Flows.Items[flowID]; ok {
 
 		// flow exists. update fields
@@ -124,11 +128,13 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 				f.SrcMAC = ll.LinkFlow().Src().String()
 				f.DstMAC = ll.LinkFlow().Dst().String()
 			}
+
 			if nl := p.NetworkLayer(); nl != nil {
 				f.NetworkProto = nl.LayerType().String()
 				f.SrcIP = nl.NetworkFlow().Src().String()
 				f.DstIP = nl.NetworkFlow().Dst().String()
 			}
+
 			if tl := p.TransportLayer(); tl != nil {
 				f.TransportProto = tl.LayerType().String()
 				f.SrcPort = tl.TransportFlow().Src().String()
@@ -229,6 +235,7 @@ func (fd *flowCustomDecoder) writeFlow(f *types.Flow) {
 	}
 
 	atomic.AddInt64(&fd.numRecords, 1)
+
 	err := fd.writer.Write(f)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)

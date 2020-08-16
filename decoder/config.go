@@ -169,6 +169,9 @@ type Config struct {
 	// Output length delimited protocol buffers
 	Proto bool
 
+	// Output data to elastic database
+	Elastic bool
+
 	// Output JSON
 	JSON bool
 

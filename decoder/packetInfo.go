@@ -13,7 +13,10 @@
 
 package decoder
 
-import "github.com/dreadl0ck/gopacket"
+import (
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/utils"
+)
 
 type packetInfo struct {
 	p         gopacket.Packet
@@ -27,12 +30,14 @@ type packetInfo struct {
 func newPacketInfo(p gopacket.Packet) *packetInfo {
 	i := new(packetInfo)
 
-	i.timestamp = p.Metadata().Timestamp.UTC().String()
+	i.timestamp = utils.TimeToString(p.Metadata().Timestamp.UTC())
 	i.p = p
+
 	if ll := p.LinkLayer(); ll != nil {
 		i.srcMAC = ll.LinkFlow().Src().String()
 		i.dstMAC = ll.LinkFlow().Dst().String()
 	}
+
 	if nl := p.NetworkLayer(); nl != nil {
 		i.srcIP = nl.NetworkFlow().Src().String()
 		i.dstIP = nl.NetworkFlow().Dst().String()

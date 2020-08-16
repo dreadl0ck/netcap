@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -280,6 +282,7 @@ func (c *CDPLocation) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (a *CiscoDiscoveryInfo) JSON() (string, error) {
+	a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
 	return jsonMarshaler.MarshalToString(a)
 }
 

@@ -183,6 +183,8 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 			Proto:            c.Proto,
 			JSON:             c.JSON,
 			Chan:             c.Chan,
+			Null:             c.Null,
+			Elastic:          c.Elastic,
 			Name:             filename,
 			Buffer:           c.Buffer,
 			Compress:         c.Compression,

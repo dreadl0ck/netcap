@@ -85,6 +85,7 @@ func selectFields(all []string, selection string) (s []int) {
 			if name == val {
 				s[i] = index
 				ok = true
+
 				break
 			}
 		}

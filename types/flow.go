@@ -16,6 +16,7 @@ package types
 import (
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -74,6 +75,7 @@ func (f *Flow) Time() string {
 
 // JSON returns the JSON representation of the audit record.
 func (f *Flow) JSON() (string, error) {
+	f.TimestampFirst = utils.TimeToUnixMilli(f.TimestampFirst)
 	return jsonMarshaler.MarshalToString(f)
 }
 
@@ -157,7 +159,7 @@ func (f *Flow) Inc() {
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (f *Flow) SetPacketContext(*PacketContext) {}
+func (f *Flow) SetPacketContext(_ *PacketContext) {}
 
 // Src returns the source address of the audit record.
 func (f *Flow) Src() string {

@@ -166,6 +166,7 @@ func Run() {
 			Compression:             *flagCompress,
 			CSV:                     *flagCSV,
 			Null:                    *flagNull,
+			Elastic:                 *flagElastic,
 			IncludeDecoders:         *flagInclude,
 			ExcludeDecoders:         *flagExclude,
 			Out:                     *flagOutDir,

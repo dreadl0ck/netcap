@@ -15,12 +15,17 @@ package netcap
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/elastic/go-elasticsearch/v7"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
@@ -57,6 +62,8 @@ type WriterConfig struct {
 	JSON bool
 	// Channel writer
 	Chan bool
+	// Elastic db writer
+	Elastic bool
 	// The Null writer will write nothing to disk and discard all data.
 	Null bool
 
@@ -85,6 +92,9 @@ func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 		return NewJSONWriter(wc)
 	case wc.Null:
 		return NewNullWriter()
+	case wc.Elastic:
+		return NewElasticWriter(wc)
+
 	// proto is the default, so this option should be checked last to allow overwriting it
 	case wc.Proto:
 		return NewProtoWriter(wc)
@@ -547,6 +557,226 @@ func (w *NullWriter) WriteHeader(t types.Type) error {
 
 // Close flushes and closes the writer and the associated file handles.
 func (w *NullWriter) Close() (name string, size int64) {
+	return "", 0
+}
+
+// ElasticWriter is a writer that writes into an elastic database.
+type ElasticWriter struct {
+	client *elasticsearch.Client
+	queue  []proto.Message
+	wc     *WriterConfig
+	sync.Mutex
+}
+
+var (
+	docIndex   int64
+	docIndexMu sync.Mutex
+)
+
+const (
+	indexName = "netcap-audit-records"
+	bulkUnit = 1000
+)
+
+// NewElasticWriter initializes and configures a new ElasticWriter instance.
+func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
+	// init new client
+	c, err := elasticsearch.NewDefaultClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO: automate mapping creation: Elasticsearch 6.0 has deprecated support for multiple types in a single index
+	// TODO: use simple types like text, keyword, date, long, double, boolean or ip where it makes sense in the mapping
+
+	// DELETE netcap-audit-records
+	// PUT netcap-audit-records
+	// PUT /netcap-audit-records/_mapping
+	// {
+	// 	"properties": {
+	//  "type": {
+	// 		"type": "keyword"
+	//	},
+	// 	"Timestamp": {
+	// 		"type": "date"
+	// 	},
+	// 	"Version": {
+	// 		"type": "text"
+	// 	},
+	// 	"ID": {
+	// 		"type": "text"
+	// 	},
+	// 	"Protocol": {
+	// 		"type": "text"
+	// 	}
+	// }
+	// }
+
+	//res, err := c.Indices.PutMapping(
+	//	strings.NewReader(`{
+	//	  "properties": {
+	//	    "name": {
+	//	      "properties": {
+	//	        "Timestamp": {
+	//	          "type": "date"
+	//	        }
+	//	      }
+	//	    }
+	//	  }
+	//	}`),
+	//	func(r *esapi.IndicesPutMappingRequest) {
+	//		r.Index = []string{indexName}
+	//	},
+	//)
+	//fmt.Println(res, err)
+	//if err != nil { // SKIP
+	//	log.Fatalf("Error getting the response: %s", err) // SKIP
+	//} // SKIP
+	//
+	//defer res.Body.Close() // SKIP
+
+	return &ElasticWriter{
+		client: c,
+		wc:     wc,
+	}
+}
+
+// WriteCSV writes a CSV record.
+func (w *ElasticWriter) Write(msg proto.Message) error {
+
+	w.Lock()
+	defer w.Unlock()
+
+	w.queue = append(w.queue, msg)
+
+	if len(w.queue)%bulkUnit == 0 {
+		err := w.sendBulk()
+		if err != nil {
+			return err
+		}
+
+		// reset queue
+		w.queue = []proto.Message{}
+	}
+
+	return nil
+}
+
+func (w *ElasticWriter) sendBulk() error {
+
+	if len(w.queue) == 0 {
+		return nil
+	}
+
+	var buf bytes.Buffer
+
+	for _, qmsg := range w.queue {
+		if rec, ok := qmsg.(types.AuditRecord); ok {
+
+			// prepare the metadata payload
+			meta := []byte(fmt.Sprintf(`{ "index" : { } }%s`, "\n"))
+
+			// prepare the data payload: encode record to JSON
+			js, err := rec.JSON()
+			if err != nil {
+				return err
+			}
+
+			// append newline to the data payload
+			data := []byte(js)
+
+			// hack to sneak the type info to the JSON
+			//data := []byte(js[:len(js)-1] + `, "type" : "`+ w.wc.Name + `"}`)
+			//fmt.Println(js[:len(js)-1] + `, "type" : "`+ w.wc.Name + `"}`)
+
+			data = append(data, "\n"...)
+
+			// append payloads to the buffer
+			buf.Grow(len(meta) + len(data))
+			_, _ = buf.Write(meta)
+			_, _ = buf.Write(data)
+		} else {
+			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", qmsg)
+		}
+	}
+
+	// send off the bulk data
+	res, err := w.client.Bulk(bytes.NewReader(buf.Bytes()), w.client.Bulk.WithIndex(indexName))
+	if err != nil {
+		log.Fatalf("Failure indexing batch: %s", err)
+	}
+
+	// if the whole request failed, print error and mark all documents as failed
+	if res.IsError() {
+		var raw map[string]interface{}
+		if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
+			log.Fatalf("Failure to to parse response body: %s", err)
+		} else {
+			log.Printf("  Error: [%d] %s: %s",
+				res.StatusCode,
+				raw["error"].(map[string]interface{})["type"],
+				raw["error"].(map[string]interface{})["reason"],
+			)
+		}
+	} else {
+		// a successful response might still contain errors for particular documents...
+		var blk *bulkResponse
+		if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
+			log.Fatalf("Failure to to parse response body: %s", err)
+		} else {
+			for _, d := range blk.Items {
+				// for any HTTP status above 201
+				if d.Index.Status > 201 {
+					log.Printf("  Error: [%d]: %s: %s: %s: %s",
+						d.Index.Status,
+						d.Index.Error.Type,
+						d.Index.Error.Reason,
+						d.Index.Error.Cause.Type,
+						d.Index.Error.Cause.Reason,
+					)
+				}
+			}
+		}
+	}
+
+	// close the response body, to prevent reaching the limit for goroutines or file handles
+	_ = res.Body.Close()
+
+	fmt.Println("sent", len(w.queue), w.wc.Name, "audit records to elastic")
+
+	return nil
+}
+
+type bulkResponse struct {
+	Errors bool `json:"errors"`
+	Items  []struct {
+		Index struct {
+			ID     string `json:"_id"`
+			Result string `json:"result"`
+			Status int    `json:"status"`
+			Error  struct {
+				Type   string `json:"type"`
+				Reason string `json:"reason"`
+				Cause  struct {
+					Type   string `json:"type"`
+					Reason string `json:"reason"`
+				} `json:"caused_by"`
+			} `json:"error"`
+		} `json:"index"`
+	} `json:"items"`
+}
+
+// WriteHeader writes a CSV header.
+func (w *ElasticWriter) WriteHeader(t types.Type) error {
+	return nil
+}
+
+// Close flushes and closes the writer and the associated file handles.
+func (w *ElasticWriter) Close() (name string, size int64) {
+	err := w.sendBulk()
+	if err != nil {
+		fmt.Println(err)
+	}
 	return "", 0
 }
 

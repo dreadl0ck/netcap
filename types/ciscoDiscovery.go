@@ -17,6 +17,8 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -71,6 +73,7 @@ func (v CiscoDiscoveryValue) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (cd *CiscoDiscovery) JSON() (string, error) {
+	cd.Timestamp = utils.TimeToUnixMilli(cd.Timestamp)
 	return jsonMarshaler.MarshalToString(cd)
 }
 

@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -140,6 +141,7 @@ func (c *LLDPCapabilities) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (l *LinkLayerDiscoveryInfo) JSON() (string, error) {
+	l.Timestamp = utils.TimeToUnixMilli(l.Timestamp)
 	return jsonMarshaler.MarshalToString(l)
 }
 

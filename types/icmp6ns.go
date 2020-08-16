@@ -16,6 +16,7 @@ package types
 import (
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -58,6 +59,7 @@ func (i *ICMPv6NeighborSolicitation) Time() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *ICMPv6NeighborSolicitation) JSON() (string, error) {
+	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
 	return jsonMarshaler.MarshalToString(i)
 }
 

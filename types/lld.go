@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -63,6 +64,7 @@ func (l LLDPPortID) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (l *LinkLayerDiscovery) JSON() (string, error) {
+	l.Timestamp = utils.TimeToUnixMilli(l.Timestamp)
 	return jsonMarshaler.MarshalToString(l)
 }
 
