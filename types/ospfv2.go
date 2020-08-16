@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -456,6 +457,7 @@ func (a *OSPFv2) Inc() {
 
 // JSON returns the JSON representation of the audit record.
 func (a *OSPFv2) JSON() (string, error) {
+	a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
 	return jsonMarshaler.MarshalToString(a)
 }
 

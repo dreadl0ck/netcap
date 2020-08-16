@@ -214,7 +214,7 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 		for _, v := range matches {
 			s = append(s, &software{
 				Software: &types.Software{
-					Timestamp:      ts.String(),
+					Timestamp:      utils.TimeToString(ts),
 					DeviceProfiles: []string{dpIdent},
 					SourceName:     "Generic version harvester",
 					SourceData:     string(data),

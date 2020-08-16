@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -183,6 +184,7 @@ func (d *Dot11ASEL) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (d *Dot11) JSON() (string, error) {
+	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
 	return jsonMarshaler.MarshalToString(d)
 }
 

@@ -67,6 +67,7 @@ var (
 
 	flagCSV     = fs.Bool("csv", false, "output data as CSV")
 	flagNull    = fs.Bool("null", false, "write no data to disk")
+	flagElastic = fs.Bool("elastic", false, "write data to elastic db")
 	flagProto   = fs.Bool("proto", true, "output data as protobuf")
 	flagJSON    = fs.Bool("json", false, "output data as JSON")
 	flagContext = fs.Bool("context", true, "add packet flow context to selected audit records")

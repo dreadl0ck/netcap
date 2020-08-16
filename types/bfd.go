@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -105,6 +106,7 @@ func (bah BFDAuthHeader) getString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (b *BFD) JSON() (string, error) {
+	b.Timestamp = utils.TimeToUnixMilli(b.Timestamp)
 	return jsonMarshaler.MarshalToString(b)
 }
 

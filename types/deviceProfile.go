@@ -13,7 +13,11 @@
 
 package types
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/dreadl0ck/netcap/utils"
+)
 
 var fieldsDeviceProfile = []string{
 	"Timestamp",
@@ -50,6 +54,11 @@ func (d *DeviceProfile) Time() string {
 
 // JSON returns the JSON representation of the audit record.
 func (d *DeviceProfile) JSON() (string, error) {
+	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
+
+	// TODO: for elasticsearch, this is too much information in a single log message
+	d.Contacts = nil
+	d.DeviceIPs = nil
 	return jsonMarshaler.MarshalToString(d)
 }
 

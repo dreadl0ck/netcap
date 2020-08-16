@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -69,6 +70,7 @@ func (en *ENIP) Time() string {
 
 // JSON returns the JSON representation of the audit record.
 func (en *ENIP) JSON() (string, error) {
+	en.Timestamp = utils.TimeToUnixMilli(en.Timestamp)
 	return jsonMarshaler.MarshalToString(en)
 }
 

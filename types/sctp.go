@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -58,8 +59,9 @@ func (s *SCTP) Time() string {
 }
 
 // JSON returns the JSON representation of the audit record.
-func (u SCTP) JSON() (string, error) {
-	return jsonMarshaler.MarshalToString(&u)
+func (u *SCTP) JSON() (string, error) {
+	u.Timestamp = utils.TimeToUnixMilli(u.Timestamp)
+	return jsonMarshaler.MarshalToString(u)
 }
 
 var sctpMetric = prometheus.NewCounterVec(

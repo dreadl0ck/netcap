@@ -2,17 +2,35 @@
 
 Filebeat installation: https://www.elastic.co/downloads/beats/filebeat
 
-Elastic error: https://stackoverflow.com/questions/50609417/elasticsearch-error-cluster-block-exception-forbidden-12-index-read-only-all
+Elastic errors: 
 
-Elasticdump tool:
+- https://stackoverflow.com/questions/50609417/elasticsearch-error-cluster-block-exception-forbidden-12-index-read-only-all
+- https://kb.objectrocket.com/elasticsearch/how-to-fix-the-forbidden-12-read-only-api-error-in-elasticsearch-282
 
-    npm install -g elasticdump
+    PUT _cluster/settings
+    {
+      "transient": {
+        "cluster.routing.allocation.disk.watermark.low": "10gb",
+        "cluster.routing.allocation.disk.watermark.high": "5gb",
+        "cluster.routing.allocation.disk.watermark.flood_stage": "2gb",
+        "cluster.info.update.interval": "1m"
+      }
+    }
 
-load test data:
+via curl:
 
-    elasticdump \
-    --input="UDP.json" \
-    --output=http://localhost:9200/udptest
+    curl --header 'Content-Type: application/json' -XPUT http://localhost:9200/_cluster/settings -d '{
+     "transient": {
+       "cluster.routing.allocation.disk.watermark.low": "10gb",
+       "cluster.routing.allocation.disk.watermark.high": "5gb",
+       "cluster.routing.allocation.disk.watermark.flood_stage": "2gb",
+       "cluster.info.update.interval": "1m"
+     }
+    }' 
+
+Delete index:
+    
+    curl -XDELETE localhost:9200/indexName
 
 - add constants for logReassemblyError(
 

@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -49,6 +50,7 @@ func (ectpr *EthernetCTPReply) Time() string {
 
 // JSON returns the JSON representation of the audit record.
 func (ectpr *EthernetCTPReply) JSON() (string, error) {
+	ectpr.Timestamp = utils.TimeToUnixMilli(ectpr.Timestamp)
 	return jsonMarshaler.MarshalToString(ectpr)
 }
 

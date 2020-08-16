@@ -18,6 +18,7 @@ require (
 	github.com/dsoprea/go-exif/v2 v2.0.0-20200717071058-9393e7afd446
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.0
+	github.com/elastic/go-elasticsearch/v7 v7.8.0
 	github.com/evilsocket/islazy v1.10.6
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -30,6 +31,7 @@ require (
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
+	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99 // indirect
 	github.com/imdario/mergo v0.3.10 // indirect

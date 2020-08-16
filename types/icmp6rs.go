@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -68,6 +69,7 @@ func (o ICMPv6Option) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *ICMPv6RouterSolicitation) JSON() (string, error) {
+	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
 	return jsonMarshaler.MarshalToString(i)
 }
 

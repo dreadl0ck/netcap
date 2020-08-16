@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -93,6 +94,7 @@ func (i IPv4Option) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *IPv4) JSON() (string, error) {
+	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
 	return jsonMarshaler.MarshalToString(i)
 }
 

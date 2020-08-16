@@ -16,6 +16,7 @@ package types
 import (
 	"strings"
 
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -52,6 +53,7 @@ func (eth *Ethernet) Time() string {
 
 // JSON returns the JSON representation of the audit record.
 func (eth *Ethernet) JSON() (string, error) {
+	eth.Timestamp = utils.TimeToUnixMilli(eth.Timestamp)
 	return jsonMarshaler.MarshalToString(eth)
 }
 
