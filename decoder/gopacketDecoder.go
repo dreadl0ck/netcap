@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/types"
@@ -97,7 +98,7 @@ type (
 		Layer       gopacket.LayerType
 		Handler     goPacketDecoderHandler
 
-		writer *netcap.Writer
+		writer netcap.AuditRecordWriter
 		Type   types.Type
 		export bool
 	}
@@ -176,10 +177,24 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 		}
 
 		// hookup writer
-		e.writer = netcap.NewWriter(filename, c.Buffer, c.Compression, c.CSV, c.Out, c.WriteChan, c.MemBufferSize)
+		e.writer = netcap.NewAuditRecordWriter(&netcap.WriterConfig{
+			CSV:              c.CSV,
+			Proto:            c.Proto,
+			JSON:             c.JSON,
+			Chan:             c.Chan,
+			Name:             filename,
+			Buffer:           c.Buffer,
+			Compress:         c.Compression,
+			Out:              c.Out,
+			MemBufferSize:    c.MemBufferSize,
+			Source:           c.Source,
+			Version:          netcap.Version,
+			IncludesPayloads: c.IncludePayloads,
+			StartTime:        time.Now(),
+		})
 
 		// write netcap header
-		err = e.writer.WriteHeader(e.Type, c.Source, netcap.Version, c.IncludePayloads)
+		err = e.writer.WriteHeader(e.Type)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to write header for audit record "+e.Type.String())
 		}
@@ -224,17 +239,9 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 			}
 		}
 
-		if dec.writer.IsCSV() {
-			_, err := dec.writer.WriteCSV(record)
-			if err != nil {
-				return err
-			}
-		} else {
-			// write record
-			err := dec.writer.WriteProto(record)
-			if err != nil {
-				return err
-			}
+		err := dec.writer.Write(record)
+		if err != nil {
+			return err
 		}
 
 		// export metrics if configured
@@ -254,8 +261,12 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder.
-func (dec *GoPacketDecoder) GetChan() <-chan []byte {
-	return dec.writer.GetChan()
+func (cd *GoPacketDecoder) GetChan() <-chan []byte {
+	if cw, ok := cd.writer.(netcap.ChannelAuditRecordWriter); ok {
+		return cw.GetChan()
+	}
+
+	return nil
 }
 
 // Destroy closes and flushes all writers.

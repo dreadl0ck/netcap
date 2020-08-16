@@ -54,6 +54,7 @@ func Open(file string, memBufSize int) (*Reader, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		r.dReader = delimited.NewReader(r.gReader)
 	} else {
 		r.dReader = delimited.NewReader(r.bReader)
@@ -70,10 +71,12 @@ func (r *Reader) Close() error {
 			return err
 		}
 	}
+
 	err := r.file.Sync()
 	if err != nil {
 		return err
 	}
+
 	return r.file.Close()
 }
 
@@ -89,8 +92,10 @@ func (r *Reader) ReadHeader() (*types.Header, error) {
 		header = new(types.Header)
 		err    = r.Next(header)
 	)
+
 	if err != nil {
 		panic("invalid netcap header in file: " + r.file.Name() + ", error: " + err.Error())
 	}
+
 	return header, err
 }

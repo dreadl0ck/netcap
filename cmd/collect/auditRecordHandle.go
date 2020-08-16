@@ -19,6 +19,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"time"
 
 	gzip "github.com/klauspost/pgzip"
 
@@ -76,7 +77,7 @@ func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 	}
 
 	// add file header
-	err = delimited.NewWriter(gWriter).PutProto(netcap.NewHeader(b.MessageType, conf.Source, netcap.Version, conf.IncludePayloads))
+	err = delimited.NewWriter(gWriter).PutProto(netcap.NewHeader(b.MessageType, conf.Source, netcap.Version, conf.IncludePayloads, time.Now()))
 	if err != nil {
 		fmt.Println("failed to write header")
 		panic(err)

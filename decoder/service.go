@@ -173,12 +173,10 @@ var serviceDecoder = newCustomDecoder(
 	},
 	func(e *customDecoder) error {
 		// flush writer
-		if !e.writer.IsChanWriter {
-			for _, item := range ServiceStore.Items {
-				item.Lock()
-				e.write(item.Service)
-				item.Unlock()
-			}
+		for _, item := range ServiceStore.Items {
+			item.Lock()
+			e.write(item.Service)
+			item.Unlock()
 		}
 
 		return nil

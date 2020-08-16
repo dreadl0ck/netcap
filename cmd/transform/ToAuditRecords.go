@@ -47,7 +47,7 @@ var maltegoBaseConfig = collector.Config{
 		CSV:           false,
 		// IncludeDecoders:         strings.Join(auditRecords, ","),
 		ExcludeDecoders:         "",
-		WriteChan:               false,
+		Chan:                    false,
 		IncludePayloads:         false,
 		Export:                  false,
 		AddContext:              true,

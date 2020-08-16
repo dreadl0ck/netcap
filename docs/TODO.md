@@ -1,5 +1,19 @@
 # TODOs
 
+Filebeat installation: https://www.elastic.co/downloads/beats/filebeat
+
+Elastic error: https://stackoverflow.com/questions/50609417/elasticsearch-error-cluster-block-exception-forbidden-12-index-read-only-all
+
+Elasticdump tool:
+
+    npm install -g elasticdump
+
+load test data:
+
+    elasticdump \
+    --input="UDP.json" \
+    --output=http://localhost:9200/udptest
+
 - add constants for logReassemblyError(
 
 - remove init function usage

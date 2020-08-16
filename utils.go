@@ -74,7 +74,7 @@ func PrintBuildInfo() {
 	FPrintBuildInfo(os.Stdout)
 }
 
-// FPrintBuildInfo PrintBuildInfo displays build information related to netcap to the specified io Writer.
+// FPrintBuildInfo PrintBuildInfo displays build information related to netcap to the specified io ProtoWriter.
 func FPrintBuildInfo(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
 	_, _ = fmt.Fprintln(w, "> NETCAP build commit:", commit)
@@ -271,73 +271,85 @@ func createFile(name, ext string) *os.File {
 	return f
 }
 
-// removeAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.
-func removeAuditRecordFileIfEmpty(name string) (size int64) {
-	if strings.HasSuffix(name, ".csv") || strings.HasSuffix(name, ".csv.gz") {
-		f, err := os.Open(name)
+func isCSV(name string) bool {
+	return strings.HasSuffix(name, ".csv") || strings.HasSuffix(name, ".csv.gz")
+}
+
+func isJSON(name string) bool {
+	return strings.HasSuffix(name, ".json") || strings.HasSuffix(name, ".json.gz")
+}
+
+func removeEmptyNewlineDelimitedFile(name string) (size int64) {
+	f, err := os.Open(name)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
+			fmt.Println(errClose)
+		}
+	}()
+
+	var r *bufio.Reader
+
+	if strings.HasSuffix(name, ".gz") {
+		var gr *gzip.Reader
+
+		gr, err = gzip.NewReader(f)
 		if err != nil {
 			panic(err)
 		}
 
-		defer func() {
-			errClose := f.Close()
-			if errClose != nil && !errors.Is(errClose, io.EOF) {
-				fmt.Println(errClose)
-			}
-		}()
+		r = bufio.NewReader(gr)
+	} else {
+		r = bufio.NewReader(f)
+	}
 
-		var r *bufio.Reader
+	count := 0
 
-		if strings.HasSuffix(name, ".csv.gz") {
-			var gr *gzip.Reader
-
-			gr, err = gzip.NewReader(f)
-			if err != nil {
-				panic(err)
-			}
-
-			r = bufio.NewReader(gr)
-		} else {
-			r = bufio.NewReader(f)
+	for {
+		_, _, err = r.ReadLine()
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			break
+		} else if err != nil {
+			panic(err)
 		}
+		count++
 
-		count := 0
-
-		for {
-			_, _, err = r.ReadLine()
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				break
-			} else if err != nil {
-				panic(err)
-			}
-			count++
-
-			if count > 1 {
-				break
-			}
+		if count > 1 {
+			break
 		}
+	}
 
-		if count < 2 {
-			// remove file
-			err = os.Remove(name)
-			if err != nil {
-				fmt.Println("failed to remove file", err)
-			}
-
-			// return file size of zero
-			return 0
-		}
-
-		// dont remove file
-		// return final file size
-		s, err := os.Stat(name)
+	if count < 2 {
+		// remove file
+		err = os.Remove(name)
 		if err != nil {
-			fmt.Println("failed to stat file:", name, err)
-
-			return
+			fmt.Println("failed to remove file", err)
 		}
 
-		return s.Size()
+		// return file size of zero
+		return 0
+	}
+
+	// dont remove file
+	// return final file size
+	s, err := os.Stat(name)
+	if err != nil {
+		fmt.Println("failed to stat file:", name, err)
+
+		return
+	}
+
+	return s.Size()
+}
+
+// removeAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.
+func removeAuditRecordFileIfEmpty(name string) (size int64) {
+	if isCSV(name) || isJSON(name) {
+		return removeEmptyNewlineDelimitedFile(name)
 	}
 
 	// Check if audit record file contains records
@@ -396,11 +408,11 @@ func removeAuditRecordFileIfEmpty(name string) (size int64) {
 }
 
 // NewHeader creates and returns a new netcap audit file header.
-func NewHeader(t types.Type, source, version string, includesPayloads bool) *types.Header {
+func NewHeader(t types.Type, source, version string, includesPayloads bool, ti time.Time) *types.Header {
 	// init header
 	header := new(types.Header)
 	header.Type = t
-	header.Created = utils.TimeToString(time.Now())
+	header.Created = utils.TimeToString(ti)
 	header.InputSource = source
 	header.Version = version
 	header.ContainsPayloads = includesPayloads

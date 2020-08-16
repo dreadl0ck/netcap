@@ -212,15 +212,13 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 // DeInit will teardown and flush all remaining records.
 // DeInit is called prior to teardown.
 func (fd *flowCustomDecoder) DeInit() error {
-	if !fd.writer.IsChanWriter {
-		fd.Flows.Lock()
-		for _, f := range fd.Flows.Items {
-			f.Lock()
-			fd.writeFlow(f.Flow)
-			f.Unlock()
-		}
-		fd.Flows.Unlock()
+	fd.Flows.Lock()
+	for _, f := range fd.Flows.Items {
+		f.Lock()
+		fd.writeFlow(f.Flow)
+		f.Unlock()
 	}
+	fd.Flows.Unlock()
 
 	return nil
 }

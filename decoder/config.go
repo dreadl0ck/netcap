@@ -54,7 +54,8 @@ var DefaultConfig = &Config{
 	IncludeDecoders:         "",
 	ExcludeDecoders:         "",
 	Out:                     "",
-	WriteChan:               false,
+	Chan:                    false,
+	Proto:                   true,
 	Source:                  "",
 	IncludePayloads:         false,
 	Export:                  false,
@@ -160,10 +161,14 @@ type Config struct {
 	WriteIncomplete bool
 
 	// Write into channel (used for distributed collection)
-	WriteChan bool
+	Chan bool
 
 	// Generate CSV instead of audit records
 	CSV bool
+
+	Proto bool
+
+	JSON bool
 
 	// Add context to supported audit records
 	AddContext bool

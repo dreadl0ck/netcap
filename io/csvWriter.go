@@ -14,6 +14,7 @@
 package io
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -24,23 +25,28 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// CSVWriter implements writing audit records to disk in the CSV format.
-type CSVWriter struct {
+// CSVProtoWriter implements writing audit records to disk in the CSV format.
+type CSVProtoWriter struct {
 	w io.Writer
 	sync.Mutex
 }
 
 // NewCSVWriter returns a new CSV writer instance.
-func NewCSVWriter(w io.Writer) *CSVWriter {
-	return &CSVWriter{
+func NewCSVWriter(w io.Writer) *CSVProtoWriter {
+	return &CSVProtoWriter{
 		w: w,
 	}
 }
 
 // WriteHeader writes the CSV header to the underlying file.
-func (w *CSVWriter) WriteHeader(msg proto.Message) (int, error) {
+func (w *CSVProtoWriter) WriteHeader(h *types.Header, msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
+
+	n, err := w.w.Write([]byte(fmt.Sprintf("# Type: %s, Created: %s, Source: %s, ContainsPayloads: %t\n", h.Type.String(), h.Created, h.InputSource, h.ContainsPayloads)))
+	if err != nil {
+		return n, err
+	}
 
 	if csv, ok := msg.(types.AuditRecord); ok {
 		return w.w.Write([]byte(strings.Join(csv.CSVHeader(), ",") + "\n"))
@@ -51,7 +57,7 @@ func (w *CSVWriter) WriteHeader(msg proto.Message) (int, error) {
 }
 
 // WriteRecord writes a protocol buffer into the CSV writer.
-func (w *CSVWriter) WriteRecord(msg proto.Message) (int, error) {
+func (w *CSVProtoWriter) WriteRecord(msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 

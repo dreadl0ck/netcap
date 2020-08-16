@@ -33,7 +33,7 @@ import (
 type reverseProxy struct {
 	Name   string
 	rp     *httputil.ReverseProxy
-	writer *netcap.Writer
+	writer netcap.AuditRecordWriter
 }
 
 // ServeHTTP implements the http.Handler interface.
@@ -109,9 +109,22 @@ func newReverseProxy(proxyName string, targetURL *url.URL) *reverseProxy {
 		},
 	}
 
-	proxy.writer = netcap.NewWriter("HTTP["+targetURL.Host+"]", true, true, false, "", false, *flagMemBufferSize)
+	proxy.writer = netcap.NewAuditRecordWriter(&netcap.WriterConfig{
+		CSV:              false,
+		Proto:            true,
+		JSON:             false,
+		Name:             "HTTP[" + targetURL.Host + "]",
+		Buffer:           false,
+		Compress:         false,
+		Out:              "",
+		MemBufferSize:    *flagMemBufferSize,
+		Source:           targetURL.String(),
+		Version:          netcap.Version,
+		IncludesPayloads: false,
+		StartTime:        time.Now(),
+	})
 
-	err := proxy.writer.WriteHeader(types.Type_NC_HTTP, targetURL.String(), netcap.Version, false)
+	err := proxy.writer.WriteHeader(types.Type_NC_HTTP)
 	if err != nil {
 		utils.DebugLog.Println("failed to write file header:", err)
 	}

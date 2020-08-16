@@ -124,6 +124,9 @@ var serviceBanners = []bannerTest{
 
 // use one global var for the vuln index so it can be shared between tests?
 func TestClassifyBanners(t *testing.T) {
+
+	conf = DefaultConfig
+
 	// Load vulnerabilities DB index
 	indexName := filepath.Join(resolvers.DataBaseSource, "nvd-v2.bleve")
 	var err error

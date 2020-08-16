@@ -188,12 +188,10 @@ var profileDecoder = newCustomDecoder(
 		dpi.Destroy()
 
 		// flush writer
-		if !e.writer.IsChanWriter {
-			for _, item := range Profiles.Items {
-				item.Lock()
-				writeProfile(item.DeviceProfile)
-				item.Unlock()
-			}
+		for _, item := range Profiles.Items {
+			item.Lock()
+			writeProfile(item.DeviceProfile)
+			item.Unlock()
 		}
 
 		return nil

@@ -681,12 +681,10 @@ var softwareDecoder = newCustomDecoder(
 		dpi.Destroy()
 
 		// flush writer
-		if !e.writer.IsChanWriter {
-			for _, item := range softwareStore.Items {
-				item.Lock()
-				e.write(item.Software)
-				item.Unlock()
-			}
+		for _, item := range softwareStore.Items {
+			item.Lock()
+			e.write(item.Software)
+			item.Unlock()
 		}
 
 		utils.CloseBleve(vulnerabilitiesIndex)
