@@ -166,9 +166,14 @@ type Config struct {
 	// Generate CSV instead of audit records
 	CSV bool
 
+	// Output length delimited protocol buffers
 	Proto bool
 
+	// Output JSON
 	JSON bool
+
+	// Discard all data and write nothing to disk
+	Null bool
 
 	// Add context to supported audit records
 	AddContext bool

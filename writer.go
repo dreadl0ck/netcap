@@ -52,6 +52,9 @@ type WriterConfig struct {
 	JSON  bool
 	Chan  bool
 
+	// The Null writer will write nothing to disk and discard all data.
+	Null  bool
+
 	Name          string
 	Buffer        bool
 	Compress      bool
@@ -64,6 +67,7 @@ type WriterConfig struct {
 	StartTime        time.Time
 }
 
+// NewAuditRecordWriter will return a new writer for netcap audit records.
 func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 	switch {
 	case wc.CSV:
@@ -72,6 +76,8 @@ func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 		return NewChanWriter(wc)
 	case wc.JSON:
 		return NewJSONWriter(wc)
+	case wc.Null:
+		return NewNullWriter()
 	// proto is the default, so this option should be checked last to allow overwriting it
 	case wc.Proto:
 		return NewProtoWriter(wc)
@@ -512,6 +518,29 @@ func (w *JSONWriter) Close() (name string, size int64) {
 	}
 
 	return closeFile(w.wc.Out, w.file, w.wc.Name)
+}
+
+// NullWriter is a writer that writes nothing to disk.
+type NullWriter struct {}
+
+// NewNullWriter initializes and configures a new NullWriter instance.
+func NewNullWriter() *NullWriter {
+	return &NullWriter{}
+}
+
+// WriteCSV writes a CSV record.
+func (w *NullWriter) Write(msg proto.Message) error {
+	return nil
+}
+
+// WriteHeader writes a CSV header.
+func (w *NullWriter) WriteHeader(t types.Type) error {
+	return nil
+}
+
+// Close flushes and closes the writer and the associated file handles.
+func (w *NullWriter) Close() (name string, size int64) {
+	return "", 0
 }
 
 /*

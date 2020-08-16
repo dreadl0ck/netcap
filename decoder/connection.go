@@ -215,6 +215,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		}
 	}
 	cd.Conns.Unlock()
+
 	return nil
 }
 
@@ -227,6 +228,7 @@ func (cd *connectionDecoder) DeInit() error {
 		f.Unlock()
 	}
 	cd.Conns.Unlock()
+
 	return nil
 }
 
@@ -237,6 +239,7 @@ func (cd *connectionDecoder) writeConn(conn *types.Connection) {
 	}
 
 	atomic.AddInt64(&cd.numRecords, 1)
+
 	err := cd.writer.Write(conn)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)

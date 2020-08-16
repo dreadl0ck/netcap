@@ -165,6 +165,7 @@ func Run() {
 			MemBufferSize:           *flagMemBufferSize,
 			Compression:             *flagCompress,
 			CSV:                     *flagCSV,
+			Null:                    *flagNull,
 			IncludeDecoders:         *flagInclude,
 			ExcludeDecoders:         *flagExclude,
 			Out:                     *flagOutDir,
