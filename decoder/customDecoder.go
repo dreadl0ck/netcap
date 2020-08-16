@@ -317,7 +317,7 @@ func (cd *customDecoder) Decode(p gopacket.Packet) error {
 		}
 
 		// export metrics if configured
-		if conf.Export {
+		if conf.ExportMetrics {
 			// assert to audit record
 			if r, ok := record.(types.AuditRecord); ok {
 				// export metrics

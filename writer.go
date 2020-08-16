@@ -109,7 +109,7 @@ type ChanWriter struct {
 
 	file *os.File
 	mu   sync.Mutex
-	wc *WriterConfig
+	wc   *WriterConfig
 }
 
 // NewChanWriter initializes and configures a new ChanWriter instance.

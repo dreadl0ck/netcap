@@ -201,7 +201,7 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 		}
 
 		// export metrics?
-		e.export = c.Export
+		e.export = c.ExportMetrics
 
 		// add to gopacket decoders map
 		decoders[e.Layer] = append(decoders[e.Layer], e)

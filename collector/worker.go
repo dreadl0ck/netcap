@@ -88,7 +88,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				// increment counter for layer type
 				c.allProtosAtomic.Inc(layer.LayerType().String())
 
-				if c.config.DecoderConfig.Export {
+				if c.config.DecoderConfig.ExportMetrics {
 					allProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
 				}
 
@@ -98,7 +98,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					// increase counter
 					c.unknownProtosAtomic.Inc(layer.LayerType().String())
 
-					if c.config.DecoderConfig.Export {
+					if c.config.DecoderConfig.ExportMetrics {
 						unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
 					}
 
@@ -119,7 +119,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					for _, dec = range decoders {
 						err = dec.Decode(ctx, goPacket, layer)
 						if err != nil {
-							if c.config.DecoderConfig.Export {
+							if c.config.DecoderConfig.ExportMetrics {
 								decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
 							}
 
@@ -133,7 +133,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				} else { // no netcap encoder implemented
 					// increment unknown layer type counter
 					c.unknownProtosAtomic.Inc(layer.LayerType().String())
-					if c.config.DecoderConfig.Export {
+					if c.config.DecoderConfig.ExportMetrics {
 						unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
 					}
 
@@ -151,7 +151,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 			for _, customDec = range c.customDecoders {
 				err = customDec.Decode(goPacket)
 				if err != nil {
-					if c.config.DecoderConfig.Export {
+					if c.config.DecoderConfig.ExportMetrics {
 						decodingErrorsTotal.WithLabelValues(customDec.GetName(), err.Error()).Inc()
 					}
 					if err = c.logPacketError(goPacket, "CustomDecoder Error: "+customDec.GetName()+": "+err.Error()); err != nil {
@@ -170,7 +170,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 					fmt.Println("failed to log packet error:", err)
 				}
 
-				if c.config.DecoderConfig.Export {
+				if c.config.DecoderConfig.ExportMetrics {
 					decodingErrorsTotal.WithLabelValues(errLayer.LayerType().String(), errLayer.Error().Error()).Inc()
 				}
 			}

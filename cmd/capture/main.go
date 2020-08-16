@@ -174,7 +174,7 @@ func Run() {
 			Chan:                    false,
 			Source:                  source,
 			IncludePayloads:         *flagPayload,
-			Export:                  false,
+			ExportMetrics:           false,
 			AddContext:              *flagContext,
 			FlushEvery:              *flagFlushevery,
 			DefragIPv4:              *flagDefragIPv4,

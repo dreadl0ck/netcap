@@ -412,7 +412,7 @@ func writeCredentials(creds *types.Credentials) {
 	credStore[ident] = creds.Flow
 	credStoreMu.Unlock()
 
-	if conf.Export {
+	if conf.ExportMetrics {
 		creds.Inc()
 	}
 

@@ -125,7 +125,7 @@ func Run() {
 				Out:                  *flagOutDir,
 				Source:               source,
 				IncludePayloads:      *flagPayload,
-				Export:               true,
+				ExportMetrics:        true,
 				AddContext:           *flagContext,
 				MemBufferSize:        *flagMemBufferSize,
 				FlushEvery:           *flagFlushevery,

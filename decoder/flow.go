@@ -224,7 +224,7 @@ func (fd *flowCustomDecoder) DeInit() error {
 }
 
 func (fd *flowCustomDecoder) writeFlow(f *types.Flow) {
-	if conf.Export {
+	if conf.ExportMetrics {
 		f.Inc()
 	}
 
