@@ -163,6 +163,9 @@ type Config struct {
 	// Write into channel (used for distributed collection)
 	Chan bool
 
+	// Size for the channel writer
+	ChanSize int
+
 	// Generate CSV instead of audit records
 	CSV bool
 

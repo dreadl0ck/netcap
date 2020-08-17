@@ -18,10 +18,9 @@ type ChanProtoWriter struct {
 	ch chan []byte
 }
 
-// NewChanWriter returns a new channel writer instance.
-// TODO make chan buf size configurable.
-func NewChanWriter() *ChanProtoWriter {
-	return &ChanProtoWriter{make(chan []byte, 1024)}
+// NewChanProtoWriter returns a new channel proto writer instance.
+func NewChanProtoWriter(size int) *ChanProtoWriter {
+	return &ChanProtoWriter{make(chan []byte, size)}
 }
 
 // Chan returns the byte channel used to receive data.

@@ -37,6 +37,7 @@ var (
 	_                  = fs.String("config", "", "read configuration from file at path")
 	flagInterface      = fs.String("iface", "en0", "interface")
 	flagMaxSize        = fs.Int("max", 10*1024, "max size of packet") // max 65,507 bytes
+	flagChanSize       = fs.Int("chan-size", 1024, "chunk size for internal data channels")
 	flagLogErrors      = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
 	flagCalcEntropy    = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
 	flagFileStorage    = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
