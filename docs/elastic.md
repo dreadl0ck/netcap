@@ -60,10 +60,9 @@ Configure mapping:
 
 Create index pattern:
     
-    curl -X PUT "localhost:5601/api/saved_objects/index-pattern" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' -d'
-    {
-      "attributes": {
-        "title": "netcap-tcp*"
-      }
-    }
-    '
+    curl -X POST "http://localhost:5601/api/saved_objects/index-pattern" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' -d'
+     {
+    "attributes": {
+     "title": "netcap-ethernet*","timeFieldName": "time"
+     }
+    }'
