@@ -62,6 +62,9 @@ type WriterConfig struct {
 	JSON bool
 	// Channel writer
 	Chan bool
+	// ChanSize is the size of chinks sent through the channel
+	ChanSize int
+
 	// Elastic db writer
 	Elastic bool
 	// The Null writer will write nothing to disk and discard all data.
@@ -135,7 +138,7 @@ func NewChanWriter(wc *WriterConfig) *ChanWriter {
 		panic("buffering or compression cannot be activated when running using writeChan")
 	}
 
-	w.cWriter = io.NewChanWriter()
+	w.cWriter = io.NewChanProtoWriter(wc.ChanSize)
 
 	// buffer data?
 	if wc.Buffer {
@@ -594,9 +597,6 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 	// PUT /netcap-audit-records/_mapping
 	// {
 	// 	"properties": {
-	//  "type": {
-	// 		"type": "keyword"
-	//	},
 	// 	"Timestamp": {
 	// 		"type": "date"
 	// 	},
@@ -777,6 +777,7 @@ func (w *ElasticWriter) Close() (name string, size int64) {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	return "", 0
 }
 

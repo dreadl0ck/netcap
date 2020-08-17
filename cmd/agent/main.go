@@ -109,11 +109,11 @@ func Run() {
 			Compression:     false,
 			CSV:             false,
 			Chan:            true,
+			ChanSize:        *flagChanSize,
 			IncludeDecoders: *flagInclude,
 			ExcludeDecoders: *flagExclude,
 			Out:             "",
 			Source:          *flagInterface,
-
 			IncludePayloads:      *flagPayload,
 			AddContext:           *flagContext,
 			MemBufferSize:        *flagMemBufferSize,

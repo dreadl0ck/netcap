@@ -243,6 +243,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 			Compress:         c.Compression,
 			Out:              c.Out,
 			Chan:             c.Chan,
+			ChanSize:         c.ChanSize,
 			MemBufferSize:    c.MemBufferSize,
 			Source:           c.Source,
 			Version:          netcap.Version,
