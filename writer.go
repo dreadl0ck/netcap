@@ -18,10 +18,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -568,6 +570,8 @@ type ElasticWriter struct {
 	client *elasticsearch.Client
 	queue  []proto.Message
 	wc     *WriterConfig
+
+	indexName string
 	sync.Mutex
 }
 
@@ -577,7 +581,6 @@ var (
 )
 
 const (
-	indexName = "netcap-audit-records"
 	bulkUnit = 1000
 )
 
@@ -589,55 +592,50 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 		log.Fatal(err)
 	}
 
-	// TODO: automate mapping creation: Elasticsearch 6.0 has deprecated support for multiple types in a single index
+	index := "netcap-" + strings.ToLower(wc.Name)
+
+	res, err := c.Indices.Create(index)
+	if err != nil {
+		// ignore error in case the index exists already
+		fmt.Println(res.StatusCode, err)
+	}
+
+	fmt.Println("created elastic index", index)
+
 	// TODO: use simple types like text, keyword, date, long, double, boolean or ip where it makes sense in the mapping
+	res, err = c.Indices.PutMapping(
+		strings.NewReader(`{
+			"properties": {
+			"Timestamp": {
+				"type": "date"
+			},
+			"Version": {
+				"type": "text"
+			},
+			"ID": {
+				"type": "text"
+			},
+			"Protocol": {
+				"type": "text"
+			}
+		}
+		}`),
+		func(r *esapi.IndicesPutMappingRequest) {
+			r.Index = []string{index}
+		},
+	)
+	if err != nil {
+		log.Fatalf("Error getting the response: %s", err)
+	}
 
-	// DELETE netcap-audit-records
-	// PUT netcap-audit-records
-	// PUT /netcap-audit-records/_mapping
-	// {
-	// 	"properties": {
-	// 	"Timestamp": {
-	// 		"type": "date"
-	// 	},
-	// 	"Version": {
-	// 		"type": "text"
-	// 	},
-	// 	"ID": {
-	// 		"type": "text"
-	// 	},
-	// 	"Protocol": {
-	// 		"type": "text"
-	// 	}
-	// }
-	// }
+	fmt.Println("configured index mapping", res, err)
 
-	//res, err := c.Indices.PutMapping(
-	//	strings.NewReader(`{
-	//	  "properties": {
-	//	    "name": {
-	//	      "properties": {
-	//	        "Timestamp": {
-	//	          "type": "date"
-	//	        }
-	//	      }
-	//	    }
-	//	  }
-	//	}`),
-	//	func(r *esapi.IndicesPutMappingRequest) {
-	//		r.Index = []string{indexName}
-	//	},
-	//)
-	//fmt.Println(res, err)
-	//if err != nil { // SKIP
-	//	log.Fatalf("Error getting the response: %s", err) // SKIP
-	//} // SKIP
-	//
-	//defer res.Body.Close() // SKIP
+	defer res.Body.Close()
 
 	return &ElasticWriter{
-		client: c,
-		wc:     wc,
+		client:    c,
+		wc:        wc,
+		indexName: index,
 	}
 }
 
@@ -701,7 +699,7 @@ func (w *ElasticWriter) sendBulk() error {
 	}
 
 	// send off the bulk data
-	res, err := w.client.Bulk(bytes.NewReader(buf.Bytes()), w.client.Bulk.WithIndex(indexName))
+	res, err := w.client.Bulk(bytes.NewReader(buf.Bytes()), w.client.Bulk.WithIndex(w.indexName))
 	if err != nil {
 		log.Fatalf("Failure indexing batch: %s", err)
 	}
