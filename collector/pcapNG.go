@@ -66,7 +66,7 @@ func countPacketsNG(path string) (count int64, err error) {
 				break
 			}
 
-			return count, errors.Wrap(err, "Error reading packet data: ")
+			return count, errors.Wrap(err, "error reading packet data: ")
 		}
 
 		// increment counter
@@ -153,8 +153,10 @@ func (c *Collector) CollectPcapNG(path string) error {
 		c.handleRawPacketData(data, ci)
 	}
 
+	// stop progress reporting
 	stopProgress <- struct{}{}
 
+	// run cleanup on channel exit
 	c.cleanup(false)
 
 	return nil

@@ -222,11 +222,12 @@ func TimeToUTC(val string) string {
 		return time.Unix(seconds, micro*1000).UTC().String()
 	}
 
-	return "invalid timestamp: " + val
+	return val
 }
 
 // TimeToUnixMilli returns a time string in netcap format to a Unix millisecond time.
 func TimeToUnixMilli(val string) string {
+
 	if slice := strings.Split(val, "."); len(slice) == 2 {
 		// seconds
 		seconds, err := strconv.ParseInt(slice[0], 10, 64)
@@ -243,7 +244,7 @@ func TimeToUnixMilli(val string) string {
 		return strconv.FormatInt(time.Unix(seconds, micro*1000).UTC().UnixNano()/int64(time.Millisecond), 10)
 	}
 
-	return "invalid timestamp: " + val
+	return val
 }
 
 // func decodemac(pkt []byte) uint64 {

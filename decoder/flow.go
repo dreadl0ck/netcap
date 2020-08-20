@@ -164,6 +164,7 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		fl := &types.Flow{}
 		fl.UID = calcMd5(flowID)
 		fl.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
+		fl.TimestampLast = utils.TimeToString(p.Metadata().Timestamp)
 
 		if ll := p.LinkLayer(); ll != nil {
 			fl.LinkProto = ll.LayerType().String()

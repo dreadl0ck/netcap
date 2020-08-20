@@ -72,7 +72,7 @@ func (c *Collector) CollectLive(iface, bpf string) error {
 				break
 			}
 
-			return errors.Wrap(err, "Error reading packet data")
+			return errors.Wrap(err, "error reading packet data")
 		}
 
 		// increment atomic packet counter
@@ -90,6 +90,7 @@ func (c *Collector) CollectLive(iface, bpf string) error {
 		c.handleRawPacketData(data, ci)
 	}
 
+	// stop progress reporting
 	stopProgress <- struct{}{}
 
 	// run cleanup on channel exit

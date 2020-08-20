@@ -1,5 +1,7 @@
 # TODOs
 
+- generate a proper field mapping for each index
+- adjust alpine build script similar to the one for ubuntu
 - add constants for logReassemblyError(
 
 - remove init function usage

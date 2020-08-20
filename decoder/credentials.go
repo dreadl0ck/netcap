@@ -100,7 +100,7 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	matches := reFTP.FindSubmatch(data)
 	if len(matches) > 1 {
 		return &types.Credentials{
-			Timestamp: ts.String(),
+			Timestamp: utils.TimeToString(ts),
 			Service:   serviceFTP,
 			Flow:      ident,
 			User:      string(matches[1]),
@@ -137,7 +137,7 @@ func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	if len(username) > 1 {
 		return &types.Credentials{
-			Timestamp: ts.String(),
+			Timestamp: utils.TimeToString(ts),
 			Service:   "HTTP Basic Auth",
 			Flow:      ident,
 			User:      username,
@@ -218,7 +218,7 @@ func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	if len(username) > 0 || len(password) > 0 {
 		return &types.Credentials{
-			Timestamp: ts.String(),
+			Timestamp: utils.TimeToString(ts),
 			Service:   serv,
 			Flow:      ident,
 			User:      username,
@@ -239,7 +239,7 @@ func telnetHarvester(data []byte, ident string, ts time.Time) *types.Credentials
 			}
 		}
 		return &types.Credentials{
-			Timestamp: ts.String(),
+			Timestamp: utils.TimeToString(ts),
 			Service:   serviceTelnet,
 			Flow:      ident,
 			User:      username,
@@ -329,7 +329,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 	if len(username) > 0 {
 		return &types.Credentials{
-			Timestamp: ts.String(),
+			Timestamp: utils.TimeToString(ts),
 			Service:   serv,
 			Flow:      ident,
 			User:      username,
@@ -385,7 +385,7 @@ var credentialsDecoder = newCustomDecoder(
 //	matches := reGenericVersion.FindSubmatch(data)
 //	if len(matches) > 1 {
 //		return &types.Software{
-//			Timestamp: ts.String(),
+//			Timestamp: utils.TimeToString(ts),
 //			Product:   string(matches[1]),
 //			Version:   string(matches[2]) + "." + string(matches[3]) + "." + string(matches[4]),
 //			Flows:     []string{ident},
