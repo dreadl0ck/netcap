@@ -663,7 +663,7 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 		if err != nil {
 			fmt.Println("failed to create index pattern:", err)
 		} else {
-			fmt.Println("index pattern created:", resp.Status)
+			fmt.Println("index pattern for", index, "created:", resp.Status)
 		}
 	}
 
@@ -671,76 +671,76 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 	res, err = c.Indices.PutMapping(
 		strings.NewReader(`{
 			"properties": {
-			"Timestamp": {
-				"type": "date"
-			},
-			"TimestampFirst": {
-				"type": "date"
-			},
-			"TimestampLast": {
-				"type": "date"
-			},
-			"Duration": {
-				"type": "long"
-			},
-			"Version": {
-				"type": "text"
-			},
-			"SrcIP": {
-				"type": "ip"
-			},
-			"DstIP": {
-				"type": "ip"
-			},
-			"Context.SrcIP": {
-				"type": "ip"
-			},
-			"Context.DstIP": {
-				"type": "ip"
-			},
-			"SrcPort": {
-				"type": "integer"
-			},
-			"DstPort": {
-				"type": "integer"
-			},
-			"Context.SrcPort": {
-				"type": "integer"
-			},
-			"Context.DstPort": {
-				"type": "integer"
-			},
-			"ID": {
-				"type": "text"
-			},
-			"Protocol": {
-				"type": "text"
-			},
-			"Answers": {
-				"type": "object",	
-			},
-			"Questions": {
-				"type": "object",	
-			},
-			"Length" {
-				"type": "integer"
-			},
-			"PayloadSize" {
-				"type": "integer"
-			},
-			"Host": {
-				"type": "text"
-			},
-			"UserAgent": {
-				"type": "text"
-			},
-			"Method": {
-				"type": "text"
-			},
-			"ServerName": {
-				"type": "text"
+				"Timestamp": {
+					"type": "date"
+				},
+				"TimestampFirst": {
+					"type": "date"
+				},
+				"TimestampLast": {
+					"type": "date"
+				},
+				"Duration": {
+					"type": "long"
+				},
+				"Version": {
+					"type": "text"
+				},
+				"SrcIP": {
+					"type": "ip"
+				},
+				"DstIP": {
+					"type": "ip"
+				},
+				"Context.SrcIP": {
+					"type": "ip"
+				},
+				"Context.DstIP": {
+					"type": "ip"
+				},
+				"SrcPort": {
+					"type": "integer"
+				},
+				"DstPort": {
+					"type": "integer"
+				},
+				"Context.SrcPort": {
+					"type": "integer"
+				},
+				"Context.DstPort": {
+					"type": "integer"
+				},
+				"ID": {
+					"type": "text"
+				},
+				"Protocol": {
+					"type": "text"
+				},
+				"Answers": {
+					"type": "object"	
+				},
+				"Questions": {
+					"type": "object"	
+				},
+				"Length": {
+					"type": "integer"
+				},
+				"PayloadSize": {
+					"type": "integer"
+				},
+				"Host": {
+					"type": "text"
+				},
+				"UserAgent": {
+					"type": "text"
+				},
+				"Method": {
+					"type": "text"
+				},
+				"ServerName": {
+					"type": "text"
+				}
 			}
-		}
 		}`),
 		func(r *esapi.IndicesPutMappingRequest) {
 			r.Index = []string{index}
@@ -883,7 +883,7 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 	if res.IsError() {
 		var raw map[string]interface{}
 		if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
-			log.Fatalf("failure to to parse response body: %s", err)
+			log.Printf("failure to to parse response body: %s", err)
 		} else {
 			log.Printf("  Error: [%d] %s: %s",
 				res.StatusCode,
@@ -893,7 +893,7 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 		}
 
 		// dump buffer in case of errors
-		fmt.Println(w.buf.String())
+		//fmt.Println(w.buf.String())
 		w.buf.Reset()
 
 		return ErrElasticFailed
@@ -902,33 +902,39 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 	// a successful response can still contain errors for some documents
 	var blk *bulkResponse
 	if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
-		log.Fatalf("failure to to parse response body: %s", err)
-	} else {
-		var hadErrors bool
-		for _, d := range blk.Items {
-			// for any HTTP status above 201
-			if d.Index.Status > 201 {
-				hadErrors = true
-				log.Printf("  Error: [%d]: %s: %s: %s: %s",
-					d.Index.Status,
-					d.Index.Error.Type,
-					d.Index.Error.Reason,
-					d.Index.Error.Cause.Type,
-					d.Index.Error.Cause.Reason,
-				)
-			}
-		}
+		log.Printf("failure to to parse response body: %s", err)
 
-		if hadErrors {
-			// dump buffer in case of errors
-			fmt.Println(w.buf.String())
+		// dump buffer in case of errors
+		//fmt.Println(w.buf.String())
+		w.buf.Reset()
+
+		return ErrElasticFailed
+	}
+
+	var hadErrors bool
+	for _, d := range blk.Items {
+		// for any HTTP status above 201
+		if d.Index.Status > 201 {
+			hadErrors = true
+			log.Printf("  Error: [%d]: %s: %s: %s: %s",
+				d.Index.Status,
+				d.Index.Error.Type,
+				d.Index.Error.Reason,
+				d.Index.Error.Cause.Type,
+				d.Index.Error.Cause.Reason,
+			)
 		}
+	}
+
+	if hadErrors {
+		// dump buffer in case of errors
+		//fmt.Println(w.buf.String())
 	}
 
 	// close the response body, to prevent reaching the limit for goroutines or file handles
 	_ = res.Body.Close()
 
-	fmt.Println("sent", len(w.queue), w.wc.Name, "audit records to elastic")
+	//fmt.Println("sent", w.processed, w.wc.Name, "audit records to elastic")
 	w.buf.Reset()
 
 	return nil
