@@ -15,6 +15,7 @@ package collector
 
 import (
 	"io"
+	"sync/atomic"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/pcap"
@@ -23,19 +24,28 @@ import (
 
 // CollectBPF open the named PCAP file and sets the specified BPF filter.
 func (c *Collector) CollectBPF(path, bpf string) error {
+	// open pcap file at path
 	handle, err := pcap.OpenOffline(path)
 	if err != nil {
 		return err
 	}
 	defer handle.Close()
 
+	// set berkeley packet filter on handle
 	if err = handle.SetBPFFilter(bpf); err != nil { //nolint:gocritic
 		return err
 	}
 
+	// initialize collector
 	if err = c.Init(); err != nil { //nolint:gocritic
 		return err
 	}
+
+	stopProgress := c.printProgressInterval()
+
+	c.mu.Lock()
+	c.isLive = true
+	c.mu.Unlock()
 
 	var (
 		data []byte
@@ -51,17 +61,28 @@ func (c *Collector) CollectBPF(path, bpf string) error {
 				break
 			}
 
-			return errors.Wrap(err, "Error reading packet data")
+			return errors.Wrap(err, "error reading packet data")
 		}
 
-		// TODO: use new progress reporting mechanism
-		c.printProgress()
+		// increment atomic packet counter
+		atomic.AddInt64(&c.current, 1)
 
-		c.handlePacket(&packet{
-			data: data,
-			ci:   ci,
-		})
+		// must be locked, otherwise a race occurs when sending a SIGINT
+		//  and triggering wg.Wait() in another goroutine...
+		c.statMutex.Lock()
+
+		// increment wait group for packet processing
+		c.wg.Add(1)
+
+		c.statMutex.Unlock()
+
+		c.handleRawPacketData(data, ci)
 	}
+
+	// stop progress reporting
+	stopProgress <- struct{}{}
+
+	// run cleanup on channel exit
 	c.cleanup(false)
 
 	return nil

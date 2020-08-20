@@ -206,8 +206,10 @@ func (c *Collector) CollectPcap(path string) error {
 		c.handleRawPacketData(data, ci)
 	}
 
+	// stop progress reporting
 	stopProgress <- struct{}{}
 
+	// run cleanup on channel exit
 	c.cleanup(false)
 
 	return nil

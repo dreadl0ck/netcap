@@ -158,7 +158,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		conn.NumPackets++
 		conn.TotalSize += int32(len(p.Data()))
 
-		// only calculate duration when timetamps have changed
+		// only calculate duration when timestamps have changed
 		if calcDuration {
 			conn.Duration = utils.StringToTime(conn.TimestampLast).Sub(utils.StringToTime(conn.TimestampFirst)).Nanoseconds()
 		}
@@ -168,6 +168,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		co := &types.Connection{}
 		co.UID = calcMd5(co.String())
 		co.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
+		co.TimestampLast = utils.TimeToString(p.Metadata().Timestamp)
 
 		if ll := p.LinkLayer(); ll != nil {
 			co.LinkProto = ll.LayerType().String()

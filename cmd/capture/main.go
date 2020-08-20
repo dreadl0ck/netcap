@@ -146,6 +146,11 @@ func Run() {
 		reassembly.Debug = true
 	}
 
+	var elasticAddrs []string
+	if *flagElasticAddrs != "" {
+		elasticAddrs = strings.Split(*flagElasticAddrs, ",")
+	}
+
 	// init collector
 	c := collector.New(collector.Config{
 		Workers:               *flagWorkers,
@@ -161,12 +166,20 @@ func Run() {
 		FreeOSMem:             *flagFreeOSMemory,
 		LogErrors:             *flagLogErrors,
 		DecoderConfig: &decoder.Config{
-			Buffer:                  *flagBuffer,
-			MemBufferSize:           *flagMemBufferSize,
-			Compression:             *flagCompress,
-			CSV:                     *flagCSV,
-			Null:                    *flagNull,
-			Elastic:                 *flagElastic,
+			Buffer:        *flagBuffer,
+			MemBufferSize: *flagMemBufferSize,
+			Compression:   *flagCompress,
+			CSV:           *flagCSV,
+			Null:          *flagNull,
+			Elastic:       *flagElastic,
+			ElasticConfig: netcap.ElasticConfig{
+				ElasticAddrs:   elasticAddrs,
+				ElasticUser:    *flagElasticUser,
+				ElasticPass:    *flagElasticPass,
+				KibanaEndpoint: *flagKibanaEndpoint,
+			},
+			BulkSizeGoPacket:        *flagBulkSizeGoPacket,
+			BulkSizeCustom:          *flagBulkSizeCustom,
 			IncludeDecoders:         *flagInclude,
 			ExcludeDecoders:         *flagExclude,
 			Out:                     *flagOutDir,

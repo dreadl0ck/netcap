@@ -154,7 +154,7 @@ func (h *pop3Reader) Decode() {
 
 	mails, user, pass, token := h.parseMails()
 	pop3Msg := &types.POP3{
-		Timestamp: h.parent.firstPacket.String(),
+		Timestamp: utils.TimeToString(h.parent.firstPacket),
 		ClientIP:  h.parent.net.Src().String(),
 		ServerIP:  h.parent.net.Dst().String(),
 		AuthToken: token,
@@ -165,7 +165,7 @@ func (h *pop3Reader) Decode() {
 
 	if user != "" || pass != "" {
 		writeCredentials(&types.Credentials{
-			Timestamp: h.parent.firstPacket.String(),
+			Timestamp: utils.TimeToString(h.parent.firstPacket),
 			Service:   servicePOP3,
 			Flow:      h.parent.ident,
 			User:      user,
@@ -307,7 +307,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 	// write file to disk
 	writeFile(&types.File{
-		Timestamp:   h.parent.firstPacket.String(),
+		Timestamp:   utils.TimeToString(h.parent.firstPacket),
 		Name:        fileName,
 		Length:      int64(len(body)),
 		Hash:        hex.EncodeToString(cryptoutils.MD5Data(body)),

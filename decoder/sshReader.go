@@ -207,7 +207,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		if dir == reassembly.TCPDirClientToServer {
 			sshDecoder.write(&types.SSH{
-				Timestamp:  h.parent.client.FirstPacket().String(),
+				Timestamp:  utils.TimeToString(h.parent.client.FirstPacket()),
 				HASSH:      hash,
 				Flow:       h.parent.ident,
 				Ident:      h.clientIdent,
@@ -218,7 +218,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			h.clientKexInit = &init
 		} else {
 			sshDecoder.write(&types.SSH{
-				Timestamp:  h.parent.client.FirstPacket().String(),
+				Timestamp:  utils.TimeToString(h.parent.client.FirstPacket()),
 				HASSH:      hash,
 				Flow:       utils.ReverseIdent(h.parent.ident),
 				Ident:      h.serverIdent,

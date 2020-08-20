@@ -233,12 +233,19 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 	for _, d := range defaultCustomDecoders {
 
 		w := netcap.NewAuditRecordWriter(&netcap.WriterConfig{
-			CSV:              c.CSV,
-			Proto:            c.Proto,
-			JSON:             c.JSON,
-			Name:             d.GetName(),
-			Null:             c.Null,
-			Elastic:          c.Elastic,
+			CSV:     c.CSV,
+			Proto:   c.Proto,
+			JSON:    c.JSON,
+			Name:    d.GetName(),
+			Null:    c.Null,
+			Elastic: c.Elastic,
+			ElasticConfig: netcap.ElasticConfig{
+				ElasticAddrs:   c.ElasticAddrs,
+				ElasticUser:    c.ElasticUser,
+				ElasticPass:    c.ElasticPass,
+				KibanaEndpoint: c.KibanaEndpoint,
+				BulkSize:       c.BulkSizeCustom,
+			},
 			Buffer:           c.Buffer,
 			Compress:         c.Compression,
 			Out:              c.Out,

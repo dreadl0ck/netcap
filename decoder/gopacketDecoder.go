@@ -179,12 +179,19 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 
 		// hookup writer
 		e.writer = netcap.NewAuditRecordWriter(&netcap.WriterConfig{
-			CSV:              c.CSV,
-			Proto:            c.Proto,
-			JSON:             c.JSON,
-			Chan:             c.Chan,
-			Null:             c.Null,
-			Elastic:          c.Elastic,
+			CSV:     c.CSV,
+			Proto:   c.Proto,
+			JSON:    c.JSON,
+			Chan:    c.Chan,
+			Null:    c.Null,
+			Elastic: c.Elastic,
+			ElasticConfig: netcap.ElasticConfig{
+				ElasticAddrs:   c.ElasticAddrs,
+				ElasticUser:    c.ElasticUser,
+				ElasticPass:    c.ElasticPass,
+				KibanaEndpoint: c.KibanaEndpoint,
+				BulkSize:       c.BulkSizeGoPacket,
+			},
 			Name:             filename,
 			Buffer:           c.Buffer,
 			Compress:         c.Compression,

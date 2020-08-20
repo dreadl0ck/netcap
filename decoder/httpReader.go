@@ -240,7 +240,7 @@ func (h *httpReader) searchForBasicAuth(req *http.Request) {
 	if u, p, ok := req.BasicAuth(); ok {
 		if u != "" || p != "" {
 			writeCredentials(&types.Credentials{
-				Timestamp: h.parent.firstPacket.String(),
+				Timestamp: utils.TimeToString(h.parent.firstPacket),
 				Service:   "HTTP Basic Auth",
 				Flow:      h.parent.ident,
 				User:      u,
@@ -273,7 +273,7 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 		}
 
 		writeCredentials(&types.Credentials{
-			Timestamp: h.parent.firstPacket.String(),
+			Timestamp: utils.TimeToString(h.parent.firstPacket),
 			Service:   serviceHTTP,
 			Flow:      h.parent.ident,
 			User:      strings.Join(values, "; "),
@@ -854,7 +854,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 
 	// write file to disk
 	writeFile(&types.File{
-		Timestamp:           h.parent.firstPacket.String(),
+		Timestamp:           utils.TimeToString(h.parent.firstPacket),
 		Name:                fileName,
 		Length:              int64(length),
 		Hash:                hash,

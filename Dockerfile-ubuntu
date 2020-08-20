@@ -23,7 +23,7 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-ENV VERSION 0.5.1
+ENV VERSION 0.5.2
 
 ENV CFLAGS -I/usr/local/include/
 ENV LDFLAGS -ltrace -lndpi -lpcap -lm -pthread

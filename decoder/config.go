@@ -33,6 +33,7 @@ const (
 func SetConfig(cfg *Config) {
 	conf = cfg
 
+	// create state machine options
 	streamFactory.fsmOptions = reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: conf.AllowMissingInit,
 	}
@@ -174,6 +175,13 @@ type Config struct {
 
 	// Output data to elastic database
 	Elastic bool
+
+	// Additional elastic configuration options
+	netcap.ElasticConfig
+
+	// Elastic bulk sizes
+	BulkSizeGoPacket int
+	BulkSizeCustom   int
 
 	// Output JSON
 	JSON bool
