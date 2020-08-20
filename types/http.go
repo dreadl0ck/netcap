@@ -113,6 +113,8 @@ func (h *HTTP) Time() string {
 // JSON returns the JSON representation of the audit record.
 func (h *HTTP) JSON() (string, error) {
 	h.Timestamp = utils.TimeToUnixMilli(h.Timestamp)
+	h.RequestBody = nil // TODO: dont kill elastic
+	h.ResponseBody = nil // TODO: dont kill elastic
 	return jsonMarshaler.MarshalToString(h)
 }
 

@@ -72,7 +72,7 @@ var (
 	flagElasticUser      = fs.String("elastic-user", "", "elastic db username")
 	flagElasticPass      = fs.String("elastic-pass", "", "elastic db password")
 	flagBulkSizeGoPacket = fs.Int("elastic-bulk-gopacket", 2000, "elastic bulk size for gopacket audit records")
-	flagBulkSizeCustom   = fs.Int("elastic-bulk-custom", 10, "elastic bulk size for custom audit records")
+	flagBulkSizeCustom   = fs.Int("elastic-bulk-custom", 1000, "elastic bulk size for custom audit records")
 	flagKibanaEndpoint   = fs.String("kibana", "", "kibana endpoint URL")
 	flagProto            = fs.Bool("proto", true, "output data as protobuf")
 	flagJSON             = fs.Bool("json", false, "output data as JSON")
