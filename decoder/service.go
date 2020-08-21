@@ -108,7 +108,7 @@ func saveTCPServiceBanner(s streamReader) {
 		// set this service response on the service and update the timestamp
 		// more data means more information and is therefore preferred for identification purposes
 		if len(sv.Banner) < len(banner) {
-			sv.Banner = banner
+			sv.Banner = string(banner)
 			sv.Timestamp = utils.TimeToString(s.FirstPacket())
 		}
 
@@ -118,7 +118,7 @@ func saveTCPServiceBanner(s streamReader) {
 
 	// nope. lets create a new one
 	serv := newService(utils.TimeToString(s.FirstPacket()), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
-	serv.Banner = banner
+	serv.Banner = string(banner)
 	serv.IP = s.Network().Dst().String()
 	serv.Port = s.Transport().Dst().String()
 
