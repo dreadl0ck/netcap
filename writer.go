@@ -711,10 +711,31 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 					"type": "integer"
 				},
 				"ID": {
-					"type": "text"
+					"type": "keyword"
 				},
 				"Protocol": {
-					"type": "text"
+					"type": "keyword"
+				},
+				"Name": {
+					"type": "keyword"
+				},
+				"Product": {
+					"type": "keyword"
+				},
+				"Vendor": {
+					"type": "keyword"
+				},
+				"SourceName": {
+					"type": "keyword"
+				},
+				"Software.Product": {
+					"type": "keyword"
+				},
+				"Software.Vendor": {
+					"type": "keyword"
+				},
+				"Software.SourceName": {
+					"type": "keyword"
 				},
 				"Answers": {
 					"type": "object"	
@@ -729,16 +750,19 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 					"type": "integer"
 				},
 				"Host": {
-					"type": "text"
+					"type": "keyword"
 				},
 				"UserAgent": {
-					"type": "text"
+					"type": "keyword"
 				},
 				"Method": {
-					"type": "text"
+					"type": "keyword"
+				},
+				"Hostname": {
+					"type": "keyword"
 				},
 				"ServerName": {
-					"type": "text"
+					"type": "keyword"
 				}
 			}
 		}`),
