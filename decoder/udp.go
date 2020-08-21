@@ -289,7 +289,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 
 	// nope. lets create a new one
 	serv := newService(utils.TimeToString(firstPacket), serverBytes, clientBytes, net.Dst().String())
-	serv.Banner = banner
+	serv.Banner = string(banner)
 	serv.IP = net.Dst().String()
 	serv.Port = transport.Dst().String()
 

@@ -1882,7 +1882,7 @@ message Service {
     string   IP                           = 2;
     string   Port                         = 3;
     string   Name                         = 4;
-    bytes    Banner                       = 5;
+    string   Banner                       = 5;
     string   Protocol                     = 6;
     repeated string   Flows               = 7;
     string   Product                      = 8;
