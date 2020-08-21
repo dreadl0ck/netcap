@@ -682,7 +682,7 @@ message DNS {
 
 message DNSResourceRecord {
 	// Header
-	bytes  Name  = 1;
+	string  Name  = 1;
 	int32  Type  = 2;
 	int32  Class = 3;
 	uint32 TTL   = 4;
@@ -725,12 +725,12 @@ message DNSSRV {
 // DNSMX is a mail exchange record, defining a mail server for a recipient's domain.
 message DNSMX {
     int32 Preference = 1;
-    bytes Name       = 2;
+    string Name       = 2;
 }
 
 // DNSQuestion wraps a single request (question) within a DNS query.
 message DNSQuestion {
-    bytes Name  = 1;
+    string Name  = 1;
     int32 Type  = 2;
     int32 Class = 3;
 }

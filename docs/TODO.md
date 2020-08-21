@@ -1,5 +1,8 @@
 # TODOs
 
+- POP3 Mails
+- dhcp options: change []byte to strings
+- embed contexts?
 - generate a proper field mapping for each index
 - adjust alpine build script similar to the one for ubuntu
 - add constants for logReassemblyError(
