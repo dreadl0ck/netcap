@@ -31,13 +31,13 @@ var dnsDecoder = newGoPacketDecoder(
 			for _, q := range dns.Questions {
 				questions = append(questions, &types.DNSQuestion{
 					Class: int32(q.Class),
-					Name:  q.Name,
+					Name:  string(q.Name),
 					Type:  int32(q.Type),
 				})
 			}
 			newNetResourceRecord := func(a layers.DNSResourceRecord) *types.DNSResourceRecord {
 				return &types.DNSResourceRecord{
-					Name:       a.Name,
+					Name:       string(a.Name),
 					Type:       int32(a.Type),
 					Class:      int32(a.Class),
 					TTL:        a.TTL,
@@ -64,7 +64,7 @@ var dnsDecoder = newGoPacketDecoder(
 					},
 					MX: &types.DNSMX{
 						Preference: int32(a.MX.Preference),
-						Name:       a.MX.Name,
+						Name:       string(a.MX.Name),
 					},
 					TXTs: a.TXTs,
 				}
