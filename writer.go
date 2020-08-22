@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -608,6 +609,8 @@ var (
 	docIndexMu sync.Mutex
 )
 
+const indexPrefix = "netcap-v2-"
+
 // NewElasticWriter initializes and configures a new ElasticWriter instance.
 func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 
@@ -621,17 +624,45 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 		log.Fatal(err)
 	}
 
-	index := "netcap-" + strings.ToLower(wc.Name)
+	return &ElasticWriter{
+		client:    c,
+		wc:        wc,
+		queue:     make([]proto.Message, wc.BulkSize),
+		indexName: makeIndex(wc),
+		meta:      []byte(fmt.Sprintf(`{ "index" : { } }%s`, "\n")),
+	}
+}
+
+func makeIndex(wc *WriterConfig) string {
+	return indexPrefix + strings.ReplaceAll(strings.ToLower(wc.Name), "/", "-")
+}
+
+// CreateElasticIndex will create and configure a single elastic database index.
+func CreateElasticIndex(wc *WriterConfig) {
+
+	// init new client
+	c, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: wc.ElasticAddrs,
+		Username:  wc.ElasticUser,
+		Password:  wc.ElasticPass,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	index := makeIndex(wc)
 
 	res, err := c.Indices.Create(index)
 	if err != nil {
 		// ignore error in case the index exists already
+		data, _ := ioutil.ReadAll(res.Body)
+		fmt.Println(string(data))
 		fmt.Println("failed to create elastic index:", err)
 	} else {
 		fmt.Println("created elastic index:", index, res.Status())
 	}
 
-	var timeField = "Timestamp"
+	timeField := "Timestamp"
 
 	switch wc.Name {
 	case "Connection", "Flow":
@@ -639,17 +670,18 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 	}
 
 	var buf bytes.Buffer
+
 	buf.WriteString(`{
     "attributes": {
-     "title": "netcap-` + strings.ToLower(wc.Name) + `*",
+     "title": "` + index + `*",
      "timeFieldName": "` + timeField + `"
      }
 }`)
 
-	// passing an explicit id to prevent kibana from duplicating patterns when restarting netcap
+	// passing an explicit id to prevent kibana from duplicating patterns when executing the index creation multiple times
 	r, err := http.NewRequest(
 		"POST",
-		wc.KibanaEndpoint+"/api/saved_objects/index-pattern/"+strings.ToLower(wc.Name),
+		wc.KibanaEndpoint+"/api/saved_objects/index-pattern/"+index,
 		&buf,
 	)
 	if err != nil {
@@ -660,10 +692,12 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 		r.SetBasicAuth(wc.ElasticUser, wc.ElasticPass)
 
 		resp, err := http.DefaultClient.Do(r)
-		if err != nil {
+		if err != nil || resp.StatusCode != http.StatusOK {
 			fmt.Println("failed to create index pattern:", err)
+			data, _ := ioutil.ReadAll(resp.Body)
+			fmt.Println(string(data))
 		} else {
-			fmt.Println("index pattern for", index, "created:", resp.Status)
+			fmt.Println("index pattern ", index + "* created:", resp.Status)
 		}
 	}
 
@@ -688,6 +722,9 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 				},
 				"SrcIP": {
 					"type": "ip"
+				},
+				"Banner": {
+					"type": "text"
 				},
 				"DstIP": {
 					"type": "ip"
@@ -761,6 +798,24 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 				"Hostname": {
 					"type": "keyword"
 				},
+				"SYN": {
+					"type": "boolean"
+				},
+				"ACK": {
+					"type": "boolean"
+				},
+				"RST": {
+					"type": "boolean"
+				},
+				"FIN": {
+					"type": "boolean"
+				},
+				"Window": {
+					"type": "integer"
+				},
+				"DataOffset": {
+					"type": "integer"
+				},
 				"ServerName": {
 					"type": "keyword"
 				}
@@ -770,7 +825,9 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 			r.Index = []string{index}
 		},
 	)
-	if err != nil {
+	if err != nil || res.StatusCode != http.StatusOK {
+		data, _ := ioutil.ReadAll(res.Body)
+		fmt.Println(string(data))
 		log.Fatalf("error getting the response: %s", err)
 	} else {
 		fmt.Println("configured index mapping", res)
@@ -791,14 +848,6 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 	// TODO: update num max fields for HTTP index via API
 
 	defer res.Body.Close()
-
-	return &ElasticWriter{
-		client:    c,
-		wc:        wc,
-		queue:     make([]proto.Message, wc.BulkSize),
-		indexName: index,
-		meta:      []byte(fmt.Sprintf(`{ "index" : { } }%s`, "\n")),
-	}
 }
 
 // Write writes a record to elastic.

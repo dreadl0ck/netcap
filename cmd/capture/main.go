@@ -15,6 +15,7 @@ package capture
 
 import (
 	"fmt"
+	"github.com/mgutz/ansi"
 	"log"
 	"net/http"
 
@@ -24,16 +25,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dustin/go-humanize"
-	"github.com/felixge/fgprof"
-	"github.com/mgutz/ansi"
-
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dustin/go-humanize"
+	"github.com/felixge/fgprof"
 )
 
 // Run parses the subcommand flags and handles the arguments.
@@ -118,20 +117,6 @@ func Run() {
 		live = true
 	}
 
-	// abort if there is no input or no live capture
-	if *flagInput == "" && !live {
-		printHeader()
-		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-read) or live mode and an interface (-iface)" + ansi.Reset)
-		os.Exit(1)
-	}
-
-	if strings.HasSuffix(*flagInput, ".ncap.gz") || strings.HasSuffix(*flagInput, ".ncap") {
-		printHeader()
-		fmt.Println(ansi.Red + "> the capture tool is used to create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
-		fmt.Println(ansi.Red + "> use the dump tool to read netcap audit records" + ansi.Reset)
-		os.Exit(1)
-	}
-
 	// set data source
 	var source string
 	if *flagInput != "" {
@@ -149,6 +134,26 @@ func Run() {
 	var elasticAddrs []string
 	if *flagElasticAddrs != "" {
 		elasticAddrs = strings.Split(*flagElasticAddrs, ",")
+	}
+
+	if *flagGenerateElasticIndices {
+		generateElasticIndices(elasticAddrs)
+
+		return
+	}
+
+	// abort if there is no input or no live capture
+	if *flagInput == "" && !live {
+		printHeader()
+		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-read) or live mode and an interface (-iface)" + ansi.Reset)
+		os.Exit(1)
+	}
+
+	if strings.HasSuffix(*flagInput, ".ncap.gz") || strings.HasSuffix(*flagInput, ".ncap") {
+		printHeader()
+		fmt.Println(ansi.Red + "> the capture tool is used to create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
+		fmt.Println(ansi.Red + "> use the dump tool to read netcap audit records" + ansi.Reset)
+		os.Exit(1)
 	}
 
 	// init collector
@@ -295,4 +300,58 @@ func Run() {
 			panic("failed to write memory profile: " + err.Error())
 		}
 	}
+}
+
+func generateElasticIndices(elasticAddrs []string) {
+	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+		netcap.CreateElasticIndex(&netcap.WriterConfig{
+			CSV:     *flagCSV,
+			Proto:   *flagProto,
+			JSON:    *flagJSON,
+			Name:    d.GetName(),
+			Null:    *flagNull,
+			Elastic: *flagElastic,
+			ElasticConfig: netcap.ElasticConfig{
+				ElasticAddrs:   elasticAddrs,
+				ElasticUser:    *flagElasticUser,
+				ElasticPass:    *flagElasticPass,
+				KibanaEndpoint: *flagKibanaEndpoint,
+				BulkSize:       *flagBulkSizeCustom,
+			},
+			Buffer:           *flagBuffer,
+			Compress:         *flagCompress,
+			Out:              *flagOutDir,
+			Chan:             false,
+			ChanSize:         0,
+			MemBufferSize:    *flagMemBufferSize,
+			Version:          netcap.Version,
+			StartTime:        time.Now(),
+		})
+	})
+
+	decoder.ApplyActionToGoPacketDecoders(func(d *decoder.GoPacketDecoder) {
+		netcap.CreateElasticIndex(&netcap.WriterConfig{
+			CSV:     *flagCSV,
+			Proto:   *flagProto,
+			JSON:    *flagJSON,
+			Name:    d.Layer.String(),
+			Null:    *flagNull,
+			Elastic: *flagElastic,
+			ElasticConfig: netcap.ElasticConfig{
+				ElasticAddrs:   elasticAddrs,
+				ElasticUser:    *flagElasticUser,
+				ElasticPass:    *flagElasticPass,
+				KibanaEndpoint: *flagKibanaEndpoint,
+				BulkSize:       *flagBulkSizeCustom,
+			},
+			Buffer:           *flagBuffer,
+			Compress:         *flagCompress,
+			Out:              *flagOutDir,
+			Chan:             false,
+			ChanSize:         0,
+			MemBufferSize:    *flagMemBufferSize,
+			Version:          netcap.Version,
+			StartTime:        time.Now(),
+		})
+	})
 }

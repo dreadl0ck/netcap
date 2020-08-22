@@ -78,7 +78,7 @@ func (d DHCPv6Option) toString() string {
 	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(d.Length))
 	b.WriteString(FieldSeparator)
-	b.WriteString(hex.EncodeToString(d.Data))
+	b.WriteString(d.Data)
 	b.WriteString(StructureEnd)
 	return b.String()
 }

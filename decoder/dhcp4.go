@@ -38,7 +38,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 			)
 			for i, o := range dhcp4.Options {
 				opts = append(opts, &types.DHCPOption{
-					Data:   o.Data,
+					Data:   string(o.Data),
 					Length: int32(o.Length),
 					Type:   int32(o.Type),
 				})
