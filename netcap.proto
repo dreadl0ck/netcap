@@ -758,9 +758,9 @@ message DHCPv4 {
 }
 
 message DHCPOption {
-    int32 Type   = 1;
-    int32 Length = 2;
-    bytes Data   = 3;
+    int32  Type   = 1;
+    int32  Length = 2;
+    string Data   = 3;
 }
 
 message DHCPv6 {
@@ -779,7 +779,7 @@ message DHCPv6 {
 message DHCPv6Option {
     int32 Code   = 1;
     int32 Length = 2;
-    bytes Data   = 3;
+    string Data   = 3;
 }
 
 // LLC is the layer used for 802.2 Logical Link Control headers. 
