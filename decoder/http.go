@@ -169,7 +169,12 @@ func readHeader(h http.Header) map[string]string {
 func readParameters(h url.Values) map[string]string {
 	m := make(map[string]string)
 	for k, vals := range h {
-		m[k] = strings.Join(vals, " ")
+		// TODO: cleanup this hack to prevent param values with dots breaking the dynamic type mapping of kibana
+		v := strings.Join(vals, " ")
+		if strings.HasPrefix(v, ".") || strings.HasSuffix(v, ".") {
+			v = "'" + v + "'"
+		}
+		m[k] = v
 	}
 	return m
 }

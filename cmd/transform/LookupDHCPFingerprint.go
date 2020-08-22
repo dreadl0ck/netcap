@@ -111,7 +111,7 @@ func lookupDHCPFingerprint() {
 	if messageToFingerprint != nil { // search vendor class
 		var vendor string
 		for _, o := range messageToFingerprint.Options {
-			if utils.IsASCII(o.Data) && len(o.Data) > 1 {
+			if utils.IsASCII([]byte(o.Data)) && len(o.Data) > 1 {
 				if o.Type == 60 {
 					vendor = string(o.Data)
 

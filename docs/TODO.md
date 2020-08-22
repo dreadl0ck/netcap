@@ -1,9 +1,12 @@
 # TODOs
 
-- POP3 Mails
-- dhcp options: change []byte to strings
-- embed contexts?
 - generate a proper field mapping for each index
+- write IP profile into dedicated audit record file
+- POP3: move mails into dedicated audit record file
+
+- embed contexts? -> not possible with proto, just add the fields directly to the structures!
+- create an index for document errors that ocurred when pushing data
+- make timestamps numeric (int64) for better performance?
 - adjust alpine build script similar to the one for ubuntu
 - add constants for logReassemblyError(
 

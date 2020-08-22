@@ -19,7 +19,7 @@ func toDHCP() {
 		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
 			if dhcp.ClientIP == ipaddr {
 				for _, o := range dhcp.Options {
-					if utf8.Valid(o.Data) && len(o.Data) != 1 {
+					if utf8.Valid([]byte(o.Data)) && len(o.Data) != 1 {
 
 						// prevent duplicating results
 						if _, ok := results[string(o.Data)]; ok {
@@ -30,7 +30,7 @@ func toDHCP() {
 						log.Println(string(o.Data), len(o.Data))
 
 						var buf bytes.Buffer
-						err := xml.EscapeText(&buf, o.Data)
+						err := xml.EscapeText(&buf, []byte(o.Data))
 						if err != nil {
 							fmt.Println(err)
 						}
