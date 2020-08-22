@@ -609,7 +609,7 @@ var (
 	docIndexMu sync.Mutex
 )
 
-const indexPrefix = "netcap-v2-"
+const indexPrefix = "netcap-"
 
 // NewElasticWriter initializes and configures a new ElasticWriter instance.
 func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
@@ -653,7 +653,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 	index := makeIndex(wc)
 
 	res, err := c.Indices.Create(index)
-	if err != nil {
+	if err != nil || res.StatusCode != http.StatusOK {
 		// ignore error in case the index exists already
 		data, _ := ioutil.ReadAll(res.Body)
 		fmt.Println(string(data))
@@ -741,6 +741,24 @@ func CreateElasticIndex(wc *WriterConfig) {
 				"DstPort": {
 					"type": "integer"
 				},
+				"Port": {
+					"type": "integer"
+				},
+				"IP": {
+					"type": "ip"
+				},
+				"ServerIP": {
+					"type": "ip"
+				},
+				"ClientIP": {
+					"type": "ip"
+				},
+				"User": {
+					"type": "keyword"
+				},
+				"Pass": {
+					"type": "keyword"
+				},
 				"Context.SrcPort": {
 					"type": "integer"
 				},
@@ -815,6 +833,18 @@ func CreateElasticIndex(wc *WriterConfig) {
 				},
 				"DataOffset": {
 					"type": "integer"
+				},
+				"Bytes": {
+					"type": "long"
+				},
+				"NumPackets": {
+					"type": "integer"
+				},
+				"Parameters.cmd": {
+					"type": "text"
+				},
+				"Parameters.name": {
+					"type": "text"
 				},
 				"ServerName": {
 					"type": "keyword"

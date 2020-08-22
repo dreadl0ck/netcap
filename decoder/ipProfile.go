@@ -199,6 +199,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 	if ja3Hash == "" {
 		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
 	}
+
 	if ja3Hash != "" {
 		ja3Map[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 	}
