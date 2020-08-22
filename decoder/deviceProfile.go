@@ -42,6 +42,7 @@ type atomicDeviceProfileMap struct {
 func (a *atomicDeviceProfileMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
+
 	return len(a.Items)
 }
 
@@ -99,6 +100,7 @@ func newDeviceProfile(i *packetInfo) *deviceProfile {
 	if ip := getIPProfile(i.dstIP, i); ip != nil {
 		contacts = append(contacts, ip.IPProfile)
 	}
+
 	var devices []*types.IPProfile
 	if ip := getIPProfile(i.srcIP, i); ip != nil {
 		devices = append(devices, ip.IPProfile)
@@ -122,6 +124,7 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
 
 	// deviceIPs
 	var found bool
+
 	for _, pr := range p.DeviceIPs {
 		if pr != nil {
 			if pr.Addr == i.srcIP {
@@ -143,6 +146,7 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
 
 	// contacts
 	found = false
+
 	for _, pr := range p.Contacts {
 		if pr != nil {
 			if pr.Addr == i.dstIP {
@@ -205,6 +209,7 @@ func writeProfile(d *types.DeviceProfile) {
 	}
 
 	atomic.AddInt64(&profileDecoderInstance.numRecords, 1)
+
 	err := profileDecoderInstance.writer.Write(d)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)

@@ -697,7 +697,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 			data, _ := ioutil.ReadAll(resp.Body)
 			fmt.Println(string(data))
 		} else {
-			fmt.Println("index pattern ", index + "* created:", resp.Status)
+			fmt.Println("index pattern ", index+"* created:", resp.Status)
 		}
 	}
 

@@ -56,7 +56,7 @@ type ipProfile struct {
 
 // GetIPProfile fetches a known profile and updates it or returns a new one.
 func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
-	if len(ipAddr) == 0 {
+	if ipAddr == "" {
 		return nil
 	}
 
@@ -73,9 +73,9 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 		p.Bytes += dataLen
 
 		// Transport Layer
-		if tl := i.p.TransportLayer(); tl != nil { // log.Println(i.p.NetworkLayer().NetworkFlow().String() + " " + tl.TransportFlow().String())
-
+		if tl := i.p.TransportLayer(); tl != nil {
 			var port *types.Port
+
 			if port, ok = p.SrcPorts[tl.TransportFlow().Src().String()]; ok {
 				atomic.AddUint64(&port.NumTotal, dataLen)
 
