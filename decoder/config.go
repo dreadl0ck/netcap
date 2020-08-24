@@ -17,7 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -49,7 +50,7 @@ func SetConfig(cfg *Config) {
 // DefaultConfig is a sane example configuration for the encoder package.
 var DefaultConfig = &Config{
 	Buffer:                  true,
-	MemBufferSize:           netcap.DefaultBufferSize,
+	MemBufferSize:           defaults.BufferSize,
 	Compression:             true,
 	CSV:                     false,
 	IncludeDecoders:         "",
@@ -78,7 +79,7 @@ var DefaultConfig = &Config{
 	FlowTimeOut:             10 * time.Second,
 	CloseInactiveTimeOut:    24 * time.Hour,
 	ClosePendingTimeOut:     5 * time.Second,
-	FileStorage:             netcap.DefaultFileStorage,
+	FileStorage:             defaults.FileStorage,
 	CalculateEntropy:        false,
 	SaveConns:               false,
 	TCPDebug:                false,
@@ -177,7 +178,7 @@ type Config struct {
 	Elastic bool
 
 	// Additional elastic configuration options
-	netcap.ElasticConfig
+	io.ElasticConfig
 
 	// Elastic bulk sizes
 	BulkSizeGoPacket int

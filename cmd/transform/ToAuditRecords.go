@@ -26,9 +26,10 @@ import (
 
 	"github.com/dreadl0ck/gopacket/pcap"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
@@ -37,12 +38,12 @@ import (
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets: false,
 	Workers:             runtime.NumCPU(),
-	PacketBufferSize:    netcap.DefaultPacketBuffer,
+	PacketBufferSize:    defaults.PacketBuffer,
 	SnapLen:             1514, // TODO: make configurable within Maltego, add as property for pcap?
 	Promisc:             false,
 	DecoderConfig: &decoder.Config{
 		Buffer:        true,
-		MemBufferSize: netcap.DefaultBufferSize,
+		MemBufferSize: defaults.BufferSize,
 		Compression:   true,
 		CSV:           false,
 		// IncludeDecoders:         strings.Join(auditRecords, ","),
@@ -52,11 +53,11 @@ var maltegoBaseConfig = collector.Config{
 		ExportMetrics:           false,
 		AddContext:              true,
 		FlushEvery:              100,
-		DefragIPv4:              netcap.DefaultDefragIPv4,
-		Checksum:                netcap.DefaultChecksum,
-		NoOptCheck:              netcap.DefaultNoOptCheck,
-		IgnoreFSMerr:            netcap.DefaultIgnoreFSMErr,
-		AllowMissingInit:        netcap.DefaultAllowMissingInit,
+		DefragIPv4:              defaults.DefragIPv4,
+		Checksum:                defaults.Checksum,
+		NoOptCheck:              defaults.NoOptCheck,
+		IgnoreFSMerr:            defaults.IgnoreFSMErr,
+		AllowMissingInit:        defaults.AllowMissingInit,
 		Debug:                   false,
 		HexDump:                 false,
 		WaitForConnections:      true,
@@ -68,7 +69,7 @@ var maltegoBaseConfig = collector.Config{
 		FlowTimeOut:             10 * time.Second,
 		CloseInactiveTimeOut:    24 * time.Hour,
 		ClosePendingTimeOut:     5 * time.Second,
-		FileStorage:             netcap.DefaultFileStorage,
+		FileStorage:             defaults.FileStorage,
 		CalculateEntropy:        false,
 		SaveConns:               false,
 		TCPDebug:                false,
@@ -141,7 +142,7 @@ func toAuditRecords() {
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
 	maltegoBaseConfig.DecoderConfig.Source = inputFile
-	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, netcap.DefaultFileStorage)
+	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, defaults.FileStorage)
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)
@@ -212,7 +213,7 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 		// TODO: return structure from collect invocation
 		// that contains the number of records per type
 		// to avoid opening the file again
-		numRecords, errCount := netcap.Count(ident)
+		numRecords, errCount := io.Count(ident)
 		if errCount != nil {
 			log.Fatal("failed to count audit records:", err)
 		}

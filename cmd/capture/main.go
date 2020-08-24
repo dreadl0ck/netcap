@@ -15,24 +15,25 @@ package capture
 
 import (
 	"fmt"
-	"github.com/mgutz/ansi"
 	"log"
 	"net/http"
-
-	// _ "net/http/pprof"
 	"os"
 	"runtime/pprof"
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
+	"github.com/felixge/fgprof"
+	"github.com/mgutz/ansi"
+
+	// _ "net/http/pprof"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
-	"github.com/felixge/fgprof"
 )
 
 // Run parses the subcommand flags and handles the arguments.
@@ -46,7 +47,7 @@ func Run() {
 	}
 
 	if *flagGenerateConfig {
-		netcap.GenerateConfig(fs, "capture")
+		io.GenerateConfig(fs, "capture")
 
 		return
 	}
@@ -177,7 +178,7 @@ func Run() {
 			CSV:           *flagCSV,
 			Null:          *flagNull,
 			Elastic:       *flagElastic,
-			ElasticConfig: netcap.ElasticConfig{
+			ElasticConfig: io.ElasticConfig{
 				ElasticAddrs:   elasticAddrs,
 				ElasticUser:    *flagElasticUser,
 				ElasticPass:    *flagElasticPass,
@@ -304,14 +305,14 @@ func Run() {
 
 func generateElasticIndices(elasticAddrs []string) {
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
-		netcap.CreateElasticIndex(&netcap.WriterConfig{
+		io.CreateElasticIndex(&io.WriterConfig{
 			CSV:     *flagCSV,
 			Proto:   *flagProto,
 			JSON:    *flagJSON,
 			Name:    d.GetName(),
 			Null:    *flagNull,
 			Elastic: *flagElastic,
-			ElasticConfig: netcap.ElasticConfig{
+			ElasticConfig: io.ElasticConfig{
 				ElasticAddrs:   elasticAddrs,
 				ElasticUser:    *flagElasticUser,
 				ElasticPass:    *flagElasticPass,
@@ -330,14 +331,14 @@ func generateElasticIndices(elasticAddrs []string) {
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(d *decoder.GoPacketDecoder) {
-		netcap.CreateElasticIndex(&netcap.WriterConfig{
+		io.CreateElasticIndex(&io.WriterConfig{
 			CSV:     *flagCSV,
 			Proto:   *flagProto,
 			JSON:    *flagJSON,
 			Name:    d.Layer.String(),
 			Null:    *flagNull,
 			Elastic: *flagElastic,
-			ElasticConfig: netcap.ElasticConfig{
+			ElasticConfig: io.ElasticConfig{
 				ElasticAddrs:   elasticAddrs,
 				ElasticUser:    *flagElasticUser,
 				ElasticPass:    *flagElasticPass,

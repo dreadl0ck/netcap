@@ -23,7 +23,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -47,7 +48,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 
 	os.Stdout = os.Stderr
 
-	netcap.PrintBuildInfo()
+	io2.PrintBuildInfo()
 
 	f, err := os.Open(sshFile)
 	if err != nil {
@@ -61,7 +62,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 
 	os.Stdout = stdout
 
-	r, err := netcap.Open(sshFile, netcap.DefaultBufferSize)
+	r, err := io2.Open(sshFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -112,7 +113,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		}
 	}
 
-	r, err = netcap.Open(sshFile, netcap.DefaultBufferSize)
+	r, err = io2.Open(sshFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}

@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -99,7 +100,7 @@ type (
 		Layer       gopacket.LayerType
 		Handler     goPacketDecoderHandler
 
-		writer netcap.AuditRecordWriter
+		writer io.AuditRecordWriter
 		Type   types.Type
 		export bool
 	}
@@ -178,14 +179,14 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 		}
 
 		// hookup writer
-		e.writer = netcap.NewAuditRecordWriter(&netcap.WriterConfig{
+		e.writer = io.NewAuditRecordWriter(&io.WriterConfig{
 			CSV:     c.CSV,
 			Proto:   c.Proto,
 			JSON:    c.JSON,
 			Chan:    c.Chan,
 			Null:    c.Null,
 			Elastic: c.Elastic,
-			ElasticConfig: netcap.ElasticConfig{
+			ElasticConfig: io.ElasticConfig{
 				ElasticAddrs:   c.ElasticAddrs,
 				ElasticUser:    c.ElasticUser,
 				ElasticPass:    c.ElasticPass,
@@ -271,7 +272,7 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder.
 func (cd *GoPacketDecoder) GetChan() <-chan []byte {
-	if cw, ok := cd.writer.(netcap.ChannelAuditRecordWriter); ok {
+	if cw, ok := cd.writer.(io.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()
 	}
 

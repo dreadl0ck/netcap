@@ -32,6 +32,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -53,7 +54,7 @@ func Run() {
 	}
 
 	if *flagGenerateConfig {
-		netcap.GenerateConfig(fs, "collect")
+		io2.GenerateConfig(fs, "collect")
 
 		return
 	}
@@ -64,7 +65,7 @@ func Run() {
 		os.Exit(0)
 	}
 
-	netcap.PrintBuildInfo()
+	io2.PrintBuildInfo()
 
 	if *flagGenKeypair {
 

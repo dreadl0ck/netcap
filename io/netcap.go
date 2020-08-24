@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package netcap
+package io
 
 import (
 	"errors"
@@ -19,6 +19,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -178,7 +179,7 @@ func InitRecord(typ types.Type) (record proto.Message) {
 // but will return an error in case of an unexpected EOF.
 func Count(filename string) (count int64, err error) {
 	// open audit record file
-	r, err := Open(filename, DefaultBufferSize)
+	r, err := Open(filename, defaults.BufferSize)
 	if err != nil {
 		return 0, err
 	}

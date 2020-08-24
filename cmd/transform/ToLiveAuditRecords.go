@@ -10,7 +10,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -48,7 +48,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		// TODO: return structure from collect invocation
 		// that contains the number of records per type
 		// to avoid opening the file again
-		numRecords, errCount := netcap.Count(ident)
+		numRecords, errCount := io.Count(ident)
 		if errCount != nil {
 			utils.DebugLog.Println("failed to count audit records:", errCount)
 
@@ -72,7 +72,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 			di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 			ent.AddDisplayInformation(di, "Netcap Info")
 
-			num, errCountRecords := netcap.Count(ident)
+			num, errCountRecords := io.Count(ident)
 			if errCountRecords != nil {
 				utils.DebugLog.Println("failed to count audit records:", errCountRecords)
 			}

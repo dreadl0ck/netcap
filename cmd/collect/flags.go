@@ -18,7 +18,7 @@ import (
 
 	"github.com/namsral/flag"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
 )
 
 // Flags returns all flags.
@@ -39,7 +39,7 @@ var (
 	flagAddr           = fs.String("addr", "127.0.0.1:1335", "specify an address and port to listen for incoming traffic")
 	flagVersion        = fs.Bool("version", false, "print netcap package version and exit")
 	files              = make(map[string]*auditRecordHandle)
-	flagMemBufferSize  = fs.Int("membuf-size", netcap.DefaultBufferSize, "set size for membuf")
+	flagMemBufferSize  = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 
 	// not configurable at the moment
 	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")

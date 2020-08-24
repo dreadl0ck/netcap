@@ -37,8 +37,8 @@ import (
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -462,7 +462,7 @@ func (c *Collector) PrintConfiguration() {
 	// always write the entire configuration into the logfile
 	_, _ = logFileHandle.Write(cdata)
 
-	netcap.FPrintLogo(target)
+	io2.FPrintLogo(target)
 
 	if c.config.DecoderConfig.Debug {
 		// in debug mode: dump config to stdout
@@ -473,7 +473,7 @@ func (c *Collector) PrintConfiguration() {
 		fmt.Println() // add newline
 	}
 
-	netcap.FPrintBuildInfo(target)
+	io2.FPrintBuildInfo(target)
 
 	// print build information
 	_, _ = fmt.Fprintln(target, "> PID:", os.Getpid())

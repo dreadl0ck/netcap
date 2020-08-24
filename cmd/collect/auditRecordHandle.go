@@ -25,7 +25,9 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/delimited"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -62,7 +64,7 @@ func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 		// create buffered writer that writes into the file handle
 		bWriter = bufio.NewWriter(f)
 		// create gzip writer that writes into the buffered writer
-		gWriter, errGzipWriter = gzip.NewWriterLevel(bWriter, netcap.DefaultCompressionLevel)
+		gWriter, errGzipWriter = gzip.NewWriterLevel(bWriter, defaults.CompressionLevel)
 	)
 
 	if errGzipWriter != nil {
@@ -72,12 +74,12 @@ func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 	// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
 	// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
 	// your would like to utilize, but about twice the number of blocks would be the best.
-	if err = gWriter.SetConcurrency(netcap.DefaultCompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
+	if err = gWriter.SetConcurrency(defaults.CompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
 		log.Fatal("failed to configure compression package: ", err)
 	}
 
 	// add file header
-	err = delimited.NewWriter(gWriter).PutProto(netcap.NewHeader(b.MessageType, conf.Source, netcap.Version, conf.IncludePayloads, time.Now()))
+	err = delimited.NewWriter(gWriter).PutProto(io.NewHeader(b.MessageType, conf.Source, netcap.Version, conf.IncludePayloads, time.Now()))
 	if err != nil {
 		fmt.Println("failed to write header")
 		panic(err)

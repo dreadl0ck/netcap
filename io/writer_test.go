@@ -11,12 +11,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package netcap
+package io
 
 import (
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -80,9 +82,9 @@ func TestWriter(t *testing.T) {
 		Buffer:           true,
 		Compress:         true,
 		Out:              "tests",
-		MemBufferSize:    DefaultBufferSize,
+		MemBufferSize:    defaults.BufferSize,
 		Source:           "unit tests",
-		Version:          Version,
+		Version:          netcap.Version,
 		IncludesPayloads: false,
 		StartTime:        time.Now(),
 	})
@@ -119,9 +121,9 @@ func BenchmarkWriter(b *testing.B) {
 		Buffer:           true,
 		Compress:         true,
 		Out:              "tests",
-		MemBufferSize:    DefaultBufferSize,
+		MemBufferSize:    defaults.BufferSize,
 		Source:           "unit tests",
-		Version:          Version,
+		Version:          netcap.Version,
 		IncludesPayloads: false,
 		StartTime:        time.Now(),
 	})

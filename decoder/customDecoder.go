@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -80,7 +81,7 @@ type (
 		numRecords int64
 
 		// writer for audit records
-		writer netcap.AuditRecordWriter
+		writer io.AuditRecordWriter
 
 		// Type of the audit records produced by this decoder
 		Type types.Type
@@ -103,7 +104,7 @@ type (
 		GetName() string
 
 		// SetWriter sets the netcap writer to use for the decoder
-		SetWriter(netcap.AuditRecordWriter)
+		SetWriter(io.AuditRecordWriter)
 
 		// GetType returns the netcap type of the decoder
 		GetType() types.Type
@@ -146,7 +147,7 @@ func (cd *customDecoder) GetName() string {
 }
 
 // SetWriter sets the netcap writer to use for the decoder.
-func (cd *customDecoder) SetWriter(w netcap.AuditRecordWriter) {
+func (cd *customDecoder) SetWriter(w io.AuditRecordWriter) {
 	cd.writer = w
 }
 
@@ -232,14 +233,14 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 	// initialize decoders
 	for _, d := range defaultCustomDecoders {
 
-		w := netcap.NewAuditRecordWriter(&netcap.WriterConfig{
+		w := io.NewAuditRecordWriter(&io.WriterConfig{
 			CSV:     c.CSV,
 			Proto:   c.Proto,
 			JSON:    c.JSON,
 			Name:    d.GetName(),
 			Null:    c.Null,
 			Elastic: c.Elastic,
-			ElasticConfig: netcap.ElasticConfig{
+			ElasticConfig: io.ElasticConfig{
 				ElasticAddrs:   c.ElasticAddrs,
 				ElasticUser:    c.ElasticUser,
 				ElasticPass:    c.ElasticPass,
@@ -354,7 +355,7 @@ func (cd *customDecoder) Destroy() (name string, size int64) {
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder.
 func (cd *customDecoder) GetChan() <-chan []byte {
-	if cw, ok := cd.writer.(netcap.ChannelAuditRecordWriter); ok {
+	if cw, ok := cd.writer.(io.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()
 	}
 

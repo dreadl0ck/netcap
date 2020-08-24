@@ -1,11 +1,18 @@
 # TODOs
 
+- debug FIRST-2015_Hands-on_Network_Forensics_PCAP/2015-03-17/snort.log.1426550408.pcap
+
+- move default permissions into defaults pkg: e.g: directoryPermission
+- add protobuf audit records
+- add issues for hacktoberfest
+
 - generate a proper field mapping for each index
 - write IP profile into dedicated audit record file
 - POP3: move mails into dedicated audit record file
 
 - embed contexts? -> not possible with proto, just add the fields directly to the structures!
-- create an index for document errors that ocurred when pushing data
+- create an index for document errors that occured when pushing data
+
 - make timestamps numeric (int64) for better performance?
 - adjust alpine build script similar to the one for ubuntu
 - add constants for logReassemblyError(

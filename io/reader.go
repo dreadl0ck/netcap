@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package netcap
+package io
 
 import (
 	"bufio"
@@ -21,6 +21,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -43,7 +44,7 @@ func Open(file string, memBufSize int) (*Reader, error) {
 	}
 
 	if memBufSize <= 0 {
-		memBufSize = DefaultBufferSize
+		memBufSize = defaults.BufferSize
 	}
 
 	r.file = h

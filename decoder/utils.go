@@ -28,6 +28,7 @@ import (
 	"github.com/evilsocket/islazy/tui"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -50,7 +51,7 @@ func MarkdownOverview() {
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
 	for _, e := range defaultGoPacketDecoders {
-		if csv, ok := netcap.InitRecord(e.Type).(types.AuditRecord); ok {
+		if csv, ok := io.InitRecord(e.Type).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(e.Layer.String(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
@@ -60,7 +61,7 @@ func MarkdownOverview() {
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
 	for _, d := range defaultCustomDecoders {
-		if csv, ok := netcap.InitRecord(d.GetType()).(types.AuditRecord); ok {
+		if csv, ok := io.InitRecord(d.GetType()).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(d.GetName(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
@@ -101,7 +102,7 @@ func calcMd5(s string) string {
 
 func countFields(t types.Type) int {
 	recordFields := 0
-	if r, ok := netcap.InitRecord(t).(types.AuditRecord); ok {
+	if r, ok := io.InitRecord(t).(types.AuditRecord); ok {
 
 		auditRecord := reflect.ValueOf(r).Elem()
 

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -35,13 +35,13 @@ func TestCaptureLive(t *testing.T) {
 			IncludePayloads:      false,
 			ExportMetrics:        false,
 			AddContext:           true,
-			MemBufferSize:        netcap.DefaultBufferSize,
-			FlushEvery:           netcap.DefaultFlushEvery,
-			DefragIPv4:           netcap.DefaultDefragIPv4,
-			Checksum:             netcap.DefaultChecksum,
-			NoOptCheck:           netcap.DefaultNoOptCheck,
-			IgnoreFSMerr:         netcap.DefaultIgnoreFSMErr,
-			AllowMissingInit:     netcap.DefaultAllowMissingInit,
+			MemBufferSize:        defaults.BufferSize,
+			FlushEvery:           defaults.FlushEvery,
+			DefragIPv4:           defaults.DefragIPv4,
+			Checksum:             defaults.Checksum,
+			NoOptCheck:           defaults.NoOptCheck,
+			IgnoreFSMerr:         defaults.IgnoreFSMErr,
+			AllowMissingInit:     defaults.AllowMissingInit,
 			Debug:                false,
 			HexDump:              false,
 			WaitForConnections:   true,
@@ -114,13 +114,13 @@ func TestCapturePCAP(t *testing.T) {
 			IncludePayloads:      false,
 			ExportMetrics:        false,
 			AddContext:           true,
-			MemBufferSize:        netcap.DefaultBufferSize,
-			FlushEvery:           netcap.DefaultFlushEvery,
-			DefragIPv4:           netcap.DefaultDefragIPv4,
-			Checksum:             netcap.DefaultChecksum,
-			NoOptCheck:           netcap.DefaultNoOptCheck,
-			IgnoreFSMerr:         netcap.DefaultIgnoreFSMErr,
-			AllowMissingInit:     netcap.DefaultAllowMissingInit,
+			MemBufferSize:        defaults.BufferSize,
+			FlushEvery:           defaults.FlushEvery,
+			DefragIPv4:           defaults.DefragIPv4,
+			Checksum:             defaults.Checksum,
+			NoOptCheck:           defaults.NoOptCheck,
+			IgnoreFSMerr:         defaults.IgnoreFSMErr,
+			AllowMissingInit:     defaults.AllowMissingInit,
 			Debug:                false,
 			HexDump:              false,
 			WaitForConnections:   true,

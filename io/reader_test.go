@@ -11,18 +11,19 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package netcap
+package io
 
 import (
 	"errors"
 	"io"
 	"testing"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func TestReader(t *testing.T) {
-	r, err := Open("tests/testdata/TCP.ncap.gz", DefaultBufferSize)
+	r, err := Open("tests/testdata/TCP.ncap.gz", defaults.BufferSize)
 	if err != nil {
 		t.Fatal(err)
 	}

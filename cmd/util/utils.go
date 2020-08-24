@@ -22,12 +22,12 @@ import (
 
 	"github.com/mgutz/ansi"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func printHeader() {
-	netcap.PrintLogo()
+	io.PrintLogo()
 	fmt.Println()
 	fmt.Println("util tool usage examples:")
 	fmt.Println("	$ net util -read TCP.ncap.gz -check")
@@ -45,14 +45,14 @@ func printUsage() {
 // CheckFields checks if the separator occurs inside fields of audit records
 // to prevent this breaking the generated CSV file.
 func checkFields() {
-	r, err := netcap.Open(*flagInput, *flagMemBufferSize)
+	r, err := io.Open(*flagInput, *flagMemBufferSize)
 	if err != nil {
 		panic(err)
 	}
 
 	var (
 		h, errFileHeader  = r.ReadHeader()
-		record            = netcap.InitRecord(h.Type)
+		record            = io.InitRecord(h.Type)
 		numExpectedFields int
 		checkFieldNames   = true
 		allFieldNames     []string
