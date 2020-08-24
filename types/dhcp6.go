@@ -17,9 +17,9 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/utils"
-
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsDHCPv6 = []string{

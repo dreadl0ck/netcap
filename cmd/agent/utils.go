@@ -16,11 +16,11 @@ package agent
 import (
 	"fmt"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 )
 
 func printHeader() {
-	netcap.PrintLogo()
+	io.PrintLogo()
 	fmt.Println()
 	fmt.Println("agent tool usage examples:")
 	fmt.Println("	$ net agent -pubkey pub.key -addr 127.0.0.1:4200")

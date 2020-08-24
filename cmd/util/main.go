@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -35,7 +36,7 @@ func Run() {
 	}
 
 	if *flagGenerateConfig {
-		netcap.GenerateConfig(fs, "util")
+		io.GenerateConfig(fs, "util")
 
 		return
 	}

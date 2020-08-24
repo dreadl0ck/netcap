@@ -1,4 +1,4 @@
-package netcap
+package io
 
 import (
 	"reflect"

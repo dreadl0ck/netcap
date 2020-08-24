@@ -26,7 +26,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"gopkg.in/cheggaaa/pb.v1"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -35,7 +36,7 @@ import (
 func labelFlows(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, "Flow.ncap.gz")
-		total, errCount = netcap.Count(fname)
+		total, errCount = io2.Count(fname)
 		labelsTotal     = 0
 		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
 		outFileName     = filepath.Join(outDir, "Flow_labeled.csv")
@@ -45,7 +46,7 @@ func labelFlows(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir
 	}
 
 	go func() {
-		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
+		r, err := io2.Open(fname, defaults.BufferSize)
 		if err != nil {
 			panic(err)
 		}

@@ -27,6 +27,8 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+const keyUnknownParam = "unknown"
+
 var httpDecoder = newCustomDecoder(
 	types.Type_NC_HTTP,
 	serviceHTTP,
@@ -169,12 +171,26 @@ func readHeader(h http.Header) map[string]string {
 func readParameters(h url.Values) map[string]string {
 	m := make(map[string]string)
 	for k, vals := range h {
+
 		// TODO: cleanup this hack to prevent param values with dots breaking the dynamic type mapping of kibana
 		v := strings.Join(vals, " ")
 		if strings.HasPrefix(v, ".") || strings.HasSuffix(v, ".") {
 			v = "'" + v + "'"
 		}
+
+		if k == "" {
+			k = keyUnknownParam
+		// TODO: cleanup this hack to prevent param values with dots breaking the dynamic type mapping of kibana
+		} else if strings.HasPrefix(k, ".") || strings.HasSuffix(k, ".") {
+			k = "'" + k + "'"
+		}
+
+		if strings.Contains(k, ".") {
+			k = strings.ReplaceAll(k, ".", "[dot]")
+		}
+
 		m[k] = v
 	}
+
 	return m
 }

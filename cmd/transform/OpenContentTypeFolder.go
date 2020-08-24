@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/maltego"
 )
@@ -46,7 +46,7 @@ func openContentTypeFolder() {
 		}
 	}
 
-	path := filepath.Join(filepath.Dir(lt.Values["path"]), netcap.DefaultFileStorage, lt.Values["properties.contenttype"])
+	path := filepath.Join(filepath.Dir(lt.Values["path"]), defaults.FileStorage, lt.Values["properties.contenttype"])
 	log.Println("open path:", path)
 
 	log.Println("command for opening path:", openCommandName)

@@ -20,8 +20,8 @@ import (
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -55,8 +55,8 @@ func (c *Collector) cleanup(force bool) {
 	select {
 	case <-waitForCollector():
 		c.printlnStdOut(" done!")
-	case <-time.After(netcap.DefaultReassemblyTimeout):
-		c.printStdOut(" timeout after ", netcap.DefaultReassemblyTimeout)
+	case <-time.After(defaults.ReassemblyTimeout):
+		c.printStdOut(" timeout after ", defaults.ReassemblyTimeout)
 	}
 
 	if c.config.ReassembleConnections {

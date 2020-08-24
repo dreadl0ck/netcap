@@ -143,4 +143,5 @@ Manually increase limit for selected audit record field count:
 
 Ingest data from PCAP directory:
     
+    rm -rf snort.log.142* && rm -f screenlog.0
     screen -L time ./analyze.sh FIRST-2015_Hands-on_Network_Forensics_PCAP

@@ -32,7 +32,8 @@ import (
 	gzip "github.com/klauspost/pgzip"
 	"gopkg.in/cheggaaa/pb.v1"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -231,7 +232,7 @@ func CustomLabels(pathMappingInfo, outputPath, separator, selection string) erro
 func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
-		total, errCount = netcap.Count(fname)
+		total, errCount = io2.Count(fname)
 		labelsTotal     = 0
 		outFileName     = filepath.Join(outDir, typ+"_labeled.csv.gz")
 		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
@@ -242,7 +243,7 @@ func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 
 	go func() {
 		// open layer data file
-		r, err := netcap.Open(fname, netcap.DefaultBufferSize)
+		r, err := io2.Open(fname, defaults.BufferSize)
 		if err != nil {
 			panic(err)
 		}
@@ -264,12 +265,12 @@ func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 		// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
 		// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
 		// your would like to utilize, but about twice the number of blocks would be the best.
-		if err = gzipWriter.SetConcurrency(netcap.DefaultCompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
+		if err = gzipWriter.SetConcurrency(defaults.CompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
 			log.Fatal("failed to configure compression package: ", err)
 		}
 
 		var (
-			record = netcap.InitRecord(header.Type)
+			record = io2.InitRecord(header.Type)
 			ok     bool
 			p      types.AuditRecord
 		)

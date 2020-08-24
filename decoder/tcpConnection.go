@@ -62,7 +62,7 @@ import (
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -601,9 +601,9 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			if !conf.Quiet {
 				fmt.Println(" done!")
 			}
-		case <-time.After(netcap.DefaultReassemblyTimeout):
+		case <-time.After(defaults.ReassemblyTimeout):
 			if !conf.Quiet {
-				fmt.Println(" timeout after", netcap.DefaultReassemblyTimeout)
+				fmt.Println(" timeout after", defaults.ReassemblyTimeout)
 			}
 		}
 

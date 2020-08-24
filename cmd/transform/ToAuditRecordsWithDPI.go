@@ -8,8 +8,8 @@ import (
 
 	"github.com/dreadl0ck/gopacket/pcap"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
@@ -57,7 +57,7 @@ func toAuditRecordsWithDPI() {
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
 	maltegoBaseConfig.DecoderConfig.Source = inputFile
-	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, netcap.DefaultFileStorage)
+	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, defaults.FileStorage)
 	maltegoBaseConfig.DPI = true
 
 	// init collector

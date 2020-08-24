@@ -23,7 +23,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -84,7 +85,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 
 	os.Stdout = os.Stderr
 
-	netcap.PrintBuildInfo()
+	io2.PrintBuildInfo()
 
 	f, err := os.Open(profilesFile)
 	if err != nil {
@@ -98,7 +99,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 
 	os.Stdout = stdout
 
-	r, err := netcap.Open(profilesFile, netcap.DefaultBufferSize)
+	r, err := io2.Open(profilesFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -148,7 +149,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 			log.Println("failed to close audit record file: ", err)
 		}
 
-		r, err = netcap.Open(profilesFile, netcap.DefaultBufferSize)
+		r, err = io2.Open(profilesFile, defaults.BufferSize)
 		if err != nil {
 			panic(err)
 		}

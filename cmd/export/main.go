@@ -27,6 +27,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/metrics"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -46,7 +47,7 @@ func Run() {
 	}
 
 	if *flagGenerateConfig {
-		netcap.GenerateConfig(fs, "export")
+		io.GenerateConfig(fs, "export")
 
 		return
 	}
@@ -150,7 +151,7 @@ func Run() {
 			},
 			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
-			// FileStorage:   netcap.DefaultFileStorage, // TODO:
+			// FileStorage:   defaults.FileStorage, // TODO:
 			Quiet: false,
 			DPI:   *flagDPI,
 			ResolverConfig: resolvers.Config{
@@ -168,7 +169,7 @@ func Run() {
 
 		metrics.ServeMetricsAt(*flagMetricsAddress, c)
 
-		netcap.PrintLogo()
+		io.PrintLogo()
 
 		// print configuration as table
 		tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{

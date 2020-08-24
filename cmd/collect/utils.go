@@ -19,11 +19,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 )
 
 func printHeader() {
-	netcap.PrintLogo()
+	io.PrintLogo()
 	fmt.Println()
 	fmt.Println("collect tool usage examples:")
 	fmt.Println("	$ net collect -privkey priv.key -addr 127.0.0.1:4200")

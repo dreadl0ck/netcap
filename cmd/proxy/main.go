@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -41,7 +42,7 @@ func Run() {
 	}
 
 	if *flagGenerateConfig {
-		netcap.GenerateConfig(fs, "proxy")
+		io.GenerateConfig(fs, "proxy")
 		return
 	}
 
@@ -51,7 +52,7 @@ func Run() {
 		os.Exit(0)
 	}
 
-	netcap.PrintBuildInfo()
+	io.PrintBuildInfo()
 
 	// check if flags have been used to configure a single instance proxy
 	if *flagLocal == "" || *flagRemote == "" {

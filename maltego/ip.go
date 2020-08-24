@@ -23,7 +23,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -41,7 +42,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
 
-	netcap.PrintBuildInfo()
+	io2.PrintBuildInfo()
 
 	f, err := os.Open(profilesFile)
 	if err != nil {
@@ -55,7 +56,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 
 	os.Stdout = stdout
 
-	r, err := netcap.Open(profilesFile, netcap.DefaultBufferSize)
+	r, err := io2.Open(profilesFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -106,7 +107,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 		}
 	}
 
-	r, err = netcap.Open(profilesFile, netcap.DefaultBufferSize)
+	r, err = io2.Open(profilesFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}

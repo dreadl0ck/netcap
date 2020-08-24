@@ -16,11 +16,11 @@ package capture
 import (
 	"fmt"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 )
 
 func printHeader() {
-	netcap.PrintLogo()
+	io.PrintLogo()
 	fmt.Println()
 	fmt.Println("capture tool usage examples:")
 	fmt.Println("	$ net capture -read dump.pcap")

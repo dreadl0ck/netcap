@@ -18,8 +18,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/utils"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsEAPOLKey = []string{

@@ -29,6 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -45,7 +46,7 @@ func Run() {
 	}
 
 	if *flagGenerateConfig {
-		netcap.GenerateConfig(fs, "agent")
+		io.GenerateConfig(fs, "agent")
 
 		return
 	}
@@ -56,7 +57,7 @@ func Run() {
 		os.Exit(0)
 	}
 
-	netcap.PrintBuildInfo()
+	io.PrintBuildInfo()
 
 	// no server public key specified - no party
 	if *flagServerPubKey == "" {

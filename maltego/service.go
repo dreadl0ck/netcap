@@ -23,7 +23,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -42,7 +43,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
-	netcap.PrintBuildInfo()
+	io2.PrintBuildInfo()
 
 	f, err := os.Open(servicesFile)
 	if err != nil {
@@ -56,7 +57,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 
 	os.Stdout = stdout
 
-	r, err := netcap.Open(servicesFile, netcap.DefaultBufferSize)
+	r, err := io2.Open(servicesFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +106,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 		}
 	}
 
-	r, err = netcap.Open(servicesFile, netcap.DefaultBufferSize)
+	r, err = io2.Open(servicesFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}

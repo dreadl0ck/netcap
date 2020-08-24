@@ -34,6 +34,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/transform"
 	"github.com/dreadl0ck/netcap/cmd/util"
 	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/io"
 )
 
 const (
@@ -67,7 +68,7 @@ var (
 )
 
 func help() {
-	netcap.PrintLogo()
+	io.PrintLogo()
 	fmt.Println(`
 available subcommands:
   > capture       capture audit records

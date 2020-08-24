@@ -19,6 +19,7 @@ import (
 	"os"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/label"
 )
 
@@ -32,7 +33,7 @@ func Run() {
 	}
 
 	if *flagGenerateConfig {
-		netcap.GenerateConfig(fs, "label")
+		io.GenerateConfig(fs, "label")
 
 		return
 	}
@@ -43,7 +44,7 @@ func Run() {
 		os.Exit(0)
 	}
 
-	netcap.PrintBuildInfo()
+	io.PrintBuildInfo()
 
 	if *flagInput == "" && *flagCustom == "" {
 		log.Fatal("no input file specified. Nothing to do.")

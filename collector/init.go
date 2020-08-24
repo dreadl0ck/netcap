@@ -13,8 +13,8 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -91,7 +91,7 @@ func (c *Collector) Init() (err error) {
 		}
 
 		// wipe extracted files
-		_ = os.RemoveAll(filepath.Join(c.config.DecoderConfig.Out, netcap.DefaultFileStorage))
+		_ = os.RemoveAll(filepath.Join(c.config.DecoderConfig.Out, defaults.FileStorage))
 
 		// clear streams if present
 		if errStreams == nil || errConns == nil {

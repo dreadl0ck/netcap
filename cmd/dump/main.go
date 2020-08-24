@@ -25,6 +25,7 @@ import (
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -40,7 +41,7 @@ func Run() {
 	}
 
 	if *flagGenerateConfig {
-		netcap.GenerateConfig(fs, "dump")
+		io.GenerateConfig(fs, "dump")
 
 		return
 	}
@@ -67,7 +68,7 @@ func Run() {
 
 	// read dumpfile header and exit
 	if *flagHeader { // open input file for reading
-		r, errOpen := netcap.Open(*flagInput, *flagMemBufferSize)
+		r, errOpen := io.Open(*flagInput, *flagMemBufferSize)
 		if errOpen != nil {
 			panic(errOpen)
 		}
@@ -96,9 +97,9 @@ func Run() {
 
 	// read ncap file and print to stdout
 	if filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz" {
-		err = netcap.Dump(
+		err = io.Dump(
 			os.Stdout,
-			netcap.DumpConfig{
+			io.DumpConfig{
 				Path:         *flagInput,
 				Separator:    *flagSeparator,
 				TabSeparated: *flagTSV,

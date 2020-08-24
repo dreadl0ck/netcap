@@ -24,7 +24,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -56,7 +57,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		log.Fatal("input file must be an audit record file")
 	}
 
-	r, err := netcap.Open(httpAuditRecords, netcap.DefaultBufferSize)
+	r, err := io2.Open(httpAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -106,7 +107,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		}
 	}
 
-	r, err = netcap.Open(httpAuditRecords, netcap.DefaultBufferSize)
+	r, err = io2.Open(httpAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}

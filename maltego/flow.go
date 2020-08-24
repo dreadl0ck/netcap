@@ -25,7 +25,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	io2 "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -177,7 +178,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
 
-	netcap.PrintBuildInfo()
+	io2.PrintBuildInfo()
 
 	dir := filepath.Dir(profilesFile)
 	flowAuditRecords := filepath.Join(dir, "Flow.ncap.gz")
@@ -195,7 +196,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 
 	os.Stdout = stdout
 
-	r, err := netcap.Open(flowAuditRecords, netcap.DefaultBufferSize)
+	r, err := io2.Open(flowAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -249,7 +250,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 		sort.Ints(sizes)
 	}
 
-	r, err = netcap.Open(flowAuditRecords, netcap.DefaultBufferSize)
+	r, err = io2.Open(flowAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
