@@ -35,8 +35,8 @@ var tcps = []*types.TCP{
 		Window:      179,
 		Checksum:    62474,
 		PayloadSize: 5,
-		SrcIP: "192.168.1.14",
-		DstIP: "172.217.6.163",
+		SrcIP:       "192.168.1.14",
+		DstIP:       "172.217.6.163",
 	},
 	{
 		Timestamp:   utils.StringToTime("1505838533.459141").UnixNano(),
@@ -50,8 +50,8 @@ var tcps = []*types.TCP{
 		Window:      179,
 		Checksum:    62473,
 		PayloadSize: 3,
-		SrcIP: "172.217.6.163",
-		DstIP: "192.168.1.14",
+		SrcIP:       "172.217.6.163",
+		DstIP:       "192.168.1.14",
 	},
 	{
 		Timestamp:   utils.StringToTime("1505838533.479163").UnixNano(),
@@ -64,8 +64,8 @@ var tcps = []*types.TCP{
 		Window:      179,
 		Checksum:    62412,
 		PayloadSize: 15,
-		SrcIP: "192.168.1.14",
-		DstIP: "172.217.6.163",
+		SrcIP:       "192.168.1.14",
+		DstIP:       "172.217.6.163",
 	},
 }
 

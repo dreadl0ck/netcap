@@ -18,14 +18,14 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
-	"github.com/dreadl0ck/tlsx"
-	"github.com/gogo/protobuf/proto"
-	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/tlsx"
+	"github.com/gogo/protobuf/proto"
 )
 
 var (
@@ -69,7 +69,7 @@ var ipProfileDecoder = newCustomDecoder(
 	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
 	func(d *customDecoder) error {
 		ipProfileDecoderInstance = d
-		
+
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {

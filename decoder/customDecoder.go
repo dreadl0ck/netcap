@@ -239,6 +239,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 			Proto:   c.Proto,
 			JSON:    c.JSON,
 			Name:    d.GetName(),
+			Type:    d.GetType(),
 			Null:    c.Null,
 			Elastic: c.Elastic,
 			ElasticConfig: io.ElasticConfig{

@@ -311,6 +311,7 @@ func generateElasticIndices(elasticAddrs []string) {
 			Proto:   *flagProto,
 			JSON:    *flagJSON,
 			Name:    d.GetName(),
+			Type:    d.GetType(),
 			Null:    *flagNull,
 			Elastic: *flagElastic,
 			ElasticConfig: io.ElasticConfig{

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -98,10 +99,13 @@ func CreateElasticIndex(wc *WriterConfig) {
 
 	res, err := c.Indices.Create(index)
 	if err != nil || res.StatusCode != http.StatusOK {
-		// ignore error in case the index exists already
-		data, _ := ioutil.ReadAll(res.Body)
-		fmt.Println(string(data))
 		fmt.Println("failed to create elastic index:", err)
+
+		if res != nil {
+			// ignore error in case the index exists already
+			data, _ := ioutil.ReadAll(res.Body)
+			fmt.Println(string(data))
+		}
 	} else {
 		fmt.Println("created elastic index:", index, res.Status())
 	}
@@ -139,173 +143,28 @@ func CreateElasticIndex(wc *WriterConfig) {
 		resp, err := http.DefaultClient.Do(r)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			fmt.Println("failed to create index pattern:", err)
-			data, _ := ioutil.ReadAll(resp.Body)
-			fmt.Println(string(data))
+
+			if resp != nil {
+				data, _ := ioutil.ReadAll(resp.Body)
+				fmt.Println(string(data))
+			}
 		} else {
 			fmt.Println("index pattern ", index+"* created:", resp.Status)
 		}
 	}
 
-	// TODO: create a proper per type mapping
 	res, err = c.Indices.PutMapping(
-		strings.NewReader(`{
-			"properties": {
-				"Timestamp": {
-					"type": "date"
-				},
-				"TimestampFirst": {
-					"type": "date"
-				},
-				"TimestampLast": {
-					"type": "date"
-				},
-				"Duration": {
-					"type": "long"
-				},
-				"Version": {
-					"type": "text"
-				},
-				"SrcIP": {
-					"type": "ip"
-				},
-				"Banner": {
-					"type": "text"
-				},
-				"DstIP": {
-					"type": "ip"
-				},
-				"Context.SrcIP": {
-					"type": "ip"
-				},
-				"Context.DstIP": {
-					"type": "ip"
-				},
-				"SrcPort": {
-					"type": "keyword"
-				},
-				"DstPort": {
-					"type": "keyword"
-				},
-				"Port": {
-					"type": "keyword"
-				},
-				"IP": {
-					"type": "ip"
-				},
-				"ServerIP": {
-					"type": "ip"
-				},
-				"ClientIP": {
-					"type": "ip"
-				},
-				"User": {
-					"type": "keyword"
-				},
-				"Pass": {
-					"type": "keyword"
-				},
-				"Context.SrcPort": {
-					"type": "integer"
-				},
-				"Context.DstPort": {
-					"type": "integer"
-				},
-				"ID": {
-					"type": "keyword"
-				},
-				"Protocol": {
-					"type": "keyword"
-				},
-				"Name": {
-					"type": "keyword"
-				},
-				"Product": {
-					"type": "keyword"
-				},
-				"Vendor": {
-					"type": "keyword"
-				},
-				"SourceName": {
-					"type": "keyword"
-				},
-				"Software.Product": {
-					"type": "keyword"
-				},
-				"Software.Vendor": {
-					"type": "keyword"
-				},
-				"Software.SourceName": {
-					"type": "keyword"
-				},
-				"Answers": {
-					"type": "object"	
-				},
-				"Questions": {
-					"type": "object"	
-				},
-				"Length": {
-					"type": "integer"
-				},
-				"PayloadSize": {
-					"type": "integer"
-				},
-				"Host": {
-					"type": "keyword"
-				},
-				"UserAgent": {
-					"type": "keyword"
-				},
-				"Method": {
-					"type": "keyword"
-				},
-				"Hostname": {
-					"type": "keyword"
-				},
-				"SYN": {
-					"type": "boolean"
-				},
-				"ACK": {
-					"type": "boolean"
-				},
-				"RST": {
-					"type": "boolean"
-				},
-				"FIN": {
-					"type": "boolean"
-				},
-				"Window": {
-					"type": "integer"
-				},
-				"DataOffset": {
-					"type": "integer"
-				},
-				"Bytes": {
-					"type": "long"
-				},
-				"NumPackets": {
-					"type": "integer"
-				},
-				"Parameters.cmd": {
-					"type": "text"
-				},
-				"Parameters.src": {
-					"type": "text"
-				},
-				"Parameters.name": {
-					"type": "text"
-				},
-				"ServerName": {
-					"type": "keyword"
-				}
-			}
-		}`),
+		bytes.NewReader(generateMapping(wc.Type)),
 		func(r *esapi.IndicesPutMappingRequest) {
 			r.Index = []string{index}
 		},
 	)
 	if err != nil || res.StatusCode != http.StatusOK {
-		data, _ := ioutil.ReadAll(res.Body)
-		fmt.Println(string(data))
+		if res != nil {
+			data, _ := ioutil.ReadAll(res.Body)
+			fmt.Println(string(data))
+		}
+
 		log.Fatalf("error getting the response: %s", err)
 	} else {
 		fmt.Println("configured index mapping", res)
@@ -524,7 +383,7 @@ func (w *ElasticWriter) Close() (name string, size int64) {
 	return "", 0
 }
 
-// JSON mapping for elastic indices
+// JSON properties for elastic indices.
 // e.g:
 // {
 // 	"properties": {
@@ -533,56 +392,108 @@ func (w *ElasticWriter) Close() (name string, size int64) {
 // 		},
 // 	}
 // }
+// contains the type mapping for indexed documents.
 type mappingJSON struct {
 	Properties map[string]map[string]string `json:"properties"`
 }
 
-//func whatMapping(d CustomDecoderAPI) {
-//	mapping := mappingJSON{
-//		Properties: map[string]map[string]string{},
-//	}
-//
-//	recordFields := 0
-//	if r, ok := io.InitRecord(d.GetType()).(types.AuditRecord); ok {
-//
-//		auditRecord := reflect.ValueOf(r).Elem()
-//
-//		// iterate over audit record fields
-//		for i := 0; i < auditRecord.NumField(); i++ { // get StructField
-//			field := auditRecord.Type().Field(i)
-//
-//			switch field.Type.String() {
-//			case "string":
-//				mapping.Properties[field.Name] = map[string]string{"type": "text"}
-//			case "int32", "uint32", "bool", "int64", "uint64", "uint8", "float64":
-//				mapping.Properties[field.Name] = map[string]string{"type": "integer"}
-//			default:
-//				if field.Type.Elem().Kind() == reflect.Struct {
-//					mapping.Properties[field.Name] = map[string]string{"type": "object"}
-//				} else {
-//					if field.Type.Elem().Kind() == reflect.Ptr {
-//						mapping.Properties[field.Name] = map[string]string{"type": "object"}
-//					} else {
-//						// scalar array types
-//						// fmt.Println("  ", field.Name, field.Type, "1")
-//						recordFields++
-//					}
-//				}
-//			}
-//		}
-//	}
-//
-//	j, err := json.MarshalIndent(mapping, " ", "  ")
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	fmt.Println(string(j))
-//}
+// overwrites for various field types
+// default for string is text, this can be overwritten with keyword via this mapping.
+var typeMapping = map[string]string{
+	"Timestamp":           "date_nanos",
+	"TimestampFirst":      "date",
+	"TimestampLast":       "date",
+	"Duration":            "long",
+	"SrcIP":               "ip",
+	"DstIP":               "ip",
+	"SrcPort":             "keyword",
+	"DstPort":             "keyword",
+	"Port":                "keyword",
+	"IP":                  "ip",
+	"ServerIP":            "ip",
+	"ClientIP":            "ip",
+	"User":                "keyword",
+	"Pass":                "keyword",
+	"ID":                  "keyword",
+	"Protocol":            "keyword",
+	"Name":                "keyword",
+	"Product":             "keyword",
+	"Vendor":              "keyword",
+	"SourceName":          "keyword",
+	"Software.Product":    "keyword",
+	"Software.Vendor":     "keyword",
+	"Software.SourceName": "keyword",
+	"Answers":             "object",
+	"Questions":           "object",
+	"Host":                "keyword",
+	"UserAgent":           "keyword",
+	"Method":              "keyword",
+	"Hostname":            "keyword",
+	"Bytes":               "long",
+	"Parameters.cmd":      "text",
+	"Parameters.src":      "text",
+	"Parameters.name":     "text",
+	"ServerName":          "keyword",
+}
 
-//
-//func TestMappingGeneration(t *testing.T) {
-//	ApplyActionToCustomDecoders(func(d CustomDecoderAPI) {
-//		whatMapping(d)
-//	})
-//}
+// generates a valid elasticsearch type mapping for the given audit record
+// and returns it as a JSON byte slice.
+// see:
+// https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html
+func generateMapping(t types.Type) []byte {
+	mapping := mappingJSON{
+		Properties: map[string]map[string]string{},
+	}
+
+	recordFields := 0
+	if r, ok := InitRecord(t).(types.AuditRecord); ok {
+
+		auditRecord := reflect.ValueOf(r).Elem()
+
+		// iterate over audit record fields
+		for i := 0; i < auditRecord.NumField(); i++ { // get StructField
+			field := auditRecord.Type().Field(i)
+
+			// first, check if a custom mapping is provided
+			if m, exists := typeMapping[field.Name]; exists {
+				fmt.Println("found mapping", field.Name, m)
+
+				// set the type for the field name
+				mapping.Properties[field.Name] = map[string]string{"type": m}
+
+				continue
+			}
+
+			// no custom type provided - make a decision based on the data type.
+			switch field.Type.String() {
+			case "string": // default for strings is text. for keyword, use the mapping table to overwrite
+				mapping.Properties[field.Name] = map[string]string{"type": "text"}
+			case "int32", "uint32", "int64", "uint64", "uint8", "float64":
+				mapping.Properties[field.Name] = map[string]string{"type": "integer"}
+			case "bool":
+				mapping.Properties[field.Name] = map[string]string{"type": "boolean"}
+			default:
+				if field.Type.Elem().Kind() == reflect.Struct {
+					mapping.Properties[field.Name] = map[string]string{"type": "object"}
+				} else {
+					if field.Type.Elem().Kind() == reflect.Ptr {
+						mapping.Properties[field.Name] = map[string]string{"type": "object"}
+					} else {
+						// scalar array types
+						// fmt.Println("  ", field.Name, field.Type, "1")
+						recordFields++
+					}
+				}
+			}
+		}
+	}
+
+	j, err := json.MarshalIndent(mapping, " ", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("mapping for", t, string(j))
+
+	return j
+}

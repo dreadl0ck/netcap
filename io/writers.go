@@ -1,6 +1,7 @@
 package io
 
 import (
+	"github.com/dreadl0ck/netcap/types"
 	"time"
 )
 
@@ -30,6 +31,7 @@ type WriterConfig struct {
 
 	// Netcap header information
 	Name          string
+	Type          types.Type
 	Buffer        bool
 	Compress      bool
 	Out           string

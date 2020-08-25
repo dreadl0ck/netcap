@@ -39,11 +39,11 @@ func (a *POP3) CSVHeader() []string {
 func (a *POP3) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.ClientIP,                 // string
-		a.ServerIP,                 // string
-		a.AuthToken,                // string
-		a.User,                     // string
-		a.Pass,                     // string
+		a.ClientIP,                   // string
+		a.ServerIP,                   // string
+		a.AuthToken,                  // string
+		a.User,                       // string
+		a.Pass,                       // string
 		strconv.Itoa(len(a.MailIDs)), // []*Mail
 	})
 }
