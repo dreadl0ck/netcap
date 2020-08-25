@@ -78,7 +78,6 @@ func addInfo(old string, new string) string {
 // saves the banner for a TCP service to the filesystem
 // and limits the length of the saved data to the BannerSize value from the config.
 func saveTCPServiceBanner(s streamReader) {
-
 	if !captureServices {
 		return
 	}

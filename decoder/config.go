@@ -25,11 +25,6 @@ import (
 
 var conf *Config
 
-const (
-	defaultDirectoryPermission = 0o700
-	defaultFilesPermission     = 0o700
-)
-
 // SetConfig can be used to set a configuration for the package.
 func SetConfig(cfg *Config) {
 	conf = cfg

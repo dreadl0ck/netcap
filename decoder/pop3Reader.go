@@ -34,6 +34,7 @@ import (
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/mgutz/ansi"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -228,9 +229,9 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	}
 
 	// make sure root path exists
-	err = os.MkdirAll(root, defaultDirectoryPermission)
+	err = os.MkdirAll(root, defaults.DirectoryPermission)
 	if err != nil {
-		utils.DebugLog.Println("failed to create directory:", root, defaultDirectoryPermission)
+		utils.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
 	}
 
 	base = path.Join(root, base)

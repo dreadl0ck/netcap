@@ -180,7 +180,7 @@ func readParameters(h url.Values) map[string]string {
 
 		if k == "" {
 			k = keyUnknownParam
-		// TODO: cleanup this hack to prevent param values with dots breaking the dynamic type mapping of kibana
+			// TODO: cleanup this hack to prevent param values with dots breaking the dynamic type mapping of kibana
 		} else if strings.HasPrefix(k, ".") || strings.HasSuffix(k, ".") {
 			k = "'" + k + "'"
 		}

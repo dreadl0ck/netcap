@@ -33,6 +33,7 @@ import (
 
 	"github.com/dreadl0ck/cryptoutils"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -695,7 +696,7 @@ func createContentTypePathIfRequired(fsPath string) {
 		contentTypeMap[fsPath] = struct{}{}
 
 		// create path
-		err := os.MkdirAll(fsPath, defaultDirectoryPermission)
+		err := os.MkdirAll(fsPath, defaults.DirectoryPermission)
 		if err != nil {
 			logReassemblyError("HTTP-create-path", "Cannot create folder %s: %s\n", fsPath, err)
 		}

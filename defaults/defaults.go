@@ -83,4 +83,8 @@ const (
 
 	// FileStorage is the default location for storing extracted files.
 	FileStorage = "files"
+
+	// DirectoryPermission = 0o755
+	DirectoryPermission = 0o700
+	FilePermission      = 0o700
 )

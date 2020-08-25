@@ -25,6 +25,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -182,9 +183,9 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	)
 
 	// make sure root path exists
-	err := os.MkdirAll(root, defaultDirectoryPermission)
+	err := os.MkdirAll(root, defaults.DirectoryPermission)
 	if err != nil {
-		utils.DebugLog.Println("failed to create directory:", root, defaultDirectoryPermission)
+		utils.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
 	}
 
 	base = path.Join(root, base)
@@ -196,7 +197,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	stats.Unlock()
 
 	// append to files
-	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaultFilesPermission)
+	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaults.FilePermission)
 	if err != nil {
 		logReassemblyError("TCP connection create", "Cannot create %s: %s\n", base, err)
 

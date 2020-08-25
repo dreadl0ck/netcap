@@ -19,7 +19,7 @@ import (
 
 // Overwriting the package level conf when executing other tests in parallel is a bad idea...
 //func TestInitCustomDecoders(t *testing.T) {
-//	_ = os.MkdirAll("tests/customDecoders", defaultDirectoryPermission)
+//	_ = os.MkdirAll("tests/customDecoders", defaults.DirectoryPermission)
 //
 //	conf = &Config{
 //		Out:                     "tests/customDecoders",
