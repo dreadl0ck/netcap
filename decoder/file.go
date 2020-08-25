@@ -42,7 +42,7 @@ var fileDecoder = newCustomDecoder(
 	},
 )
 
-// writeProfile writes the profile.
+// writeDeviceProfile writes the profile.
 func writeFile(f *types.File) {
 	if conf.ExportMetrics {
 		f.Inc()

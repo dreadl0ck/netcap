@@ -3,9 +3,7 @@
 - CSV: write unit test that check if number fields matches the number of fields produced
 - generate a proper field mapping for each index
 
-- write IP profile into dedicated audit record file
 - POP3: move mails into dedicated audit record file
-- embed contexts? -> not possible with proto, just add the fields directly to the structures!
 - create an index for document errors that occurred when pushing data
 - adjust alpine build script similar to the one for ubuntu
 

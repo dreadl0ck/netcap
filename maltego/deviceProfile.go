@@ -42,14 +42,15 @@ var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, ma
 // seen for all DeviceIPs of a given DeviceProfile.
 var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
 	if profile.MacAddr == mac {
-		for _, ip := range profile.DeviceIPs {
-			if uint64(ip.NumPackets) < *min {
-				*min = uint64(ip.NumPackets)
-			}
-			if uint64(ip.NumPackets) > *max {
-				*max = uint64(ip.NumPackets)
-			}
-		}
+		// for _, ip := range profile.DeviceIPs {
+			// TODO: load ipProfiles into memory and lookup the ip
+			//if uint64(ip.NumPackets) < *min {
+			//	*min = uint64(ip.NumPackets)
+			//}
+			//if uint64(ip.NumPackets) > *max {
+			//	*max = uint64(ip.NumPackets)
+			//}
+		//}
 	}
 }
 
@@ -57,14 +58,15 @@ var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, 
 // seen for all ContactIPs of a given DeviceProfile.
 var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
 	if profile.MacAddr == mac {
-		for _, ip := range profile.Contacts {
-			if uint64(ip.NumPackets) < *min {
-				*min = uint64(ip.NumPackets)
-			}
-			if uint64(ip.NumPackets) > *max {
-				*max = uint64(ip.NumPackets)
-			}
-		}
+		//for _, ip := range profile.Contacts {
+		//	// TODO: load ipProfiles into memory and lookup the ip
+		//	if uint64(ip.NumPackets) < *min {
+		//		*min = uint64(ip.NumPackets)
+		//	}
+		//	if uint64(ip.NumPackets) > *max {
+		//		*max = uint64(ip.NumPackets)
+		//	}
+		//}
 	}
 }
 

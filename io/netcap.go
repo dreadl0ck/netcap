@@ -167,6 +167,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Vulnerability)
 	case types.Type_NC_Exploit:
 		record = new(types.Exploit)
+	case types.Type_NC_IPProfile:
+		record = new(types.IPProfile)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
