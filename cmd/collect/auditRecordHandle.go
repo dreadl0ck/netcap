@@ -31,8 +31,6 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-const directoryPermission = 0o755
-
 // auditRecordHandle wraps a file handle of a netcap audit record file
 // contains the original file handle and writers to compress and buffer the data.
 type auditRecordHandle struct {
@@ -43,7 +41,7 @@ type auditRecordHandle struct {
 
 // newAuditRecordHandle creates a new netcap audit record file.
 func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
-	err := os.MkdirAll(b.ClientID, directoryPermission)
+	err := os.MkdirAll(b.ClientID, defaults.DirectoryPermission)
 	if err != nil {
 		panic(err)
 	}
