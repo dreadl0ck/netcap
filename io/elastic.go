@@ -1,3 +1,16 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 package io
 
 import (
@@ -18,6 +31,8 @@ import (
 
 	"github.com/dreadl0ck/netcap/types"
 )
+
+const indexPrefix = "netcap-v2-"
 
 // ElasticConfig allows to overwrite elastic defaults.
 type ElasticConfig struct {
@@ -51,13 +66,6 @@ type ElasticWriter struct {
 	sync.Mutex
 }
 
-var (
-	docIndex   int64
-	docIndexMu sync.Mutex
-)
-
-const indexPrefix = "netcap-"
-
 // NewElasticWriter initializes and configures a new ElasticWriter instance.
 func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 	// init new client
@@ -85,6 +93,11 @@ func makeIndex(wc *WriterConfig) string {
 
 // CreateElasticIndex will create and configure a single elastic database index.
 func CreateElasticIndex(wc *WriterConfig) {
+
+	if wc.Type == types.Type_NC_Header {
+		log.Fatal("uninitialized writer type, please set the Type field")
+	}
+
 	// init new client
 	c, err := elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: wc.ElasticAddrs,
@@ -129,8 +142,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 	// passing an explicit id to prevent kibana from duplicating patterns when executing the index creation multiple times
 	r, err := http.NewRequest(
 		"POST",
-		// wc.KibanaEndpoint+"/api/saved_objects/index-pattern/"+index, // TODO:
-		wc.KibanaEndpoint+"/api/saved_objects/index-pattern/"+strings.ReplaceAll(strings.ToLower(wc.Name), "/", "-"),
+		wc.KibanaEndpoint+"/api/saved_objects/index-pattern/"+index,
 		&buf,
 	)
 	if err != nil {
@@ -401,8 +413,8 @@ type mappingJSON struct {
 // default for string is text, this can be overwritten with keyword via this mapping.
 var typeMapping = map[string]string{
 	"Timestamp":           "date_nanos",
-	"TimestampFirst":      "date",
-	"TimestampLast":       "date",
+	"TimestampFirst":      "date_nanos",
+	"TimestampLast":       "date_nanos",
 	"Duration":            "long",
 	"SrcIP":               "ip",
 	"DstIP":               "ip",
@@ -456,7 +468,6 @@ func generateMapping(t types.Type) []byte {
 
 			// first, check if a custom mapping is provided
 			if m, exists := typeMapping[field.Name]; exists {
-				fmt.Println("found mapping", field.Name, m)
 
 				// set the type for the field name
 				mapping.Properties[field.Name] = map[string]string{"type": m}
