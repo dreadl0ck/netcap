@@ -191,12 +191,12 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 	}
 
 	for _, f := range files {
-		if !strings.HasSuffix(f.Name(), ".ncap.gz") {
+		if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) {
 			continue
 		}
 
 		ident := filepath.Join(outDir, f.Name())
-		name := strings.TrimSuffix(f.Name(), ".ncap.gz")
+		name := strings.TrimSuffix(f.Name(), defaults.FileExtensionCompressed)
 		//
 		//// stat generated profiles
 		//stat, err := os.Stat(ident)
@@ -221,7 +221,7 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 		ent := trx.AddEntity("netcap."+name+"AuditRecords", utils.Pluralize(name))
 
 		ent.AddProperty("path", "Path", "strict", ident)
-		ent.AddProperty("description", "Description", "strict", name+".ncap.gz")
+		ent.AddProperty("description", "Description", "strict", name+defaults.FileExtensionCompressed)
 
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 

@@ -15,6 +15,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"io"
 	"log"
 	"net"
@@ -201,7 +202,7 @@ func Progress(current, total int64) string {
 
 // TrimFileExtension returns the netcap file name without file extension.
 func TrimFileExtension(file string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(file, ".gz"), ".ncap")
+	return strings.TrimSuffix(strings.TrimSuffix(file, ".gz"), defaults.FileExtension)
 }
 
 // TimeToUTC returns a time string in netcap format to a UTC string.

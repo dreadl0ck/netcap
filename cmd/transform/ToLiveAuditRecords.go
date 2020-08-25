@@ -2,6 +2,7 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"log"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 	// generate maltego transform
 	trx := maltego.Transform{}
 	for _, name := range allDecoders {
-		ident := filepath.Join(outDir, name+".ncap")
+		ident := filepath.Join(outDir, name+defaults.FileExtension)
 
 		// stat generated profiles
 		stat, err := os.Stat(ident)
@@ -62,7 +63,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		ent := trx.AddEntity("netcap."+name+"AuditRecords", utils.Pluralize(name))
 
 		ent.AddProperty("path", "Path", "strict", ident)
-		ent.AddProperty("description", "Description", "strict", name+".ncap.gz")
+		ent.AddProperty("description", "Description", "strict", name+defaults.FileExtensionCompressed)
 
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 

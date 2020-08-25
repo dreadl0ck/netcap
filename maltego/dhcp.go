@@ -54,7 +54,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	}
 
 	// check if its an audit record file
-	if !strings.HasSuffix(f.Name(), ".ncap.gz") && !strings.HasSuffix(f.Name(), ".ncap") {
+	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
 		log.Fatal("input file must be an audit record file")
 	}
 

@@ -15,6 +15,7 @@ package export
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,8 +34,6 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
-
-const netcapFileExtension = ".ncap"
 
 // Run parses the subcommand flags and handles the arguments.
 func Run() {
@@ -81,7 +80,7 @@ func Run() {
 	}
 
 	switch {
-	case filepath.Ext(*flagInput) == netcapFileExtension || filepath.Ext(*flagInput) == ".gz":
+	case filepath.Ext(*flagInput) == defaults.FileExtension || filepath.Ext(*flagInput) == ".gz":
 		metrics.ServeMetricsAt(*flagMetricsAddress, nil)
 		exportFile(*flagInput)
 	case *flagDir != "":

@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"io"
 	"io/ioutil"
 	"log"
@@ -264,7 +265,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 
 				var (
 					protocol = strings.TrimPrefix(b.MessageType.String(), "NC_")
-					path     = filepath.Join(b.ClientID, protocol+".ncap.gz")
+					path     = filepath.Join(b.ClientID, protocol+defaults.FileExtensionCompressed)
 				)
 
 				if a, exists := files[path]; exists {

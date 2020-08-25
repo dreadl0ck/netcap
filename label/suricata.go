@@ -178,13 +178,13 @@ func Suricata(inputPcap, outputPath string, useDescription bool, separator, sele
 	// iterate over all files in dir
 	for _, f := range files {
 		// check if its an audit record file
-		if strings.HasSuffix(f.Name(), ".ncap.gz") || strings.HasSuffix(f.Name(), ".ncap") {
+		if strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) || strings.HasSuffix(f.Name(), defaults.FileExtension) {
 			wg.Add(1)
 
 			var (
 				// get record name
 				filename = f.Name()
-				typ      = strings.TrimSuffix(strings.TrimSuffix(filename, ".ncap.gz"), ".ncap")
+				typ      = strings.TrimSuffix(strings.TrimSuffix(filename, defaults.FileExtensionCompressed), defaults.FileExtension)
 			)
 
 			// some record types need to be processed separately

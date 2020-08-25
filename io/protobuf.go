@@ -38,9 +38,9 @@ func NewProtoWriter(wc *WriterConfig) *ProtoWriter {
 	}
 
 	if wc.Compress {
-		w.file = createFile(filepath.Join(wc.Out, wc.Name), ".ncap.gz")
+		w.file = createFile(filepath.Join(wc.Out, wc.Name), defaults.FileExtensionCompressed)
 	} else {
-		w.file = createFile(filepath.Join(wc.Out, wc.Name), ".ncap")
+		w.file = createFile(filepath.Join(wc.Out, wc.Name), defaults.FileExtension)
 	}
 
 	// buffer data?
