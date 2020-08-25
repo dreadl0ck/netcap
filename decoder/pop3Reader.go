@@ -164,7 +164,7 @@ func (h *pop3Reader) Decode() {
 		AuthToken: token,
 		User:      user,
 		Pass:      pass,
-		MailIDs:     mails,
+		MailIDs:   mails,
 	}
 
 	if user != "" || pass != "" {
@@ -684,7 +684,7 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 		EnvelopeTo:      header["Envelope-To"],
 		Body:            h.parseParts(body),
 		ID:              newMailID(),
-		Origin: "POP3",
+		Origin:          "POP3",
 	}
 	for _, p := range mail.Body {
 		if strings.Contains(p.Header["Content-Disposition"], "attachment") {

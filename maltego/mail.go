@@ -51,8 +51,8 @@ func LoadMails() map[string]*types.Mail {
 
 	var (
 		mail = new(types.Mail)
-		pm      proto.Message
-		ok      bool
+		pm   proto.Message
+		ok   bool
 	)
 
 	pm = mail
@@ -70,27 +70,27 @@ func LoadMails() map[string]*types.Mail {
 		}
 
 		mails[mail.ID] = &types.Mail{
-			Timestamp: mail.Timestamp,
-			ReturnPath: mail.ReturnPath,
-			From: mail.From,
-			To: mail.To,
-			CC: mail.CC,
-			Subject: mail.Subject,
-			Date: mail.Date,
-			MessageID: mail.MessageID,
-			References: mail.References,
-			InReplyTo: mail.InReplyTo,
+			Timestamp:       mail.Timestamp,
+			ReturnPath:      mail.ReturnPath,
+			From:            mail.From,
+			To:              mail.To,
+			CC:              mail.CC,
+			Subject:         mail.Subject,
+			Date:            mail.Date,
+			MessageID:       mail.MessageID,
+			References:      mail.References,
+			InReplyTo:       mail.InReplyTo,
 			ContentLanguage: mail.ContentLanguage,
-			HasAttachments: mail.HasAttachments,
-			XOriginatingIP: mail.XOriginatingIP,
-			ContentType: mail.ContentType,
-			EnvelopeTo: mail.EnvelopeTo,
-			Body: mail.Body,
-			ClientIP: mail.ClientIP,
-			ServerIP: mail.ServerIP,
-			ID: mail.ID,
-			DeliveryDate: mail.DeliveryDate,
-			Origin: mail.Origin,
+			HasAttachments:  mail.HasAttachments,
+			XOriginatingIP:  mail.XOriginatingIP,
+			ContentType:     mail.ContentType,
+			EnvelopeTo:      mail.EnvelopeTo,
+			Body:            mail.Body,
+			ClientIP:        mail.ClientIP,
+			ServerIP:        mail.ServerIP,
+			ID:              mail.ID,
+			DeliveryDate:    mail.DeliveryDate,
+			Origin:          mail.Origin,
 		}
 	}
 

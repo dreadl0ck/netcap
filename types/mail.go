@@ -34,9 +34,9 @@ var fieldsMail = []string{
 	"ContentType",     // string
 	"EnvelopeTo",      // string
 	//"Body",            // []*MailPart
-	"ClientIP",        // string
-	"ServerIP",        // string
-	"ID",              // string
+	"ClientIP", // string
+	"ServerIP", // string
+	"ID",       // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -48,25 +48,25 @@ func (d *Mail) CSVHeader() []string {
 func (d *Mail) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(d.Timestamp),
-		d.ReturnPath,      // string
-		d.From,            // string
-		d.To,              // string
-		d.CC,              // string
-		d.Subject,         // string
-		d.Date,            // string
-		d.MessageID,       // string
-		d.References,      // string
-		d.InReplyTo,       // string
-		d.ContentLanguage, // string
-		strconv.FormatBool(d.HasAttachments),  // bool
-		d.XOriginatingIP,  // string
-		d.ContentType,     // string
-		d.EnvelopeTo,      // string
+		d.ReturnPath,                         // string
+		d.From,                               // string
+		d.To,                                 // string
+		d.CC,                                 // string
+		d.Subject,                            // string
+		d.Date,                               // string
+		d.MessageID,                          // string
+		d.References,                         // string
+		d.InReplyTo,                          // string
+		d.ContentLanguage,                    // string
+		strconv.FormatBool(d.HasAttachments), // bool
+		d.XOriginatingIP,                     // string
+		d.ContentType,                        // string
+		d.EnvelopeTo,                         // string
 		//d.Body,            // []*MailPart
-		formatInt64(d.Timestamp),       // int64
-		d.ClientIP,        // string
-		d.ServerIP,        // string
-		d.ID,              // string
+		formatInt64(d.Timestamp), // int64
+		d.ClientIP,               // string
+		d.ServerIP,               // string
+		d.ID,                     // string
 	})
 }
 

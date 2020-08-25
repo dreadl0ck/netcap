@@ -86,9 +86,9 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 	}
 
 	var (
-		min uint64 = 10000000
-		max uint64 = 0
-		profiles = LoadIPProfiles()
+		min      uint64 = 10000000
+		max      uint64 = 0
+		profiles        = LoadIPProfiles()
 	)
 
 	if count != nil {

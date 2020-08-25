@@ -1,6 +1,5 @@
 # TODOs
 
-- generate a proper field mapping for each index
 - count device and ip profiles on stats structure
 - simplify decoder creation
 
@@ -14,6 +13,9 @@
 
 - add constants for logReassemblyError(
 - error messages iteration
+- review all log.Fatal and panic usages
+- check for usage of fmt.Println(err) / fmt.Println(errClose)
+- check TODOs
 
 - add protobuf audit records
 - banner matching: only match the first banner seen for a service?
@@ -23,10 +25,8 @@
 
 - communityID format from zeek
 - unify flow ident string: src:port -> dst:port
+
 - net dump -stats: show value distribution per field
-- review all log.Fatal usages
-- check for usage of fmt.Println(err) / fmt.Println(errClose)
-- check TODOs
 
 - reassembly: reduce allocs per stream to 0 again
 - add a die(msg string) function and use instead of panic(err) 
