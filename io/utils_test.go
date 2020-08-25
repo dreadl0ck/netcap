@@ -19,7 +19,7 @@ import (
 )
 
 func TestDumpCSV(t *testing.T) {
-	f, err := os.Create("tests/testdump.csv")
+	f, err := os.Create("../tests/testdump.csv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestDumpCSV(t *testing.T) {
 	}()
 
 	err = Dump(f, DumpConfig{
-		Path:      "tests/testdata/TCP.ncap.gz",
+		Path:      "../tests/testdata/TCP.ncap.gz",
 		Separator: ",",
 		UTC:       false,
 		CSV:       true,
@@ -42,7 +42,7 @@ func TestDumpCSV(t *testing.T) {
 }
 
 func TestDumpJSON(t *testing.T) {
-	f, err := os.Create("tests/testdump.json")
+	f, err := os.Create("../tests/testdump.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestDumpJSON(t *testing.T) {
 	}()
 
 	err = Dump(f, DumpConfig{
-		Path: "tests/testdata/TCP.ncap.gz",
+		Path: "../tests/testdata/TCP.ncap.gz",
 		JSON: true,
 	})
 	if err != nil {
@@ -63,7 +63,7 @@ func TestDumpJSON(t *testing.T) {
 }
 
 func TestDumpStruc(t *testing.T) {
-	f, err := os.Create("tests/testdump.log")
+	f, err := os.Create("../tests/testdump.log")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestDumpStruc(t *testing.T) {
 	}()
 
 	err = Dump(f, DumpConfig{
-		Path:       "tests/testdata/TCP.ncap.gz",
+		Path:       "../tests/testdata/TCP.ncap.gz",
 		Structured: true,
 	})
 	if err != nil {
@@ -84,7 +84,7 @@ func TestDumpStruc(t *testing.T) {
 }
 
 func TestCloseFile(t *testing.T) {
-	f := createFile("tests/TCP", ".ncap.gz")
+	f := createFile("../tests/TCP", ".ncap.gz")
 	if f == nil {
 		t.Fatal("nil file handle received")
 	}
@@ -100,7 +100,7 @@ func TestCloseFile(t *testing.T) {
 }
 
 func TestCreateFile(t *testing.T) {
-	f := createFile("tests/CreateFileTCP", ".ncap.gz")
+	f := createFile("../tests/CreateFileTCP", ".ncap.gz")
 	if f == nil {
 		t.Fatal("nil file handle received")
 	}

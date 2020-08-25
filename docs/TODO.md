@@ -1,8 +1,6 @@
 # TODOs
 
 - banner matching: only match the first banner seen for a service?
-- don't print banner matching debug output in normal debug mode
-- move default permissions into defaults pkg: e.g: directoryPermission
 - add issues for hacktoberfest
 
 - generate a proper field mapping for each index
