@@ -44,7 +44,7 @@ func (a *POP3) CSVRecord() []string {
 		a.AuthToken,                // string
 		a.User,                     // string
 		a.Pass,                     // string
-		strconv.Itoa(len(a.Mails)), // []*Mail
+		strconv.Itoa(len(a.MailIDs)), // []*Mail
 	})
 }
 

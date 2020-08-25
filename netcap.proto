@@ -150,6 +150,7 @@ enum Type {
   NC_Vulnerability = 99;
   NC_Exploit = 100;
   NC_IPProfile = 101;
+  NC_Mail      = 102;
 }
 
 //
@@ -1848,12 +1849,12 @@ message POP3 {
   string AuthToken = 4;
   string User = 5;
   string Pass = 6;
-  repeated Mail Mails = 7;
+  repeated string MailIDs = 7;
 }
 
 message Mail {
-  string ReturnPath = 1;
-  string DeliveryDate = 2;
+  int64 Timestamp = 1;
+  string ReturnPath = 2;
   string From = 3;
   string To = 4;
   string CC = 5;
@@ -1868,6 +1869,11 @@ message Mail {
   string ContentType = 14;
   string EnvelopeTo = 15;
   repeated MailPart Body = 16;
+  string ClientIP = 17; // address of the client that fetched the mail
+  string ServerIP = 18; // address of the server where the mail was retrieved from
+  string ID       = 19;
+  string DeliveryDate  = 20;
+  string Origin = 21;
 }
 
 message MailPart {

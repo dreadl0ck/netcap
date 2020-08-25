@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/RoaringBitmap/roaring v0.5.0 // indirect
+	github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1
 	github.com/blevesearch/bleve v1.0.9
 	github.com/cznic/b v0.0.0-20181122101859-a26611c4d92d // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
