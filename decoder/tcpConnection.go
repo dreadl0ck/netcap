@@ -535,7 +535,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	stats.Unlock()
 
 	// for debugging:
-	// assembleWithContextTimeout(packet, assembler, tcp)
+	//assembleWithContextTimeout(packet, assembler, tcp)
 	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})

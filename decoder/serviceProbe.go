@@ -65,7 +65,10 @@ var (
 	}
 )
 
-const debugRegexClean = false
+const (
+	debugRegexClean = false
+	probeDebug      = false
+)
 
 // serviceProbe is a regex based probe to fingerprint a network service by looking at its banner
 // the term banner refers to the first X bytes of data (usually 512) that have been sent by the server.
@@ -165,7 +168,7 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				serv.OS = addInfo(serv.OS, extractGroup(&probe.OS, m))
 				serv.Version = addInfo(serv.Version, extractGroup(&probe.Version, m))
 
-				if conf.Debug {
+				if probeDebug {
 					fmt.Println("\n\nMATCH!", ident)
 					fmt.Println(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
@@ -182,7 +185,7 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				serv.OS = addInfo(serv.OS, extractGroupDotNet(&probe.OS, m))
 				serv.Version = addInfo(serv.Version, extractGroupDotNet(&probe.Version, m))
 
-				if conf.Debug {
+				if probeDebug {
 					fmt.Println("\nMATCH!", ident)
 					fmt.Println(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
@@ -277,11 +280,13 @@ var serviceProbeIdentEnums = make(map[string]int)
 func enumerate(in string) string {
 	if v, ok := serviceProbeIdentEnums[in]; ok {
 		serviceProbeIdentEnums[in]++
+
 		return in + "-" + strconv.Itoa(v+1)
-	} else {
-		serviceProbeIdentEnums[in] = 1
-		return in + "-1"
 	}
+
+	serviceProbeIdentEnums[in] = 1
+
+	return in + "-1"
 }
 
 func initServiceProbes() error {
@@ -299,6 +304,7 @@ func initServiceProbes() error {
 			// ignore comments and blanks
 			continue
 		}
+
 		if strings.HasPrefix(line, "match") {
 
 			// check if rule ident field has been excluded
@@ -331,6 +337,7 @@ func initServiceProbes() error {
 			s.Ident = enumerate(ident)
 
 			var b byte
+
 			for {
 				b, err = r.ReadByte()
 				if errors.Is(err, io.EOF) {
