@@ -14,25 +14,32 @@
 package decoder
 
 import (
+	"log"
 	"sync"
 	"sync/atomic"
 
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/tlsx"
-
+	"github.com/gogo/protobuf/proto"
+	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// LocalDNS controls whether the DNS names shall be resolved locally
-// without contacting a nameserver.
-var LocalDNS = true
+var (
+	// LocalDNS controls whether the DNS names shall be resolved locally
+	// without contacting a nameserver.
+	LocalDNS = true
+
+	ipProfileDecoderInstance *customDecoder
+	ipProfiles               int64
+)
 
 // atomicIPProfileMap contains all connections and provides synchronized access.
 type atomicIPProfileMap struct {
-	// SrcIP to Profiles
+	// SrcIP to DeviceProfiles
 	Items map[string]*ipProfile
 	sync.Mutex
 }
@@ -41,10 +48,12 @@ type atomicIPProfileMap struct {
 func (a *atomicIPProfileMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
+
 	return len(a.Items)
 }
 
-var ipProfiles = &atomicIPProfileMap{
+// IPProfiles contains a map of IP specific behavior profiles at runtime.
+var IPProfiles = &atomicIPProfileMap{
 	Items: make(map[string]*ipProfile),
 }
 
@@ -54,15 +63,42 @@ type ipProfile struct {
 	sync.Mutex
 }
 
+var ipProfileDecoder = newCustomDecoder(
+	types.Type_NC_IPProfile,
+	"IPProfile",
+	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
+	func(d *customDecoder) error {
+		ipProfileDecoderInstance = d
+		
+		return nil
+	},
+	func(p gopacket.Packet) proto.Message {
+		return nil
+	},
+	func(e *customDecoder) error {
+		// teardown DPI C libs
+		dpi.Destroy()
+
+		// flush writer
+		for _, item := range IPProfiles.Items {
+			item.Lock()
+			writeIPProfile(item.IPProfile)
+			item.Unlock()
+		}
+
+		return nil
+	},
+)
+
 // GetIPProfile fetches a known profile and updates it or returns a new one.
 func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 	if ipAddr == "" {
 		return nil
 	}
 
-	ipProfiles.Lock()
-	if p, ok := ipProfiles.Items[ipAddr]; ok {
-		ipProfiles.Unlock()
+	IPProfiles.Lock()
+	if p, ok := IPProfiles.Items[ipAddr]; ok {
+		IPProfiles.Unlock()
 
 		p.Lock()
 
@@ -153,7 +189,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 
 		return p
 	}
-	ipProfiles.Unlock()
+	IPProfiles.Unlock()
 
 	var (
 		protos   = make(map[string]*types.Protocol)
@@ -241,9 +277,23 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 		},
 	}
 
-	ipProfiles.Lock()
-	ipProfiles.Items[ipAddr] = p
-	ipProfiles.Unlock()
+	IPProfiles.Lock()
+	IPProfiles.Items[ipAddr] = p
+	IPProfiles.Unlock()
 
 	return p
+}
+
+// writeIPProfile writes the ip profile.
+func writeIPProfile(i *types.IPProfile) {
+	if conf.ExportMetrics {
+		i.Inc()
+	}
+
+	atomic.AddInt64(&ipProfileDecoderInstance.numRecords, 1)
+
+	err := ipProfileDecoderInstance.writer.Write(i)
+	if err != nil {
+		log.Fatal("failed to write proto: ", err)
+	}
 }

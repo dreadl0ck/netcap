@@ -694,7 +694,7 @@ var softwareDecoder = newCustomDecoder(
 )
 
 // TODO: move into customDecoder and use in other places to remove unnecessary package level decoders
-// writeProfile writes the profile.
+// writeDeviceProfile writes the profile.
 func (cd *customDecoder) write(r types.AuditRecord) {
 	if conf.ExportMetrics {
 		r.Inc()

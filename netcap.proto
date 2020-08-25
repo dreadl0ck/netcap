@@ -29,7 +29,7 @@ syntax = "proto3";
 // generated protocol buffer code will be put into the "types" package
 package types;
 
-option go_package = "typespb";
+option go_package = "types";
 option java_multiple_files = true;
 option java_outer_classname = "NetcapProto";
 option java_package = "com.types";
@@ -149,6 +149,7 @@ enum Type {
   NC_SSH = 98;
   NC_Vulnerability = 99;
   NC_Exploit = 100;
+  NC_IPProfile = 101;
 }
 
 //
@@ -1723,8 +1724,8 @@ message ENIPCommandSpecificData {
 message DeviceProfile {
   string MacAddr = 1;
   string DeviceManufacturer = 2;
-  repeated IPProfile DeviceIPs = 3;
-  repeated IPProfile Contacts = 4;
+  repeated string DeviceIPs = 3;
+  repeated string Contacts  = 4;
   int64 NumPackets = 5;
   int64 Timestamp = 6; // first seen
   uint64 Bytes = 7;
@@ -1747,8 +1748,8 @@ message IPProfile {
   map<string, string> Ja3 = 8; // ja3 to lookup
   map<string, Protocol> Protocols = 9;
   uint64 Bytes = 10;
-  map<string, Port> DstPorts = 11; // Ports to bytes
-  map<string, Port> SrcPorts = 12; // Ports to bytes
+  map<string, Port> DstPorts = 11; // Ports mapped to bytes
+  map<string, Port> SrcPorts = 12; // Ports mapped to bytes
   map<string, int64> SNIs = 13;
 }
 

@@ -356,7 +356,7 @@ func (c *Collector) printProgress() {
 			// b.WriteString(" connections: ")
 			// b.WriteString(strconv.Itoa(decoder.Connections.Size()))
 			b.WriteString(" profiles: ")
-			b.WriteString(strconv.Itoa(decoder.Profiles.Size()))
+			b.WriteString(strconv.Itoa(decoder.DeviceProfiles.Size()))
 			b.WriteString(" packets: ")
 			b.WriteString(strconv.Itoa(int(c.current)))
 
@@ -410,7 +410,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 						utils.Progress(curr, num),
 						// decoder.Flows.Size(), // TODO: fetch this info from stats?
 						// decoder.Connections.Size(), // TODO: fetch this info from stats?
-						decoder.Profiles.Size(),
+						decoder.DeviceProfiles.Size(),
 						decoder.ServiceStore.Size(),
 						int(curr),
 						pps,

@@ -1,8 +1,6 @@
 package transform
 
 import (
-	"strconv"
-
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -14,27 +12,29 @@ func toApplicationsForCategory() {
 			if profile.MacAddr == mac {
 
 				for _, ip := range profile.Contacts {
-					if ip.Addr == ipaddr {
-						category := lt.Values["description"]
-						for protoName, proto := range ip.Protocols {
-							if proto.Category == category {
-								ent := trx.AddEntity("maltego.Service", protoName)
-								ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
-							}
-						}
+					if ip == ipaddr {
+						// TODO: load ipProfiles into memory and lookup the ip
+						//category := lt.Values["description"]
+						//for protoName, proto := range ip.Protocols {
+						//	if proto.Category == category {
+						//		ent := trx.AddEntity("maltego.Service", protoName)
+						//		ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
+						//	}
+						//}
 
 						break
 					}
 				}
 				for _, ip := range profile.DeviceIPs {
-					if ip.Addr == ipaddr {
-						category := lt.Values["description"]
-						for protoName, proto := range ip.Protocols {
-							if proto.Category == category {
-								ent := trx.AddEntity("maltego.Service", protoName)
-								ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
-							}
-						}
+					if ip == ipaddr {
+						// TODO: load ipProfiles into memory and lookup the ip
+						//category := lt.Values["description"]
+						//for protoName, proto := range ip.Protocols {
+						//	if proto.Category == category {
+						//		ent := trx.AddEntity("maltego.Service", protoName)
+						//		ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
+						//	}
+						//}
 
 						break
 					}

@@ -13,62 +13,71 @@
 
 package types
 
-import (
-	"strconv"
-)
-
-var fieldsDeviceProfile = []string{
-	"Timestamp",
-	"MacAddr",
-	"DeviceManufacturer",
-	"NumDeviceIPs",
-	"NumContacts",
-	"NumPackets",
-	"Bytes",
+var fieldsIPProfile = []string{
+	"Addr",           // string
+	"NumPackets",     // int64
+	"Geolocation",    // string
+	"DNSNames",       // []string
+	"TimestampFirst", // int64
+	"TimestampLast",  // int64
+	"Applications",   // []string
+	"Ja3",            // map[string]string
+	"Protocols",      // map[string]*Protocol
+	"Bytes",          // uint64
+	"DstPorts",       // map[string]*Port
+	"SrcPorts",       // map[string]*Port
+	"SNIs",           // map[string]int64
 }
 
 // CSVHeader returns the CSV header for the audit record.
-func (d *DeviceProfile) CSVHeader() []string {
-	return filter(fieldsDeviceProfile)
+func (d *IPProfile) CSVHeader() []string {
+	return filter(fieldsIPProfile)
 }
 
 // CSVRecord returns the CSV record for the audit record.
-func (d *DeviceProfile) CSVRecord() []string {
+func (d *IPProfile) CSVRecord() []string {
 	return filter([]string{
-		formatTimestamp(d.Timestamp),
-		d.MacAddr,
-		d.DeviceManufacturer,
-		strconv.Itoa(len(d.DeviceIPs)),
-		strconv.Itoa(len(d.Contacts)),
+		d.Addr,
 		formatInt64(d.NumPackets),
-		formatUint64(d.Bytes),
+		d.Geolocation,
+		// TODO: csv
+		//d.DNSNames,
+		//d.TimestampFirst,
+		//d.TimestampLast,
+		//d.Applications,
+		//d.Ja3,
+		//d.Protocols,
+		//formatUint64(d.Bytes),
+		//d.DstPorts,,
+		//d.SrcPorts,
+		//d.SNIs,
 	})
 }
 
 // Time returns the timestamp associated with the audit record.
-func (d *DeviceProfile) Time() int64 {
-	return d.Timestamp
+func (d *IPProfile) Time() int64 {
+	return d.TimestampFirst
 }
 
 // JSON returns the JSON representation of the audit record.
-func (d *DeviceProfile) JSON() (string, error) {
+func (d *IPProfile) JSON() (string, error) {
 	//	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
 
 	return jsonMarshaler.MarshalToString(d)
 }
 
 // Inc increments the metrics for the audit record.
-func (d *DeviceProfile) Inc() {}
+func (d *IPProfile) Inc() {}
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (d *DeviceProfile) SetPacketContext(*PacketContext) {}
+func (d *IPProfile) SetPacketContext(*PacketContext) {}
 
 // Src returns the source address of the audit record.
-func (d *DeviceProfile) Src() string {
+func (d *IPProfile) Src() string {
 	return ""
 }
 
 // Dst returns the destination address of the audit record.
-func (d *DeviceProfile) Dst() string {
+func (d *IPProfile) Dst() string {
 	return ""
 }

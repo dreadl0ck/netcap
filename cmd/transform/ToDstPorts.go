@@ -22,19 +22,21 @@ func toDstPorts() {
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
-					if ip.Addr == ipaddr {
-						for portStr, port := range ip.DstPorts {
-							addDestinationPort(trx, portStr, port, min, max, ip)
-						}
+					if ip == ipaddr {
+						// TODO: load ipProfiles into memory and lookup the ip
+						//for portStr, port := range ip.DstPorts {
+						//	addDestinationPort(trx, portStr, port, min, max, ip)
+						//}
 
 						break
 					}
 				}
 				for _, ip := range profile.DeviceIPs {
-					if ip.Addr == ipaddr {
-						for portStr, port := range ip.DstPorts {
-							addDestinationPort(trx, portStr, port, min, max, ip)
-						}
+					if ip == ipaddr {
+						// TODO: load ipProfiles into memory and lookup the ip
+						//for portStr, port := range ip.DstPorts {
+						//	addDestinationPort(trx, portStr, port, min, max, ip)
+						//}
 
 						break
 					}

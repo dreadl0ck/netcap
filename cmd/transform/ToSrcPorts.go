@@ -22,17 +22,19 @@ func toSrcPorts() {
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
-					if ip.Addr == ipaddr {
-						for portStr, port := range ip.SrcPorts {
-							addSourcePort(trx, portStr, port, min, max, ip)
-						}
+					if ip == ipaddr {
+						// TODO: load ipProfiles into memory and lookup the ip
+						//for portStr, port := range ip.SrcPorts {
+						//	addSourcePort(trx, portStr, port, min, max, ip)
+						//}
 					}
 				}
 				for _, ip := range profile.DeviceIPs {
-					if ip.Addr == ipaddr {
-						for portStr, port := range ip.SrcPorts {
-							addSourcePort(trx, portStr, port, min, max, ip)
-						}
+					if ip == ipaddr {
+						// TODO: load ipProfiles into memory and lookup the ip
+						//for portStr, port := range ip.SrcPorts {
+						//	addSourcePort(trx, portStr, port, min, max, ip)
+						//}
 					}
 				}
 			}
