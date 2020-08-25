@@ -84,10 +84,15 @@ const (
 	// FileStorage is the default location for storing extracted files.
 	FileStorage = "files"
 
-	// DirectoryPermission = 0o755
+	// DirectoryPermission for all created folders.
 	DirectoryPermission = 0o700
-	FilePermission      = 0o700
 
-	FileExtension           = ".ncap"
+	// FilePermission for all created files.
+	FilePermission = 0o700
+
+	// FileExtension of uncompressed netcap files.
+	FileExtension = ".ncap"
+
+	// FileExtensionCompressed of gzipped netcap files.
 	FileExtensionCompressed = ".ncap.gz"
 )
