@@ -25,7 +25,7 @@ var snapDecoder = newGoPacketDecoder(
 	types.Type_NC_SNAP,
 	layers.LayerTypeSNAP,
 	"The Subnetwork Access Protocol (SNAP) is a mechanism for multiplexing, on networks using IEEE 802.2 LLC",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if snap, ok := layer.(*layers.SNAP); ok {
 			return &types.SNAP{
 				Timestamp:          timestamp,

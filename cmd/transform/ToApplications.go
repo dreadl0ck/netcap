@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/utils"
 	"strconv"
 
 	"github.com/dreadl0ck/netcap/maltego"
@@ -17,7 +18,7 @@ func toApplications() {
 						for protoName, proto := range ip.Protocols {
 							ent := trx.AddEntity("maltego.Service", protoName)
 
-							di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
+							di := "<h3>Application</h3><p>Timestamp first seen: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p>"
 							ent.AddDisplayInformation(di, "Netcap Info")
 
 							ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
@@ -31,7 +32,7 @@ func toApplications() {
 						for protoName, proto := range ip.Protocols {
 							ent := trx.AddEntity("maltego.Service", protoName)
 
-							di := "<h3>Application</h3><p>Timestamp first seen: " + ip.TimestampFirst + "</p>"
+							di := "<h3>Application</h3><p>Timestamp first seen: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p>"
 							ent.AddDisplayInformation(di, "Netcap Info")
 
 							ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")

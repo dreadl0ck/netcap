@@ -17,8 +17,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsICMPv6RouterAdvertisement = []string{
@@ -62,13 +60,13 @@ func (i *ICMPv6RouterAdvertisement) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (i *ICMPv6RouterAdvertisement) Time() string {
+func (i *ICMPv6RouterAdvertisement) Time() int64 {
 	return i.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (i *ICMPv6RouterAdvertisement) JSON() (string, error) {
-	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
 	return jsonMarshaler.MarshalToString(i)
 }
 

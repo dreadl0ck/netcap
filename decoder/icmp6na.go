@@ -25,7 +25,7 @@ var icmpv6NeighborAdvertisementDecoder = newGoPacketDecoder(
 	types.Type_NC_ICMPv6NeighborAdvertisement,
 	layers.LayerTypeICMPv6NeighborAdvertisement,
 	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if icmp6na, ok := layer.(*layers.ICMPv6NeighborAdvertisement); ok {
 			var opts []*types.ICMPv6Option
 			for _, o := range icmp6na.Options {

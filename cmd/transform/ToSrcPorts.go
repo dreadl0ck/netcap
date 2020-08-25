@@ -2,6 +2,7 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"os"
 	"strconv"
 
@@ -55,7 +56,7 @@ func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min
 	}
 	serviceName := resolvers.LookupServiceByPort(np, typ)
 
-	di := "<h3>Port</h3><p>Timestamp: " + ip.TimestampFirst + "</p><p>ServiceName: " + serviceName + "</p>"
+	di := "<h3>Port</h3><p>Timestamp: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p><p>ServiceName: " + serviceName + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 
 	ent.AddProperty("label", "Label", "strict", portStr+"\n"+serviceName)

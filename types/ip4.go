@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsIPv4 = []string{
@@ -76,7 +74,7 @@ func (i *IPv4) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (i *IPv4) Time() string {
+func (i *IPv4) Time() int64 {
 	return i.Timestamp
 }
 
@@ -95,7 +93,7 @@ func (i IPv4Option) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *IPv4) JSON() (string, error) {
-	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
 	return jsonMarshaler.MarshalToString(i)
 }
 

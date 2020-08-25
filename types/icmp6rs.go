@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsICMPv6RouterSolicitation = []string{
@@ -53,7 +51,7 @@ func (i *ICMPv6RouterSolicitation) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (i *ICMPv6RouterSolicitation) Time() string {
+func (i *ICMPv6RouterSolicitation) Time() int64 {
 	return i.Timestamp
 }
 
@@ -70,7 +68,7 @@ func (o ICMPv6Option) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *ICMPv6RouterSolicitation) JSON() (string, error) {
-	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
 	return jsonMarshaler.MarshalToString(i)
 }
 

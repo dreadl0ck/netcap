@@ -17,8 +17,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsVRRPv2 = []string{
@@ -64,13 +62,13 @@ func (a *VRRPv2) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (a *VRRPv2) Time() string {
+func (a *VRRPv2) Time() int64 {
 	return a.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (a *VRRPv2) JSON() (string, error) {
-	a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
+	//	// a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
 	return jsonMarshaler.MarshalToString(a)
 }
 

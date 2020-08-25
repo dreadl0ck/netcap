@@ -101,7 +101,7 @@ var udpDecoder = newGoPacketDecoder(
 	types.Type_NC_UDP,
 	layers.LayerTypeUDP,
 	"User Datagram Protocol (UDP) is a connectionless communications protocol, that facilitates the exchange of messages between computing devices in a network",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if udp, ok := layer.(*layers.UDP); ok {
 			var payload []byte
 			if conf.IncludePayloads {
@@ -289,7 +289,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	serv := newService(utils.TimeToString(firstPacket), serverBytes, clientBytes, net.Dst().String())
+	serv := newService(firstPacket.UnixNano(), serverBytes, clientBytes, net.Dst().String())
 	serv.Banner = string(banner)
 	serv.IP = net.Dst().String()
 	serv.Port = transport.Dst().String()

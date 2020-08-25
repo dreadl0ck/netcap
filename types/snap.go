@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsSNAP = []string{
@@ -43,13 +41,13 @@ func (s *SNAP) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (s *SNAP) Time() string {
+func (s *SNAP) Time() int64 {
 	return s.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (u *SNAP) JSON() (string, error) {
-	u.Timestamp = utils.TimeToUnixMilli(u.Timestamp)
+	//	u.Timestamp = utils.TimeToUnixMilli(u.Timestamp)
 	return jsonMarshaler.MarshalToString(u)
 }
 

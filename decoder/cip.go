@@ -25,7 +25,7 @@ var cipDecoder = newGoPacketDecoder(
 	types.Type_NC_CIP,
 	layers.LayerTypeCIP,
 	"The Common Industrial Protocol (CIP) is an industrial protocol for industrial automation applications",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if cip, ok := layer.(*layers.CIP); ok {
 			var payload []byte
 			if conf.IncludePayloads {

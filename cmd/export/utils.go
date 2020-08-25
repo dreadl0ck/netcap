@@ -198,7 +198,7 @@ func firstTimestamp(path string) time.Time {
 
 		// assert to AuditRecord
 		if p, ok := record.(types.AuditRecord); ok {
-			return utils.StringToTime(p.Time())
+			return time.Unix(0, p.Time())
 		}
 	}
 
@@ -251,7 +251,7 @@ func exportFile(path string) {
 		if p, ok := record.(types.AuditRecord); ok {
 
 			if *flagReplay {
-				t := utils.StringToTime(p.Time())
+				t := time.Unix(0, p.Time())
 
 				if count == 1 {
 					firstTimestampValue = t

@@ -3,6 +3,7 @@ package transform
 import (
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toLoginInformation() {
@@ -15,7 +16,7 @@ func toLoginInformation() {
 			}
 
 			ent := trx.AddEntity("netcap.Credentials", val)
-			ent.AddProperty("timestamp", "Timestamp", "strict", cred.Timestamp)
+			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(cred.Timestamp))
 			ent.AddProperty("service", "Service", "strict", cred.Service)
 			ent.AddProperty("flow", "Flow", "strict", cred.Flow)
 			ent.AddProperty("notes", "Notes", "strict", cred.Notes)

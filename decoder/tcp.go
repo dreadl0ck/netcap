@@ -27,7 +27,7 @@ var tcpDecoder = newGoPacketDecoder(
 	types.Type_NC_TCP,
 	layers.LayerTypeTCP,
 	"The Transmission Control Protocol (TCP) is a connection-oriented communications protocol, that facilitates the exchange of messages between computing devices in a network",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if tcp, ok := layer.(*layers.TCP); ok {
 			var (
 				opts    []*types.TCPOption

@@ -25,7 +25,7 @@ var ipv4Decoder = newGoPacketDecoder(
 	types.Type_NC_IPv4,
 	layers.LayerTypeIPv4,
 	"Internet Protocol version 4 is the fourth version of the Internet Protocol. It is one of the core protocols of standards-based internetworking methods in the Internet and other packet-switched networks",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ip4, ok := layer.(*layers.IPv4); ok {
 			var e float64
 			if conf.CalculateEntropy {

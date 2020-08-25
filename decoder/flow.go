@@ -18,12 +18,12 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 type flow struct {
@@ -110,17 +110,11 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		// check if received packet from the same flow
 		// was captured BEFORE the flows first seen timestamp
-		if !utils.StringToTime(f.TimestampFirst).Before(p.Metadata().Timestamp) {
+		if !(f.TimestampFirst < p.Metadata().Timestamp.UnixNano()) {
 			calcDuration = true
 
-			// if there is no last seen timestamp yet, simply swap the values
-			// otherwise the previously stored TimestampFirst value would be lost
-			if f.TimestampLast == "" {
-				f.TimestampLast = f.TimestampFirst
-			}
-
 			// rewrite timestamp
-			f.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
+			f.TimestampFirst = p.Metadata().Timestamp.UnixNano()
 
 			// rewrite source and destination parameters
 			// since the first packet decides about the flow direction
@@ -143,10 +137,10 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		}
 
 		// check if last timestamp was before the current packet
-		if utils.StringToTime(f.TimestampLast).Before(p.Metadata().Timestamp) {
+		if f.TimestampLast < p.Metadata().Timestamp.UnixNano() {
 			// current packet is newer
 			// update last seen timestamp
-			f.TimestampLast = utils.TimeToString(p.Metadata().Timestamp)
+			f.TimestampLast = p.Metadata().Timestamp.UnixNano()
 			calcDuration = true
 		} // else: do nothing, timestamp is still the oldest one
 
@@ -155,7 +149,7 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		// only calculate duration when timetamps have changed
 		if calcDuration {
-			f.Duration = utils.StringToTime(f.TimestampLast).Sub(utils.StringToTime(f.TimestampFirst)).Nanoseconds()
+			f.Duration = time.Unix(0, f.TimestampLast).Sub(time.Unix(0, f.TimestampFirst)).Nanoseconds()
 		}
 
 		f.Unlock()
@@ -163,8 +157,8 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		// create a new flow
 		fl := &types.Flow{}
 		fl.UID = calcMd5(flowID)
-		fl.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
-		fl.TimestampLast = utils.TimeToString(p.Metadata().Timestamp)
+		fl.TimestampFirst = p.Metadata().Timestamp.UnixNano()
+		fl.TimestampLast = p.Metadata().Timestamp.UnixNano()
 
 		if ll := p.LinkLayer(); ll != nil {
 			fl.LinkProto = ll.LayerType().String()
@@ -206,7 +200,7 @@ func (fd *flowCustomDecoder) flushFlows(p gopacket.Packet) {
 
 	for id, flw := range fd.Flows.Items {
 		// flush entries whose last timestamp is flowTimeOut older than current packet
-		if p.Metadata().Timestamp.Sub(utils.StringToTime(flw.TimestampLast)) > conf.FlowTimeOut {
+		if p.Metadata().Timestamp.Sub(time.Unix(0, flw.TimestampLast)) > conf.FlowTimeOut {
 			selectFlows = append(selectFlows, flw.Flow)
 			// cleanup
 			delete(fd.Flows.Items, id)

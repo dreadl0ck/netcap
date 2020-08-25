@@ -25,7 +25,7 @@ var geneveDecoder = newGoPacketDecoder(
 	types.Type_NC_Geneve,
 	layers.LayerTypeGeneve,
 	"Geneve is a network virtualization overlay encapsulation protocol designed to establish tunnels between network virtualization end points (NVE) over an existing IP network",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if geneve, ok := layer.(*layers.Geneve); ok {
 			var opts []*types.GeneveOption
 			if len(geneve.Options) > 0 {

@@ -25,7 +25,7 @@ var nortelDiscoveryDecoder = newGoPacketDecoder(
 	types.Type_NC_NortelDiscovery,
 	layers.LayerTypeNortelDiscovery,
 	"The Nortel Discovery Protocol (NDP) is a Data Link Layer (OSI Layer 2) network protocol for discovery of Nortel networking devices and certain products from Avaya and Ciena",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if nortel, ok := layer.(*layers.NortelDiscovery); ok {
 			return &types.NortelDiscovery{
 				Timestamp: timestamp,

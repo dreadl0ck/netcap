@@ -81,7 +81,7 @@ func Run() {
 
 		// print result as table
 		tui.Table(os.Stdout, []string{"Field", "Value"}, [][]string{
-			{"Created", utils.TimeToUTC(h.Created)},
+			{"Created", utils.UnixTimeToUTC(h.Created)},
 			{"Source", h.InputSource},
 			{"Version", h.Version},
 			{"Type", h.Type.String()},

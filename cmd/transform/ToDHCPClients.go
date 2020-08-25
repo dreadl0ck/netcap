@@ -34,7 +34,7 @@ func toDHCPClients() {
 
 			ent := trx.AddEntity("netcap.DHCPClient", ident)
 
-			ent.AddProperty("timestamp", "Timestamp", "strict", dhcp.Timestamp)
+			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(dhcp.Timestamp))
 			ent.AddProperty("clientIP", "ClientIP", "strict", dhcp.ClientIP)
 			ent.AddProperty("serverIP", "ServerIP", "strict", dhcp.NextServerIP)
 			ent.AddProperty("fp", "Fingerprint", "strict", dhcp.Fingerprint)

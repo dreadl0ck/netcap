@@ -15,8 +15,6 @@ package types
 
 import (
 	"strconv"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsDeviceProfile = []string{
@@ -37,7 +35,7 @@ func (d *DeviceProfile) CSVHeader() []string {
 // CSVRecord returns the CSV record for the audit record.
 func (d *DeviceProfile) CSVRecord() []string {
 	return filter([]string{
-		d.Timestamp,
+		formatTimestamp(d.Timestamp),
 		d.MacAddr,
 		d.DeviceManufacturer,
 		strconv.Itoa(len(d.DeviceIPs)),
@@ -48,13 +46,13 @@ func (d *DeviceProfile) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (d *DeviceProfile) Time() string {
-	return ""
+func (d *DeviceProfile) Time() int64 {
+	return d.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (d *DeviceProfile) JSON() (string, error) {
-	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
+	//	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
 
 	// TODO: for elasticsearch, this is too much information in a single log message
 	d.Contacts = nil

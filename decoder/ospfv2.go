@@ -25,7 +25,7 @@ var ospfv2Decoder = newGoPacketDecoder(
 	types.Type_NC_OSPFv2,
 	layers.LayerTypeOSPF,
 	"Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ospf2, ok := layer.(*layers.OSPFv2); ok {
 			var (
 				headers []*types.LSAheader

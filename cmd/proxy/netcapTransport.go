@@ -28,7 +28,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // netcapTransport contains a http.Transport for RoundTrips
@@ -175,7 +174,7 @@ makeHTTPRequest:
 	// create HTTP audit record and populate it with data
 	// from both http.Request and http.Response
 	r := &types.HTTP{
-		Timestamp: utils.TimeToString(startTime),
+		Timestamp: startTime.UnixNano(),
 
 		// Request information
 		// ReqCookies:         reqCookies,

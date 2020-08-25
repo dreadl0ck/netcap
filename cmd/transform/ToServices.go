@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/utils"
 	"strconv"
 
 	"github.com/dreadl0ck/netcap/maltego"
@@ -26,7 +27,7 @@ func toServices() {
 			}
 
 			ent := trx.AddEntity("netcap.Service", val)
-			ent.AddProperty("timestamp", "Timestamp", "strict", service.Timestamp)
+			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(service.Timestamp))
 			ent.AddProperty("product", "Product", "strict", service.Product)
 			ent.AddProperty("version", "Version", "strict", service.Version)
 			ent.AddProperty("protocol", "Protocol", "strict", service.Protocol)

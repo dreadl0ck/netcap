@@ -25,7 +25,7 @@ var ospfv3Decoder = newGoPacketDecoder(
 	types.Type_NC_OSPFv3,
 	layers.LayerTypeOSPF,
 	"Open Shortest Path First (OSPF) v3 is a routing protocol for Internet Protocol (IP) networks with support for IPv6",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ospf3, ok := layer.(*layers.OSPFv3); ok {
 			var (
 				hello  *types.HelloPkg

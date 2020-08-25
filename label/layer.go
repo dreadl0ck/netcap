@@ -34,7 +34,7 @@ import (
 var CollectLabels bool
 
 // labelLayer labels packets of a given gopacket.LayerType string.
-func labelLayer(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*suricataAlert, labels []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
+func labelLayer(wg *sync.WaitGroup, file string, typ string, labelMap map[int64]*suricataAlert, labels []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
 		total, errCount = io2.Count(fname)

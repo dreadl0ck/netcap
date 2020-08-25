@@ -25,7 +25,7 @@ var mplsDecoder = newGoPacketDecoder(
 	types.Type_NC_MPLS,
 	layers.LayerTypeMPLS,
 	"Multiprotocol Label Switching is a routing technique in telecommunications networks that directs data from one node to the next based on short path labels rather than long network addresses, thus avoiding complex lookups in a routing table and speeding traffic flows",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if mpls, ok := layer.(*layers.MPLS); ok {
 			return &types.MPLS{
 				Timestamp:    timestamp,

@@ -225,6 +225,11 @@ func TimeToUTC(val string) string {
 	return val
 }
 
+// UnixTimeToUTC returns a time string in netcap format to a UTC string.
+func UnixTimeToUTC(val int64) string {
+	return time.Unix(0, val).UTC().String()
+}
+
 // TimeToUnixMilli returns a time string in netcap format to a Unix millisecond time.
 func TimeToUnixMilli(val string) string {
 	if slice := strings.Split(val, "."); len(slice) == 2 {

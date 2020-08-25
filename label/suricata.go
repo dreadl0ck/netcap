@@ -59,7 +59,7 @@ var (
 
 // suricataAlert is a summary structure for an alert.
 type suricataAlert struct {
-	Timestamp      string
+	Timestamp      int64
 	Proto          string
 	SrcIP          string
 	SrcPort        int
@@ -74,7 +74,7 @@ type suricataAlert struct {
 // a directory named after the input file is created, all suricata logs go there
 // if no output directory is specified, netcap audit records are expected in the current directory.
 // otherwise audit records are expected in the output directory.
-func Suricata(inputPcap string, outputPath string, useDescription bool, separator, selection string) error {
+func Suricata(inputPcap, outputPath string, useDescription bool, separator, selection string) error {
 	start := time.Now()
 
 	// directory for suricata logs
@@ -246,7 +246,7 @@ func Suricata(inputPcap string, outputPath string, useDescription bool, separato
 }
 
 // parseSuricataFastLog returns labels for a given suricata fast.log contents.
-func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[string]*suricataAlert, arr []*suricataAlert, err error) {
+func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[int64]*suricataAlert, arr []*suricataAlert, err error) {
 	fmt.Println("parsing suricata fast.log")
 
 	if len(excluded) != 0 {
@@ -261,7 +261,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 	var duplicates []*suricataAlert
 
 	// ts:alert
-	labelMap = make(map[string]*suricataAlert)
+	labelMap = make(map[int64]*suricataAlert)
 
 	// range fast.log contents line by line
 	for _, l := range strings.Split(string(contents), "\n") {
@@ -345,7 +345,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 
 			// create alert
 			a := &suricataAlert{
-				Timestamp:      utils.TimeToString(t),
+				Timestamp:      t.UnixNano(),
 				Proto:          nProto,
 				SrcIP:          sourceIP,
 				SrcPort:        srcport,
@@ -397,7 +397,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[st
 
 		for _, a := range duplicates {
 			tui.Table(os.Stdout, []string{"Field", "Value"}, [][]string{
-				{"Timestamp", a.Timestamp},
+				{"Timestamp", time.Unix(0, a.Timestamp).UTC().String()},
 				{"Proto", a.Proto},
 				{"SrcIP", a.SrcIP},
 				{"SrcPort", strconv.Itoa(a.SrcPort)},

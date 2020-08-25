@@ -25,7 +25,7 @@ var fddiDecoder = newGoPacketDecoder(
 	types.Type_NC_FDDI,
 	layers.LayerTypeFDDI,
 	"Fiber Distributed Data Interface (FDDI) is a standard for data transmission in a local area network",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if fddi, ok := layer.(*layers.FDDI); ok {
 			return &types.FDDI{
 				Timestamp:    timestamp,

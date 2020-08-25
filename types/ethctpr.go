@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsEthernetCTPReply = []string{
@@ -45,13 +43,13 @@ func (ectpr *EthernetCTPReply) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (ectpr *EthernetCTPReply) Time() string {
+func (ectpr *EthernetCTPReply) Time() int64 {
 	return ectpr.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (ectpr *EthernetCTPReply) JSON() (string, error) {
-	ectpr.Timestamp = utils.TimeToUnixMilli(ectpr.Timestamp)
+	//	ectpr.Timestamp = utils.TimeToUnixMilli(ectpr.Timestamp)
 	return jsonMarshaler.MarshalToString(ectpr)
 }
 

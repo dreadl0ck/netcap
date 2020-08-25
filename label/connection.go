@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"gopkg.in/cheggaaa/pb.v1"
@@ -108,9 +109,9 @@ func labelConnections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, 
 			// if not label it as normal
 			for _, a := range alerts {
 				var (
-					alertTime = utils.StringToTime(a.Timestamp)
-					last      = utils.StringToTime(conn.TimestampLast)
-					first     = utils.StringToTime(conn.TimestampFirst)
+					alertTime = time.Unix(0, a.Timestamp)
+					last      = time.Unix(0, conn.TimestampLast)
+					first     = time.Unix(0, conn.TimestampFirst)
 				)
 
 				// transport protocol must match

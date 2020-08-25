@@ -25,7 +25,7 @@ var diameterDecoder = newGoPacketDecoder(
 	types.Type_NC_Diameter,
 	layers.LayerTypeDiameter,
 	"Diameter is an authentication, authorization, and accounting protocol for computer networks, it evolved from the earlier RADIUS protocol",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if d, ok := layer.(*layers.Diameter); ok {
 			var avps []*types.AVP
 			for _, a := range d.AVPs {

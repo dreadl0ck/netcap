@@ -25,7 +25,7 @@ var llcDecoder = newGoPacketDecoder(
 	types.Type_NC_LLC,
 	layers.LayerTypeLLC,
 	"The LLC sublayer acts as an interface between the media access control sublayer and the network layer",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if llc, ok := layer.(*layers.LLC); ok {
 			return &types.LLC{
 				Timestamp: timestamp,

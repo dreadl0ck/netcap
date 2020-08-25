@@ -44,7 +44,7 @@ func toOutgoingFlowsFiltered() {
 func addOutFlow(trx *maltego.Transform, flow *types.Flow, min, max uint64, name string) {
 	ent := trx.AddEntity("netcap.Flow", flow.UID+"\n"+name)
 
-	di := "<h3>Outgoing Flow: " + flow.SrcIP + ":" + flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.TimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.TimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
+	di := "<h3>Outgoing Flow: " + flow.SrcIP + ":" + flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.UnixTimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.UnixTimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 
 	ent.SetLinkLabel(humanize.Bytes(uint64(flow.TotalSize)))

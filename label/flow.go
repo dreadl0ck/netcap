@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"gopkg.in/cheggaaa/pb.v1"
@@ -107,9 +108,9 @@ func labelFlows(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir
 			// if not label it as normal
 			for _, a := range alerts {
 				var (
-					alertTime = utils.StringToTime(a.Timestamp)
-					last      = utils.StringToTime(flow.TimestampLast)
-					first     = utils.StringToTime(flow.TimestampFirst)
+					alertTime = time.Unix(0, a.Timestamp)
+					last      = time.Unix(0, flow.TimestampLast)
+					first     = time.Unix(0, flow.TimestampFirst)
 				)
 
 				// alert time must be either after or equal to first seen timestamp

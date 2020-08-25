@@ -18,8 +18,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*
@@ -27,7 +25,7 @@ import (
  */
 
 var auditRecord = &UDP{
-	Timestamp:      utils.TimeToString(time.Now()), // string
+	Timestamp:      time.Now().UnixNano(), 			// int64
 	SrcPort:        1334,                           // int32
 	DstPort:        345,                            // int32
 	Length:         234,                            // int32

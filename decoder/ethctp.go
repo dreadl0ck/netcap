@@ -25,7 +25,7 @@ var ethernetCTPDecoder = newGoPacketDecoder(
 	types.Type_NC_EthernetCTP,
 	layers.LayerTypeEthernetCTP,
 	"Ethernet Configuration Testing Protocol is a diagnostic protocol included in the Xerox Ethernet II specification",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ethctp, ok := layer.(*layers.EthernetCTP); ok {
 			return &types.EthernetCTP{
 				Timestamp: timestamp,

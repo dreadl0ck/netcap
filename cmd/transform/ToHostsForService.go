@@ -25,7 +25,7 @@ func toHostsForService() {
 					srcIP, _, _, _ := utils.ParseIdent(f)
 					ent := trx.AddEntity("netcap.IPAddr", srcIP)
 
-					ent.AddProperty("timestamp", "Timestamp", "strict", service.Timestamp)
+					ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(service.Timestamp))
 					ent.AddProperty("mac", "MacAddress", "strict", mac)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", srcIP)
 					ent.AddProperty("path", "Path", "strict", profilesFile)

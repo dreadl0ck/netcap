@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsIGMP = []string{
@@ -76,7 +74,7 @@ func (i *IGMP) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (i *IGMP) Time() string {
+func (i *IGMP) Time() int64 {
 	return i.Timestamp
 }
 
@@ -99,7 +97,7 @@ func (i IGMPv3GroupRecord) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *IGMP) JSON() (string, error) {
-	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
 	return jsonMarshaler.MarshalToString(i)
 }
 

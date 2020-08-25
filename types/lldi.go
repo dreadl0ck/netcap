@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsLLDI = []string{
@@ -64,7 +62,7 @@ func (l *LinkLayerDiscoveryInfo) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (l *LinkLayerDiscoveryInfo) Time() string {
+func (l *LinkLayerDiscoveryInfo) Time() int64 {
 	return l.Timestamp
 }
 
@@ -142,7 +140,7 @@ func (c *LLDPCapabilities) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (l *LinkLayerDiscoveryInfo) JSON() (string, error) {
-	l.Timestamp = utils.TimeToUnixMilli(l.Timestamp)
+	//	l.Timestamp = utils.TimeToUnixMilli(l.Timestamp)
 	return jsonMarshaler.MarshalToString(l)
 }
 

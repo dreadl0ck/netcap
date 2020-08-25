@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsDHCPv6 = []string{
@@ -67,7 +65,7 @@ func (d *DHCPv6) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (d *DHCPv6) Time() string {
+func (d *DHCPv6) Time() int64 {
 	return d.Timestamp
 }
 
@@ -85,7 +83,7 @@ func (d DHCPv6Option) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (d *DHCPv6) JSON() (string, error) {
-	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
+	//	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
 	return jsonMarshaler.MarshalToString(d)
 }
 

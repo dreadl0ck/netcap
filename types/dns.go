@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsDNS = []string{
@@ -104,7 +102,7 @@ func (d *DNS) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (d *DNS) Time() string {
+func (d *DNS) Time() int64 {
 	return d.Timestamp
 }
 
@@ -204,7 +202,7 @@ func (q *DNSMX) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (d *DNS) JSON() (string, error) {
-	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
+	//	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
 	return jsonMarshaler.MarshalToString(d)
 }
 
