@@ -197,27 +197,32 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		// flush
 		if conf.ConnFlushInterval != 0 && conns%int64(conf.ConnFlushInterval) == 0 {
-			var selectConns []*types.Connection
-			for id, entry := range cd.Conns.Items {
-				// flush entries whose last timestamp is connTimeOut older than current packet
-				if p.Metadata().Timestamp.Sub(utils.StringToTime(entry.TimestampLast)) > conf.ConnTimeOut {
-					selectConns = append(selectConns, entry.Connection)
-					// cleanup
-					delete(cd.Conns.Items, id)
-				}
-			}
-
-			// flush selection in background
-			go func() {
-				for _, selectedConn := range selectConns {
-					cd.writeConn(selectedConn)
-				}
-			}()
+			cd.flushConns(p)
 		}
 	}
 	cd.Conns.Unlock()
 
 	return nil
+}
+
+func (cd *connectionDecoder) flushConns(p gopacket.Packet) {
+	var selectConns []*types.Connection
+
+	for id, entry := range cd.Conns.Items {
+		// flush entries whose last timestamp is connTimeOut older than current packet
+		if p.Metadata().Timestamp.Sub(utils.StringToTime(entry.TimestampLast)) > conf.ConnTimeOut {
+			selectConns = append(selectConns, entry.Connection)
+			// cleanup
+			delete(cd.Conns.Items, id)
+		}
+	}
+
+	// flush selection in background
+	go func() {
+		for _, selectedConn := range selectConns {
+			cd.writeConn(selectedConn)
+		}
+	}()
 }
 
 // DeInit is called prior to teardown.
