@@ -29,7 +29,7 @@ import (
 )
 
 // CountPacketsDevices returns the lowest and highest number of packets seen for a given DeviceProfile.
-var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
+var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, max *uint64, _ map[string]*types.IPProfile) {
 	if uint64(profile.NumPackets) < *min {
 		*min = uint64(profile.NumPackets)
 	}
@@ -40,38 +40,38 @@ var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, ma
 
 // CountPacketsDeviceIPs CountPacketsDevices returns the lowest and highest number of packets
 // seen for all DeviceIPs of a given DeviceProfile.
-var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
+var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile) {
 	if profile.MacAddr == mac {
-		// for _, ip := range profile.DeviceIPs {
-			// TODO: load ipProfiles into memory and lookup the ip
-			//if uint64(ip.NumPackets) < *min {
-			//	*min = uint64(ip.NumPackets)
-			//}
-			//if uint64(ip.NumPackets) > *max {
-			//	*max = uint64(ip.NumPackets)
-			//}
-		//}
+		for _, ip := range profile.DeviceIPs {
+			countIP(ips, ip, min, max)
+		}
 	}
 }
 
 // CountPacketsContactIPs returns the lowest and highest number of packets
 // seen for all ContactIPs of a given DeviceProfile.
-var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64) {
+var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile) {
 	if profile.MacAddr == mac {
-		//for _, ip := range profile.Contacts {
-		//	// TODO: load ipProfiles into memory and lookup the ip
-		//	if uint64(ip.NumPackets) < *min {
-		//		*min = uint64(ip.NumPackets)
-		//	}
-		//	if uint64(ip.NumPackets) > *max {
-		//		*max = uint64(ip.NumPackets)
-		//	}
-		//}
+		for _, ip := range profile.Contacts {
+			countIP(ips, ip, min, max)
+		}
+	}
+}
+
+func countIP(ips map[string]*types.IPProfile, ip string, min, max *uint64) {
+	if p, ok := ips[ip]; ok {
+		if uint64(p.NumPackets) < *min {
+			*min = uint64(p.NumPackets)
+		}
+
+		if uint64(p.NumPackets) > *max {
+			*max = uint64(p.NumPackets)
+		}
 	}
 }
 
 // countFunc is a function that counts something over DeviceProfiles.
-type countFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64)
+type countFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
 
 // deviceProfileTransformationFunc is transform over DeviceProfiles.
 type deviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
@@ -132,6 +132,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 	var (
 		min uint64 = 10000000
 		max uint64 = 0
+		profiles = LoadIPProfiles()
 	)
 
 	if count != nil {
@@ -143,7 +144,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 				panic(err)
 			}
 
-			count(profile, mac, &min, &max)
+			count(profile, mac, &min, &max, profiles)
 		}
 
 		err = r.Close()

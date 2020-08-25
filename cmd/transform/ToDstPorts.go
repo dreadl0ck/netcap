@@ -17,26 +17,30 @@ func toDstPorts() {
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
+	profiles := maltego.LoadIPProfiles()
+
 	maltego.IPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip == ipaddr {
-						// TODO: load ipProfiles into memory and lookup the ip
-						//for portStr, port := range ip.DstPorts {
-						//	addDestinationPort(trx, portStr, port, min, max, ip)
-						//}
+						if p, ok := profiles[ip]; ok {
+							for portStr, port := range p.DstPorts {
+								addDestinationPort(trx, portStr, port, min, max, p)
+							}
+						}
 
 						break
 					}
 				}
 				for _, ip := range profile.DeviceIPs {
 					if ip == ipaddr {
-						// TODO: load ipProfiles into memory and lookup the ip
-						//for portStr, port := range ip.DstPorts {
-						//	addDestinationPort(trx, portStr, port, min, max, ip)
-						//}
+						if p, ok := profiles[ip]; ok {
+							for portStr, port := range p.DstPorts {
+								addDestinationPort(trx, portStr, port, min, max, p)
+							}
+						}
 
 						break
 					}

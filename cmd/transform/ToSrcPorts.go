@@ -14,8 +14,11 @@ import (
 func toSrcPorts() {
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
+
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
+
+	profiles := maltego.LoadIPProfiles()
 
 	maltego.IPTransform(
 		nil,
@@ -23,18 +26,20 @@ func toSrcPorts() {
 			if profile.MacAddr == mac {
 				for _, ip := range profile.Contacts {
 					if ip == ipaddr {
-						// TODO: load ipProfiles into memory and lookup the ip
-						//for portStr, port := range ip.SrcPorts {
-						//	addSourcePort(trx, portStr, port, min, max, ip)
-						//}
+						if ipp, ok := profiles[ip]; ok {
+							for portStr, port := range ipp.SrcPorts {
+								addSourcePort(trx, portStr, port, min, max, ipp)
+							}
+						}
 					}
 				}
 				for _, ip := range profile.DeviceIPs {
 					if ip == ipaddr {
-						// TODO: load ipProfiles into memory and lookup the ip
-						//for portStr, port := range ip.SrcPorts {
-						//	addSourcePort(trx, portStr, port, min, max, ip)
-						//}
+						if ipp, ok := profiles[ip]; ok {
+							for portStr, port := range ipp.SrcPorts {
+								addSourcePort(trx, portStr, port, min, max, ipp)
+							}
+						}
 					}
 				}
 			}

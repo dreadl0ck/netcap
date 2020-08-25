@@ -34,14 +34,15 @@ type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *typ
 
 // IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile.
 func IPTransform(count countFunc, transform IPTransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
+	var (
+		lt           = ParseLocalArguments(os.Args[1:])
+		profilesFile = lt.Values["path"]
+		mac          = lt.Values["mac"]
+		ipaddr       = lt.Values["ipaddr"]
+		stdout       = os.Stdout
+	)
 
-	stdout := os.Stdout
 	os.Stdout = os.Stderr
-
 	netio.PrintBuildInfo()
 
 	f, err := os.Open(profilesFile)
@@ -87,6 +88,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 	var (
 		min uint64 = 10000000
 		max uint64 = 0
+		profiles = LoadIPProfiles()
 	)
 
 	if count != nil {
@@ -98,7 +100,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 				panic(err)
 			}
 
-			count(profile, mac, &min, &max)
+			count(profile, mac, &min, &max, profiles)
 		}
 
 		err = r.Close()
