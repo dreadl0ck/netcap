@@ -86,6 +86,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 	fmt.Println(trx.ReturnOutput())
 }
 
+// TODO: this should be generated not hardcoded!
 var allDecoders = []string{
 	"TLSClientHello",
 	"TLSServerHello",
@@ -156,4 +157,5 @@ var allDecoders = []string{
 	"EthernetIP",
 	"SMTP",
 	"Diameter",
+	"IPProfile",
 }
