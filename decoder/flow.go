@@ -193,22 +193,7 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		// continuously flush flows
 		if conf.FlowFlushInterval != 0 && flows%int64(conf.FlowFlushInterval) == 0 {
-			var selectFlows []*types.Flow
-			for id, flw := range fd.Flows.Items {
-				// flush entries whose last timestamp is flowTimeOut older than current packet
-				if p.Metadata().Timestamp.Sub(utils.StringToTime(fl.TimestampLast)) > conf.FlowTimeOut {
-					selectFlows = append(selectFlows, flw.Flow)
-					// cleanup
-					delete(fd.Flows.Items, id)
-				}
-			}
-
-			// do this in background
-			go func() {
-				for _, flw := range selectFlows {
-					fd.writeFlow(flw)
-				}
-			}()
+			fd.flushFlows(p)
 		}
 	}
 	fd.Flows.Unlock()
@@ -216,8 +201,28 @@ func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	return nil
 }
 
-// DeInit will teardown and flush all remaining records.
-// DeInit is called prior to teardown.
+func (fd *flowCustomDecoder) flushFlows(p gopacket.Packet) {
+	var selectFlows []*types.Flow
+
+	for id, flw := range fd.Flows.Items {
+		// flush entries whose last timestamp is flowTimeOut older than current packet
+		if p.Metadata().Timestamp.Sub(utils.StringToTime(flw.TimestampLast)) > conf.FlowTimeOut {
+			selectFlows = append(selectFlows, flw.Flow)
+			// cleanup
+			delete(fd.Flows.Items, id)
+		}
+	}
+
+	// do this in background
+	go func() {
+		for _, flw := range selectFlows {
+			fd.writeFlow(flw)
+		}
+	}()
+}
+
+// DeInit will flush all remaining records
+// and is called prior to teardown.
 func (fd *flowCustomDecoder) DeInit() error {
 	fd.Flows.Lock()
 	for _, f := range fd.Flows.Items {
