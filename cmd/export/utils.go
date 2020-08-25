@@ -24,13 +24,13 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	io2 "github.com/dreadl0ck/netcap/io"
+	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func printHeader() {
-	io2.PrintLogo()
+	netio.PrintLogo()
 	fmt.Println()
 	fmt.Println("export tool usage examples:")
 	fmt.Println("	$ net export -read dump.pcap")
@@ -162,7 +162,7 @@ func exportDir(path string) {
 // this will open the netcap dump file at path
 // and return the timestamp of the first audit record in there.
 func firstTimestamp(path string) time.Time {
-	r, err := io2.Open(path, defaults.BufferSize)
+	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		log.Fatal("failed to open netcap file:", err)
 	}
@@ -179,7 +179,7 @@ func firstTimestamp(path string) time.Time {
 		header, errFileHeader = r.ReadHeader()
 
 		// initialize a record instance for the type from the header
-		record = io2.InitRecord(header.Type)
+		record = netio.InitRecord(header.Type)
 	)
 
 	if errFileHeader != nil {
@@ -208,7 +208,7 @@ func firstTimestamp(path string) time.Time {
 func exportFile(path string) {
 	var (
 		count  = 0
-		r, err = io2.Open(path, *flagMemBufferSize)
+		r, err = netio.Open(path, *flagMemBufferSize)
 	)
 
 	if err != nil {
@@ -227,7 +227,7 @@ func exportFile(path string) {
 		header, errFileHeader = r.ReadHeader()
 
 		// initialize a record instance for the type from the header
-		record = io2.InitRecord(header.Type)
+		record = netio.InitRecord(header.Type)
 
 		firstTimestampValue time.Time
 	)

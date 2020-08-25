@@ -38,7 +38,7 @@ import (
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap/decoder"
-	io2 "github.com/dreadl0ck/netcap/io"
+	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -462,7 +462,7 @@ func (c *Collector) PrintConfiguration() {
 	// always write the entire configuration into the logfile
 	_, _ = logFileHandle.Write(cdata)
 
-	io2.FPrintLogo(target)
+	netio.FPrintLogo(target)
 
 	if c.config.DecoderConfig.Debug {
 		// in debug mode: dump config to stdout
@@ -473,7 +473,7 @@ func (c *Collector) PrintConfiguration() {
 		fmt.Println() // add newline
 	}
 
-	io2.FPrintBuildInfo(target)
+	netio.FPrintBuildInfo(target)
 
 	// print build information
 	_, _ = fmt.Fprintln(target, "> PID:", os.Getpid())

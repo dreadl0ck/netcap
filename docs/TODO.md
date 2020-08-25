@@ -1,10 +1,13 @@
 # TODOs
 
-- CSV: write unit test that check if number fields matches the number of fields produced
+- restore operation on ip profiles for maltego
+- POP3: move mails into dedicated audit record file
 - generate a proper field mapping for each index
 
-- POP3: move mails into dedicated audit record file
 - create an index for document errors that occurred when pushing data
+- create an index for errors that occurred during netcap processing
+
+- CSV: write unit test that checks if the number of fields matches the number of fields produced
 - adjust alpine build script similar to the one for ubuntu
 
 - add constants for logReassemblyError(

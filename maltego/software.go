@@ -24,7 +24,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	io2 "github.com/dreadl0ck/netcap/io"
+	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -43,7 +43,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
-	io2.PrintBuildInfo()
+	netio.PrintBuildInfo()
 
 	f, err := os.Open(softwaresFile)
 	if err != nil {
@@ -57,7 +57,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 
 	os.Stdout = stdout
 
-	r, err := io2.Open(softwaresFile, defaults.BufferSize)
+	r, err := netio.Open(softwaresFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -106,7 +106,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 		}
 	}
 
-	r, err = io2.Open(softwaresFile, defaults.BufferSize)
+	r, err = netio.Open(softwaresFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
