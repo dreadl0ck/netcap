@@ -41,10 +41,7 @@ func (a *File) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *File) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		a.Name,
@@ -54,10 +51,10 @@ func (a *File) CSVRecord() []string {
 		a.Ident,
 		a.Source,
 		a.ContentType,
-		a.Context.SrcIP,
-		a.Context.DstIP,
-		a.Context.SrcPort,
-		a.Context.DstPort,
+		a.SrcIP,
+		a.DstIP,
+		formatInt32(a.SrcPort),
+		formatInt32(a.DstPort),
 	})
 }
 
@@ -90,18 +87,10 @@ func (a *File) SetPacketContext(*PacketContext) {}
 
 // Src returns the source address of the audit record.
 func (a *File) Src() string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
-	return a.Context.SrcIP
+	return a.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (a *File) Dst() string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
-	return a.Context.DstIP
+	return a.DstIP
 }

@@ -99,8 +99,11 @@ func lookupDHCPFingerprint() {
 					ServerName:   dhcp.ServerName,
 					File:         dhcp.File,
 					Options:      dhcp.Options,
-					Context:      dhcp.Context,
 					Fingerprint:  dhcp.Fingerprint,
+					SrcIP: dhcp.SrcIP,
+					DstIP: dhcp.DstIP,
+					SrcPort: dhcp.SrcPort,
+					DstPort: dhcp.DstPort,
 				}
 				mtrx = trx
 			}

@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/dreadl0ck/gopacket"
@@ -78,8 +79,8 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				}
 
 				if transportLayer != nil {
-					ctx.SrcPort = transportLayer.TransportFlow().Src().String()
-					ctx.DstPort = transportLayer.TransportFlow().Dst().String()
+					ctx.SrcPort = int32(binary.BigEndian.Uint16(transportLayer.TransportFlow().Src().Raw()))
+					ctx.DstPort = int32(binary.BigEndian.Uint16(transportLayer.TransportFlow().Dst().Raw()))
 				}
 			}
 

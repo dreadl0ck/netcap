@@ -56,10 +56,7 @@ func (t *TCP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (t *TCP) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if t.Context == nil {
-		t.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(t.Timestamp),                      // string
 		formatInt32(t.SrcPort),                            // int32
@@ -84,8 +81,8 @@ func (t *TCP) CSVRecord() []string {
 		strconv.FormatFloat(t.PayloadEntropy, 'f', 8, 64), // float64
 		formatInt32(t.PayloadSize),                        // int32
 		hex.EncodeToString(t.Payload),
-		t.Context.SrcIP,
-		t.Context.DstIP,
+		t.SrcIP,
+		t.DstIP,
 	})
 }
 
@@ -195,26 +192,16 @@ func (t *TCP) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (t *TCP) SetPacketContext(ctx *PacketContext) {
-	// create new context and only add information that is
-	// not yet present on the audit record type
-	t.Context = &PacketContext{
-		SrcIP: ctx.SrcIP,
-		DstIP: ctx.DstIP,
-	}
+	t.SrcIP = ctx.SrcIP
+	t.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (t *TCP) Src() string {
-	if t.Context != nil {
-		return t.Context.SrcIP
-	}
-	return ""
+	return t.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (t *TCP) Dst() string {
-	if t.Context != nil {
-		return t.Context.DstIP
-	}
-	return ""
+	return t.DstIP
 }

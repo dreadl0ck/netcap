@@ -38,16 +38,13 @@ func (i *ICMPv6NeighborSolicitation) CSVRecord() []string {
 	for _, o := range i.Options {
 		opts = append(opts, o.toString())
 	}
-	// prevent accessing nil pointer
-	if i.Context == nil {
-		i.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		i.TargetAddress,
 		strings.Join(opts, ""),
-		i.Context.SrcIP,
-		i.Context.DstIP,
+		i.SrcIP,
+		i.DstIP,
 	})
 }
 
@@ -77,21 +74,16 @@ func (i *ICMPv6NeighborSolicitation) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (i *ICMPv6NeighborSolicitation) SetPacketContext(ctx *PacketContext) {
-	i.Context = ctx
+	i.SrcIP = ctx.SrcIP
+	i.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (i *ICMPv6NeighborSolicitation) Src() string {
-	if i.Context != nil {
-		return i.Context.SrcIP
-	}
-	return ""
+	return i.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (i *ICMPv6NeighborSolicitation) Dst() string {
-	if i.Context != nil {
-		return i.Context.DstIP
-	}
-	return ""
+	return i.DstIP
 }

@@ -45,10 +45,7 @@ func (d *DHCPv6) CSVRecord() []string {
 	for _, o := range d.Options {
 		opts = append(opts, o.toString())
 	}
-	// prevent accessing nil pointer
-	if d.Context == nil {
-		d.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(d.Timestamp),        // string
 		formatInt32(d.MsgType),              // int32
@@ -57,10 +54,10 @@ func (d *DHCPv6) CSVRecord() []string {
 		d.PeerAddr,                          // string
 		hex.EncodeToString(d.TransactionID), // []byte
 		strings.Join(opts, ""),              // []*DHCPv6Option
-		d.Context.SrcIP,
-		d.Context.DstIP,
-		d.Context.SrcPort,
-		d.Context.DstPort,
+		d.SrcIP,
+		d.DstIP,
+		formatInt32(d.SrcPort),
+		formatInt32(d.DstPort),
 	})
 }
 
@@ -102,21 +99,18 @@ func (d *DHCPv6) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (d *DHCPv6) SetPacketContext(ctx *PacketContext) {
-	d.Context = ctx
+	d.SrcIP = ctx.SrcIP
+	d.DstIP = ctx.DstIP
+	d.SrcPort = ctx.SrcPort
+	d.DstPort = ctx.DstPort
 }
 
 // Src returns the source address of the audit record.
 func (d *DHCPv6) Src() string {
-	if d.Context != nil {
-		return d.Context.SrcIP
-	}
-	return ""
+	return d.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (d *DHCPv6) Dst() string {
-	if d.Context != nil {
-		return d.Context.DstIP
-	}
-	return ""
+	return d.DstIP
 }

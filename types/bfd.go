@@ -39,10 +39,6 @@ var fieldsBFD = []string{
 	"RequiredMinRxInterval",
 	"RequiredMinEchoRxInterval",
 	"AuthHeader",
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -52,11 +48,6 @@ func (b *BFD) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (b *BFD) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if b.Context == nil {
-		b.Context = &PacketContext{}
-	}
-
 	return filter([]string{
 		formatTimestamp(b.Timestamp),
 		formatInt32(b.Version),                        // int32
@@ -75,10 +66,6 @@ func (b *BFD) CSVRecord() []string {
 		formatInt32(b.RequiredMinRxInterval),          // int32
 		formatInt32(b.RequiredMinEchoRxInterval),      // int32
 		b.AuthHeader.getString(),                      // *BFDAuthHeader
-		b.Context.SrcIP,
-		b.Context.DstIP,
-		b.Context.SrcPort,
-		b.Context.DstPort,
 	})
 }
 
@@ -123,24 +110,14 @@ func (b *BFD) Inc() {
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (b *BFD) SetPacketContext(ctx *PacketContext) {
-	b.Context = ctx
-}
+func (b *BFD) SetPacketContext(_ *PacketContext) {}
 
 // Src returns the source address of the audit record.
 func (b *BFD) Src() string {
-	if b.Context != nil {
-		return b.Context.SrcIP
-	}
-
 	return ""
 }
 
 // Dst returns the destination address of the audit record.
 func (b *BFD) Dst() string {
-	if b.Context != nil {
-		return b.Context.DstIP
-	}
-
 	return ""
 }

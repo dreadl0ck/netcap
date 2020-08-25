@@ -52,10 +52,7 @@ func (a *GRE) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *GRE) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.ChecksumPresent),   // bool
@@ -74,10 +71,8 @@ func (a *GRE) CSVRecord() []string {
 		formatUint32(a.Seq),                     // uint32
 		formatUint32(a.Ack),                     // uint32
 		a.Routing.getString(),                   // *GRERouting
-		a.Context.SrcIP,
-		a.Context.DstIP,
-		a.Context.SrcPort,
-		a.Context.DstPort,
+		a.SrcIP,
+		a.DstIP,
 	})
 }
 
@@ -129,21 +124,16 @@ func (a *GRE) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *GRE) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+	a.SrcIP = ctx.SrcIP
+	a.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (a *GRE) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
-	}
-	return ""
+	return a.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (a *GRE) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
-	}
-	return ""
+	return a.DstIP
 }
