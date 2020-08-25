@@ -26,6 +26,8 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+var captureServices bool
+
 type service struct {
 	*types.Service
 	sync.Mutex
@@ -42,6 +44,7 @@ type atomicServiceMap struct {
 func (a *atomicServiceMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
+
 	return len(a.Items)
 }
 
@@ -75,6 +78,11 @@ func addInfo(old string, new string) string {
 // saves the banner for a TCP service to the filesystem
 // and limits the length of the saved data to the BannerSize value from the config.
 func saveTCPServiceBanner(s streamReader) {
+
+	if !captureServices {
+		return
+	}
+
 	banner := s.ServiceBanner()
 
 	// limit length of data
@@ -92,9 +100,10 @@ func saveTCPServiceBanner(s streamReader) {
 		defer ServiceStore.Unlock()
 
 		// invoke the service probe matching on all streams towards this service
+		// TODO: make matching more banners than the first one configurable
 		matchServiceProbes(sv, banner, s.Ident())
 
-		// ensure we dont duplicate any flows
+		// ensure we don't duplicate any flows
 		for _, f := range sv.Flows {
 			if f == ident {
 				return
@@ -144,7 +153,7 @@ func saveTCPServiceBanner(s streamReader) {
 }
 
 // newDeviceProfile creates a new network service.
-func newService(ts string, numBytesServer int, numBytesClient int, ip string) *service {
+func newService(ts string, numBytesServer, numBytesClient int, ip string) *service {
 	var host string
 	if resolvers.CurrentConfig.ReverseDNS {
 		host = strings.Join(resolvers.LookupDNSNames(ip), "; ")
@@ -167,6 +176,7 @@ var serviceDecoder = newCustomDecoder(
 	"Service",
 	"A network service",
 	func(d *customDecoder) error {
+		captureServices = true
 		return initServiceProbes()
 	},
 	func(p gopacket.Packet) proto.Message {
