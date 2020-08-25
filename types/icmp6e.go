@@ -34,16 +34,13 @@ func (i *ICMPv6Echo) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (i *ICMPv6Echo) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if i.Context == nil {
-		i.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Identifier),
 		formatInt32(i.SeqNumber),
-		i.Context.SrcIP,
-		i.Context.DstIP,
+		i.SrcIP,
+		i.DstIP,
 	})
 }
 
@@ -73,21 +70,16 @@ func (i *ICMPv6Echo) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (i *ICMPv6Echo) SetPacketContext(ctx *PacketContext) {
-	i.Context = ctx
+	i.SrcIP = ctx.SrcIP
+	i.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (i *ICMPv6Echo) Src() string {
-	if i.Context != nil {
-		return i.Context.SrcIP
-	}
-	return ""
+	return i.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (i *ICMPv6Echo) Dst() string {
-	if i.Context != nil {
-		return i.Context.DstIP
-	}
-	return ""
+	return i.DstIP
 }

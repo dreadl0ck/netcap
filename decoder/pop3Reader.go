@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -316,12 +317,10 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		Ident:       h.parent.ident,
 		Source:      source,
 		ContentType: cType,
-		Context: &types.PacketContext{
-			SrcIP:   h.parent.net.Src().String(),
-			DstIP:   h.parent.net.Dst().String(),
-			SrcPort: h.parent.transport.Src().String(),
-			DstPort: h.parent.transport.Dst().String(),
-		},
+		SrcIP:       h.parent.net.Src().String(),
+		DstIP:       h.parent.net.Dst().String(),
+		SrcPort:     int32(binary.BigEndian.Uint16(h.parent.transport.Src().Raw())),
+		DstPort:     int32(binary.BigEndian.Uint16(h.parent.transport.Dst().Raw())),
 	})
 
 	return nil

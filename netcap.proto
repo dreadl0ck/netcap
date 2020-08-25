@@ -184,8 +184,8 @@ message Batch {
 message PacketContext {
     string SrcIP    = 1;
     string DstIP    = 2;
-    string SrcPort  = 3;
-    string DstPort  = 4;
+    int32  SrcPort  = 3;
+    int32  DstPort  = 4;
 }
 
 /*
@@ -478,7 +478,8 @@ message IPv4 {
     double PayloadEntropy = 16;
     int32  PayloadSize    = 17;
 
-    PacketContext Context = 18;
+    int32 SrcPort = 18;
+    int32 DstPort = 19;
 }
 
 message IPv4Option {
@@ -506,7 +507,8 @@ message IPv6 {
     int32  PayloadSize    = 11;
     IPv6HopByHop HopByHop = 12;
 
-    PacketContext Context = 13;
+    int32 SrcPort = 13;
+    int32 DstPort = 14;
 }
 
 message IPv6Fragment {
@@ -517,7 +519,11 @@ message IPv6Fragment {
     int32         Reserved2        = 5;    // Reserved2 is bits [29-31), from least to most significant, 0-indexed
     bool          MoreFragments    = 6;   
     uint32        Identification   = 7;
-    PacketContext Context          = 8;
+
+    int32 SrcPort = 8;
+    int32 DstPort = 9;
+    string SrcIP = 10;
+    string DstIP = 11;
 }
 
 message ICMPv4 {
@@ -527,7 +533,8 @@ message ICMPv4 {
     int32 Id         = 4;
     int32 Seq        = 5;
 
-    PacketContext Context = 6;
+    string SrcIP = 6;
+    string DstIP = 7;
 }
 
 message ICMPv6 {
@@ -535,7 +542,8 @@ message ICMPv6 {
     int32 TypeCode   = 2;
     int32 Checksum   = 3;
 
-    PacketContext Context = 4;
+    string SrcIP = 4;
+    string DstIP = 5;
 }
 
 message ICMPv6NeighborAdvertisement {
@@ -544,7 +552,8 @@ message ICMPv6NeighborAdvertisement {
     string TargetAddress          = 3;
     repeated ICMPv6Option Options = 4;
 
-    PacketContext Context = 5;
+    string SrcIP = 5;
+    string DstIP = 6;
 }
 
 message ICMPv6RouterAdvertisement {
@@ -556,7 +565,8 @@ message ICMPv6RouterAdvertisement {
     uint32 RetransTimer           = 6;
     repeated ICMPv6Option Options = 7;
 
-    PacketContext Context = 8;
+    string SrcIP = 8;
+    string DstIP = 9;
 }
 
 message ICMPv6Option {
@@ -583,7 +593,8 @@ message UDP {
     int32  PayloadSize    = 7;
     bytes  Payload        = 8;
 
-    PacketContext Context = 9;
+    string SrcIP = 9;
+    string DstIP = 10;
 }
 
 // The Transmission Control Protocol (TCP) is one of the main protocols of the Internet 
@@ -620,7 +631,8 @@ message TCP {
     int32    PayloadSize       = 22;
     bytes    Payload           = 23;
 
-    PacketContext Context = 24;
+    string SrcIP = 24;
+    string DstIP = 25;
 }
 
 message TCPOption {
@@ -631,12 +643,12 @@ message TCPOption {
 
 message SCTP {
     int64 Timestamp       = 1;
-    uint32 SrcPort         = 2;
-    uint32 DstPort         = 3;
+    int32  SrcPort         = 2;
+    int32  DstPort         = 3;
     uint32 VerificationTag = 4;
     uint32 Checksum        = 5;
-
-    PacketContext Context = 6;
+    string SrcIP = 6;
+    string DstIP = 7;
 }
 
 /*
@@ -654,30 +666,33 @@ message SCTP {
 message DNS {
     int64 Timestamp = 1;
 
-	// Header fields
-	int32 ID      = 2;
-	bool   QR     = 3;
-	int32  OpCode = 4;
+    // Header fields
+    int32 ID      = 2;
+    bool   QR     = 3;
+    int32  OpCode = 4;
 
-	bool   AA = 5; // Authoritative answer
-	bool   TC = 6; // Truncated
-	bool   RD = 7; // Recursion desired
-	bool   RA = 8; // Recursion available
-	int32  Z  = 9; // Reserved for future use
+    bool   AA = 5; // Authoritative answer
+    bool   TC = 6; // Truncated
+    bool   RD = 7; // Recursion desired
+    bool   RA = 8; // Recursion available
+    int32  Z  = 9; // Reserved for future use
 
-	int32  ResponseCode = 10;
-	int32 QDCount       = 11; // Number of questions to expect
-	int32 ANCount       = 12; // Number of answers to expect
-	int32 NSCount       = 13; // Number of authorities to expect
-	int32 ARCount       = 14; // Number of additional records to expect
+    int32  ResponseCode = 10;
+    int32 QDCount       = 11; // Number of questions to expect
+    int32 ANCount       = 12; // Number of answers to expect
+    int32 NSCount       = 13; // Number of authorities to expect
+    int32 ARCount       = 14; // Number of additional records to expect
 
-	// Entries
-	repeated DNSQuestion       Questions   = 15;
-	repeated DNSResourceRecord Answers     = 16;
-	repeated DNSResourceRecord Authorities = 17;
+    // Entries
+    repeated DNSQuestion       Questions   = 15;
+    repeated DNSResourceRecord Answers     = 16;
+    repeated DNSResourceRecord Authorities = 17;
     repeated DNSResourceRecord Additionals = 18;
 
-    PacketContext Context = 19;
+    string SrcIP = 19;
+    string DstIP = 20;
+    int32 SrcPort = 21;
+    int32 DstPort = 22;
 }
 
 message DNSResourceRecord {
@@ -752,9 +767,12 @@ message DHCPv4 {
     bytes ServerName             = 14;
     bytes File                   = 15;
     repeated DHCPOption Options  = 16;
+    string        Fingerprint = 17;
 
-    PacketContext Context     = 17;
-    string        Fingerprint = 18;
+    string SrcIP = 18;
+    string DstIP = 19;
+    int32 SrcPort = 20;
+    int32 DstPort = 21;
 }
 
 message DHCPOption {
@@ -771,9 +789,13 @@ message DHCPv6 {
     string PeerAddr               = 5;
     bytes TransactionID           = 6;
     repeated DHCPv6Option Options = 7;
+    string        Fingerprint = 8;
 
-    PacketContext Context     = 8;
-    string        Fingerprint = 9;
+
+    string SrcIP = 9;
+    string DstIP = 10;
+    int32 SrcPort = 11;
+    int32 DstPort = 12;
 }
 
 message DHCPv6Option {
@@ -815,7 +837,10 @@ message NTP {
 
     bytes ExtensionBytes      = 15;  // Just put extensions in a byte slice.
 
-    PacketContext Context = 16;
+    string SrcIP = 16;
+    string DstIP = 17;
+    int32 SrcPort = 18;
+    int32 DstPort = 19;
 }
 
 // The Session Initiation Protocol (SIP) is a signalling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications
@@ -832,7 +857,10 @@ message SIP {
     int32 ResponseCode     = 6;
     string ResponseStatus  = 7;
 
-    PacketContext Context = 8;
+    string SrcIP = 8;
+    string DstIP = 9;
+    int32 SrcPort = 10;
+    int32 DstPort = 11;
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol 
@@ -858,7 +886,8 @@ message IGMP {
     repeated IGMPv3GroupRecord GroupRecords = 12;
     int32 Version                    = 13;
 
-    PacketContext Context = 14;
+    string SrcIP = 14;
+    string DstIP = 15;
 }
 
 message IGMPv3GroupRecord {
@@ -873,7 +902,8 @@ message IPv6HopByHop {
     int64 Timestamp                    = 1;
     repeated IPv6HopByHopOption Options = 2;
 
-    PacketContext Context = 3;
+    string SrcIP = 3;
+    string DstIP = 4;
 }
 
 message IPv6HopByHopOption {
@@ -904,7 +934,8 @@ message ICMPv6Echo {
     int32 Identifier = 2;
     int32 SeqNumber  = 3;
 
-    PacketContext Context = 4;
+    string SrcIP = 4;
+    string DstIP = 5;
 }
 
 message ICMPv6NeighborSolicitation {
@@ -912,14 +943,17 @@ message ICMPv6NeighborSolicitation {
     string TargetAddress = 2;
     repeated ICMPv6Option Options = 3;
 
-    PacketContext Context = 4;
+
+    string SrcIP = 4;
+    string DstIP = 5;
 }
 
 message ICMPv6RouterSolicitation {
     int64 Timestamp              = 1;
     repeated ICMPv6Option Options = 2;
 
-    PacketContext Context = 3;
+    string SrcIP = 3;
+    string DstIP = 4;
 }
 
 // The Hypertext Transfer Protocol (HTTP) is an application protocol for distributed, 
@@ -1050,7 +1084,8 @@ message IPSecAH {
     int32    Seq                       = 4;
     bytes    AuthenticationData        = 5;
 
-    PacketContext Context = 6;
+    string SrcIP = 6;
+    string DstIP = 7;
 }
 
 message IPSecESP {
@@ -1059,9 +1094,13 @@ message IPSecESP {
     int32    Seq                       = 3;
     int32    LenEncrypted              = 4;
 
-    PacketContext Context = 5;
+    string SrcIP = 5;
+    string DstIP = 6;
 }
 
+// The Generic Network Virtualization Encapsulation (Geneve) protocol offers a new approach to encapsulation
+// designed to offer control-plane independence between tunnel endpoints.
+// The protocol specifies only a data-plane schema using a number of variable length options.
 message Geneve {
     int64                Timestamp      = 1;
     int32                 Version        = 2;
@@ -1071,8 +1110,6 @@ message Geneve {
     int32                 Protocol       = 6;
     uint32                VNI            = 7;
     repeated GeneveOption Options        = 8;
-
-    PacketContext Context = 9;
 }
 
 message GeneveOption {
@@ -1092,8 +1129,6 @@ message VXLAN {
     bool       GBPDontLearn         = 5;   // 'D' bit per Group Policy
     bool       GBPApplied           = 6;   // 'A' bit per Group Policy
     int32      GBPGroupPolicyID     = 7;   // 'Group Policy ID' 16 bits per Group Policy
-
-    PacketContext Context = 8;
 }
 
 // Universal Serial Bus (USB) is an industry standard that establishes specifications 
@@ -1151,7 +1186,10 @@ message LCM {
     string    ChannelName          = 8;
     bool      Fragmented           = 9;
 
-    PacketContext Context = 10;
+    string SrcIP = 10;
+    string DstIP = 11;
+    int32 SrcPort = 12;
+    int32 DstPort = 13;
 }
 
 message MPLS {
@@ -1160,8 +1198,6 @@ message MPLS {
     int32   TrafficClass   = 3;
     bool    StackBottom    = 4;
     int32   TTL            = 5;
-
-    PacketContext Context = 6;
 }
 
 // Modbus is a serial communications protocol originally published by Modicon 
@@ -1182,10 +1218,18 @@ message Modbus {
     bytes  Payload       = 6;
     bool   Exception     = 7;
     int32  FunctionCode  = 8;
-    
-    PacketContext Context = 9;
+
+    // in case of ModbusTCP:
+    string SrcIP = 9;
+    string DstIP = 10;
+    int32 SrcPort = 11;
+    int32 DstPort = 12;
 }
 
+// Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks.
+// It uses a link state routing (LSR) algorithm and falls into the group of interior gateway protocols (IGPs),
+// operating within a single autonomous system (AS).
+// OSPFv2 is defined as OSPF Version 2 in RFC 2328 (1998) for IPv4.
 message OSPFv2 {
     int64    Timestamp     = 1;
     int32     Version       = 2;
@@ -1204,7 +1248,8 @@ message OSPFv2 {
     DbDescPkg             DbDesc  = 13;
     HelloPkgV2            HelloV2 = 14;
 
-    PacketContext Context = 15;
+    string SrcIP = 15;
+    string DstIP = 16;
 }
 
 message HelloPkg {
@@ -1238,6 +1283,10 @@ message DbDescPkg {
     repeated LSAheader   LSAinfo        = 5;
 }
 
+// Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks.
+// It uses a link state routing (LSR) algorithm and falls into the group of interior gateway protocols (IGPs),
+// operating within a single autonomous system (AS).
+// The updates for IPv6 are specified as OSPF Version 3 in RFC 5340 (2008).
 message OSPFv3 {
     int64    Timestamp     = 1;
     int32     Version       = 2;
@@ -1256,7 +1305,8 @@ message OSPFv3 {
     LSUpdate              LSU       = 13;
     repeated LSAheader    LSAs      = 14;
 
-    PacketContext Context = 15;
+    string SrcIP = 15;
+    string DstIP = 16;
 }
 
 message LSAheader {
@@ -1270,6 +1320,11 @@ message LSAheader {
     int32   LSOptions   = 8;
 }
 
+// The link-state advertisement (LSA) is a basic communication means of the OSPF routing protocol for the Internet Protocol (IP).
+// It communicates the router's local routing topology to all other local routers in the same OSPF area.
+// OSPF is designed for scalability, so some LSAs are not flooded out on all interfaces, but only on those that belong to the appropriate area.
+// In this way detailed information can be kept localized, while summary information is flooded to the rest of the network.
+// The original IPv4-only OSPFv2 and the newer IPv6-compatible OSPFv3 have broadly similar LSA types.
 message LSA {
     
     LSAheader Header = 1;
@@ -1285,7 +1340,8 @@ message LSA {
     LinkLSA              LLSA             = 9;
     IntraAreaPrefixLSA   IntraAPrefixLSA  = 10;
 
-    PacketContext Context = 11;
+    string SrcIP = 11;
+    string DstIP = 12;
 }
 
 message LSReq {
@@ -1409,8 +1465,6 @@ message BFD {
     int32         RequiredMinRxInterval    = 15;  // Minimum interval, in microseconds, between received BFD Control packets that this system is capable of supporting
     int32         RequiredMinEchoRxInterval = 16; // Minimum interval, in microseconds, between received BFD Echo packets that this system is capable of supporting
     BFDAuthHeader AuthHeader                = 17; // Authentication data, variable length.
-
-    PacketContext Context = 18;
 }
 
 message BFDAuthHeader {
@@ -1443,7 +1497,8 @@ message GRE {
     uint32       Ack               = 16;                                                           
     GRERouting   Routing           = 17;
 
-    PacketContext Context = 18;
+    string SrcIP = 18;
+    string DstIP = 19;
 }
 
 message GRERouting {
@@ -1460,8 +1515,6 @@ message FDDI {
     int32   Priority         = 3;
     string  SrcMAC           = 4;
     string  DstMAC           = 5;
-
-    PacketContext Context    = 6;
 }
 
 // EAP defines an Extensible Authentication Protocol (rfc 3748) layer.
@@ -1525,7 +1578,8 @@ message VRRPv2 {
     int32           Checksum      = 9;  // used to detect data corruption in the VRRP message.
     repeated string IPAddress     = 10;  // one or more IP addresses associated with the virtual router. Specified in the CountIPAddr field.
 
-    PacketContext Context    = 11;
+    string SrcIP = 11;
+    string DstIP = 12;
 }
 
 // Cisco Discovery Protocol is a proprietary Data Link Layer protocol 
@@ -1650,6 +1704,8 @@ message IPNet {
     string    IPMask  = 2;     // network mask
 }
 
+// The Nortel Discovery Protocol (NDP) is a Data Link Layer (OSI Layer 2) network protocol for discovery of Nortel networking devices and certain products from Avaya and Ciena.
+// The device and topology information may be graphically displayed network management software.
 message NortelDiscovery {
     int64    Timestamp    = 1;
     string    IPAddress    = 2;
@@ -1659,7 +1715,8 @@ message NortelDiscovery {
     int32     State        = 6;
     int32     NumLinks     = 7;
 
-    PacketContext Context    = 8;
+    string SrcMac = 8;
+    string DstMac = 9;
 }
 
 // The Common Industrial Protocol (CIP) is an industrial protocol for industrial automation applications. 
@@ -1675,7 +1732,11 @@ message CIP {
     int32         Status           = 6; // Response only
     repeated uint32 AdditionalStatus = 7; // Response only
     bytes         Data             = 8; // Command data for request, reply data for response
-    PacketContext Context          = 9;
+
+    string SrcIP = 9;
+    string DstIP = 10;
+    int32 SrcPort = 11;
+    int32 DstPort = 12;
 }
 
 // ENIP implements decoding of EtherNet/IP, a protocol used to transport the
@@ -1685,13 +1746,17 @@ message CIP {
 message ENIP {
     int64                  Timestamp        = 1;
     uint32                  Command          = 2; 
-	uint32                  Length           = 3;
-	uint32                  SessionHandle    = 4;
-	uint32                  Status           = 5;
-	bytes                   SenderContext    = 6;
-	uint32                  Options          = 7;
-	ENIPCommandSpecificData CommandSpecific  = 8;
-    PacketContext           Context          = 9;
+    uint32                  Length           = 3;
+    uint32                  SessionHandle    = 4;
+    uint32                  Status           = 5;
+    bytes                   SenderContext    = 6;
+    uint32                  Options          = 7;
+	  ENIPCommandSpecificData CommandSpecific  = 8;
+
+	  string SrcIP = 9;
+    string DstIP = 10;
+    int32 SrcPort = 11;
+    int32 DstPort = 12;
 }
 
 
@@ -1749,9 +1814,13 @@ message File {
     string        Ident       = 6;
     string        Source      = 7;
     string        ContentType = 8;
-    PacketContext Context     = 9;
-    string        Host        = 10;
-    string        ContentTypeDetected = 11;
+    string        Host        = 9;
+    string        ContentTypeDetected = 10;
+
+    string SrcIP = 11;
+    string DstIP = 12;
+    int32 SrcPort = 13;
+    int32 DstPort = 14;
 }
 
 // SMTPResponse SMTP response type
@@ -1774,7 +1843,11 @@ message SMTP {
     bool                   IsResponse    = 3;
     repeated SMTPResponse  ResponseLines = 4;
     SMTPCommand            Command       = 5;
-    PacketContext          Context       = 6;
+
+    string SrcIP = 6;
+    string DstIP = 7;
+    int32 SrcPort = 8;
+    int32 DstPort = 9;
 }
 
 // Diameter is an authentication, authorization, and accounting protocol for computer networks.
@@ -1794,7 +1867,11 @@ message Diameter {
 
     // Diameter AVPs
     repeated AVP  AVPs            = 9;
-    PacketContext Context         = 10;
+
+    string SrcIP = 10;
+    string DstIP = 11;
+    int32 SrcPort = 12;
+    int32 DstPort = 13;
 }
 
 // Attribute Value Pair

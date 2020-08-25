@@ -26,8 +26,6 @@ var fieldsMPLS = []string{
 	"TrafficClass",
 	"StackBottom",
 	"TTL",
-	"SrcIP",
-	"DstIP",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -37,18 +35,13 @@ func (a *MPLS) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *MPLS) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.Label),              // int32
 		formatInt32(a.TrafficClass),       // int32
 		strconv.FormatBool(a.StackBottom), // bool
 		formatInt32(a.TTL),                // int32
-		a.Context.SrcIP,
-		a.Context.DstIP,
 	})
 }
 
@@ -77,22 +70,14 @@ func (a *MPLS) Inc() {
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (a *MPLS) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
-}
+func (a *MPLS) SetPacketContext(_ *PacketContext) {}
 
 // Src returns the source address of the audit record.
 func (a *MPLS) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
-	}
 	return ""
 }
 
 // Dst returns the destination address of the audit record.
 func (a *MPLS) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
-	}
 	return ""
 }

@@ -1,5 +1,6 @@
 # TODOs
 
+- CSV: write unit test that check if number fields matches the number of fields produced
 - generate a proper field mapping for each index
 
 - write IP profile into dedicated audit record file
@@ -7,14 +8,15 @@
 - embed contexts? -> not possible with proto, just add the fields directly to the structures!
 - create an index for document errors that occurred when pushing data
 - adjust alpine build script similar to the one for ubuntu
+
 - add constants for logReassemblyError(
+- error messages iteration
 
 - add protobuf audit records
 - banner matching: only match the first banner seen for a service?
 - add issues for hacktoberfest
 
 - remove init function usage
-- error messages iteration
 
 - communityID format from zeek
 - unify flow ident string: src:port -> dst:port

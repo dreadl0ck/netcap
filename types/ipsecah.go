@@ -37,18 +37,15 @@ func (a *IPSecAH) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *IPSecAH) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.Reserved),
 		formatInt32(a.SPI),
 		formatInt32(a.Seq),
 		hex.EncodeToString(a.AuthenticationData),
-		a.Context.SrcIP,
-		a.Context.DstIP,
+		a.SrcIP,
+		a.DstIP,
 	})
 }
 
@@ -78,21 +75,16 @@ func (a *IPSecAH) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *IPSecAH) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+	a.SrcIP = ctx.SrcIP
+	a.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (a *IPSecAH) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
-	}
-	return ""
+	return a.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (a *IPSecAH) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
-	}
-	return ""
+	return a.DstIP
 }

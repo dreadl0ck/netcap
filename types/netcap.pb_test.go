@@ -25,14 +25,14 @@ import (
  */
 
 var auditRecord = &UDP{
-	Timestamp:      time.Now().UnixNano(), 			// int64
-	SrcPort:        1334,                           // int32
-	DstPort:        345,                            // int32
-	Length:         234,                            // int32
-	Checksum:       123445,                         // int32
-	PayloadEntropy: 1224.123332,                    // float64
-	PayloadSize:    12413,                          // int32
-	Payload:        []byte{0x1, 0x2, 0x3, 0x4},     // []byte
+	Timestamp:      time.Now().UnixNano(),      // int64
+	SrcPort:        1334,                       // int32
+	DstPort:        345,                        // int32
+	Length:         234,                        // int32
+	Checksum:       123445,                     // int32
+	PayloadEntropy: 1224.123332,                // float64
+	PayloadSize:    12413,                      // int32
+	Payload:        []byte{0x1, 0x2, 0x3, 0x4}, // []byte
 }
 
 // serialized packet data

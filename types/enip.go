@@ -42,10 +42,6 @@ func (en *ENIP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (en *ENIP) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if en.Context == nil {
-		en.Context = &PacketContext{}
-	}
 	return filter([]string{
 		formatTimestamp(en.Timestamp),
 		formatUint32(en.Command),             // uint32
@@ -55,10 +51,10 @@ func (en *ENIP) CSVRecord() []string {
 		hex.EncodeToString(en.SenderContext), // []byte
 		formatUint32(en.Options),             // uint32
 		en.CommandSpecific.String(),          // *ENIPCommandSpecificData
-		en.Context.SrcIP,
-		en.Context.DstIP,
-		en.Context.SrcPort,
-		en.Context.DstPort,
+		en.SrcIP,
+		en.DstIP,
+		formatInt32(en.SrcPort),
+		formatInt32(en.DstPort),
 	})
 }
 
@@ -88,21 +84,18 @@ func (en *ENIP) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (en *ENIP) SetPacketContext(ctx *PacketContext) {
-	en.Context = ctx
+	en.SrcIP = ctx.SrcIP
+	en.DstIP = ctx.DstIP
+	en.SrcPort = ctx.SrcPort
+	en.DstPort = ctx.DstPort
 }
 
 // Src returns the source address of the audit record.
 func (en *ENIP) Src() string {
-	if en.Context != nil {
-		return en.Context.SrcIP
-	}
-	return ""
+	return en.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (en *ENIP) Dst() string {
-	if en.Context != nil {
-		return en.Context.DstIP
-	}
-	return ""
+	return en.DstIP
 }

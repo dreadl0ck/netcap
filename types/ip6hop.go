@@ -38,15 +38,12 @@ func (l *IPv6HopByHop) CSVRecord() []string {
 	for i, v := range l.Options {
 		opts[i] = v.toString()
 	}
-	// prevent accessing nil pointer
-	if l.Context == nil {
-		l.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(l.Timestamp),
 		strings.Join(opts, ""),
-		l.Context.SrcIP,
-		l.Context.DstIP,
+		l.SrcIP,
+		l.DstIP,
 	})
 }
 
@@ -92,21 +89,16 @@ func (l *IPv6HopByHop) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (l *IPv6HopByHop) SetPacketContext(ctx *PacketContext) {
-	l.Context = ctx
+	l.SrcIP = ctx.SrcIP
+	l.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (l *IPv6HopByHop) Src() string {
-	if l.Context != nil {
-		return l.Context.SrcIP
-	}
-	return ""
+	return l.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (l *IPv6HopByHop) Dst() string {
-	if l.Context != nil {
-		return l.Context.DstIP
-	}
-	return ""
+	return l.DstIP
 }

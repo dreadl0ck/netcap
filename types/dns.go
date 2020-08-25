@@ -71,10 +71,7 @@ func (d *DNS) CSVRecord() []string {
 	for _, q := range d.Additionals {
 		additionals = append(questions, q.toString())
 	}
-	// prevent accessing nil pointer
-	if d.Context == nil {
-		d.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(d.Timestamp),
 		formatInt32(d.ID),             // int32
@@ -94,10 +91,10 @@ func (d *DNS) CSVRecord() []string {
 		strings.Join(answers, ""),     // []*DNSResourceRecord
 		strings.Join(authorities, ""), // []*DNSResourceRecord
 		strings.Join(additionals, ""), // []*DNSResourceRecord
-		d.Context.SrcIP,
-		d.Context.DstIP,
-		d.Context.SrcPort,
-		d.Context.DstPort,
+		d.SrcIP,
+		d.DstIP,
+		formatInt32(d.SrcPort),
+		formatInt32(d.DstPort),
 	})
 }
 
@@ -221,21 +218,18 @@ func (d *DNS) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (d *DNS) SetPacketContext(ctx *PacketContext) {
-	d.Context = ctx
+	d.SrcIP = ctx.SrcIP
+	d.DstIP = ctx.DstIP
+	d.SrcPort = ctx.SrcPort
+	d.DstPort = ctx.DstPort
 }
 
 // Src returns the source address of the audit record.
 func (d *DNS) Src() string {
-	if d.Context != nil {
-		return d.Context.SrcIP
-	}
-	return ""
+	return d.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (d *DNS) Dst() string {
-	if d.Context != nil {
-		return d.Context.DstIP
-	}
-	return ""
+	return d.DstIP
 }

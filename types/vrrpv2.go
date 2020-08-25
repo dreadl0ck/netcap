@@ -41,10 +41,7 @@ func (a *VRRPv2) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *VRRPv2) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.Version),      // int32
@@ -56,8 +53,8 @@ func (a *VRRPv2) CSVRecord() []string {
 		formatInt32(a.AdverInt),     // int32
 		formatInt32(a.Checksum),     // int32
 		join(a.IPAddress...),        // []string
-		a.Context.SrcIP,
-		a.Context.DstIP,
+		a.SrcIP,
+		a.DstIP,
 	})
 }
 
@@ -87,21 +84,16 @@ func (a *VRRPv2) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *VRRPv2) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+	a.SrcIP = ctx.SrcIP
+	a.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (a *VRRPv2) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
-	}
-	return ""
+	return a.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (a *VRRPv2) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
-	}
-	return ""
+	return a.DstIP
 }

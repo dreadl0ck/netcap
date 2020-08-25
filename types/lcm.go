@@ -43,10 +43,7 @@ func (a *LCM) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *LCM) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.Magic),             // int32
@@ -57,10 +54,10 @@ func (a *LCM) CSVRecord() []string {
 		formatInt32(a.TotalFragments),    // int32
 		a.ChannelName,                    // string
 		strconv.FormatBool(a.Fragmented), // bool
-		a.Context.SrcIP,
-		a.Context.DstIP,
-		a.Context.SrcPort,
-		a.Context.DstPort,
+		a.SrcIP,
+		a.DstIP,
+		formatInt32(a.SrcPort),
+		formatInt32(a.DstPort),
 	})
 }
 
@@ -90,21 +87,18 @@ func (a *LCM) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *LCM) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+	a.SrcIP = ctx.SrcIP
+	a.DstIP = ctx.DstIP
+	a.SrcPort = ctx.SrcPort
+	a.DstPort = ctx.DstPort
 }
 
 // Src returns the source address of the audit record.
 func (a *LCM) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
-	}
-	return ""
+	return a.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (a *LCM) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
-	}
-	return ""
+	return a.DstIP
 }

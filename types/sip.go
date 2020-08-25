@@ -41,10 +41,7 @@ func (s *SIP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (s *SIP) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if s.Context == nil {
-		s.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(s.Timestamp),
 		formatInt32(s.Version),           //  int32 `protobuf:"varint,2,opt,name=Version,proto3" json:"Version,omitempty"`
@@ -53,10 +50,10 @@ func (s *SIP) CSVRecord() []string {
 		strconv.FormatBool(s.IsResponse), //            bool     `protobuf:"varint,5,opt,name=IsResponse,proto3" json:"IsResponse,omitempty"`
 		formatInt32(s.ResponseCode),      //          int32    `protobuf:"varint,6,opt,name=ResponseCode,proto3" json:"ResponseCode,omitempty"`
 		s.ResponseStatus,                 //        string   `protobuf
-		s.Context.SrcIP,
-		s.Context.DstIP,
-		s.Context.SrcPort,
-		s.Context.DstPort,
+		s.SrcIP,
+		s.DstIP,
+		formatInt32(s.SrcPort),
+		formatInt32(s.DstPort),
 	})
 }
 
@@ -86,21 +83,18 @@ func (s *SIP) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (s *SIP) SetPacketContext(ctx *PacketContext) {
-	s.Context = ctx
+	s.SrcIP = ctx.SrcIP
+	s.DstIP = ctx.DstIP
+	s.SrcPort = ctx.SrcPort
+	s.DstPort = ctx.DstPort
 }
 
 // Src returns the source address of the audit record.
 func (s *SIP) Src() string {
-	if s.Context != nil {
-		return s.Context.SrcIP
-	}
-	return ""
+	return s.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (s *SIP) Dst() string {
-	if s.Context != nil {
-		return s.Context.DstIP
-	}
-	return ""
+	return s.DstIP
 }

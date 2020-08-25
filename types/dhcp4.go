@@ -54,10 +54,7 @@ func (d *DHCPv4) CSVRecord() []string {
 	for _, o := range d.Options {
 		opts = append(opts, o.toString())
 	}
-	// prevent accessing nil pointer
-	if d.Context == nil {
-		d.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(d.Timestamp),     // string
 		formatInt32(d.Operation),         // int32
@@ -75,10 +72,10 @@ func (d *DHCPv4) CSVRecord() []string {
 		hex.EncodeToString(d.ServerName), // []byte
 		hex.EncodeToString(d.File),       // []byte
 		strings.Join(opts, ""),           // []*DHCPOption
-		d.Context.SrcIP,
-		d.Context.DstIP,
-		d.Context.SrcPort,
-		d.Context.DstPort,
+		d.SrcIP,
+		d.DstIP,
+		formatInt32(d.SrcPort),
+		formatInt32(d.DstPort),
 	})
 }
 
@@ -120,21 +117,18 @@ func (d *DHCPv4) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (d *DHCPv4) SetPacketContext(ctx *PacketContext) {
-	d.Context = ctx
+	d.SrcIP = ctx.SrcIP
+	d.DstIP = ctx.DstIP
+	d.SrcPort = ctx.SrcPort
+	d.DstPort = ctx.DstPort
 }
 
 // Src returns the source address of the audit record.
 func (d *DHCPv4) Src() string {
-	if d.Context != nil {
-		return d.Context.SrcIP
-	}
-	return ""
+	return d.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (d *DHCPv4) Dst() string {
-	if d.Context != nil {
-		return d.Context.DstIP
-	}
-	return ""
+	return d.DstIP
 }

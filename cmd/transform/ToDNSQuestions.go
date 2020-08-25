@@ -85,7 +85,7 @@ func toDNSQuestions() {
 				results[string(q.Name)]++
 
 				ent := trx.AddEntity("netcap.DNSName", string(q.Name))
-				ent.AddProperty("srcIP", "SourceIP", "strict", dns.Context.SrcIP)
+				ent.AddProperty("srcIP", "SourceIP", "strict", dns.SrcIP)
 				ent.SetLinkLabel(strconv.Itoa(results[string(q.Name)]))
 			}
 		}

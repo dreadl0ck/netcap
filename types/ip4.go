@@ -164,12 +164,8 @@ func (i *IPv4) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (i *IPv4) SetPacketContext(ctx *PacketContext) {
-	// create new context and only add information that is
-	// not yet present on the audit record type
-	i.Context = &PacketContext{
-		SrcPort: ctx.SrcPort,
-		DstPort: ctx.DstPort,
-	}
+	i.SrcPort = ctx.SrcPort
+	i.DstPort = ctx.DstPort
 }
 
 // Src returns the source address of the audit record.

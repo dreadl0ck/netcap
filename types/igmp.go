@@ -50,10 +50,7 @@ func (i *IGMP) CSVRecord() []string {
 	for _, r := range i.GroupRecords {
 		records = append(records, r.toString())
 	}
-	// prevent accessing nil pointer
-	if i.Context == nil {
-		i.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Type),                           // int32
@@ -68,8 +65,8 @@ func (i *IGMP) CSVRecord() []string {
 		formatInt32(i.NumberOfSources),                // int32
 		strings.Join(records, ""),                     // []*IGMPv3GroupRecord
 		formatInt32(i.Version),                        // int32
-		i.Context.SrcIP,
-		i.Context.DstIP,
+		i.SrcIP,
+		i.DstIP,
 	})
 }
 
@@ -116,21 +113,16 @@ func (i *IGMP) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (i *IGMP) SetPacketContext(ctx *PacketContext) {
-	i.Context = ctx
+	i.SrcIP = ctx.SrcIP
+	i.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (i *IGMP) Src() string {
-	if i.Context != nil {
-		return i.Context.SrcIP
-	}
-	return ""
+	return i.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (i *IGMP) Dst() string {
-	if i.Context != nil {
-		return i.Context.DstIP
-	}
-	return ""
+	return i.DstIP
 }

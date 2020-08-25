@@ -28,8 +28,6 @@ var fieldsVXLAN = []string{
 	"GBPDontLearn",     //  bool
 	"GBPApplied",       //  bool
 	"GBPGroupPolicyID", //  int32
-	"SrcIP",
-	"DstIP",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -39,10 +37,7 @@ func (a *VXLAN) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *VXLAN) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.ValidIDFlag),  //  bool
@@ -51,8 +46,6 @@ func (a *VXLAN) CSVRecord() []string {
 		strconv.FormatBool(a.GBPDontLearn), //  bool
 		strconv.FormatBool(a.GBPApplied),   //  bool
 		formatInt32(a.GBPGroupPolicyID),    //  int32
-		a.Context.SrcIP,
-		a.Context.DstIP,
 	})
 }
 
@@ -82,21 +75,14 @@ func (a *VXLAN) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *VXLAN) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
 }
 
 // Src returns the source address of the audit record.
 func (a *VXLAN) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
-	}
 	return ""
 }
 
 // Dst returns the destination address of the audit record.
 func (a *VXLAN) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
-	}
 	return ""
 }

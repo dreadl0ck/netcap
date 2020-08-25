@@ -30,8 +30,8 @@ var sctpDecoder = newGoPacketDecoder(
 			return &types.SCTP{
 				Timestamp:       timestamp,
 				Checksum:        sctp.Checksum,
-				DstPort:         uint32(sctp.DstPort),
-				SrcPort:         uint32(sctp.SrcPort),
+				DstPort:         int32(sctp.DstPort),
+				SrcPort:         int32(sctp.SrcPort),
 				VerificationTag: sctp.VerificationTag,
 			}
 		}

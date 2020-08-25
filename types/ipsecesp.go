@@ -35,17 +35,14 @@ func (a *IPSecESP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *IPSecESP) CSVRecord() []string {
-	// prevent accessing nil pointer
-	if a.Context == nil {
-		a.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.SPI),
 		formatInt32(a.Seq),
 		formatInt32(a.LenEncrypted),
-		a.Context.SrcIP,
-		a.Context.DstIP,
+		a.SrcIP,
+		a.DstIP,
 	})
 }
 
@@ -75,21 +72,16 @@ func (a *IPSecESP) Inc() {
 
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *IPSecESP) SetPacketContext(ctx *PacketContext) {
-	a.Context = ctx
+	a.SrcIP = ctx.SrcIP
+	a.DstIP = ctx.DstIP
 }
 
 // Src returns the source address of the audit record.
 func (a *IPSecESP) Src() string {
-	if a.Context != nil {
-		return a.Context.SrcIP
-	}
-	return ""
+	return a.SrcIP
 }
 
 // Dst returns the destination address of the audit record.
 func (a *IPSecESP) Dst() string {
-	if a.Context != nil {
-		return a.Context.DstIP
-	}
-	return ""
+	return a.DstIP
 }

@@ -47,10 +47,7 @@ func (i *Geneve) CSVRecord() []string {
 	for _, o := range i.Options {
 		opts = append(opts, o.toString())
 	}
-	// prevent accessing nil pointer
-	if i.Context == nil {
-		i.Context = &PacketContext{}
-	}
+
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Version),               // int32
@@ -60,10 +57,6 @@ func (i *Geneve) CSVRecord() []string {
 		formatInt32(i.Protocol),              // int32
 		formatUint32(i.VNI),                  // uint32
 		strings.Join(opts, ""),               // []*GeneveOption
-		i.Context.SrcIP,
-		i.Context.DstIP,
-		i.Context.SrcPort,
-		i.Context.DstPort,
 	})
 }
 
@@ -109,22 +102,14 @@ func (i *Geneve) Inc() {
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (i *Geneve) SetPacketContext(ctx *PacketContext) {
-	i.Context = ctx
-}
+func (i *Geneve) SetPacketContext(_ *PacketContext) {}
 
 // Src returns the source address of the audit record.
 func (i *Geneve) Src() string {
-	if i.Context != nil {
-		return i.Context.SrcIP
-	}
 	return ""
 }
 
 // Dst returns the destination address of the audit record.
 func (i *Geneve) Dst() string {
-	if i.Context != nil {
-		return i.Context.DstIP
-	}
 	return ""
 }
