@@ -87,4 +87,7 @@ const (
 	// DirectoryPermission = 0o755
 	DirectoryPermission = 0o700
 	FilePermission      = 0o700
+
+	FileExtension           = ".ncap"
+	FileExtensionCompressed = ".ncap.gz"
 )

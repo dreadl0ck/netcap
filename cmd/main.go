@@ -15,6 +15,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"io/ioutil"
 	"log"
 	"os"
@@ -56,7 +57,7 @@ const (
 	extPCAP   = ".pcap"
 	extPCAPNG = ".pcapng"
 	extConfig = ".conf"
-	extNetcap = ".ncap"
+	extNetcap = defaults.FileExtension
 	extGzip   = ".gz"
 )
 

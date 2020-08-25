@@ -64,7 +64,7 @@ func exportDir(path string) {
 			ext   = filepath.Ext(fName)
 		)
 
-		if ext == ".ncap" || ext == ".gz" {
+		if ext == defaults.FileExtension || ext == ".gz" {
 			if !*flagReplay {
 				fmt.Println("exporting", fName)
 

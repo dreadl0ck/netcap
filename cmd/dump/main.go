@@ -15,6 +15,7 @@ package dump
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"log"
 	"os"
 	"path/filepath"
@@ -96,7 +97,7 @@ func Run() {
 	types.FieldSeparator = *flagStructSeparator
 
 	// read ncap file and print to stdout
-	if filepath.Ext(*flagInput) == ".ncap" || filepath.Ext(*flagInput) == ".gz" {
+	if filepath.Ext(*flagInput) == defaults.FileExtension || filepath.Ext(*flagInput) == ".gz" {
 		err = io.Dump(
 			os.Stdout,
 			io.DumpConfig{

@@ -1,6 +1,5 @@
 # TODOs
 
-- move ".ncap.gz" file extension to defaults
 - POP3: move mails into dedicated audit record file
 - generate a proper field mapping for each index
 

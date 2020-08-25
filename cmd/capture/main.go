@@ -15,6 +15,7 @@ package capture
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"log"
 	"net/http"
 	"os"
@@ -150,7 +151,7 @@ func Run() {
 		os.Exit(1)
 	}
 
-	if strings.HasSuffix(*flagInput, ".ncap.gz") || strings.HasSuffix(*flagInput, ".ncap") {
+	if strings.HasSuffix(*flagInput, defaults.FileExtensionCompressed) || strings.HasSuffix(*flagInput, defaults.FileExtension) {
 		printHeader()
 		fmt.Println(ansi.Red + "> the capture tool is used to create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
 		fmt.Println(ansi.Red + "> use the dump tool to read netcap audit records" + ansi.Reset)
