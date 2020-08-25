@@ -12,13 +12,13 @@ import (
 	"strings"
 )
 
-// LoadIPProfiles will load the ipProfiles into memory and return them.
-func LoadIPProfiles() map[string]*types.IPProfile {
+// LoadMails will load the email audit records into memory and return them.
+func LoadMails() map[string]*types.Mail {
 
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 
-	profiles := make(map[string]*types.IPProfile)
+	mails := make(map[string]*types.Mail)
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 
@@ -50,39 +50,47 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 	}
 
 	var (
-		profile = new(types.IPProfile)
+		mail = new(types.Mail)
 		pm      proto.Message
 		ok      bool
 	)
 
-	pm = profile
+	pm = mail
 
 	if _, ok = pm.(types.AuditRecord); !ok {
 		panic("type does not implement types.AuditRecord interface")
 	}
 
 	for {
-		err = r.Next(profile)
+		err = r.Next(mail)
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)
 		}
 
-		profiles[profile.Addr] = &types.IPProfile{
-			Addr:           profile.Addr,
-			NumPackets:     profile.NumPackets,
-			Geolocation:    profile.Geolocation,
-			DNSNames:       profile.DNSNames,
-			TimestampFirst: profile.TimestampFirst,
-			TimestampLast:  profile.TimestampLast,
-			Applications:   profile.Applications,
-			Ja3:            profile.Ja3,
-			Protocols:      profile.Protocols,
-			Bytes:          profile.Bytes,
-			DstPorts:       profile.DstPorts,
-			SrcPorts:       profile.SrcPorts,
-			SNIs:           profile.SNIs,
+		mails[mail.ID] = &types.Mail{
+			Timestamp: mail.Timestamp,
+			ReturnPath: mail.ReturnPath,
+			From: mail.From,
+			To: mail.To,
+			CC: mail.CC,
+			Subject: mail.Subject,
+			Date: mail.Date,
+			MessageID: mail.MessageID,
+			References: mail.References,
+			InReplyTo: mail.InReplyTo,
+			ContentLanguage: mail.ContentLanguage,
+			HasAttachments: mail.HasAttachments,
+			XOriginatingIP: mail.XOriginatingIP,
+			ContentType: mail.ContentType,
+			EnvelopeTo: mail.EnvelopeTo,
+			Body: mail.Body,
+			ClientIP: mail.ClientIP,
+			ServerIP: mail.ServerIP,
+			ID: mail.ID,
+			DeliveryDate: mail.DeliveryDate,
+			Origin: mail.Origin,
 		}
 	}
 
@@ -91,5 +99,5 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	return profiles
+	return mails
 }

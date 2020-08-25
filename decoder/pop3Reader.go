@@ -20,7 +20,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"github.com/araddon/dateparse"
 	"io"
+	"log"
 	"net/http"
 	"net/textproto"
 	"os"
@@ -162,7 +164,7 @@ func (h *pop3Reader) Decode() {
 		AuthToken: token,
 		User:      user,
 		Pass:      pass,
-		Mails:     mails,
+		MailIDs:     mails,
 	}
 
 	if user != "" || pass != "" {
@@ -413,7 +415,7 @@ func getCommand(line string) (string, []string) {
 	return cmd[0], cmd[1:]
 }
 
-func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string) {
+func (h *pop3Reader) parseMails() (mailIDs []string, user, pass, token string) {
 	if len(h.pop3Responses) == 0 || len(h.pop3Requests) == 0 {
 		return
 	}
@@ -491,7 +493,9 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == pop3Dot {
-						mails = append(mails, h.parseMail([]byte(mailBuf)))
+						mail := h.parseMail([]byte(mailBuf))
+						writeMail(mail)
+						mailIDs = append(mailIDs, mail.ID)
 						mailBuf = ""
 						numMails++
 						h.resIndex++
@@ -503,7 +507,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 					n++
 				}
 
-				h.resIndex = h.resIndex + n
+				h.resIndex += n
 
 				continue
 			case "QUIT":
@@ -548,6 +552,7 @@ func (h *pop3Reader) parseMails() (mails []*types.Mail, user, pass, token string
 				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == pop3OK {
 					state = stateAuthenticated
+
 					if len(h.pop3Requests) < h.reqIndex {
 						r = h.pop3Requests[h.reqIndex]
 						if r != nil {
@@ -651,8 +656,19 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 	mailDebug(ansi.Yellow, "parseMail", h.parent.ident, ansi.Reset)
 
 	header, body := splitMailHeaderAndBody(buf)
+
+	var ti int64
+
+	ts, err := dateparse.ParseAny(header["Delivery-Date"])
+	if err != nil {
+		utils.DebugLog.Println("failed to parse delivery date string from mail header:", err)
+	} else {
+		ti = ts.UnixNano()
+	}
+
 	mail := &types.Mail{
 		ReturnPath:      header["Return-Path"],
+		Timestamp:       ti,
 		DeliveryDate:    header["Delivery-Date"],
 		From:            header["From"],
 		To:              header["To"],
@@ -667,6 +683,8 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 		ContentType:     header[headerContentType],
 		EnvelopeTo:      header["Envelope-To"],
 		Body:            h.parseParts(body),
+		ID:              newMailID(),
+		Origin: "POP3",
 	}
 	for _, p := range mail.Body {
 		if strings.Contains(p.Header["Content-Disposition"], "attachment") {
@@ -809,6 +827,15 @@ func copyMailPart(part *types.MailPart) *types.MailPart {
 		Content:  part.Content,
 		Filename: part.Filename,
 	}
+}
+
+func newMailID() string {
+	s, err := cryptoutils.RandomString(20)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return s
 }
 
 // TODO: write unit test for this

@@ -1,7 +1,10 @@
 # TODOs
 
-- POP3: move mails into dedicated audit record file
 - generate a proper field mapping for each index
+- count device and ip profiles on stats structure
+- simplify decoder creation
+
+- add logging pkg to create dedicated file loggers for different components
 
 - create an index for document errors that occurred when pushing data
 - create an index for errors that occurred during netcap processing

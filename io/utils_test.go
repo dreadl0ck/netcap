@@ -14,6 +14,7 @@
 package io
 
 import (
+	"github.com/dreadl0ck/netcap/defaults"
 	"os"
 	"testing"
 )

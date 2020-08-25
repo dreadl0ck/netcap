@@ -57,6 +57,7 @@ func toDNSQuestions() {
 		ok  bool
 		trx = maltego.Transform{}
 	)
+
 	pm = dns
 
 	if _, ok = pm.(types.AuditRecord); !ok {
