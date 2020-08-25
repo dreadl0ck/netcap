@@ -306,6 +306,7 @@ commands:
         exec: go test -v -bench=. ./...
 
     format-code:
+        description: format source code
         exec: |
 
             # TODO: recursive ./... does not seem to be supported
@@ -317,6 +318,14 @@ commands:
 
             gci -w -local github.com/dreadl0ck/netcap .
 
+    format-proto:
+        description: format protobuf definitions
+        help: |
+            https://github.com/uber/prototool#prototool-format
+        exec: |
+            prototool format -w -f netcap.proto
+
     make-icons:
+        description: generate icons for maltego integration
         exec: |
             go test -v -run="GenerateAuditRecordIcons" -tags="icons" github.com/dreadl0ck/netcap/maltego
