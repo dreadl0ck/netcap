@@ -24,7 +24,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	io2 "github.com/dreadl0ck/netcap/io"
+	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -36,14 +36,16 @@ type serviceCountFunc = func(service *types.Service, mac string, min, max *uint6
 
 // ServiceTransform applies a maltego transformation over Service profiles seen for a target Service.
 func ServiceTransform(count serviceCountFunc, transform serviceTransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	servicesFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
+	var (
+		lt           = ParseLocalArguments(os.Args[1:])
+		servicesFile = lt.Values["path"]
+		mac          = lt.Values["mac"]
+		ipaddr       = lt.Values["ipaddr"]
+		stdout       = os.Stdout
+	)
 
-	stdout := os.Stdout
 	os.Stdout = os.Stderr
-	io2.PrintBuildInfo()
+	netio.PrintBuildInfo()
 
 	f, err := os.Open(servicesFile)
 	if err != nil {
@@ -57,7 +59,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 
 	os.Stdout = stdout
 
-	r, err := io2.Open(servicesFile, defaults.BufferSize)
+	r, err := netio.Open(servicesFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -106,7 +108,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 		}
 	}
 
-	r, err = io2.Open(servicesFile, defaults.BufferSize)
+	r, err = netio.Open(servicesFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}

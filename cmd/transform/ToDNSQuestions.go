@@ -13,7 +13,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	io2 "github.com/dreadl0ck/netcap/io"
+	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -37,7 +37,7 @@ func toDNSQuestions() {
 		log.Fatal("input file must be an audit record file")
 	}
 
-	r, err := io2.Open(dnsAuditRecords, defaults.BufferSize)
+	r, err := netio.Open(dnsAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}

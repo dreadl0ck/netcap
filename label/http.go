@@ -13,7 +13,7 @@ import (
 	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	io2 "github.com/dreadl0ck/netcap/io"
+	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -22,7 +22,7 @@ import (
 func labelHTTP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
-		total, errCount = io2.Count(fname)
+		total, errCount = netio.Count(fname)
 		labelsTotal     = 0
 		progress        = pb.New(int(total)).Prefix(utils.Pad(utils.TrimFileExtension(file), 25))
 		outFileName     = filepath.Join(outDir, "HTTP_labeled.csv")
@@ -32,7 +32,7 @@ func labelHTTP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir,
 	}
 
 	go func() {
-		r, err := io2.Open(fname, defaults.BufferSize)
+		r, err := netio.Open(fname, defaults.BufferSize)
 		if err != nil {
 			panic(err)
 		}

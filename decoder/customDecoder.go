@@ -233,7 +233,6 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 
 	// initialize decoders
 	for _, d := range defaultCustomDecoders {
-
 		w := io.NewAuditRecordWriter(&io.WriterConfig{
 			CSV:     c.CSV,
 			Proto:   c.Proto,

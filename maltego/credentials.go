@@ -24,7 +24,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	io2 "github.com/dreadl0ck/netcap/io"
+	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -43,7 +43,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
-	io2.PrintBuildInfo()
+	netio.PrintBuildInfo()
 
 	f, err := os.Open(credentialsFile)
 	if err != nil {
@@ -57,7 +57,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 
 	os.Stdout = stdout
 
-	r, err := io2.Open(credentialsFile, defaults.BufferSize)
+	r, err := netio.Open(credentialsFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -106,7 +106,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 		}
 	}
 
-	r, err = io2.Open(credentialsFile, defaults.BufferSize)
+	r, err = netio.Open(credentialsFile, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
