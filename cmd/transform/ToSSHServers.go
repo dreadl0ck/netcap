@@ -3,6 +3,7 @@ package transform
 import (
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toSSHServers() {
@@ -16,7 +17,7 @@ func toSSHServers() {
 				}
 
 				ent := trx.AddEntity("netcap.SSHServer", val)
-				ent.AddProperty("timestamp", "Timestamp", "strict", ssh.Timestamp)
+				ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(ssh.Timestamp))
 				ent.AddProperty("ident", "Ident", "strict", ssh.Ident)
 				ent.AddProperty("flow", "Flow", "strict", ssh.Flow)
 				ent.AddProperty("algorithms", "Algorithms", "strict", ssh.Algorithms)

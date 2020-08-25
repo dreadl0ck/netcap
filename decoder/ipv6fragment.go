@@ -25,7 +25,7 @@ var ip6FragmentDecoder = newGoPacketDecoder(
 	types.Type_NC_IPv6Fragment,
 	layers.LayerTypeIPv6Fragment,
 	"IPv6 fragmented packet",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ip6f, ok := layer.(*layers.IPv6Fragment); ok {
 			return &types.IPv6Fragment{
 				Timestamp:      timestamp,

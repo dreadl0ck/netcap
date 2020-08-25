@@ -23,7 +23,6 @@ import (
 
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var captureServices bool
@@ -117,7 +116,7 @@ func saveTCPServiceBanner(s streamReader) {
 		// more data means more information and is therefore preferred for identification purposes
 		if len(sv.Banner) < len(banner) {
 			sv.Banner = string(banner)
-			sv.Timestamp = utils.TimeToString(s.FirstPacket())
+			sv.Timestamp = s.FirstPacket().UnixNano()
 		}
 
 		return
@@ -125,7 +124,7 @@ func saveTCPServiceBanner(s streamReader) {
 	ServiceStore.Unlock()
 
 	// nope. lets create a new one
-	serv := newService(utils.TimeToString(s.FirstPacket()), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
+	serv := newService(s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
 	serv.Banner = string(banner)
 	serv.IP = s.Network().Dst().String()
 	serv.Port = s.Transport().Dst().String()
@@ -152,7 +151,7 @@ func saveTCPServiceBanner(s streamReader) {
 }
 
 // newDeviceProfile creates a new network service.
-func newService(ts string, numBytesServer, numBytesClient int, ip string) *service {
+func newService(ts int64, numBytesServer, numBytesClient int, ip string) *service {
 	var host string
 	if resolvers.CurrentConfig.ReverseDNS {
 		host = strings.Join(resolvers.LookupDNSNames(ip), "; ")

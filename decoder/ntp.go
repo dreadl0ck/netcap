@@ -25,7 +25,7 @@ var ntpDecoder = newGoPacketDecoder(
 	types.Type_NC_NTP,
 	layers.LayerTypeNTP,
 	"The Network Time Protocol is a networking protocol for clock synchronization between computer systems over packet-switched, variable-latency data networks",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ntp, ok := layer.(*layers.NTP); ok {
 			return &types.NTP{
 				Timestamp:          timestamp,

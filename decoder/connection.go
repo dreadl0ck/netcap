@@ -18,12 +18,12 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // connectionID is a bidirectional connection
@@ -123,11 +123,11 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		// check if received packet from the same flow
 		// was captured BEFORE the flows first seen timestamp
-		if !utils.StringToTime(conn.TimestampFirst).Before(p.Metadata().Timestamp) {
+		if !(conn.TimestampFirst < p.Metadata().Timestamp.UnixNano()) {
 			calcDuration = true
 
 			// rewrite timestamp
-			conn.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
+			conn.TimestampFirst = p.Metadata().Timestamp.UnixNano()
 
 			// rewrite source and destination parameters
 			// since the first packet decides about the flow direction
@@ -148,10 +148,10 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		}
 
 		// check if last timestamp was before the current packet
-		if utils.StringToTime(conn.TimestampLast).Before(p.Metadata().Timestamp) {
+		if conn.TimestampLast < p.Metadata().Timestamp.UnixNano() {
 			// current packet is newer
 			// update last seen timestamp
-			conn.TimestampLast = utils.TimeToString(p.Metadata().Timestamp)
+			conn.TimestampLast = p.Metadata().Timestamp.UnixNano()
 			calcDuration = true
 		} // else: do nothing, timestamp is still the oldest one
 
@@ -160,15 +160,15 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		// only calculate duration when timestamps have changed
 		if calcDuration {
-			conn.Duration = utils.StringToTime(conn.TimestampLast).Sub(utils.StringToTime(conn.TimestampFirst)).Nanoseconds()
+			conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
 		}
 
 		conn.Unlock()
 	} else { // create a new Connection
 		co := &types.Connection{}
 		co.UID = calcMd5(co.String())
-		co.TimestampFirst = utils.TimeToString(p.Metadata().Timestamp)
-		co.TimestampLast = utils.TimeToString(p.Metadata().Timestamp)
+		co.TimestampFirst = p.Metadata().Timestamp.UnixNano()
+		co.TimestampLast = p.Metadata().Timestamp.UnixNano()
 
 		if ll := p.LinkLayer(); ll != nil {
 			co.LinkProto = ll.LayerType().String()
@@ -210,7 +210,7 @@ func (cd *connectionDecoder) flushConns(p gopacket.Packet) {
 
 	for id, entry := range cd.Conns.Items {
 		// flush entries whose last timestamp is connTimeOut older than current packet
-		if p.Metadata().Timestamp.Sub(utils.StringToTime(entry.TimestampLast)) > conf.ConnTimeOut {
+		if p.Metadata().Timestamp.Sub(time.Unix(0, entry.TimestampLast)) > conf.ConnTimeOut {
 			selectConns = append(selectConns, entry.Connection)
 			// cleanup
 			delete(cd.Conns.Items, id)

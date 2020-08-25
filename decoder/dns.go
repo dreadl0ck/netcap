@@ -25,7 +25,7 @@ var dnsDecoder = newGoPacketDecoder(
 	types.Type_NC_DNS,
 	layers.LayerTypeDNS,
 	"The Domain Name System is a hierarchical and decentralized naming system for computers, services, or other resources connected to the Internet or a private network",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if dns, ok := layer.(*layers.DNS); ok {
 			var questions []*types.DNSQuestion
 			for _, q := range dns.Questions {

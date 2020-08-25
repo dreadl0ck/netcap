@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsBFD = []string{
@@ -85,7 +83,7 @@ func (b *BFD) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (b *BFD) Time() string {
+func (b *BFD) Time() int64 {
 	return b.Timestamp
 }
 
@@ -107,7 +105,7 @@ func (bah BFDAuthHeader) getString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (b *BFD) JSON() (string, error) {
-	b.Timestamp = utils.TimeToUnixMilli(b.Timestamp)
+	//	b.Timestamp = utils.TimeToUnixMilli(b.Timestamp)
 	return jsonMarshaler.MarshalToString(b)
 }
 

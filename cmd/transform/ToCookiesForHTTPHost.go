@@ -3,6 +3,7 @@ package transform
 import (
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toCookiesForHTTPHost() {
@@ -13,10 +14,10 @@ func toCookiesForHTTPHost() {
 				host := lt.Value
 				if http.Host == host {
 					for _, c := range http.ReqCookies {
-						addCookie(trx, c, http.Timestamp, ipaddr, profilesFile, http.Method)
+						addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, profilesFile, http.Method)
 					}
 					for _, c := range http.ResCookies {
-						addCookie(trx, c, http.Timestamp, ipaddr, profilesFile, http.Method)
+						addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, profilesFile, http.Method)
 					}
 				}
 			}

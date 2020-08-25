@@ -28,7 +28,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 	types.Type_NC_DHCPv4,
 	layers.LayerTypeDHCPv4,
 	"The Dynamic Host Configuration Protocol (DHCP) is a network management protocol used on Internet Protocol networks whereby a DHCP server dynamically assigns an IP address and other network configuration parameters to each device on a network so they can communicate with other IP networks",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if dhcp4, ok := layer.(*layers.DHCPv4); ok {
 
 			var (

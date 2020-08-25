@@ -97,7 +97,7 @@ func (h *sshReader) processSSHIdent(ident string, entity string) {
 		writeSoftware([]*software{
 			{
 				Software: &types.Software{
-					Timestamp:  utils.TimeToString(h.parent.firstPacket),
+					Timestamp:  h.parent.firstPacket.UnixNano(),
 					Product:    i.productName,
 					Version:    i.productVersion,
 					SourceName: "SSH " + entity + " Ident",
@@ -207,7 +207,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		if dir == reassembly.TCPDirClientToServer {
 			sshDecoder.write(&types.SSH{
-				Timestamp:  utils.TimeToString(h.parent.client.FirstPacket()),
+				Timestamp:  h.parent.client.FirstPacket().UnixNano(),
 				HASSH:      hash,
 				Flow:       h.parent.ident,
 				Ident:      h.clientIdent,
@@ -218,7 +218,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			h.clientKexInit = &init
 		} else {
 			sshDecoder.write(&types.SSH{
-				Timestamp:  utils.TimeToString(h.parent.client.FirstPacket()),
+				Timestamp:  h.parent.client.FirstPacket().UnixNano(),
 				HASSH:      hash,
 				Flow:       utils.ReverseIdent(h.parent.ident),
 				Ident:      h.serverIdent,
@@ -233,7 +233,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			sshVersion, product, version, os := parseSSHInfoFromHasshDB(soft.Version)
 
 			h.software = append(h.software, &types.Software{
-				Timestamp: utils.TimeToString(h.parent.client.FirstPacket()),
+				Timestamp: h.parent.client.FirstPacket().UnixNano(),
 				Product:   product,
 				Vendor:    "", // do not set the vendor for now
 				Version:   version,

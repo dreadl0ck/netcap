@@ -46,7 +46,7 @@ type AuditRecord interface {
 	CSVHeader() []string
 
 	// Time used to retrieve the timestamp of the audit record for labeling
-	Time() string
+	Time() int64
 
 	// Src returns the source of an audit record
 	// for Layer 2 records this shall be the MAC address

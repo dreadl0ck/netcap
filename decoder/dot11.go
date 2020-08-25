@@ -25,7 +25,7 @@ var dot11Decoder = newGoPacketDecoder(
 	types.Type_NC_Dot11,
 	layers.LayerTypeDot11,
 	"IEEE 802.11 is part of the IEEE 802 set of local area network protocols, and specifies the set of media access control and physical layer protocols for implementing wireless local area network Wi-Fi",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if dot11, ok := layer.(*layers.Dot11); ok {
 			var qos *types.Dot11QOS
 			var htcontrol *types.Dot11HTControl

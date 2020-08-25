@@ -25,7 +25,7 @@ var ipv6Decoder = newGoPacketDecoder(
 	types.Type_NC_IPv6,
 	layers.LayerTypeIPv6,
 	"Internet Protocol version 6 (IPv6) is the most recent version of the Internet Protocol (IP), the communications protocol that provides an identification and location system for computers on networks and routes traffic across the Internet",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ip6, ok := layer.(*layers.IPv6); ok {
 			var e float64
 			if conf.CalculateEntropy {

@@ -25,7 +25,7 @@ var ipSecAHDecoder = newGoPacketDecoder(
 	types.Type_NC_IPSecAH,
 	layers.LayerTypeIPSecAH,
 	"IPSec Authentication Header (AH)",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ipsecah, ok := layer.(*layers.IPSecAH); ok {
 			return &types.IPSecAH{
 				Timestamp:          timestamp,

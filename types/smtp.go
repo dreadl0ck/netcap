@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsSMTP = []string{
@@ -63,7 +61,7 @@ func (a *SMTP) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (a *SMTP) Time() string {
+func (a *SMTP) Time() int64 {
 	return a.Timestamp
 }
 
@@ -89,7 +87,7 @@ func (a SMTPResponse) getString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (a *SMTP) JSON() (string, error) {
-	a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
+	//	// a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
 	return jsonMarshaler.MarshalToString(a)
 }
 

@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/mgutz/ansi"
 
@@ -172,7 +173,7 @@ func TestClassifyBanners(t *testing.T) {
 
 func (b bannerTest) testClassifyBanner(t *testing.T) {
 	// make dummy service
-	serv := newService("", 0, 0, "")
+	serv := newService(time.Now().UnixNano(), 0, 0, "")
 	serv.IP = "127.0.0.1"
 	serv.Port = "21"
 	ident := "127.0.0.1->127.0.0.1-4322->21"

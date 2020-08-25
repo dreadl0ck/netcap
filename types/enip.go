@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsENIP = []string{
@@ -65,13 +63,13 @@ func (en *ENIP) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (en *ENIP) Time() string {
+func (en *ENIP) Time() int64 {
 	return en.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (en *ENIP) JSON() (string, error) {
-	en.Timestamp = utils.TimeToUnixMilli(en.Timestamp)
+	//	en.Timestamp = utils.TimeToUnixMilli(en.Timestamp)
 	return jsonMarshaler.MarshalToString(en)
 }
 

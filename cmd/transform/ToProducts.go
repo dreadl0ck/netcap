@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/utils"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/maltego"
@@ -32,7 +33,7 @@ func toProducts() {
 			}
 
 			ent := trx.AddEntity("netcap.Software", val)
-			ent.AddProperty("timestamp", "Timestamp", "strict", soft.Timestamp)
+			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(soft.Timestamp))
 			ent.AddProperty("vendor", "Vendor", "strict", soft.Vendor)
 			ent.AddProperty("product", "Product", "strict", soft.Product)
 			ent.AddProperty("version", "Version", "strict", soft.Version)

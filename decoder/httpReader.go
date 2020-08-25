@@ -107,14 +107,14 @@ var httpStore = &httpMetaStore{
 
 type httpRequest struct {
 	request   *http.Request
-	timestamp string
+	timestamp int64
 	clientIP  string
 	serverIP  string
 }
 
 type httpResponse struct {
 	response  *http.Response
-	timestamp string
+	timestamp int64
 	clientIP  string
 	serverIP  string
 }
@@ -241,7 +241,7 @@ func (h *httpReader) searchForBasicAuth(req *http.Request) {
 	if u, p, ok := req.BasicAuth(); ok {
 		if u != "" || p != "" {
 			writeCredentials(&types.Credentials{
-				Timestamp: utils.TimeToString(h.parent.firstPacket),
+				Timestamp: h.parent.firstPacket.UnixNano(),
 				Service:   "HTTP Basic Auth",
 				Flow:      h.parent.ident,
 				User:      u,
@@ -274,7 +274,7 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 		}
 
 		writeCredentials(&types.Credentials{
-			Timestamp: utils.TimeToString(h.parent.firstPacket),
+			Timestamp: h.parent.firstPacket.UnixNano(),
 			Service:   serviceHTTP,
 			Flow:      h.parent.ident,
 			User:      strings.Join(values, "; "),
@@ -453,7 +453,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	h.parent.Lock()
 	h.responses = append(h.responses, &httpResponse{
 		response:  res,
-		timestamp: utils.TimeToString(h.parent.firstPacket),
+		timestamp: h.parent.firstPacket.UnixNano(),
 		clientIP:  h.parent.net.Src().String(),
 		serverIP:  h.parent.net.Dst().String(),
 	})
@@ -855,7 +855,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 
 	// write file to disk
 	writeFile(&types.File{
-		Timestamp:           utils.TimeToString(h.parent.firstPacket),
+		Timestamp:           h.parent.firstPacket.UnixNano(),
 		Name:                fileName,
 		Length:              int64(length),
 		Hash:                hash,
@@ -904,7 +904,7 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	logReassemblyInfo("HTTP/%s Request: %s %s (body:%d)\n", h.parent.ident, req.Method, req.URL, s)
 
 	h.parent.Lock()
-	t := utils.TimeToString(h.parent.firstPacket)
+	t := h.parent.firstPacket.UnixNano()
 	h.parent.Unlock()
 
 	request := &httpRequest{

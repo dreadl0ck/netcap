@@ -228,7 +228,7 @@ func CustomLabels(pathMappingInfo, outputPath, separator, selection string) erro
 }
 
 // customMap uses info from a csv file to label the data
-// func customMap(wg *sync.WaitGroup, file string, typ string, labelMap map[string]*suricataAlert, labels []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {.
+// func customMap(wg *sync.WaitGroup, file string, typ string, labelMap map[int64]*suricataAlert, labels []*suricataAlert, outDir, separator, selection string) *pb.ProgressBar {.
 func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDir, separator, selection string) *pb.ProgressBar {
 	var (
 		fname           = filepath.Join(outDir, file)
@@ -323,7 +323,7 @@ func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 				}
 
 				// verify time interval of audit record is within the attack period
-				auditRecordTime := utils.StringToTime(p.Time()).UTC().Add(8 * time.Hour)
+				auditRecordTime := time.Unix(0, p.Time()).UTC().Add(8 * time.Hour)
 
 				// if the audit record has a timestamp in the attack period
 				if (l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime)) ||

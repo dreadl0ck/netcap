@@ -25,7 +25,7 @@ var sctpDecoder = newGoPacketDecoder(
 	types.Type_NC_SCTP,
 	layers.LayerTypeSCTP,
 	"The Stream Control Transmission Protocol (SCTP) is a computer networking communications protocol which operates at the transport layer and serves a role similar to the popular protocols TCP and UDP",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if sctp, ok := layer.(*layers.SCTP); ok {
 			return &types.SCTP{
 				Timestamp:       timestamp,

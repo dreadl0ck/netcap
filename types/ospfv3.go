@@ -17,8 +17,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsOSPFv3 = []string{
@@ -82,7 +80,7 @@ func (a *OSPFv3) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (a *OSPFv3) Time() string {
+func (a *OSPFv3) Time() int64 {
 	return a.Timestamp
 }
 
@@ -125,7 +123,7 @@ func (a *OSPFv3) Inc() {
 
 // JSON returns the JSON representation of the audit record.
 func (a *OSPFv3) JSON() (string, error) {
-	a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
+	//	// a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
 	return jsonMarshaler.MarshalToString(a)
 }
 

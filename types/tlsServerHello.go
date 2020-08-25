@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsTLSServerHello = []string{
@@ -92,13 +90,13 @@ func (t *TLSServerHello) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (t *TLSServerHello) Time() string {
+func (t *TLSServerHello) Time() int64 {
 	return t.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (t *TLSServerHello) JSON() (string, error) {
-	t.Timestamp = utils.TimeToUnixMilli(t.Timestamp)
+	//	t.Timestamp = utils.TimeToUnixMilli(t.Timestamp)
 	return jsonMarshaler.MarshalToString(t)
 }
 

@@ -25,7 +25,7 @@ var eapolDecoder = newGoPacketDecoder(
 	types.Type_NC_EAPOL,
 	layers.LayerTypeEAPOL,
 	"Extensible Authentication Protocol is an authentication framework frequently used in network and internet connections",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if eapol, ok := layer.(*layers.EAPOL); ok {
 			return &types.EAPOL{
 				Timestamp: timestamp,

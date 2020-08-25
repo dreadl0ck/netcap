@@ -25,7 +25,7 @@ var vrrpv2Decoder = newGoPacketDecoder(
 	types.Type_NC_VRRPv2,
 	layers.LayerTypeVRRP,
 	"The Virtual Router Redundancy Protocol is a computer networking protocol that provides for automatic assignment of available Internet Protocol routers to participating hosts",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if vrrpv2, ok := layer.(*layers.VRRPv2); ok {
 			var addr []string
 			for _, a := range vrrpv2.IPAddress {

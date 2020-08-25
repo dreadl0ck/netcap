@@ -91,7 +91,7 @@ var defaultGoPacketDecoders = []*GoPacketDecoder{
 
 type (
 	// goPacketDecoderHandler is the handler function for a layer encoder.
-	goPacketDecoderHandler = func(layer gopacket.Layer, timestamp string) proto.Message
+	goPacketDecoderHandler = func(layer gopacket.Layer, timestamp int64) proto.Message
 
 	// GoPacketDecoder represents an encoder for the gopacket.Layer type
 	// this structure has an optimized field order to avoid excessive padding.
@@ -236,7 +236,7 @@ func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string
 // this calls the handler function of the encoder
 // and writes the serialized protobuf into the data pipe.
 func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
-	record := dec.Handler(l, utils.TimeToString(p.Metadata().Timestamp))
+	record := dec.Handler(l, p.Metadata().Timestamp.UnixNano())
 	if record != nil {
 
 		if ctx != nil {

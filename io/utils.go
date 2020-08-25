@@ -336,7 +336,7 @@ func NewHeader(t types.Type, source, version string, includesPayloads bool, ti t
 	// init header
 	header := new(types.Header)
 	header.Type = t
-	header.Created = utils.TimeToString(ti)
+	header.Created = ti.UnixNano()
 	header.InputSource = source
 	header.Version = version
 	header.ContainsPayloads = includesPayloads

@@ -25,7 +25,7 @@ var ciscoDiscoveryInfoDecoder = newGoPacketDecoder(
 	types.Type_NC_CiscoDiscoveryInfo,
 	layers.LayerTypeCiscoDiscoveryInfo,
 	"Cisco Discovery Protocol is a proprietary Data Link Layer protocol used to share information about other directly connected Cisco equipment, such as the operating system version and IP address",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ciscoDiscoveryInfo, ok := layer.(*layers.CiscoDiscoveryInfo); ok {
 			var (
 				addresses     []string

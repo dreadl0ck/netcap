@@ -25,7 +25,7 @@ var smtpDecoder = newGoPacketDecoder(
 	types.Type_NC_SMTP,
 	layers.LayerTypeSMTP,
 	"The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if smtp, ok := layer.(*layers.SMTP); ok {
 			var responses []*types.SMTPResponse
 			for _, r := range smtp.ResponseLines {

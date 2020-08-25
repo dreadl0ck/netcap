@@ -1,19 +1,17 @@
 # TODOs
 
-- banner matching: only match the first banner seen for a service?
-- add issues for hacktoberfest
-
 - generate a proper field mapping for each index
-- add protobuf audit records
+
 - write IP profile into dedicated audit record file
 - POP3: move mails into dedicated audit record file
-
 - embed contexts? -> not possible with proto, just add the fields directly to the structures!
 - create an index for document errors that occurred when pushing data
-
-- make timestamps numeric (int64) for better performance?
 - adjust alpine build script similar to the one for ubuntu
 - add constants for logReassemblyError(
+
+- add protobuf audit records
+- banner matching: only match the first banner seen for a service?
+- add issues for hacktoberfest
 
 - remove init function usage
 - error messages iteration

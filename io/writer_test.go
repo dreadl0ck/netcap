@@ -14,6 +14,7 @@
 package io
 
 import (
+	"github.com/dreadl0ck/netcap/utils"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ import (
 
 var tcps = []*types.TCP{
 	{
-		Timestamp:   "1505838533.449164",
+		Timestamp:   utils.StringToTime("1505838533.449164").UnixNano(),
 		SrcPort:     443,
 		DstPort:     49209,
 		SeqNum:      2765430390,
@@ -40,7 +41,7 @@ var tcps = []*types.TCP{
 		},
 	},
 	{
-		Timestamp:   "1505838533.459141",
+		Timestamp:   utils.StringToTime("1505838533.459141").UnixNano(),
 		SrcPort:     49209,
 		DstPort:     443,
 		SeqNum:      2765430393,
@@ -57,7 +58,7 @@ var tcps = []*types.TCP{
 		},
 	},
 	{
-		Timestamp:   "1505838533.479163",
+		Timestamp:   utils.StringToTime("1505838533.479163").UnixNano(),
 		SrcPort:     443,
 		DstPort:     49209,
 		SeqNum:      2765430390,

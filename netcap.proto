@@ -152,7 +152,7 @@ enum Type {
  */
 
 message Header {
-    string Created          = 1; // Timestamp of creation date
+    int64 Created           = 1; // Timestamp of creation date
     string InputSource      = 2; // interface name or name of dumpfile
     Type   Type             = 3; // netcap data type
     string Version          = 4; // Netcap version string
@@ -196,7 +196,7 @@ message PacketContext {
 // format: <networkFlow>:<tranportFlow>
 // e.g: 172.16.11.104->201.11.212.81:2673->1511
 message Flow {
-    string TimestampFirst     = 1;
+    int64 TimestampFirst     = 1;
     string LinkProto          = 2;
     string NetworkProto       = 3;
     string TransportProto     = 4;
@@ -211,7 +211,7 @@ message Flow {
     int32  AppPayloadSize     = 13; // size of application layer payload
     int32  NumPackets         = 14;
     string UID                = 15;
-    string TimestampLast      = 16;
+    int64 TimestampLast      = 16;
     int64  Duration           = 17;
 }
 
@@ -220,7 +220,7 @@ message Flow {
 // IP <-> IP bisdirectional IP
 // Port <-> Port bidirectional Port
 message Connection {
-    string TimestampFirst     = 1;
+    int64 TimestampFirst     = 1;
     string LinkProto          = 2;
     string NetworkProto       = 3;
     string TransportProto     = 4;
@@ -235,7 +235,7 @@ message Connection {
     int32  AppPayloadSize     = 13; // size of application layer payload
     int32  NumPackets         = 14;
     string UID                = 15;
-    string TimestampLast      = 16;
+    int64 TimestampLast      = 16;
     int64  Duration           = 17;
 }
 
@@ -253,7 +253,7 @@ message Connection {
 // Ethernet has since retained a good deal of backward compatibility and has been refined to support higher bit rates, a greater number of nodes, and longer link distances. 
 // Over time, Ethernet has largely replaced competing wired LAN technologies such as Token Ring, FDDI and ARCNET.
 message Ethernet {
-    string Timestamp      = 1;
+    int64 Timestamp      = 1;
     string SrcMAC         = 2;
     string DstMAC         = 3;
     int32  EthernetType   = 4;
@@ -264,7 +264,7 @@ message Ethernet {
 // The Address Resolution Protocol (ARP) is a communication protocol used for discovering the link layer address, 
 // such as a MAC address, associated with a given internet layer address, typically an IPv4 address.
 message ARP {
-    string Timestamp          = 1;
+    int64 Timestamp          = 1;
     int32  AddrType           = 2;
     int32  Protocol           = 3;
     int32  HwAddressSize      = 4;
@@ -278,7 +278,7 @@ message ARP {
 
 // Dot1Q is the packet layer for 802.1Q VLAN headers.
 message Dot1Q {
-    string Timestamp     = 1;
+    int64 Timestamp     = 1;
     int32 Priority       = 2;
     bool DropEligible    = 3;
     int32 VLANIdentifier = 4;
@@ -288,7 +288,7 @@ message Dot1Q {
 // Dot11 provides an IEEE 802.11 base packet header. 
 // See http://standards.ieee.org/findstds/standard/802.11-2012.html for excruciating detail.
 message Dot11 {
-    string Timestamp         = 1;
+    int64 Timestamp         = 1;
     int32 Type               = 2;
     int32 Proto              = 3;
     int32 Flags              = 4;
@@ -369,7 +369,7 @@ message Dot11ASEL {
 // Discovery specified in IEEE 802.1AB and IEEE 802.3 section 6 clause 79.
 // LLDP performs functions similar to several proprietary protocols, such as Cisco Discovery Protocol, Foundry Discovery Protocol, Nortel Discovery Protocol and Link Layer Topology Discovery.
 message LinkLayerDiscovery {
-    string Timestamp        = 1;
+    int64 Timestamp        = 1;
     LLDPChassisID ChassisID = 2;
     LLDPPortID PortID       = 3;
     int32 TTL               = 4;
@@ -393,19 +393,19 @@ message LinkLayerDiscoveryValue {
 }
 
 message EthernetCTP {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
     int32 SkipCount  = 2;
 }
 
 message EthernetCTPReply {
-    string Timestamp    = 1;
+    int64 Timestamp    = 1;
     int32 Function      = 2;
     int32 ReceiptNumber = 3;
     bytes Data          = 4;
 }
 
 message LinkLayerDiscoveryInfo {
-    string Timestamp       = 1;
+    int64 Timestamp       = 1;
     string PortDescription = 2;
     string SysName         = 3;
     string SysDescription  = 4;
@@ -459,7 +459,7 @@ message LLDPOrgSpecificTLV {
 // IPv4 is described in IETF publication RFC 791 (September 1981), replacing an earlier definition (RFC 760, January 1980).
 // IPv4 uses a 32-bit address space, which limits the number of unique hosts to 4,294,967,296 (232), but large blocks are reserved for special networking methods.
 message IPv4 {
-    string  Timestamp     = 1;
+    int64  Timestamp     = 1;
     int32  Version        = 2;
     int32  IHL            = 3;
     int32  TOS            = 4;
@@ -493,7 +493,7 @@ message IPv4Option {
 // Task Force (IETF) to deal with the long-anticipated problem of IPv4 address exhaustion.
 // IPv6 is intended to replace IPv4.
 message IPv6 {
-    string  Timestamp     = 1;
+    int64  Timestamp     = 1;
     int32  Version        = 2;
     int32  TrafficClass   = 3;
     uint32 FlowLabel      = 4;
@@ -510,7 +510,7 @@ message IPv6 {
 }
 
 message IPv6Fragment {
-    string        Timestamp        = 1;
+    int64        Timestamp        = 1;
     int32         NextHeader       = 2; 
     int32         Reserved1        = 3;    // Reserved1 is bits [8-16), from least to most significant, 0-indexed
     int32         FragmentOffset   = 4;
@@ -521,7 +521,7 @@ message IPv6Fragment {
 }
 
 message ICMPv4 {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
     int32 TypeCode   = 2;
     int32 Checksum   = 3;
     int32 Id         = 4;
@@ -531,7 +531,7 @@ message ICMPv4 {
 }
 
 message ICMPv6 {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
     int32 TypeCode   = 2;
     int32 Checksum   = 3;
 
@@ -539,7 +539,7 @@ message ICMPv6 {
 }
 
 message ICMPv6NeighborAdvertisement {
-    string Timestamp              = 1;
+    int64 Timestamp              = 1;
     int32 Flags                   = 2;
     string TargetAddress          = 3;
     repeated ICMPv6Option Options = 4;
@@ -548,7 +548,7 @@ message ICMPv6NeighborAdvertisement {
 }
 
 message ICMPv6RouterAdvertisement {
-    string Timestamp              = 1;
+    int64 Timestamp              = 1;
     int32 HopLimit                = 2;
     int32 Flags                   = 3;
     int32 RouterLifetime          = 4;
@@ -574,7 +574,7 @@ message ICMPv6Option {
 // case referred to as datagrams, to other hosts on an Internet Protocol (IP) network. 
 // Prior communications are not required in order to set up communication channels or data paths.
 message UDP {
-    string Timestamp      = 1;
+    int64 Timestamp      = 1;
     int32  SrcPort        = 2;
     int32  DstPort        = 3;
 	int32  Length         = 4;
@@ -595,7 +595,7 @@ message UDP {
 // administration, and file transfer rely on TCP, which is part of the Transport Layer 
 // of the TCP/IP suite. SSL/TLS often runs on top of TCP.
 message TCP {
-    string  Timestamp = 1;
+    int64  Timestamp = 1;
     int32  SrcPort    = 2;
     int32  DstPort    = 3;
     uint32 SeqNum     = 4;
@@ -630,7 +630,7 @@ message TCPOption {
 }
 
 message SCTP {
-    string Timestamp       = 1;
+    int64 Timestamp       = 1;
     uint32 SrcPort         = 2;
     uint32 DstPort         = 3;
     uint32 VerificationTag = 4;
@@ -652,7 +652,7 @@ message SCTP {
 // worldwide, distributed directory service, the Domain Name System has been an essential 
 // component of the functionality of the Internet since 1985.
 message DNS {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
 
 	// Header fields
 	int32 ID      = 2;
@@ -736,7 +736,7 @@ message DNSQuestion {
 }
 
 message DHCPv4 {
-    string Timestamp             = 1;
+    int64 Timestamp             = 1;
     int32 Operation              = 2;
     int32 HardwareType           = 3;
     int32 HardwareLen            = 4;
@@ -764,7 +764,7 @@ message DHCPOption {
 }
 
 message DHCPv6 {
-    string Timestamp              = 1;
+    int64 Timestamp              = 1;
     int32 MsgType                 = 2;
     int32 HopCount                = 3;
     string LinkAddr               = 4;
@@ -785,7 +785,7 @@ message DHCPv6Option {
 // LLC is the layer used for 802.2 Logical Link Control headers. 
 // See http://standards.ieee.org/getieee802/download/802.2-1998.pdf
 message LLC {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
     int32 DSAP       = 2;
     bool  IG         = 3;  // true means group, false means individual
     int32 SSAP       = 4;
@@ -798,7 +798,7 @@ message LLC {
 // data networks. In operation since before 1985, NTP is one of the oldest Internet 
 // protocols in current use. NTP was designed by David L. Mills of the University of Delaware.
 message NTP {
-    string Timestamp          = 1;
+    int64 Timestamp          = 1;
     int32  LeapIndicator      = 2;  // [0,3]. Indicates whether leap second(s) is to be added.
     int32  Version            = 3;  // [0,7]. Version of the NTP protocol.
     int32  Mode               = 4;  // [0,7]. Mode.
@@ -820,7 +820,7 @@ message NTP {
 
 // The Session Initiation Protocol (SIP) is a signalling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications
 message SIP {
-    string Timestamp        = 1;
+    int64 Timestamp        = 1;
     // Base information
     int32 Version           = 2;
     int32 Method            = 3;
@@ -844,7 +844,7 @@ message SIP {
 // networks is handled by Multicast Listener Discovery (MLD) which is a part of ICMPv6 
 // in contrast to IGMP's bare IP encapsulation.
 message IGMP {
-    string Timestamp                 = 1;
+    int64 Timestamp                 = 1;
     int32 Type                       = 2;
     uint64 MaxResponseTime           = 3;
     int32 Checksum                   = 4;
@@ -870,7 +870,7 @@ message IGMPv3GroupRecord {
 }
 
 message IPv6HopByHop {
-    string Timestamp                    = 1;
+    int64 Timestamp                    = 1;
     repeated IPv6HopByHopOption Options = 2;
 
     PacketContext Context = 3;
@@ -894,13 +894,13 @@ message IPv6HopByHopOptionAlignment {
 // on networks using IEEE 802.2 LLC, more protocols than can be distinguished
 // by the 8-bit 802.2 Service Access Point (SAP) fields."
 message SNAP {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
     bytes OrganizationalCode = 2;
     int32 Type = 3;
 }
 
 message ICMPv6Echo {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
     int32 Identifier = 2;
     int32 SeqNumber  = 3;
 
@@ -908,7 +908,7 @@ message ICMPv6Echo {
 }
 
 message ICMPv6NeighborSolicitation {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
     string TargetAddress = 2;
     repeated ICMPv6Option Options = 3;
 
@@ -916,7 +916,7 @@ message ICMPv6NeighborSolicitation {
 }
 
 message ICMPv6RouterSolicitation {
-    string Timestamp              = 1;
+    int64 Timestamp              = 1;
     repeated ICMPv6Option Options = 2;
 
     PacketContext Context = 3;
@@ -926,7 +926,7 @@ message ICMPv6RouterSolicitation {
 // collaborative, hypermedia information systems. HTTP is the foundation of data 
 // communication for the World Wide Web.
 message HTTP {
-    string Timestamp           = 1;
+    int64 Timestamp           = 1;
     string Proto               = 2;
     string Method              = 3;
 	string Host                = 4;
@@ -979,7 +979,7 @@ message HTTPCookie {
 // TLS Client Hello
 
 message TLSClientHello {
-    string Timestamp                  = 1;
+    int64 Timestamp                  = 1;
     int32  Type                       = 2;
     int32  Version                    = 3;
     int32  MessageLen                 = 4;
@@ -1012,7 +1012,7 @@ message TLSClientHello {
 // TLS Server Hello
 
 message TLSServerHello {
-    string Timestamp                   = 1;
+    int64 Timestamp                   = 1;
     int32  Version                     = 2;
     bytes  Random                      = 3;
     bytes  SessionID                   = 4;
@@ -1044,7 +1044,7 @@ message TLSServerHello {
 }
 
 message IPSecAH {
-    string   Timestamp                 = 1;
+    int64   Timestamp                 = 1;
     int32    Reserved                  = 2;
     int32    SPI                       = 3;
     int32    Seq                       = 4;
@@ -1054,7 +1054,7 @@ message IPSecAH {
 }
 
 message IPSecESP {
-    string   Timestamp                 = 1;
+    int64   Timestamp                 = 1;
     int32    SPI                       = 2;
     int32    Seq                       = 3;
     int32    LenEncrypted              = 4;
@@ -1063,7 +1063,7 @@ message IPSecESP {
 }
 
 message Geneve {
-    string                Timestamp      = 1;
+    int64                Timestamp      = 1;
     int32                 Version        = 2;
     int32                 OptionsLength  = 3;
     bool                  OAMPacket      = 4;
@@ -1085,7 +1085,7 @@ message GeneveOption {
 
 // VXLAN is a VXLAN packet header
 message VXLAN {
-    string     Timestamp            = 1;
+    int64     Timestamp            = 1;
     bool       ValidIDFlag          = 2;   // 'I' bit per RFC 7348
     uint32     VNI                  = 3;   // 'VXLAN Network Identifier' 24 bits per RFC 7348
     bool       GBPExtension         = 4;   // 'G' bit per Group Policy https://tools.ietf.org/html/draft-smith-vxlan-group-policy-00
@@ -1102,7 +1102,7 @@ message VXLAN {
 // the USB standard is currently maintained by the USB Implementers Forum (USB-IF). 
 // There have been four generations of USB specifications: USB 1.x, USB 2.0, USB 3.x and USB4.
 message USB {
-    string      Timestamp                 = 1;
+    int64      Timestamp                 = 1;
     uint64      ID                        = 2;
     int32       EventType                 = 3;
     int32       TransferType              = 4;           
@@ -1125,7 +1125,7 @@ message USB {
 }
 
 message USBRequestBlockSetup {
-    string Timestamp   = 1; 
+    int64 Timestamp   = 1; 
     int32  RequestType = 2;
     int32  Request     = 3;
     int32  Value       = 4;
@@ -1141,7 +1141,7 @@ message USBRequestBlockSetup {
 // https://lcm-proj.github.io/
 // https://github.com/lcm-proj/lcm
 message LCM {
-    string    Timestamp            = 1;
+    int64    Timestamp            = 1;
     int32     Magic                = 2;
     int32     SequenceNumber       = 3;
     int32     PayloadSize          = 4;
@@ -1155,7 +1155,7 @@ message LCM {
 }
 
 message MPLS {
-    string  Timestamp      = 1;
+    int64  Timestamp      = 1;
     int32   Label          = 2;
     int32   TrafficClass   = 3;
     bool    StackBottom    = 4;
@@ -1174,7 +1174,7 @@ message MPLS {
 // size on the format of the data to be transmitted. The Modbus uses the RS485 as its physical layer. 
 // It is possible to use the DC-BUS as power line communication physical layer to save wires.
 message Modbus {
-    string Timestamp     = 1;
+    int64 Timestamp     = 1;
     int32  TransactionID = 2; // Identification of a MODBUS Request/Response transaction
     int32  ProtocolID    = 3; // It is used for intra-system multiplexing
     int32  Length        = 4; // Number of following bytes (includes 1 byte for UnitIdentifier + Modbus data length
@@ -1187,7 +1187,7 @@ message Modbus {
 }
 
 message OSPFv2 {
-    string    Timestamp     = 1;
+    int64    Timestamp     = 1;
     int32     Version       = 2;
     int32     Type          = 3;
     int32     PacketLength  = 4;
@@ -1239,7 +1239,7 @@ message DbDescPkg {
 }
 
 message OSPFv3 {
-    string    Timestamp     = 1;
+    int64    Timestamp     = 1;
     int32     Version       = 2;
     int32     Type          = 3;
     int32     PacketLength  = 4;
@@ -1392,7 +1392,7 @@ message LSAPrefix {
 // and routing protocols. In addition to fast forwarding path failure detection, 
 // BFD provides a consistent failure detection method for network administrators.
 message BFD {
-    string        Timestamp                = 1;
+    int64        Timestamp                = 1;
     int32         Version                  = 2;  // Version of the BFD protocol.
     int32         Diagnostic               = 3;  // Diagnostic code for last state change
     int32         State                    = 4;  // Current state
@@ -1425,7 +1425,7 @@ message BFDAuthHeader {
 // protocols inside virtual point-to-point links or point-to-multipoint 
 // links over an Internet Protocol network.
 message GRE {
-    string       Timestamp         = 1;
+    int64       Timestamp         = 1;
     bool         ChecksumPresent   = 2;
     bool         RoutingPresent    = 3;
     bool         KeyPresent        = 4;
@@ -1455,7 +1455,7 @@ message GRERouting {
 }
 
 message FDDI {
-    string  Timestamp        = 1;
+    int64  Timestamp        = 1;
     int32   FrameControl     = 2;
     int32   Priority         = 3;
     string  SrcMAC           = 4;
@@ -1466,7 +1466,7 @@ message FDDI {
 
 // EAP defines an Extensible Authentication Protocol (rfc 3748) layer.
 message EAP {
-    string   Timestamp   = 1;
+    int64   Timestamp   = 1;
     int32    Code        = 2;
     int32    Id          = 3;
     int32    Length      = 4;
@@ -1476,7 +1476,7 @@ message EAP {
 
 // EAPOL defines an EAP over LAN (802.1x) layer.
 message EAPOL {
-    string   Timestamp  = 1;
+    int64   Timestamp  = 1;
     int32    Version    = 2;
     int32    Type       = 3;
     int32    Length     = 4;
@@ -1484,7 +1484,7 @@ message EAPOL {
 
 // EAPOLKey defines an EAPOL-Key frame for 802.1x authentication
 message EAPOLKey {
-    string    Timestamp            = 1;
+    int64    Timestamp            = 1;
     int32     KeyDescriptorType    = 2;
     int32     KeyDescriptorVersion = 3;
     int32     KeyType              = 4;
@@ -1514,7 +1514,7 @@ message EAPOLKey {
 // This increases the availability and reliability of routing paths via 
 // automatic default gateway selections on an IP subnetwork.
 message VRRPv2 {
-    string          Timestamp     = 1;     
+    int64          Timestamp     = 1;     
     int32           Version       = 2;  // The version field specifies the VRRP protocol version of this packet (v2)
     int32           Type          = 3;  // The type field specifies the type of this VRRP packet.  The only type defined in v2 is ADVERTISEMENT
     int32           VirtualRtrID  = 4;  // identifies the virtual router this packet is reporting status for
@@ -1533,7 +1533,7 @@ message VRRPv2 {
 // It is used to share information about other directly connected Cisco equipment, 
 // such as the operating system version and IP address.
 message CiscoDiscovery {
-    string                       Timestamp   = 1;
+    int64                       Timestamp   = 1;
     int32                        Version     = 2;
     int32                        TTL         = 3;
     int32                        Checksum    = 4;
@@ -1570,7 +1570,7 @@ message CDPSparePairPoE {
 }
 
 message CiscoDiscoveryInfo {
-    string                         Timestamp           = 1;
+    int64                         Timestamp           = 1;
     CDPHello                       CDPHello            = 2;
     string                         DeviceID            = 3;
     repeated string                Addresses           = 4;
@@ -1651,7 +1651,7 @@ message IPNet {
 }
 
 message NortelDiscovery {
-    string    Timestamp    = 1;
+    int64    Timestamp    = 1;
     string    IPAddress    = 2;
     bytes     SegmentID    = 3;
     int32     Chassis      = 4;
@@ -1667,7 +1667,7 @@ message NortelDiscovery {
 // automation applications – control, safety, synchronization, motion, configuration and information. 
 // It allows users to integrate these manufacturing applications with enterprise-level Ethernet networks and the Internet.
 message CIP {
-    string        Timestamp        = 1;
+    int64        Timestamp        = 1;
     bool          Response         = 2; // false if request, true if response
     int32         ServiceID        = 3; // The service specified for the request
     uint32        ClassID          = 4; // request only
@@ -1683,7 +1683,7 @@ message CIP {
 // over both TCP and UDP.
 // See the EtherNet/IP Developer's Guide for more information: https://www.odva.org/Portals/0/Library/Publications_Numbered/PUB00213R0_EtherNetIP_Developers_Guide.pdf
 message ENIP {
-    string                  Timestamp        = 1;
+    int64                  Timestamp        = 1;
     uint32                  Command          = 2; 
 	uint32                  Length           = 3;
 	uint32                  SessionHandle    = 4;
@@ -1709,7 +1709,7 @@ message DeviceProfile {
 	repeated IPProfile DeviceIPs          = 3;
     repeated IPProfile Contacts           = 4;
     int64              NumPackets         = 5;
-    string             Timestamp          = 6; // first seen
+    int64             Timestamp          = 6; // first seen
     uint64             Bytes              = 7;
 }
 
@@ -1724,8 +1724,8 @@ message IPProfile {
     int64                  NumPackets      = 2;
     string                 Geolocation     = 3;
     repeated string        DNSNames        = 4;
-    string                 TimestampFirst  = 5;
-    string                 TimestampLast   = 6;
+    int64                 TimestampFirst  = 5;
+    int64                 TimestampLast   = 6;
     repeated string        Applications    = 7;
     map<string, string>    Ja3             = 8; // ja3 to lookup
     map<string, Protocol>  Protocols       = 9;
@@ -1741,7 +1741,7 @@ message Protocol {
 }
 
 message File {
-    string        Timestamp   = 1;
+    int64        Timestamp   = 1;
     string        Name        = 2;
     int64         Length      = 3;
     string        Hash        = 4;
@@ -1769,7 +1769,7 @@ message SMTPCommand {
 
 // Simple Mail Transfer Protocol
 message SMTP {
-    string                 Timestamp     = 1;
+    int64                 Timestamp     = 1;
     bool                   IsEncrypted   = 2;
     bool                   IsResponse    = 3;
     repeated SMTPResponse  ResponseLines = 4;
@@ -1781,7 +1781,7 @@ message SMTP {
 // It evolved from the earlier RADIUS protocol.
 // It belongs to the application layer protocols in the internet protocol suite.
 message Diameter {
-    string        Timestamp       = 1;
+    int64        Timestamp       = 1;
 
     // Diameter Header Information
     uint32        Version         = 2;
@@ -1818,7 +1818,7 @@ message AVP {
 }
 
 message POP3 {
-    string           Timestamp              = 1;
+    int64           Timestamp              = 1;
     string           ClientIP               = 2;
     string           ServerIP               = 3;
     string           AuthToken              = 4;
@@ -1864,7 +1864,7 @@ message POP3Response {
 }
 
 message Software {
-    string   Timestamp                    = 1;
+    int64   Timestamp                    = 1;
     string   Product                      = 2;
     string   Vendor                       = 3;
     string   Version                      = 4;
@@ -1878,7 +1878,7 @@ message Software {
 }
 
 message Service {
-    string   Timestamp                    = 1;
+    int64   Timestamp                    = 1;
     string   IP                           = 2;
     string   Port                         = 3;
     string   Name                         = 4;
@@ -1896,7 +1896,7 @@ message Service {
 }
 
 message Credentials {
-    string Timestamp = 1;
+    int64 Timestamp = 1;
     string Service   = 2;
     string Flow      = 3;
     string User      = 4;
@@ -1905,7 +1905,7 @@ message Credentials {
 }
 
 message SSH {
-    string Timestamp  = 1;
+    int64 Timestamp  = 1;
     string HASSH      = 2;
     string Flow       = 3;
     string Notes      = 4;
@@ -1915,7 +1915,7 @@ message SSH {
 }
 
 message Vulnerability {
-    string   Timestamp       = 1;
+    int64   Timestamp       = 1;
     string   ID              = 2;
     string   Description     = 3;
     string   Severity        = 4;
@@ -1927,7 +1927,7 @@ message Vulnerability {
 }
 
 message Exploit {
-    string   Timestamp   = 1;
+    int64   Timestamp   = 1;
     string   ID          = 2;
     string   Description = 3;
     string   File        = 4;

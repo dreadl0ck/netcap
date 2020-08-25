@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsTCP = []string{
@@ -106,13 +104,13 @@ func (t *TCP) getOptionString() string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (t *TCP) Time() string {
+func (t *TCP) Time() int64 {
 	return t.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (t *TCP) JSON() (string, error) {
-	t.Timestamp = utils.TimeToUnixMilli(t.Timestamp)
+	//	t.Timestamp = utils.TimeToUnixMilli(t.Timestamp)
 	return jsonMarshaler.MarshalToString(t)
 }
 

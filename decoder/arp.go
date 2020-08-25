@@ -25,7 +25,7 @@ var arpDecoder = newGoPacketDecoder(
 	types.Type_NC_ARP,
 	layers.LayerTypeARP,
 	"The Address Resolution Protocol resolves IP to hardware addresses",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if arp, ok := layer.(*layers.ARP); ok {
 			return &types.ARP{
 				Timestamp:       timestamp,

@@ -25,7 +25,7 @@ var ethernetDecoder = newGoPacketDecoder(
 	types.Type_NC_Ethernet,
 	layers.LayerTypeEthernet,
 	"Ethernet is a family of computer networking technologies commonly used in local area networks, metropolitan area networks and wide area networks",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if eth, ok := layer.(*layers.Ethernet); ok {
 			var e float64
 			if conf.CalculateEntropy {

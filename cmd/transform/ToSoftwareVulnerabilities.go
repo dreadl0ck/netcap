@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/utils"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/maltego"
@@ -34,7 +35,7 @@ func toSoftwareVulnerabilities() {
 			}
 
 			ent := trx.AddEntity("netcap.Vulnerability", val)
-			ent.AddProperty("timestamp", "Timestamp", "strict", vuln.Timestamp)
+			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(vuln.Timestamp))
 			ent.AddProperty("id", "ID", "strict", vuln.ID)
 			ent.AddProperty("notes", "Notes", "strict", vuln.Notes)
 			ent.AddProperty("flows", "flows", "strict", strings.Join(vuln.Software.Flows, ","))

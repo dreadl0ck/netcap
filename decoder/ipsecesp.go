@@ -25,7 +25,7 @@ var ipSecESPDecoder = newGoPacketDecoder(
 	types.Type_NC_IPSecESP,
 	layers.LayerTypeIPSecESP,
 	"IPSec Encapsulating Security Payload (ESP)",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ipsecesp, ok := layer.(*layers.IPSecESP); ok {
 			return &types.IPSecESP{
 				Timestamp:    timestamp,

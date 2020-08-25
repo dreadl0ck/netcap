@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"strings"
 
@@ -53,7 +54,7 @@ func toFetchedMails() {
 					fmt.Println(err)
 				}
 
-				di := "<h3>EMail: " + m.Subject + "</h3><p>Timestamp First: " + pop3.Timestamp + "</p><p>From: " + m.From + "</p><p>To: " + m.To + "</p><p>Text: " + buf.String() + "</p><p>Additional parts: " + attachments + "</p>"
+				di := "<h3>EMail: " + m.Subject + "</h3><p>Timestamp First: " + utils.UnixTimeToUTC(pop3.Timestamp) + "</p><p>From: " + m.From + "</p><p>To: " + m.To + "</p><p>Text: " + buf.String() + "</p><p>Additional parts: " + attachments + "</p>"
 				ent.AddDisplayInformation(di, "Netcap Info")
 			}
 		},

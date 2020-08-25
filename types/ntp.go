@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsNTP = []string{
@@ -80,13 +78,13 @@ func (n *NTP) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (n *NTP) Time() string {
+func (n *NTP) Time() int64 {
 	return n.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (n *NTP) JSON() (string, error) {
-	n.Timestamp = utils.TimeToUnixMilli(n.Timestamp)
+	//	n.Timestamp = utils.TimeToUnixMilli(n.Timestamp)
 	return jsonMarshaler.MarshalToString(n)
 }
 

@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsPOP3 = []string{
@@ -51,13 +49,13 @@ func (a *POP3) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (a *POP3) Time() string {
+func (a *POP3) Time() int64 {
 	return a.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (a *POP3) JSON() (string, error) {
-	a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
+	//	// a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
 	return jsonMarshaler.MarshalToString(a)
 }
 

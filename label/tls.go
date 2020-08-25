@@ -107,7 +107,7 @@ func labelTLS(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, 
 				if a.Proto == "TCP" &&
 
 					// AND timestamp of alert must be equal to handshake packet or after it
-					(a.Timestamp == tls.Timestamp || utils.StringToTime(a.Timestamp).After(utils.StringToTime(tls.Timestamp))) &&
+					(a.Timestamp == tls.Timestamp || a.Timestamp > tls.Timestamp) &&
 
 					// AND source ip must either be source or destination of alert
 					(tls.SrcIP == a.SrcIP || tls.SrcIP == a.DstIP) &&

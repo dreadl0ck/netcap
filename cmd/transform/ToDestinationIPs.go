@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/utils"
 	"net"
 	"strconv"
 
@@ -40,7 +41,7 @@ func toDestinationIPs() {
 
 					ent.AddProperty("geolocation", "Geolocation", "strict", ip.Geolocation)
 					ent.AddProperty("dnsNames", "DNS Names", "strict", dnsNames)
-					ent.AddProperty("timestamp", "Timestamp", "strict", profile.Timestamp)
+					ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(profile.Timestamp))
 
 					ent.AddProperty("mac", "MacAddress", "strict", mac)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ip.Addr)

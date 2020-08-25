@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsHTTP = []string{
@@ -107,13 +105,13 @@ func (c *HTTPCookie) toString() string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (h *HTTP) Time() string {
+func (h *HTTP) Time() int64 {
 	return h.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (h *HTTP) JSON() (string, error) {
-	h.Timestamp = utils.TimeToUnixMilli(h.Timestamp)
+	//	h.Timestamp = utils.TimeToUnixMilli(h.Timestamp)
 	h.RequestBody = nil  // TODO: dont kill elastic
 	h.ResponseBody = nil // TODO: dont kill elastic
 	return jsonMarshaler.MarshalToString(h)

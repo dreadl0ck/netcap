@@ -15,13 +15,11 @@ package decoder
 
 import (
 	"github.com/dreadl0ck/gopacket"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 type packetInfo struct {
 	p         gopacket.Packet
-	timestamp string
+	timestamp int64
 	srcMAC    string
 	dstMAC    string
 	srcIP     string
@@ -31,7 +29,7 @@ type packetInfo struct {
 func newPacketInfo(p gopacket.Packet) *packetInfo {
 	i := new(packetInfo)
 
-	i.timestamp = utils.TimeToString(p.Metadata().Timestamp.UTC())
+	i.timestamp = p.Metadata().Timestamp.UnixNano()
 	i.p = p
 
 	if ll := p.LinkLayer(); ll != nil {

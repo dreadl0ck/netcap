@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsIPv6 = []string{
@@ -66,7 +64,7 @@ func (i *IPv6) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (i *IPv6) Time() string {
+func (i *IPv6) Time() int64 {
 	return i.Timestamp
 }
 
@@ -76,12 +74,12 @@ func (h IPv6HopByHop) toString() string {
 		opts = append(opts, o.toString())
 	}
 
-	return h.Timestamp + FieldSeparator + join(opts...)
+	return strconv.FormatInt(h.Timestamp, 10) + FieldSeparator + join(opts...)
 }
 
 // JSON returns the JSON representation of the audit record.
 func (i *IPv6) JSON() (string, error) {
-	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
 	return jsonMarshaler.MarshalToString(i)
 }
 

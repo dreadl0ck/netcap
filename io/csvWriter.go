@@ -16,6 +16,7 @@ package io
 import (
 	"bufio"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"log"
 	"os"
@@ -153,7 +154,7 @@ func (w *CSVProtoWriter) WriteHeader(h *types.Header, msg proto.Message) (int, e
 	w.Lock()
 	defer w.Unlock()
 
-	n, err := w.w.Write([]byte(fmt.Sprintf("# Type: %s, Created: %s, Source: %s, ContainsPayloads: %t\n", h.Type.String(), h.Created, h.InputSource, h.ContainsPayloads)))
+	n, err := w.w.Write([]byte(fmt.Sprintf("# Type: %s, Created: %s, Source: %s, ContainsPayloads: %t\n", h.Type.String(), utils.UnixTimeToUTC(h.Created), h.InputSource, h.ContainsPayloads)))
 	if err != nil {
 		return n, err
 	}

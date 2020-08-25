@@ -25,7 +25,7 @@ var modbusDecoder = newGoPacketDecoder(
 	types.Type_NC_Modbus,
 	layers.LayerTypeModbus,
 	"Modbus is a data communications protocol originally published by Modicon in 1979 for use with its programmable logic controllers",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if m, ok := layer.(*layers.Modbus); ok {
 			var payload []byte
 			if conf.IncludePayloads {

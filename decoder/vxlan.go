@@ -25,7 +25,7 @@ var vxlanDecoder = newGoPacketDecoder(
 	types.Type_NC_VXLAN,
 	layers.LayerTypeVXLAN,
 	"Virtual Extensible LAN is a network virtualization technology that attempts to address the scalability problems associated with large cloud computing deployments",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if vx, ok := layer.(*layers.VXLAN); ok {
 			return &types.VXLAN{
 				Timestamp:        timestamp,

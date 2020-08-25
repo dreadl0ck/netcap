@@ -17,8 +17,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var fieldsDiameter = []string{
@@ -70,13 +68,13 @@ func (d *Diameter) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (d *Diameter) Time() string {
+func (d *Diameter) Time() int64 {
 	return d.Timestamp
 }
 
 // JSON returns the JSON representation of the audit record.
 func (d *Diameter) JSON() (string, error) {
-	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
+	//	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
 	return jsonMarshaler.MarshalToString(d)
 }
 

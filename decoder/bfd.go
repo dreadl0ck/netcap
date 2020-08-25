@@ -25,7 +25,7 @@ var bfdDecoder = newGoPacketDecoder(
 	types.Type_NC_BFD,
 	layers.LayerTypeBFD,
 	"Bidirectional Forwarding Detection (BFD) is a network protocol that is used to detect faults between two forwarding engines connected by a link",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if bfd, ok := layer.(*layers.BFD); ok {
 			return &types.BFD{
 				Timestamp:                 timestamp,

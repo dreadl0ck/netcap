@@ -22,7 +22,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var tlsServerHelloDecoder = newCustomDecoder(
@@ -61,7 +60,7 @@ var tlsServerHelloDecoder = newCustomDecoder(
 			}
 
 			return &types.TLSServerHello{
-				Timestamp:                    utils.TimeToString(p.Metadata().Timestamp),
+				Timestamp:                    p.Metadata().Timestamp.UnixNano(),
 				Version:                      int32(hello.Vers),
 				Random:                       hello.Random,
 				SessionID:                    hello.SessionID,

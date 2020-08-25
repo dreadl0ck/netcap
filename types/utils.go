@@ -127,12 +127,12 @@ func join(a ...string) string {
 	return b.String()
 }
 
-func formatTimestamp(ts string) string {
+func formatTimestamp(ts int64) string {
 	if UTC {
-		return utils.TimeToUTC(ts)
+		return utils.UnixTimeToUTC(ts)
 	}
 
-	return ts
+	return strconv.FormatInt(ts, 10)
 }
 
 func formatInt32(v int32) string {

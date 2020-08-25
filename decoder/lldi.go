@@ -25,7 +25,7 @@ var linkLayerDiscoveryInfoDecoder = newGoPacketDecoder(
 	types.Type_NC_LinkLayerDiscoveryInfo,
 	layers.LayerTypeLinkLayerDiscoveryInfo,
 	"The Link Layer Discovery Protocol is a vendor-neutral link layer protocol used by network devices for advertising their identity, capabilities, and neighbors on a local area network based on IEEE 802 technology, principally wired Ethernet",
-	func(layer gopacket.Layer, timestamp string) proto.Message {
+	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if lldi, ok := layer.(*layers.LinkLayerDiscoveryInfo); ok {
 			var (
 				tlvs          []*types.LLDPOrgSpecificTLV
