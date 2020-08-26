@@ -241,11 +241,11 @@ commands:
 
     run-grafana:
         description: start grafana service locally
-        exec: grafana-server --homepath /usr/local/opt/grafana/share/grafana
+        exec: grafana-server -config configs/grafana.ini --homepath /usr/local/opt/grafana/share/grafana
 
     run-prometheus:
         description: start prometheus daemon locally
-        exec: prometheus --config.file prometheus/prometheus.yml
+        exec: prometheus --config.file configs/prometheus.yml
 
     download-vulndbs:
         description: download vulnerability databases
