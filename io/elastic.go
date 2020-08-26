@@ -34,7 +34,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-const indexPrefix = "netcap-v2-"
+const indexPrefix = "netcap-"
 
 var (
 	// ErrElasticFailed indicates sending data to elasticsearch has failed.
