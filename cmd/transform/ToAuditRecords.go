@@ -45,7 +45,7 @@ var maltegoBaseConfig = collector.Config{
 		Buffer:        true,
 		MemBufferSize: defaults.BufferSize,
 		Compression:   true,
-		CSV:           false,
+		Proto:         true,
 		// IncludeDecoders:         strings.Join(auditRecords, ","),
 		ExcludeDecoders:         "",
 		Chan:                    false,

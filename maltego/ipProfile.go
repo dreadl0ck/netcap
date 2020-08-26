@@ -1,3 +1,16 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 package maltego
 
 import (
@@ -5,6 +18,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -16,14 +30,18 @@ import (
 
 // LoadIPProfiles will load the ipProfiles into memory and return them.
 func LoadIPProfiles() map[string]*types.IPProfile {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
+	var (
+		lt       = ParseLocalArguments(os.Args[1:])
+		path     = filepath.Join(filepath.Dir(lt.Values["path"]), "IPProfile.ncap.gz")
+		profiles = make(map[string]*types.IPProfile)
+		stdOut   = os.Stdout
+	)
 
-	profiles := make(map[string]*types.IPProfile)
-	stdOut := os.Stdout
+	log.Println("open path:", path)
+
 	os.Stdout = os.Stderr
 
-	f, err := os.Open(profilesFile)
+	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +53,7 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 
 	os.Stdout = stdOut
 
-	r, err := netio.Open(profilesFile, defaults.BufferSize)
+	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -46,8 +64,8 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		log.Fatal(errFileHeader)
 	}
 
-	if header.Type != types.Type_NC_DeviceProfile {
-		panic("file does not contain DeviceProfile records: " + header.Type.String())
+	if header.Type != types.Type_NC_IPProfile {
+		panic("file does not contain IPProfile records: " + header.Type.String())
 	}
 
 	var (
@@ -67,7 +85,9 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
-			panic(err)
+			log.Println("failed to read audit records:", err)
+
+			return profiles
 		}
 
 		profiles[profile.Addr] = &types.IPProfile{
