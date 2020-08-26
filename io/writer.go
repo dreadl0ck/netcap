@@ -28,7 +28,7 @@ type AuditRecordWriter interface {
 }
 
 // ChannelAuditRecordWriter extends the AuditRecordWriter
-// by offering a function to get a channel to receive serialized audit records
+// by offering a function to get a channel to receive serialized audit records.
 type ChannelAuditRecordWriter interface {
 	AuditRecordWriter
 	GetChan() <-chan []byte
@@ -56,5 +56,5 @@ func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 		panic("invalid WriterConfig")
 	}
 
-	return nil //nolint:govet
+	return nil //nolint:govet // stop complaining that this is unreachable
 }

@@ -40,7 +40,7 @@ var (
 	// ErrElasticFailed indicates sending data to elasticsearch has failed.
 	ErrElasticFailed = errors.New("failed to send data to elastic")
 
-	// ErrMissingAuditRecordInterface indicates the audit record is lacking methods to fulfil the types.AuditRecord interface.
+	// ErrMissingAuditRecordInterface indicates the audit record is lacking methods to implement the types.AuditRecord interface.
 	ErrMissingAuditRecordInterface = errors.New("type does not implement the types.AuditRecord interface")
 )
 
@@ -507,13 +507,12 @@ var typeMapping = map[string]string{
 	"TimestampLast":      "date",
 	"ReferenceTimestamp": "date",
 
-	"Duration":        "long",
-	"Bytes":           "long",
-	"SeqNum":          "long",
-	"AckNum":          "long",
-	"ReferenceID":     "long",
-	"Xid":             "long",
-	"OriginTimestamp": "long",
+	"Duration":    "long",
+	"Bytes":       "long",
+	"SeqNum":      "long",
+	"AckNum":      "long",
+	"ReferenceID": "long",
+	"Xid":         "long",
 
 	"SrcIP":    "ip",
 	"DstIP":    "ip",
@@ -547,6 +546,10 @@ var typeMapping = map[string]string{
 	"Parameters.cmd":  "text",
 	"Parameters.src":  "text",
 	"Parameters.name": "text",
+
+	// too big for long type ...
+	"OriginTimestamp":   "text",
+	"TransmitTimestamp": "text",
 }
 
 // generates a valid elasticsearch type mapping for the given audit record
