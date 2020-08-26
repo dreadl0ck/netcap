@@ -135,7 +135,7 @@ func toAuditRecords() {
 	// the directory for this will be named like the input file with an added .net extension
 	outDir := inputFile + ".net"
 
-	err := os.MkdirAll(outDir, outDirPermission)
+	err := os.MkdirAll(outDir, defaults.DirectoryPermission)
 	if err != nil {
 		log.Println(err)
 	}
