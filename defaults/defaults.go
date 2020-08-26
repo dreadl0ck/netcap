@@ -86,7 +86,7 @@ const (
 	FileStorage = "files"
 
 	// DirectoryPermission for all created folders.
-	DirectoryPermission = 0o700
+	DirectoryPermission = 0o744
 
 	// FilePermission for all created files.
 	FilePermission = 0o700

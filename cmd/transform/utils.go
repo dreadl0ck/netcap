@@ -3,6 +3,7 @@ package transform
 import (
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"io"
 	"log"
 	"net/http"
@@ -32,7 +33,7 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 	// TODO: improve and test content type check and executable file detection
 	log.Println("open path for determining content type:", loc)
 
-	f, err := os.OpenFile(loc, os.O_RDONLY, outDirPermission)
+	f, err := os.OpenFile(loc, os.O_RDONLY, defaults.DirectoryPermission)
 	if err != nil {
 		log.Fatal(err)
 	}

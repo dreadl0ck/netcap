@@ -50,7 +50,7 @@ func toAuditRecordsWithDPI() {
 	outDir := inputFile + ".net"
 
 	// error explicitly ignored, files will be overwritten if there are any
-	err := os.MkdirAll(outDir, outDirPermission)
+	err := os.MkdirAll(outDir, defaults.DirectoryPermission)
 	if err != nil {
 		log.Println(err)
 	}
