@@ -317,14 +317,11 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 	// 	"version":"WzEwODgsM10="
 	// }
 
-	// TODO: update num max fields for HTTP index via API
-	//PUT netcap-v2-ipprofile/_settings
-	//{
-	//	"index.mapping.total_fields.limit": 10000000033
-	//}
-	var data = make(map[string]string)
+	// create settings mapping
+	data := make(map[string]string)
 	data["index.mapping.total_fields.limit"] = "100000000"
 
+	// serialize JSON
 	d, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("failed to marshal json data:", err)
@@ -332,31 +329,26 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 		return
 	}
 
-	r, err := http.NewRequest(
-		"PUT",
-		wc.KibanaEndpoint+"/api/"+index+"/_settings",
-		bytes.NewReader(d),
+	// use put settings call to increase the maximum fields for each document
+	// audit records like HTTP and IPProfile often generate a high number of fields
+	// TODO: make the limit configurable
+	res, err = c.Indices.PutSettings(bytes.NewReader(d),
+		func(r *esapi.IndicesPutSettingsRequest) {
+			r.Index = []string{index}
+		},
 	)
-	if err != nil {
-		fmt.Println("failed to create index settings request:", err)
-	} else {
-		setElasticAuth(r, wc)
-
-		// create the index
-		resp, errAPI := http.DefaultClient.Do(r)
-		if errAPI != nil || resp.StatusCode != http.StatusOK {
-			fmt.Println("failed to update index settings:", errAPI)
-
-			if resp != nil {
-				d, _ = ioutil.ReadAll(resp.Body)
-				fmt.Println(string(d))
-			}
-		} else {
-			fmt.Println("index", index, "settings updated", resp.Status)
+	if err != nil || res.StatusCode != http.StatusOK {
+		if res != nil {
+			d, _ = ioutil.ReadAll(res.Body)
+			fmt.Println(string(d))
 		}
 
-		_ = resp.Body.Close()
+		log.Fatal("failed to put index settings:", err)
+	} else {
+		fmt.Println("put index settings:", res)
 	}
+
+	_ = res.Body.Close()
 }
 
 // send a bulk of audit records and metadata to the elastic database daemon.
