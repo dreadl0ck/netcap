@@ -16,6 +16,7 @@ package types
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -53,7 +54,9 @@ func (l *LLC) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (l *LLC) JSON() (string, error) {
-	//	l.Timestamp = utils.TimeToUnixMilli(l.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	l.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(l)
 }
 

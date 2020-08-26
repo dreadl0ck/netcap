@@ -93,7 +93,6 @@ func makeIndex(wc *WriterConfig) string {
 
 // CreateElasticIndex will create and configure a single elastic database index.
 func CreateElasticIndex(wc *WriterConfig) {
-
 	if wc.Type == types.Type_NC_Header {
 		log.Fatal("uninitialized writer type, please set the Type field")
 	}
@@ -152,12 +151,13 @@ func CreateElasticIndex(wc *WriterConfig) {
 		r.Header.Set("Content-Type", "application/json")
 		r.SetBasicAuth(wc.ElasticUser, wc.ElasticPass)
 
-		resp, err := http.DefaultClient.Do(r)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			fmt.Println("failed to create index pattern:", err)
+		// create the index
+		resp, errAPI := http.DefaultClient.Do(r)
+		if errAPI != nil || res.StatusCode != http.StatusOK {
+			fmt.Println("failed to create index pattern:", errAPI)
 
-			if resp != nil {
-				data, _ := ioutil.ReadAll(resp.Body)
+			if res != nil {
+				data, _ := ioutil.ReadAll(res.Body)
 				fmt.Println(string(data))
 			}
 		} else {
@@ -165,6 +165,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 		}
 	}
 
+	// configure the mapping for the new index
 	res, err = c.Indices.PutMapping(
 		bytes.NewReader(generateMapping(wc.Type)),
 		func(r *esapi.IndicesPutMappingRequest) {
@@ -195,6 +196,10 @@ func CreateElasticIndex(wc *WriterConfig) {
 	// }
 
 	// TODO: update num max fields for HTTP index via API
+	//PUT netcap-v2-ipprofile/_settings
+	//{
+	//	"index.mapping.total_fields.limit": 100000000
+	//}
 
 	defer res.Body.Close()
 }
@@ -412,9 +417,9 @@ type mappingJSON struct {
 // overwrites for various field types
 // default for string is text, this can be overwritten with keyword via this mapping.
 var typeMapping = map[string]string{
-	"Timestamp":           "date_nanos",
-	"TimestampFirst":      "date_nanos",
-	"TimestampLast":       "date_nanos",
+	"Timestamp":           "date",
+	"TimestampFirst":      "date",
+	"TimestampLast":       "date",
 	"Duration":            "long",
 	"SrcIP":               "ip",
 	"DstIP":               "ip",
@@ -446,6 +451,9 @@ var typeMapping = map[string]string{
 	"Parameters.src":      "text",
 	"Parameters.name":     "text",
 	"ServerName":          "keyword",
+	"SeqNum":              "long",
+	"AckNum":              "long",
+	"ReferenceID":         "long",
 }
 
 // generates a valid elasticsearch type mapping for the given audit record

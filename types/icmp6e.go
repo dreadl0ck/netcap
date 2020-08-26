@@ -15,6 +15,7 @@ package types
 
 import (
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -34,7 +35,6 @@ func (i *ICMPv6Echo) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (i *ICMPv6Echo) CSVRecord() []string {
-
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Identifier),
@@ -51,7 +51,9 @@ func (i *ICMPv6Echo) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (i *ICMPv6Echo) JSON() (string, error) {
-	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	i.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(i)
 }
 

@@ -16,6 +16,7 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -65,7 +66,9 @@ func (o ICMPv6Option) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *ICMPv6RouterSolicitation) JSON() (string, error) {
-	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	i.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(i)
 }
 

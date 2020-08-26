@@ -16,6 +16,7 @@ package types
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -79,7 +80,9 @@ func (h IPv6HopByHop) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *IPv6) JSON() (string, error) {
-	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	i.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(i)
 }
 

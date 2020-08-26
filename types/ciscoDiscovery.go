@@ -16,6 +16,7 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -71,7 +72,9 @@ func (v CiscoDiscoveryValue) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (cd *CiscoDiscovery) JSON() (string, error) {
-	//	cd.Timestamp = utils.TimeToUnixMilli(cd.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	cd.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(cd)
 }
 

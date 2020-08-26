@@ -15,7 +15,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
 	"io/ioutil"
 	"log"
 	"os"
@@ -34,6 +33,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/proxy"
 	"github.com/dreadl0ck/netcap/cmd/transform"
 	"github.com/dreadl0ck/netcap/cmd/util"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/io"
 )

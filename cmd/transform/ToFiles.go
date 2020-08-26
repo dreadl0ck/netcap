@@ -1,11 +1,11 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/utils"
 	"strconv"
 
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toFiles() {

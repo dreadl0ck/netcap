@@ -1,18 +1,19 @@
 package transform
 
 import (
+	"net"
+	"strconv"
+	"strings"
+
+	"github.com/dustin/go-humanize"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
-	"net"
-	"strconv"
-	"strings"
 )
 
 func toDestinationIPs() {
-
 	profiles := maltego.LoadIPProfiles()
 
 	maltego.DeviceProfileTransform(

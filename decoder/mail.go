@@ -23,9 +23,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var (
-	mailDecoderInstance *customDecoder
-)
+var mailDecoderInstance *customDecoder
 
 var mailDecoder = newCustomDecoder(
 	types.Type_NC_Mail,

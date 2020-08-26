@@ -13,6 +13,8 @@
 
 package types
 
+import "time"
+
 var fieldsIPProfile = []string{
 	"Addr",           // string
 	"NumPackets",     // int64
@@ -41,16 +43,16 @@ func (d *IPProfile) CSVRecord() []string {
 		formatInt64(d.NumPackets),
 		d.Geolocation,
 		// TODO: csv
-		//d.DNSNames,
-		//d.TimestampFirst,
-		//d.TimestampLast,
-		//d.Applications,
-		//d.Ja3,
-		//d.Protocols,
-		//formatUint64(d.Bytes),
-		//d.DstPorts,,
-		//d.SrcPorts,
-		//d.SNIs,
+		// d.DNSNames,
+		// d.TimestampFirst,
+		// d.TimestampLast,
+		// d.Applications,
+		// d.Ja3,
+		// d.Protocols,
+		// formatUint64(d.Bytes),
+		// d.DstPorts,,
+		// d.SrcPorts,
+		// d.SNIs,
 	})
 }
 
@@ -61,7 +63,8 @@ func (d *IPProfile) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (d *IPProfile) JSON() (string, error) {
-	//	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	d.TimestampFirst /= int64(time.Millisecond)
 
 	return jsonMarshaler.MarshalToString(d)
 }

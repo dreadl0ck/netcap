@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toMails() {
-
 	mails := maltego.LoadMails()
 
 	maltego.POP3Transform(

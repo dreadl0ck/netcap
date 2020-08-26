@@ -14,8 +14,9 @@
 package io
 
 import (
-	"github.com/dreadl0ck/netcap/types"
 	"time"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // WriterConfig contains config parameters for a audit record writer.

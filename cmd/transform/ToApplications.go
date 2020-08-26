@@ -1,14 +1,14 @@
 package transform
 
 import (
+	"strconv"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
-	"strconv"
 )
 
 func toApplications() {
-
 	profiles := maltego.LoadIPProfiles()
 
 	maltego.IPTransform(

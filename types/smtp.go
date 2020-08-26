@@ -16,6 +16,7 @@ package types
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -39,7 +40,6 @@ func (a *SMTP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *SMTP) CSVRecord() []string {
-
 	var responses []string
 	for _, r := range a.ResponseLines {
 		responses = append(responses, r.getString())
@@ -84,7 +84,9 @@ func (a SMTPResponse) getString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (a *SMTP) JSON() (string, error) {
-	//	// a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	a.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(a)
 }
 

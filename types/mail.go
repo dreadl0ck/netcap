@@ -15,6 +15,7 @@ package types
 
 import (
 	"strconv"
+	"time"
 )
 
 var fieldsMail = []string{
@@ -62,7 +63,7 @@ func (d *Mail) CSVRecord() []string {
 		d.XOriginatingIP,                     // string
 		d.ContentType,                        // string
 		d.EnvelopeTo,                         // string
-		//d.Body,            // []*MailPart
+		// d.Body,            // []*MailPart
 		formatInt64(d.Timestamp), // int64
 		d.ClientIP,               // string
 		d.ServerIP,               // string
@@ -77,7 +78,8 @@ func (d *Mail) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (d *Mail) JSON() (string, error) {
-	//	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	d.Timestamp /= int64(time.Millisecond)
 
 	return jsonMarshaler.MarshalToString(d)
 }
@@ -91,7 +93,6 @@ func (d *Mail) SetPacketContext(*PacketContext) {}
 // Src returns the source address of the audit record.
 func (d *Mail) Src() string {
 	return d.ClientIP
-
 }
 
 // Dst returns the destination address of the audit record.

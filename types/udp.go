@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -41,7 +42,6 @@ func (u *UDP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (u *UDP) CSVRecord() []string {
-
 	return filter([]string{
 		formatTimestamp(u.Timestamp),                      // string
 		formatInt32(u.SrcPort),                            // int32
@@ -63,7 +63,9 @@ func (u *UDP) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (u *UDP) JSON() (string, error) {
-	//	u.Timestamp = utils.TimeToUnixMilli(u.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	u.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(u)
 }
 

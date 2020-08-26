@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -92,7 +93,9 @@ func (bah BFDAuthHeader) getString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (b *BFD) JSON() (string, error) {
-	//	b.Timestamp = utils.TimeToUnixMilli(b.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	b.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(b)
 }
 

@@ -2,19 +2,20 @@ package maltego
 
 import (
 	"errors"
-	"github.com/dreadl0ck/netcap/defaults"
-	netio "github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
 	"io"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // LoadIPProfiles will load the ipProfiles into memory and return them.
 func LoadIPProfiles() map[string]*types.IPProfile {
-
 	lt := ParseLocalArguments(os.Args[1:])
 	profilesFile := lt.Values["path"]
 

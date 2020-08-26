@@ -20,7 +20,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"github.com/araddon/dateparse"
 	"io"
 	"log"
 	"net/http"
@@ -34,6 +33,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/araddon/dateparse"
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/mgutz/ansi"
 
