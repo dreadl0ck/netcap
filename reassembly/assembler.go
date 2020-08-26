@@ -989,6 +989,7 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 // FlushAll flushes all remaining data into all remaining connections and closes
 // those connections. It returns the total number of connections flushed/closed
 // by the call.
+// TODO: progress reporting
 func (a *Assembler) FlushAll() (closed int) {
 	conns := a.connPool.connections()
 	closed = len(conns)
