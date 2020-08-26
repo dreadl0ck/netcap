@@ -34,6 +34,8 @@ import (
 
 const indexPrefix = "netcap-v2-"
 
+var ErrElasticFailed = errors.New("failed to send data to elastic")
+
 // ElasticConfig allows to overwrite elastic defaults.
 type ElasticConfig struct {
 	// ElasticAddrs is a list of elastic database endpoints to send data to
@@ -66,6 +68,10 @@ type ElasticWriter struct {
 	sync.Mutex
 }
 
+/*
+ * Public
+ */
+
 // NewElasticWriter initializes and configures a new ElasticWriter instance.
 func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 	// init new client
@@ -82,17 +88,14 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 		client:    c,
 		wc:        wc,
 		queue:     make([]proto.Message, wc.BulkSize),
-		indexName: makeIndex(wc),
+		indexName: makeElasticIndexIdent(wc),
 		meta:      []byte(fmt.Sprintf(`{ "index" : { } }%s`, "\n")),
 	}
 }
 
-func makeIndex(wc *WriterConfig) string {
-	return indexPrefix + strings.ReplaceAll(strings.ToLower(wc.Name), "/", "-")
-}
-
 // CreateElasticIndex will create and configure a single elastic database index.
 func CreateElasticIndex(wc *WriterConfig) {
+	// catch uninitialized type error
 	if wc.Type == types.Type_NC_Header {
 		log.Fatal("uninitialized writer type, please set the Type field")
 	}
@@ -107,36 +110,12 @@ func CreateElasticIndex(wc *WriterConfig) {
 		log.Fatal(err)
 	}
 
-	index := makeIndex(wc)
+	// create index identfier and the index
+	index := makeElasticIndexIdent(wc)
+	createElasticIndex(c, index)
 
-	res, err := c.Indices.Create(index)
-	if err != nil || res.StatusCode != http.StatusOK {
-		fmt.Println("failed to create elastic index:", err)
-
-		if res != nil {
-			// ignore error in case the index exists already
-			data, _ := ioutil.ReadAll(res.Body)
-			fmt.Println(string(data))
-		}
-	} else {
-		fmt.Println("created elastic index:", index, res.Status())
-	}
-
-	timeField := "Timestamp"
-
-	switch wc.Name {
-	case "Connection", "Flow":
-		timeField = "TimestampFirst"
-	}
-
-	var buf bytes.Buffer
-
-	buf.WriteString(`{
-    "attributes": {
-     "title": "` + index + `*",
-     "timeFieldName": "` + timeField + `"
-     }
-}`)
+	// create buffer for request and add meta data
+	buf := initElasticBuffer(wc, index)
 
 	// passing an explicit id to prevent kibana from duplicating patterns when executing the index creation multiple times
 	r, err := http.NewRequest(
@@ -147,17 +126,15 @@ func CreateElasticIndex(wc *WriterConfig) {
 	if err != nil {
 		fmt.Println("failed to create index pattern request:", err)
 	} else {
-		r.Header.Set("kbn-xsrf", "true")
-		r.Header.Set("Content-Type", "application/json")
-		r.SetBasicAuth(wc.ElasticUser, wc.ElasticPass)
+		setElasticAuth(r, wc)
 
 		// create the index
 		resp, errAPI := http.DefaultClient.Do(r)
-		if errAPI != nil || res.StatusCode != http.StatusOK {
+		if errAPI != nil || resp.StatusCode != http.StatusOK {
 			fmt.Println("failed to create index pattern:", errAPI)
 
-			if res != nil {
-				data, _ := ioutil.ReadAll(res.Body)
+			if resp != nil {
+				data, _ := ioutil.ReadAll(resp.Body)
 				fmt.Println(string(data))
 			}
 		} else {
@@ -166,42 +143,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 	}
 
 	// configure the mapping for the new index
-	res, err = c.Indices.PutMapping(
-		bytes.NewReader(generateMapping(wc.Type)),
-		func(r *esapi.IndicesPutMappingRequest) {
-			r.Index = []string{index}
-		},
-	)
-	if err != nil || res.StatusCode != http.StatusOK {
-		if res != nil {
-			data, _ := ioutil.ReadAll(res.Body)
-			fmt.Println(string(data))
-		}
-
-		log.Fatalf("error getting the response: %s", err)
-	} else {
-		fmt.Println("configured index mapping", res)
-	}
-
-	// TODO: update Duration fieldFormatMap for flows and conns via saved objects API
-	// e.g: https://dreadl0ck.net:5443/api/saved_objects/index-pattern/flow
-	// {
-	// 	"attributes":{
-	// 	"title":"netcap-flow*",
-	// 		"timeFieldName":"TimestampFirst",
-	// 		"fields":"[{\"name\":\"DstIP\",\"type\":\"ip\",\"esTypes\":[\"ip\"],\"count\":1,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"Duration\",\"type\":\"number\",\"esTypes\":[\"integer\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"ID\",\"type\":\"string\",\"esTypes\":[\"text\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"Protocol\",\"type\":\"string\",\"esTypes\":[\"text\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"SrcIP\",\"type\":\"ip\",\"esTypes\":[\"ip\"],\"count\":1,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"Timestamp\",\"type\":\"date\",\"esTypes\":[\"date\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"TimestampFirst\",\"type\":\"date\",\"esTypes\":[\"date\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"TimestampLast\",\"type\":\"date\",\"esTypes\":[\"date\"],\"count\":1,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"Version\",\"type\":\"string\",\"esTypes\":[\"text\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"_id\",\"type\":\"string\",\"esTypes\":[\"_id\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"name\":\"_index\",\"type\":\"string\",\"esTypes\":[\"_index\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"name\":\"_score\",\"type\":\"number\",\"count\":0,\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"_source\",\"type\":\"_source\",\"esTypes\":[\"_source\"],\"count\":0,\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"_type\",\"type\":\"string\",\"esTypes\":[\"_type\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false}]",
-	// 		"fieldFormatMap":"{\"Duration\":{\"id\":\"duration\",\"params\":{\"parsedUrl\":{\"origin\":\"KIBANA_ENDPOINT\",\"pathname\":\"/app/kibana\",\"basePath\":\"\"},\"inputFormat\":\"nanoseconds\",\"outputFormat\":\"asMilliseconds\",\"outputPrecision\":4}}}"
-	// 	},
-	// 	"version":"WzEwODgsM10="
-	// }
-
-	// TODO: update num max fields for HTTP index via API
-	//PUT netcap-v2-ipprofile/_settings
-	//{
-	//	"index.mapping.total_fields.limit": 100000000
-	//}
-
-	defer res.Body.Close()
+	configureIndex(c, wc, index)
 }
 
 // Write writes a record to elastic.
@@ -252,7 +194,127 @@ func (w *ElasticWriter) Write(msg proto.Message) error {
 	return nil
 }
 
-var ErrElasticFailed = errors.New("failed to send data to elastic")
+// WriteHeader writes a CSV header.
+func (w *ElasticWriter) WriteHeader(t types.Type) error {
+	return nil
+}
+
+// Close flushes and closes the writer and the associated file handles.
+func (w *ElasticWriter) Close() (name string, size int64) {
+	err := w.sendBulk(0, 0)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return "", 0
+}
+
+/*
+ * Private
+ */
+
+type bulkResponse struct {
+	Errors bool `json:"errors"`
+	Items  []struct {
+		Index struct {
+			ID     string `json:"_id"`
+			Result string `json:"result"`
+			Status int    `json:"status"`
+			Error  struct {
+				Type   string `json:"type"`
+				Reason string `json:"reason"`
+				Cause  struct {
+					Type   string `json:"type"`
+					Reason string `json:"reason"`
+				} `json:"caused_by"`
+			} `json:"error"`
+		} `json:"index"`
+	} `json:"items"`
+}
+
+func makeElasticIndexIdent(wc *WriterConfig) string {
+	return indexPrefix + strings.ReplaceAll(strings.ToLower(wc.Name), "/", "-")
+}
+
+func createElasticIndex(c *elasticsearch.Client, ident string) {
+	res, err := c.Indices.Create(ident)
+	if err != nil || res.StatusCode != http.StatusOK {
+		fmt.Println("failed to create elastic index:", err)
+
+		if res != nil {
+			// ignore error in case the index exists already
+			data, _ := ioutil.ReadAll(res.Body)
+			fmt.Println(string(data))
+		}
+	} else {
+		fmt.Println("created elastic index:", ident, res.Status())
+	}
+}
+
+func initElasticBuffer(wc *WriterConfig, index string) bytes.Buffer {
+	timeField := "Timestamp"
+
+	switch wc.Name {
+	case "Connection", "Flow":
+		timeField = "TimestampFirst"
+	}
+
+	var buf bytes.Buffer
+
+	buf.WriteString(`{
+    "attributes": {
+     "title": "` + index + `*",
+     "timeFieldName": "` + timeField + `"
+     }
+}`)
+
+	return buf
+}
+
+func setElasticAuth(r *http.Request, wc *WriterConfig) {
+	r.Header.Set("kbn-xsrf", "true")
+	r.Header.Set("Content-Type", "application/json")
+	r.SetBasicAuth(wc.ElasticUser, wc.ElasticPass)
+}
+
+func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
+	res, err := c.Indices.PutMapping(
+		bytes.NewReader(generateMapping(wc.Type)),
+		func(r *esapi.IndicesPutMappingRequest) {
+			r.Index = []string{index}
+		},
+	)
+	if err != nil || res.StatusCode != http.StatusOK {
+		if res != nil {
+			data, _ := ioutil.ReadAll(res.Body)
+			fmt.Println(string(data))
+		}
+
+		log.Fatalf("error getting the response: %s", err)
+	} else {
+		fmt.Println("configured index mapping", res)
+	}
+
+	// TODO: update Duration fieldFormatMap for flows and conns via saved objects API
+	// e.g: https://dreadl0ck.net:5443/api/saved_objects/index-pattern/flow
+	// {
+	// 	"attributes":{
+	// 	"title":"netcap-flow*",
+	// 		"timeFieldName":"TimestampFirst",
+	// 		"fields":"[{\"name\":\"DstIP\",\"type\":\"ip\",\"esTypes\":[\"ip\"],\"count\":1,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"Duration\",\"type\":\"number\",\"esTypes\":[\"integer\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"ID\",\"type\":\"string\",\"esTypes\":[\"text\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"Protocol\",\"type\":\"string\",\"esTypes\":[\"text\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"SrcIP\",\"type\":\"ip\",\"esTypes\":[\"ip\"],\"count\":1,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"Timestamp\",\"type\":\"date\",\"esTypes\":[\"date\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"TimestampFirst\",\"type\":\"date\",\"esTypes\":[\"date\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"TimestampLast\",\"type\":\"date\",\"esTypes\":[\"date\"],\"count\":1,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"Version\",\"type\":\"string\",\"esTypes\":[\"text\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"_id\",\"type\":\"string\",\"esTypes\":[\"_id\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"name\":\"_index\",\"type\":\"string\",\"esTypes\":[\"_index\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"name\":\"_score\",\"type\":\"number\",\"count\":0,\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"_source\",\"type\":\"_source\",\"esTypes\":[\"_source\"],\"count\":0,\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"_type\",\"type\":\"string\",\"esTypes\":[\"_type\"],\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false}]",
+	// 		"fieldFormatMap":"{\"Duration\":{\"id\":\"duration\",\"params\":{\"parsedUrl\":{\"origin\":\"KIBANA_ENDPOINT\",\"pathname\":\"/app/kibana\",\"basePath\":\"\"},\"inputFormat\":\"nanoseconds\",\"outputFormat\":\"asMilliseconds\",\"outputPrecision\":4}}}"
+	// 	},
+	// 	"version":"WzEwODgsM10="
+	// }
+
+	// TODO: update num max fields for HTTP index via API
+	//PUT netcap-v2-ipprofile/_settings
+	//{
+	//	"index.mapping.total_fields.limit": 100000000
+	//}
+
+	_ = res.Body.Close()
+}
 
 func (w *ElasticWriter) sendBulk(start, limit int) error {
 	w.processed = 0
@@ -366,40 +428,6 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 	return nil
 }
 
-type bulkResponse struct {
-	Errors bool `json:"errors"`
-	Items  []struct {
-		Index struct {
-			ID     string `json:"_id"`
-			Result string `json:"result"`
-			Status int    `json:"status"`
-			Error  struct {
-				Type   string `json:"type"`
-				Reason string `json:"reason"`
-				Cause  struct {
-					Type   string `json:"type"`
-					Reason string `json:"reason"`
-				} `json:"caused_by"`
-			} `json:"error"`
-		} `json:"index"`
-	} `json:"items"`
-}
-
-// WriteHeader writes a CSV header.
-func (w *ElasticWriter) WriteHeader(t types.Type) error {
-	return nil
-}
-
-// Close flushes and closes the writer and the associated file handles.
-func (w *ElasticWriter) Close() (name string, size int64) {
-	err := w.sendBulk(0, 0)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	return "", 0
-}
-
 // JSON properties for elastic indices.
 // e.g:
 // {
@@ -417,18 +445,26 @@ type mappingJSON struct {
 // overwrites for various field types
 // default for string is text, this can be overwritten with keyword via this mapping.
 var typeMapping = map[string]string{
-	"Timestamp":           "date",
-	"TimestampFirst":      "date",
-	"TimestampLast":       "date",
-	"Duration":            "long",
-	"SrcIP":               "ip",
-	"DstIP":               "ip",
+	"Timestamp":          "date",
+	"TimestampFirst":     "date",
+	"TimestampLast":      "date",
+	"ReferenceTimestamp": "date",
+
+	"Duration":    "long",
+	"Bytes":       "long",
+	"SeqNum":      "long",
+	"AckNum":      "long",
+	"ReferenceID": "long",
+
+	"SrcIP":    "ip",
+	"DstIP":    "ip",
+	"IP":       "ip",
+	"ServerIP": "ip",
+	"ClientIP": "ip",
+
 	"SrcPort":             "keyword",
 	"DstPort":             "keyword",
 	"Port":                "keyword",
-	"IP":                  "ip",
-	"ServerIP":            "ip",
-	"ClientIP":            "ip",
 	"User":                "keyword",
 	"Pass":                "keyword",
 	"ID":                  "keyword",
@@ -440,20 +476,18 @@ var typeMapping = map[string]string{
 	"Software.Product":    "keyword",
 	"Software.Vendor":     "keyword",
 	"Software.SourceName": "keyword",
-	"Answers":             "object",
-	"Questions":           "object",
 	"Host":                "keyword",
 	"UserAgent":           "keyword",
 	"Method":              "keyword",
 	"Hostname":            "keyword",
-	"Bytes":               "long",
-	"Parameters.cmd":      "text",
-	"Parameters.src":      "text",
-	"Parameters.name":     "text",
 	"ServerName":          "keyword",
-	"SeqNum":              "long",
-	"AckNum":              "long",
-	"ReferenceID":         "long",
+
+	"Answers":   "object",
+	"Questions": "object",
+
+	"Parameters.cmd":  "text",
+	"Parameters.src":  "text",
+	"Parameters.name": "text",
 }
 
 // generates a valid elasticsearch type mapping for the given audit record
