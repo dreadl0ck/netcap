@@ -15,6 +15,7 @@ package types
 
 import (
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -74,8 +75,9 @@ func (f *Flow) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (f *Flow) JSON() (string, error) {
-	// f.TimestampFirst = utils.TimeToUnixMilli(f.TimestampFirst)
-	// f.TimestampLast = utils.TimeToUnixMilli(f.TimestampLast)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	f.TimestampFirst /= int64(time.Millisecond)
+	f.TimestampLast /= int64(time.Millisecond)
 
 	return jsonMarshaler.MarshalToString(f)
 }

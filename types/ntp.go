@@ -83,6 +83,7 @@ func (n *NTP) Time() int64 {
 func (n *NTP) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
 	n.Timestamp /= int64(time.Millisecond)
+	n.ReferenceTimestamp /= uint64(time.Millisecond)
 
 	return jsonMarshaler.MarshalToString(n)
 }

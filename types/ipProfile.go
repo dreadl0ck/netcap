@@ -65,6 +65,7 @@ func (d *IPProfile) Time() int64 {
 func (d *IPProfile) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
 	d.TimestampFirst /= int64(time.Millisecond)
+	d.TimestampLast /= int64(time.Millisecond)
 
 	return jsonMarshaler.MarshalToString(d)
 }

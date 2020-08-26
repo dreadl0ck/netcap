@@ -163,40 +163,7 @@ func (w *ElasticWriter) Write(msg proto.Message) error {
 	w.queueIndex++
 
 	if w.queueIndex == w.wc.BulkSize {
-
-		var (
-			unit = w.wc.BulkSize
-			err  error
-			half bool
-		)
-
-		for {
-			err = w.sendBulk(0, unit)
-			if err != nil {
-				fmt.Println("failed to send elastic bulk data", err, w.wc.Name)
-
-				if !half {
-					// half the unit and try again
-					half = true
-					unit /= 2
-				}
-
-				continue
-			}
-
-			// if the batch was cut in half due to a previous error, send the remainder
-			if half {
-				err = w.sendBulk(unit, unit)
-				if err != nil {
-					fmt.Println("failed to send elastic bulk data half", err, w.wc.Name)
-				}
-			}
-
-			// reset queue index
-			w.queueIndex = 0
-
-			break
-		}
+		w.sendData()
 	}
 
 	return nil
@@ -238,6 +205,50 @@ type bulkResponse struct {
 			} `json:"error"`
 		} `json:"index"`
 	} `json:"items"`
+}
+
+func (w *ElasticWriter) sendData() {
+	var (
+		unit = w.wc.BulkSize
+		err  error
+		half bool
+	)
+
+	for {
+		err = w.sendBulk(0, unit)
+		if err != nil {
+			fmt.Println("failed to send elastic bulk data:", err, w.wc.Name)
+
+			if !half {
+				// half the unit and try again
+				half = true
+				unit /= 2
+				fmt.Println("half the unit from to", unit)
+			}
+
+			continue
+		}
+
+		// if the batch was cut in half due to a previous error, send the remainder
+		if half {
+			fmt.Println("sending remaining half", unit)
+
+			err = w.sendBulk(0, unit)
+			if err != nil {
+				fmt.Println("failed to send elastic bulk data half", err, w.wc.Name)
+			}
+
+			fmt.Println("items in queue after sending second batch:", len(w.queue))
+
+			// realloc queue
+			w.queue = make([]proto.Message, w.wc.BulkSize)
+		}
+
+		// reset queue index
+		w.queueIndex = 0
+
+		break
+	}
 }
 
 func makeElasticIndexIdent(wc *WriterConfig) string {
@@ -501,6 +512,7 @@ var typeMapping = map[string]string{
 	"SeqNum":      "long",
 	"AckNum":      "long",
 	"ReferenceID": "long",
+	"Xid":         "long",
 
 	"SrcIP":    "ip",
 	"DstIP":    "ip",
