@@ -550,6 +550,7 @@ var typeMapping = map[string]string{
 	// too big for long type ...
 	"OriginTimestamp":   "text",
 	"TransmitTimestamp": "text",
+	"ReceiveTimestamp":  "text",
 }
 
 // generates a valid elasticsearch type mapping for the given audit record
