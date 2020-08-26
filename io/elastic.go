@@ -34,6 +34,7 @@ import (
 
 const indexPrefix = "netcap-v2-"
 
+// ErrElasticFailed indicates sending data to elasticsearch has failed.
 var ErrElasticFailed = errors.New("failed to send data to elastic")
 
 // ElasticConfig allows to overwrite elastic defaults.
