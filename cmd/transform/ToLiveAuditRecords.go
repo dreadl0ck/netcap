@@ -2,7 +2,6 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/utils"

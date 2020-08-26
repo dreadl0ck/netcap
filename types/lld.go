@@ -16,6 +16,7 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -63,7 +64,9 @@ func (l LLDPPortID) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (l *LinkLayerDiscovery) JSON() (string, error) {
-	//	l.Timestamp = utils.TimeToUnixMilli(l.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	l.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(l)
 }
 

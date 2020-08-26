@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -280,7 +281,9 @@ func (c *CDPLocation) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (a *CiscoDiscoveryInfo) JSON() (string, error) {
-	//	// a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	a.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(a)
 }
 

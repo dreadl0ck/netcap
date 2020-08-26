@@ -6,7 +6,6 @@ import (
 )
 
 func toSNIs() {
-
 	profiles := maltego.LoadIPProfiles()
 
 	maltego.IPTransform(
@@ -16,7 +15,6 @@ func toSNIs() {
 				for _, ip := range profile.Contacts {
 					if ip == ipaddr {
 						addSNI(profiles, ip, trx, min, max)
-
 					}
 				}
 				for _, ip := range profile.DeviceIPs {

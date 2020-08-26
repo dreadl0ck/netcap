@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -96,7 +97,9 @@ func (t *TLSServerHello) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (t *TLSServerHello) JSON() (string, error) {
-	//	t.Timestamp = utils.TimeToUnixMilli(t.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	t.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(t)
 }
 

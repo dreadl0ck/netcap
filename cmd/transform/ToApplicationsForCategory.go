@@ -1,13 +1,13 @@
 package transform
 
 import (
+	"strconv"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"strconv"
 )
 
 func toApplicationsForCategory() {
-
 	var (
 		profiles = maltego.LoadIPProfiles()
 		category string

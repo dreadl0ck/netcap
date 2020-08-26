@@ -14,13 +14,13 @@
 package io
 
 import (
-	"github.com/dreadl0ck/netcap/utils"
 	"testing"
 	"time"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var tcps = []*types.TCP{

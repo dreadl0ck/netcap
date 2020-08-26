@@ -16,6 +16,7 @@ package types
 import (
 	"encoding/hex"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -80,7 +81,9 @@ func (d DHCPv6Option) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (d *DHCPv6) JSON() (string, error) {
-	//	d.Timestamp = utils.TimeToUnixMilli(d.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	d.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(d)
 }
 

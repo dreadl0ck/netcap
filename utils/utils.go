@@ -15,7 +15,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
 	"io"
 	"log"
 	"net"
@@ -29,6 +28,8 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/evilsocket/islazy/tui"
+
+	"github.com/dreadl0ck/netcap/defaults"
 )
 
 // noPluralsMap contains words for which to make an exception when pluralizing nouns.

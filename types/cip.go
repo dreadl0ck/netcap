@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -74,7 +75,9 @@ func (c *CIP) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (c *CIP) JSON() (string, error) {
-	//	c.Timestamp = utils.TimeToUnixMilli(c.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	c.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(c)
 }
 

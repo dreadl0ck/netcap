@@ -16,7 +16,6 @@ package io
 import (
 	"bufio"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"io"
 	"log"
 	"os"
@@ -31,6 +30,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // CSVWriter is a structure that supports writing CSV audit records to disk.

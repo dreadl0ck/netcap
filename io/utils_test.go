@@ -14,9 +14,10 @@
 package io
 
 import (
-	"github.com/dreadl0ck/netcap/defaults"
 	"os"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/defaults"
 )
 
 func TestDumpCSV(t *testing.T) {

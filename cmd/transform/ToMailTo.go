@@ -6,7 +6,6 @@ import (
 )
 
 func toMailTo() {
-
 	mails := maltego.LoadMails()
 
 	maltego.POP3Transform(

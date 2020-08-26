@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -82,7 +83,9 @@ func (u *USB) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (u *USB) JSON() (string, error) {
-	//	u.Timestamp = utils.TimeToUnixMilli(u.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	u.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(u)
 }
 

@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -52,7 +53,6 @@ func (a *GRE) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *GRE) CSVRecord() []string {
-
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.ChecksumPresent),   // bool
@@ -105,7 +105,9 @@ func (r *GRERouting) getString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (a *GRE) JSON() (string, error) {
-	//	// a.Timestamp = utils.TimeToUnixMilli(a.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	a.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(a)
 }
 

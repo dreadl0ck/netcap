@@ -74,8 +74,8 @@ func (c *Connection) Time() int64 {
 
 // JSON returns the JSON representation of the audit record.
 func (c *Connection) JSON() (string, error) {
-	//c.TimestampFirst = utils.TimeToUnixMilli(c.TimestampFirst)
-	//c.TimestampLast = utils.TimeToUnixMilli(c.TimestampLast)
+	// c.TimestampFirst = utils.TimeToUnixMilli(c.TimestampFirst)
+	// c.TimestampLast = utils.TimeToUnixMilli(c.TimestampLast)
 
 	return jsonMarshaler.MarshalToString(c)
 }

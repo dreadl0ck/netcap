@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -94,7 +95,9 @@ func (i IGMPv3GroupRecord) toString() string {
 
 // JSON returns the JSON representation of the audit record.
 func (i *IGMP) JSON() (string, error) {
-	//	i.Timestamp = utils.TimeToUnixMilli(i.Timestamp)
+	// convert unix timestamp from nano to millisecond precision for elastic
+	i.Timestamp /= int64(time.Millisecond)
+
 	return jsonMarshaler.MarshalToString(i)
 }
 
