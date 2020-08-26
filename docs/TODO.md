@@ -17,6 +17,7 @@
 - check for usage of fmt.Println(err) / fmt.Println(errClose)
 - check TODOs
 
+- add support to compile without dynamically linked dpi libs
 - add protobuf audit records
 - banner matching: only match the first banner seen for a service?
 - add issues for hacktoberfest
