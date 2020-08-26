@@ -18,12 +18,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
@@ -34,8 +36,13 @@ import (
 
 const indexPrefix = "netcap-v2-"
 
-// ErrElasticFailed indicates sending data to elasticsearch has failed.
-var ErrElasticFailed = errors.New("failed to send data to elastic")
+var (
+	// ErrElasticFailed indicates sending data to elasticsearch has failed.
+	ErrElasticFailed = errors.New("failed to send data to elastic")
+
+	// ErrMissingAuditRecordInterface indicates the audit record is lacking methods to fulfil the types.AuditRecord interface.
+	ErrMissingAuditRecordInterface = errors.New("type does not implement the types.AuditRecord interface")
+)
 
 // ElasticConfig allows to overwrite elastic defaults.
 type ElasticConfig struct {
@@ -296,8 +303,10 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 		fmt.Println("configured index mapping", res)
 	}
 
-	// TODO: update Duration fieldFormatMap for flows and conns via saved objects API
-	// e.g: https://dreadl0ck.net:5443/api/saved_objects/index-pattern/flow
+	_ = res.Body.Close()
+
+	// TODO: update Duration fieldFormatMap to milliseconds for flows and conns via saved objects API
+	// e.g: /api/saved_objects/index-pattern/flow
 	// {
 	// 	"attributes":{
 	// 	"title":"netcap-flow*",
@@ -311,49 +320,79 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 	// TODO: update num max fields for HTTP index via API
 	//PUT netcap-v2-ipprofile/_settings
 	//{
-	//	"index.mapping.total_fields.limit": 100000000
+	//	"index.mapping.total_fields.limit": 10000000033
 	//}
+	var data = make(map[string]string)
+	data["index.mapping.total_fields.limit"] = "100000000"
 
-	_ = res.Body.Close()
+	d, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("failed to marshal json data:", err)
+
+		return
+	}
+
+	r, err := http.NewRequest(
+		"PUT",
+		wc.KibanaEndpoint+"/api/"+index+"/_settings",
+		bytes.NewReader(d),
+	)
+	if err != nil {
+		fmt.Println("failed to create index settings request:", err)
+	} else {
+		setElasticAuth(r, wc)
+
+		// create the index
+		resp, errAPI := http.DefaultClient.Do(r)
+		if errAPI != nil || resp.StatusCode != http.StatusOK {
+			fmt.Println("failed to update index settings:", errAPI)
+
+			if resp != nil {
+				d, _ = ioutil.ReadAll(resp.Body)
+				fmt.Println(string(d))
+			}
+		} else {
+			fmt.Println("index", index, "settings updated", resp.Status)
+		}
+
+		_ = resp.Body.Close()
+	}
 }
 
+// send a bulk of audit records and metadata to the elastic database daemon.
 func (w *ElasticWriter) sendBulk(start, limit int) error {
 	w.processed = 0
 
 	for _, qmsg := range w.queue[start:] {
-		if qmsg != nil {
-			if rec, ok := qmsg.(types.AuditRecord); ok {
+		if qmsg == nil {
+			continue
+		}
 
-				// prepare the data payload: encode record to JSON
-				js, err := rec.JSON()
-				if err != nil {
-					return err
-				}
-
-				// append newline to the data payload
-				data := []byte(js)
-
-				// hack to sneak the type info to the JSON
-				// data := []byte(js[:len(js)-1] + `, "type" : "`+ w.wc.Name + `"}`)
-				// fmt.Println(js[:len(js)-1] + `, "type" : "`+ w.wc.Name + `"}`)
-
-				data = append(data, "\n"...)
-
-				// append payloads to the buffer
-				w.buf.Grow(len(w.meta) + len(data))
-				_, _ = w.buf.Write(w.meta)
-				_, _ = w.buf.Write(data)
-
-				// pass limit = 0 to process the entire queue
-				if limit > 0 && w.processed >= limit {
-					w.processed++
-					w.queue = w.queue[w.processed:]
-
-					break
-				}
-			} else {
-				return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", qmsg)
+		if rec, ok := qmsg.(types.AuditRecord); ok {
+			// prepare the data payload: encode record to JSON
+			js, err := rec.JSON()
+			if err != nil {
+				return err
 			}
+
+			// append newline to the data payload
+			data := []byte(js)
+			data = append(data, "\n"...)
+
+			// append payloads to the buffer
+			w.buf.Grow(len(w.meta) + len(data))
+			_, _ = w.buf.Write(w.meta)
+			_, _ = w.buf.Write(data)
+
+			// pass limit = 0 to process the entire queue
+			if limit > 0 && w.processed >= limit {
+				w.processed++
+				w.queue = w.queue[w.processed:]
+
+				break
+			}
+		} else {
+			return fmt.Errorf("%s: %w", qmsg, ErrMissingAuditRecordInterface)
 		}
 	}
 
@@ -361,70 +400,84 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 		return nil
 	}
 
-	// send off the bulk data
-	res, err := w.client.Bulk(bytes.NewReader(w.buf.Bytes()), w.client.Bulk.WithIndex(w.indexName))
-	if err != nil {
-		log.Fatalf("failure indexing batch: %s", err)
-	}
+	for {
+		// send off the bulk data
+		res, err := w.client.Bulk(bytes.NewReader(w.buf.Bytes()), w.client.Bulk.WithIndex(w.indexName))
+		if err != nil {
 
-	// if the whole request failed, print error and mark all documents as failed
-	if res.IsError() {
-		var raw map[string]interface{}
-		if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
+			// network error - wait a little and retry
+			dur := 500 * time.Millisecond
+
+			fmt.Println("failure indexing batch:", err, "will sleep for", dur, "and retry")
+			time.Sleep(dur)
+
+			continue
+		}
+
+		// if the whole request failed, print error and mark all documents as failed
+		if res.IsError() {
+			var raw map[string]interface{}
+			if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
+				log.Printf("failure to to parse response body: %s", err)
+			} else {
+				log.Printf("Error: [%d] %s: %s",
+					res.StatusCode,
+					raw["error"].(map[string]interface{})["type"],
+					raw["error"].(map[string]interface{})["reason"],
+				)
+			}
+
+			// dump buffer in case of errors
+			fmt.Println(w.buf.String())
+			w.buf.Reset()
+
+			return ErrElasticFailed
+		}
+
+		// a successful response can still contain errors for some documents
+		var blk *bulkResponse
+		if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
 			log.Printf("failure to to parse response body: %s", err)
-		} else {
-			log.Printf("Error: [%d] %s: %s",
-				res.StatusCode,
-				raw["error"].(map[string]interface{})["type"],
-				raw["error"].(map[string]interface{})["reason"],
-			)
+
+			// dump buffer in case of errors
+			fmt.Println(w.buf.String())
+			w.buf.Reset()
+
+			return ErrElasticFailed
+		}
+
+		var hadErrors bool
+
+		// log errors for HTTP status codes above 201
+		for _, d := range blk.Items {
+
+			if d.Index.Status > 201 {
+				hadErrors = true
+
+				log.Printf("Error: [%d]: %s: %s: %s: %s",
+					d.Index.Status,
+					d.Index.Error.Type,
+					d.Index.Error.Reason,
+					d.Index.Error.Cause.Type,
+					d.Index.Error.Cause.Reason,
+				)
+			}
 		}
 
 		// dump buffer in case of errors
-		fmt.Println(w.buf.String())
-		w.buf.Reset()
-
-		return ErrElasticFailed
-	}
-
-	// a successful response can still contain errors for some documents
-	var blk *bulkResponse
-	if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
-		log.Printf("failure to to parse response body: %s", err)
-
-		// dump buffer in case of errors
-		fmt.Println(w.buf.String())
-		w.buf.Reset()
-
-		return ErrElasticFailed
-	}
-
-	var hadErrors bool
-	for _, d := range blk.Items {
-		// for any HTTP status above 201
-		if d.Index.Status > 201 {
-			hadErrors = true
-
-			log.Printf("Error: [%d]: %s: %s: %s: %s",
-				d.Index.Status,
-				d.Index.Error.Type,
-				d.Index.Error.Reason,
-				d.Index.Error.Cause.Type,
-				d.Index.Error.Cause.Reason,
-			)
+		if hadErrors {
+			fmt.Println(w.buf.String())
 		}
+
+		// close the response body, to prevent reaching the limit for goroutines or file handles
+		_ = res.Body.Close()
+
+		utils.DebugLog.Println("sent", w.processed, w.wc.Name, "audit records to elastic")
+		w.buf.Reset()
+
+		// exit loop on success
+		break
 	}
-
-	if hadErrors {
-		// dump buffer in case of errors
-		fmt.Println(w.buf.String())
-	}
-
-	// close the response body, to prevent reaching the limit for goroutines or file handles
-	_ = res.Body.Close()
-
-	// fmt.Println("sent", w.processed, w.wc.Name, "audit records to elastic")
-	w.buf.Reset()
 
 	return nil
 }
