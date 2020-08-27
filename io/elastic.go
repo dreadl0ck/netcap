@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -32,6 +31,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 const indexPrefix = "netcap-"
@@ -453,7 +453,6 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 
 		// log errors for HTTP status codes above 201
 		for _, d := range blk.Items {
-
 			if d.Index.Status > 201 {
 				hadErrors = true
 

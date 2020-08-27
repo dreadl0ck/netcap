@@ -236,15 +236,19 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 	}
 	stats.outOfOrderPackets += int64(sgStats.QueuedPackets)
 	stats.outOfOrderBytes += int64(sgStats.QueuedBytes)
+
 	if int64(length) > stats.biggestChunkBytes {
 		stats.biggestChunkBytes = int64(length)
 	}
+
 	if int64(sgStats.Packets) > stats.biggestChunkPackets {
 		stats.biggestChunkPackets = int64(sgStats.Packets)
 	}
+
 	if sgStats.OverlapBytes != 0 && sgStats.OverlapPackets == 0 {
-		utils.ReassemblyLog.Println("ReassembledSG: invalid overlap, bytes:", sgStats.OverlapBytes, "packets:", sgStats.OverlapPackets)
+		utils.ReassemblyLog.Println("reassembledSG: invalid overlap, bytes:", sgStats.OverlapBytes, "packets:", sgStats.OverlapPackets)
 	}
+
 	stats.overlapBytes += int64(sgStats.OverlapBytes)
 	stats.overlapPackets += int64(sgStats.OverlapPackets)
 	stats.Unlock()
@@ -351,8 +355,9 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 
 	if length > 0 {
 		if conf.HexDump {
-			logReassemblyDebug("Feeding stream reader with:\n%s", hex.Dump(data))
+			logReassemblyDebug("feeding stream reader with:\n%s", hex.Dump(data))
 		}
+
 		t.feedData(dir, data, ac)
 	}
 }
@@ -460,7 +465,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		t.decoder.Decode()
 	}
 
-	logReassemblyDebug("%s: Stream closed\n", t.ident)
+	logReassemblyDebug("%s: stream closed\n", t.ident)
 
 	// do not remove the connection to allow last ACK
 	return false
@@ -507,7 +512,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		if newip4.Length != l {
 			stats.ipdefrag++
 
-			logReassemblyDebug("Decoding re-assembled packet: %s\n", newip4.NextLayerType())
+			logReassemblyDebug("decoding re-assembled packet: %s\n", newip4.NextLayerType())
 
 			pb, ok := packet.(gopacket.PacketBuilder)
 			if !ok {
@@ -582,7 +587,7 @@ func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	conf.Lock()
 	if conf.Debug {
-		utils.ReassemblyLog.Println("StreamPool:")
+		utils.ReassemblyLog.Println("streamPool:")
 		utils.ReassemblyLog.Println(streamFactory.StreamPool.DumpString())
 	}
 	conf.Unlock()
@@ -766,6 +771,7 @@ func (t *tcpConnection) sortAndMergeFragments() {
 	for _, d := range t.merged { // fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
 
 		t.conversationRawBuf.Write(d.raw)
+
 		if d.dir == reassembly.TCPDirClientToServer {
 			if conf.Debug {
 				var ts string
