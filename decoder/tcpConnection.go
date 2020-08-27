@@ -629,7 +629,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
 		// flush the remaining streams to disk
 		for _, s := range streamFactory.streamReaders {
-			if s != nil {
+			if s != nil { // never feed a nil stream
 				sp.handleStream(s)
 			}
 		}
@@ -638,7 +638,14 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			fmt.Println()
 		}
 
+		// explicitly feed a nil stream to exit the goroutines used for processing
+		for _, w := range sp.workers {
+			w <- nil
+		}
+
+		fmt.Print("waiting for stream processor wait group... ")
 		sp.wg.Wait()
+		fmt.Println("done!")
 
 		// process UDP streams
 		if conf.SaveConns {

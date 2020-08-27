@@ -62,32 +62,33 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 
 	// start worker
 	go func() {
-		for {
-			select {
-			case s := <-chanInput:
-				if s == nil {
-					return
-				}
+		for s := range chanInput {
+			// nil packet is used to exit the loop
+			// the processing logic will never send a streamReader in here that is nil
+			if s == nil {
+				fmt.Println("[streamWorker] nil packet, returning at", "(", tsp.numDone, "/", tsp.numTotal, ")")
+				return
+			}
 
-				// do not process streams that have been saved already by their cleanup functions
-				// because the corresponding connection has been closed
-				if s.Saved() {
-					break
-				}
+			// do not process streams that have been saved already by their cleanup functions
+			// because the corresponding connection has been closed
+			if s.Saved() {
+				wg.Done()
+				continue
+			}
 
-				if s.IsClient() {
-					// save the entire conversation.
-					// we only need to do this once, when the client part of the connection is closed
-					err := saveConnection(s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
-					if err != nil {
-						fmt.Println("failed to save connection", err)
-					}
-				} else {
-					s.SortAndMergeFragments()
-
-					// save the service banner
-					saveTCPServiceBanner(s)
+			if s.IsClient() {
+				// save the entire conversation.
+				// we only need to do this once, when the client part of the connection is closed
+				err := saveConnection(s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
+				if err != nil {
+					fmt.Println("failed to save connection", err)
 				}
+			} else {
+				s.SortAndMergeFragments()
+
+				// save the service banner
+				saveTCPServiceBanner(s)
 			}
 
 			tsp.Lock()
@@ -97,10 +98,9 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 				clearLine()
 				fmt.Print("processing remaining open TCP streams... ", "(", tsp.numDone, "/", tsp.numTotal, ")")
 			}
-			tsp.Unlock()
 
+			tsp.Unlock()
 			wg.Done()
-			continue
 		}
 	}()
 
@@ -114,5 +114,6 @@ func (tsp *tcpStreamProcessor) initWorkers() {
 	for i := range tsp.workers {
 		tsp.workers[i] = tsp.streamWorker(&tsp.wg)
 	}
+
 	tsp.numWorkers = len(tsp.workers)
 }
