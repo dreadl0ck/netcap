@@ -519,9 +519,10 @@ var typeMapping = map[string]string{
 	"ServerIP": "ip",
 	"ClientIP": "ip",
 
-	"SrcPort":             "keyword",
-	"DstPort":             "keyword",
-	"Port":                "keyword",
+	"SrcPort": "integer",
+	"DstPort": "integer",
+	"Port":    "integer",
+
 	"ID":                  "keyword",
 	"User":                "keyword",
 	"Pass":                "keyword",
@@ -550,6 +551,9 @@ var typeMapping = map[string]string{
 	"OriginTimestamp":   "text",
 	"TransmitTimestamp": "text",
 	"ReceiveTimestamp":  "text",
+
+	"SrcPorts": "flattened",
+	"DstPorts": "flattened",
 }
 
 // generates a valid elasticsearch type mapping for the given audit record
@@ -572,7 +576,6 @@ func generateMapping(t types.Type) []byte {
 
 			// first, check if a custom mapping is provided
 			if m, exists := typeMapping[field.Name]; exists {
-
 				// set the type for the field name
 				mapping.Properties[field.Name] = map[string]string{"type": m}
 

@@ -101,8 +101,8 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 			Ja3:            profile.Ja3,
 			Protocols:      profile.Protocols,
 			Bytes:          profile.Bytes,
-			DstPorts:       profile.DstPorts,
 			SrcPorts:       profile.SrcPorts,
+			DstPorts:       profile.DstPorts,
 			SNIs:           profile.SNIs,
 		}
 	}

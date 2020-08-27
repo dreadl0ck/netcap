@@ -1732,10 +1732,12 @@ message DeviceProfile {
   uint64 Bytes = 7;
 }
 
+// Port models a transport layer port and basic stats such as the number of packets, bytes transferred and protocol type.
 message Port {
-  uint64 numTCP = 1;
-  uint64 numUDP = 2;
-  uint64 numTotal = 3;
+  int32  PortNumber = 1;
+  uint64 Packets = 2;
+  uint64 Bytes   = 3;
+  string Protocol = 4;
 }
 
 message IPProfile {
@@ -1749,9 +1751,11 @@ message IPProfile {
   map<string, string> Ja3 = 8; // ja3 to lookup
   map<string, Protocol> Protocols = 9;
   uint64 Bytes = 10;
-  map<string, Port> DstPorts = 11; // Ports mapped to bytes
-  map<string, Port> SrcPorts = 12; // Ports mapped to bytes
-  map<string, int64> SNIs = 13;
+  map<string, int64> SNIs = 11;
+
+  // mapped port numbers to packet count and bytes transferred for Src / Dst.
+  repeated Port SrcPorts = 12;
+  repeated Port DstPorts = 13;
 }
 
 message Protocol {
