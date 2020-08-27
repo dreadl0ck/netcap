@@ -14,20 +14,21 @@ func toApplications() {
 	maltego.IPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
-			if profile.MacAddr == mac {
-				for _, ip := range profile.Contacts {
-					if ip == ipaddr {
-						addApplication(profiles, ip, trx)
+			if profile.MacAddr != mac {
+				return
+			}
+			for _, ip := range profile.Contacts {
+				if ip == ipaddr {
+					addApplication(profiles, ip, trx)
 
-						break
-					}
+					break
 				}
-				for _, ip := range profile.DeviceIPs {
-					if ip == ipaddr {
-						addApplication(profiles, ip, trx)
+			}
+			for _, ip := range profile.DeviceIPs {
+				if ip == ipaddr {
+					addApplication(profiles, ip, trx)
 
-						break
-					}
+					break
 				}
 			}
 		},

@@ -13,25 +13,26 @@ func toGeolocation() {
 	maltego.IPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
-			if profile.MacAddr == mac {
-				for _, ip := range profile.Contacts {
-					if ip == ipaddr {
-						if p, ok := profiles[ip]; ok {
-							if p.Geolocation == "" {
-								continue
-							}
-							addGeolocation(trx, p, min, max)
+			if profile.MacAddr != mac {
+				return
+			}
+			for _, ip := range profile.Contacts {
+				if ip == ipaddr {
+					if p, ok := profiles[ip]; ok {
+						if p.Geolocation == "" {
+							continue
 						}
+						addGeolocation(trx, p, min, max)
 					}
 				}
-				for _, ip := range profile.DeviceIPs {
-					if ip == ipaddr {
-						if p, ok := profiles[ip]; ok {
-							if p.Geolocation == "" {
-								continue
-							}
-							addGeolocation(trx, p, min, max)
+			}
+			for _, ip := range profile.DeviceIPs {
+				if ip == ipaddr {
+					if p, ok := profiles[ip]; ok {
+						if p.Geolocation == "" {
+							continue
 						}
+						addGeolocation(trx, p, min, max)
 					}
 				}
 			}

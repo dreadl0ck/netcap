@@ -22,28 +22,29 @@ func toDstPorts() {
 	maltego.IPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
-			if profile.MacAddr == mac {
-				for _, ip := range profile.Contacts {
-					if ip == ipaddr {
-						if p, ok := profiles[ip]; ok {
-							for portNum, port := range p.DstPorts {
-								addDestinationPort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, p)
-							}
+			if profile.MacAddr != mac {
+				return
+			}
+			for _, ip := range profile.Contacts {
+				if ip == ipaddr {
+					if p, ok := profiles[ip]; ok {
+						for portNum, port := range p.DstPorts {
+							addDestinationPort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, p)
 						}
-
-						break
 					}
+
+					break
 				}
-				for _, ip := range profile.DeviceIPs {
-					if ip == ipaddr {
-						if p, ok := profiles[ip]; ok {
-							for portNum, port := range p.DstPorts {
-								addDestinationPort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, p)
-							}
+			}
+			for _, ip := range profile.DeviceIPs {
+				if ip == ipaddr {
+					if p, ok := profiles[ip]; ok {
+						for portNum, port := range p.DstPorts {
+							addDestinationPort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, p)
 						}
-
-						break
 					}
+
+					break
 				}
 			}
 		},

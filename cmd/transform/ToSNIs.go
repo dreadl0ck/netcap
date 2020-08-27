@@ -11,16 +11,17 @@ func toSNIs() {
 	maltego.IPTransform(
 		maltego.CountPacketsContactIPs,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
-			if profile.MacAddr == mac {
-				for _, ip := range profile.Contacts {
-					if ip == ipaddr {
-						addSNI(profiles, ip, trx, min, max)
-					}
+			if profile.MacAddr != mac {
+				return
+			}
+			for _, ip := range profile.Contacts {
+				if ip == ipaddr {
+					addSNI(profiles, ip, trx, min, max)
 				}
-				for _, ip := range profile.DeviceIPs {
-					if ip == ipaddr {
-						addSNI(profiles, ip, trx, min, max)
-					}
+			}
+			for _, ip := range profile.DeviceIPs {
+				if ip == ipaddr {
+					addSNI(profiles, ip, trx, min, max)
 				}
 			}
 		},

@@ -11,11 +11,12 @@ func toHTTPStatusCodes() {
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
-			if http.SrcIP == ipaddr {
-				if http.StatusCode != 0 {
-					val := strconv.FormatInt(int64(http.StatusCode), 10)
-					trx.AddEntity("netcap.HTTPStatusCode", val)
-				}
+			if http.SrcIP != ipaddr {
+				return
+			}
+			if http.StatusCode != 0 {
+				val := strconv.FormatInt(int64(http.StatusCode), 10)
+				trx.AddEntity("netcap.HTTPStatusCode", val)
 			}
 		},
 		false,
