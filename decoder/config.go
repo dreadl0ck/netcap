@@ -239,5 +239,8 @@ type Config struct {
 	// Quiet disables logging to stdout
 	Quiet bool
 
+	// TCPStreamProcessor
+	StreamBufferSize int
+
 	sync.Mutex
 }

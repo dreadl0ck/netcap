@@ -225,6 +225,7 @@ func Run() {
 			HarvesterBannerSize:     *flagHarvesterBannerSize,
 			StopAfterHarvesterMatch: *flagStopAfterHarvesterMatch,
 			CustomRegex:             *flagCustomCredsRegex,
+			StreamBufferSize:        *flagStreamBufferSize,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    *flagReverseDNS,

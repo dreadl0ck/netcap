@@ -22,12 +22,13 @@ import (
 // internal data structure to parallelize processing of tcp streams
 // when the core engine is stopped and the remaining open connections are processed.
 type tcpStreamProcessor struct {
-	workers    []chan streamReader
-	numWorkers int
-	next       int
-	wg         sync.WaitGroup
-	numDone    int
-	numTotal   int
+	workers          []chan streamReader
+	numWorkers       int
+	next             int
+	wg               sync.WaitGroup
+	numDone          int
+	numTotal         int
+	streamBufferSize int
 	sync.Mutex
 }
 
@@ -56,17 +57,20 @@ func (tsp *tcpStreamProcessor) handleStream(s streamReader) {
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
+// the wait group has already been incremented for each non-nil packet,
+// so wg.Done() must be called before returning for each item.
 func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReader {
 	// init channel to receive input packets
-	chanInput := make(chan streamReader, 10)
+	chanInput := make(chan streamReader, tsp.streamBufferSize)
 
 	// start worker
 	go func() {
 		for s := range chanInput {
-			// nil packet is used to exit the loop
+			// nil packet is used to exit the loop,
 			// the processing logic will never send a streamReader in here that is nil
 			if s == nil {
 				fmt.Println("[streamWorker] nil packet, returning at", "(", tsp.numDone, "/", tsp.numTotal, ")")
+
 				return
 			}
 
@@ -74,6 +78,7 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 			// because the corresponding connection has been closed
 			if s.Saved() {
 				wg.Done()
+
 				continue
 			}
 
@@ -109,8 +114,10 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 }
 
 // spawn the configured number of workers.
-func (tsp *tcpStreamProcessor) initWorkers() {
+func (tsp *tcpStreamProcessor) initWorkers(streamBufferSize int) {
+	tsp.streamBufferSize = streamBufferSize
 	tsp.workers = make([]chan streamReader, runtime.NumCPU())
+
 	for i := range tsp.workers {
 		tsp.workers[i] = tsp.streamWorker(&tsp.wg)
 	}

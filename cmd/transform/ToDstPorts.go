@@ -26,8 +26,8 @@ func toDstPorts() {
 				for _, ip := range profile.Contacts {
 					if ip == ipaddr {
 						if p, ok := profiles[ip]; ok {
-							for portStr, port := range p.DstPorts {
-								addDestinationPort(trx, portStr, port, min, max, p)
+							for portNum, port := range p.DstPorts {
+								addDestinationPort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, p)
 							}
 						}
 
@@ -37,8 +37,8 @@ func toDstPorts() {
 				for _, ip := range profile.DeviceIPs {
 					if ip == ipaddr {
 						if p, ok := profiles[ip]; ok {
-							for portStr, port := range p.DstPorts {
-								addDestinationPort(trx, portStr, port, min, max, p)
+							for portNum, port := range p.DstPorts {
+								addDestinationPort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, p)
 							}
 						}
 
@@ -56,20 +56,18 @@ func addDestinationPort(trx *maltego.Transform, portStr string, port *types.Port
 	np, err := strconv.Atoi(portStr)
 	if err != nil {
 		fmt.Println(err)
+
 		np = 0
 	}
 
-	var typ string
-	if port.NumTCP > 0 {
-		typ = "TCP"
-	} else if port.NumUDP > 0 {
-		typ = "UDP"
-	}
-	serviceName := resolvers.LookupServiceByPort(np, typ)
+	var (
+		serviceName = resolvers.LookupServiceByPort(np, port.Protocol)
+		di          = "<h3>Port</h3><p>Timestamp: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p><p>ServiceName: " + serviceName + "</p>"
+	)
 
-	di := "<h3>Port</h3><p>Timestamp: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p><p>ServiceName: " + serviceName + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 	ent.AddProperty("label", "Label", "strict", portStr+"\n"+serviceName)
-	ent.SetLinkLabel(strconv.FormatInt(int64(port.NumTotal), 10) + " pkts")
-	ent.SetLinkThickness(maltego.GetThickness(port.NumTotal, min, max))
+
+	ent.SetLinkLabel(strconv.FormatInt(int64(port.Packets), 10) + " pkts")
+	ent.SetLinkThickness(maltego.GetThickness(port.Packets, min, max))
 }

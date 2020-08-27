@@ -14,12 +14,12 @@
 package decoder
 
 import (
+	"encoding/binary"
 	"log"
 	"sync"
 	"sync/atomic"
 
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
@@ -110,48 +110,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 		p.Bytes += dataLen
 
 		// Transport Layer
-		if tl := i.p.TransportLayer(); tl != nil {
-			var port *types.Port
-
-			if port, ok = p.SrcPorts[tl.TransportFlow().Src().String()]; ok {
-				atomic.AddUint64(&port.NumTotal, dataLen)
-
-				if tl.LayerType() == layers.LayerTypeTCP {
-					atomic.AddUint64(&port.NumTCP, 1)
-				} else if tl.LayerType() == layers.LayerTypeUDP {
-					atomic.AddUint64(&port.NumUDP, 1)
-				}
-			} else {
-				port = &types.Port{
-					NumTotal: dataLen,
-				}
-				if tl.LayerType() == layers.LayerTypeTCP {
-					port.NumTCP++
-				} else if tl.LayerType() == layers.LayerTypeUDP {
-					port.NumUDP++
-				}
-				p.SrcPorts[tl.TransportFlow().Src().String()] = port
-			}
-
-			if port, ok = p.DstPorts[tl.TransportFlow().Dst().String()]; ok {
-				port.NumTotal += dataLen
-				if tl.LayerType() == layers.LayerTypeTCP {
-					port.NumTCP++
-				} else if tl.LayerType() == layers.LayerTypeUDP {
-					port.NumUDP++
-				}
-			} else {
-				port = &types.Port{
-					NumTotal: dataLen,
-				}
-				if tl.LayerType() == layers.LayerTypeTCP {
-					port.NumTCP++
-				} else if tl.LayerType() == layers.LayerTypeUDP {
-					port.NumUDP++
-				}
-				p.DstPorts[tl.TransportFlow().Dst().String()] = port
-			}
-		}
+		updatePorts(i, p)
 
 		// Session Layer: TLS
 		ch := tlsx.GetClientHelloBasic(i.p)
@@ -193,42 +152,17 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 	IPProfiles.Unlock()
 
 	var (
-		protos   = make(map[string]*types.Protocol)
-		ja3Map   = make(map[string]string)
-		dataLen  = uint64(len(i.p.Data()))
-		srcPorts = make(map[string]*types.Port)
-		dstPorts = make(map[string]*types.Port)
-		sniMap   = make(map[string]int64)
+		protos  = make(map[string]*types.Protocol)
+		ja3Map  = make(map[string]string)
+		dataLen = uint64(len(i.p.Data()))
+		sniMap  = make(map[string]int64)
 	)
 
 	// Network Layer: IP Geolocation
 	loc, _ := resolvers.LookupGeolocation(ipAddr)
 
 	// Transport Layer: Port information
-
-	if tl := i.p.TransportLayer(); tl != nil {
-		srcPort := &types.Port{
-			NumTotal: dataLen,
-		}
-
-		if tl.LayerType() == layers.LayerTypeTCP {
-			srcPort.NumTCP++
-		} else if tl.LayerType() == layers.LayerTypeUDP {
-			srcPort.NumUDP++
-		}
-
-		srcPorts[tl.TransportFlow().Src().String()] = srcPort
-
-		dstPort := &types.Port{
-			NumTotal: dataLen,
-		}
-		if tl.LayerType() == layers.LayerTypeTCP {
-			dstPort.NumTCP++
-		} else if tl.LayerType() == layers.LayerTypeUDP {
-			dstPort.NumUDP++
-		}
-		dstPorts[tl.TransportFlow().Dst().String()] = dstPort
-	}
+	srcPorts, dstPorts := initPorts(i)
 
 	// Session Layer: TLS
 
@@ -283,6 +217,92 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 	IPProfiles.Unlock()
 
 	return p
+}
+
+func updatePorts(i *packetInfo, p *ipProfile) {
+	if tl := i.p.TransportLayer(); tl != nil {
+		var (
+			// get packet size
+			dataLen   = uint64(len(i.p.Data()))
+			srcPort   = int32(binary.BigEndian.Uint16(tl.TransportFlow().Src().Raw()))
+			dstPort   = int32(binary.BigEndian.Uint16(tl.TransportFlow().Dst().Raw()))
+			found     bool
+			layerType = tl.LayerType().String()
+		)
+
+		// source port
+		for _, port := range p.SrcPorts {
+			if port.PortNumber == srcPort && port.Protocol == layerType {
+				atomic.AddUint64(&port.Bytes, dataLen)
+				atomic.AddUint64(&port.Packets, 1)
+
+				found = true
+
+				break
+			}
+		}
+
+		if !found {
+			p.SrcPorts = append(p.SrcPorts, &types.Port{
+				PortNumber: srcPort,
+				Bytes:      dataLen,
+				Packets:    1,
+				Protocol:   layerType,
+			})
+		}
+
+		// reset
+		found = false
+
+		// destination port
+		for _, port := range p.DstPorts {
+			if port.PortNumber == dstPort && port.Protocol == layerType {
+				atomic.AddUint64(&port.Bytes, dataLen)
+				atomic.AddUint64(&port.Packets, 1)
+
+				found = true
+
+				break
+			}
+		}
+
+		if !found {
+			p.DstPorts = append(p.DstPorts, &types.Port{
+				PortNumber: dstPort,
+				Bytes:      dataLen,
+				Packets:    1,
+				Protocol:   layerType,
+			})
+		}
+	}
+}
+
+func initPorts(i *packetInfo) (
+	srcPorts,
+	dstPorts []*types.Port,
+) {
+	if tl := i.p.TransportLayer(); tl != nil {
+		// get packet size
+		dataLen := uint64(len(i.p.Data()))
+
+		// source port
+		srcPorts = append(srcPorts, &types.Port{
+			PortNumber: int32(binary.BigEndian.Uint16(tl.TransportFlow().Src().Raw())),
+			Bytes:      dataLen,
+			Packets:    1,
+			Protocol:   tl.LayerType().String(),
+		})
+
+		// destination port
+		dstPorts = append(dstPorts, &types.Port{
+			PortNumber: int32(binary.BigEndian.Uint16(tl.TransportFlow().Dst().Raw())),
+			Bytes:      dataLen,
+			Packets:    1,
+			Protocol:   tl.LayerType().String(),
+		})
+	}
+
+	return
 }
 
 // writeIPProfile writes the ip profile.

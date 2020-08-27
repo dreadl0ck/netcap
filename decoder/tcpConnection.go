@@ -629,7 +629,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		streamFactory.Unlock()
 
 		sp := new(tcpStreamProcessor)
-		sp.initWorkers()
+		sp.initWorkers(conf.StreamBufferSize)
 		sp.numTotal = numTotal
 
 		// flush the remaining streams to disk
@@ -643,14 +643,14 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			fmt.Println()
 		}
 
+		fmt.Print("waiting for stream processor wait group... ")
+		sp.wg.Wait()
+		fmt.Println("done!")
+
 		// explicitly feed a nil stream to exit the goroutines used for processing
 		for _, w := range sp.workers {
 			w <- nil
 		}
-
-		fmt.Print("waiting for stream processor wait group... ")
-		sp.wg.Wait()
-		fmt.Println("done!")
 
 		// process UDP streams
 		if conf.SaveConns {
