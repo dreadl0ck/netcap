@@ -1007,10 +1007,10 @@ func (a *Assembler) FlushAll() (closed int) {
 			if !half.closed {
 				a.closeHalfConnection(conn, half)
 			}
-
-			bar.Increment()
 		}
 		conn.mu.Unlock()
+
+		bar.Increment()
 	}
 
 	bar.Finish()
