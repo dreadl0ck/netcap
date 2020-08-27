@@ -3,13 +3,13 @@ package transform
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
