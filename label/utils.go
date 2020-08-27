@@ -23,7 +23,7 @@ import (
 	"strings"
 	"sync"
 
-	"gopkg.in/cheggaaa/pb.v1"
+	"github.com/cheggaaa/pb"
 
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/utils"

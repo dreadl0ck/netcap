@@ -22,8 +22,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cheggaaa/pb"
 	"github.com/gogo/protobuf/proto"
-	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"

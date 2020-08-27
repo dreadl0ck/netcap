@@ -25,9 +25,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cheggaaa/pb"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/pkg/errors"
-	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/utils"

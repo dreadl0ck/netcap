@@ -28,9 +28,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cheggaaa/pb"
 	"github.com/evilsocket/islazy/tui"
 	gzip "github.com/klauspost/pgzip"
-	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
