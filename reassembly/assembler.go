@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 )
@@ -989,10 +990,12 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 // FlushAll flushes all remaining data into all remaining connections and closes
 // those connections. It returns the total number of connections flushed/closed
 // by the call.
-// TODO: progress reporting
 func (a *Assembler) FlushAll() (closed int) {
 	conns := a.connPool.connections()
 	closed = len(conns)
+
+	// create and start new bar
+	bar := pb.StartNew(closed)
 
 	for _, conn := range conns {
 		conn.mu.Lock()
@@ -1004,9 +1007,13 @@ func (a *Assembler) FlushAll() (closed int) {
 			if !half.closed {
 				a.closeHalfConnection(conn, half)
 			}
+
+			bar.Increment()
 		}
 		conn.mu.Unlock()
 	}
+
+	bar.Finish()
 
 	return
 }
