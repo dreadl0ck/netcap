@@ -30,7 +30,7 @@ import (
 type StreamPool struct {
 	conns              map[key]*connection
 	users              int
-	mu                 sync.Mutex
+	mu                 sync.RWMutex
 	factory            streamFactory
 	free               []*connection
 	all                [][]connection
@@ -95,14 +95,16 @@ func NewStreamPool(factory streamFactory) *StreamPool {
 }
 
 func (p *StreamPool) connections() []*connection {
-	p.mu.Lock()
+	p.mu.RLock()
+
+	// TODO: avoid this allocation?
 	conns := make([]*connection, 0, len(p.conns))
 
 	for _, conn := range p.conns {
 		conns = append(conns, conn)
 	}
 
-	p.mu.Unlock()
+	p.mu.RUnlock()
 
 	return conns
 }

@@ -299,6 +299,9 @@ commands:
     test:
         exec: go test ./...
 
+    test-race:
+        exec: GORACE="history_size=7" go test -race ./...
+
     test-verbose:
         exec: go test -v ./...
 

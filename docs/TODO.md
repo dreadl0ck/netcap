@@ -1,5 +1,14 @@
 # TODOs
 
+
+- improve port modeling:
+
+message Port {
+  uint64 numTCP = 1;
+  uint64 numUDP = 2;
+  uint64 numTotal = 3;
+}
+
 - count device and ip profiles on stats structure
 - simplify decoder creation
 
