@@ -611,7 +611,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		// must be done after waiting for connections or there might be data loss
 		for i, a := range assemblers {
 			utils.ClearLine()
-			fmt.Print("flushing tcp assembler", i+1, "/", len(assemblers))
+			fmt.Print("flushing tcp assembler ", i+1, "/", len(assemblers))
 			utils.ReassemblyLog.Printf("assembler flush: %d closed\n", a.FlushAll())
 		}
 

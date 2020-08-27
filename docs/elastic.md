@@ -145,3 +145,21 @@ Ingest data from PCAP directory:
     
     rm -rf snort.log.142* && rm -f screenlog.0
     screen -L time ./analyze.sh FIRST-2015_Hands-on_Network_Forensics_PCAP
+
+Increase Java heap size:
+    
+    # micro /etc/elasticsearch/jvm.options.d/elastic.options
+
+add limits:
+
+    -Xms12g
+    -Xmx12g
+
+restart elastic:
+
+    # chown elasticsearch /etc/elasticsearch/jvm.options.d/elastic.options
+    # systemctl restart elasticsearch.service
+    
+search screenlog for unique errors:
+    
+    grep "Error:" screenlog.0 | cut -d "]" -f 2 | sort | uniq

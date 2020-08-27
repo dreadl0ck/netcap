@@ -274,7 +274,7 @@ func initElasticBuffer(wc *WriterConfig, index string) bytes.Buffer {
 	timeField := "Timestamp"
 
 	switch wc.Name {
-	case "Connection", "Flow":
+	case "Connection", "Flow", "IPProfile":
 		timeField = "TimestampFirst"
 	}
 
@@ -523,9 +523,9 @@ var typeMapping = map[string]string{
 	"SrcPort":             "keyword",
 	"DstPort":             "keyword",
 	"Port":                "keyword",
+	"ID":                  "keyword",
 	"User":                "keyword",
 	"Pass":                "keyword",
-	"ID":                  "keyword",
 	"Protocol":            "keyword",
 	"Name":                "keyword",
 	"Product":             "keyword",
