@@ -16,25 +16,26 @@ func toApplicationsForCategory() {
 	maltego.IPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
-			if profile.MacAddr == mac {
+			if profile.MacAddr != mac {
+				return
+			}
 
-				if category == "" {
-					category = lt.Values["description"]
+			if category == "" {
+				category = lt.Values["description"]
+			}
+
+			for _, ip := range profile.Contacts {
+				if ip == ipaddr {
+					addApplicationForCategory(profiles, ip, category, trx)
+
+					break
 				}
+			}
+			for _, ip := range profile.DeviceIPs {
+				if ip == ipaddr {
+					addApplicationForCategory(profiles, ip, category, trx)
 
-				for _, ip := range profile.Contacts {
-					if ip == ipaddr {
-						addApplicationForCategory(profiles, ip, category, trx)
-
-						break
-					}
-				}
-				for _, ip := range profile.DeviceIPs {
-					if ip == ipaddr {
-						addApplicationForCategory(profiles, ip, category, trx)
-
-						break
-					}
+					break
 				}
 			}
 		},

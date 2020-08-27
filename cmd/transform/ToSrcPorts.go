@@ -23,22 +23,23 @@ func toSrcPorts() {
 	maltego.IPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
-			if profile.MacAddr == mac {
-				for _, ip := range profile.Contacts {
-					if ip == ipaddr {
-						if ipp, ok := profiles[ip]; ok {
-							for portNum, port := range ipp.SrcPorts {
-								addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp)
-							}
+			if profile.MacAddr != mac {
+				return
+			}
+			for _, ip := range profile.Contacts {
+				if ip == ipaddr {
+					if ipp, ok := profiles[ip]; ok {
+						for portNum, port := range ipp.SrcPorts {
+							addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp)
 						}
 					}
 				}
-				for _, ip := range profile.DeviceIPs {
-					if ip == ipaddr {
-						if ipp, ok := profiles[ip]; ok {
-							for portNum, port := range ipp.SrcPorts {
-								addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp)
-							}
+			}
+			for _, ip := range profile.DeviceIPs {
+				if ip == ipaddr {
+					if ipp, ok := profiles[ip]; ok {
+						for portNum, port := range ipp.SrcPorts {
+							addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp)
 						}
 					}
 				}

@@ -9,10 +9,11 @@ func toHTTPUserAgents() {
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
-			if http.SrcIP == ipaddr {
-				if http.UserAgent != "" {
-					trx.AddEntity("netcap.UserAgent", http.UserAgent)
-				}
+			if http.SrcIP != ipaddr {
+				return
+			}
+			if http.UserAgent != "" {
+				trx.AddEntity("netcap.UserAgent", http.UserAgent)
 			}
 		},
 		false,

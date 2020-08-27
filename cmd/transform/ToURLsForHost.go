@@ -15,20 +15,22 @@ func toURLsForHost() {
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
-			if http.SrcIP == ipaddr {
-				if http.URL != "" {
-					bareURL := http.Host + stripQueryString(http.URL)
-					log.Println(bareURL)
-
-					ent := trx.AddEntity("netcap.URL", bareURL)
-
-					// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
-					ent.AddProperty("properties.url", "URL", "strict", bareURL)
-
-					urlStats[bareURL]++
-					ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]) + "\n" + http.Method)
-				}
+			if http.SrcIP != ipaddr {
+				return
 			}
+			if http.URL == "" {
+				return
+			}
+			bareURL := http.Host + stripQueryString(http.URL)
+			log.Println(bareURL)
+
+			ent := trx.AddEntity("netcap.URL", bareURL)
+
+			// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
+			ent.AddProperty("properties.url", "URL", "strict", bareURL)
+
+			urlStats[bareURL]++
+			ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]) + "\n" + http.Method)
 		},
 		false,
 	)
