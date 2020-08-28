@@ -83,7 +83,7 @@ func (c *Collector) Init() (err error) {
 
 	// start workers
 	c.workers = c.initWorkers()
-	c.l.Error("spawned workers", zap.Int("total", c.config.Workers))
+	c.l.Info("spawned workers", zap.Int("total", c.config.Workers))
 
 	// create full output directory path if set
 	if c.config.DecoderConfig.Out != "" {
