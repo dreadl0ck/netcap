@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -61,7 +61,7 @@ func SaveFingerprintDB() {
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil {
-			logger2.DebugLog.Println(errClose)
+			l.Error("failed to close file handle:", zap.Error(errClose))
 		}
 	}()
 
@@ -70,7 +70,7 @@ func SaveFingerprintDB() {
 		log.Fatal(err)
 	}
 
-	logger2.DebugLog.Println("saved fingerprint db with", len(dhcpFingerprintDB), "items")
+	l.Info("saved fingerprint db", zap.Int("items", len(dhcpFingerprintDB)))
 }
 
 // Fingerbank.org API
@@ -187,7 +187,7 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*dhcpResult,
 	defer func() {
 		errClose := resp.Body.Close()
 		if errClose != nil {
-			logger2.DebugLog.Println("failed to close DHCP fingerprint API response body:", errClose)
+			l.Error("failed to close DHCP fingerprint API response body:", zap.Error(errClose))
 		}
 	}()
 
@@ -246,7 +246,7 @@ func InitDHCPFingerprintDB() {
 
 	if !quiet {
 		dhcpFingerprintMu.Lock()
-		logger2.DebugLog.Println("loaded", len(dhcpFingerprintDB), "DHCP fingerprints")
+		l.Info("loaded DHCP fingerprints", zap.Int("items", len(dhcpFingerprintDB)))
 		dhcpFingerprintMu.Unlock()
 	}
 }
@@ -286,7 +286,7 @@ func initDHCPFingerprintDBCSV() {
 	dhcpFingerprintMu.Unlock()
 
 	if !quiet {
-		logger2.DebugLog.Println("loaded", fingerprints, "DHCP fingerprints")
+		l.Info("loaded DHCP fingerprints", zap.Int("items", fingerprints))
 	}
 }
 

@@ -15,6 +15,7 @@ package decoder
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"path/filepath"
 	"sync"
 
@@ -64,7 +65,10 @@ type tcpConnectionFactory struct {
 // this is the entry point for new network streams
 // depending on the used ports, a dedicated stream reader instance will be started and subsequently fed with new data from the stream.
 func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reassembly.AssemblerContext) reassembly.Stream {
-	logReassemblyDebug("* NEW: %s %s\n", net, transport)
+	reassemblyLog.Debug("new stream",
+		zap.String("net", net.String()),
+		zap.String("transport", transport.String()),
+	)
 
 	str := &tcpConnection{
 		net:         net,
@@ -89,8 +93,11 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reasse
 	factory.wg.Add(2)
 
 	factory.Lock()
-	factory.streamReaders = append(factory.streamReaders, str.client)
-	factory.streamReaders = append(factory.streamReaders, str.client)
+	factory.streamReaders = append(
+		factory.streamReaders,
+		str.client,
+		str.server,
+	)
 	factory.numActive += 2
 	factory.Unlock()
 

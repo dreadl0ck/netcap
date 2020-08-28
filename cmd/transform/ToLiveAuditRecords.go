@@ -2,7 +2,6 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
 	"log"
 	"os"
 	"path/filepath"
@@ -37,12 +36,12 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		// stat generated profiles
 		stat, err := os.Stat(ident)
 		if err != nil {
-			logger.DebugLog.Println("invalid path: ", err)
+			log.Println("invalid path: ", err)
 
 			continue
 		}
 		if stat.IsDir() {
-			logger.DebugLog.Println("not a file: ", err)
+			log.Println("not a file: ", err)
 
 			continue
 		}
@@ -52,7 +51,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		// to avoid opening the file again
 		numRecords, errCount := io.Count(ident)
 		if errCount != nil {
-			logger.DebugLog.Println("failed to count audit records:", errCount)
+			log.Println("failed to count audit records:", errCount)
 
 			continue
 		}
@@ -76,7 +75,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 
 			num, errCountRecords := io.Count(ident)
 			if errCountRecords != nil {
-				logger.DebugLog.Println("failed to count audit records:", errCountRecords)
+				log.Println("failed to count audit records:", errCountRecords)
 			}
 
 			ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(num, 10) + "\nInterface: " + iface + "\nStart Time: " + start.String())

@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"path/filepath"
 	"sync"
@@ -250,8 +250,10 @@ func (t *tcpStreamReader) Run(f *tcpConnectionFactory) {
 				return
 			}
 
-			logger.ReassemblyLog.Println("TCP stream encountered an error", t.parent.ident, err)
-			fmt.Println("TCP stream encountered an error", t.parent.ident, err)
+			decoderLog.Error("TCP stream encountered an error",
+				zap.String("ident", t.parent.ident),
+				zap.Error(err),
+			)
 
 			// stop processing the stream and trigger cleanup
 			return
@@ -267,7 +269,7 @@ func (t *tcpStreamReader) readStream(b io.ByteReader) error {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return err
 		} else if err != nil {
-			logReassemblyError("readStream", "TCP/%s failed to read: %s (%v,%+v)\n", t.ident, err)
+			logReassemblyError("readStream", t.ident, err)
 
 			return err
 		}

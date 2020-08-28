@@ -18,7 +18,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"math"
 	"os"
 	"reflect"
@@ -252,32 +252,30 @@ func pad(in interface{}, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
 }
 
-func logReassemblyError(t string, s string, a ...interface{}) {
+func logReassemblyError(task string, msg string, err error) {
 	stats.Lock()
 	stats.numErrors++
 	stats.Unlock()
 
 	errorsMapMutex.Lock()
-	nb := errorsMap[t]
-	errorsMap[t] = nb + 1
+	nb := errorsMap[task]
+	errorsMap[task] = nb + 1
 	errorsMapMutex.Unlock()
 
-	if conf.Debug {
-		logger.ReassemblyLog.Printf("ERROR: "+s, a...)
-	}
+	reassemblyLog.Error(msg, zap.Error(err))
 }
 
-func logReassemblyInfo(s string, a ...interface{}) {
-	if conf.Debug {
-		logger.ReassemblyLog.Printf("INFO: "+s, a...)
-	}
-}
-
-func logReassemblyDebug(s string, a ...interface{}) {
-	if conf.Debug {
-		logger.ReassemblyLog.Printf("DEBUG: "+s, a...)
-	}
-}
+//func logReassemblyInfo(s string, a ...interface{}) {
+//	if conf.Debug {
+//		logger.ReassemblyLog.Printf("INFO: "+s, a...)
+//	}
+//}
+//
+//func logReassemblyDebug(s string, a ...interface{}) {
+//	if conf.Debug {
+//		logger.ReassemblyLog.Printf("DEBUG: "+s, a...)
+//	}
+//}
 
 // TODO: add to general utils? or make a cryptoutils sub pkg?
 //func loadRsaPrivKey(path string, rsaPrivateKeyPassword string) *rsa.PrivateKey {

@@ -16,7 +16,6 @@ package export
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"io/ioutil"
 	"log"
@@ -170,7 +169,7 @@ func firstTimestamp(path string) time.Time {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			logger.DebugLog.Println("failed to close file:", errClose)
+			log.Println("failed to close file:", errClose)
 		}
 	}()
 
@@ -218,7 +217,7 @@ func exportFile(path string) {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			logger.DebugLog.Println("failed to close file:", errClose)
+			log.Println("failed to close file:", errClose)
 		}
 	}()
 

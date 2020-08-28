@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"os"
 	"path"
@@ -122,7 +122,9 @@ func Dump(w *os.File, c DumpConfig) error {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			logger.DebugLog.Println("failed to close file:", errClose)
+			l.Info("failed to close file",
+				zap.Error(errClose),
+			)
 		}
 	}()
 

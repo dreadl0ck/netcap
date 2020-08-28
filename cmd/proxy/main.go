@@ -15,7 +15,6 @@ package proxy
 
 import (
 	"fmt"
-	logger2 "github.com/dreadl0ck/netcap/logger"
 	"log"
 	"net/http"
 	"net/url"
@@ -88,7 +87,7 @@ func Run() {
 	defer func() {
 		errClose := logger.Sync()
 		if errClose != nil {
-			logger2.DebugLog.Println("failed to sync logger:", errClose)
+			fmt.Println("failed to sync logger:", errClose)
 		}
 	}()
 

@@ -17,7 +17,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
@@ -146,7 +146,9 @@ func InitServiceDB() {
 				case r[2] == udp:
 					udpPortMap[index] = p
 				default:
-					logger2.DebugLog.Println("ignoring service probe:", r)
+					l.Warn("ignoring service probe",
+						zap.Strings("probe", r),
+					)
 				}
 			}
 		} else {
@@ -172,14 +174,16 @@ func InitServiceDB() {
 			case r[2] == udp:
 				udpPortMap[num] = p
 			default:
-				logger2.DebugLog.Println("ignoring service probe:", r)
+				l.Warn("ignoring service probe",
+					zap.Strings("probe", r),
+				)
 			}
 		}
 	}
 
 	if !quiet {
-		logger2.DebugLog.Println("loaded", len(tcpPortMap), "TCP service records")
-		logger2.DebugLog.Println("loaded", len(udpPortMap), "UDP service records")
+		l.Info("loaded TCP service records", zap.Int("total", len(tcpPortMap)))
+		l.Info("loaded UDP service records", zap.Int("total", len(udpPortMap)))
 	}
 }
 

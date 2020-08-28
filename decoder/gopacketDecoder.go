@@ -16,7 +16,7 @@ package decoder
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"log"
 	"strings"
 	"time"
@@ -217,7 +217,7 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 		decoders[e.Layer] = append(decoders[e.Layer], e)
 	}
 
-	logger.DebugLog.Println("initialized", len(decoders), "gopacket decoders")
+	decoderLog.Info("initialized gopacket decoders", zap.Int("total", len(decoders)))
 
 	return decoders, nil
 }

@@ -1,6 +1,6 @@
 # TODOs
 
-- file logger pkg
+- file logger pkg, refactor to use local loggers and use zap
 - add command to reset elastic indices and patterns 
 
 - automate creation of netcap-* index

@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -155,7 +155,10 @@ func (h *httpReader) Decode() {
 				}
 			}
 			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-				logger.DebugLog.Println("error reading HTTP", err, h.parent.ident)
+				decoderLog.Error("error reading HTTP",
+					zap.Error(err),
+					zap.String("ident", h.parent.ident),
+				)
 			}
 			buf.Reset()
 			previousDir = d.dir
@@ -414,14 +417,14 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
-		logReassemblyError("HTTP-response", "HTTP/%s Response error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+		logReassemblyError("HTTP-response", h.parent.ident, err)
 		return err
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	s := len(body)
 	if err != nil {
-		logReassemblyError("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.parent.ident, s, err)
+		logReassemblyError("HTTP-response-body", fmt.Sprintf("%s: failed to get body(parsed len:%d)", h.parent.ident, s), err)
 	} else {
 		_ = res.Body.Close()
 
@@ -444,7 +447,15 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	}
 
 	encoding := res.Header[headerContentEncoding]
-	logReassemblyInfo("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.parent.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
+	reassemblyLog.Debug("HTTP response",
+		zap.String("ident", h.parent.ident),
+		zap.String("Status", res.Status),
+		zap.Int64("ContentLength", res.ContentLength),
+		zap.String("sym", sym),
+		zap.Int("bodyLength", s),
+		zap.Strings("contentType", contentType),
+		zap.Strings("encoding", encoding),
+	)
 
 	// increment counter
 	stats.Lock()
@@ -699,7 +710,7 @@ func createContentTypePathIfRequired(fsPath string) {
 		// create path
 		err := os.MkdirAll(fsPath, defaults.DirectoryPermission)
 		if err != nil {
-			logReassemblyError("HTTP-create-path", "Cannot create folder %s: %s\n", fsPath, err)
+			logReassemblyError("HTTP-create-path", fmt.Sprintf("cannot create folder %s", fsPath), err)
 		}
 	}
 	// free lock again
@@ -771,11 +782,12 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		n++
 	}
 
-	logger.DebugLog.Println("saving file:", target)
+	decoderLog.Info("saving file", zap.String("target", target))
 
 	f, err := os.Create(target)
 	if err != nil {
-		logReassemblyError("HTTP-create", "Cannot create %s: %s\n", target, err)
+		logReassemblyError("HTTP-create", fmt.Sprintf("cannot create %s", target), err)
+
 		return err
 	}
 
@@ -800,21 +812,25 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		written, err = io.Copy(f, r)
 
 		if err != nil {
-			logReassemblyError("HTTP-save", "%s: failed to copy %s (l:%d): %s\n", h.parent.ident, target, written, err)
+			logReassemblyError("HTTP-save", fmt.Sprintf("%s: failed to copy %s (l:%d)", h.parent.ident, target, written), err)
 		}
 
 		if _, ok := r.(*gzip.Reader); ok {
 			err = r.(*gzip.Reader).Close()
 			if err != nil {
-				logReassemblyError("HTTP-save", "%s: failed to close gzip reader %s (l:%d): %s\n", h.parent.ident, target, written, err)
+				logReassemblyError("HTTP-save", fmt.Sprintf("%s: failed to close gzip reader %s (l:%d)", h.parent.ident, target, written), err)
 			}
 		}
 
 		err = f.Close()
 		if err != nil {
-			logReassemblyError("HTTP-save", "%s: failed to close %s (l:%d): %s\n", h.parent.ident, target, written, err)
+			logReassemblyError("HTTP-save", fmt.Sprintf("%s: failed to close %s (l:%d)", h.parent.ident, target, written), err)
 		} else {
-			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, written)
+			reassemblyLog.Debug("saved HTTP data",
+				zap.String("ident", h.parent.ident),
+				zap.String("target", target),
+				zap.Int64("written", written),
+			)
 		}
 
 		var data []byte
@@ -881,7 +897,7 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
-		logReassemblyError("HTTP-request", "HTTP/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+		logReassemblyError("HTTP-request", h.parent.ident, err)
 		return err
 	}
 
@@ -900,7 +916,12 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	//}
 
-	logReassemblyInfo("HTTP/%s Request: %s %s (body:%d)\n", h.parent.ident, req.Method, req.URL, s)
+	reassemblyLog.Debug("HTTP request",
+		zap.String("ident", h.parent.ident),
+		zap.String("method", req.Method),
+		zap.String("url", req.URL.String()),
+		zap.Int("bodyLength", s),
+	)
 
 	h.parent.Lock()
 	t := h.parent.firstPacket.UnixNano()
@@ -916,7 +937,7 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	// parse form values
 	err = req.ParseForm()
 	if err != nil {
-		logReassemblyError("HTTP-request", "HTTP/%s failed to parse form values: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+		logReassemblyError("HTTP-request", fmt.Sprintf("%s: failed to parse form values", h.parent.ident), err)
 	}
 
 	// increase counter

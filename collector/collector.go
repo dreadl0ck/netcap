@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
@@ -80,6 +80,8 @@ type Collector struct {
 	statMutex                sync.Mutex
 	shutdown                 bool
 	isLive                   bool
+	l                        *zap.Logger
+	loggers                  []*zap.Logger
 }
 
 // New returns a new Collector instance.
@@ -224,7 +226,7 @@ func (c *Collector) closeErrorLogFile() {
 
 	_, err := c.errorLogFile.WriteString(stats)
 	if err != nil {
-		logger.DebugLog.Println("failed to write stats into error log:", err)
+		c.l.Error("failed to write stats into error log", zap.Error(err))
 
 		return
 	}
@@ -232,7 +234,7 @@ func (c *Collector) closeErrorLogFile() {
 	// sync
 	err = c.errorLogFile.Sync()
 	if err != nil {
-		logger.DebugLog.Println("failed to sync error log:", err)
+		c.l.Error("failed to sync error log", zap.Error(err))
 
 		return
 	}
@@ -240,7 +242,7 @@ func (c *Collector) closeErrorLogFile() {
 	// close file handle
 	err = c.errorLogFile.Close()
 	if err != nil {
-		logger.DebugLog.Println("failed to close error log:", err)
+		c.l.Error("failed to close error log", zap.Error(err))
 
 		return
 	}

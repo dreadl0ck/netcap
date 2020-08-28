@@ -14,7 +14,6 @@
 package decoder
 
 import (
-	"github.com/dreadl0ck/netcap/logger"
 	"sync"
 	"time"
 
@@ -34,10 +33,7 @@ func SetConfig(cfg *Config) {
 		SupportMissingEstablishment: conf.AllowMissingInit,
 	}
 
-	// setup loggers
 	if conf.Debug {
-		logger.InitLoggers(conf.Out)
-
 		pop3Debug = true
 	}
 }

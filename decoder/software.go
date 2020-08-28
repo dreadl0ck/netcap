@@ -16,7 +16,7 @@ package decoder
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -314,15 +314,17 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
-	if len(h.UserAgent) != 0 && h.UserAgent != " " {
+	if h.UserAgent != "" && h.UserAgent != " " {
 
 		pMu.Lock()
+
 		userInfo, ok := userAgentCaching[h.UserAgent]
 		if !ok {
 			userInfo = parseUserAgent(h.UserAgent)
 			userAgentCaching[h.UserAgent] = userInfo
-			logger.DebugLog.Println("UserAgent:", userInfo.full)
+			decoderLog.Debug("UserAgent:", zap.String("userInfo", userInfo.full))
 		}
+
 		pMu.Unlock()
 
 		s = append(s, &software{
@@ -633,7 +635,7 @@ var softwareDecoder = newCustomDecoder(
 			hashDBMap[v.Hash] = v.Software
 		}
 
-		logger.DebugLog.Println("loaded", len(hashDBMap), "different HASSH digests")
+		decoderLog.Info("loaded HASSH digests", zap.Int("total", len(hashDBMap)))
 
 		data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/cmsdb.json")
 		if err != nil {
@@ -656,7 +658,7 @@ var softwareDecoder = newCustomDecoder(
 			return err
 		}
 
-		logger.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
+		decoderLog.Info("loaded Ja3/ja3S database", zap.Int("total_records", len(ja3db.Servers)))
 
 		return nil
 	},
@@ -672,12 +674,12 @@ var softwareDecoder = newCustomDecoder(
 		for ip, ua := range httpStore.UserAgents {
 			rows = append(rows, []string{ip, ua})
 		}
-		tui.Table(logger.DebugLogFileHandle, []string{"IP", "UserAgents"}, rows)
+		tui.Table(decoderLogFileHandle, []string{"IP", "UserAgents"}, rows)
 		rows = [][]string{}
 		for ip, sn := range httpStore.ServerNames {
 			rows = append(rows, []string{ip, sn})
 		}
-		tui.Table(logger.DebugLogFileHandle, []string{"IP", "ServerNames"}, rows)
+		tui.Table(decoderLogFileHandle, []string{"IP", "ServerNames"}, rows)
 		httpStore.Unlock()
 
 		// teardown DPI C libs

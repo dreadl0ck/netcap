@@ -15,7 +15,7 @@ package resolvers
 
 import (
 	"bytes"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -52,7 +52,7 @@ func InitDNSWhitelist() {
 	}
 
 	if !quiet {
-		logger2.DebugLog.Println("loaded", hosts, "whitelisted DNS hosts")
+		l.Info("loaded whitelisted DNS hosts", zap.Int("numHosts", hosts))
 	}
 }
 

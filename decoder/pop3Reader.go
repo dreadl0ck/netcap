@@ -20,7 +20,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"github.com/dreadl0ck/netcap/logger"
+	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/http"
@@ -234,7 +235,10 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	// make sure root path exists
 	err = os.MkdirAll(root, defaults.DirectoryPermission)
 	if err != nil {
-		logger.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
+		decoderLog.Error("failed to create directory",
+			zap.String("path", root),
+			zap.Int("perm", defaults.DirectoryPermission),
+		)
 	}
 
 	base = path.Join(root, base)
@@ -271,7 +275,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 	f, err := os.Create(target)
 	if err != nil {
-		logReassemblyError("POP3-create", "Cannot create %s: %s\n", target, err)
+		logReassemblyError("POP3-create", fmt.Sprintf("cannot create %s", target), err)
 
 		return err
 	}
@@ -291,21 +295,25 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	if err == nil {
 		w, errCopy := io.Copy(f, r)
 		if errCopy != nil {
-			logReassemblyError(opPop3Save, "%s: failed to save %s (l:%d): %s\n", h.parent.ident, target, w, errCopy)
+			logReassemblyError(opPop3Save, fmt.Sprintf("%s: failed to save %s (l:%d)", h.parent.ident, target, w), errCopy)
 		} else {
-			logReassemblyInfo("%s: Saved %s (l:%d)\n", h.parent.ident, target, w)
+			reassemblyLog.Debug("saved POP3 data",
+				zap.String("ident", h.parent.ident),
+				zap.String("target", target),
+				zap.Int64("written", w),
+			)
 		}
 
 		if _, ok := r.(*gzip.Reader); ok {
 			errClose := r.(*gzip.Reader).Close()
 			if errClose != nil {
-				logReassemblyError(opPop3Save, "%s: failed to close gzip reader %s (l:%d): %s\n", h.parent.ident, target, w, errClose)
+				logReassemblyError(opPop3Save, fmt.Sprintf("%s: failed to close gzip reader %s (l:%d)", h.parent.ident, target, w), errClose)
 			}
 		}
 
 		errClose := f.Close()
 		if errClose != nil {
-			logReassemblyError(opPop3Save, "%s: failed to close file handle %s (l:%d): %s\n", h.parent.ident, target, w, errClose)
+			logReassemblyError(opPop3Save, fmt.Sprintf("%s: failed to close file handle %s (l:%d)", h.parent.ident, target, w), errClose)
 		}
 	}
 
@@ -330,7 +338,8 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 func mailDebug(args ...interface{}) {
 	if pop3Debug {
-		logger.DebugLog.Println(args...)
+		// TODO: dedicated zap logger for POP3
+		fmt.Println(args...)
 	}
 }
 
@@ -342,7 +351,10 @@ func (h *pop3Reader) readRequest(b *bufio.Reader) error {
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
-		logger.DebugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+		decoderLog.Error("POP3 Request error",
+			zap.String("ident", h.parent.ident),
+			zap.Error(err),
+		)
 
 		return err
 	}
@@ -373,7 +385,7 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
-		logReassemblyError("POP3-response", "POP3/%s Response error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+		logReassemblyError("POP3-response", h.parent.ident, err)
 
 		return err
 	}
@@ -661,7 +673,7 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 
 	ts, err := dateparse.ParseAny(header["Delivery-Date"])
 	if err != nil {
-		logger.DebugLog.Println("failed to parse delivery date string from mail header:", err)
+		decoderLog.Error("failed to parse delivery date string from mail header", zap.Error(err))
 	} else {
 		ti = ts.UnixNano()
 	}

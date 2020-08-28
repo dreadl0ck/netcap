@@ -48,7 +48,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -168,7 +168,7 @@ type tcpConnection struct {
 func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection, nextSeq reassembly.Sequence) bool {
 	// Finite State Machine
 	if !t.tcpstate.CheckState(tcp, dir) {
-		logReassemblyError("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
+		logReassemblyError("FSM", fmt.Sprintf("%s: Packet rejected by FSM (state:%s)", t.ident, t.tcpstate.String()), nil)
 		stats.Lock()
 		stats.rejectFsm++
 
@@ -186,7 +186,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 	// TCP Options
 	err := t.optchecker.Accept(tcp, dir, nextSeq)
 	if err != nil {
-		logReassemblyError("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
+		logReassemblyError("OptionChecker", fmt.Sprintf("%s: packet rejected by OptionChecker", t.ident), err)
 		stats.Lock()
 		stats.rejectOpt++
 		stats.Unlock()
@@ -202,11 +202,11 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 	if conf.Checksum {
 		chk, errChk := tcp.ComputeChecksum()
 		if errChk != nil {
-			logReassemblyError("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, errChk)
+			logReassemblyError("ChecksumCompute", fmt.Sprintf("%s: error computing checksum", t.ident), errChk)
 
 			accept = false
 		} else if chk != 0x0 {
-			logReassemblyError("Checksum", "%s: Invalid checksum: 0x%x\n", t.ident, chk)
+			logReassemblyError("Checksum", fmt.Sprintf("%s: invalid checksum: 0x%x", t.ident, chk), nil)
 
 			accept = false
 		}
@@ -247,7 +247,10 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 	}
 
 	if sgStats.OverlapBytes != 0 && sgStats.OverlapPackets == 0 {
-		logger.ReassemblyLog.Println("reassembledSG: invalid overlap, bytes:", sgStats.OverlapBytes, "packets:", sgStats.OverlapPackets)
+		decoderLog.Warn("reassembledSG: invalid overlap",
+			zap.Int("bytes", sgStats.OverlapBytes),
+			zap.Int("packets", sgStats.OverlapPackets),
+		)
 	}
 
 	stats.overlapBytes += int64(sgStats.OverlapBytes)
@@ -261,7 +264,18 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 		ident = fmt.Sprintf("%v %v(%s): ", t.net.Reverse(), t.transport.Reverse(), dir)
 	}
 
-	logReassemblyDebug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
+	reassemblyLog.Debug("SG reassembled packet",
+		zap.String("ident", ident),
+		zap.Int("length", length),
+		zap.Bool("start", start),
+		zap.Bool("end", end),
+		zap.Int("skip", skip),
+		zap.Int("saved", saved),
+		zap.Int("packets", sgStats.Packets),
+		zap.Int("chunks", sgStats.Chunks),
+		zap.Int("overlapBytes", sgStats.OverlapBytes),
+		zap.Int("overlapPackets", sgStats.OverlapPackets),
+	)
 }
 
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
@@ -356,7 +370,9 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 
 	if length > 0 {
 		if conf.HexDump {
-			logReassemblyDebug("feeding stream reader with:\n%s", hex.Dump(data))
+			reassemblyLog.Debug("feeding stream reader",
+				zap.String("data", hex.Dump(data)),
+			)
 		}
 
 		t.feedData(dir, data, ac)
@@ -407,7 +423,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		}
 	}
 
-	logger.DebugLog.Println("ReassemblyComplete", t.ident)
+	decoderLog.Info("ReassemblyComplete", zap.String("ident", t.ident))
 
 	// save data for the current stream
 	if t.client != nil {
@@ -466,7 +482,9 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		t.decoder.Decode()
 	}
 
-	logReassemblyDebug("%s: stream closed\n", t.ident)
+	reassemblyLog.Debug("stream closed",
+		zap.String("ident", t.ident),
+	)
 
 	// do not remove the connection to allow last ACK
 	return false
@@ -505,7 +523,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		if err != nil {
 			log.Fatalln("error while de-fragmenting", err)
 		} else if newip4 == nil {
-			logReassemblyDebug("fragment received...\n")
+			reassemblyLog.Debug("fragment received...")
 
 			return
 		}
@@ -513,7 +531,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		if newip4.Length != l {
 			stats.ipdefrag++
 
-			logReassemblyDebug("decoding re-assembled packet: %s\n", newip4.NextLayerType())
+			reassemblyLog.Debug("decoding re-assembled packet", zap.String("layer", newip4.NextLayerType().String()))
 
 			pb, ok := packet.(gopacket.PacketBuilder)
 			if !ok {
@@ -556,7 +574,11 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		if doFlush {
 			ref := packet.Metadata().CaptureInfo.Timestamp
 			flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-conf.ClosePendingTimeOut), TC: ref.Add(-conf.CloseInactiveTimeOut)})
-			logger.DebugLog.Printf("Forced flush: %d flushed, %d closed (%s)\n", flushed, closed, ref)
+			decoderLog.Info("forced flush",
+				zap.Int("flushed", flushed),
+				zap.Int("closed", closed),
+				zap.Time("ref", ref),
+			)
 		}
 	}
 }
@@ -588,8 +610,8 @@ func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	conf.Lock()
 	if conf.Debug {
-		logger.ReassemblyLog.Println("streamPool:")
-		logger.ReassemblyLog.Println(streamFactory.StreamPool.DumpString())
+		decoderLog.Info("streamPool:")
+		decoderLog.Info(streamFactory.StreamPool.DumpString())
 	}
 	conf.Unlock()
 
@@ -618,7 +640,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		for i, a := range assemblers {
 			utils.ClearLine()
 			fmt.Print("flushing tcp assembler ", i+1, "/", len(assemblers))
-			logger.ReassemblyLog.Printf("assembler flush: %d closed\n", a.FlushAll())
+			decoderLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
 		}
 
 		if !conf.Quiet {
@@ -679,13 +701,21 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	if !conf.Quiet {
 		errorsMapMutex.Lock()
 		stats.Lock()
-		logger.ReassemblyLog.Printf("HTTPDecoder: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", stats.count, stats.dataBytes, time.Since(start), stats.numErrors, len(errorsMap))
+		decoderLog.Info("HTTPDecoder stats: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)",
+			zap.Int64("packets", stats.count),
+			zap.Int64("bytes", stats.dataBytes),
+			zap.Duration("duration", time.Since(start)),
+			zap.Uint("numErrors", stats.numErrors),
+			zap.Int("len(errorsMap)", len(errorsMap)),
+			zap.Int64("requests", stats.requests),
+			zap.Int64("responses", stats.responses),
+		)
 		stats.Unlock()
 		errorsMapMutex.Unlock()
 
 		// print configuration
 		// print configuration as table
-		tui.Table(logger.ReassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
+		tui.Table(reassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
 			{"FlushEvery", strconv.Itoa(conf.FlushEvery)},
 			{"CloseInactiveTimeout", conf.CloseInactiveTimeOut.String()},
 			{"ClosePendingTimeout", conf.ClosePendingTimeOut.String()},
@@ -728,7 +758,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		)
 		stats.Unlock()
 
-		tui.Table(logger.ReassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
+		tui.Table(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
 
 		errorsMapMutex.Lock()
 		stats.Lock()
@@ -738,10 +768,9 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
 			}
 
-			tui.Table(logger.ReassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
+			tui.Table(reassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
 		}
 
-		logger.ReassemblyLog.Println("\nencountered", stats.numErrors, "errors during processing.", "HTTP requests", stats.requests, " responses", stats.responses)
 		stats.Unlock()
 		errorsMapMutex.Unlock()
 	}
