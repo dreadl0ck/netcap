@@ -15,7 +15,7 @@ package resolvers
 
 import (
 	"context"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"log"
 	"net"
 	"sync"
@@ -99,7 +99,7 @@ func LookupDNSNames(ip string) []string {
 
 	names, err := r.LookupAddr(ctx, ip)
 	if err != nil {
-		logger2.DebugLog.Println("net.LookupAddr failed:", err)
+		l.Error("net.LookupAddr failed:", zap.Error(err))
 	} // failed values are added to the DB as well so we don't try to resolve them again
 
 	// add to DB

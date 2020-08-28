@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,11 +28,62 @@ var errAborted = errors.New("operation aborted by user")
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
+
 	decoder.SetConfig(c.config.DecoderConfig)
+
+	// Logging ------------------------ //
+
+	// setup logger for collector
+	c.l, _, err = logger.InitZapLogger(c.config.DecoderConfig.Out, "collector")
+	if err != nil {
+		return err
+	}
+
+	// setup logger for resolvers
+	lResolvers, _, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "resolvers")
+	if err != nil {
+		return err
+	}
+
+	resolvers.SetLogger(lResolvers)
+
+	// setup logger for io
+	lIO, _, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "io")
+	if err != nil {
+		return err
+	}
+
+	io.SetLogger(lIO)
+
+	// setup logger for decoders
+	lDecoder, decoderLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "decoder")
+	if err != nil {
+		return err
+	}
+
+	decoder.SetDecoderLogger(lDecoder, decoderLogFile)
+
+	// setup logger for reassembly
+	lReassembly, reassemblyLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "reassembly")
+	if err != nil {
+		return err
+	}
+
+	decoder.SetReassemblyLogger(lReassembly, reassemblyLogFile)
+
+	c.loggers = append(c.loggers,
+		c.l,
+		lResolvers,
+		lIO,
+		lDecoder,
+		lReassembly,
+	)
+
+	// Logging ------------------------ //
 
 	// start workers
 	c.workers = c.initWorkers()
-	logger.DebugLog.Println("spawned", c.config.Workers, "workers")
+	c.l.Error("spawned workers", zap.Int("total", c.config.Workers))
 
 	// create full output directory path if set
 	if c.config.DecoderConfig.Out != "" {

@@ -17,7 +17,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"log"
@@ -89,7 +89,7 @@ func initJa3Resolver() {
 		}
 	}
 
-	logger2.DebugLog.Println("loaded a total of", len(ja3DB), "JA3 summaries")
+	l.Info("loaded JA3 summaries", zap.Int("total", len(ja3DB)))
 }
 
 /*
@@ -141,7 +141,11 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 	}
 
 	if !quiet {
-		logger2.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		l.Info("updated JA3 summaries",
+			zap.String("source", f.Name()),
+			zap.Int("new", sums),
+			zap.Int("updated", updated),
+		)
 	}
 }
 
@@ -164,7 +168,11 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 	}
 
 	if !quiet {
-		logger2.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		l.Info("updated JA3 summaries",
+			zap.String("source", f.Name()),
+			zap.Int("new", sums),
+			zap.Int("updated", updated),
+		)
 	}
 }
 
@@ -195,6 +203,10 @@ func parseSummaries(data []byte, f os.FileInfo) {
 		addToJa3DB(sum, &updated, &sums)
 	}
 	if !quiet {
-		logger2.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		l.Info("updated JA3 summaries",
+			zap.String("source", f.Name()),
+			zap.Int("new", sums),
+			zap.Int("updated", updated),
+		)
 	}
 }

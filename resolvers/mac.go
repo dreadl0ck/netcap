@@ -17,7 +17,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"log"
@@ -75,7 +75,9 @@ func initMACResolver() {
 		sums++
 	}
 	if !quiet {
-		logger2.DebugLog.Println("loaded", sums, "OUI summaries")
+		l.Info("loaded OUI summaries",
+			zap.Int("total", sums),
+		)
 	}
 }
 

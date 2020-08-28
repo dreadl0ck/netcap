@@ -15,7 +15,7 @@ package decoder
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"log"
 	"strings"
 	"sync/atomic"
@@ -286,7 +286,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 		useHarvesters = true
 	}
 
-	logger.DebugLog.Println("initialized", len(decoders), "custom decoders")
+	decoderLog.Info("initialized custom decoders", zap.Int("total", len(decoders)))
 
 	return decoders, nil
 }

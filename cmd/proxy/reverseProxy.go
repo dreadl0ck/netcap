@@ -15,7 +15,7 @@ package proxy
 
 import (
 	"crypto/tls"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -127,7 +127,7 @@ func newReverseProxy(proxyName string, targetURL *url.URL) *reverseProxy {
 
 	err := proxy.writer.WriteHeader(types.Type_NC_HTTP)
 	if err != nil {
-		logger2.DebugLog.Println("failed to write file header:", err)
+		fmt.Println("failed to write file header:", err)
 	}
 
 	return proxy

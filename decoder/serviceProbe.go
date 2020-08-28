@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -311,13 +311,14 @@ func initServiceProbes() error {
 			ident := strings.Fields(line)[1]
 			if conf.UseRE2 {
 				if _, ok := ignoredProbesRE2[ident]; ok {
-					logger.DebugLog.Println("ignoring probe", ident)
+					decoderLog.Debug("ignoring probe", zap.String("ident", ident))
 
 					continue
 				}
 			} else {
 				if _, ok := ignoredProbes[ident]; ok {
-					logger.DebugLog.Println("ignoring probe", ident)
+					decoderLog.Debug("ignoring probe", zap.String("ident", ident))
+
 					continue
 				}
 			}
@@ -417,7 +418,10 @@ func initServiceProbes() error {
 
 								i, err = cpe.NewItemFromUri(buf.String())
 								if err != nil {
-									logger.DebugLog.Println("error while parsing cpe tag for service probe:", err, "probe:", s.Ident)
+									decoderLog.Error("error while parsing cpe tag for service probe",
+										zap.Error(err),
+										zap.String("probe", s.Ident),
+									)
 
 									goto next
 								}
@@ -537,7 +541,7 @@ func initServiceProbes() error {
 		}
 	}
 
-	logger.DebugLog.Println("loaded", len(serviceProbes), "nmap service probes")
+	decoderLog.Info("loaded nmap service probes", zap.Int("total", len(serviceProbes)))
 
 	return nil
 }

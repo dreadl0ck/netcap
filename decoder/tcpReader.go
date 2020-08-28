@@ -16,7 +16,7 @@ package decoder
 import (
 	"bytes"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 	"os"
 	"path"
@@ -186,12 +186,15 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	// make sure root path exists
 	err := os.MkdirAll(root, defaults.DirectoryPermission)
 	if err != nil {
-		logger.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
+		decoderLog.Warn("failed to create directory",
+			zap.String("path", root),
+			zap.Int("perm", defaults.DirectoryPermission),
+		)
 	}
 
 	base = path.Join(root, base)
 
-	logger.ReassemblyLog.Println("saveConnection", base)
+	decoderLog.Info("saveConnection", zap.String("base", base))
 
 	stats.Lock()
 	stats.savedTCPConnections++
@@ -200,7 +203,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	// append to files
 	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaults.FilePermission)
 	if err != nil {
-		logReassemblyError("TCP connection create", "Cannot create %s: %s\n", base, err)
+		logReassemblyError("TCP connection create", fmt.Sprintf("failed to create %s", base), err)
 
 		return err
 	}
@@ -216,22 +219,26 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 
 	w, err := io.Copy(f, r)
 	if err != nil {
-		logReassemblyError("TCP stream", "%s: failed to save TCP connection %s (l:%d): %s\n", ident, base, w, err)
+		logReassemblyError("TCP stream", fmt.Sprintf("%s: failed to save TCP connection %s (l:%d)", ident, base, w), err)
 	} else {
-		logReassemblyInfo("%s: Saved TCP connection %s (l:%d)\n", ident, base, w)
+		reassemblyLog.Info("saved TCP connection",
+			zap.String("ident", ident),
+			zap.String("base", base),
+			zap.Int64("bytesWritten", w),
+		)
 	}
 
 	err = f.Close()
 	if err != nil {
-		logReassemblyError("TCP connection", "%s: failed to close TCP connection file %s (l:%d): %s\n", ident, base, w, err)
+		logReassemblyError("TCP connection", fmt.Sprintf("%s: failed to close TCP connection file %s (l:%d)", ident, base, w), err)
 	}
 
 	return nil
 }
 
 //goland:noinspection GoUnusedFunction
-func tcpDebug(args ...interface{}) {
-	if conf.TCPDebug {
-		logger.DebugLog.Println(args...)
-	}
-}
+//func tcpDebug(args ...interface{}) {
+//	if conf.TCPDebug {
+//		logger.DebugLog.Println(args...)
+//	}
+//}

@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -474,7 +474,10 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 		// close the response body, to prevent reaching the limit for goroutines or file handles
 		_ = res.Body.Close()
 
-		logger.DebugLog.Println("sent", w.processed, w.wc.Name, "audit records to elastic")
+		l.Info("sent audit records to elastic",
+			zap.Int("total", w.processed),
+			zap.String("type", w.wc.Name),
+		)
 		w.buf.Reset()
 
 		// exit loop on success

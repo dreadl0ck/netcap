@@ -15,7 +15,7 @@ package resolvers
 
 import (
 	"bytes"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net"
@@ -55,7 +55,9 @@ func InitLocalDNS() {
 	}
 
 	if !quiet {
-		logger2.DebugLog.Println("loaded", hosts, "local DNS hosts")
+		l.Info("loaded local DNS hosts",
+			zap.Int("numHosts", hosts),
+		)
 	}
 }
 

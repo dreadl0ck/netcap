@@ -15,7 +15,7 @@ package resolvers
 
 import (
 	"bytes"
-	logger2 "github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -53,7 +53,7 @@ func initIPWhitelist() {
 	}
 
 	if !quiet {
-		logger2.DebugLog.Println("loaded", hosts, "whitelisted IP hosts")
+		l.Info("loaded whitelisted IP hosts", zap.Int("numHosts", hosts))
 	}
 }
 

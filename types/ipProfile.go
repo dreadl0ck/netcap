@@ -25,7 +25,7 @@ var fieldsIPProfile = []string{
 	"Applications",   // []string
 	//"Ja3",            // map[string]string
 	//"Protocols",      // map[string]*Protocol
-	"Bytes",          // uint64
+	"Bytes", // uint64
 	//"DstPorts",       // map[string]*Port
 	//"SrcPorts",       // map[string]*Port
 	//"SNIs",           // map[string]int64

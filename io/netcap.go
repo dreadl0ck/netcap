@@ -15,7 +15,7 @@ package io
 
 import (
 	"errors"
-	"github.com/dreadl0ck/netcap/logger"
+	"go.uber.org/zap"
 	"io"
 
 	"github.com/gogo/protobuf/proto"
@@ -191,7 +191,9 @@ func Count(filename string) (count int64, err error) {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			logger.DebugLog.Println("failed to close file:", errClose)
+			l.Info("failed to close file",
+				zap.Error(errClose),
+			)
 		}
 	}()
 

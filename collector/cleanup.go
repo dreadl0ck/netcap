@@ -15,7 +15,6 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/logger"
 	"log"
 	"time"
 
@@ -86,9 +85,12 @@ func (c *Collector) cleanup(force bool) {
 
 	resolvers.SaveFingerprintDB()
 
-	// close the encoder logs
-	for _, e := range logger.CloseLogFiles() {
-		fmt.Println("failed to close logfile handle:", e)
+	// sync the logs
+	for _, l := range c.loggers {
+		err := l.Sync()
+		if err != nil {
+			fmt.Println("failed to close logfile handle:", err)
+		}
 	}
 
 	c.mu.Lock()
