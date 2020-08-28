@@ -341,14 +341,15 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 	}
 
 	// HTTP Server Name
-	if len(h.ServerName) != 0 && h.ServerName != " " {
+	if h.ServerName != "" && h.ServerName != " " {
 		values := regExpServerName.FindStringSubmatch(h.ServerName)
+
 		s = append(s, &software{
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
-				Product:   values[1],                // Name of the server (Apache, Nginx, ...)
-				Notes:     "Maybe OS: " + values[3], // potentially operating system
-				Version:   values[2],                // Version as found after the '/'
+				Product:   values[1], // Name of the server (Apache, Nginx, ...)
+				Notes:     values[3], // potentially operating system
+				Version:   values[2], // Version as found after the '/'
 				// DeviceProfiles: []string{dpIdent},
 				SourceName: "ServerName",
 				SourceData: h.ServerName,
@@ -360,8 +361,9 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 
 	// X-Powered-By HTTP Header
 	if poweredBy, ok := h.ResponseHeader["X-Powered-By"]; ok {
-		if len(poweredBy) != 0 && poweredBy != " " {
+		if poweredBy != "" && poweredBy != " " {
 			values := regexpXPoweredBy.FindStringSubmatch(poweredBy)
+
 			s = append(s, &software{
 				Software: &types.Software{
 					Timestamp: h.Timestamp,

@@ -172,6 +172,11 @@ func readParameters(h url.Values) map[string]string {
 	m := make(map[string]string)
 	for k, vals := range h {
 
+		// ignore empty params with empty name, they will cause an error in elastic
+		if k == " " {
+			continue
+		}
+
 		// TODO: cleanup this hack to prevent param values with dots breaking the dynamic type mapping of kibana
 		v := strings.Join(vals, " ")
 		if strings.HasPrefix(v, ".") || strings.HasSuffix(v, ".") {

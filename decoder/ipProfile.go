@@ -92,7 +92,7 @@ var ipProfileDecoder = newCustomDecoder(
 )
 
 // GetIPProfile fetches a known profile and updates it or returns a new one.
-func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
+func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 	if ipAddr == "" {
 		return nil
 	}
@@ -110,7 +110,7 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 		p.Bytes += dataLen
 
 		// Transport Layer
-		updatePorts(i, p)
+		updatePorts(i, p, source)
 
 		// Session Layer: TLS
 		ch := tlsx.GetClientHelloBasic(i.p)
@@ -219,61 +219,71 @@ func getIPProfile(ipAddr string, i *packetInfo) *ipProfile {
 	return p
 }
 
-func updatePorts(i *packetInfo, p *ipProfile) {
+func updatePorts(i *packetInfo, p *ipProfile, source bool) {
 	if tl := i.p.TransportLayer(); tl != nil {
 		var (
 			// get packet size
 			dataLen   = uint64(len(i.p.Data()))
 			srcPort   = int32(binary.BigEndian.Uint16(tl.TransportFlow().Src().Raw()))
 			dstPort   = int32(binary.BigEndian.Uint16(tl.TransportFlow().Dst().Raw()))
-			found     bool
 			layerType = tl.LayerType().String()
 		)
 
-		// source port
-		for _, port := range p.SrcPorts {
-			if port.PortNumber == srcPort && port.Protocol == layerType {
-				atomic.AddUint64(&port.Bytes, dataLen)
-				atomic.AddUint64(&port.Packets, 1)
-
-				found = true
-
-				break
-			}
+		// check if the passed in ip profile is the source address for the current packet
+		if source {
+			doPortUpdate(p, srcPort, dstPort, layerType, dataLen)
+		} else {
+			doPortUpdate(p, dstPort, srcPort, layerType, dataLen)
 		}
+	}
+}
 
-		if !found {
-			p.SrcPorts = append(p.SrcPorts, &types.Port{
-				PortNumber: srcPort,
-				Bytes:      dataLen,
-				Packets:    1,
-				Protocol:   layerType,
-			})
+func doPortUpdate(p *ipProfile, srcPort, dstPort int32, layerType string, dataLen uint64) {
+	var found bool
+
+	// source port
+	for _, port := range p.SrcPorts {
+		if port.PortNumber == srcPort && port.Protocol == layerType {
+			atomic.AddUint64(&port.Bytes, dataLen)
+			atomic.AddUint64(&port.Packets, 1)
+
+			found = true
+
+			break
 		}
+	}
 
-		// reset
-		found = false
+	if !found {
+		p.SrcPorts = append(p.SrcPorts, &types.Port{
+			PortNumber: srcPort,
+			Bytes:      dataLen,
+			Packets:    1,
+			Protocol:   layerType,
+		})
+	}
 
-		// destination port
-		for _, port := range p.DstPorts {
-			if port.PortNumber == dstPort && port.Protocol == layerType {
-				atomic.AddUint64(&port.Bytes, dataLen)
-				atomic.AddUint64(&port.Packets, 1)
+	// reset
+	found = false
 
-				found = true
+	// destination port
+	for _, port := range p.DstPorts {
+		if port.PortNumber == dstPort && port.Protocol == layerType {
+			atomic.AddUint64(&port.Bytes, dataLen)
+			atomic.AddUint64(&port.Packets, 1)
 
-				break
-			}
+			found = true
+
+			break
 		}
+	}
 
-		if !found {
-			p.DstPorts = append(p.DstPorts, &types.Port{
-				PortNumber: dstPort,
-				Bytes:      dataLen,
-				Packets:    1,
-				Protocol:   layerType,
-			})
-		}
+	if !found {
+		p.DstPorts = append(p.DstPorts, &types.Port{
+			PortNumber: dstPort,
+			Bytes:      dataLen,
+			Packets:    1,
+			Protocol:   layerType,
+		})
 	}
 }
 

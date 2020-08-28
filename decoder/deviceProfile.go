@@ -97,12 +97,12 @@ func updateDeviceProfile(i *packetInfo) {
 // newDeviceProfile creates a new device specific profile.
 func newDeviceProfile(i *packetInfo) *deviceProfile {
 	var contacts []string
-	if ip := getIPProfile(i.dstIP, i); ip != nil {
+	if ip := getIPProfile(i.dstIP, i, false); ip != nil {
 		contacts = append(contacts, ip.IPProfile.Addr)
 	}
 
 	var devices []string
-	if ip := getIPProfile(i.srcIP, i); ip != nil {
+	if ip := getIPProfile(i.srcIP, i, true); ip != nil {
 		devices = append(devices, ip.IPProfile.Addr)
 	}
 
@@ -128,14 +128,14 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
 	for _, addr := range p.DeviceIPs {
 		if addr == i.srcIP {
 			// update existing ip profile
-			_ = getIPProfile(i.srcIP, i).IPProfile
+			_ = getIPProfile(i.srcIP, i, true).IPProfile
 			found = true
 		}
 	}
 
 	// if no existing one has been updated, its a new one
 	if !found {
-		ip := getIPProfile(i.srcIP, i)
+		ip := getIPProfile(i.srcIP, i, true)
 		// if the packet has no network layer we wont get an IP here
 		// prevent adding a nil pointer to the array
 		if ip != nil {
@@ -149,14 +149,14 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
 	for _, addr := range p.Contacts {
 		if addr == i.dstIP {
 			// update existing ip profile
-			_ = getIPProfile(i.dstIP, i).IPProfile
+			_ = getIPProfile(i.dstIP, i, false).IPProfile
 			found = true
 		}
 	}
 
 	// if no existing one has been updated, its a new one
 	if !found {
-		ip := getIPProfile(i.dstIP, i)
+		ip := getIPProfile(i.dstIP, i, false)
 
 		// if the packet has no network layer we wont get an IP here
 		// prevent adding a nil pointer to the array
