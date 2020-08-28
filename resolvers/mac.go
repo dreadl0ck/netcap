@@ -17,13 +17,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	logger2 "github.com/dreadl0ck/netcap/logger"
 	"io"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // https://macaddress.io/database/macaddress.io-db.json
@@ -76,7 +75,7 @@ func initMACResolver() {
 		sums++
 	}
 	if !quiet {
-		utils.DebugLog.Println("loaded", sums, "OUI summaries")
+		logger2.DebugLog.Println("loaded", sums, "OUI summaries")
 	}
 }
 

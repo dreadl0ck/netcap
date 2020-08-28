@@ -15,12 +15,11 @@ package resolvers
 
 import (
 	"context"
+	logger2 "github.com/dreadl0ck/netcap/logger"
 	"log"
 	"net"
 	"sync"
 	"time"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (
@@ -100,7 +99,7 @@ func LookupDNSNames(ip string) []string {
 
 	names, err := r.LookupAddr(ctx, ip)
 	if err != nil {
-		utils.DebugLog.Println("net.LookupAddr failed:", err)
+		logger2.DebugLog.Println("net.LookupAddr failed:", err)
 	} // failed values are added to the DB as well so we don't try to resolve them again
 
 	// add to DB

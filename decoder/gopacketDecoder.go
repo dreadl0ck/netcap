@@ -16,6 +16,7 @@ package decoder
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"log"
 	"strings"
 	"time"
@@ -27,7 +28,6 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // contains all available gopacket decoders.
@@ -217,7 +217,7 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 		decoders[e.Layer] = append(decoders[e.Layer], e)
 	}
 
-	utils.DebugLog.Println("initialized", len(decoders), "gopacket decoders")
+	logger.DebugLog.Println("initialized", len(decoders), "gopacket decoders")
 
 	return decoders, nil
 }

@@ -15,12 +15,11 @@ package resolvers
 
 import (
 	"bytes"
+	logger2 "github.com/dreadl0ck/netcap/logger"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var ipWhitelist = make(map[string]struct{})
@@ -54,7 +53,7 @@ func initIPWhitelist() {
 	}
 
 	if !quiet {
-		utils.DebugLog.Println("loaded", hosts, "whitelisted IP hosts")
+		logger2.DebugLog.Println("loaded", hosts, "whitelisted IP hosts")
 	}
 }
 

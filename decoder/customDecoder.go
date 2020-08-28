@@ -15,6 +15,7 @@ package decoder
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"log"
 	"strings"
 	"sync/atomic"
@@ -28,7 +29,6 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (
@@ -286,7 +286,7 @@ func InitCustomDecoders(c *Config) (decoders []CustomDecoderAPI, err error) {
 		useHarvesters = true
 	}
 
-	utils.DebugLog.Println("initialized", len(decoders), "custom decoders")
+	logger.DebugLog.Println("initialized", len(decoders), "custom decoders")
 
 	return decoders, nil
 }

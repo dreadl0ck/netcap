@@ -1,6 +1,7 @@
 # TODOs
 
 - file logger pkg
+- add command to reset elastic indices and patterns 
 
 - automate creation of netcap-* index
 - instrument the core code with prometheus

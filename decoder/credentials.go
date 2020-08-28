@@ -17,6 +17,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"log"
 	"regexp"
 	"strings"
@@ -28,7 +29,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (
@@ -150,7 +150,7 @@ func httpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 func decodeSMTPAuthPlain(in string) (user, pass string) {
 	data, err := base64.StdEncoding.DecodeString(in)
 	if err != nil {
-		utils.DebugLog.Println("Captured SMTP Auth Plain credentials, but could not decode them")
+		logger.DebugLog.Println("Captured SMTP Auth Plain credentials, but could not decode them")
 	}
 	var (
 		newDataUsername []byte
@@ -175,12 +175,12 @@ func decodeSMTPAuthPlain(in string) (user, pass string) {
 func decodeSMTPLogin(in [][]byte, typ string) (user, pass string) {
 	usernameBin, err := base64.StdEncoding.DecodeString(string(in[1]))
 	if err != nil {
-		utils.DebugLog.Println("Captured "+typ+" credentials, but could not decode them: ", string(in[1]))
+		logger.DebugLog.Println("Captured "+typ+" credentials, but could not decode them: ", string(in[1]))
 	}
 
 	passwordBin, err := base64.StdEncoding.DecodeString(string(in[2]))
 	if err != nil {
-		utils.DebugLog.Println("Captured "+typ+" credentials, but could not decode them: ", string(in[2]))
+		logger.DebugLog.Println("Captured "+typ+" credentials, but could not decode them: ", string(in[2]))
 	}
 
 	return string(usernameBin), string(passwordBin)
@@ -270,11 +270,11 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(matchesPlainSeparate) > 1 {
 		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[1]))
 		if err != nil {
-			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesPlainSeparate[1]))
+			logger.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesPlainSeparate[1]))
 		}
 		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesPlainSeparate[2]))
 		if err != nil {
-			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesPlainSeparate[2]))
+			logger.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesPlainSeparate[2]))
 		}
 		username = string(usernameBin)
 		password = string(passwordBin)
@@ -284,7 +284,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(matchesLogin) > 1 {
 		extractedData, err := base64.StdEncoding.DecodeString(string(matchesLogin[1]))
 		if err != nil {
-			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesLogin[1]))
+			logger.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesLogin[1]))
 		}
 
 		var (
@@ -316,12 +316,12 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(matchesCramMd5) > 1 {
 		usernameBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[1]))
 		if err != nil {
-			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesCramMd5[1]))
+			logger.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesCramMd5[1]))
 		}
 		username = string(usernameBin) // This is really the challenge
 		passwordBin, err := base64.StdEncoding.DecodeString(string(matchesCramMd5[2]))
 		if err != nil {
-			utils.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesCramMd5[2]))
+			logger.DebugLog.Println("Captured IMAP credentials, but could not decode them:", err, string(matchesCramMd5[2]))
 		}
 		password = string(passwordBin) // And this is the hash
 		serv = "IMAP CRAM-MD5"

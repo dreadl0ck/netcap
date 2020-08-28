@@ -14,13 +14,13 @@
 package decoder
 
 import (
+	"github.com/dreadl0ck/netcap/logger"
 	"sync"
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var conf *Config
@@ -36,7 +36,7 @@ func SetConfig(cfg *Config) {
 
 	// setup loggers
 	if conf.Debug {
-		utils.InitLoggers(conf.Out)
+		logger.InitLoggers(conf.Out)
 
 		pop3Debug = true
 	}

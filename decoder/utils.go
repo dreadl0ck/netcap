@@ -18,6 +18,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"math"
 	"os"
 	"reflect"
@@ -30,7 +31,6 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (
@@ -263,19 +263,19 @@ func logReassemblyError(t string, s string, a ...interface{}) {
 	errorsMapMutex.Unlock()
 
 	if conf.Debug {
-		utils.ReassemblyLog.Printf("ERROR: "+s, a...)
+		logger.ReassemblyLog.Printf("ERROR: "+s, a...)
 	}
 }
 
 func logReassemblyInfo(s string, a ...interface{}) {
 	if conf.Debug {
-		utils.ReassemblyLog.Printf("INFO: "+s, a...)
+		logger.ReassemblyLog.Printf("INFO: "+s, a...)
 	}
 }
 
 func logReassemblyDebug(s string, a ...interface{}) {
 	if conf.Debug {
-		utils.ReassemblyLog.Printf("DEBUG: "+s, a...)
+		logger.ReassemblyLog.Printf("DEBUG: "+s, a...)
 	}
 }
 

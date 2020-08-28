@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -37,7 +38,6 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (
@@ -155,7 +155,7 @@ func (h *httpReader) Decode() {
 				}
 			}
 			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-				utils.DebugLog.Println("error reading HTTP", err, h.parent.ident)
+				logger.DebugLog.Println("error reading HTTP", err, h.parent.ident)
 			}
 			buf.Reset()
 			previousDir = d.dir
@@ -771,7 +771,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		n++
 	}
 
-	utils.DebugLog.Println("saving file:", target)
+	logger.DebugLog.Println("saving file:", target)
 
 	f, err := os.Create(target)
 	if err != nil {

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -32,7 +33,6 @@ import (
 	"github.com/umisama/go-cpe"
 
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (
@@ -311,13 +311,13 @@ func initServiceProbes() error {
 			ident := strings.Fields(line)[1]
 			if conf.UseRE2 {
 				if _, ok := ignoredProbesRE2[ident]; ok {
-					utils.DebugLog.Println("ignoring probe", ident)
+					logger.DebugLog.Println("ignoring probe", ident)
 
 					continue
 				}
 			} else {
 				if _, ok := ignoredProbes[ident]; ok {
-					utils.DebugLog.Println("ignoring probe", ident)
+					logger.DebugLog.Println("ignoring probe", ident)
 					continue
 				}
 			}
@@ -417,7 +417,7 @@ func initServiceProbes() error {
 
 								i, err = cpe.NewItemFromUri(buf.String())
 								if err != nil {
-									utils.DebugLog.Println("error while parsing cpe tag for service probe:", err, "probe:", s.Ident)
+									logger.DebugLog.Println("error while parsing cpe tag for service probe:", err, "probe:", s.Ident)
 
 									goto next
 								}
@@ -537,7 +537,7 @@ func initServiceProbes() error {
 		}
 	}
 
-	utils.DebugLog.Println("loaded", len(serviceProbes), "nmap service probes")
+	logger.DebugLog.Println("loaded", len(serviceProbes), "nmap service probes")
 
 	return nil
 }
