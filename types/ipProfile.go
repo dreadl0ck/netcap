@@ -23,12 +23,12 @@ var fieldsIPProfile = []string{
 	"TimestampFirst", // int64
 	"TimestampLast",  // int64
 	"Applications",   // []string
-	"Ja3",            // map[string]string
-	"Protocols",      // map[string]*Protocol
+	//"Ja3",            // map[string]string
+	//"Protocols",      // map[string]*Protocol
 	"Bytes",          // uint64
-	"DstPorts",       // map[string]*Port
-	"SrcPorts",       // map[string]*Port
-	"SNIs",           // map[string]int64
+	//"DstPorts",       // map[string]*Port
+	//"SrcPorts",       // map[string]*Port
+	//"SNIs",           // map[string]int64
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -42,17 +42,16 @@ func (d *IPProfile) CSVRecord() []string {
 		d.Addr,
 		formatInt64(d.NumPackets),
 		d.Geolocation,
-		// TODO: csv
-		// d.DNSNames,
-		// d.TimestampFirst,
-		// d.TimestampLast,
-		// d.Applications,
-		// d.Ja3,
-		// d.Protocols,
-		// formatUint64(d.Bytes),
-		// d.DstPorts,,
-		// d.SrcPorts,
-		// d.SNIs,
+		join(d.DNSNames...),
+		formatInt64(d.TimestampFirst),
+		formatInt64(d.TimestampLast),
+		join(d.Applications...),
+		//d.Ja3,
+		//d.Protocols,
+		formatUint64(d.Bytes),
+		//d.DstPorts,
+		//d.SrcPorts,
+		//d.SNIs,
 	})
 }
 
