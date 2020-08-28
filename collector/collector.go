@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"log"
 	"os"
@@ -223,7 +224,7 @@ func (c *Collector) closeErrorLogFile() {
 
 	_, err := c.errorLogFile.WriteString(stats)
 	if err != nil {
-		utils.DebugLog.Println("failed to write stats into error log:", err)
+		logger.DebugLog.Println("failed to write stats into error log:", err)
 
 		return
 	}
@@ -231,7 +232,7 @@ func (c *Collector) closeErrorLogFile() {
 	// sync
 	err = c.errorLogFile.Sync()
 	if err != nil {
-		utils.DebugLog.Println("failed to sync error log:", err)
+		logger.DebugLog.Println("failed to sync error log:", err)
 
 		return
 	}
@@ -239,7 +240,7 @@ func (c *Collector) closeErrorLogFile() {
 	// close file handle
 	err = c.errorLogFile.Close()
 	if err != nil {
-		utils.DebugLog.Println("failed to close error log:", err)
+		logger.DebugLog.Println("failed to close error log:", err)
 
 		return
 	}

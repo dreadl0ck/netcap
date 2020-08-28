@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"log"
 	"net/http"
@@ -40,7 +41,6 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*
@@ -234,7 +234,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	// make sure root path exists
 	err = os.MkdirAll(root, defaults.DirectoryPermission)
 	if err != nil {
-		utils.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
+		logger.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
 	}
 
 	base = path.Join(root, base)
@@ -330,7 +330,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 
 func mailDebug(args ...interface{}) {
 	if pop3Debug {
-		utils.DebugLog.Println(args...)
+		logger.DebugLog.Println(args...)
 	}
 }
 
@@ -342,7 +342,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader) error {
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
-		utils.DebugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
+		logger.DebugLog.Printf("POP3/%s Request error: %s (%v,%+v)\n", h.parent.ident, err, err, err)
 
 		return err
 	}
@@ -661,7 +661,7 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 
 	ts, err := dateparse.ParseAny(header["Delivery-Date"])
 	if err != nil {
-		utils.DebugLog.Println("failed to parse delivery date string from mail header:", err)
+		logger.DebugLog.Println("failed to parse delivery date string from mail header:", err)
 	} else {
 		ti = ts.UnixNano()
 	}

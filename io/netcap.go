@@ -15,13 +15,13 @@ package io
 
 import (
 	"errors"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // InitRecord initializes a new record of the given type
@@ -191,7 +191,7 @@ func Count(filename string) (count int64, err error) {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			utils.DebugLog.Println("failed to close file:", errClose)
+			logger.DebugLog.Println("failed to close file:", errClose)
 		}
 	}()
 

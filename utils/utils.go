@@ -15,6 +15,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"log"
 	"net"
@@ -41,8 +42,8 @@ var noPluralsMap = map[string]struct{}{
 // OpenBleve is a simple wrapper for the bleve open call
 // it's used to log any open operations.
 func OpenBleve(path string) (bleve.Index, error) {
-	if DebugLogFileHandle != nil {
-		DebugLog.Println("opening bleve db at path:", path)
+	if logger.DebugLogFileHandle != nil {
+		logger.DebugLog.Println("opening bleve db at path:", path)
 	}
 
 	return bleve.Open(path)
@@ -55,8 +56,8 @@ func CloseBleve(index io.Closer) {
 		return
 	}
 
-	if DebugLogFileHandle != nil {
-		DebugLog.Println("closing bleve db:", index)
+	if logger.DebugLogFileHandle != nil {
+		logger.DebugLog.Println("closing bleve db:", index)
 	}
 
 	err := index.Close()

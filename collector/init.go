@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,7 +19,6 @@ import (
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var errAborted = errors.New("operation aborted by user")
@@ -30,7 +30,7 @@ func (c *Collector) Init() (err error) {
 
 	// start workers
 	c.workers = c.initWorkers()
-	utils.DebugLog.Println("spawned", c.config.Workers, "workers")
+	logger.DebugLog.Println("spawned", c.config.Workers, "workers")
 
 	// create full output directory path if set
 	if c.config.DecoderConfig.Out != "" {

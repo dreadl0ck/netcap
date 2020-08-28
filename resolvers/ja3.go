@@ -17,14 +17,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	logger2 "github.com/dreadl0ck/netcap/logger"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var ja3DB = make(map[string]*ja3Summary)
@@ -90,7 +89,7 @@ func initJa3Resolver() {
 		}
 	}
 
-	utils.DebugLog.Println("loaded a total of", len(ja3DB), "JA3 summaries")
+	logger2.DebugLog.Println("loaded a total of", len(ja3DB), "JA3 summaries")
 }
 
 /*
@@ -142,7 +141,7 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 	}
 
 	if !quiet {
-		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		logger2.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }
 
@@ -165,7 +164,7 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 	}
 
 	if !quiet {
-		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		logger2.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }
 
@@ -196,6 +195,6 @@ func parseSummaries(data []byte, f os.FileInfo) {
 		addToJa3DB(sum, &updated, &sums)
 	}
 	if !quiet {
-		utils.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
+		logger2.DebugLog.Println("loaded", sums, "new and updated", updated, "JA3 summaries from", f.Name())
 	}
 }

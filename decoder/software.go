@@ -16,6 +16,7 @@ package decoder
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -320,7 +321,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 		if !ok {
 			userInfo = parseUserAgent(h.UserAgent)
 			userAgentCaching[h.UserAgent] = userInfo
-			utils.DebugLog.Println("UserAgent:", userInfo.full)
+			logger.DebugLog.Println("UserAgent:", userInfo.full)
 		}
 		pMu.Unlock()
 
@@ -632,7 +633,7 @@ var softwareDecoder = newCustomDecoder(
 			hashDBMap[v.Hash] = v.Software
 		}
 
-		utils.DebugLog.Println("loaded", len(hashDBMap), "different HASSH digests")
+		logger.DebugLog.Println("loaded", len(hashDBMap), "different HASSH digests")
 
 		data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/cmsdb.json")
 		if err != nil {
@@ -655,7 +656,7 @@ var softwareDecoder = newCustomDecoder(
 			return err
 		}
 
-		utils.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
+		logger.DebugLog.Println("loaded Ja3/ja3S database, records:", len(ja3db.Servers))
 
 		return nil
 	},
@@ -671,12 +672,12 @@ var softwareDecoder = newCustomDecoder(
 		for ip, ua := range httpStore.UserAgents {
 			rows = append(rows, []string{ip, ua})
 		}
-		tui.Table(utils.DebugLogFileHandle, []string{"IP", "UserAgents"}, rows)
+		tui.Table(logger.DebugLogFileHandle, []string{"IP", "UserAgents"}, rows)
 		rows = [][]string{}
 		for ip, sn := range httpStore.ServerNames {
 			rows = append(rows, []string{ip, sn})
 		}
-		tui.Table(utils.DebugLogFileHandle, []string{"IP", "ServerNames"}, rows)
+		tui.Table(logger.DebugLogFileHandle, []string{"IP", "ServerNames"}, rows)
 		httpStore.Unlock()
 
 		// teardown DPI C libs

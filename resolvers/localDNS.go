@@ -15,13 +15,12 @@ package resolvers
 
 import (
 	"bytes"
+	logger2 "github.com/dreadl0ck/netcap/logger"
 	"io/ioutil"
 	"log"
 	"net"
 	"path/filepath"
 	"strings"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var localDNSNamesDB = make(map[string]string)
@@ -56,7 +55,7 @@ func InitLocalDNS() {
 	}
 
 	if !quiet {
-		utils.DebugLog.Println("loaded", hosts, "local DNS hosts")
+		logger2.DebugLog.Println("loaded", hosts, "local DNS hosts")
 	}
 }
 

@@ -15,6 +15,7 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io/ioutil"
 	"log"
 	"os"
@@ -205,7 +206,7 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 		//	continue
 		//}
 		if f.IsDir() {
-			utils.DebugLog.Println("not a file: ", err)
+			logger.DebugLog.Println("not a file: ", err)
 
 			continue
 		}

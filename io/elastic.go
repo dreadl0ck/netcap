@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -31,7 +32,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 const indexPrefix = "netcap-"
@@ -474,7 +474,7 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 		// close the response body, to prevent reaching the limit for goroutines or file handles
 		_ = res.Body.Close()
 
-		utils.DebugLog.Println("sent", w.processed, w.wc.Name, "audit records to elastic")
+		logger.DebugLog.Println("sent", w.processed, w.wc.Name, "audit records to elastic")
 		w.buf.Reset()
 
 		// exit loop on success

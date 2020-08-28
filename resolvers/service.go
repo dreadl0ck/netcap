@@ -17,14 +17,13 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	logger2 "github.com/dreadl0ck/netcap/logger"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (
@@ -147,7 +146,7 @@ func InitServiceDB() {
 				case r[2] == udp:
 					udpPortMap[index] = p
 				default:
-					utils.DebugLog.Println("ignoring service probe:", r)
+					logger2.DebugLog.Println("ignoring service probe:", r)
 				}
 			}
 		} else {
@@ -173,14 +172,14 @@ func InitServiceDB() {
 			case r[2] == udp:
 				udpPortMap[num] = p
 			default:
-				utils.DebugLog.Println("ignoring service probe:", r)
+				logger2.DebugLog.Println("ignoring service probe:", r)
 			}
 		}
 	}
 
 	if !quiet {
-		utils.DebugLog.Println("loaded", len(tcpPortMap), "TCP service records")
-		utils.DebugLog.Println("loaded", len(udpPortMap), "UDP service records")
+		logger2.DebugLog.Println("loaded", len(tcpPortMap), "TCP service records")
+		logger2.DebugLog.Println("loaded", len(udpPortMap), "UDP service records")
 	}
 }
 

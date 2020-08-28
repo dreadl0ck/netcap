@@ -16,6 +16,7 @@ package decoder
 import (
 	"bytes"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"os"
 	"path"
@@ -33,7 +34,6 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var udpStreams = newUDPStreamPool()
@@ -223,11 +223,11 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 	// make sure root path exists
 	err := os.MkdirAll(root, defaults.DirectoryPermission)
 	if err != nil {
-		utils.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
+		logger.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
 	}
 	base = path.Join(root, base)
 
-	utils.ReassemblyLog.Println("saveConnection", base)
+	logger.ReassemblyLog.Println("saveConnection", base)
 
 	stats.Lock()
 	stats.savedUDPConnections++

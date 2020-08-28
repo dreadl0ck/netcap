@@ -18,14 +18,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
-
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // tcpStreamReader is an internal structure that is used to read TCP data streams
@@ -251,7 +250,7 @@ func (t *tcpStreamReader) Run(f *tcpConnectionFactory) {
 				return
 			}
 
-			utils.ReassemblyLog.Println("TCP stream encountered an error", t.parent.ident, err)
+			logger.ReassemblyLog.Println("TCP stream encountered an error", t.parent.ident, err)
 			fmt.Println("TCP stream encountered an error", t.parent.ident, err)
 
 			// stop processing the stream and trigger cleanup

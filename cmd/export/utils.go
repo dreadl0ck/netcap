@@ -16,6 +16,7 @@ package export
 import (
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"io/ioutil"
 	"log"
@@ -26,7 +27,6 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 func printHeader() {
@@ -170,7 +170,7 @@ func firstTimestamp(path string) time.Time {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			utils.DebugLog.Println("failed to close file:", errClose)
+			logger.DebugLog.Println("failed to close file:", errClose)
 		}
 	}()
 
@@ -218,7 +218,7 @@ func exportFile(path string) {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			utils.DebugLog.Println("failed to close file:", errClose)
+			logger.DebugLog.Println("failed to close file:", errClose)
 		}
 	}()
 

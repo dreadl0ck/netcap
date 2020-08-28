@@ -16,6 +16,7 @@ package decoder
 import (
 	"bytes"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"os"
 	"path"
@@ -185,12 +186,12 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 	// make sure root path exists
 	err := os.MkdirAll(root, defaults.DirectoryPermission)
 	if err != nil {
-		utils.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
+		logger.DebugLog.Println("failed to create directory:", root, defaults.DirectoryPermission)
 	}
 
 	base = path.Join(root, base)
 
-	utils.ReassemblyLog.Println("saveConnection", base)
+	logger.ReassemblyLog.Println("saveConnection", base)
 
 	stats.Lock()
 	stats.savedTCPConnections++
@@ -231,6 +232,6 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 //goland:noinspection GoUnusedFunction
 func tcpDebug(args ...interface{}) {
 	if conf.TCPDebug {
-		utils.DebugLog.Println(args...)
+		logger.DebugLog.Println(args...)
 	}
 }

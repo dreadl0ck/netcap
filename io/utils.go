@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"io"
 	"os"
 	"path"
@@ -121,7 +122,7 @@ func Dump(w *os.File, c DumpConfig) error {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			utils.DebugLog.Println("failed to close file:", errClose)
+			logger.DebugLog.Println("failed to close file:", errClose)
 		}
 	}()
 

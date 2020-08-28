@@ -15,6 +15,7 @@ package proxy
 
 import (
 	"fmt"
+	logger2 "github.com/dreadl0ck/netcap/logger"
 	"log"
 	"net/http"
 	"net/url"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // a list of all reverse proxies
@@ -88,7 +88,7 @@ func Run() {
 	defer func() {
 		errClose := logger.Sync()
 		if errClose != nil {
-			utils.DebugLog.Println("failed to sync logger:", errClose)
+			logger2.DebugLog.Println("failed to sync logger:", errClose)
 		}
 	}()
 

@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/logger"
 	"log"
 	"time"
 
@@ -23,7 +24,6 @@ import (
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // cleanup before leaving. closes all buffers and displays stats.
@@ -87,7 +87,7 @@ func (c *Collector) cleanup(force bool) {
 	resolvers.SaveFingerprintDB()
 
 	// close the encoder logs
-	for _, e := range utils.CloseLogFiles() {
+	for _, e := range logger.CloseLogFiles() {
 		fmt.Println("failed to close logfile handle:", e)
 	}
 
