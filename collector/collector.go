@@ -384,7 +384,6 @@ func (c *Collector) printProgressInterval() chan struct{} {
 			case <-stop:
 				return
 			case <-time.After(interval * time.Second):
-
 				// must be locked, otherwise a race occurs when sending a SIGINT
 				// and triggering wg.Wait() in another goroutine...
 				c.statMutex.Lock()
@@ -492,6 +491,7 @@ func (c *Collector) PrintConfiguration() {
 		{"Payloads", strconv.FormatBool(c.config.DecoderConfig.IncludePayloads)},
 		{"FileStorage", c.config.DecoderConfig.FileStorage},
 	})
+
 	_, _ = fmt.Fprintln(target) // add a newline
 }
 
@@ -506,7 +506,6 @@ func (c *Collector) initLogging() error {
 
 	if c.config.DecoderConfig.Out != "" {
 		if stat, err := os.Stat(c.config.DecoderConfig.Out); err != nil {
-
 			err = os.MkdirAll(c.config.DecoderConfig.Out, os.FileMode(outDirPermissionDefault))
 			if err != nil {
 				fmt.Println(err)
@@ -536,7 +535,7 @@ func (c *Collector) Stop() {
 	c.cleanup(false)
 }
 
-// ForceStop will halt packet collection immediately without waiting for processing to finish.
+// forceStop will halt packet collection immediately without waiting for processing to finish.
 func (c *Collector) forceStop() {
 	c.cleanup(true)
 }

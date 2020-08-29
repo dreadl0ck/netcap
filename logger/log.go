@@ -42,7 +42,7 @@ var (
 // - name is the log filename.
 // - each pkg should init a dedicated local! logger and use it on the main structure.
 // - outpath must exist in advance.
-func InitZapLogger(outpath, name string) (*zap.Logger, *os.File, error) {
+func InitZapLogger(outpath, name string, debug bool) (*zap.Logger, *os.File, error) {
 	fileHandle, err := os.OpenFile(
 		filepath.Join(outpath, name+".log"),
 		os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
@@ -52,9 +52,17 @@ func InitZapLogger(outpath, name string) (*zap.Logger, *os.File, error) {
 		return nil, nil, err
 	}
 
-	allLevels := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return true // enable all
-	})
+	var level zap.LevelEnablerFunc
+	if debug {
+		level = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			return true // enable all
+		})
+	} else {
+		level = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			return lvl > zapcore.DebugLevel // enable all above debug
+		})
+	}
+
 
 	// Join the outputs, encoders, and level-handling functions into
 	// zapcore.Cores, then tee the cores together.
@@ -69,11 +77,9 @@ func InitZapLogger(outpath, name string) (*zap.Logger, *os.File, error) {
 			// If the data source only implements io.Writer, we can use zapcore.AddSync to add a no-op Sync
 			// method. If its not safe for concurrent use, we can add a protecting mutex with zapcore.Lock.
 			zapcore.AddSync(fileHandle),
-			allLevels,
+			level,
 		),
 	)
-
-	//defer l.Sync() TODO
 
 	return zap.New(core), fileHandle, nil
 }
