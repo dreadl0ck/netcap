@@ -1,6 +1,7 @@
 # TODOs
 
-- file logger pkg, refactor to use local loggers and use zap
+- dump json and elastic errors into dedicated log file (elastic.log)
+
 - add command to reset elastic indices and patterns 
 
 - automate creation of netcap-* index
@@ -8,7 +9,6 @@
 - https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-module-golang.html
 - jaeger tracing
 
-- dump json and elastic error into file
 - move logic to identify protocols from stream banners into dedicated pkg
 - enrich POP3 information if no Mails have been transferred, e.g. capture the command series for fingerprinting
 

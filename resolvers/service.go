@@ -146,7 +146,7 @@ func InitServiceDB() {
 				case r[2] == udp:
 					udpPortMap[index] = p
 				default:
-					l.Warn("ignoring service probe",
+					l.Debug("ignoring service probe",
 						zap.Strings("probe", r),
 					)
 				}
@@ -174,7 +174,7 @@ func InitServiceDB() {
 			case r[2] == udp:
 				udpPortMap[num] = p
 			default:
-				l.Warn("ignoring service probe",
+				l.Debug("ignoring service probe",
 					zap.Strings("probe", r),
 				)
 			}

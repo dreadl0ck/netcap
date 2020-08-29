@@ -34,13 +34,13 @@ func (c *Collector) Init() (err error) {
 	// Logging ------------------------ //
 
 	// setup logger for collector
-	c.l, _, err = logger.InitZapLogger(c.config.DecoderConfig.Out, "collector")
+	c.l, _, err = logger.InitZapLogger(c.config.DecoderConfig.Out, "collector", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	// setup logger for resolvers
-	lResolvers, _, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "resolvers")
+	lResolvers, _, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "resolvers", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (c *Collector) Init() (err error) {
 	resolvers.SetLogger(lResolvers)
 
 	// setup logger for io
-	lIO, _, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "io")
+	lIO, _, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "io", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (c *Collector) Init() (err error) {
 	io.SetLogger(lIO)
 
 	// setup logger for decoders
-	lDecoder, decoderLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "decoder")
+	lDecoder, decoderLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "decoder", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
@@ -64,13 +64,14 @@ func (c *Collector) Init() (err error) {
 	decoder.SetDecoderLogger(lDecoder, decoderLogFile)
 
 	// setup logger for reassembly
-	lReassembly, reassemblyLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "reassembly")
+	lReassembly, reassemblyLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "reassembly", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	decoder.SetReassemblyLogger(lReassembly, reassemblyLogFile)
 
+	// store pointers to loggers, in order to sync them on exit
 	c.loggers = append(c.loggers,
 		c.l,
 		lResolvers,
