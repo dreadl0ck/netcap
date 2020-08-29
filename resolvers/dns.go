@@ -99,7 +99,7 @@ func LookupDNSNames(ip string) []string {
 
 	names, err := r.LookupAddr(ctx, ip)
 	if err != nil {
-		l.Error("net.LookupAddr failed:", zap.Error(err))
+		resolverLog.Error("net.LookupAddr failed:", zap.Error(err))
 	} // failed values are added to the DB as well so we don't try to resolve them again
 
 	// add to DB

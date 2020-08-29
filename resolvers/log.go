@@ -15,9 +15,9 @@ package resolvers
 
 import "go.uber.org/zap"
 
-var l *zap.Logger
+var resolverLog *zap.Logger
 
 // SetLogger sets the logger for the resolvers package.
 func SetLogger(lg *zap.Logger) {
-	l = lg
+	resolverLog = lg
 }

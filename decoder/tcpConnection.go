@@ -423,7 +423,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		}
 	}
 
-	decoderLog.Info("ReassemblyComplete", zap.String("ident", t.ident))
+	decoderLog.Debug("ReassemblyComplete", zap.String("ident", t.ident))
 
 	// save data for the current stream
 	if t.client != nil {

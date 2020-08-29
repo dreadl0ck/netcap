@@ -191,7 +191,7 @@ func Count(filename string) (count int64, err error) {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			l.Info("failed to close file",
+			ioLog.Info("failed to close file",
 				zap.Error(errClose),
 			)
 		}

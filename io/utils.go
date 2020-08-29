@@ -122,7 +122,7 @@ func Dump(w *os.File, c DumpConfig) error {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			l.Info("failed to close file",
+			ioLog.Info("failed to close file",
 				zap.Error(errClose),
 			)
 		}

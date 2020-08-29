@@ -75,7 +75,7 @@ func initMACResolver() {
 		sums++
 	}
 	if !quiet {
-		l.Info("loaded OUI summaries",
+		resolverLog.Info("loaded OUI summaries",
 			zap.Int("total", sums),
 		)
 	}

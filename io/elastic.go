@@ -431,7 +431,7 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 			}
 
 			// dump buffer in case of errors
-			fmt.Println(w.buf.String())
+			ioLog.Debug(w.buf.String())
 			w.buf.Reset()
 
 			return ErrElasticFailed
@@ -443,7 +443,7 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 			log.Printf("failure to to parse response body: %s", err)
 
 			// dump buffer in case of errors
-			fmt.Println(w.buf.String())
+			ioLog.Debug(w.buf.String())
 			w.buf.Reset()
 
 			return ErrElasticFailed
@@ -468,13 +468,13 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 
 		// dump buffer in case of errors
 		if hadErrors {
-			fmt.Println(w.buf.String())
+			ioLog.Debug(w.buf.String())
 		}
 
 		// close the response body, to prevent reaching the limit for goroutines or file handles
 		_ = res.Body.Close()
 
-		l.Info("sent audit records to elastic",
+		ioLog.Info("sent audit records to elastic",
 			zap.Int("total", w.processed),
 			zap.String("type", w.wc.Name),
 		)
