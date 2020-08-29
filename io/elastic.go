@@ -423,10 +423,10 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 			if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
 				log.Printf("failure to to parse response body: %s", err)
 			} else {
-				log.Printf("Error: [%d] %s: %s",
-					res.StatusCode,
-					raw["error"].(map[string]interface{})["type"],
-					raw["error"].(map[string]interface{})["reason"],
+				ioLog.Error("elastic bulk request failed",
+					zap.Int("status", res.StatusCode),
+					zap.String("type", raw["error"].(map[string]interface{})["type"].(string)),
+					zap.String("reason", raw["error"].(map[string]interface{})["reason"].(string)),
 				)
 			}
 
@@ -456,12 +456,12 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 			if d.Index.Status > 201 {
 				hadErrors = true
 
-				log.Printf("Error: [%d]: %s: %s: %s: %s",
-					d.Index.Status,
-					d.Index.Error.Type,
-					d.Index.Error.Reason,
-					d.Index.Error.Cause.Type,
-					d.Index.Error.Cause.Reason,
+				ioLog.Error("error for item in elastic bulk request",
+					zap.Int("status", d.Index.Status),
+					zap.String("type", d.Index.Error.Type),
+					zap.String("reason", d.Index.Error.Reason),
+					zap.String("causeType", d.Index.Error.Cause.Type),
+					zap.String("causeReason", d.Index.Error.Cause.Reason),
 				)
 			}
 		}

@@ -8,6 +8,7 @@
 
 - errors.log: sort by count
 
+- dockerfiles: add docker directory and then subdirs for different dists: eg: docker/ubuntu/Dockerfile
 - add command to reset elastic indices and patterns 
 
 - automate creation of netcap-* index
