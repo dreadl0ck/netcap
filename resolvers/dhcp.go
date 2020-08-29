@@ -61,7 +61,7 @@ func SaveFingerprintDB() {
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil {
-			l.Error("failed to close file handle:", zap.Error(errClose))
+			resolverLog.Error("failed to close file handle:", zap.Error(errClose))
 		}
 	}()
 
@@ -70,7 +70,7 @@ func SaveFingerprintDB() {
 		log.Fatal(err)
 	}
 
-	l.Info("saved fingerprint db", zap.Int("items", len(dhcpFingerprintDB)))
+	resolverLog.Info("saved fingerprint db", zap.Int("items", len(dhcpFingerprintDB)))
 }
 
 // Fingerbank.org API
@@ -187,7 +187,7 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*dhcpResult,
 	defer func() {
 		errClose := resp.Body.Close()
 		if errClose != nil {
-			l.Error("failed to close DHCP fingerprint API response body:", zap.Error(errClose))
+			resolverLog.Error("failed to close DHCP fingerprint API response body:", zap.Error(errClose))
 		}
 	}()
 
@@ -246,7 +246,7 @@ func InitDHCPFingerprintDB() {
 
 	if !quiet {
 		dhcpFingerprintMu.Lock()
-		l.Info("loaded DHCP fingerprints", zap.Int("items", len(dhcpFingerprintDB)))
+		resolverLog.Info("loaded DHCP fingerprints", zap.Int("items", len(dhcpFingerprintDB)))
 		dhcpFingerprintMu.Unlock()
 	}
 }
@@ -286,7 +286,7 @@ func initDHCPFingerprintDBCSV() {
 	dhcpFingerprintMu.Unlock()
 
 	if !quiet {
-		l.Info("loaded DHCP fingerprints", zap.Int("items", fingerprints))
+		resolverLog.Info("loaded DHCP fingerprints", zap.Int("items", fingerprints))
 	}
 }
 

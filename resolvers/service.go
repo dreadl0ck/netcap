@@ -146,7 +146,7 @@ func InitServiceDB() {
 				case r[2] == udp:
 					udpPortMap[index] = p
 				default:
-					l.Debug("ignoring service probe",
+					resolverLog.Debug("ignoring service probe",
 						zap.Strings("probe", r),
 					)
 				}
@@ -174,7 +174,7 @@ func InitServiceDB() {
 			case r[2] == udp:
 				udpPortMap[num] = p
 			default:
-				l.Debug("ignoring service probe",
+				resolverLog.Debug("ignoring service probe",
 					zap.Strings("probe", r),
 				)
 			}
@@ -182,8 +182,8 @@ func InitServiceDB() {
 	}
 
 	if !quiet {
-		l.Info("loaded TCP service records", zap.Int("total", len(tcpPortMap)))
-		l.Info("loaded UDP service records", zap.Int("total", len(udpPortMap)))
+		resolverLog.Info("loaded TCP service records", zap.Int("total", len(tcpPortMap)))
+		resolverLog.Info("loaded UDP service records", zap.Int("total", len(udpPortMap)))
 	}
 }
 

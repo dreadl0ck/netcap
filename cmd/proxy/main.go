@@ -85,13 +85,13 @@ func Run() {
 
 	// synchronize the logger on exit
 	defer func() {
-		errClose := logger.Sync()
+		errClose := proxyLog.Sync()
 		if errClose != nil {
 			fmt.Println("failed to sync logger:", errClose)
 		}
 	}()
 
-	logger.Info("setup complete",
+	proxyLog.Info("setup complete",
 		zap.String("logfile", logFileName),
 		zap.String("config", *flagProxyConfig),
 	)
@@ -108,7 +108,7 @@ func Run() {
 
 		// spawn a goroutine for each proxy
 		go func() {
-			logger.Info("initializing proxy",
+			proxyLog.Info("initializing proxy",
 				zap.String("local", local),
 				zap.String("remote", remote),
 				zap.String("proxyName", proxyName),

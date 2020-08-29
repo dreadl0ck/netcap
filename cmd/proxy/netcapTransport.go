@@ -122,7 +122,7 @@ makeHTTPRequest:
 		// modify request
 		req.URL.Path = newLoc
 
-		logger.Info(t.proxyName+" proxy got a redirect.",
+		proxyLog.Info(t.proxyName+" proxy got a redirect.",
 			zap.String("newLocation", newLoc),
 		)
 

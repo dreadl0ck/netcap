@@ -52,7 +52,7 @@ func InitDNSWhitelist() {
 	}
 
 	if !quiet {
-		l.Info("loaded whitelisted DNS hosts", zap.Int("numHosts", hosts))
+		resolverLog.Info("loaded whitelisted DNS hosts", zap.Int("numHosts", hosts))
 	}
 }
 

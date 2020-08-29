@@ -1,6 +1,12 @@
 # TODOs
 
-- dump json and elastic errors into dedicated log file (elastic.log)
+- errors.log / debug.log file creation ?
+- move all logfile inits into a single function call + netcap.log
+ 
+- dump service banner debugs into dedicated logfile
+- dump pop3 debugs into dedicated logfile
+
+- errors.log: sort by count
 
 - add command to reset elastic indices and patterns 
 

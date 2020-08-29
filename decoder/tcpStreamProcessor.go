@@ -69,8 +69,6 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 			// nil packet is used to exit the loop,
 			// the processing logic will never send a streamReader in here that is nil
 			if s == nil {
-				fmt.Println("[streamWorker] nil packet, returning at", "(", tsp.numDone, "/", tsp.numTotal, ")")
-
 				return
 			}
 

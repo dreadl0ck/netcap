@@ -53,7 +53,7 @@ func initIPWhitelist() {
 	}
 
 	if !quiet {
-		l.Info("loaded whitelisted IP hosts", zap.Int("numHosts", hosts))
+		resolverLog.Info("loaded whitelisted IP hosts", zap.Int("numHosts", hosts))
 	}
 }
 

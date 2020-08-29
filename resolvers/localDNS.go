@@ -55,7 +55,7 @@ func InitLocalDNS() {
 	}
 
 	if !quiet {
-		l.Info("loaded local DNS hosts",
+		resolverLog.Info("loaded local DNS hosts",
 			zap.Int("numHosts", hosts),
 		)
 	}

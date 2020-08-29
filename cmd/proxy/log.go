@@ -22,8 +22,8 @@ import (
 // logFileName holds name of the logfile.
 const logFileName = "net.proxy.log"
 
-// logger instance.
-var logger *zap.Logger
+// logging instance.
+var proxyLog *zap.Logger
 
 // configureLogger configures the logging instance.
 func configureLogger(debug bool, outputPath string) {
@@ -42,7 +42,8 @@ func configureLogger(debug bool, outputPath string) {
 
 	// append outputPath
 	zc.OutputPaths = append(zc.OutputPaths, outputPath)
-	logger, err = zc.Build()
+
+	proxyLog, err = zc.Build()
 	if err != nil {
 		log.Fatalf("failed to initialize zap logger: %v", err)
 	}
