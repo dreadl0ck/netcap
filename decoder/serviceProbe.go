@@ -67,7 +67,6 @@ var (
 
 const (
 	debugRegexClean = false
-	probeDebug      = false
 )
 
 // serviceProbe is a regex based probe to fingerprint a network service by looking at its banner
@@ -168,9 +167,9 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				serv.OS = addInfo(serv.OS, extractGroup(&probe.OS, m))
 				serv.Version = addInfo(serv.Version, extractGroup(&probe.Version, m))
 
-				if probeDebug {
-					fmt.Println("\n\nMATCH!", ident)
-					fmt.Println(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+				if conf.Debug { // prevent evaluating the log statement if not in debug mode
+					serviceLog.Println("\n\nMATCH!", ident)
+					serviceLog.Println(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
 				writeSoftwareFromBanner(serv, ident, probe.Ident)
@@ -185,9 +184,9 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				serv.OS = addInfo(serv.OS, extractGroupDotNet(&probe.OS, m))
 				serv.Version = addInfo(serv.Version, extractGroupDotNet(&probe.Version, m))
 
-				if probeDebug {
-					fmt.Println("\nMATCH!", ident)
-					fmt.Println(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+				if conf.Debug { // prevent evaluating the log statement if not in debug mode
+					serviceLog.Println("\n\nMATCH!", ident)
+					serviceLog.Println(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
 				}
 
 				writeSoftwareFromBanner(serv, ident, probe.Ident)
@@ -525,13 +524,13 @@ func initServiceProbes() error {
 				if conf.Debug {
 					if conf.UseRE2 {
 						if before != finalReg {
-							fmt.Println("before != finalReg:", before)
+							serviceLog.Println("before != finalReg:", before)
 						}
 
-						fmt.Println("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
+						serviceLog.Println("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
 					} else {
-						fmt.Println("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.Reset)
-						fmt.Println(ansi.White, line, ansi.Reset)
+						serviceLog.Println("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.Reset)
+						serviceLog.Println(ansi.White, line, ansi.Reset)
 					}
 				}
 			} else {

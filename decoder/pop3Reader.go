@@ -45,10 +45,8 @@ import (
 )
 
 /*
-* POP3 part
+ * POP3 protocol
  */
-
-var pop3Debug = false
 
 // pop3State describes a state in the POP3 state machine.
 type pop3State int
@@ -128,6 +126,7 @@ func (h *pop3Reader) Decode() {
 					err = h.readResponse(b)
 				}
 			}
+			// TODO: handle err?
 			// if err != nil {
 			// 	fmt.Println(err)
 			// }
@@ -151,6 +150,7 @@ func (h *pop3Reader) Decode() {
 			err = h.readResponse(b)
 		}
 	}
+	// TODO: handle err?
 	// if err != nil {
 	// 	fmt.Println(err)
 	// }
@@ -190,9 +190,6 @@ func (h *pop3Reader) Decode() {
 	if err != nil {
 		errorMap.Inc(err.Error())
 	}
-
-	// inserts a newline to increase readability
-	mailDebug()
 }
 
 // TODO: use saveFile to extract attachments.
@@ -337,10 +334,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 }
 
 func mailDebug(args ...interface{}) {
-	if pop3Debug {
-		// TODO: dedicated zap logger for POP3
-		fmt.Println(args...)
-	}
+	pop3Log.Println(args...)
 }
 
 func (h *pop3Reader) readRequest(b *bufio.Reader) error {
@@ -705,6 +699,7 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 			break
 		}
 	}
+
 	return mail
 }
 
@@ -726,7 +721,7 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else {
-				mailDebug("failed to read line: ", err)
+				mailDebug(ansi.Yellow, h.parent.ident, "failed to read line: "+err.Error())
 
 				return parts
 			}
@@ -773,18 +768,20 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 			pts := strings.Split(line, ": ")
 			if len(pts) == 2 {
 				currentPart.Header[pts[0]] = pts[1]
-				mailDebug(ansi.Yellow, "parsed header field", pts[0], ansi.Reset)
+				mailDebug(ansi.Yellow, h.parent.ident, "parsed header field: "+pts[0], ansi.Reset)
 			} else {
 				pts = strings.Split(line, "filename=")
 				if len(pts) == 2 {
 					currentPart.Filename = strings.Trim(pts[1], "\"")
-					mailDebug(ansi.Yellow, "parsed filename field", currentPart.Filename, ansi.Reset)
+					mailDebug(ansi.Yellow, h.parent.ident, "parsed filename field: "+currentPart.Filename, ansi.Reset)
 				}
 			}
+
 			if line == "\n" || line == "" {
 				parsePayload = true
 				mailDebug(ansi.Green, "start parsing payload", ansi.Reset)
 			}
+
 			continue
 		}
 		// start marker type 1
@@ -793,7 +790,8 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 				ID:     strings.TrimPrefix(line, partIdent),
 				Header: make(map[string]string),
 			}
-			mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+			mailDebug(ansi.Red, h.parent.ident, "start: "+currentPart.ID, ansi.Reset)
+
 			continue
 		}
 		// start marker type 2
@@ -802,20 +800,23 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 				ID:     strings.TrimPrefix(line, "--"),
 				Header: make(map[string]string),
 			}
-			mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+			mailDebug(ansi.Red, h.parent.ident, "start: "+currentPart.ID, ansi.Reset)
+
 			continue
 		}
 
 		// single parts have no markers
-		mailDebug(ansi.Red, "no marker found", line)
+		mailDebug(ansi.Red, "no marker found", line, ansi.Reset)
+
 		currentPart = &types.MailPart{
 			ID:     "none",
 			Header: make(map[string]string),
 		}
 		pts := strings.Split(line, ": ")
+
 		if len(pts) == 2 {
 			currentPart.Header[pts[0]] = pts[1]
-			mailDebug(ansi.Yellow, "parsed header field", pts[0], ansi.Reset)
+			mailDebug(ansi.Yellow, h.parent.ident, "parsed header field: "+pts[0])
 		} else {
 			pts = strings.Split(line, "filename=")
 			if len(pts) == 2 {

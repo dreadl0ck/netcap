@@ -24,7 +24,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -80,8 +79,14 @@ type Collector struct {
 	statMutex                sync.Mutex
 	shutdown                 bool
 	isLive                   bool
-	l                        *zap.Logger
-	loggers                  []*zap.Logger
+
+	// logging
+	log           *zap.Logger // collector.log
+	netcapLog     *log.Logger // netcap.log
+	netcapLogFile *os.File
+
+	zapLoggers     []*zap.Logger
+	logFileHandles []*os.File
 }
 
 // New returns a new Collector instance.
@@ -226,7 +231,7 @@ func (c *Collector) closeErrorLogFile() {
 
 	_, err := c.errorLogFile.WriteString(stats)
 	if err != nil {
-		c.l.Error("failed to write stats into error log", zap.Error(err))
+		c.log.Error("failed to write stats into error log", zap.Error(err))
 
 		return
 	}
@@ -234,7 +239,7 @@ func (c *Collector) closeErrorLogFile() {
 	// sync
 	err = c.errorLogFile.Sync()
 	if err != nil {
-		c.l.Error("failed to sync error log", zap.Error(err))
+		c.log.Error("failed to sync error log", zap.Error(err))
 
 		return
 	}
@@ -242,7 +247,7 @@ func (c *Collector) closeErrorLogFile() {
 	// close file handle
 	err = c.errorLogFile.Close()
 	if err != nil {
-		c.l.Error("failed to close error log", zap.Error(err))
+		c.log.Error("failed to close error log", zap.Error(err))
 
 		return
 	}
@@ -254,9 +259,9 @@ func (c *Collector) closeErrorLogFile() {
 func (c *Collector) stats() {
 	var target io.Writer
 	if c.config.Quiet {
-		target = logFileHandle
+		target = c.netcapLogFile
 	} else {
-		target = io.MultiWriter(os.Stderr, logFileHandle)
+		target = io.MultiWriter(os.Stderr, c.netcapLogFile)
 	}
 
 	var rows [][]string
@@ -452,9 +457,9 @@ func (c *Collector) PrintConfiguration() {
 
 	var target io.Writer
 	if c.config.Quiet {
-		target = logFileHandle
+		target = c.netcapLogFile
 	} else {
-		target = io.MultiWriter(os.Stdout, logFileHandle)
+		target = io.MultiWriter(os.Stdout, c.netcapLogFile)
 	}
 
 	cdata, err := json.MarshalIndent(c.config, " ", "  ")
@@ -462,16 +467,16 @@ func (c *Collector) PrintConfiguration() {
 		log.Fatal(err)
 	}
 	// always write the entire configuration into the logfile
-	_, _ = logFileHandle.Write(cdata)
+	_, _ = c.netcapLogFile.Write(cdata)
 
 	netio.FPrintLogo(target)
 
 	if c.config.DecoderConfig.Debug {
 		// in debug mode: dump config to stdout
-		target = io.MultiWriter(os.Stdout, logFileHandle)
+		target = io.MultiWriter(os.Stdout, c.netcapLogFile)
 	} else {
 		// default: write configuration into netcap.log
-		target = logFileHandle
+		target = c.netcapLogFile
 		fmt.Println() // add newline
 	}
 
@@ -493,41 +498,6 @@ func (c *Collector) PrintConfiguration() {
 	})
 
 	_, _ = fmt.Fprintln(target) // add a newline
-}
-
-// initLogging can be used to open the logfile before calling Init()
-// this is used to be able to dump the collector configuration into the netcap.log in quiet mode
-// following calls to Init() will not open the filehandle again.
-func (c *Collector) initLogging() error {
-	// prevent reopen
-	if logFileHandle != nil {
-		return nil
-	}
-
-	if c.config.DecoderConfig.Out != "" {
-		if stat, err := os.Stat(c.config.DecoderConfig.Out); err != nil {
-			err = os.MkdirAll(c.config.DecoderConfig.Out, os.FileMode(outDirPermissionDefault))
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			_, err = os.Stat(c.config.DecoderConfig.Out)
-			if err != nil {
-				return err
-			}
-		} else if !stat.IsDir() {
-			return errInvalidOutputDirectory
-		}
-	}
-
-	var err error
-
-	logFileHandle, err = os.OpenFile(filepath.Join(c.config.DecoderConfig.Out, "netcap.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, c.config.OutDirPermission)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Stop will halt packet collection and wait for all processing to finish.

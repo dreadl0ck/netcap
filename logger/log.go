@@ -14,39 +14,22 @@
 package logger
 
 import (
+	"github.com/dreadl0ck/netcap/defaults"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 )
 
-const (
-	logFilePermission = 0o755
-)
-
-var (
-// ReassemblyLog is the reassembly logger.
-//ReassemblyLog = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
-
-// ReassemblyLogFileHandle is the file handle for the reassembly logger.
-//ReassemblyLogFileHandle *os.File
-
-// DebugLog is the debug logger.
-//DebugLog = log.New(ioutil.Discard, "", log.LstdFlags|log.Lmicroseconds)
-
-// DebugLogFileHandle is the file handle for the debug logger.
-//DebugLogFileHandle *os.File
-)
-
 // InitZapLogger can be used for high performance logging.
-// - name is the log filename.
-// - each pkg should init a dedicated local! logger and use it on the main structure.
-// - outpath must exist in advance.
+// The name is the log filename and the outpath must exist in advance.
 func InitZapLogger(outpath, name string, debug bool) (*zap.Logger, *os.File, error) {
 	fileHandle, err := os.OpenFile(
 		filepath.Join(outpath, name+".log"),
 		os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
-		logFilePermission,
+		defaults.FilePermission,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -54,15 +37,14 @@ func InitZapLogger(outpath, name string, debug bool) (*zap.Logger, *os.File, err
 
 	var level zap.LevelEnablerFunc
 	if debug {
-		level = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+		level = func(lvl zapcore.Level) bool {
 			return true // enable all
-		})
+		}
 	} else {
-		level = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+		level = func(lvl zapcore.Level) bool {
 			return lvl > zapcore.DebugLevel // enable all above debug
-		})
+		}
 	}
-
 
 	// Join the outputs, encoders, and level-handling functions into
 	// zapcore.Cores, then tee the cores together.
@@ -84,42 +66,31 @@ func InitZapLogger(outpath, name string, debug bool) (*zap.Logger, *os.File, err
 	return zap.New(core), fileHandle, nil
 }
 
-// InitLoggers initializes the loggers for the given output path.
-//func InitLoggers(outpath string) {
-//	var err error
-//
-//	DebugLogFileHandle, err = os.OpenFile(filepath.Join(outpath, "debug.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	DebugLog.SetOutput(DebugLogFileHandle)
-//
-//	ReassemblyLogFileHandle, err = os.OpenFile(filepath.Join(outpath, "reassembly.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, logFilePermission)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	ReassemblyLog.SetOutput(ReassemblyLogFileHandle)
-//}
+// InitDebugLogger can be used for ANSI escape sequence colored and multi line debug logging.
+// The name is the log filename and the outpath must exist in advance.
+// When debug mode is not active, this function will init the logger with ioutil.Discard,
+// and return a nil pointer for the file handle.
+func InitDebugLogger(outpath, name string, debug bool) (*log.Logger, *os.File, error) {
+	var (
+		fileHandle *os.File
+		err        error
+		l          *log.Logger
+	)
 
-// CloseLogFiles closes the logfile handles.
-//func CloseLogFiles() []error {
-//	var errs []error
-//
-//	if ReassemblyLogFileHandle != nil {
-//		err := ReassemblyLogFileHandle.Close()
-//		if err != nil {
-//			errs = append(errs, err)
-//		}
-//	}
-//
-//	if DebugLogFileHandle != nil {
-//		err := DebugLogFileHandle.Close()
-//		if err != nil {
-//			errs = append(errs, err)
-//		}
-//	}
-//
-//	return errs
-//}
+	if debug {
+		fileHandle, err = os.OpenFile(
+			filepath.Join(outpath, name+".log"),
+			os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
+			defaults.FilePermission,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		l = log.New(fileHandle, "", log.Ldate|log.Lmicroseconds)
+	} else {
+		l = log.New(ioutil.Discard, "", log.Ldate|log.Lmicroseconds)
+	}
+
+	return l, fileHandle, nil
+}

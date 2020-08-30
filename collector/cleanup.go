@@ -86,10 +86,10 @@ func (c *Collector) cleanup(force bool) {
 	resolvers.SaveFingerprintDB()
 
 	// sync the logs
-	for _, l := range c.loggers {
+	for _, l := range c.zapLoggers {
 		err := l.Sync()
 		if err != nil {
-			fmt.Println("failed to close logfile handle:", err)
+			fmt.Println("failed to sync zap logger:", err)
 		}
 	}
 
@@ -108,17 +108,19 @@ func (c *Collector) cleanup(force bool) {
 
 	c.closeErrorLogFile()
 	c.stats()
+	c.printlnStdOut("execution time", time.Since(c.start))
+
+	// close the log file handles
+	for _, l := range c.logFileHandles {
+		if l != nil {
+			err := l.Close()
+			if err != nil {
+				fmt.Println("failed to close logfile handle:", err)
+			}
+		}
+	}
 
 	if c.config.DecoderConfig.Debug {
 		c.printErrors()
-	}
-
-	c.printlnStdOut("execution time", time.Since(c.start))
-
-	if logFileHandle != nil {
-		err := logFileHandle.Close()
-		if err != nil {
-			c.printStdOut("failed to close logfile:", err)
-		}
 	}
 }

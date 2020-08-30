@@ -27,8 +27,6 @@ import (
 	"golang.org/x/net/bpf"
 )
 
-var logFileHandle *os.File
-
 type packet struct {
 	data []byte
 	ci   gopacket.CaptureInfo
@@ -98,15 +96,16 @@ func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 
 func (c *Collector) printlnStdOut(args ...interface{}) {
 	if c.config.Quiet {
-		_, _ = fmt.Fprintln(logFileHandle, args...)
+		_, _ = fmt.Fprintln(c.netcapLogFile, args...)
 	} else {
+		_, _ = fmt.Fprintln(c.netcapLogFile, args...)
 		_, _ = fmt.Fprintln(os.Stdout, args...)
 	}
 }
 
 func (c *Collector) printStdOut(args ...interface{}) {
 	if c.config.Quiet {
-		_, _ = fmt.Fprint(logFileHandle, args...)
+		_, _ = fmt.Fprint(c.netcapLogFile, args...)
 	} else {
 		_, _ = fmt.Fprint(os.Stdout, args...)
 	}

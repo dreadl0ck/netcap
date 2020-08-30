@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/logger"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -28,63 +26,25 @@ var errAborted = errors.New("operation aborted by user")
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
+	// set quiet mode for decoder config if active in collector config
+	if c.config.Quiet {
+		c.config.DecoderConfig.Quiet = true
+	}
 
+	// set configuration for decoder pkg
 	decoder.SetConfig(c.config.DecoderConfig)
 
-	// Logging ------------------------ //
-
-	// setup logger for collector
-	c.l, _, err = logger.InitZapLogger(c.config.DecoderConfig.Out, "collector", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
+	// init logfile if necessary
+	if c.netcapLogFile == nil && c.config.Quiet {
+		err = c.initLogging()
+		if err != nil {
+			return err
+		}
 	}
-
-	// setup logger for resolvers
-	lResolvers, _, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "resolvers", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
-	}
-
-	resolvers.SetLogger(lResolvers)
-
-	// setup logger for io
-	lIO, _, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "io", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
-	}
-
-	io.SetLogger(lIO)
-
-	// setup logger for decoders
-	lDecoder, decoderLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "decoder", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
-	}
-
-	decoder.SetDecoderLogger(lDecoder, decoderLogFile)
-
-	// setup logger for reassembly
-	lReassembly, reassemblyLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "reassembly", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
-	}
-
-	decoder.SetReassemblyLogger(lReassembly, reassemblyLogFile)
-
-	// store pointers to loggers, in order to sync them on exit
-	c.loggers = append(c.loggers,
-		c.l,
-		lResolvers,
-		lIO,
-		lDecoder,
-		lReassembly,
-	)
-
-	// Logging ------------------------ //
 
 	// start workers
 	c.workers = c.initWorkers()
-	c.l.Info("spawned workers", zap.Int("total", c.config.Workers))
+	c.log.Info("spawned workers", zap.Int("total", c.config.Workers))
 
 	// create full output directory path if set
 	if c.config.DecoderConfig.Out != "" {
@@ -104,19 +64,6 @@ func (c *Collector) Init() (err error) {
 
 	if c.config.ResolverConfig.LocalDNS {
 		decoder.LocalDNS = true
-	}
-
-	// set quiet mode for other subpackages
-	if c.config.Quiet {
-		c.config.DecoderConfig.Quiet = true
-	}
-
-	// init logfile if necessary
-	if logFileHandle == nil && c.config.Quiet {
-		err = c.initLogging()
-		if err != nil {
-			return err
-		}
 	}
 
 	// check for files from previous run in the output directory
