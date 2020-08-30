@@ -1914,7 +1914,7 @@ message Software {
 message Service {
   int64 Timestamp = 1;
   string IP = 2;
-  string Port = 3;
+  int32 Port = 3;
   string Name = 4;
   string Banner = 5;
   string Protocol = 6;

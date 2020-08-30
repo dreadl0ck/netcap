@@ -15,6 +15,7 @@ package decoder
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"go.uber.org/zap"
 	"io"
@@ -300,7 +301,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	serv := newService(firstPacket.UnixNano(), serverBytes, clientBytes, net.Dst().String())
 	serv.Banner = string(banner)
 	serv.IP = net.Dst().String()
-	serv.Port = transport.Dst().String()
+	serv.Port = int32(binary.BigEndian.Uint16(transport.Dst().Raw()))
 
 	// set flow ident, h.parent.ident is the client flow
 	serv.Flows = []string{flowIdent}

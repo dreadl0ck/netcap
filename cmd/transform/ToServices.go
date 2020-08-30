@@ -12,7 +12,7 @@ func toServices() {
 	maltego.ServiceTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
-			val := service.IP + ":" + service.Port
+			val := service.IP + ":" + strconv.Itoa(int(service.Port))
 			if len(service.Vendor) > 0 {
 				val += "\n" + service.Vendor
 			}
@@ -32,7 +32,7 @@ func toServices() {
 			ent.AddProperty("version", "Version", "strict", service.Version)
 			ent.AddProperty("protocol", "Protocol", "strict", service.Protocol)
 			ent.AddProperty("ip", "IP", "strict", service.IP)
-			ent.AddProperty("port", "Port", "strict", service.Port)
+			ent.AddProperty("port", "Port", "strict", strconv.Itoa(int(service.Port)))
 			ent.AddProperty("hostname", "Hostname", "strict", service.Hostname)
 			ent.AddProperty("bytesclient", "BytesClient", "strict", strconv.Itoa(int(service.BytesClient)))
 			ent.AddProperty("bytesserver", "BytesServer", "strict", strconv.Itoa(int(service.BytesServer)))

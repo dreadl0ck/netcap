@@ -461,6 +461,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 	if t.decoder != nil { // try to determine what type of raw tcp stream and update decoder
 		// TODO: move this functionality into a dedicated package and create a voting model
+		// first guess should be based on the port, to avoid unnecessary attempts
 		if _, ok := t.decoder.(*tcpReader); ok {
 			switch {
 			case bytes.Contains(t.server.ServiceBanner(), []byte(serviceHTTP)):

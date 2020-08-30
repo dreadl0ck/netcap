@@ -36,45 +36,46 @@ func SetConfig(cfg *Config) {
 
 // DefaultConfig is a sane example configuration for the encoder package.
 var DefaultConfig = &Config{
-	Buffer:                  true,
-	MemBufferSize:           defaults.BufferSize,
-	Compression:             true,
-	CSV:                     false,
-	IncludeDecoders:         "",
-	ExcludeDecoders:         "",
-	Out:                     "",
-	Chan:                    false,
-	Proto:                   true,
-	Source:                  "",
-	IncludePayloads:         false,
-	ExportMetrics:           false,
-	AddContext:              true,
-	FlushEvery:              100,
-	DefragIPv4:              false,
-	Checksum:                false,
-	NoOptCheck:              false,
-	IgnoreFSMerr:            false,
-	AllowMissingInit:        false,
-	Debug:                   false,
-	HexDump:                 false,
-	WaitForConnections:      true,
-	WriteIncomplete:         false,
-	MemProfile:              "",
-	ConnFlushInterval:       10000,
-	ConnTimeOut:             10 * time.Second,
-	FlowFlushInterval:       2000,
-	FlowTimeOut:             10 * time.Second,
-	CloseInactiveTimeOut:    24 * time.Hour,
-	ClosePendingTimeOut:     5 * time.Second,
-	FileStorage:             defaults.FileStorage,
-	CalculateEntropy:        false,
-	SaveConns:               false,
-	TCPDebug:                false,
-	UseRE2:                  true,
-	HarvesterBannerSize:     512,
-	BannerSize:              512,
-	StopAfterHarvesterMatch: true,
-	IgnoreDecoderInitErrors: true,
+	Buffer:                     true,
+	MemBufferSize:              defaults.BufferSize,
+	Compression:                true,
+	CSV:                        false,
+	IncludeDecoders:            "",
+	ExcludeDecoders:            "",
+	Out:                        "",
+	Chan:                       false,
+	Proto:                      true,
+	Source:                     "",
+	IncludePayloads:            false,
+	ExportMetrics:              false,
+	AddContext:                 true,
+	FlushEvery:                 100,
+	DefragIPv4:                 false,
+	Checksum:                   false,
+	NoOptCheck:                 false,
+	IgnoreFSMerr:               false,
+	AllowMissingInit:           false,
+	Debug:                      false,
+	HexDump:                    false,
+	WaitForConnections:         true,
+	WriteIncomplete:            false,
+	MemProfile:                 "",
+	ConnFlushInterval:          10000,
+	ConnTimeOut:                10 * time.Second,
+	FlowFlushInterval:          2000,
+	FlowTimeOut:                10 * time.Second,
+	CloseInactiveTimeOut:       24 * time.Hour,
+	ClosePendingTimeOut:        5 * time.Second,
+	FileStorage:                defaults.FileStorage,
+	CalculateEntropy:           false,
+	SaveConns:                  false,
+	TCPDebug:                   false,
+	UseRE2:                     true,
+	HarvesterBannerSize:        512,
+	BannerSize:                 512,
+	StopAfterHarvesterMatch:    true,
+	StopAfterServiceProbeMatch: true,
+	IgnoreDecoderInitErrors:    true,
 }
 
 // Config contains configuration parameters
@@ -140,8 +141,11 @@ type Config struct {
 	// if this is set to false an alternative regex engine that is compatible to the .NET syntax will be used for service banner detection
 	UseRE2 bool
 
-	// stop processing the conversation when the first harvester returns a result
+	// stop processing the conversation when the first credential harvester returns a result
 	StopAfterHarvesterMatch bool
+
+	// stop processing the conversation when the first service probe returns a result
+	StopAfterServiceProbeMatch bool
 
 	// Buffer data before writing it to disk
 	Buffer bool

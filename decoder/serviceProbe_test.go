@@ -175,7 +175,7 @@ func (b bannerTest) testClassifyBanner(t *testing.T) {
 	// make dummy service
 	serv := newService(time.Now().UnixNano(), 0, 0, "")
 	serv.IP = "127.0.0.1"
-	serv.Port = "21"
+	serv.Port = 21
 	ident := "127.0.0.1->127.0.0.1-4322->21"
 	serv.Flows = []string{ident}
 
