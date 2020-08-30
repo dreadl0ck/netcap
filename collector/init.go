@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mgutz/ansi"
 	"github.com/prometheus/client_golang/prometheus"
@@ -109,6 +110,8 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
+	start := time.Now()
+
 	// initialize decoders
 	c.goPacketDecoders, err = decoder.InitGoPacketDecoders(c.config.DecoderConfig)
 	handleDecoderInitError(err, "gopacket")
@@ -117,7 +120,7 @@ func (c *Collector) Init() (err error) {
 	handleDecoderInitError(err, "custom")
 
 	c.buildProgressString()
-	c.printlnStdOut("done")
+	c.printlnStdOut("done in", time.Since(start))
 
 	// set pointer of collectors atomic counter map in encoder pkg
 	decoder.SetErrorMap(c.errorMap)
@@ -141,12 +144,7 @@ func (c *Collector) Init() (err error) {
 		go c.freeOSMemory()
 	}
 
-	// create log file
-	c.mu.Lock()
-	c.errorLogFile, err = os.Create(filepath.Join(c.config.DecoderConfig.Out, "errors.log"))
-	c.mu.Unlock()
-
-	return
+	return nil
 }
 
 // displays a prompt message to the terminal and returns a bool indicating the user decision.
