@@ -1,11 +1,7 @@
 # TODOs
 
+- measure and log time for decoder init
 - errors.log / debug.log file creation ?
-- move all logfile inits into a single function call + netcap.log
- 
-- dump service banner debugs into dedicated logfile
-- dump pop3 debugs into dedicated logfile
-
 - errors.log: sort by count
 
 - dockerfiles: add docker directory and then subdirs for different dists: eg: docker/ubuntu/Dockerfile

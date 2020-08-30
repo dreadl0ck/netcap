@@ -32,10 +32,6 @@ func SetConfig(cfg *Config) {
 	streamFactory.fsmOptions = reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: conf.AllowMissingInit,
 	}
-
-	if conf.Debug {
-		pop3Debug = true
-	}
 }
 
 // DefaultConfig is a sane example configuration for the encoder package.

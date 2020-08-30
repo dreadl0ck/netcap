@@ -995,6 +995,8 @@ func (a *Assembler) FlushAll() (closed int) {
 	closed = len(conns)
 
 	// create and start new bar
+	// TODO: when using multiple assemblers, only the first FlushAll invocation will flush the data
+	// and the remaining invocations will render a complete progress bar...
 	bar := pb.StartNew(closed)
 
 	for _, conn := range conns {
