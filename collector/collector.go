@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 	"io"
 	"log"
@@ -33,14 +34,12 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
-	"github.com/dustin/go-humanize"
-	"github.com/evilsocket/islazy/tui"
-	"github.com/mgutz/ansi"
-
 	"github.com/dreadl0ck/netcap/decoder"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dustin/go-humanize"
+	"github.com/evilsocket/islazy/tui"
 )
 
 // errInvalidOutputDirectory indicates that a file path was supplied instead of a directory.
@@ -202,34 +201,17 @@ func (c *Collector) handlePacketTimeout(p *packet) {
 
 // print errors to stdout in red.
 func (c *Collector) printErrors() {
-	c.errorMap.Lock()
-	if len(c.errorMap.Items) > 0 {
-		fmt.Println("")
-
-		for msg, count := range c.errorMap.Items {
-			fmt.Println(ansi.Red, "[ERROR]", msg, "COUNT:", count, ansi.Reset)
-		}
-
-		fmt.Println("")
-	}
-	c.errorMap.Unlock()
+	fmt.Println(ansi.Red, c.getErrorSummary(), ansi.Reset)
 }
 
 // closes the logfile for errors.
 func (c *Collector) closeErrorLogFile() {
-	c.errorMap.Lock()
 
-	// append  stats
-	var stats string
-	for msg, count := range c.errorMap.Items {
-		stats += fmt.Sprintln("[ERROR]", msg, "COUNT:", count)
-	}
-
-	c.errorMap.Unlock()
+	summary := c.getErrorSummary()
 
 	c.mu.Lock()
 
-	_, err := c.errorLogFile.WriteString(stats)
+	_, err := c.errorLogFile.WriteString(summary)
 	if err != nil {
 		c.log.Error("failed to write stats into error log", zap.Error(err))
 

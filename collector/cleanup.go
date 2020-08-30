@@ -108,6 +108,11 @@ func (c *Collector) cleanup(force bool) {
 
 	c.closeErrorLogFile()
 	c.stats()
+
+	if c.config.DecoderConfig.Debug {
+		c.printErrors()
+	}
+
 	c.printlnStdOut("execution time", time.Since(c.start))
 
 	// close the log file handles
@@ -118,9 +123,5 @@ func (c *Collector) cleanup(force bool) {
 				fmt.Println("failed to close logfile handle:", err)
 			}
 		}
-	}
-
-	if c.config.DecoderConfig.Debug {
-		c.printErrors()
 	}
 }
