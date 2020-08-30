@@ -1,6 +1,7 @@
 # TODOs
 
-- errors.log: sort by count
+- move logic to identify protocols from stream banners into dedicated pkg
+- provide a service detection mapping for the banner matching, to make a good first guess based on the protocol which signatures to try first
 
 - dockerfiles: add docker directory and then subdirs for different dists: eg: docker/ubuntu/Dockerfile
 - add command to reset elastic indices and patterns 
@@ -10,15 +11,12 @@
 - https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-module-golang.html
 - jaeger tracing
 
-- move logic to identify protocols from stream banners into dedicated pkg
 - enrich POP3 information if no Mails have been transferred, e.g. capture the command series for fingerprinting
 
 - implement ipprofile csv generation
 - count device and ip profiles on stats structure
 - simplify decoder creation and update documentation
 - document stream decoder implementation
-
-- provide a service detection mapping for the banner matching, to make a good first guess based on the protocol which signatures to try first
 
 - add logging pkg to create dedicated file loggers for different components
 
