@@ -227,6 +227,7 @@ func Run() {
 			StopAfterServiceProbeMatch: *flagStopAfterServiceProbeMatch,
 			CustomRegex:                *flagCustomCredsRegex,
 			StreamBufferSize:           *flagStreamBufferSize,
+			IgnoreDecoderInitErrors:    *flagIgnoreInitErrs,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    *flagReverseDNS,
