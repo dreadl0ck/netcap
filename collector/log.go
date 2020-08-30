@@ -20,6 +20,7 @@ import (
 	"github.com/dreadl0ck/netcap/logger"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"os"
+	"path/filepath"
 )
 
 // initLogging can be used to open the logfile before calling Init()
@@ -132,6 +133,11 @@ func (c *Collector) initLogging() error {
 		serviceLogFile,
 		pop3LogFile,
 	)
+
+	// create errors.log file
+	c.mu.Lock()
+	c.errorLogFile, err = os.Create(filepath.Join(c.config.DecoderConfig.Out, "errors.log"))
+	c.mu.Unlock()
 
 	return nil
 }
