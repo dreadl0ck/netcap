@@ -32,6 +32,7 @@ const (
 	reserved = "Reserved"
 )
 
+// TODO: add a command to fetch the latest version
 // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
 
 // excerpt:
@@ -68,6 +69,7 @@ func getServiceName(in string) string {
 }
 
 // InitServiceDB initializes the ports to service names mapping.
+// TODO: include service names for other transport protocols
 func InitServiceDB() {
 	var (
 		f, err    = os.Open(filepath.Join(DataBaseSource, "service-names-port-numbers.csv"))
@@ -187,9 +189,9 @@ func InitServiceDB() {
 	}
 }
 
-// LookupServiceByPort looks up the service name associated with a given port.
-func LookupServiceByPort(port int, typ string) string {
-	if typ == "TCP" {
+// LookupServiceByPort looks up the service name associated with a given port and protocol.
+func LookupServiceByPort(port int, protocol string) string {
+	if protocol == "TCP" {
 		if res, ok := tcpPortMap[port]; ok {
 			return res.service
 		}

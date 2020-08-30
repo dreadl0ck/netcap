@@ -2,6 +2,7 @@ package transform
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
@@ -9,14 +10,22 @@ import (
 )
 
 func toHostsForService() {
-	var ip, port string
+	var (
+		ip   string
+		port int32
+	)
 
 	maltego.ServiceTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
 			if len(ip) == 0 {
 				ip = lt.Values["ip"]
-				port = lt.Values["port"]
+				portStr := lt.Values["port"]
+				portNum, err := strconv.Atoi(portStr)
+				if err != nil {
+					log.Fatal("invalid port", err)
+				}
+				port = int32(portNum)
 				log.Println("searching for ip", ip, "and port", port)
 			}
 

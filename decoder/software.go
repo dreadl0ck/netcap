@@ -43,6 +43,7 @@ import (
 
 const (
 	protoTCP      = "TCP"
+	protoUDP      = "UDP"
 	serviceHTTP   = "HTTP"
 	serviceSSH    = "SSH"
 	servicePOP3   = "POP3"

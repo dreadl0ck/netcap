@@ -1,7 +1,9 @@
 # TODOs
 
-- move logic to identify protocols from stream banners into dedicated pkg
-- provide a service detection mapping for the banner matching, to make a good first guess based on the protocol which signatures to try first
+- add flag for ingore decoder init errors
+- properly init logfiles in unit tests
+- move logic to identify protocols from stream banners into dedicated pkg and use ports to improve first guess
+- decodingError: add flow information for debugging
 
 - dockerfiles: add docker directory and then subdirs for different dists: eg: docker/ubuntu/Dockerfile
 - add command to reset elastic indices and patterns 

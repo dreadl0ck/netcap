@@ -146,7 +146,7 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 				if creds := ch(banner, ident, firstPacket); creds != nil { // write audit record
 					writeCredentials(creds)
 
-					// stop after a match for now
+					// stop after a match if configured
 					if conf.StopAfterHarvesterMatch {
 						break
 					}

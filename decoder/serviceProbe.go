@@ -19,9 +19,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -37,7 +39,7 @@ import (
 
 var (
 	// all initialized service probes at runtime.
-	serviceProbes []*serviceProbe
+	serviceProbes map[string][]*serviceProbe
 
 	// ignored probes for RE2 engine (RE2 does not support backtracking
 	// groups in regexes with backtracking will be replaced by wildcard groups).
@@ -155,8 +157,42 @@ func writeSoftwareFromBanner(serv *service, ident, probeIdent string) {
 }
 
 func matchServiceProbes(serv *service, banner []byte, ident string) {
-	// match banner against nmap service probes
-	for _, probe := range serviceProbes {
+
+	var (
+		expectedCategory string
+		found bool
+	)
+
+	// lookup expected identifier based on port
+	switch serv.Protocol {
+	case protoTCP:
+		expectedCategory = servicesByPortsTCP[serv.Port]
+	case protoUDP:
+		expectedCategory = servicesByPortsUDP[serv.Port]
+	}
+
+	if expectedCategory != "" {
+		if probes, ok := serviceProbes[expectedCategory]; ok {
+			found = matchProbes(serv, probes, banner, ident)
+		}
+	}
+
+	// if no match was found OR stopping after a match is disabled
+	if !found || !conf.StopAfterServiceProbeMatch {
+		// match banner against ALL nmap service probes
+		for category, probes := range serviceProbes {
+			// exclude the category that was already searched
+			if category == expectedCategory {
+				continue
+			}
+
+			_ = matchProbes(serv, probes, banner, ident)
+		}
+	}
+}
+
+func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident string) (found bool) {
+	for _, probe := range probes {
 		if conf.UseRE2 {
 			if m := probe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
@@ -173,6 +209,14 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				}
 
 				writeSoftwareFromBanner(serv, ident, probe.Ident)
+
+				// return true if search shall be stopped after the first match
+				if conf.StopAfterServiceProbeMatch {
+					return true
+				}
+
+				// otherwise continue, but mark search as successful
+				found = true
 			}
 		} else { // use the .NET compatible regex implementation
 			if m, err := probe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
@@ -190,9 +234,19 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				}
 
 				writeSoftwareFromBanner(serv, ident, probe.Ident)
+
+				// return true if search shall be stopped after the first match
+				if conf.StopAfterServiceProbeMatch {
+					return true
+				}
+
+				// otherwise continue, but mark search as successful
+				found = true
 			}
 		}
 	}
+
+	return
 }
 
 var reGroup = regexp.MustCompile("\\$[0-9]+")
@@ -290,13 +344,13 @@ func enumerate(in string) string {
 
 func initServiceProbes() error {
 	// load nmap service probes
-	data, err := ioutil.ReadFile("/usr/local/etc/netcap/dbs/nmap-service-probes")
+	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "nmap-service-probes"))
 	if err != nil {
 		return err
 	}
 
 	lines := strings.Split(string(data), "\n")
-	serviceProbes = make([]*serviceProbe, 0, len(lines))
+	serviceProbes = make(map[string][]*serviceProbe, 0)
 
 	for _, line := range lines {
 		if len(line) == 0 || line == "\n" || strings.HasPrefix(line, "#") {
@@ -330,13 +384,12 @@ func initServiceProbes() error {
 				checkOpts bool
 				parseMeta bool
 				s         = new(serviceProbe)
+				b         byte
 			)
 
 			// enumerate the ident type (e.g: http -> http-1 for the first http banner probe)
 			// useful to see which rule matched exactly, since multiple rules for the same protocol / service are usually present
 			s.Ident = enumerate(ident)
-
-			var b byte
 
 			for {
 				b, err = r.ReadByte()
@@ -345,10 +398,8 @@ func initServiceProbes() error {
 				} else if err != nil {
 					return err
 				}
-				// fmt.Println("read", string(b))
 
 				if unicode.IsSpace(rune(b)) && !checkOpts {
-					// fmt.Println("its a space", string(b))
 					spaces++
 
 					if delim != 0 {
@@ -362,8 +413,6 @@ func initServiceProbes() error {
 				// example: p/Amanda backup system index server/ i/broken: GLib $1 too old/ cpe:/a:amanda:amanda/
 				if parseMeta { // skip over whitespace
 					if unicode.IsSpace(rune(b)) {
-						// fmt.Println("parse meta: skip whitespace")
-
 						continue
 					}
 
@@ -440,7 +489,7 @@ func initServiceProbes() error {
 				// - there can be an optional i for case insensitive matching
 				// - or an 's' to include newlines in the '.' specifier
 				if checkOpts {
-					if unicode.IsSpace(rune(b)) { // fmt.Println("options done!")
+					if unicode.IsSpace(rune(b)) {
 						// options done
 						checkOpts = false
 						parseMeta = true
@@ -460,7 +509,6 @@ func initServiceProbes() error {
 				// check if delimiter was already found
 				if delim != 0 {
 					if b == delim {
-						// fmt.Println("parsed regex", ansi.Blue, string(regex), ansi.Reset, "from line", ansi.Green, line, ansi.Reset)
 
 						// parse options
 						checkOpts = true
@@ -485,8 +533,6 @@ func initServiceProbes() error {
 					} else if err != nil {
 						return err
 					}
-
-					// fmt.Println("read delim", string(b))
 
 					delim = b
 
@@ -535,7 +581,11 @@ func initServiceProbes() error {
 				}
 			} else {
 				s.RegExRaw = finalReg
-				serviceProbes = append(serviceProbes, s)
+				if arr, ok := serviceProbes[ident]; ok {
+					arr = append(arr, s)
+				} else {
+					serviceProbes[ident] = []*serviceProbe{s}
+				}
 			}
 		}
 	}
