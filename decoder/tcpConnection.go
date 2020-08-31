@@ -631,6 +631,10 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			}
 		}
 
+		if !conf.Quiet {
+			fmt.Println("processing last TCP streams")
+		}
+
 		// flush assemblers
 		// must be done after waiting for connections or there might be data loss
 		for i, a := range assemblers {
@@ -638,12 +642,9 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				zap.Int("current", i+1),
 				zap.Int("numAssemblers", len(assemblers)),
 			)
-			if !conf.Quiet {
-				fmt.Println("processing last TCP streams")
-			}
 
 			if i == 0 {
-				// only display progress bat for the first flush, since all following ones will be instant.
+				// only display progress bar for the first flush, since all following ones will be instant.
 				decoderLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
 			} else {
 				decoderLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))

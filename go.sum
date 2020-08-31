@@ -84,8 +84,8 @@ github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557 h1:m/rxJiRUg
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7 h1:yBEizTC9Sj3v7e5q1zqc/L5P0h+wRfsx9eZqtWcBN2g=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200322190608-ceb6f481d0e7/go.mod h1:G6cJViboLOuUCto9bY0+lSiMRkFcJPVITDqPM5/ShkI=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200808174515-68baaaca9c4b h1:xWHtWYXqgCMa8NoilwCB/ZA0lSBLBzlB1TiiUVtZoeg=
-github.com/dreadl0ck/gopacket v1.1.16-0.20200808174515-68baaaca9c4b/go.mod h1:62Gx7zJXfQjlnN/oUgrNQ5SSZ7k55RwHg7prdF9kHXQ=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200831153559-a0d2e73e902d h1:mCMON8wZr1fmuGNOfkehnnlBQ1NhXC49rVVwlpVM9OQ=
+github.com/dreadl0ck/gopacket v1.1.16-0.20200831153559-a0d2e73e902d/go.mod h1:AO4gQoj71eHM7uHvvmIi0V4/vM8LJ1nuGPq9PVNHCrQ=
 github.com/dreadl0ck/ja3 v1.0.0-dreadl0ck-gopacket h1:pDHF+0QbW9e8xqdwiFLXowcS53ZF9bhrQVUlYXzcVcE=
 github.com/dreadl0ck/ja3 v1.0.0-dreadl0ck-gopacket/go.mod h1:xv5UNKcRNSaUTREt90/G5CnXVX+iBgbI8cidF4CEn4g=
 github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket h1:FOqjFi//FT2SslC28SqsqkiSYzXIqcrjqYOOufSA6TU=
@@ -189,10 +189,7 @@ github.com/google/go-cmp v0.5.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.5.1 h1:JFrFEBb2xKufg6XkJsJr+WbKb4FQlURi5RUcBveYu9k=
 github.com/google/go-cmp v0.5.1/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
-github.com/google/gopacket v1.1.17 h1:rMrlX2ZY2UbvT+sdz3+6J+pp2z+msCq9MxTU6ymxbBY=
 github.com/google/gopacket v1.1.17/go.mod h1:UdDNZ1OO62aGYVnPhxT1U6aI7ukYtA/kB8vaU0diBUM=
-github.com/google/gopacket v1.1.18 h1:lum7VRA9kdlvBi7/v2p7/zcbkduHaCH/SVVyurs7OpY=
-github.com/google/gopacket v1.1.18/go.mod h1:UdDNZ1OO62aGYVnPhxT1U6aI7ukYtA/kB8vaU0diBUM=
 github.com/google/pprof v0.0.0-20200615235658-03e1cf38a040 h1:i7RUpu0EybzQyQvPT7J3MmODs4+gPcHsD/pqW0uIYVo=
 github.com/google/pprof v0.0.0-20200615235658-03e1cf38a040/go.mod h1:ZgVRPoUq/hfqzAqh7sHMqb3I9Rq5C59dIz2SbBwJ4eM=
 github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99 h1:Ak8CrdlwwXwAZxzS66vgPt4U8yUZX7JwLvVR58FN5jM=
