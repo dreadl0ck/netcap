@@ -109,27 +109,24 @@ func (h *pop3Reader) Decode() {
 	// parse conversation
 	for _, d := range h.parent.merged {
 		if d.dir == previousDir {
-			// fmt.Println(d.dir, "collect", len(d.raw), d.ac.GetCaptureInfo().Timestamp)
 			buf.Write(d.raw)
 		} else {
-			var err error
+			var (
+				err error
+				b   = bufio.NewReader(&buf)
+			)
 
-			// fmt.Println(hex.Dump(buf.Bytes()))
-
-			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = h.readRequest(b)
-				}
+				err = h.readRequest(b)
 			} else {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = h.readResponse(b)
-				}
+				err = h.readResponse(b)
 			}
-			// TODO: handle err?
-			// if err != nil {
-			// 	fmt.Println(err)
-			// }
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+				decoderLog.Error("error reading POP3",
+					zap.Error(err),
+					zap.String("ident", h.parent.ident),
+				)
+			}
 			buf.Reset()
 			previousDir = d.dir
 
@@ -138,22 +135,23 @@ func (h *pop3Reader) Decode() {
 			continue
 		}
 	}
-	var err error
-	b := bufio.NewReader(&buf)
+
+	var (
+		err error
+		b   = bufio.NewReader(&buf)
+	)
 
 	if previousDir == reassembly.TCPDirClientToServer {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = h.readRequest(b)
-		}
+		err = h.readRequest(b)
 	} else {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = h.readResponse(b)
-		}
+		err = h.readResponse(b)
 	}
-	// TODO: handle err?
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+		decoderLog.Error("error reading POP3",
+			zap.Error(err),
+			zap.String("ident", h.parent.ident),
+		)
+	}
 
 	// fmt.Println(servicePOP3, h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
 
