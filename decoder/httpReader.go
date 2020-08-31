@@ -142,9 +142,11 @@ func (h *httpReader) Decode() {
 		if d.dir == previousDir {
 			buf.Write(d.raw)
 		} else {
-			var err error
+			var (
+				err error
+				b = bufio.NewReader(&buf)
+			)
 
-			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
 				err = h.readRequest(b)
 			} else {
@@ -165,22 +167,23 @@ func (h *httpReader) Decode() {
 		}
 	}
 
-	var err error
+	var (
+		err error
+		b = bufio.NewReader(&buf)
+	)
 
-	b := bufio.NewReader(&buf)
 
 	if previousDir == reassembly.TCPDirClientToServer {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = h.readRequest(b)
-		}
+		err = h.readRequest(b)
 	} else {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = h.readResponse(b)
-		}
+		err = h.readResponse(b)
 	}
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+		decoderLog.Error("error reading HTTP",
+			zap.Error(err),
+			zap.String("ident", h.parent.ident),
+		)
+	}
 
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
@@ -206,7 +209,7 @@ func (h *httpReader) Decode() {
 			})
 		} else {
 			// response without matching request
-			// dont add to output for now
+			// don't add to output for now
 			atomic.AddInt64(&stats.numUnmatchedResp, 1)
 
 			continue
