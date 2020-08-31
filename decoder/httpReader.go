@@ -146,13 +146,9 @@ func (h *httpReader) Decode() {
 
 			b := bufio.NewReader(&buf)
 			if previousDir == reassembly.TCPDirClientToServer {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = h.readRequest(b)
-				}
+				err = h.readRequest(b)
 			} else {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = h.readResponse(b)
-				}
+				err = h.readResponse(b)
 			}
 			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 				decoderLog.Error("error reading HTTP",

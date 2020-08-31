@@ -1,5 +1,8 @@
 # TODOs
- 
+
+- httpMetaStore cleanup
+- stream protocol identification: add stream signature with patterns for client and server streams 
+- gopacket: add fallback for identifying protocols in tcp and udp payloads
 - log service probe misses, ensure tls does not get matched!
 - properly init logfiles in unit tests
 - move logic to identify protocols from stream banners into dedicated pkg and use ports to improve first guess
