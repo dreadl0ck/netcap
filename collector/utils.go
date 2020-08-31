@@ -75,8 +75,15 @@ func clearLine() {
 
 func share(current, total int64) string {
 	percent := (float64(current) / float64(total)) * 100
+	var pad string
+	switch {
+	case percent < 10.00:
+		pad = "  "
+	case percent < 100.00:
+		pad = " "
+	}
 
-	return strconv.FormatFloat(percent, 'f', 5, 64) + "%"
+	return pad + strconv.FormatFloat(percent, 'f', 3, 64) + "%"
 }
 
 func rawBPF(filter string) ([]bpf.RawInstruction, error) {

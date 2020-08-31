@@ -129,8 +129,8 @@ var (
 	flagStopAfterServiceProbeMatch = fs.Bool("stop-after-serviceprobe-match", true, "stop processing the conversation after the first service probe returned a result")
 	flagIgnoreInitErrs             = fs.Bool("ignore-init-errorss", true, "ignore errors from initializing custom decoders")
 
-	flagBannerSize          = fs.Int("bsize", 512, "size of the stored service banners in bytes")
-	flagHarvesterBannerSize = fs.Int("hbsize", 512, "size of the data passed to the credential harvesters in bytes")
+	flagBannerSize          = fs.Int("bsize", 256, "size of the stored service banners in bytes")
+	flagHarvesterBannerSize = fs.Int("hbsize", 256, "size of the data passed to the credential harvesters in bytes")
 	flagCustomCredsRegex    = fs.String("reCustom", "", "possibility of passing a custom regex for harvesting credentials")
 	flagStreamBufferSize    = fs.Int("stream-buffer", 100, "stream buffer size for tcp stream processor")
 )

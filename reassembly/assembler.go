@@ -994,6 +994,28 @@ func (a *Assembler) FlushAll() (closed int) {
 	conns := a.connPool.connections()
 	closed = len(conns)
 
+	for _, conn := range conns {
+		conn.mu.Lock()
+		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
+			for !half.closed {
+				a.skipFlush(conn, half)
+			}
+
+			if !half.closed {
+				a.closeHalfConnection(conn, half)
+			}
+		}
+		conn.mu.Unlock()
+	}
+
+	return
+}
+
+// FlushAllProgress behaves like FlushAll, but displays a progress bar additionally.
+func (a *Assembler) FlushAllProgress() (closed int) {
+	conns := a.connPool.connections()
+	closed = len(conns)
+
 	// create and start new bar
 	// TODO: when using multiple assemblers, only the first FlushAll invocation will flush the data
 	// and the remaining invocations will render a complete progress bar...

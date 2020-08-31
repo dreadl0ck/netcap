@@ -15,14 +15,14 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dustin/go-humanize"
+	"go.uber.org/zap"
 	"log"
 	"time"
 
-	"github.com/dustin/go-humanize"
-
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/resolvers"
 )
 
 // cleanup before leaving. closes all buffers and displays stats.
@@ -50,12 +50,11 @@ func (c *Collector) cleanup(force bool) {
 		return ch
 	}
 
-	c.printStdOut("\nwaiting for main collector wait group...")
+	c.log.Info("waiting for main collector wait group...")
 	select {
 	case <-waitForCollector():
-		c.printlnStdOut(" done!")
 	case <-time.After(defaults.ReassemblyTimeout):
-		c.printStdOut(" timeout after ", defaults.ReassemblyTimeout)
+		c.log.Info(" timeout after ", zap.Duration("reassemblyTimeout", defaults.ReassemblyTimeout))
 	}
 
 	if c.config.ReassembleConnections {
@@ -63,6 +62,10 @@ func (c *Collector) cleanup(force bool) {
 		decoder.CleanupReassembly(!force, c.assemblers)
 	}
 
+	c.teardown()
+}
+
+func (c *Collector) teardown() {
 	// flush all gopacket decoders
 	for _, decoders := range c.goPacketDecoders {
 		for _, e := range decoders {
