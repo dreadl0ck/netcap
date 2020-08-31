@@ -1,5 +1,6 @@
 # TODOs
-
+ 
+- log service probe misses, ensure tls does not get matched!
 - properly init logfiles in unit tests
 - move logic to identify protocols from stream banners into dedicated pkg and use ports to improve first guess
 - decodingError: add flow information for debugging
@@ -18,7 +19,7 @@
 - count device and ip profiles on stats structure
 - simplify decoder creation and update documentation
 - document stream decoder implementation
-
+        
 - add logging pkg to create dedicated file loggers for different components
 
 - create an index for document errors that occurred when pushing data

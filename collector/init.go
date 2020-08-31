@@ -103,6 +103,7 @@ func (c *Collector) Init() (err error) {
 	}
 
 	c.printStdOut("initializing decoders... ")
+	c.netcapLog.Println("initializing decoders... ")
 
 	if c.config.DecoderConfig.ExportMetrics {
 		for _, m := range types.Metrics {

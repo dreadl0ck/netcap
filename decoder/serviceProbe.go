@@ -161,6 +161,7 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 	var (
 		expectedCategory string
 		found            bool
+		matched int
 	)
 
 	// lookup expected identifier based on port
@@ -174,7 +175,8 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 	if expectedCategory != "" {
 		if probes, ok := serviceProbes[expectedCategory]; ok {
 			decoderLog.Info("matching probes", zap.String("ident", ident), zap.String("expectedCategory", expectedCategory))
-			found = matchProbes(serv, probes, banner, ident)
+			found, matched = matchProbes(serv, probes, banner, ident)
+			serviceLog.Println(ident, "found?", found, "at", matched, "of", len(probes), "expected", expectedCategory)
 		}
 	}
 
@@ -187,13 +189,19 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				continue
 			}
 
-			_ = matchProbes(serv, probes, banner, ident)
+			found, matched = matchProbes(serv, probes, banner, ident)
+			if found && conf.StopAfterServiceProbeMatch {
+				serviceLog.Println(ident, "FOUND at", matched, "of", len(probes), "expected", expectedCategory)
+				return
+			}
 		}
 	}
+
+	serviceLog.Println(ident, "ALL probes tried, found", found, "matched", matched)
 }
 
-func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident string) (found bool) {
-	for _, probe := range probes {
+func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident string) (found bool, index int) {
+	for i, probe := range probes {
 		if conf.UseRE2 {
 			if m := probe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
@@ -213,7 +221,7 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 
 				// return true if search shall be stopped after the first match
 				if conf.StopAfterServiceProbeMatch {
-					return true
+					return true, i
 				}
 
 				// otherwise continue, but mark search as successful
@@ -238,7 +246,7 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 
 				// return true if search shall be stopped after the first match
 				if conf.StopAfterServiceProbeMatch {
-					return true
+					return true, i
 				}
 
 				// otherwise continue, but mark search as successful
@@ -247,7 +255,7 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 		}
 	}
 
-	return
+	return found, len(probes)
 }
 
 var reGroup = regexp.MustCompile("\\$[0-9]+")

@@ -15,7 +15,7 @@ require (
 	github.com/dlclark/regexp2 v1.2.0
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
 	github.com/dreadl0ck/go-dpi v0.0.0-20200429152202-653b4f217bbf
-	github.com/dreadl0ck/gopacket v1.1.16-0.20200808174515-68baaaca9c4b
+	github.com/dreadl0ck/gopacket v1.1.16-0.20200831153559-a0d2e73e902d
 	github.com/dreadl0ck/ja3 v1.0.0-dreadl0ck-gopacket
 	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
 	github.com/dsoprea/go-exif/v2 v2.0.0-20200717071058-9393e7afd446
