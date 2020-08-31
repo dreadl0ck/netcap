@@ -619,33 +619,35 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	// wait for stream reassembly to finish
 	if conf.WaitForConnections || wait {
 
-		if !conf.Quiet {
-			fmt.Print("\nwaiting for last streams to finish processing...")
-		}
+		decoderLog.Info("waiting for last streams to finish processing...")
 
 		// wait for remaining connections to finish processing
 		// will wait forever if there are streams that are never shutdown via FIN/RST
 		select {
 		case <-waitForConns():
-			if !conf.Quiet {
-				fmt.Println(" done!")
-			}
 		case <-time.After(defaults.ReassemblyTimeout):
 			if !conf.Quiet {
-				fmt.Println(" timeout after", defaults.ReassemblyTimeout)
+				decoderLog.Info(" timeout after", zap.Duration("reassembly_timeout", defaults.ReassemblyTimeout))
 			}
 		}
 
 		// flush assemblers
 		// must be done after waiting for connections or there might be data loss
 		for i, a := range assemblers {
-			utils.ClearLine()
-			fmt.Print("flushing tcp assembler ", i+1, "/", len(assemblers))
-			decoderLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
-		}
+			decoderLog.Info("flushing tcp assembler",
+				zap.Int("current", i+1),
+				zap.Int("numAssemblers", len(assemblers)),
+			)
+			if !conf.Quiet {
+				fmt.Println("processing last TCP streams")
+			}
 
-		if !conf.Quiet {
-			fmt.Println(" done!")
+			if i == 0 {
+				// only display progress bat for the first flush, since all following ones will be instant.
+				decoderLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
+			} else {
+				decoderLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
+			}
 		}
 
 		streamFactory.Lock()
@@ -663,13 +665,8 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			}
 		}
 
-		if !conf.Quiet {
-			fmt.Println()
-		}
-
-		fmt.Print("waiting for stream processor wait group... ")
+		decoderLog.Info("waiting for stream processor wait group... ")
 		sp.wg.Wait()
-		fmt.Println("done!")
 
 		// explicitly feed a nil stream to exit the goroutines used for processing
 		for _, w := range sp.workers {

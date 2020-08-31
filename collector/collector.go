@@ -135,6 +135,7 @@ func (c *Collector) handleSignals() {
 		go func() {
 			sign := <-sigs
 			fmt.Println("force quitting, signal:", sign)
+			c.teardown()
 			os.Exit(0)
 		}()
 

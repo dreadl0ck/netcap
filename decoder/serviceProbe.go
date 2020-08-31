@@ -160,7 +160,7 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 
 	var (
 		expectedCategory string
-		found bool
+		found            bool
 	)
 
 	// lookup expected identifier based on port
@@ -173,6 +173,7 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 
 	if expectedCategory != "" {
 		if probes, ok := serviceProbes[expectedCategory]; ok {
+			decoderLog.Info("matching probes", zap.String("ident", ident), zap.String("expectedCategory", expectedCategory))
 			found = matchProbes(serv, probes, banner, ident)
 		}
 	}

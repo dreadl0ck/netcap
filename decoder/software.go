@@ -459,6 +459,7 @@ func analyzeSoftware(i *packetInfo) {
 			default:
 			}
 		}
+
 		dst, err := strconv.Atoi(tl.TransportFlow().Dst().String())
 		if err == nil {
 			switch tl.LayerType() {
@@ -492,6 +493,7 @@ func analyzeSoftware(i *packetInfo) {
 			jaCacheMutex.Lock()
 			ja3Cache[i.srcIP] = ja3Hash
 			jaCacheMutex.Unlock()
+
 			JA3 = ""
 			JA3s = ""
 		} else {
@@ -524,10 +526,12 @@ func writeSoftware(software []*software, update func(s *software)) {
 			continue
 		}
 		s.Lock()
+
 		if s.Software == nil {
 			s.Unlock()
 			continue
 		}
+
 		ident := s.Product + "/" + s.Version
 
 		// trim version field if its too long

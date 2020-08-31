@@ -111,11 +111,9 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reasse
 // waitGoRoutines waits until the goroutines launched to process TCP streams are done
 // this will block forever if there are streams that are never shutdown (via RST or FIN flags).
 func (factory *tcpConnectionFactory) waitGoRoutines() {
-	if !conf.Quiet {
-		factory.Lock()
-		fmt.Println("\nwaiting for", factory.numActive, "flows")
-		factory.Unlock()
-	}
+	factory.Lock()
+	decoderLog.Info("waiting for last TCP streams to process", zap.Int64("num", factory.numActive))
+	factory.Unlock()
 
 	factory.wg.Wait()
 }
