@@ -14,6 +14,7 @@
 package utils
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
@@ -36,6 +37,14 @@ import (
 var noPluralsMap = map[string]struct{}{
 	"Software": {},
 	"Ethernet": {},
+}
+
+func DecodePort(raw []byte) int32 {
+	if len(raw) != 2 {
+		return 0
+	}
+
+	return int32(binary.BigEndian.Uint16(raw))
 }
 
 // OpenBleve is a simple wrapper for the bleve open call

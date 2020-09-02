@@ -14,7 +14,7 @@
 package decoder
 
 import (
-	"encoding/binary"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -224,8 +224,8 @@ func updatePorts(i *packetInfo, p *ipProfile, source bool) {
 		var (
 			// get packet size
 			dataLen   = uint64(len(i.p.Data()))
-			srcPort   = int32(binary.BigEndian.Uint16(tl.TransportFlow().Src().Raw()))
-			dstPort   = int32(binary.BigEndian.Uint16(tl.TransportFlow().Dst().Raw()))
+			srcPort   = utils.DecodePort(tl.TransportFlow().Src().Raw())
+			dstPort   = utils.DecodePort(tl.TransportFlow().Dst().Raw())
 			layerType = tl.LayerType().String()
 		)
 
@@ -297,7 +297,7 @@ func initPorts(i *packetInfo) (
 
 		// source port
 		srcPorts = append(srcPorts, &types.Port{
-			PortNumber: int32(binary.BigEndian.Uint16(tl.TransportFlow().Src().Raw())),
+			PortNumber: utils.DecodePort(tl.TransportFlow().Src().Raw()),
 			Bytes:      dataLen,
 			Packets:    1,
 			Protocol:   tl.LayerType().String(),
@@ -305,7 +305,7 @@ func initPorts(i *packetInfo) (
 
 		// destination port
 		dstPorts = append(dstPorts, &types.Port{
-			PortNumber: int32(binary.BigEndian.Uint16(tl.TransportFlow().Dst().Raw())),
+			PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
 			Bytes:      dataLen,
 			Packets:    1,
 			Protocol:   tl.LayerType().String(),

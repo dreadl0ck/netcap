@@ -220,7 +220,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			sshDecoder.write(&types.SSH{
 				Timestamp:  h.parent.client.FirstPacket().UnixNano(),
 				HASSH:      hash,
-				Flow:       utils.ReverseIdent(h.parent.ident),
+				Flow:       utils.ReverseFlowIdent(h.parent.ident),
 				Ident:      h.serverIdent,
 				Algorithms: raw,
 				IsClient:   false,

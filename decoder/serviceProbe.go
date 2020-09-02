@@ -178,6 +178,9 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 			found, matched = matchProbes(serv, probes, banner, ident)
 			serviceLog.Println(ident, "found?", found, "at", matched, "of", len(probes), "expected", expectedCategory)
 		}
+		if !found && conf.StopAfterServiceCategoryMiss {
+			return
+		}
 	}
 
 	// if no match was found OR stopping after a match is disabled
@@ -195,9 +198,9 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 				return
 			}
 		}
-	}
 
-	serviceLog.Println(ident, "ALL probes tried, found", found, "matched", matched)
+		serviceLog.Println(ident, "ALL probes tried, found:", found, "matched", matched)
+	}
 }
 
 func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident string) (found bool, index int) {

@@ -446,7 +446,7 @@ func analyzeSoftware(i *packetInfo) {
 
 	// Lookup Service For Port Numbers
 	if tl := i.p.TransportLayer(); tl != nil { // set flow ident
-		f = i.srcIP + ":" + tl.TransportFlow().Src().String() + "->" + i.dstIP + ":" + tl.TransportFlow().Dst().String()
+		f = utils.CreateFlowIdent(i.srcIP, tl.TransportFlow().Src().String(), i.dstIP, tl.TransportFlow().Dst().String())
 
 		// get source port and convert to integer
 		src, err := strconv.Atoi(tl.TransportFlow().Src().String())
@@ -593,7 +593,7 @@ func updateSoftwareAuditRecord(dp *deviceProfile, p *software, i *packetInfo) {
 	p.DeviceProfiles = append(p.DeviceProfiles, dpIdent)
 	tl := i.p.TransportLayer()
 	if tl != nil {
-		p.Flows = append(p.Flows, i.srcIP+":"+tl.TransportFlow().Src().String()+"->"+i.dstIP+":"+tl.TransportFlow().Dst().String())
+		p.Flows = append(p.Flows, utils.CreateFlowIdent(i.srcIP, tl.TransportFlow().Src().String(), i.dstIP, tl.TransportFlow().Dst().String()))
 	} else {
 		// no transport layer
 		p.Flows = append(p.Flows, i.srcIP+"->"+i.dstIP)

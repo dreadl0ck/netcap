@@ -225,6 +225,7 @@ func Run() {
 			HarvesterBannerSize:        *flagHarvesterBannerSize,
 			StopAfterHarvesterMatch:    *flagStopAfterHarvesterMatch,
 			StopAfterServiceProbeMatch: *flagStopAfterServiceProbeMatch,
+			StopAfterServiceCategoryMiss: *flagStopAfterServiceCategoryMiss,
 			CustomRegex:                *flagCustomCredsRegex,
 			StreamBufferSize:           *flagStreamBufferSize,
 			IgnoreDecoderInitErrors:    *flagIgnoreInitErrs,

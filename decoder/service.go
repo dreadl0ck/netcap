@@ -14,7 +14,7 @@
 package decoder
 
 import (
-	"encoding/binary"
+	"github.com/dreadl0ck/netcap/utils"
 	"strconv"
 	"strings"
 	"sync"
@@ -128,7 +128,7 @@ func saveTCPServiceBanner(s streamReader) {
 	serv := newService(s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
 	serv.Banner = string(banner)
 	serv.IP = s.Network().Dst().String()
-	serv.Port = int32(binary.BigEndian.Uint16(s.Transport().Dst().Raw()))
+	serv.Port = utils.DecodePort(s.Transport().Dst().Raw())
 
 	// set flow ident, h.parent.ident is the client flow
 	serv.Flows = []string{s.Ident()}

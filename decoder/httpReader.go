@@ -17,10 +17,10 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
@@ -148,9 +148,13 @@ func (h *httpReader) Decode() {
 			)
 
 			if previousDir == reassembly.TCPDirClientToServer {
-				err = h.readRequest(b)
+				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+					err = h.readRequest(b)
+				}
 			} else {
-				err = h.readResponse(b)
+				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+					err = h.readResponse(b)
+				}
 			}
 			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 				decoderLog.Error("error reading HTTP",
@@ -174,9 +178,13 @@ func (h *httpReader) Decode() {
 
 
 	if previousDir == reassembly.TCPDirClientToServer {
-		err = h.readRequest(b)
+		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			err = h.readRequest(b)
+		}
 	} else {
-		err = h.readResponse(b)
+		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			err = h.readResponse(b)
+		}
 	}
 	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
 		decoderLog.Error("error reading HTTP",
@@ -882,8 +890,8 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		ContentType:         contentType,
 		SrcIP:               h.parent.net.Src().String(),
 		DstIP:               h.parent.net.Dst().String(),
-		SrcPort:             int32(binary.BigEndian.Uint16(h.parent.transport.Src().Raw())),
-		DstPort:             int32(binary.BigEndian.Uint16(h.parent.transport.Dst().Raw())),
+		SrcPort:             utils.DecodePort(h.parent.transport.Src().Raw()),
+		DstPort:             utils.DecodePort(h.parent.transport.Dst().Raw()),
 	})
 
 	return nil
