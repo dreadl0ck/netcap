@@ -14,9 +14,8 @@
 package decoder
 
 import (
-	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"go.uber.org/zap"
-	"path/filepath"
 	"sync"
 
 	"github.com/dreadl0ck/gopacket"
@@ -74,7 +73,7 @@ func (factory *tcpConnectionFactory) New(net, transport gopacket.Flow, ac reasse
 		net:         net,
 		transport:   transport,
 		tcpstate:    reassembly.NewTCPSimpleFSM(factory.fsmOptions),
-		ident:       filepath.Clean(fmt.Sprintf("%s-%s", net, transport)),
+		ident:       utils.CreateFlowIdentFromLayerFlows(net, transport),
 		optchecker:  reassembly.NewTCPOptionCheck(),
 		firstPacket: ac.GetCaptureInfo().Timestamp,
 	}

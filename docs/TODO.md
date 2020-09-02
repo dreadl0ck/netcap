@@ -1,5 +1,9 @@
 # TODOs
 
+- log decoding and reassembly errors into elastic
+- create script to test different parameters on a single file
+- fix failing test-pcaps
+
 - httpMetaStore cleanup
 - stream protocol identification: add stream signature with patterns for client and server streams 
 - gopacket: add fallback for identifying protocols in tcp and udp payloads
@@ -45,7 +49,6 @@
 - remove init function usage
 
 - communityID format from zeek
-- unify flow ident string: src:port -> dst:port
 
 - net dump -stats: show value distribution per field
 

@@ -147,6 +147,9 @@ type Config struct {
 	// stop processing the conversation when the first service probe returns a result
 	StopAfterServiceProbeMatch bool
 
+	// when identifying a category for a service based on the port, stop matching banners when all probes for the category failed
+	StopAfterServiceCategoryMiss bool
+
 	// Buffer data before writing it to disk
 	Buffer bool
 

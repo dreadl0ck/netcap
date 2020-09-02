@@ -31,7 +31,7 @@ func toHostsForService() {
 
 			if service.IP == ip && service.Port == port {
 				for _, f := range service.Flows {
-					srcIP, _, _, _ := utils.ParseIdent(f)
+					srcIP, _, _, _ := utils.ParseFlowIdent(f)
 					ent := trx.AddEntity("netcap.IPAddr", srcIP)
 
 					ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(service.Timestamp))

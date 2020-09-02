@@ -126,8 +126,9 @@ var (
 	flagCloseInactiveTimeout       = fs.Duration("close-inactive-timeout", defaults.CloseInactiveTimeout, "reassembly: close connections that are inactive")
 	flagUseRE2                     = fs.Bool("re2", true, "if true uses the default golang re2 regex engine for service detection")
 	flagStopAfterHarvesterMatch    = fs.Bool("stop-after-harvester-match", true, "stop processing the conversation after the first credential harvester returned a result")
-	flagStopAfterServiceProbeMatch = fs.Bool("stop-after-serviceprobe-match", true, "stop processing the conversation after the first service probe returned a result")
-	flagIgnoreInitErrs             = fs.Bool("ignore-init-errorss", true, "ignore errors from initializing custom decoders")
+	flagStopAfterServiceProbeMatch = fs.Bool("stop-after-service-match", true, "stop processing the conversation after the first service probe returned a result")
+	flagStopAfterServiceCategoryMiss = fs.Bool("stop-after-service-category-miss", true, "stop processing the conversation after the first service probe returned a result")
+	flagIgnoreInitErrs             = fs.Bool("ignore-init-errors", true, "ignore errors from initializing custom decoders")
 
 	flagBannerSize          = fs.Int("bsize", 256, "size of the stored service banners in bytes")
 	flagHarvesterBannerSize = fs.Int("hbsize", 256, "size of the data passed to the credential harvesters in bytes")
