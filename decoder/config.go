@@ -241,5 +241,8 @@ type Config struct {
 	// TCPStreamProcessor
 	StreamBufferSize int
 
+	// DisableGenericVersionHarvester will not use the generic version string regex for the software harvester
+	DisableGenericVersionHarvester bool
+
 	sync.Mutex
 }

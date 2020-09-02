@@ -24,7 +24,7 @@ const (
 	BufferSize = 1024 * 1024 * 12 // 12 MB
 
 	// PacketBuffer is the size of the channel for feeding packets into workers.
-	PacketBuffer = 100
+	PacketBuffer = 1000
 
 	// SnapLen is the default length for an ethernet frame:
 	// 1500 Ethernet MTU + 14 bytes Ethernet header.
@@ -32,17 +32,17 @@ const (
 
 	// ConnFlushInterval configures how often the connections are flushed for Flow and Connection audit record generation.
 	// TODO: refactor to flush periodically, instead of every n packets?
-	ConnFlushInterval = 0
+	ConnFlushInterval = 1000
 
 	// FlowFlushInterval configures how often the connections are flushed for Flow and Connection audit record generation.
 	// TODO: refactor to flush periodically, instead of every n packets?
-	FlowFlushInterval = 0
+	FlowFlushInterval = 1000
 
 	// ConnTimeOut will be used to set age threshold if the corresponding FlushInterval > 0.
-	ConnTimeOut = 0 * time.Second
+	ConnTimeOut = 10 * time.Second
 
 	// FlowTimeOut will be used to set age threshold if the corresponding FlushInterval > 0.
-	FlowTimeOut = 0 * time.Second
+	FlowTimeOut = 10 * time.Minute
 
 	// CompressionBlockSize will determine the block size used for parallel compression.
 	CompressionBlockSize = 1024 * 1024 * 1 // 1 MB

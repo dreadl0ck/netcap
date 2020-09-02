@@ -87,17 +87,41 @@ func (d *DHCPv6) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(d)
 }
 
+var fieldsDHCPv6Metric = []string{
+	"MsgType",       // int32
+	"HopCount",      // int32
+	"LinkAddr",      // string
+	"PeerAddr",      // string
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
+}
+
 var dhcp6Metric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_DHCPv6.String()),
 		Help: Type_NC_DHCPv6.String() + " audit records",
 	},
-	fieldsDHCPv6[1:],
+	fieldsDHCPv6Metric,
 )
+
+func (d *DHCPv6) metricValues() []string{
+	return []string{
+		formatInt32(d.MsgType),       // int32
+		formatInt32(d.HopCount),      // int32
+		d.LinkAddr,      // string
+		d.PeerAddr,      // string
+		d.SrcIP,
+		d.DstIP,
+		formatInt32(d.SrcPort),
+		formatInt32(d.DstPort),
+	}
+}
 
 // Inc increments the metrics for the audit record.
 func (d *DHCPv6) Inc() {
-	dhcp6Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
+	dhcp6Metric.WithLabelValues(d.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.

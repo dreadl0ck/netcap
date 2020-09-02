@@ -91,7 +91,7 @@ var (
 		Items: make(map[string]*software),
 	}
 
-	parser, errInitUAParser = uaparser.New("/usr/local/etc/netcap/dbs/regexes.yaml")
+	parser, errInitUAParser = uaparser.New(filepath.Join(resolvers.DataBaseSource, "regexes.yaml"))
 	pMu                     sync.Mutex
 
 	ja3db     ja3CombinationsDB
@@ -304,7 +304,7 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 
 	// if nothing was found with all above attempts, try to throw the generic version number harvester at it
 	// and see if this delivers anything interesting
-	if len(s) == 0 {
+	if len(s) == 0 && !conf.DisableGenericVersionHarvester {
 		return softwareHarvester(i.p.Data(), flowIdent, i.p.Metadata().CaptureInfo.Timestamp, serviceIdent, dpIdent, protos)
 	}
 
@@ -611,7 +611,7 @@ var softwareDecoder = newCustomDecoder(
 		}
 
 		// Load the JSON database of JA3/JA3S combinations into memory
-		data, err := ioutil.ReadFile("/usr/local/etc/netcap/dbs/ja_3_3s.json")
+		data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "ja_3_3s.json"))
 		if err != nil {
 			return err
 		}
@@ -623,7 +623,7 @@ var softwareDecoder = newCustomDecoder(
 		}
 
 		// Load the JSON database of HASSH signaures
-		data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/hasshdb.json")
+		data, err = ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "hasshdb.json"))
 		if err != nil {
 			return err
 		}
@@ -642,7 +642,7 @@ var softwareDecoder = newCustomDecoder(
 
 		decoderLog.Info("loaded HASSH digests", zap.Int("total", len(hashDBMap)))
 
-		data, err = ioutil.ReadFile("/usr/local/etc/netcap/dbs/cmsdb.json")
+		data, err = ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "cmsdb.json"))
 		if err != nil {
 			return err
 		}

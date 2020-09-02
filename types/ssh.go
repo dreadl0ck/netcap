@@ -52,17 +52,29 @@ func (a *SSH) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
 
+var fieldsSSHMetric = []string{
+	"HASSH",
+	"Flow",
+}
+
 var sshMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_SSH.String()),
 		Help: Type_NC_SSH.String() + " audit records",
 	},
-	fieldsSSH[1:],
+	fieldsSSHMetric,
 )
+
+func (a *SSH) metricValues()[]string {
+	return []string{
+		"HASSH",
+		"Flow",
+	}
+}
 
 // Inc increments the metrics for the audit record.
 func (a *SSH) Inc() {
-	sshMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	sshMetric.WithLabelValues(a.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.

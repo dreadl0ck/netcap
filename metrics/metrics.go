@@ -15,6 +15,7 @@
 package metrics
 
 import (
+	_ "expvar" // TODO: protect via auth?
 	"fmt"
 	"log"
 	"math"
@@ -65,6 +66,7 @@ func ServeMetricsAt(addr string, c *collector.Collector) {
 		http.HandleFunc(metricsRoute, func(w http.ResponseWriter, r *http.Request) {
 			upTime.WithLabelValues().Set(math.RoundToEven(time.Since(startTime).Seconds()))
 
+			// kindly ask the collector for some stats
 			if c != nil {
 				numPackets.WithLabelValues().Set(float64(c.GetNumPackets()))
 			}

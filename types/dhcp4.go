@@ -105,17 +105,57 @@ func (d *DHCPv4) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(d)
 }
 
+var fieldsDHCPv4Metric = []string{
+	"Operation",    // int32
+	"HardwareType", // int32
+	"HardwareLen",  // int32
+	"HardwareOpts", // int32
+	"Xid",          // uint32
+	"Secs",         // int32
+	"Flags",        // int32
+	"ClientIP",     // string
+	"YourClientIP", // string
+	"NextServerIP", // string
+	"RelayAgentIP", // string
+	"ClientHWAddr", // string
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
+}
+
 var dhcp4Metric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_DHCPv4.String()),
 		Help: Type_NC_DHCPv4.String() + " audit records",
 	},
-	fieldsDHCPv4[1:],
+	fieldsDHCPv4Metric,
 )
+
+func (d *DHCPv4) metricValues() []string {
+	return []string{
+		formatInt32(d.Operation),
+		formatInt32(d.HardwareType),
+		formatInt32(d.HardwareLen),
+		formatInt32(d.HardwareOpts),
+		formatUint32(d.Xid),
+		formatInt32(d.Secs),
+		formatInt32(d.Flags),
+		d.ClientIP,
+		d.YourClientIP,
+		d.NextServerIP,
+		d.RelayAgentIP,
+		d.ClientHWAddr,
+		d.SrcIP,
+		d.DstIP,
+		formatInt32(d.SrcPort),
+		formatInt32(d.DstPort),
+	}
+}
 
 // Inc increments the metrics for the audit record.
 func (d *DHCPv4) Inc() {
-	dhcp4Metric.WithLabelValues(d.CSVRecord()[1:]...).Inc()
+	dhcp4Metric.WithLabelValues(d.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
