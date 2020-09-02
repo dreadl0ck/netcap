@@ -48,6 +48,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -65,7 +66,6 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (
@@ -379,16 +379,10 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 	}
 }
 
-// ReassemblyComplete is called when assembly decides there is
-// no more data for this stream, either because a FIN or RST packet
-// was seen, or because the stream has timed out without any new
-// packet data (due to a call to FlushCloseOlderThan).
-// It should return true if the connection should be removed from the pool
-// It can return false if it want to see subsequent packets with Accept(), e.g. to
-// see FIN-ACK, for deeper state-machine analysis.
-func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) bool {
-	// fmt.Println(t.ident, "t.firstPacket:", t.firstPacket, "ac.Timestamp", ac.GetCaptureInfo().Timestamp)
-	// fmt.Println(t.ident, !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp), "&&", t.firstPacket.After(ac.GetCaptureInfo().Timestamp))
+func (t *tcpConnection) reorder(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) {
+
+	//fmt.Println(t.ident, "t.firstPacket:", t.firstPacket, "ac.Timestamp", ac.GetCaptureInfo().Timestamp, "firstFlow", firstFlow)
+	//fmt.Println(t.ident, !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp), "&&", t.firstPacket.After(ac.GetCaptureInfo().Timestamp))
 
 	// is this packet older than the oldest packet we saw for this connection?
 	// if yes, if check the direction of the client is correct
@@ -405,7 +399,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 				t.Lock()
 				t.ident = utils.ReverseFlowIdent(t.ident)
-				// fmt.Println("flip! new", ansi.Red+t.ident+ansi.Reset, t.firstPacket)
+				//fmt.Println("flip! new", ansi.Red+t.ident+ansi.Reset, t.firstPacket)
 
 				t.client, t.server = t.server, t.client
 				t.transport, t.net = t.transport.Reverse(), t.net.Reverse()
@@ -422,6 +416,18 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 			}
 		}
 	}
+}
+
+// ReassemblyComplete is called when assembly decides there is
+// no more data for this stream, either because a FIN or RST packet
+// was seen, or because the stream has timed out without any new
+// packet data (due to a call to FlushCloseOlderThan).
+// It should return true if the connection should be removed from the pool
+// It can return false if it want to see subsequent packets with Accept(), e.g. to
+// see FIN-ACK, for deeper state-machine analysis.
+func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) bool {
+
+	t.reorder(ac, firstFlow)
 
 	decoderLog.Debug("ReassemblyComplete", zap.String("ident", t.ident))
 
