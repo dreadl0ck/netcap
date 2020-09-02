@@ -16,6 +16,7 @@ package decoder
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
@@ -707,6 +708,15 @@ var softwareDecoder = newCustomDecoder(
 // writeDeviceProfile writes the profile.
 func (cd *customDecoder) write(r types.AuditRecord) {
 	if conf.ExportMetrics {
+
+		// TODO: remove for production builds?
+		defer func() {
+			if errRecover := recover(); errRecover != nil {
+				spew.Dump(r)
+				fmt.Println("recovered from panic", errRecover)
+			}
+		}()
+
 		r.Inc()
 	}
 

@@ -15,6 +15,7 @@ package decoder
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 	"log"
 	"strings"
@@ -333,6 +334,15 @@ func (cd *customDecoder) Decode(p gopacket.Packet) error {
 		if conf.ExportMetrics {
 			// assert to audit record
 			if r, ok := record.(types.AuditRecord); ok {
+
+				// TODO: remove for production builds?
+				defer func() {
+					if errRecover := recover(); errRecover != nil {
+						spew.Dump(r)
+						fmt.Println("recovered from panic", errRecover)
+					}
+				}()
+
 				// export metrics
 				r.Inc()
 			} else {

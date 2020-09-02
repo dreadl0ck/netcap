@@ -82,6 +82,11 @@ func saveTCPServiceBanner(s streamReader) {
 		return
 	}
 
+	// don't process empty service banners, or every probing attempt will produce a new service audit record
+	if s.NumBytes() == 0 {
+		return
+	}
+
 	banner := s.ServiceBanner()
 
 	// limit length of data

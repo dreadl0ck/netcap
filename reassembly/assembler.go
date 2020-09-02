@@ -209,8 +209,8 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 
 	if half.firstSeen.After(ac.GetCaptureInfo().Timestamp) {
 		half.firstSeen = ac.GetCaptureInfo().Timestamp
-		half.flow = netFlow
 	}
+	half.flow = netFlow
 
 	// fmt.Println(netFlow, len(t.Payload), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format(tf), ansi.Green, half.firstSeen.Format(tf), ansi.Blue, half.lastSeen.Format(tf), ansi.Reset)
 
@@ -1017,8 +1017,6 @@ func (a *Assembler) FlushAllProgress() (closed int) {
 	closed = len(conns)
 
 	// create and start new bar
-	// TODO: when using multiple assemblers, only the first FlushAll invocation will flush the data
-	// and the remaining invocations will render a complete progress bar...
 	bar := pb.StartNew(closed)
 
 	for _, conn := range conns {

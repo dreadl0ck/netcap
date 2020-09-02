@@ -89,7 +89,7 @@ var fieldsServiceMetric = []string{
 	"BytesServer", // int32
 	"BytesClient", // int32
 	"Hostname",    // string
-	"OS",          // string
+	//"OS",          // string
 }
 
 var serviceMetric = prometheus.NewCounterVec(
@@ -113,7 +113,7 @@ func (a *Service) metricValues() []string {
 		formatInt32(a.BytesServer),
 		formatInt32(a.BytesClient),
 		a.Hostname,
-		a.OS,
+		//a.OS,
 	}
 }
 
