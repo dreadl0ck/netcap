@@ -14,6 +14,7 @@
 package types
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,16 @@ import (
 
 var fieldsSoftware = []string{
 	"Timestamp",
+	"Product",
+	"Vendor",
+	"Version",
+	"DeviceProfiles",
+	"SourceName",
+	"DPIResults",
+	"Service",
+	"Flows",
+	"SourceData",
+	"Notes",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -33,6 +44,16 @@ func (a *Software) CSVHeader() []string {
 func (a *Software) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
+		a.Product,
+		a.Vendor,
+		a.Version,
+		join(a.DeviceProfiles...),
+		a.SourceName,
+		join(a.DPIResults...),
+		a.Service,
+		join(a.Flows...),
+		a.SourceData,
+		a.Notes,
 	})
 }
 
@@ -49,17 +70,41 @@ func (a *Software) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
 
+var fieldsSoftwareMetric = []string{
+	"Product",
+	"Vendor",
+	"Version",
+	"NumDeviceProfiles",
+	"SourceName",
+	//"NumDPIResults",
+	"Service",
+	//"Flows",
+	//"SourceData",
+	//"Notes",
+}
+
 var softwareMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_Software.String()),
 		Help: Type_NC_Software.String() + " audit records",
 	},
-	fieldsSoftware[1:],
+	fieldsSoftwareMetric,
 )
+
+func (a *Software) metricValues() []string {
+	return []string{
+		a.Product,
+		a.Vendor,
+		a.Version,
+		strconv.Itoa(len(a.DeviceProfiles)),
+		a.SourceName,
+		a.Service,
+	}
+}
 
 // Inc increments the metrics for the audit record.
 func (a *Software) Inc() {
-	softwareMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	softwareMetric.WithLabelValues(a.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.

@@ -14,6 +14,7 @@
 package types
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,20 @@ import (
 
 var fieldsService = []string{
 	"Timestamp",
+	"IP",          // string
+	"Port",        // int32
+	"Name",        // string
+	"Banner",      // string
+	"Protocol",    // string
+	"Flows",       // []string
+	"Product",     // string
+	"Vendor",      // string
+	"Version",     // string
+	"Notes",       // string
+	"BytesServer", // int32
+	"BytesClient", // int32
+	"Hostname",    // string
+	"OS",          // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -33,6 +48,19 @@ func (a *Service) CSVHeader() []string {
 func (a *Service) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
+		a.IP,          // string
+		formatInt32(a.Port),        // int32
+		a.Name,        // string
+		a.Banner,      // string
+		a.Protocol,    // string
+		join(a.Flows...),       // []string
+		a.Product,     // string
+		a.Vendor,      // string
+		a.Version,     // string
+		formatInt32(a.BytesServer), // int32
+		formatInt32(a.BytesClient), // int32
+		a.Hostname,    // string
+		a.OS,          // string
 	})
 }
 
@@ -49,17 +77,49 @@ func (a *Service) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
 
+var fieldsServiceMetric = []string{
+	"IP",          // string
+	"Port",        // int32
+	"Name",        // string
+	"Protocol",    // string
+	"NumFlows",    // []string
+	"Product",     // string
+	"Vendor",      // string
+	"Version",     // string
+	"BytesServer", // int32
+	"BytesClient", // int32
+	"Hostname",    // string
+	"OS",          // string
+}
+
 var serviceMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_Service.String()),
 		Help: Type_NC_Service.String() + " audit records",
 	},
-	fieldsService[1:],
+	fieldsServiceMetric,
 )
+
+func (a *Service) metricValues() []string {
+	return []string{
+		a.IP,
+		formatInt32(a.Port),
+		a.Name,
+		a.Protocol,
+		strconv.Itoa(len(a.Flows)),
+		a.Product,
+		a.Vendor,
+		a.Version,
+		formatInt32(a.BytesServer),
+		formatInt32(a.BytesClient),
+		a.Hostname,
+		a.OS,
+	}
+}
 
 // Inc increments the metrics for the audit record.
 func (a *Service) Inc() {
-	serviceMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	serviceMetric.WithLabelValues(a.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -67,7 +127,7 @@ func (a *Service) SetPacketContext(*PacketContext) {}
 
 // Src returns the source address of the audit record.
 func (a *Service) Src() string {
-	return ""
+	return a.IP
 }
 
 // Dst returns the destination address of the audit record.

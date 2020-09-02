@@ -1,5 +1,10 @@
 # TODOs
 
+- document grafana setup: https://grafana.com/docs/grafana/latest/installation/debian
+- document piechart plugin installation:
+
+    grafana-cli plugins install grafana-piechart-panel
+
 - log decoding and reassembly errors into elastic
 - create script to test different parameters on a single file
 - fix failing test-pcaps

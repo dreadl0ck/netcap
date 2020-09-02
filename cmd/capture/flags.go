@@ -37,6 +37,7 @@ var (
 	flagGenerateElasticIndices = fs.Bool("gen-elastic-indices", false, "generate elastic indices and mapping")
 	_                          = fs.String("config", "", "read configuration from file at path")
 	flagInput                  = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
+	flagMetricsAddr            = fs.String("metrics", "", "serve metrics at")
 	flagOutDir                 = fs.String("out", "", "specify output directory, will be created if it does not exist")
 
 	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
@@ -129,6 +130,7 @@ var (
 	flagStopAfterServiceProbeMatch = fs.Bool("stop-after-service-match", true, "stop processing the conversation after the first service probe returned a result")
 	flagStopAfterServiceCategoryMiss = fs.Bool("stop-after-service-category-miss", true, "stop processing the conversation after the first service probe returned a result")
 	flagIgnoreInitErrs             = fs.Bool("ignore-init-errors", true, "ignore errors from initializing custom decoders")
+	flagDisableGenericVersionHarvester = fs.Bool("disable-generic-software-harvester", true, "disable the generic software harvester regex")
 
 	flagBannerSize          = fs.Int("bsize", 256, "size of the stored service banners in bytes")
 	flagHarvesterBannerSize = fs.Int("hbsize", 256, "size of the data passed to the credential harvesters in bytes")

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -106,8 +107,12 @@ func (c *Collector) Init() (err error) {
 	c.netcapLog.Println("initializing decoders... ")
 
 	if c.config.DecoderConfig.ExportMetrics {
-		for _, m := range types.Metrics {
-			prometheus.MustRegister(m)
+		for i, m := range types.Metrics {
+			err = prometheus.Register(m)
+			if err != nil {
+				spew.Dump(m)
+				log.Fatal("array index:", i, ", error:", err)
+			}
 		}
 	}
 

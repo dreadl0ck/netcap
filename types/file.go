@@ -71,17 +71,48 @@ func (a *File) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
 
+var fieldsFileMetric = []string{
+	"Name",
+	"Length",
+	"Hash",
+	"Location",
+	"Ident",
+	"Source",
+	"ContentType",
+	"SrcIP",
+	"DstIP",
+	"SrcPort",
+	"DstPort",
+}
+
 var fileMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_File.String()),
 		Help: Type_NC_File.String() + " audit records",
 	},
-	fieldsARP[1:],
+	fieldsFileMetric,
 )
+
+// CSVRecord returns the CSV record for the audit record.
+func (a *File) metricValues() []string {
+	return filter([]string{
+		a.Name,
+		formatInt64(a.Length),
+		a.Hash,
+		a.Location,
+		a.Ident,
+		a.Source,
+		a.ContentType,
+		a.SrcIP,
+		a.DstIP,
+		formatInt32(a.SrcPort),
+		formatInt32(a.DstPort),
+	})
+}
 
 // Inc increments the metrics for the audit record.
 func (a *File) Inc() {
-	fileMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	fileMetric.WithLabelValues(a.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.

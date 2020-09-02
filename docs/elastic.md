@@ -2,6 +2,21 @@
 description: Elastic notes
 ---
 
+# Metricbeat
+
+    metricbeat modules enable golang system
+    metricbeat setup -e
+
+See:
+
+- https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-installation-configuration.html
+- https://www.elastic.co/guide/en/beats/metricbeat/current/configuration-metricbeat.html
+- https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-module-system.html
+
+Example: run net capture with metrics flag to expose metrics during operation (both prometheus and expvar)
+    
+   net capture -iface=XXXX -metrics=localhost:6060
+
 # Elastic
 
 Filebeat installation: https://www.elastic.co/downloads/beats/filebeat

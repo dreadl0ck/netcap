@@ -15,6 +15,7 @@ package capture
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/metrics"
 	"log"
 	"net/http"
 	"os"
@@ -159,6 +160,12 @@ func Run() {
 		os.Exit(1)
 	}
 
+	var exportMetrics bool
+	if *flagMetricsAddr != "" {
+		metrics.ServeMetricsAt(*flagMetricsAddr, nil)
+		exportMetrics = true
+	}
+
 	// init collector
 	c := collector.New(collector.Config{
 		Workers:               *flagWorkers,
@@ -196,7 +203,7 @@ func Run() {
 			Chan:                       false,
 			Source:                     source,
 			IncludePayloads:            *flagPayload,
-			ExportMetrics:              false,
+			ExportMetrics:              exportMetrics,
 			AddContext:                 *flagContext,
 			FlushEvery:                 *flagFlushevery,
 			DefragIPv4:                 *flagDefragIPv4,
@@ -229,6 +236,7 @@ func Run() {
 			CustomRegex:                *flagCustomCredsRegex,
 			StreamBufferSize:           *flagStreamBufferSize,
 			IgnoreDecoderInitErrors:    *flagIgnoreInitErrs,
+			DisableGenericVersionHarvester: *flagDisableGenericVersionHarvester,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    *flagReverseDNS,
