@@ -264,7 +264,7 @@ func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 
 		// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
 		// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
-		// your would like to utilize, but about twice the number of blocks would be the best.
+		// you would like to utilize, but about twice the number of blocks would be the best.
 		if err = gzipWriter.SetConcurrency(defaults.CompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
 			log.Fatal("failed to configure compression package: ", err)
 		}

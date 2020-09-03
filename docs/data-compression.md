@@ -18,7 +18,7 @@ This design implements input buffering to the compressor which has a nice perfor
 
 To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
 
-You should at least have a block size of 100k and at least a number of blocks that match the number of cores your would like to utilize, but about twice the number of blocks would be the best.
+You should at least have a block size of 100k and at least a number of blocks that match the number of cores you would like to utilize, but about twice the number of blocks would be the best.
 
 The default configuration uses 1MB block size and 2x NumCPUs as the number of blocks.
 

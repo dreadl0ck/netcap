@@ -77,8 +77,6 @@ var ipProfileDecoder = newCustomDecoder(
 		return nil
 	},
 	func(e *customDecoder) error {
-		// teardown DPI C libs
-		dpi.Destroy()
 
 		// flush writer
 		for _, item := range IPProfiles.Items {

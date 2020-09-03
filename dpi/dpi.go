@@ -31,6 +31,11 @@ import (
 
 var disableDPI = true
 
+// IsEnabled will return true if goDPI has been initialized
+func IsEnabled() bool {
+	return disableDPI
+}
+
 // Init initializes the deep packet inspection engines.
 func Init() {
 	disableDPI = false

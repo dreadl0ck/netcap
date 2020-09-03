@@ -66,7 +66,7 @@ func NewJSONWriter(wc *WriterConfig) *JSONWriter {
 
 		if wc.Compress {
 			var errGzipWriter error
-			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.bWriter, defaults.CompressionLevel)
+			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.bWriter, wc.CompressionLevel)
 
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
@@ -79,7 +79,7 @@ func NewJSONWriter(wc *WriterConfig) *JSONWriter {
 	} else {
 		if wc.Compress {
 			var errGzipWriter error
-			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, defaults.CompressionLevel)
+			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, wc.CompressionLevel)
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
@@ -92,8 +92,8 @@ func NewJSONWriter(wc *WriterConfig) *JSONWriter {
 	if w.gWriter != nil {
 		// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
 		// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
-		// your would like to utilize, but about twice the number of blocks would be the best.
-		if err := w.gWriter.SetConcurrency(defaults.CompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
+		// you would like to utilize, but about twice the number of blocks would be the best.
+		if err := w.gWriter.SetConcurrency(wc.CompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
 			log.Fatal("failed to configure compression package: ", err)
 		}
 	}

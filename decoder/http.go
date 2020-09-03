@@ -34,8 +34,6 @@ var httpDecoder = newCustomDecoder(
 	serviceHTTP,
 	"The Hypertext Transfer Protocol is powering the world wide web",
 	func(d *customDecoder) error {
-		streamFactory.decodeHTTP = true
-
 		return nil
 	},
 	func(packet gopacket.Packet) proto.Message {

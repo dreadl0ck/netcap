@@ -123,4 +123,3 @@ func BenchmarkParseFlowIdent(b *testing.B) {
 		ParseFlowIdent("192.168.1.47:53032->165.227.109.154:80")
 	}
 }
-

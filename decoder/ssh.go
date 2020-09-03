@@ -25,8 +25,6 @@ var sshDecoder = newCustomDecoder(
 	serviceSSH,
 	"The Secure Shell Protocol allows controlling remote machines over an encrypted connection",
 	func(d *customDecoder) error {
-		streamFactory.decodeSSH = true
-
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {

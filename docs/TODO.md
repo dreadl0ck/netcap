@@ -1,6 +1,12 @@
 # TODOs
 
 - make ReassemblyComplete return value configurable
+- capture: make CompressionLevel, CompressionBlockSize configurable
+ 
+- add prometheus metrics for internals
+- update logging for service probes
+- remove colors from pop3 log
+
 - document grafana setup: https://grafana.com/docs/grafana/latest/installation/debian
 - document piechart plugin installation:
 

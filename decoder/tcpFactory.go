@@ -54,9 +54,6 @@ type tcpConnectionFactory struct {
 	StreamPool    *reassembly.StreamPool
 	wg            sync.WaitGroup
 	sync.Mutex
-	decodeHTTP bool
-	decodePOP3 bool
-	decodeSSH  bool
 	fsmOptions reassembly.TCPSimpleFSMOptions
 }
 
