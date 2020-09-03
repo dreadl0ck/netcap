@@ -76,6 +76,9 @@ var DefaultConfig = &Config{
 	StopAfterHarvesterMatch:    true,
 	StopAfterServiceProbeMatch: true,
 	IgnoreDecoderInitErrors:    true,
+	RemoveClosedStreams:        false,
+	CompressionBlockSize:       defaults.CompressionBlockSize,
+	CompressionLevel:           defaults.CompressionLevel,
 }
 
 // Config contains configuration parameters
@@ -243,6 +246,16 @@ type Config struct {
 
 	// DisableGenericVersionHarvester will not use the generic version string regex for the software harvester
 	DisableGenericVersionHarvester bool
+
+	// RemoveClosedStreams will remove streams that received a FIN or RST packet
+	// if set to false it allows to witness further packets for the stream, e.g. FIN-ACK
+	RemoveClosedStreams bool
+
+	// CompressionBlockSize is the block size used for parallel compression
+	CompressionBlockSize int
+
+	// CompressionLevel is the compression level to use by default
+	CompressionLevel int
 
 	sync.Mutex
 }

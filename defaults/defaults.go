@@ -44,10 +44,10 @@ const (
 	// FlowTimeOut will be used to set age threshold if the corresponding FlushInterval > 0.
 	FlowTimeOut = 10 * time.Minute
 
-	// CompressionBlockSize will determine the block size used for parallel compression.
+	// CompressionBlockSize is the block size used for parallel compression.
 	CompressionBlockSize = 1024 * 1024 * 1 // 1 MB
 
-	// CompressionLevel will determine the compression level to use by default.
+	// CompressionLevel is the compression level to use by default.
 	CompressionLevel = flate.BestSpeed
 
 	// TCP Stream Reassembly:

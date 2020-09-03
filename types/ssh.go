@@ -65,7 +65,7 @@ var sshMetric = prometheus.NewCounterVec(
 	fieldsSSHMetric,
 )
 
-func (a *SSH) metricValues()[]string {
+func (a *SSH) metricValues() []string {
 	return []string{
 		"HASSH",
 		"Flow",

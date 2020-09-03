@@ -48,19 +48,19 @@ func (a *Service) CSVHeader() []string {
 func (a *Service) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.IP,          // string
+		a.IP,                       // string
 		formatInt32(a.Port),        // int32
-		a.Name,        // string
-		a.Banner,      // string
-		a.Protocol,    // string
-		join(a.Flows...),       // []string
-		a.Product,     // string
-		a.Vendor,      // string
-		a.Version,     // string
+		a.Name,                     // string
+		a.Banner,                   // string
+		a.Protocol,                 // string
+		join(a.Flows...),           // []string
+		a.Product,                  // string
+		a.Vendor,                   // string
+		a.Version,                  // string
 		formatInt32(a.BytesServer), // int32
 		formatInt32(a.BytesClient), // int32
-		a.Hostname,    // string
-		a.OS,          // string
+		a.Hostname,                 // string
+		a.OS,                       // string
 	})
 }
 

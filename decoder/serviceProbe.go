@@ -161,7 +161,7 @@ func matchServiceProbes(serv *service, banner []byte, ident string) {
 	var (
 		expectedCategory string
 		found            bool
-		matched int
+		matched          int
 	)
 
 	// lookup expected identifier based on port

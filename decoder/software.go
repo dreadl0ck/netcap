@@ -688,9 +688,6 @@ var softwareDecoder = newCustomDecoder(
 		tui.Table(decoderLogFileHandle, []string{"IP", "ServerNames"}, rows)
 		httpStore.Unlock()
 
-		// teardown DPI C libs
-		dpi.Destroy()
-
 		// flush writer
 		for _, item := range softwareStore.Items {
 			item.Lock()

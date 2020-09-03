@@ -15,6 +15,7 @@ package capture
 
 import (
 	"fmt"
+	"github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/io"
 )
@@ -32,4 +33,36 @@ func printHeader() {
 func printUsage() {
 	printHeader()
 	fs.PrintDefaults()
+}
+
+const (
+	pgzipMaxSpeed       = "max-speed"
+	pgzipMaxCompression = "max-compression"
+	pgzipNone           = "none"
+)
+
+func getCompressionLevel(in string) int {
+	switch in {
+	case pgzipMaxSpeed:
+		return pgzip.BestSpeed
+	case pgzipMaxCompression:
+		return pgzip.BestCompression
+	case pgzipNone:
+		return pgzip.NoCompression
+	default:
+		return pgzip.DefaultCompression
+	}
+}
+
+func compressionLevelToString(in int) string {
+	switch in {
+	case pgzip.BestSpeed:
+		return pgzipMaxSpeed
+	case pgzip.BestCompression:
+		return pgzipMaxCompression
+	case pgzip.NoCompression:
+		return pgzipNone
+	default:
+		return "default"
+	}
 }

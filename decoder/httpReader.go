@@ -144,7 +144,7 @@ func (h *httpReader) Decode() {
 		} else {
 			var (
 				err error
-				b = bufio.NewReader(&buf)
+				b   = bufio.NewReader(&buf)
 			)
 
 			if previousDir == reassembly.TCPDirClientToServer {
@@ -173,9 +173,8 @@ func (h *httpReader) Decode() {
 
 	var (
 		err error
-		b = bufio.NewReader(&buf)
+		b   = bufio.NewReader(&buf)
 	)
-
 
 	if previousDir == reassembly.TCPDirClientToServer {
 		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
@@ -296,6 +295,12 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 }
 
 func (t *tcpConnection) writeHTTP(h *types.HTTP) {
+
+	// prevent nil pointer access if httpDecoder is not initialized
+	if httpDecoder.writer == nil {
+		return
+	}
+
 	httpStore.Lock()
 
 	if h.UserAgent != "" {

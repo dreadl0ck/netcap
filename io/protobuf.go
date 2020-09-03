@@ -61,23 +61,23 @@ func NewProtoWriter(wc *WriterConfig) *ProtoWriter {
 		if wc.Compress {
 			// experiment: pgzip -> file
 			var errGzipWriter error
-			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, defaults.CompressionLevel)
+			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, wc.CompressionLevel)
 
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
 			// experiment: buffer -> pgzip
-			w.bWriter = bufio.NewWriterSize(w.gWriter, defaults.BufferSize)
+			w.bWriter = bufio.NewWriterSize(w.gWriter, wc.MemBufferSize)
 			// experiment: delimited -> buffer
 			w.dWriter = delimited.NewWriter(w.bWriter)
 		} else {
-			w.bWriter = bufio.NewWriterSize(w.file, defaults.BufferSize)
+			w.bWriter = bufio.NewWriterSize(w.file, wc.MemBufferSize)
 			w.dWriter = delimited.NewWriter(w.bWriter)
 		}
 	} else {
 		if w.wc.Compress {
 			var errGzipWriter error
-			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, defaults.CompressionLevel)
+			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, wc.CompressionLevel)
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
@@ -92,8 +92,8 @@ func NewProtoWriter(wc *WriterConfig) *ProtoWriter {
 	if w.gWriter != nil {
 		// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
 		// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
-		// your would like to utilize, but about twice the number of blocks would be the best.
-		if err := w.gWriter.SetConcurrency(defaults.CompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
+		// you would like to utilize, but about twice the number of blocks would be the best.
+		if err := w.gWriter.SetConcurrency(wc.CompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
 			log.Fatal("failed to configure compression package: ", err)
 		}
 	}

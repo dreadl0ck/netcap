@@ -21,7 +21,6 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -186,8 +185,6 @@ var deviceProfileDecoder = newCustomDecoder(
 		return nil
 	},
 	func(e *customDecoder) error {
-		// teardown DPI C libs
-		dpi.Destroy()
 
 		// flush writer
 		for _, item := range DeviceProfiles.Items {

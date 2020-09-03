@@ -48,6 +48,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/utils"
 	"go.uber.org/zap"
 	"log"
@@ -494,7 +495,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	)
 
 	// do not remove the connection to allow last ACK
-	return false
+	return conf.RemoveClosedStreams
 }
 
 // ReassemblePacket takes care of submitting a TCP packet to the reassembly.
@@ -649,7 +650,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				zap.Int("numAssemblers", len(assemblers)),
 			)
 
-			if i == 0 {
+			if i == 0 && !conf.Quiet {
 				// only display progress bar for the first flush, since all following ones will be instant.
 				decoderLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
 			} else {
@@ -684,6 +685,11 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		if conf.SaveConns {
 			udpStreams.saveAllUDPConnections()
 		}
+	}
+
+	if dpi.IsEnabled() {
+		// teardown DPI C libs
+		dpi.Destroy()
 	}
 
 	// create a memory snapshot for debugging

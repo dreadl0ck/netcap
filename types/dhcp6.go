@@ -88,10 +88,10 @@ func (d *DHCPv6) JSON() (string, error) {
 }
 
 var fieldsDHCPv6Metric = []string{
-	"MsgType",       // int32
-	"HopCount",      // int32
-	"LinkAddr",      // string
-	"PeerAddr",      // string
+	"MsgType",  // int32
+	"HopCount", // int32
+	"LinkAddr", // string
+	"PeerAddr", // string
 	"SrcIP",
 	"DstIP",
 	"SrcPort",
@@ -106,12 +106,12 @@ var dhcp6Metric = prometheus.NewCounterVec(
 	fieldsDHCPv6Metric,
 )
 
-func (d *DHCPv6) metricValues() []string{
+func (d *DHCPv6) metricValues() []string {
 	return []string{
-		formatInt32(d.MsgType),       // int32
-		formatInt32(d.HopCount),      // int32
-		d.LinkAddr,      // string
-		d.PeerAddr,      // string
+		formatInt32(d.MsgType),  // int32
+		formatInt32(d.HopCount), // int32
+		d.LinkAddr,              // string
+		d.PeerAddr,              // string
 		d.SrcIP,
 		d.DstIP,
 		formatInt32(d.SrcPort),

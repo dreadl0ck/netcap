@@ -56,4 +56,8 @@ type WriterConfig struct {
 	Version          string
 	IncludesPayloads bool
 	StartTime        time.Time
+
+	// compression
+	CompressionBlockSize int
+	CompressionLevel     int
 }
