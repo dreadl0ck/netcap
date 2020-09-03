@@ -308,6 +308,9 @@ commands:
     bench:
         exec: go test -v -bench=. ./...
 
+    test-params:
+        description: test various different configurations of the netcap core, to compare their performance and accuracy
+
     format-code:
         description: format source code
         exec: |
