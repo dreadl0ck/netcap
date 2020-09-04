@@ -97,6 +97,12 @@ func validPop3ServerCommand(cmd string) bool {
 
 // Decode parses the stream according to the POP3 protocol.
 func (h *pop3Reader) Decode() {
+
+	// prevent nil pointer access if decoder is not initialized
+	if pop3Decoder.writer == nil {
+		return
+	}
+
 	var (
 		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection

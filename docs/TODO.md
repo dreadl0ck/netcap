@@ -1,7 +1,6 @@
 # TODOs
 
-- make ReassemblyComplete return value configurable
-- capture: make CompressionLevel, CompressionBlockSize configurable
+- build an abstraction for merging the chunks in Decode()
  
 - add prometheus metrics for internals
 - update logging for service probes
