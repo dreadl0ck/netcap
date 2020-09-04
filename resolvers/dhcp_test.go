@@ -14,8 +14,24 @@
 package resolvers
 
 import (
+	logging "github.com/dreadl0ck/netcap/logger"
+	"log"
 	"testing"
 )
+
+// init does not seem to be called for the compiled program,
+// even this file is in the resolvers package scope.
+// so we abuse it here to guarantee the logfile handles are initialized for all tests
+func init() {
+
+	var err error
+	resolverLog, _, err = logging.InitZapLogger("../tests", "resolvers", true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO: sync on exit, move to a central place
+}
 
 type dhcpFingerprintResult struct {
 	fingerprint string

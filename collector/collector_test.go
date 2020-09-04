@@ -54,6 +54,8 @@ func TestCaptureLive(t *testing.T) {
 			CloseInactiveTimeOut: 24 * time.Hour,
 			ClosePendingTimeOut:  5 * time.Second,
 			FileStorage:          "",
+			CompressionBlockSize: defaults.CompressionBlockSize,
+			CompressionLevel:     defaults.CompressionLevel,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),

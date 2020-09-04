@@ -72,16 +72,17 @@ var tcps = []*types.TCP{
 func TestWriter(t *testing.T) {
 	// create a new writer
 	w := NewProtoWriter(&WriterConfig{
-		Proto:            true,
-		Name:             "TCP-writer-test",
-		Buffer:           true,
-		Compress:         true,
-		Out:              "../tests",
-		MemBufferSize:    defaults.BufferSize,
-		Source:           "unit tests",
-		Version:          netcap.Version,
-		IncludesPayloads: false,
-		StartTime:        time.Now(),
+		Proto:                true,
+		Name:                 "TCP-writer-test",
+		Buffer:               true,
+		Compress:             true,
+		Out:                  "../tests",
+		MemBufferSize:        defaults.BufferSize,
+		Source:               "unit tests",
+		Version:              netcap.Version,
+		IncludesPayloads:     false,
+		StartTime:            time.Now(),
+		CompressionBlockSize: defaults.CompressionBlockSize,
 	})
 	if w == nil {
 		t.Fatal("got nil writer")
@@ -111,16 +112,17 @@ func TestWriter(t *testing.T) {
 func BenchmarkWriter(b *testing.B) {
 	// create a new writer
 	w := NewProtoWriter(&WriterConfig{
-		Proto:            true,
-		Name:             "TCP-writer-test",
-		Buffer:           true,
-		Compress:         true,
-		Out:              "../tests",
-		MemBufferSize:    defaults.BufferSize,
-		Source:           "unit tests",
-		Version:          netcap.Version,
-		IncludesPayloads: false,
-		StartTime:        time.Now(),
+		Proto:                true,
+		Name:                 "TCP-writer-test",
+		Buffer:               true,
+		Compress:             true,
+		Out:                  "../tests",
+		MemBufferSize:        defaults.BufferSize,
+		Source:               "unit tests",
+		Version:              netcap.Version,
+		IncludesPayloads:     false,
+		StartTime:            time.Now(),
+		CompressionBlockSize: defaults.CompressionBlockSize,
 	})
 	if w == nil {
 		b.Fatal("got nil writer")
