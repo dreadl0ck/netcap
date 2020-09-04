@@ -1,10 +1,30 @@
 package decoder
 
 import (
+	"github.com/dreadl0ck/netcap/logger"
+	"log"
 	"strings"
 	"testing"
 	"time"
 )
+
+// init does not seem to be called for the compiled program,
+// even this file is in the decoder package scope.
+// so we abuse it here to guarantee the logfile handles are initialized for all tests
+func init() {
+	var err error
+	decoderLog, _, err = logger.InitZapLogger("tests", "decoder", true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	serviceLog, _, err = logger.InitDebugLogger("tests", "service", true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO: sync on exit, move to a central place
+}
 
 // FTP Harvester test
 func TestFTPCredentialsHarvester(t *testing.T) {
@@ -227,8 +247,9 @@ AUTH PLAIN
 334
 dGVzdAB0ZXN0ADEyMzQ=
 235 2.7.0 Authentication successful`)
+
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := smtpHarvester([]byte(finalData), "test", time.Now())
+	c := smtpHarvester([]byte(finalData), "test1", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -248,8 +269,9 @@ EHLO client.example.com
 250 AUTH LOGIN PLAIN CRAM-MD5
 AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ= *
 235 2.7.0 Authentication successful`)
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = smtpHarvester([]byte(finalData), "test", time.Now())
+	c = smtpHarvester([]byte(finalData), "test2", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -274,7 +296,7 @@ dGVzdA==
 dGVzdDEyMzQ=
 235 2.7.0 Authentication successful`)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = smtpHarvester([]byte(finalData), "test", time.Now())
+	c = smtpHarvester([]byte(finalData), "test3", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -297,7 +319,7 @@ AUTH CRAM-MD5
 cmpzMyBlYzNhNTlmZWQzOTVhYmExZWM2MzY3YzRmNGI0MWFjMA==
 235 2.7.0 Authentication successful`)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = smtpHarvester([]byte(finalData), "test", time.Now())
+	c = smtpHarvester([]byte(finalData), "test4", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}

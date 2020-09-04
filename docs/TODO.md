@@ -1,5 +1,7 @@
 # TODOs
 
+- maltego: create latest binaries and transforms + instructions to generate
+
 - build an abstraction for merging the chunks in Decode()
  
 - add prometheus metrics for internals
