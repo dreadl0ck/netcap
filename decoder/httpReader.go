@@ -128,6 +128,12 @@ type httpReader struct {
 
 // Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
+
+	// prevent nil pointer access if decoder is not initialized
+	if httpDecoder.writer == nil {
+		return
+	}
+
 	// parse conversation
 	var (
 		buf         bytes.Buffer
@@ -295,11 +301,6 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 }
 
 func (t *tcpConnection) writeHTTP(h *types.HTTP) {
-
-	// prevent nil pointer access if httpDecoder is not initialized
-	if httpDecoder.writer == nil {
-		return
-	}
 
 	httpStore.Lock()
 
