@@ -22,7 +22,6 @@
 - remove length field from UDP and IPv6
 - add support to compile without dynamically linked dpi libs
 - add issues for hacktoberfest
-- monitor repo with LGTM and add badge
 - update logging for service probe matching
 - build an abstraction for merging the chunks in Decode()
 - update logging for service probes
