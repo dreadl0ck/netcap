@@ -76,7 +76,7 @@ func (a *VXLAN) Inc() {
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (a *VXLAN) SetPacketContext(ctx *PacketContext) {
+func (a *VXLAN) SetPacketContext(_ *PacketContext) {
 }
 
 // Src returns the source address of the audit record.

@@ -170,7 +170,7 @@ func (w *ElasticWriter) Write(msg proto.Message) error {
 }
 
 // WriteHeader writes a CSV header.
-func (w *ElasticWriter) WriteHeader(t types.Type) error {
+func (w *ElasticWriter) WriteHeader(_ types.Type) error {
 	return nil
 }
 

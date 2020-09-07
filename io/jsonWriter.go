@@ -146,12 +146,12 @@ func NewNullWriter() *NullWriter {
 }
 
 // WriteCSV writes a CSV record.
-func (w *NullWriter) Write(msg proto.Message) error {
+func (w *NullWriter) Write(_ proto.Message) error {
 	return nil
 }
 
 // WriteHeader writes a CSV header.
-func (w *NullWriter) WriteHeader(t types.Type) error {
+func (w *NullWriter) WriteHeader(_ types.Type) error {
 	return nil
 }
 
