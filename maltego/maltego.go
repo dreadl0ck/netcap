@@ -245,11 +245,17 @@ func (m *EntityObj) SetNote(note string) {
 	m.AddProperty("notes#", "Notes", "", note)
 }
 
+// LinkDirection determines the direction of node interconnections (links).
+type LinkDirection string
+
+const (
+	DirectionOutputToInput LinkDirection = "output-to-input"
+	DirectionInputToOutput LinkDirection = "input-to-output"
+)
+
 // SetLinkDirection sets the link direction
-// TODO: add constants for dirs!
-func (m *EntityObj) SetLinkDirection(dir string) {
-	m.AddProperty("link#maltego.link.direction", "Direction", "loose", dir)
-	// me.addProperty('link#maltego.link.direction','link#maltego.link.direction','loose','output-to-input')
+func (m *EntityObj) SetLinkDirection(dir LinkDirection) {
+	m.AddProperty("link#maltego.link.direction", "Direction", "loose", string(dir))
 }
 
 func (m *EntityObj) returnEntity() string {
