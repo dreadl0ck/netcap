@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"log"
 	"os"
 

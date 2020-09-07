@@ -123,7 +123,7 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
    <Field name="properties.pcap" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="PCAP">
     <SampleValue>-</SampleValue>
    </Field>
-   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Path">
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="path to the audit records on disk" displayName="Path">
     <SampleValue></SampleValue>
    </Field>
   </Fields>

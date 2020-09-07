@@ -8,6 +8,12 @@
    <Field name="name" type="string" nullable="false" hidden="false" readonly="false" description="Name of the network interface" displayName="Name">
     <SampleValue></SampleValue>
    </Field>
+   <Field name="snaplen" type="string" nullable="true" hidden="false" readonly="false" description="snap length for ethernet frames in bytes, default: 1514" displayName="Snaplen">
+    <SampleValue></SampleValue>
+   </Field>
+   <Field name="bpf" type="string" nullable="true" hidden="false" readonly="false" description="berkeley packet filter to apply" displayName="Bpf">
+    <SampleValue></SampleValue>
+   </Field>
   </Fields>
  </Properties>
 </MaltegoEntity>

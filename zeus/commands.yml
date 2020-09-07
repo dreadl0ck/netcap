@@ -344,4 +344,4 @@ commands:
     make-icons:
         description: generate icons for maltego integration
         exec: |
-            go test -v -run="GenerateAuditRecordIcons" -tags="icons" github.com/dreadl0ck/netcap/maltego
+            go clean -testcache && go test -v -run="GenerateAuditRecordIcons" -tags="icons" github.com/dreadl0ck/netcap/maltego
