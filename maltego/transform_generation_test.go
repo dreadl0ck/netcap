@@ -344,7 +344,7 @@ func TestGenerateTransformServerListing(t *testing.T) {
 		Enabled:     true,
 		Description: "Local transforms hosted on this machine",
 		URL:         "http://localhost",
-		LastSync:    "2020-06-23 20:47:24.433 CEST", // TODO
+		LastSync:    time.Now().Format("2006-01-02 15:04:05.000 MST"),
 		Protocol: struct {
 			Text    string `xml:",chardata"`
 			Version string `xml:"version,attr"`
