@@ -15,65 +15,12 @@ import (
 
 // TestCaptureLive will test capturing traffic live from the loopback interface
 func TestCaptureLive(t *testing.T) {
-	// init collector
-	// TODO: use base config from PCAP test, and set to live mode
-	c := New(Config{
-		WriteUnknownPackets: false,
-		Workers:             12,
-		PacketBufferSize:    100,
-		SnapLen:             1514,
-		Promisc:             false,
-		DecoderConfig: &decoder.Config{
-			Buffer:               true,
-			Compression:          true,
-			CSV:                  false,
-			Proto:                true,
-			IncludeDecoders:      "",
-			ExcludeDecoders:      "",
-			Out:                  "../tests/collector-test-live",
-			Source:               "unit tests live capture",
-			IncludePayloads:      false,
-			ExportMetrics:        false,
-			AddContext:           true,
-			MemBufferSize:        defaults.BufferSize,
-			FlushEvery:           defaults.FlushEvery,
-			DefragIPv4:           defaults.DefragIPv4,
-			Checksum:             defaults.Checksum,
-			NoOptCheck:           defaults.NoOptCheck,
-			IgnoreFSMerr:         defaults.IgnoreFSMErr,
-			AllowMissingInit:     defaults.AllowMissingInit,
-			Debug:                false,
-			HexDump:              false,
-			WaitForConnections:   true,
-			WriteIncomplete:      false,
-			MemProfile:           "",
-			ConnFlushInterval:    10000,
-			ConnTimeOut:          10,
-			FlowFlushInterval:    2000,
-			FlowTimeOut:          10,
-			CloseInactiveTimeOut: 24 * time.Hour,
-			ClosePendingTimeOut:  5 * time.Second,
-			FileStorage:          "",
-			CompressionBlockSize: defaults.CompressionBlockSize,
-			CompressionLevel:     defaults.CompressionLevel,
-		},
-		BaseLayer:     utils.GetBaseLayer("ethernet"),
-		DecodeOptions: utils.GetDecodeOptions("datagrams"),
-		Quiet:         true,
-		DPI:           false,
-		ResolverConfig: resolvers.Config{
-			ReverseDNS:    false,
-			LocalDNS:      false,
-			MACDB:         true,
-			Ja3DB:         true,
-			ServiceDB:     true,
-			GeolocationDB: true,
-		},
-		OutDirPermission:      0o700,
-		FreeOSMem:             0,
-		ReassembleConnections: true,
-	})
 
+	// prepare default config
+	DefaultConfig.DecoderConfig.Out = "../tests/collector-test-live"
+	DefaultConfig.DecoderConfig.Source = "unit tests live capture"
+
+	c := New(DefaultConfig)
 	c.PrintConfiguration()
 
 	// start timer
@@ -103,7 +50,7 @@ func TestCapturePCAP(t *testing.T) {
 		WriteUnknownPackets: false,
 		Workers:             12,
 		PacketBufferSize:    100,
-		SnapLen:             1514,
+		SnapLen:             defaults.SnapLen,
 		Promisc:             false,
 		DecoderConfig: &decoder.Config{
 			Buffer:               true,

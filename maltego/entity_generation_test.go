@@ -32,7 +32,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"ContentType", "category", "A MIME type describes different multi-media formats", "", nil},
 	{"Credentials", "security", "Credentials for accessing services that require user authentication", "netcap.IPAddr", nil},
 	{"Email", "mail_outline", "An email message", "maltego.Email", nil},
-	{"Interface", "router", "A network interface", "", []propertyField{newRequiredStringField("name", "Name of the network interface")}},
+	{"Interface", "router", "A network interface", "", []propertyField{newRequiredStringField("name", "Name of the network interface"), newStringField("snaplen", "snap length for ethernet frames in bytes, default: 1514"), newStringField("bpf", "berkeley packet filter to apply")}},
 	{"PCAP", "sd_storage", "A packet capture dump file", "", []propertyField{newRequiredStringField("path", "Absolute path to the PCAP file")}},
 	{"Device", "devices", "A device seen on the network", "", nil},
 	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},
@@ -82,13 +82,13 @@ func TestGenerateAllEntities(t *testing.T) {
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
-		genEntity("entities", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path"))
+		genEntity("entities", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path", "path to the audit records on disk"))
 		genEntity("entities", d.GetName(), d.GetName(), d.GetDescription(), "")
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		genEntity("entities", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path"))
+		genEntity("entities", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path", "path to the audit records on disk"))
 		genEntity("entities", name, name, e.Description, "")
 	})
 
@@ -111,7 +111,7 @@ func TestGenerateAndPackCaptureProcessEntity(t *testing.T) {
 
 func TestGenerateAndPackPCAPEntity(t *testing.T) {
 	genEntityArchive()
-	genEntity("entities", "PCAP", "sd_storage", "Packet capture file", "", newStringField("path"))
+	genEntity("entities", "PCAP", "sd_storage", "Packet capture file", "", newStringField("path", "path to the audit records on disk"))
 	packEntityArchive()
 }
 
@@ -130,7 +130,7 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
  </Properties>
 </MaltegoEntity>`
 
-	e := newEntity("PCAP", "General/SharkAttack", "Packet capture file", "", newStringField("path"))
+	e := newEntity("PCAP", "General/SharkAttack", "Packet capture file", "", newStringField("path", "path to the audit records on disk"))
 
 	data, err := xml.MarshalIndent(e, "", " ")
 	if err != nil {

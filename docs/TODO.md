@@ -10,9 +10,10 @@
 - Maltego: immediate feedback
 - docs: describe custom labeling
 
-- index generation
+- updated contexts
+- index generation for vuln search
 - live capture with maltego
-- refactored decoder constructors
+- refactored decoder constructors, add examples
 - document metrics via expvar: https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-module-golang.html
 
 ### Release
@@ -51,6 +52,9 @@
 - implement tls decryption: https://wiki.wireshark.org/TLS
 - chart pkts/sec by time or pkt offset in pcap
 - add tests for POP3 parsing
+- make a nice visual cheat sheet with all audit records and all fields
+- create a cli helper to display all fields for a given audit record
+- add explanation to each field in the proto definition via tags? could be used to generate docs
 
 ## Maltego Plugin
 
