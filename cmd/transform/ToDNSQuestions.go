@@ -80,14 +80,14 @@ func toDNSQuestions() {
 			if len(q.Name) != 0 {
 
 				// prevent duplicating results
-				if _, exists := results[string(q.Name)]; exists {
+				if _, exists := results[q.Name]; exists {
 					continue
 				}
-				results[string(q.Name)]++
+				results[q.Name]++
 
-				ent := trx.AddEntity("netcap.DNSName", string(q.Name))
+				ent := trx.AddEntity("netcap.DNSName", q.Name)
 				ent.AddProperty("srcIP", "SourceIP", "strict", dns.SrcIP)
-				ent.SetLinkLabel(strconv.Itoa(results[string(q.Name)]))
+				ent.SetLinkLabel(strconv.Itoa(results[q.Name]))
 			}
 		}
 	}

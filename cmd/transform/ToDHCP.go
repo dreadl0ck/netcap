@@ -22,12 +22,12 @@ func toDHCP() {
 					if utf8.Valid([]byte(o.Data)) && len(o.Data) != 1 {
 
 						// prevent duplicating results
-						if _, ok := results[string(o.Data)]; ok {
+						if _, ok := results[o.Data]; ok {
 							return
 						}
-						results[string(o.Data)]++
+						results[o.Data]++
 
-						log.Println(string(o.Data), len(o.Data))
+						log.Println(o.Data, len(o.Data))
 
 						var buf bytes.Buffer
 						err := xml.EscapeText(&buf, []byte(o.Data))

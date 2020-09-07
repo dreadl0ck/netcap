@@ -41,7 +41,7 @@ func toServices() {
 			ent.AddProperty("path", "Path", "strict", profilesFile)
 
 			if len(service.Banner) > 0 {
-				ent.AddDisplayInformation("<pre>"+maltego.EscapeText(string(service.Banner))+"</pre>", "Transferred Data")
+				ent.AddDisplayInformation("<pre>"+maltego.EscapeText(service.Banner)+"</pre>", "Transferred Data")
 			}
 		},
 	)

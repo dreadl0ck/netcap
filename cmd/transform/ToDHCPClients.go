@@ -45,11 +45,11 @@ func toDHCPClients() {
 				if utils.IsASCII([]byte(o.Data)) && len(o.Data) > 1 {
 					switch o.Type {
 					case 60:
-						ent.AddProperty("vendor", "Vendor", "strict", string(o.Data))
+						ent.AddProperty("vendor", "Vendor", "strict", o.Data)
 					case 12:
-						ent.AddProperty("host", "Hostname", "strict", string(o.Data))
+						ent.AddProperty("host", "Hostname", "strict", o.Data)
 					case 15:
-						ent.AddProperty("domain", "Domain", "strict", string(o.Data))
+						ent.AddProperty("domain", "Domain", "strict", o.Data)
 					}
 				}
 			}

@@ -107,7 +107,7 @@ func (d *DNS) Time() int64 {
 func (q *DNSQuestion) toString() string {
 	var b strings.Builder
 	b.WriteString(StructureBegin)
-	b.WriteString(string(q.Name))
+	b.WriteString(q.Name)
 	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(q.Type))
 	b.WriteString(FieldSeparator)
@@ -123,7 +123,7 @@ func (q *DNSResourceRecord) toString() string {
 	}
 	var b strings.Builder
 	b.WriteString(StructureBegin)
-	b.WriteString(string(q.Name))
+	b.WriteString(q.Name)
 	b.WriteString(FieldSeparator)
 	b.WriteString(formatInt32(q.Type))
 	b.WriteString(FieldSeparator)
@@ -193,7 +193,7 @@ func (q *DNSMX) toString() string {
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(q.Preference))
 	b.WriteString(FieldSeparator)
-	b.WriteString(string(q.Name))
+	b.WriteString(q.Name)
 	b.WriteString(StructureEnd)
 	return b.String()
 }
