@@ -302,6 +302,7 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 
 func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 
+	// ------ LOCK the store
 	httpStore.Lock()
 
 	if h.UserAgent != "" {
@@ -370,30 +371,8 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 		}
 	}
 
+	// ------ UNLOCK the store
 	httpStore.Unlock()
-
-	// TODO: fixme
-	// get source port and convert to integer
-	// src, err := strconv.Atoi(tl.TransportFlow().Src().String())
-	// if err == nil {
-	// 	switch tl.LayerType() {
-	// 	case layers.LayerTypeTCP:
-	// 		serviceNameSrc = resolvers.LookupServiceByPort(src, typeTCP)
-	// 	case layers.LayerTypeUDP:
-	// 		serviceNameSrc = resolvers.LookupServiceByPort(src, typeUDP)
-	// 	default:
-	// 	}
-	// }
-	// dst, err := strconv.Atoi(tl.TransportFlow().Dst().String())
-	// if err == nil {
-	// 	switch tl.LayerType() {
-	// 	case layers.LayerTypeTCP:
-	// 		serviceNameDst = resolvers.LookupServiceByPort(dst, typeTCP)
-	// 	case layers.LayerTypeUDP:
-	// 		serviceNameDst = resolvers.LookupServiceByPort(dst, typeUDP)
-	// 	default:
-	// 	}
-	// }
 
 	if conf.IncludePayloads {
 		h.RequestBody = t.client.DataSlice().bytes()
@@ -418,8 +397,19 @@ func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 		return
 	}
 
-	// TODO: pass update func
-	writeSoftware(soft, nil)
+	writeSoftware(soft, func(s *software) {
+		s.Lock()
+		for _, f := range s.Flows {
+			// prevent duplicates
+			if f == t.ident {
+				s.Unlock()
+				return
+			}
+		}
+		// add flow
+		s.Flows = append(s.Flows, t.ident)
+		s.Unlock()
+	})
 }
 
 // HTTP Response
