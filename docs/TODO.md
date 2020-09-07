@@ -149,6 +149,7 @@ entities:
 
 ## General
 
+- implement a net dump summary table like: https://github.com/jbaggs/conn-summary
 - httpMetaStore cleanup
 - stream protocol identification: add stream signature with patterns for client and server streams 
 - move logic to identify protocols from stream banners into dedicated pkg and use ports to improve first guess

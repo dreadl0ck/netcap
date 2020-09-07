@@ -35,7 +35,6 @@ var (
 	LocalDNS = true
 
 	ipProfileDecoderInstance *customDecoder
-	ipProfiles               int64
 )
 
 // atomicIPProfileMap contains all connections and provides synchronized access.
