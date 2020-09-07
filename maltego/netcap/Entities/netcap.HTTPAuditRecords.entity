@@ -5,7 +5,7 @@
    <Field name="properties.httpauditrecords" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="HTTPAuditRecords">
     <SampleValue>-</SampleValue>
    </Field>
-   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Path">
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="path to the audit records on disk" displayName="Path">
     <SampleValue></SampleValue>
    </Field>
   </Fields>

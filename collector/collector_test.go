@@ -19,6 +19,7 @@ func TestCaptureLive(t *testing.T) {
 	// prepare default config
 	DefaultConfig.DecoderConfig.Out = "../tests/collector-test-live"
 	DefaultConfig.DecoderConfig.Source = "unit tests live capture"
+	DefaultConfig.Quiet = true
 
 	c := New(DefaultConfig)
 	c.PrintConfiguration()

@@ -168,13 +168,13 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
-		genEntity("netcap", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path"))
+		genEntity("netcap", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path", "path to the audit records on disk"))
 		genEntity("netcap", d.GetName(), d.GetName(), d.GetDescription(), "")
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		genEntity("netcap", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path"))
+		genEntity("netcap", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path", "path to the audit records on disk"))
 		genEntity("netcap", name, name, e.Description, "")
 	})
 
@@ -328,9 +328,10 @@ func genTransformSet(outDir string) {
 }
 
 func TestGenerateTransformServerListing(t *testing.T) {
+	lastSync := time.Now().Format("2006-01-02 15:04:05.000 MST")
 	// File: Servers/Local.tas
 	expected := `<MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-06-23 20:47:24.433 CEST</LastSync>
+ <LastSync>`+ lastSync + `</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -344,7 +345,7 @@ func TestGenerateTransformServerListing(t *testing.T) {
 		Enabled:     true,
 		Description: "Local transforms hosted on this machine",
 		URL:         "http://localhost",
-		LastSync:    time.Now().Format("2006-01-02 15:04:05.000 MST"),
+		LastSync:    lastSync,
 		Protocol: struct {
 			Text    string `xml:",chardata"`
 			Version string `xml:"version,attr"`
@@ -471,7 +472,10 @@ func TestGenerateTransform(t *testing.T) {
  <StealthLevel>0</StealthLevel>
 </MaltegoTransform>`
 
-	tr := newTransform("ToAuditRecords", "Transform PCAP file into audit records", "netcap.PCAP")
+	tr := newTransform(
+		"ToAuditRecords",
+		"Transform PCAP file into audit records",
+		"netcap.PCAP")
 
 	data, err := xml.MarshalIndent(&tr, "", " ")
 	if err != nil {
