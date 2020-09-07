@@ -39,7 +39,7 @@ var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets: false,
 	Workers:             runtime.NumCPU(),
 	PacketBufferSize:    defaults.PacketBuffer,
-	SnapLen:             1514, // TODO: make configurable within Maltego, add as property for pcap?
+	SnapLen:             defaults.SnapLen,
 	Promisc:             false,
 	DecoderConfig: &decoder.Config{
 		Buffer:        true,

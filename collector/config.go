@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"github.com/dreadl0ck/netcap/defaults"
 	"os"
 
 	"github.com/dreadl0ck/gopacket"
@@ -32,7 +33,7 @@ var DefaultConfig = Config{
 	PacketBufferSize:    100,
 	WriteUnknownPackets: false,
 	Promisc:             false,
-	SnapLen:             1514,
+	SnapLen:             defaults.SnapLen,
 	DPI:                 false,
 	BaseLayer:           utils.GetBaseLayer("ethernet"),
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
@@ -49,7 +50,7 @@ var DefaultConfigDPI = Config{
 	PacketBufferSize:    100,
 	WriteUnknownPackets: false,
 	Promisc:             false,
-	SnapLen:             1514,
+	SnapLen:             defaults.SnapLen,
 	DPI:                 true,
 	BaseLayer:           utils.GetBaseLayer("ethernet"),
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),

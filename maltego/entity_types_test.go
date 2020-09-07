@@ -157,14 +157,14 @@ func newEntity(entName, imgName, description, parent string, propertyFields ...p
 	return ent
 }
 
-func newStringField(name string) propertyField {
+func newStringField(name string, description string) propertyField {
 	return propertyField{
 		Name:        strings.ToLower(name),
 		Type:        "string",
 		Nullable:    true,
 		Hidden:      false,
 		Readonly:    false,
-		Description: "",
+		Description: description,
 		DisplayName: strings.Title(name),
 		SampleValue: "",
 	}

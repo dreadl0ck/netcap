@@ -37,8 +37,8 @@ func main() {
 	} else {
 		fmt.Println("Listening on", *flagInterface)
 
-		// snapLen = 1514 (1500 Ethernet MTU + 14 byte Ethernet Header)
-		handle, err = pcap.OpenLive(*flagInterface, 1514, false, pcap.BlockForever)
+		// snapLen = defaults.SnapLen (1500 Ethernet MTU + 14 byte Ethernet Header)
+		handle, err = pcap.OpenLive(*flagInterface, defaults.SnapLen, false, pcap.BlockForever)
 	}
 	if err != nil {
 		log.Fatal(err)

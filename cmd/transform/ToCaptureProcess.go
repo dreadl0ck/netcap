@@ -15,6 +15,24 @@ func toCaptureProcess() {
 	lt := maltego.ParseLocalArguments(os.Args[1:])
 	log.Println("capture on interface:", lt.Value)
 
+	// check if a custom snaplen was provided as property
+	if snaplen, ok := lt.Values["snaplen"]; ok {
+
+		if snaplen != "" {
+			n, err := strconv.Atoi(snaplen)
+			if err != nil {
+				log.Fatal("invalid snaplen provided: ", err)
+			}
+
+			if n <= 0 {
+				log.Fatal("invalid snaplen provided: ", n)
+			}
+
+			// set value in the base config
+			maltegoBaseConfig.SnapLen = n
+		}
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err)
@@ -22,8 +40,17 @@ func toCaptureProcess() {
 	outDir := filepath.Join(home, lt.Value+".net")
 	log.Println("writing output to:", outDir)
 
-	// TODO: pass bpf (add as property to Interface entity)
+	// prepare arguments
 	args := []string{"capture", "-iface", lt.Value, "-out", outDir, "-fileStorage=files", "-config=/usr/local/etc/netcap/livecapture.conf", "-quiet"}
+
+	// check if a custom bpf was provided as property
+	if bpf, ok := lt.Values["bpf"]; ok {
+
+		if bpf != "" {
+			args = append(args, "-bpf="+bpf)
+		}
+	}
+
 	log.Println("args:", args)
 
 	cmd := exec.Command("/usr/local/bin/net", args...)
