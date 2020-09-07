@@ -583,28 +583,28 @@ func newSoftware(i *packetInfo) *software {
 	}
 }
 
-func updateSoftwareAuditRecord(dp *deviceProfile, p *software, i *packetInfo) {
+func updateSoftwareAuditRecord(dp *deviceProfile, s *software, i *packetInfo) {
 	dpIdent := dp.MacAddr
 	if dp.DeviceManufacturer != "" {
 		dpIdent += " <" + dp.DeviceManufacturer + ">"
 	}
 
-	p.Lock()
-	for _, pr := range p.DeviceProfiles {
+	s.Lock()
+	for _, pr := range s.DeviceProfiles {
 		if pr == dpIdent {
-			p.Unlock()
+			s.Unlock()
 			return
 		}
 	}
-	p.DeviceProfiles = append(p.DeviceProfiles, dpIdent)
+	s.DeviceProfiles = append(s.DeviceProfiles, dpIdent)
 	tl := i.p.TransportLayer()
 	if tl != nil {
-		p.Flows = append(p.Flows, utils.CreateFlowIdent(i.srcIP, tl.TransportFlow().Src().String(), i.dstIP, tl.TransportFlow().Dst().String()))
+		s.Flows = append(s.Flows, utils.CreateFlowIdent(i.srcIP, tl.TransportFlow().Src().String(), i.dstIP, tl.TransportFlow().Dst().String()))
 	} else {
 		// no transport layer
-		p.Flows = append(p.Flows, i.srcIP+"->"+i.dstIP)
+		s.Flows = append(s.Flows, i.srcIP+"->"+i.dstIP)
 	}
-	p.Unlock()
+	s.Unlock()
 }
 
 var softwareDecoder = newCustomDecoder(
