@@ -39,6 +39,7 @@ var noPluralsMap = map[string]struct{}{
 	"Ethernet": {},
 }
 
+// DecodePort decodes the network port directly from a byte slice.
 func DecodePort(raw []byte) int32 {
 	if len(raw) != 2 {
 		return 0

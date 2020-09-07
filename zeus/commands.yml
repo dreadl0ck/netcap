@@ -114,7 +114,7 @@ commands:
         description: set the correct project version
         help: generates the version.go file
         exec: |
-            echo -e "// Package netcap is a framework for network traffic analysis. Learn more at https://netcap.io.\npackage netcap\n\n// Netcap version.\nvar Version = \"v${VERSION}\"\nvar Commit = \"$(git rev-parse HEAD | tr -d "\n")\"" > version.go
+            echo -e "// Package netcap is a framework for network traffic analysis. Learn more at https://netcap.io.\npackage netcap\n\n// Version is the current version identifier for netcap.\nvar Version = \"v${VERSION}\"\n\n// Commit is the git commit id of the current version.\nvar Commit = \"$(git rev-parse HEAD | tr -d "\n")\"" > version.go
             sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile-ubuntu > Dockerfile-ubuntu-cp
             mv Dockerfile-ubuntu-cp Dockerfile-ubuntu
             sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile-alpine > Dockerfile-alpine-cp

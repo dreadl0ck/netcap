@@ -42,7 +42,6 @@ var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, ma
 // seen for all DeviceIPs of a given DeviceProfile.
 var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile) {
 	if profile.MacAddr != mac {
-		return
 		for _, ip := range profile.DeviceIPs {
 			countIP(ips, ip, min, max)
 		}

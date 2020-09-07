@@ -1,6 +1,8 @@
 // Package netcap is a framework for network traffic analysis. Learn more at https://netcap.io.
 package netcap
 
-// Netcap version.
-var Version = "v0.5.2"
-var Commit = "bf02416a0d41c0ebf7f31b0976fd958b7dbfc7bc"
+// Version is the current version identifier for netcap.
+var Version = "v0.5.3"
+
+// Commit is the git commit id of the current version.
+var Commit = "bfefe867df75d3ed09bc7d46e1d7c784b6a2b474"
