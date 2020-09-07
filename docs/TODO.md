@@ -1,87 +1,106 @@
 # TODOs
 
-- maltego: create latest binaries and transforms + instructions to generate
+## WIP
 
-- build an abstraction for merging the chunks in Decode()
- 
-- add prometheus metrics for internals
-- update logging for service probes
-- remove colors from pop3 log
+## General
 
+- httpMetaStore cleanup
+- stream protocol identification: add stream signature with patterns for client and server streams 
+- move logic to identify protocols from stream banners into dedicated pkg and use ports to improve first guess
+
+- gopacket: add fallback for identifying protocols in tcp and udp payloads
+- decodingError: add flow information for debugging
+- enrich POP3 information if no Mails have been transferred, e.g. capture the command series for fingerprinting
+
+- add support to compile without dynamically linked dpi libs
+- add audit records for observed protocol buffers
+- banner matching: only match the first banner seen for a service?
+- add issues for hacktoberfest
+
+- reduce init function usage and document the remainders
+- add support for communityID identifiers: https://github.com/satta/gommunityid
+- net dump -stats: show value distribution per field
+
+- reassembly: reduce allocs for ordered stream to 0 again
+- add a die(msg string) function and use instead of panic(err), for centralized teardown and cleanup 
+- https://github.com/glycerine/offheap
+
+- service: add reverse dns lookup and cache all results offline in a boltdb?
+- implement tls decryption: https://wiki.wireshark.org/TLS
+- add comments similar to wireshark info field to records
+
+- add verbose per packet logs via flag (+include packet number)
+- chart pkts/sec by time or pkt offset in pcap
+
+## Elastic
+
+- create an index for document errors that occurred when pushing data
+- create an index for errors that occurred during netcap processing
+
+- automate creation of netcap-* index (add init hook that sets up extra indices and patterns)
+- add cli support to reset elastic indices and patterns
+- log decoding and reassembly errors into elastic
+
+## Grafana / Prometheus
+
+- instrument the core code with prometheus
 - document grafana setup: https://grafana.com/docs/grafana/latest/installation/debian
 - document piechart plugin installation:
 
     grafana-cli plugins install grafana-piechart-panel
 
-- log decoding and reassembly errors into elastic
-- create script to test different parameters on a single file
-- fix failing test-pcaps
-
-- httpMetaStore cleanup
-- stream protocol identification: add stream signature with patterns for client and server streams 
-- gopacket: add fallback for identifying protocols in tcp and udp payloads
-- log service probe misses, ensure tls does not get matched!
-- properly init logfiles in unit tests
-- move logic to identify protocols from stream banners into dedicated pkg and use ports to improve first guess
-- decodingError: add flow information for debugging
-
-- dockerfiles: add docker directory and then subdirs for different dists: eg: docker/ubuntu/Dockerfile
-- add command to reset elastic indices and patterns 
-
-- automate creation of netcap-* index
-- instrument the core code with prometheus
-- https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-module-golang.html
-- jaeger tracing
-
-- enrich POP3 information if no Mails have been transferred, e.g. capture the command series for fingerprinting
-
-- implement ipprofile csv generation
-- count device and ip profiles on stats structure
-- simplify decoder creation and update documentation
-- document stream decoder implementation
-        
-- add logging pkg to create dedicated file loggers for different components
-
-- create an index for document errors that occurred when pushing data
-- create an index for errors that occurred during netcap processing
+## Unit Tests
 
 - CSV: write unit test that checks if the number of fields matches the number of fields produced
-- adjust alpine build script similar to the one for ubuntu
+- document: script to test different parameters on a single file
 
-- add constants for logReassemblyError(
-- error messages iteration
-- review all log.Fatal and panic usages
-- check for usage of fmt.Println(err) / fmt.Println(errClose)
-- check TODOs
+- add tests for POP3 parsing
+- add tests for http audit records and compare results with output from urlsnarf
+- unit tests: add tests with non UTF8 strings to check for proto encoding errors
 
-- add support to compile without dynamically linked dpi libs
-- add protobuf audit records
-- banner matching: only match the first banner seen for a service?
-- add issues for hacktoberfest
+## Resolvers
 
-- remove init function usage
-
-- communityID format from zeek
-
-- net dump -stats: show value distribution per field
-
-- reassembly: reduce allocs per stream to 0 again
-- add a die(msg string) function and use instead of panic(err) 
-- https://github.com/glycerine/offheap
-
-- service: add reverse dns lookup and cache all results offline in a boltdb?
-- add a config option to only write the first X bytes of an TLS encrypted connection to disk
 - integrate to resolvers: https://github.com/fwmark/registry/blob/main/README.md
 
-- implement tls decryption: https://wiki.wireshark.org/TLS
-- add comments based on wireshark info field to records
-- add verbose per packet logs via flag (+include packet number)
-- chart pkts/sec by time or pkt offset in pcap
+## v0.5 Documentation
+
+- Blog: Threat hunting with Netcap and Maltego
+- Blog: Metrics with Prometheus and Grafana
+- Blog: Framework Introduction and Setup
+- Maltego: immediate feedback
+- docs: describe custom labeling
+
+- index generation
+- live capture with maltego
+- refactored decoder constructors
+- document metrics
+
+- https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-module-golang.html
+
+### Release
+
+- update logging for service probe matching
+- build an abstraction for merging the chunks in Decode()
+- update logging for service probes
+- remove colors from pop3 log
+- release dashboards
+
+- godoc cleanup
+- proxy testing and use simplecert
+- dockerfiles: add docker directory and then subdirs for different dists: eg: docker/ubuntu/Dockerfile
+- count device and ip profiles on stats structure
+- document stream decoder implementation
+- adjust alpine build script similar to the one for ubuntu
 
 - check source todos
 - error handling iteration: improve error messages and reduce panic() usage
 - reduce global state iteration
 - comment exported symbols iteration
+- add constants for logReassemblyError(
+- review all log.Fatal and panic usages
+- check for usage of fmt.Println(err) / fmt.Println(errClose)
+
+## Maltego Plugin
 
 maltego additions:
 
@@ -122,8 +141,6 @@ maltego cleanups:
 - TLS fingerprints: GetJa3? for IPAddr entities
 - MIME type: check if executables are properly detected
 
-wireshark pcap downloads: wget -r -np -l 1 -A pcap https://www.wireshark.org/download/automated/captures/
-
 on audit record archives:
 
 - on TLSHellos: To JA3 Fingerprints
@@ -138,21 +155,9 @@ on audit record archives:
 - on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
 - on Connections: GetLongRunningSessions
 
-## v0.5 Documentation
-
-- Blog: Threat hunting with Netcap and Maltego
-- Blog: Metrics with Prometheus and Grafana
-- Blog: Framework Introduction and Setup
-- index generation
-- live capture with maltego
-- refactored decoder constructors
-
-## Maltego Plugin
-
 - Viewlets:
-
   - Suspicious events:
-    - dial to IP directly
+    - dial to IP directly over HTTP
     - shell commands in http parameters
     - masquerated protocol (by using well known ports for example)
     - http content type does not match content
@@ -177,57 +182,72 @@ entities:
 - GetApplicationsForCategory is broken
 
 - Create a netcap.Query entity: Add Execute and run the custom query
-- link src to dst ports?
+- link src to dst ports? by creating different entities for src and dst ports?
 - improve DisplayInformation to allow tracking updates to an entity over time
 
-- check if order of values in maltego list matches the timestamps
 - Application: add timestamps when packets have been seen, currently the first seen timestamp for the associated ip profile is repeated
 
 ## General
+
+- scoring / IOC plugin
+- net export replay pcap
+- implement processing all pcaps in a directory and generate a summary file with stats from all, and aggregate audit records
+
+- net dump: add lag to show conversations and unique ips
+- add optional time interval extraction?
+
+- tfRecords output
+- use offheap maps
+- implement selective layer decoding with gopacket to improve performance
+
+- add util to dump field and apply post processing: net dump -read UDP.ncap.gz -field Payload | base64 -d
 
 - net dump, add pagination with Enter by default, similar to more? display audit record header in pagination mode?
 - capture: add test flag, to emit output for automated tests: #version number \n CSV filename,time,streams,http,pop3,tls,tcp,udp,ethernet,DeviceProfile,software,bytes written,errors
   - collect output and create a table + persist it in tests/logs/test-pcaps-$(date)-$(version).log
   - collect decoding errors from all test pcaps and deduplicate!
+
 - add database update command
 - add full stream SMTP parsing
 - extract TLS certificates! alert if selfsigned
+
 - map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc
 - integrate CPE database?
-- parse cpes, for example with https://github.com/knqyf263/go-cpe
+
 - passive DNS: create hosts mapping ala tshark -z hosts -r traffic.pcap
 - use JSON decoder from new protobuf release, when gogo integrated the new protobuf V2 API: https://pkg.go.dev/google.golang.org/protobuf/encoding/protojson?tab=doc
-- monitor repo with LGTM
+
+- monitor repo with LGTM and add badge
 - implement the connection history string in the same manner as zeek
-- official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt
-- net split tool: add support to split pcaps into connections, like: $ mkdir all_split && dreadbook:test alien$ PcapSplitter -o all_split -f all.pcap -m connection
+
+- use official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt
+- finish net split tool, to split pcap or audit record files by days or hours or by connections similar to $ PcapSplitter -o all_split -f all.pcap -m connection
+
 - ICS pcaps: failed to collect audit records from pcapng file: Unknown magic 73726576
+
 - add net grep tool, similar to ngrep
-- check TODOs in source
+
 - add support for RMCP protocol
 - implement alerting / rule mechanism with separate tool
-- remove global state in decoder and collector pkgs?
 - transform: add a text based commandline interface for the transformations
-- capture unknown L7 protocol TCP streams and write to disk
-- new tool: net split, to split pcap or audit record files by days or hours
 - implement passive dns hosts mapping generation in netcap
-- sort errors by the number of occurrences (COUNT) for print and log in errors.log
-- add log flag to enable writing output to file netcap.log and stdout simultaneously
-- use a logger without reflection for performance: zap?
 - add a -cheatsheet commandline option to each tool, to print command examples into the terminal
-- integrate new TLS layer from gopacket
+
 - use ip whitelist for DeviceProfiles
-- implement a JSON output writer?
-- integrate: https://ja3er.com/downloads.html
+
 - add Ja3 / ja3s whitelisting
 - use new 1.13 strings.ToValidUTF8()
 - remove length field from UDP and IPv6
 - constconf: generate a configuration with constant values -> compiler can optimize better
 
-## tests
+## FAQs
 
-- add tests for POP3 parsing
-- add tests for http audit records and compare results with output from urlsnarf
+- Is this an IDS?
+- Can this handle high throughput
+
+### Tooling
+
+- Audit Record Anonymization for studying sensitive industrial networks
 
 ## Reassembly
 
@@ -248,9 +268,11 @@ entities:
 
 ## net label
 
+- net label: make time zone offset configurable
+- net label: print table with stats
+- label: add switch to control uni vs bidirectional labeling?
 - label tool: display a warning when nothing is there for mapping
 - add YARA support for labels
-- docs: describe custom labeling
 
 - Visualize CIC datasets
 - implement reading NC files in rust
@@ -258,9 +280,9 @@ entities:
 
 - capture payloads for HTTP?
 - add payload data for Flows and Connection if desired
+
 - add flags to enable payload capture for link layer protocols. Currently payload capture only supports some Transport layer protos
 
-- refactor printProgress()
 - refactor CheckFields()
 - use gopacket.LayerType for c.unknownProtosAtomic and c.allProtosAtomi -> AtomicCounterMap for gopacket.Layers
 
@@ -275,12 +297,6 @@ entities:
 - concatenating Strings Builder vs byte slices etc
 - robustness testing / stress test / evasion
 - performance assessment + optimizations
-- pprof & memprof tests
-
-## Sensor
-
-- client reuse conn?
-- implement data export to elastic stack / influx
 
 ## New Protocols
 
@@ -289,21 +305,19 @@ entities:
 
 ## Future Development
 
-- colorize tool output for better readability
 - helper func for ToString() on array?
 - check for panic(err) instances and handle more gracefully
-- performance: allocate fixed size arrays when encoding
+- performance: allocate fixed size arrays where possible
 - events package to define events based on characteristics or IOCs
-- scale to multi instance architecture
+- implement running a multi instance cluster for packet processing
 
 - labeling: log number of unmatched alerts
 - suricata labeling: switch to intelligence from eve.json
-- TCP stream reassembly: ease adding support for other stream based protocols
+
 - flag sort output by timestamp (func in utils)
 - flag to limit maximum disk space used in live mode / create a file per day?
 
 - use unique maps for each worker and merge to prevent synced maps?
-- integrate HASSH SSH fingerprinting
 - netcap go plugins?
 
 ## Notes

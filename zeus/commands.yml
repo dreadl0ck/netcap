@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION:  0.5.2
+    VERSION:  0.5.3
 
 # command data
 commands:
@@ -206,18 +206,26 @@ commands:
             trap 'exit 0' INT
             redcolor()(set -o pipefail;"$@" 2>&1>&3|sed $'s,.*,\e[31m&\e[m,'>&2)3>&1
             for f in $(find tests -type f -name "*.pcap" -o -name "*.pcapng"); do
-                echo "net capture -read "$f" -out "$f.net" -quiet -time -ignore-unknown"
-                redcolor net capture -read "$f" -out "$f.net" -quiet -time -ignore-unknown || :
-                rm -rf "$f.net"
+                if [[ -f "$f" ]]; then
+                    echo "net capture -read "$f" -out "$f.net" -quiet -time -ignore-unknown"
+                    redcolor net capture -read "$f" -out "$f.net" -quiet -time -ignore-unknown || :
+                    if [[ -d "$f.net" ]]; then
+                        rm -rf "$f.net"
+                    fi
+                fi
             done
 
     test-pcaps-dev:
         exec: |
             trap 'exit 0' INT
             for f in $(find tests -type f -name "*.pcap" -o -name "*.pcapng"); do
-                echo "$f -> net capture -read "$f" -out "$f.net""
-                net capture -read "$f" -out "$f.net"
-                rm -rf "$f.net"
+                if [[ -f "$f" ]]; then
+                    echo "net capture -read "$f" -out "$f.net""
+                    net capture -read "$f" -out "$f.net"
+                    if [[ -d "$f.net" ]]; then
+                        rm -rf "$f.net"
+                    fi
+                fi
             done
 
     merge-test-pcaps:
