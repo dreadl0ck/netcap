@@ -116,7 +116,7 @@ func lookupDHCPFingerprint() {
 		for _, o := range messageToFingerprint.Options {
 			if utils.IsASCII([]byte(o.Data)) && len(o.Data) > 1 {
 				if o.Type == 60 {
-					vendor = string(o.Data)
+					vendor = o.Data
 
 					break
 				}
