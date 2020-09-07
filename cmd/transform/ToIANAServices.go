@@ -1,6 +1,8 @@
 package transform
 
 import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +15,12 @@ import (
 )
 
 func toIANAServices() {
+
+	resolverLog := zap.New(zapcore.NewNopCore())
+	defer resolverLog.Sync()
+
+	resolvers.SetLogger(resolverLog)
+
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitServiceDB()
