@@ -96,4 +96,7 @@ const (
 
 	// FileExtensionCompressed of gzipped netcap files.
 	FileExtensionCompressed = ".ncap.gz"
+
+	// ElasticLimitTotalFields is the maximum number of fields allowed per batch of audit records.
+	ElasticLimitTotalFields = 1000000
 )

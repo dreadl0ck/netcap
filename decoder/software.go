@@ -181,18 +181,8 @@ func parseUserAgent(ua string) *userAgent {
 	}
 
 	// if vendor could not be identified, try to determine based on product name
-	// TODO: add utility for this
 	if vendor == "" {
-		switch product {
-		case "Chrome", "Android":
-			vendor = "Google"
-		case "Firefox":
-			vendor = "Mozilla"
-		case "Internet Explorer", "IE":
-			vendor = "Microsoft"
-		case "Safari", "iOS", "macOS":
-			vendor = "Apple"
-		}
+		vendor = determineVendor(product)
 	}
 
 	return &userAgent{
@@ -202,6 +192,21 @@ func parseUserAgent(ua string) *userAgent {
 		version: version,
 		full:    strings.TrimSpace(full),
 	}
+}
+
+// determine vendor name based on product name
+func determineVendor(product string) (vendor string) {
+	switch product {
+	case "Chrome", "Android":
+		vendor = "Google"
+	case "Firefox":
+		vendor = "Mozilla"
+	case "Internet Explorer", "IE":
+		vendor = "Microsoft"
+	case "Safari", "iOS", "macOS":
+		vendor = "Apple"
+	}
+	return vendor
 }
 
 // generic version harvester, scans the payload using a regular expression.
