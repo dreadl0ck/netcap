@@ -18,11 +18,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -58,6 +60,9 @@ type ElasticConfig struct {
 
 	// KibanaEndpoint is the address for Kibana
 	KibanaEndpoint string
+
+	// LimitTotalFields is the maximum number of fields allowed per batch
+	LimitTotalFields int
 
 	BulkSize int
 }
@@ -328,9 +333,13 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 	// 	"version":"WzEwODgsM10="
 	// }
 
+	if wc.LimitTotalFields == 0 {
+		wc.LimitTotalFields = defaults.ElasticLimitTotalFields
+	}
+
 	// create settings mapping
 	data := make(map[string]string)
-	data["index.mapping.total_fields.limit"] = "100000000"
+	data["index.mapping.total_fields.limit"] = strconv.Itoa(wc.LimitTotalFields)
 
 	// serialize JSON
 	d, err := json.Marshal(data)
@@ -342,7 +351,6 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 
 	// use put settings call to increase the maximum fields for each document
 	// audit records like HTTP and IPProfile often generate a high number of fields
-	// TODO: make the limit configurable
 	res, err = c.Indices.PutSettings(bytes.NewReader(d),
 		func(r *esapi.IndicesPutSettingsRequest) {
 			r.Index = []string{index}

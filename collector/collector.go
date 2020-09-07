@@ -27,7 +27,6 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -312,52 +311,52 @@ func (c *Collector) stats() {
 }
 
 // updates the progress indicator and writes to stdout.
-func (c *Collector) printProgress() {
-	// increment atomic packet counter
-	atomic.AddInt64(&c.current, 1)
-
-	// must be locked, otherwise a race occurs when sending a SIGINT
-	//  and triggering wg.Wait() in another goroutine...
-	c.statMutex.Lock()
-
-	// increment wait group for packet processing
-	c.wg.Add(1)
-
-	// dont print message when collector is about to shutdown
-	if c.shutdown {
-		c.statMutex.Unlock()
-
-		return
-	}
-	c.statMutex.Unlock()
-
-	if c.current%1000 == 0 {
-		if !c.config.Quiet {
-			// using a strings.Builder for assembling string for performance
-			// TODO: could be refactored to use a byte slice with a fixed length instead
-			// TODO: add Builder to collector and flush it every cycle to reduce allocations
-			// also only print flows and collections when the corresponding decoders are active
-			var b strings.Builder
-
-			b.Grow(65)
-			b.WriteString("decoding packets... (")
-			b.WriteString(utils.Progress(c.current, c.numPackets))
-			b.WriteString(")")
-			// b.WriteString(strconv.Itoa(decoder.Flows.Size()))
-			// b.WriteString(" connections: ")
-			// b.WriteString(strconv.Itoa(decoder.Connections.Size()))
-			b.WriteString(" profiles: ")
-			b.WriteString(strconv.Itoa(decoder.DeviceProfiles.Size()))
-			b.WriteString(" packets: ")
-			b.WriteString(strconv.Itoa(int(c.current)))
-
-			// print
-			clearLine()
-
-			_, _ = os.Stdout.WriteString(b.String())
-		}
-	}
-}
+//func (c *Collector) printProgress() {
+//	// increment atomic packet counter
+//	atomic.AddInt64(&c.current, 1)
+//
+//	// must be locked, otherwise a race occurs when sending a SIGINT
+//	//  and triggering wg.Wait() in another goroutine...
+//	c.statMutex.Lock()
+//
+//	// increment wait group for packet processing
+//	c.wg.Add(1)
+//
+//	// dont print message when collector is about to shutdown
+//	if c.shutdown {
+//		c.statMutex.Unlock()
+//
+//		return
+//	}
+//	c.statMutex.Unlock()
+//
+//	if c.current%1000 == 0 {
+//		if !c.config.Quiet {
+//			// using a strings.Builder for assembling string for performance
+//			// TODO: could be refactored to use a byte slice with a fixed length instead
+//			// TODO: add Builder to collector and flush it every cycle to reduce allocations
+//			// also only print flows and collections when the corresponding decoders are active
+//			var b strings.Builder
+//
+//			b.Grow(65)
+//			b.WriteString("decoding packets... (")
+//			b.WriteString(utils.Progress(c.current, c.numPackets))
+//			b.WriteString(")")
+//			// b.WriteString(strconv.Itoa(decoder.Flows.Size()))
+//			// b.WriteString(" connections: ")
+//			// b.WriteString(strconv.Itoa(decoder.Connections.Size()))
+//			b.WriteString(" profiles: ")
+//			b.WriteString(strconv.Itoa(decoder.DeviceProfiles.Size()))
+//			b.WriteString(" packets: ")
+//			b.WriteString(strconv.Itoa(int(c.current)))
+//
+//			// print
+//			clearLine()
+//
+//			_, _ = os.Stdout.WriteString(b.String())
+//		}
+//	}
+//}
 
 // updates the progress indicator and writes to stdout periodically.
 func (c *Collector) printProgressInterval() chan struct{} {
