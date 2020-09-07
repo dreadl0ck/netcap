@@ -23,7 +23,7 @@ import (
 
 func TestCreateFlowIdentFromLayerFlows(t *testing.T) {
 
-	net, err := gopacket.FlowFromEndpoints(
+	netFlow, err := gopacket.FlowFromEndpoints(
 		layers.NewIPEndpoint(net.IP{1, 2, 3, 4}),
 		layers.NewIPEndpoint(net.IP{5, 6, 7, 8}),
 	)
@@ -39,7 +39,7 @@ func TestCreateFlowIdentFromLayerFlows(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	ident := CreateFlowIdentFromLayerFlows(net, trans)
+	ident := CreateFlowIdentFromLayerFlows(netFlow, trans)
 	if ident != "1.2.3.4:3456->5.6.7.8:80" {
 		t.Fatal("unexpected ident", ident)
 	}
@@ -47,7 +47,7 @@ func TestCreateFlowIdentFromLayerFlows(t *testing.T) {
 
 func BenchmarkFlowIdentFromLayerFlows(b *testing.B) {
 
-	net, err := gopacket.FlowFromEndpoints(
+	netFlow, err := gopacket.FlowFromEndpoints(
 		layers.NewIPEndpoint(net.IP{1, 2, 3, 4}),
 		layers.NewIPEndpoint(net.IP{5, 6, 7, 8}),
 	)
@@ -66,7 +66,7 @@ func BenchmarkFlowIdentFromLayerFlows(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		CreateFlowIdentFromLayerFlows(net, trans)
+		CreateFlowIdentFromLayerFlows(netFlow, trans)
 	}
 }
 

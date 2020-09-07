@@ -3,6 +3,7 @@ package transform
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -17,7 +18,12 @@ import (
 func toIANAServices() {
 
 	resolverLog := zap.New(zapcore.NewNopCore())
-	defer resolverLog.Sync()
+	defer func() {
+		err := resolverLog.Sync()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
 	resolvers.SetLogger(resolverLog)
 

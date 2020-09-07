@@ -22,35 +22,35 @@ func toSourceIPs() {
 				return
 			}
 			for _, ip := range profile.DeviceIPs {
-				if profile, ok := profiles[ip]; ok {
+				if p, ok := profiles[ip]; ok {
 
 					var (
 						ent      *maltego.EntityObj
-						dnsNames = strings.Join(profile.DNSNames, "\n")
-						val      = profile.Addr
+						dnsNames = strings.Join(p.DNSNames, "\n")
+						val      = p.Addr
 					)
-					if len(profile.Geolocation) > 0 {
-						val += "\n" + profile.Geolocation
+					if len(p.Geolocation) > 0 {
+						val += "\n" + p.Geolocation
 					}
 					if len(dnsNames) > 0 {
 						val += "\n" + dnsNames
 					}
-					if resolvers.IsPrivateIP(net.ParseIP(profile.Addr)) {
+					if resolvers.IsPrivateIP(net.ParseIP(p.Addr)) {
 						ent = trx.AddEntity("netcap.InternalSourceIP", val)
 					} else {
 						ent = trx.AddEntity("netcap.ExternalSourceIP", val)
 					}
 
-					ent.AddProperty("geolocation", "Geolocation", "strict", profile.Geolocation)
+					ent.AddProperty("geolocation", "Geolocation", "strict", p.Geolocation)
 					ent.AddProperty("dnsNames", "DNS Names", "strict", dnsNames)
 
 					ent.AddProperty("mac", "MacAddress", "strict", mac)
-					ent.AddProperty("ipaddr", "IPAddress", "strict", profile.Addr)
+					ent.AddProperty("ipaddr", "IPAddress", "strict", p.Addr)
 					ent.AddProperty("path", "Path", "strict", profilesFile)
-					ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(profile.NumPackets, 10))
+					ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(p.NumPackets, 10))
 
-					ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
-					ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
+					ent.SetLinkLabel(strconv.FormatInt(p.NumPackets, 10) + " pkts\n" + humanize.Bytes(p.Bytes))
+					ent.SetLinkThickness(maltego.GetThickness(uint64(p.NumPackets), min, max))
 				}
 			}
 		},
