@@ -132,14 +132,14 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 
 		// Application Layer: DPI
 		uniqueResults := dpi.GetProtocols(i.p)
-		for proto, res := range uniqueResults {
+		for protocol, res := range uniqueResults {
 			// check if proto exists already
 			var prot *types.Protocol
-			if prot, ok = p.Protocols[proto]; ok {
+			if prot, ok = p.Protocols[protocol]; ok {
 				prot.Packets++
 			} else {
 				// add new
-				p.Protocols[proto] = dpi.NewProto(&res)
+				p.Protocols[protocol] = dpi.NewProto(&res)
 			}
 		}
 
@@ -180,8 +180,8 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 
 	// Application Layer: DPI
 	uniqueResults := dpi.GetProtocols(i.p)
-	for proto, res := range uniqueResults {
-		protos[proto] = dpi.NewProto(&res)
+	for protocol, res := range uniqueResults {
+		protos[protocol] = dpi.NewProto(&res)
 	}
 
 	var names []string
