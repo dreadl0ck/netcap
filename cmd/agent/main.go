@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/denisbrodbeck/machineid"
 	"io/ioutil"
 	"log"
 	"os"
@@ -160,11 +161,14 @@ func Run() {
 	// close handle on exit
 	defer handle.Close()
 
-	// get client id
-	// currently the user name is used for this
-	// TODO: generate a unique numerical identifier instead
+	// get client id: $USER-$MACHINEID
 	userName := os.Getenv("USER")
-	fmt.Println("\n["+userName+"] got", len(chans), "channels")
+	id, err := machineid.ID()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("\n["+userName +"-" +id+ "] got", len(chans), "channels")
 
 	// iterate over encoder channels
 	for _, bi := range chans { // create a copy of loop variable
