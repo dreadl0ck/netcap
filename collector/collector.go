@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -128,12 +129,13 @@ func (c *Collector) handleSignals() {
 	go func() {
 		sig := <-sigs
 
-		fmt.Println("\nreceived signal:", sig)
-		fmt.Println("exiting")
+		c.printlnStdOut("\nreceived signal:", sig)
+		c.printlnStdOut("exiting")
+		c.log.Info("received signal", zap.String("sig", sig.String()))
 
 		go func() {
 			sign := <-sigs
-			fmt.Println("force quitting, signal:", sign)
+			c.printlnStdOut("force quitting, signal:", sign)
 			c.teardown()
 			os.Exit(0)
 		}()
@@ -141,6 +143,58 @@ func (c *Collector) handleSignals() {
 		c.cleanup(true)
 		os.Exit(0)
 	}()
+
+	// TODO: make configurable
+	go c.serveCleanupHTTPEndpoint()
+}
+
+func (c *Collector) serveCleanupHTTPEndpoint() {
+	var (
+		cleanupTriggered bool
+		cleanupMu        sync.Mutex
+	)
+
+	http.HandleFunc("/cleanup", func(w http.ResponseWriter, r *http.Request) {
+
+		// sync access
+		cleanupMu.Lock()
+		defer cleanupMu.Unlock()
+
+		// reply OK
+		// TODO: hold the connection open until the stream processing is going on.
+		// This way the stop command could flush the latest audit records to maltego once the netcap process exited.
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+
+		// second time cleanup request will force shutdown
+		if cleanupTriggered {
+			c.log.Info("shutdown forced via local http endpoint from", zap.String("userAgent", r.UserAgent()), zap.String("addr", r.RemoteAddr))
+
+			// triggered once already. now force shutdown
+			// do this in the background to allow the http request handler to finish cleanly
+			go func() {
+				c.printlnStdOut("force quitting")
+				time.Sleep(1 * time.Second)
+				c.teardown()
+				os.Exit(0)
+			}()
+
+			return
+		}
+
+		// first time shutdown triggered
+		cleanupTriggered = true
+		c.log.Info("shutdown request received via local http endpoint from", zap.String("userAgent", r.UserAgent()), zap.String("addr", r.RemoteAddr))
+
+		// trigger cleanup in the background to allow the http request handler to finish cleanly
+		go func() {
+			time.Sleep(1 * time.Second)
+			c.cleanup(true)
+			os.Exit(0)
+		}()
+	})
+
+	log.Fatal(http.ListenAndServe("127.0.0.1:60589", nil))
 }
 
 // to decode incoming packets in parallel

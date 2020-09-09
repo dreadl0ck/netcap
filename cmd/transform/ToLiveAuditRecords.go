@@ -57,12 +57,13 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		}
 
 		if numRecords == 0 {
+			log.Println("no records in", path)
 			continue
 		}
 
 		ent := trx.AddEntityWithPath("netcap."+name+"AuditRecords", utils.Pluralize(name), path)
 
-		ent.AddProperty("description", "Description", "strict", name+defaults.FileExtensionCompressed)
+		ent.AddProperty("description", "Description", "strict", name+defaults.FileExtension)
 
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 

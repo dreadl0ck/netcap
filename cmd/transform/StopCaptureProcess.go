@@ -3,37 +3,35 @@ package transform
 import (
 	"fmt"
 	"log"
-	"os"
-	"strconv"
+	"net/http"
 
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func stopCaptureProcess() {
-	lt := maltego.ParseLocalArguments(os.Args[1:])
-	pid := lt.Values["pid"]
-	log.Println("kill PID:", pid)
+	var (
+		//lt = maltego.ParseLocalArguments(os.Args[1:])
+		trx = maltego.Transform{}
+	)
 
-	pidInt, err := strconv.Atoi(pid)
+	log.Println("sending cleanup request")
+
+	// TODO: flush all remaining audit records to maltego on exit: remove timeout, make the request blocking and wait for it, then invoke toLiveAuditRecords
+	resp, err := http.Get("http://127.0.0.1:60589/cleanup")
 	if err != nil {
-		log.Fatal(err)
+		trx.AddUIMessage("failed to stop process: " + err.Error(), maltego.UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
-	p, err := os.FindProcess(pidInt)
-	if err != nil {
-		log.Fatal(err)
+	if resp.StatusCode != http.StatusOK {
+		trx.AddUIMessage("failed to stop process: " + resp.Status, maltego.UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		return
 	}
 
-	// graceful shutdown
-	// TODO: add windows support
-	err = p.Signal(os.Interrupt)
-	// err = p.Kill()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// generate maltego transform
-	trx := maltego.Transform{}
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
+
+	log.Println("done!")
 }

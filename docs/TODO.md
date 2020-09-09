@@ -2,8 +2,7 @@
 
 ## WIP
 
-ToHostForService
-ToLiveAuditRecords
+- add constant for "/usr/local/bin/net"
 
 ## v0.5 Documentation
 

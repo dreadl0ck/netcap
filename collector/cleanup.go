@@ -27,6 +27,9 @@ import (
 
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup(force bool) {
+
+	c.log.Info("cleanup started")
+
 	c.statMutex.Lock()
 	c.shutdown = true
 	c.statMutex.Unlock()
@@ -87,6 +90,8 @@ func (c *Collector) teardown() {
 	}
 
 	resolvers.SaveFingerprintDB()
+
+	c.log.Info("decoder teardown complete, closing logfiles")
 
 	// sync the logs
 	for _, l := range c.zapLoggers {
