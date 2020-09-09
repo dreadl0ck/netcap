@@ -2,6 +2,9 @@ package transform
 
 import (
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"log"
 	"os"
 	"time"
 
@@ -14,6 +17,17 @@ import (
 )
 
 func toOutgoingFlowsFiltered() {
+
+	resolverLog := zap.New(zapcore.NewNopCore())
+	defer func() {
+		err := resolverLog.Sync()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	resolvers.SetLogger(resolverLog)
+
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitLocalDNS()
