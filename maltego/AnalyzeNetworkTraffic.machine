@@ -90,7 +90,7 @@ machine("netcap.AnalyzeNetworkTraffic",
             }
 
             path {
-                run("netcap.ToProducts")
+                run("netcap.ToSoftwareProducts")
             }
 
             path {

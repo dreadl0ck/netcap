@@ -19,6 +19,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -37,19 +38,25 @@ type serviceCountFunc = func(service *types.Service, mac string, min, max *uint6
 // ServiceTransform applies a maltego transformation over Service profiles seen for a target Service.
 func ServiceTransform(count serviceCountFunc, transform serviceTransformationFunc) {
 	var (
-		lt           = ParseLocalArguments(os.Args[1:])
-		servicesFile = lt.Values["path"]
-		mac          = lt.Values["mac"]
-		ipaddr       = lt.Values["ipaddr"]
-		stdout       = os.Stdout
-		trx          = Transform{}
+		lt     = ParseLocalArguments(os.Args[1:])
+		path   = lt.Values["path"]
+		mac    = lt.Values["mac"]
+		ipaddr = lt.Values["ipaddr"]
+		stdout = os.Stdout
+		trx    = Transform{}
 	)
+
+	if !strings.HasPrefix(filepath.Base(path), "Service.ncap") {
+		path = filepath.Join(filepath.Dir(path), "Service.ncap.gz")
+	}
 
 	os.Stdout = os.Stderr
 	netio.PrintBuildInfo()
 	os.Stdout = stdout
 
-	f, err := os.Open(servicesFile)
+	log.Println("opening", path)
+
+	f, err := os.Open(path)
 	if err != nil {
 		trx.AddUIMessage("path property not set!", UIMessageFatal)
 		fmt.Println(trx.ReturnOutput())
@@ -65,7 +72,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 		return
 	}
 
-	r, err := netio.Open(servicesFile, defaults.BufferSize)
+	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +120,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 		}
 	}
 
-	r, err = netio.Open(servicesFile, defaults.BufferSize)
+	r, err = netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -129,7 +136,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 			panic(err)
 		}
 
-		transform(lt, &trx, service, min, max, servicesFile, mac, ipaddr)
+		transform(lt, &trx, service, min, max, path, mac, ipaddr)
 	}
 
 	err = r.Close()

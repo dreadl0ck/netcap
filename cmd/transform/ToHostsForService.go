@@ -18,14 +18,16 @@ func toHostsForService() {
 	maltego.ServiceTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, path string, mac string, ipaddr string) {
-			if len(ip) == 0 {
+			if ip == "" {
 				ip = lt.Values["ip"]
 				portStr := lt.Values["port"]
-				portNum, err := strconv.Atoi(portStr)
-				if err != nil {
-					log.Fatal("invalid port", err)
+				if portStr != "" {
+					portNum, err := strconv.Atoi(portStr)
+					if err != nil {
+						log.Fatal("invalid port", err)
+					}
+					port = int32(portNum)
 				}
-				port = int32(portNum)
 				log.Println("searching for ip", ip, "and port", port)
 			}
 
