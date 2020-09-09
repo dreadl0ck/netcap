@@ -56,7 +56,7 @@ func labelTLS(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, 
 			log.Fatal(errFileHeader)
 		}
 		if header.Type != types.Type_NC_TLSClientHello {
-			panic("file does not contain HTTP records: " + header.Type.String())
+			die("file does not contain HTTP records", header.Type.String())
 		}
 
 		// outfile handle

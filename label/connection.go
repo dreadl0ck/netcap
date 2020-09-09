@@ -60,7 +60,7 @@ func labelConnections(wg *sync.WaitGroup, file string, alerts []*suricataAlert, 
 		}
 
 		if header.Type != types.Type_NC_Connection {
-			panic("file does not contain Connection records: " + header.Type.String())
+			die("file does not contain Connection records", header.Type.String())
 		}
 
 		// outfile handle

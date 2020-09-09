@@ -56,7 +56,7 @@ func labelUDP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir, 
 			log.Fatal(errFileHeader)
 		}
 		if header.Type != types.Type_NC_UDP {
-			panic("file does not contain UDP records: " + header.Type.String())
+			die("file does not contain UDP records", header.Type.String())
 		}
 
 		// outfile handle

@@ -69,9 +69,8 @@ func toCaptureProcess() {
 	log.Println("PID", cmd.Process.Pid)
 
 	returnCaptureProcessEntity(cmd.Process.Pid, outDir, lt.Value)
-	
-	time.Sleep(3 * time.Second)
-	//<- make(chan bool)
+
+	time.Sleep(1 * time.Second)
 }
 
 func getPathLiveCaptureOutDir(iface string) string {

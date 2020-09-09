@@ -80,44 +80,41 @@ type deviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, p
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records.
 func DeviceProfileTransform(count countFunc, transform deviceProfileTransformationFunc) {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
-		mac    = lt.Values["mac"]
-		stdout = os.Stdout
-		trx    = Transform{}
+		lt   = ParseLocalArguments(os.Args[1:])
+		path = lt.Values["path"]
+		mac  = lt.Values["mac"]
+		trx = Transform{}
 	)
 
-	os.Stdout = os.Stderr
-	netio.PrintBuildInfo()
-	os.Stdout = stdout
+	netio.FPrintBuildInfo(os.Stderr)
 
 	f, err := os.Open(path)
 	if err != nil {
-		// TODO: display error to user
-		log.Fatal(err)
+
+		log.Println(err)
+		path = strings.TrimSuffix(path, ".gz")
+
+		f, err = os.Open(path)
+		if err != nil {
+			die(err.Error(), "failed to open audit records")
+		}
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die("input file must be an audit record file, but got", f.Name())
 	}
 
-	r, err := netio.Open(path, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die(errFileHeader.Error(), "failed to open audit record file")
 	}
 
 	if header.Type != types.Type_NC_DeviceProfile {
-		panic("file does not contain DeviceProfile records: " + header.Type.String())
+		die("file does not contain DeviceProfile records", header.Type.String())
 	}
 
 	var (
@@ -156,9 +153,9 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		}
 
 		r, err = netio.Open(path, defaults.BufferSize)
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		die(err.Error(), "failed to open file")
+	}
 
 		// read off netcap header - ignore err as it has been checked before
 		_, _ = r.ReadHeader()

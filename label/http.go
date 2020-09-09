@@ -44,7 +44,7 @@ func labelHTTP(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir,
 		}
 
 		if header.Type != types.Type_NC_HTTP {
-			panic("file does not contain HTTP records: " + header.Type.String())
+			die("file does not contain HTTP records", header.Type.String())
 		}
 
 		// outfile handle

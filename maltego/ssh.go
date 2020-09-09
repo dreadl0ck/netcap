@@ -43,25 +43,17 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		sshFile = lt.Values["path"]
 		mac     = lt.Values["mac"]
 		ipaddr  = lt.Values["ipaddr"]
-		stdout  = os.Stdout
+
 		trx     = Transform{}
 	)
 
-	os.Stdout = os.Stderr
-	netio.PrintBuildInfo()
-	os.Stdout = stdout
+	netio.FPrintBuildInfo(os.Stderr)
 
-	f, err := os.Open(sshFile)
-	if err != nil {
-		log.Fatal(err)
-	}
+	f := openPath(sshFile)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die(errUnexpectedFileType, f.Name())
 	}
 
 	r, err := netio.Open(sshFile, defaults.BufferSize)
@@ -72,11 +64,11 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_SSH {
-		panic("file does not contain SSH records: " + header.Type.String())
+		die("file does not contain SSH records", header.Type.String())
 	}
 
 	var (

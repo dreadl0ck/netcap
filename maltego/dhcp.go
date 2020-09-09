@@ -58,10 +58,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die(errUnexpectedFileType, f.Name())
 	}
 
 	r, err := netio.Open(dhcpAuditRecords, defaults.BufferSize)
@@ -72,10 +69,10 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 	if header.Type != types.Type_NC_DHCPv4 {
-		panic("file does not contain DHCPv4 records: " + header.Type.String())
+		die("file does not contain DHCPv4 records", header.Type.String())
 	}
 
 	var (

@@ -2,6 +2,9 @@ package transform
 
 import (
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"log"
 	"os"
 	"strconv"
 
@@ -12,9 +15,19 @@ import (
 )
 
 func toSrcPorts() {
+
+	resolverLog := zap.New(zapcore.NewNopCore())
+	defer func() {
+		err := resolverLog.Sync()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	resolvers.SetLogger(resolverLog)
+
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
-
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 

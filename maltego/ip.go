@@ -39,40 +39,29 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 		path   = lt.Values["path"]
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values["ipaddr"]
-		stdout = os.Stdout
-		trx    = Transform{}
+
+		trx = Transform{}
 	)
 
-	os.Stdout = os.Stderr
-	netio.PrintBuildInfo()
-	os.Stdout = stdout
+	netio.FPrintBuildInfo(os.Stderr)
 
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
+	f := openPath(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die(errUnexpectedFileType, f.Name())
 	}
 
-	r, err := netio.Open(path, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_DeviceProfile {
-		panic("file does not contain DeviceProfile records: " + header.Type.String())
+		die("file does not contain DeviceProfile records", header.Type.String())
 	}
 
 	var (
@@ -91,6 +80,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 		min      uint64 = 10000000
 		max      uint64 = 0
 		profiles        = LoadIPProfiles()
+		err error
 	)
 
 	if count != nil {
@@ -113,7 +103,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 
 	r, err = netio.Open(path, defaults.BufferSize)
 	if err != nil {
-		panic(err)
+		die(err.Error(), "failed to open file")
 	}
 
 	// read netcap header - ignore err as it has been checked before

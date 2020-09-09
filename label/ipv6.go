@@ -56,7 +56,7 @@ func labelIPv6(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir,
 			log.Fatal(errFileHeader)
 		}
 		if header.Type != types.Type_NC_IPv6 {
-			panic("file does not contain IPv6 records: " + header.Type.String())
+			die("file does not contain IPv6 records", header.Type.String())
 		}
 
 		// outfile handle
