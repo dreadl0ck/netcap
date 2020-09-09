@@ -1,6 +1,9 @@
 package transform
 
 import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"log"
 	"os"
 
 	"github.com/dreadl0ck/netcap/maltego"
@@ -9,6 +12,17 @@ import (
 )
 
 func toHTTPHostsFiltered() {
+
+	resolverLog := zap.New(zapcore.NewNopCore())
+	defer func() {
+		err := resolverLog.Sync()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	resolvers.SetLogger(resolverLog)
+
 	stdOut := os.Stdout
 	os.Stdout = os.Stderr
 	resolvers.InitDNSWhitelist()
