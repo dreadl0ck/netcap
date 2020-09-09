@@ -69,3 +69,12 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 		return
 	}
 }
+
+func die(err string, msg string) {
+	trx := maltego.Transform{}
+	// add error message for the user
+	trx.AddUIMessage(msg + ": " + err, maltego.UIMessageFatal)
+	fmt.Println(trx.ReturnOutput())
+	log.Println(msg, err)
+	os.Exit(0) // don't signal an error for the transform invocation
+}

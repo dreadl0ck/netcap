@@ -53,7 +53,7 @@ func toDNSQuestions() {
 		log.Fatal(errFileHeader)
 	}
 	if header.Type != types.Type_NC_DNS {
-		panic("file does not contain DNS records: " + header.Type.String())
+		die("file does not contain DNS records", header.Type.String())
 	}
 
 	var (

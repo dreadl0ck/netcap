@@ -100,3 +100,7 @@ func finish(wg *sync.WaitGroup, r *io.Reader, f *os.File, labelsTotal int, outFi
 
 	wg.Done()
 }
+
+func die(err string, msg string) {
+	log.Fatal(err, msg)
+}

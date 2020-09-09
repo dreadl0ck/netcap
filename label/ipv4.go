@@ -56,7 +56,7 @@ func labelIPv4(wg *sync.WaitGroup, file string, alerts []*suricataAlert, outDir,
 			log.Fatal(errFileHeader)
 		}
 		if header.Type != types.Type_NC_IPv4 {
-			panic("file does not contain IPv4 records: " + header.Type.String())
+			die("file does not contain IPv4 records", header.Type.String())
 		}
 
 		// outfile handle

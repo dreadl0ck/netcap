@@ -49,18 +49,12 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 
 	f, err := os.Open(fileAuditRecords)
 	if err != nil {
-		trx.AddUIMessage("audit record file not found: "+err.Error(), UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die(err.Error(), "audit record file not found")
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die("input file must be an audit record file, but got", f.Name())
 	}
 
 	r, err := netio.Open(fileAuditRecords, defaults.BufferSize)
@@ -71,7 +65,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_File {

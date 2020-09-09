@@ -156,26 +156,30 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 
 	http.HandleFunc("/cleanup", func(w http.ResponseWriter, r *http.Request) {
 
+		var force bool
+
 		// sync access
 		cleanupMu.Lock()
-		defer cleanupMu.Unlock()
-
-		// reply OK
-		// TODO: hold the connection open until the stream processing is going on.
-		// This way the stop command could flush the latest audit records to maltego once the netcap process exited.
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		force = cleanupTriggered
+		cleanupMu.Unlock()
 
 		// second time cleanup request will force shutdown
-		if cleanupTriggered {
+		if force {
 			c.log.Info("shutdown forced via local http endpoint from", zap.String("userAgent", r.UserAgent()), zap.String("addr", r.RemoteAddr))
 
 			// triggered once already. now force shutdown
+			c.printlnStdOut("force quitting")
+			c.teardown()
+
+			// reply OK
+			// TODO: hold the connection open until the stream processing is going on.
+			// This way the stop command could flush the latest audit records to maltego once the netcap process exited.
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+
 			// do this in the background to allow the http request handler to finish cleanly
 			go func() {
-				c.printlnStdOut("force quitting")
 				time.Sleep(1 * time.Second)
-				c.teardown()
 				os.Exit(0)
 			}()
 
@@ -183,13 +187,22 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 		}
 
 		// first time shutdown triggered
+		cleanupMu.Lock()
 		cleanupTriggered = true
+		cleanupMu.Unlock()
+
 		c.log.Info("shutdown request received via local http endpoint from", zap.String("userAgent", r.UserAgent()), zap.String("addr", r.RemoteAddr))
 
-		// trigger cleanup in the background to allow the http request handler to finish cleanly
+		c.cleanup(true)
+
+		// reply OK
+		// TODO: hold the connection open until the stream processing is going on.
+		// This way the stop command could flush the latest audit records to maltego once the netcap process exited.
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+
 		go func() {
 			time.Sleep(1 * time.Second)
-			c.cleanup(true)
 			os.Exit(0)
 		}()
 	})

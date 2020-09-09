@@ -58,10 +58,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die(errUnexpectedFileType, f.Name())
 	}
 
 	r, err := netio.Open(pop3AuditRecords, defaults.BufferSize)
@@ -72,10 +69,10 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 	if header.Type != types.Type_NC_POP3 {
-		panic("file does not contain POP3 records: " + header.Type.String())
+		die("file does not contain POP3 records", header.Type.String())
 	}
 
 	var (

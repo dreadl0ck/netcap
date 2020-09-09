@@ -15,7 +15,6 @@ package maltego
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -31,49 +30,36 @@ import (
 // LoadMails will load the email audit records into memory and return them.
 func LoadMails() map[string]*types.Mail {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
-		mails  = make(map[string]*types.Mail)
-		stdOut = os.Stdout
-		trx    = Transform{}
+		lt    = ParseLocalArguments(os.Args[1:])
+		path  = lt.Values["path"]
+		mails = make(map[string]*types.Mail)
 	)
 
-	os.Stdout = os.Stderr
-	netio.PrintBuildInfo()
-	os.Stdout = stdOut
-
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
+	netio.FPrintBuildInfo(os.Stderr)
+	f := openPath(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return nil
+		die(errUnexpectedFileType, f.Name())
 	}
 
-	r, err := netio.Open(path, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_DeviceProfile {
-		panic("file does not contain DeviceProfile records: " + header.Type.String())
+		die("file does not contain DeviceProfile records", header.Type.String())
 	}
 
 	var (
 		mail = new(types.Mail)
 		pm   proto.Message
 		ok   bool
+		err error
 	)
 
 	pm = mail

@@ -176,30 +176,23 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 		path             = lt.Values["path"]
 		mac              = lt.Values["mac"]
 		ipaddr           = lt.Values["ipaddr"]
-		stdout           = os.Stdout
 		dir              = filepath.Dir(path)
 		flowAuditRecords = filepath.Join(dir, "Flow.ncap.gz")
 		trx              = Transform{}
 	)
 
-	os.Stdout = os.Stderr
-	netio.PrintBuildInfo()
-	os.Stdout = stdout
+	netio.FPrintBuildInfo(os.Stderr)
 
 	log.Println("opening", flowAuditRecords)
 
 	f, err := os.Open(flowAuditRecords)
 	if err != nil {
-		// TODO: display errors to user
-		log.Fatal(err)
+		die(err.Error(), "failed to open audit records")
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die("input file must be an audit record file, but got", f.Name())
 	}
 
 	r, err := netio.Open(flowAuditRecords, defaults.BufferSize)
@@ -210,11 +203,11 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die(errFileHeader.Error(), "failed to read file header")
 	}
 
 	if header.Type != types.Type_NC_Flow {
-		panic("file does not contain Flow records: " + header.Type.String())
+		die("file does not contain Flow records", header.Type.String())
 	}
 
 	var (

@@ -50,18 +50,24 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
-		trx.AddUIMessage("audit record file not found: "+err.Error(), UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+
+		log.Println(err)
+		httpAuditRecords = strings.TrimSuffix(httpAuditRecords, ".gz")
+
+		f, err = os.Open(httpAuditRecords)
+		if err != nil {
+
+			trx.AddUIMessage("audit record file not found: "+err.Error(), UIMessageFatal)
+			fmt.Println(trx.ReturnOutput())
+			log.Println("input file must be an audit record file")
+
+			return
+		}
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die(errUnexpectedFileType, f.Name())
 	}
 
 	r, err := netio.Open(httpAuditRecords, defaults.BufferSize)
@@ -72,11 +78,11 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_HTTP {
-		panic("file does not contain HTTP records: " + header.Type.String())
+		die("file does not contain HTTP records", header.Type.String())
 	}
 
 	var (

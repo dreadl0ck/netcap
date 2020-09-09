@@ -34,38 +34,27 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		lt       = ParseLocalArguments(os.Args[1:])
 		path     = filepath.Join(filepath.Dir(lt.Values["path"]), "IPProfile.ncap.gz")
 		profiles = make(map[string]*types.IPProfile)
-		stdOut   = os.Stdout
+		err error
 	)
 
-	log.Println("open path:", path)
-
-	os.Stdout = os.Stderr
-	netio.PrintBuildInfo()
-	os.Stdout = stdOut
-
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
+	netio.FPrintBuildInfo(os.Stderr)
+	f := openPath(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
 		log.Fatal("input file must be an audit record file")
 	}
 
-	r, err := netio.Open(path, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_IPProfile {
-		panic("file does not contain IPProfile records: " + header.Type.String())
+		die("file does not contain IPProfile records", header.Type.String())
 	}
 
 	var (

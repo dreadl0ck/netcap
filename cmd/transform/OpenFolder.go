@@ -46,7 +46,7 @@ func openFolder() {
 	}
 
 	path := filepath.Dir(lt.Values["location"])
-	log.Println("open path:", path)
+
 
 	log.Println("command for opening path:", openCommandName)
 

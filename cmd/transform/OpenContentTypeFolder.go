@@ -47,7 +47,7 @@ func openContentTypeFolder() {
 	}
 
 	path := filepath.Join(filepath.Dir(lt.Values["path"]), defaults.FileStorage, lt.Values["properties.contenttype"])
-	log.Println("open path:", path)
+
 
 	log.Println("command for opening path:", openCommandName)
 

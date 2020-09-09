@@ -42,25 +42,16 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 		credentialsFile = lt.Values["path"]
 		mac             = lt.Values["mac"]
 		ipaddr          = lt.Values["ipaddr"]
-		stdout          = os.Stdout
 		trx             = Transform{}
 	)
 
-	os.Stdout = os.Stderr
-	netio.PrintBuildInfo()
-	os.Stdout = stdout
+	netio.FPrintBuildInfo(os.Stderr)
 
-	f, err := os.Open(credentialsFile)
-	if err != nil {
-		log.Fatal(err)
-	}
+	f := openPath(credentialsFile)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
+		die(errUnexpectedFileType, f.Name())
 	}
 
 	r, err := netio.Open(credentialsFile, defaults.BufferSize)
@@ -71,10 +62,10 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
+		die("failed to read file header", errFileHeader.Error())
 	}
 	if header.Type != types.Type_NC_Credentials {
-		panic("file does not contain Credentials records: " + header.Type.String())
+		die("file does not contain Credentials records", header.Type.String())
 	}
 
 	var (
