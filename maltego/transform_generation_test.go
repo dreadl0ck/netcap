@@ -84,6 +84,7 @@ var transforms = []transformCoreInfo{
 	{"ToSoftwareVulnerabilities", "netcap.VulnerabilityAuditRecords", "Show all discovered vulnerable software"},
 	{"ToServices", "netcap.ServiceAuditRecords", "Show detected network services"},
 	{"ToDevices", "netcap.DeviceProfileAuditRecords", "Show all discovered device audit records"},
+	{"ToHosts", "netcap.IPProfileAuditRecords", "Show all discovered ip hosts"},
 
 	{"OpenExploit", "netcap.Exploit", "Open the exploit source with the default system program for the filetype"},
 	{"OpenFile", "netcap.File", "Opens a file with the default application"},

@@ -75,6 +75,7 @@ func Run() {
 		toFileType,
 		toFilesForContentType,
 		toGeolocation,
+		toHosts,
 		toParameterValues,
 		toParametersForHTTPHost,
 		toHTTPContentTypes,
