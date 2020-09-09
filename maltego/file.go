@@ -49,9 +49,9 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 
 	f, err := os.Open(fileAuditRecords)
 	if err != nil {
-		// write an empty reply if the audit record file was not found.
-		log.Println(err)
+		trx.AddUIMessage("audit record file not found: "+err.Error(), UIMessageFatal)
 		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
 		return
 	}
 

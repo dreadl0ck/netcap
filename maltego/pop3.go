@@ -50,9 +50,9 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 
 	f, err := os.Open(pop3AuditRecords)
 	if err != nil {
-		// write an empty reply if the audit record file was not found.
-		log.Println(err)
+		trx.AddUIMessage("audit record file not found: "+err.Error(), UIMessageFatal)
 		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
 		return
 	}
 

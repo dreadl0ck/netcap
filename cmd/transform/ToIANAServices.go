@@ -45,6 +45,8 @@ func toIANAServices() {
 				ent := trx.AddEntityWithPath("netcap.Service", service, path)
 				ent.SetLinkLabel(humanize.Bytes(uint64(flow.TotalSize)))
 				ent.SetLinkThickness(maltego.GetThickness(uint64(flow.TotalSize), min, max))
+				ent.AddProperty("ip", "IP", "strict", flow.DstIP)
+				ent.AddProperty("port", "Port", "strict", flow.DstPort)
 			}
 		},
 	)
