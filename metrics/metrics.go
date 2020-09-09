@@ -15,7 +15,9 @@
 package metrics
 
 import (
-	_ "expvar" // TODO: protect via auth?
+
+	//  TODO: protect via auth?
+	_ "expvar"
 	"fmt"
 	"log"
 	"math"

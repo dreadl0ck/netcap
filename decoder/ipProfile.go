@@ -14,7 +14,6 @@
 package decoder
 
 import (
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -27,6 +26,7 @@ import (
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (
@@ -76,7 +76,6 @@ var ipProfileDecoder = newCustomDecoder(
 		return nil
 	},
 	func(e *customDecoder) error {
-
 		// flush writer
 		for _, item := range IPProfiles.Items {
 			item.Lock()

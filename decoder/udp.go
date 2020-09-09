@@ -16,8 +16,6 @@ package decoder
 import (
 	"bytes"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"path"
@@ -31,10 +29,12 @@ import (
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var udpStreams = newUDPStreamPool()

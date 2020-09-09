@@ -39,7 +39,6 @@ type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *type
 
 // DHCPTransform applies a maltego transformation over DHCP audit records.
 func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, continueTransform bool) {
-
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]

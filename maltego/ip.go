@@ -80,7 +80,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 		min      uint64 = 10000000
 		max      uint64 = 0
 		profiles        = LoadIPProfiles()
-		err error
+		err      error
 	)
 
 	if count != nil {

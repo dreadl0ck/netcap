@@ -46,12 +46,12 @@ func (d *IPProfile) CSVRecord() []string {
 		formatInt64(d.TimestampFirst),
 		formatInt64(d.TimestampLast),
 		join(d.Applications...),
-		//d.Ja3,
-		//d.Protocols,
+		// d.Ja3,
+		// d.Protocols,
 		formatUint64(d.Bytes),
-		//d.DstPorts,
-		//d.SrcPorts,
-		//d.SNIs,
+		// d.DstPorts,
+		// d.SrcPorts,
+		// d.SNIs,
 	})
 }
 

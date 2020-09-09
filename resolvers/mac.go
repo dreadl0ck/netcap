@@ -17,12 +17,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 // https://macaddress.io/database/macaddress.io-db.json

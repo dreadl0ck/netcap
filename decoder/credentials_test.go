@@ -1,11 +1,12 @@
 package decoder
 
 import (
-	"github.com/dreadl0ck/netcap/logger"
 	"log"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/dreadl0ck/netcap/logger"
 )
 
 // init does not seem to be called for the compiled program,

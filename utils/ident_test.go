@@ -14,15 +14,15 @@
 package utils
 
 import (
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
 	"log"
 	"net"
 	"testing"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
 )
 
 func TestCreateFlowIdentFromLayerFlows(t *testing.T) {
-
 	netFlow, err := gopacket.FlowFromEndpoints(
 		layers.NewIPEndpoint(net.IP{1, 2, 3, 4}),
 		layers.NewIPEndpoint(net.IP{5, 6, 7, 8}),
@@ -46,7 +46,6 @@ func TestCreateFlowIdentFromLayerFlows(t *testing.T) {
 }
 
 func BenchmarkFlowIdentFromLayerFlows(b *testing.B) {
-
 	netFlow, err := gopacket.FlowFromEndpoints(
 		layers.NewIPEndpoint(net.IP{1, 2, 3, 4}),
 		layers.NewIPEndpoint(net.IP{5, 6, 7, 8}),

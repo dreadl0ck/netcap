@@ -16,7 +16,6 @@ package decoder
 import (
 	"bytes"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"path"
@@ -25,6 +24,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"

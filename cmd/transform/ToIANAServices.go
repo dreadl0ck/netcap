@@ -1,14 +1,14 @@
 package transform
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
@@ -16,7 +16,6 @@ import (
 )
 
 func toIANAServices() {
-
 	resolverLog := zap.New(zapcore.NewNopCore())
 	defer func() {
 		err := resolverLog.Sync()

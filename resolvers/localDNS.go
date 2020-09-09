@@ -15,12 +15,13 @@ package resolvers
 
 import (
 	"bytes"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net"
 	"path/filepath"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 var localDNSNamesDB = make(map[string]string)

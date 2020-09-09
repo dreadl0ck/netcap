@@ -17,13 +17,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 var ja3DB = make(map[string]*ja3Summary)

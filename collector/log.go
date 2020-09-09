@@ -15,12 +15,13 @@ package collector
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/dreadl0ck/netcap/decoder"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/logger"
 	"github.com/dreadl0ck/netcap/resolvers"
-	"os"
-	"path/filepath"
 )
 
 // initLogging can be used to open the logfile before calling Init()

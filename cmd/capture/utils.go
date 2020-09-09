@@ -15,6 +15,7 @@ package capture
 
 import (
 	"fmt"
+
 	"github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/io"

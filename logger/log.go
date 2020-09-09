@@ -14,13 +14,15 @@
 package logger
 
 import (
-	"github.com/dreadl0ck/netcap/defaults"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/dreadl0ck/netcap/defaults"
 )
 
 // InitZapLogger can be used for high performance logging.

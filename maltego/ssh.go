@@ -44,7 +44,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		mac     = lt.Values["mac"]
 		ipaddr  = lt.Values["ipaddr"]
 
-		trx     = Transform{}
+		trx = Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)

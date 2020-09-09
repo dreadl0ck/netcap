@@ -17,7 +17,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"regexp"
 	"strings"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/gogo/protobuf/proto"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/types"
 )

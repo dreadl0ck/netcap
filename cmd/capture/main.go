@@ -15,7 +15,6 @@ package capture
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/metrics"
 	"log"
 	"net/http"
 	"os"
@@ -33,6 +32,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/metrics"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"

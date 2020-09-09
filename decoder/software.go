@@ -16,8 +16,6 @@ package decoder
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -29,12 +27,14 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/gogo/protobuf/proto"
 	"github.com/ua-parser/uap-go/uaparser"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"

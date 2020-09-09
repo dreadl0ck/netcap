@@ -18,13 +18,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
+	"go.uber.org/zap"
 )
 
 // tcpStreamReader is an internal structure that is used to read TCP data streams

@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"path"
@@ -31,6 +30,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
 	"github.com/namsral/flag"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/dreadl0ck/netcap"

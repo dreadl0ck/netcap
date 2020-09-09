@@ -18,8 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -32,7 +30,9 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/gogo/protobuf/proto"
+	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
 

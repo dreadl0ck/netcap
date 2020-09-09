@@ -185,7 +185,6 @@ var deviceProfileDecoder = newCustomDecoder(
 		return nil
 	},
 	func(e *customDecoder) error {
-
 		// flush writer
 		for _, item := range DeviceProfiles.Items {
 			item.Lock()

@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"go.uber.org/zap"
 	"log"
 	"os"
 	"path/filepath"
@@ -13,8 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/mgutz/ansi"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/defaults"

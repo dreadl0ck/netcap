@@ -20,8 +20,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
-	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -34,10 +32,12 @@ import (
 	"sync/atomic"
 
 	"github.com/dreadl0ck/cryptoutils"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (
@@ -128,7 +128,6 @@ type httpReader struct {
 
 // Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
-
 	// prevent nil pointer access if decoder is not initialized
 	if httpDecoder.writer == nil {
 		return
@@ -301,7 +300,6 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 }
 
 func (t *tcpConnection) writeHTTP(h *types.HTTP) {
-
 	// ------ LOCK the store
 	httpStore.Lock()
 

@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mgutz/ansi"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/http"
@@ -34,12 +32,15 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dustin/go-humanize"
+	"github.com/evilsocket/islazy/tui"
+	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
+
 	"github.com/dreadl0ck/netcap/decoder"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
-	"github.com/evilsocket/islazy/tui"
 )
 
 // errInvalidOutputDirectory indicates that a file path was supplied instead of a directory.
@@ -155,7 +156,6 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 	)
 
 	http.HandleFunc("/cleanup", func(w http.ResponseWriter, r *http.Request) {
-
 		var force bool
 
 		// sync access
@@ -273,7 +273,6 @@ func (c *Collector) printErrors() {
 
 // closes the logfile for errors.
 func (c *Collector) closeErrorLogFile() {
-
 	summary := c.getErrorSummary()
 
 	c.mu.Lock()

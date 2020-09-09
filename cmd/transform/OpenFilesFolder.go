@@ -48,7 +48,6 @@ func openFilesFolder() {
 
 	path := filepath.Join(filepath.Dir(lt.Values["path"]), defaults.FileStorage)
 
-
 	log.Println("command for opening path:", openCommandName)
 
 	args = append(args, path)

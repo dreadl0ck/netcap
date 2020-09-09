@@ -37,7 +37,6 @@ type filesTransformationFunc = func(lt LocalTransform, trx *Transform, file *typ
 
 // FilesTransform applies a maltego transformation over File audit records.
 func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
-
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]

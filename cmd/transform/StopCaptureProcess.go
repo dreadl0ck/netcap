@@ -9,10 +9,8 @@ import (
 )
 
 func stopCaptureProcess() {
-	var (
-		//lt = maltego.ParseLocalArguments(os.Args[1:])
-		trx = maltego.Transform{}
-	)
+	// lt = maltego.ParseLocalArguments(os.Args[1:])
+	trx := maltego.Transform{}
 
 	log.Println("sending cleanup request")
 

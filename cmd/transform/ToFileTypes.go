@@ -23,7 +23,6 @@ func toFileTypes() {
 			//// ent.AddDisplayInformation(di, "Netcap Info")
 
 			ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-
 		},
 	)
 }

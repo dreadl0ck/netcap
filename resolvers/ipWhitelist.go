@@ -15,11 +15,12 @@ package resolvers
 
 import (
 	"bytes"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 var ipWhitelist = make(map[string]struct{})

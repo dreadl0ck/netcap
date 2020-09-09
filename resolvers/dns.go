@@ -15,11 +15,12 @@ package resolvers
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"log"
 	"net"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 var (
