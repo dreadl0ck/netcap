@@ -100,7 +100,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(service, mac, &min, &max)

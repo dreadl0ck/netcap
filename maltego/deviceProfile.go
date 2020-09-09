@@ -141,7 +141,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(profile, mac, &min, &max, profiles)

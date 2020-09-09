@@ -25,7 +25,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -61,10 +60,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		die(errUnexpectedFileType, f.Name())
 	}
 
-	r, err := netio.Open(pop3AuditRecords, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
@@ -97,7 +93,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count()
@@ -109,10 +105,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		}
 	}
 
-	r, err = netio.Open(pop3AuditRecords, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r = openNetcapArchive(path)
 
 	// read netcap header - ignore err as it has been checked before
 	_, _ = r.ReadHeader()

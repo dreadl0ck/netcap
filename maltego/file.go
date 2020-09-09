@@ -25,7 +25,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -56,10 +55,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		die("input file must be an audit record file, but got", f.Name())
 	}
 
-	r, err := netio.Open(fileAuditRecords, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
@@ -93,7 +89,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count()
@@ -105,10 +101,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		}
 	}
 
-	r, err = netio.Open(fileAuditRecords, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r = openNetcapArchive(path)
 
 	// read netcap header - ignore err as it has been checked before
 	_, _ = r.ReadHeader()
