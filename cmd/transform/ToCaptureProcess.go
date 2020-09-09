@@ -2,13 +2,13 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-
-	"github.com/dreadl0ck/netcap/maltego"
+	"time"
 )
 
 func toCaptureProcess() {
@@ -33,15 +33,18 @@ func toCaptureProcess() {
 		}
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	outDir := filepath.Join(home, lt.Value+".net")
+	outDir := getPathLiveCaptureOutDir(lt.Value)
 	log.Println("writing output to:", outDir)
 
 	// prepare arguments
-	args := []string{"capture", "-iface", lt.Value, "-out", outDir, "-fileStorage=files", "-config=/usr/local/etc/netcap/livecapture.conf", "-quiet"}
+	args := []string{
+		"capture",
+		"-iface", lt.Value,
+		"-out", outDir,
+		"-fileStorage=files",
+		"-config=" + "/usr/local/etc/netcap/livecapture.conf",
+		"-quiet",
+	}
 
 	// check if a custom bpf was provided as property
 	if bpf, ok := lt.Values["bpf"]; ok {
@@ -54,7 +57,11 @@ func toCaptureProcess() {
 	log.Println("args:", args)
 
 	cmd := exec.Command("/usr/local/bin/net", args...)
-	err = cmd.Start()
+	//args = append([]string{"/usr/local/bin/net"}, args...)
+	//cmd := exec.Command("/bin/bash", append([]string{"-ci"}, strings.Join(args, " "))...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stderr
+	err := cmd.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,6 +69,17 @@ func toCaptureProcess() {
 	log.Println("PID", cmd.Process.Pid)
 
 	returnCaptureProcessEntity(cmd.Process.Pid, outDir, lt.Value)
+	
+	time.Sleep(3 * time.Second)
+	//<- make(chan bool)
+}
+
+func getPathLiveCaptureOutDir(iface string) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return filepath.Join(home, iface+".net")
 }
 
 func returnCaptureProcessEntity(pid int, path string, iface string) {

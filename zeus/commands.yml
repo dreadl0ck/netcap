@@ -350,3 +350,6 @@ commands:
         dependencies:
           - make-icons
         exec: go test -v -run="TestGenerateFullMaltegoConfiguration" -tags="icons" github.com/dreadl0ck/netcap/maltego
+
+    open-maltego-logs:
+        exec: code "/Users/$USER/Library/Application Support/maltego/"

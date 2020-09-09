@@ -96,6 +96,8 @@ func Run() {
 		toOutgoingFlowsFiltered,
 		toURLsForWebsite,
 		openNetcapFolderInTerminal,
+		openLiveNetcapFolder,
+		openLiveNetcapFolderInTerminal,
 		openFilesFolder,
 		openContentTypeFolder,
 		toMD5HashesForFile,

@@ -94,6 +94,9 @@ var transforms = []transformCoreInfo{
 	{"OpenFilesFolder", "netcap.FileAuditRecords", "Open the storage folder for the extracted files"},
 	{"OpenContentTypeFolder", "netcap.ContentType", "Open the storage folder for the selected content type"},
 
+	{"OpenLiveNetcapFolder", "netcap.Interface", "Open the storage folder for the selected network interface"},
+	{"OpenLiveNetcapFolderInTerminal", "netcap.Interface", "Open the storage folder for the selected network interface in the terminal"},
+
 	{"ToHostsForService", "netcap.Service", "Show all hosts that have been contacting the service"},
 	{"ToMD5HashesForFile", "netcap.File", "Get the MD5 hashes for all files seen with the provided file name"},
 	{"ToMD5HashesForImage", "maltego.Image", "Get the MD5 hashes associated with the image file"},
