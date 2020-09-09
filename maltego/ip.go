@@ -89,7 +89,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(profile, mac, &min, &max, profiles)

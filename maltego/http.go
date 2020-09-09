@@ -25,7 +25,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -70,10 +69,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 		die(errUnexpectedFileType, f.Name())
 	}
 
-	r, err := netio.Open(httpAuditRecords, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
@@ -108,7 +104,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(http, &min, &max)
@@ -120,10 +116,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 		}
 	}
 
-	r, err = netio.Open(httpAuditRecords, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r = openNetcapArchive(path)
 
 	// read netcap header - ignore err as it has been checked before
 	_, _ = r.ReadHeader()

@@ -194,10 +194,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 		die("input file must be an audit record file, but got", f.Name())
 	}
 
-	r, err := netio.Open(flowAuditRecords, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
@@ -233,7 +230,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(flow, ipaddr, &min, &max, &sizes)
@@ -247,10 +244,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 		sort.Ints(sizes)
 	}
 
-	r, err = netio.Open(flowAuditRecords, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r = openNetcapArchive(path)
 
 	// read netcap header - ignore err as it has been checked before
 	_, _ = r.ReadHeader()

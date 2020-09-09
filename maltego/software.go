@@ -37,27 +37,24 @@ type softwareCountFunc = func(software *types.Software, mac string, min, max *ui
 // SoftwareTransform applies a maltego transformation over Software profiles seen for a target Software.
 func SoftwareTransform(count softwareCountFunc, transform softwareTransformationFunc) {
 	var (
-		lt            = ParseLocalArguments(os.Args[1:])
-		softwaresFile = lt.Values["path"]
-		mac           = lt.Values["mac"]
-		ipaddr        = lt.Values["ipaddr"]
+		lt     = ParseLocalArguments(os.Args[1:])
+		path   = lt.Values["path"]
+		mac    = lt.Values["mac"]
+		ipaddr = lt.Values["ipaddr"]
 
 		trx = Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
 
-	f := openPath(softwaresFile)
+	f := openPath(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
 		die(errUnexpectedFileType, f.Name())
 	}
 
-	r, err := netio.Open(softwaresFile, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
@@ -72,6 +69,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 		software = new(types.Software)
 		pm       proto.Message
 		ok       bool
+		err      error
 	)
 	pm = software
 
@@ -90,7 +88,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(software, mac, &min, &max)
@@ -102,10 +100,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 		}
 	}
 
-	r, err = netio.Open(softwaresFile, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r = openNetcapArchive(path)
 
 	// read netcap header - ignore err as it has been checked before
 	_, _ = r.ReadHeader()
@@ -118,7 +113,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 			panic(err)
 		}
 
-		transform(lt, &trx, software, min, max, softwaresFile, mac, ipaddr)
+		transform(lt, &trx, software, min, max, path, mac, ipaddr)
 	}
 
 	err = r.Close()

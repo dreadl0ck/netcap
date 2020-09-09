@@ -37,32 +37,30 @@ type credentialsCountFunc = func(credentials *types.Credentials, mac string, min
 // CredentialsTransform applies a maltego transformation over Credentials profiles seen for a target Credentials.
 func CredentialsTransform(count credentialsCountFunc, transform credentialsTransformationFunc) {
 	var (
-		lt              = ParseLocalArguments(os.Args[1:])
-		credentialsFile = lt.Values["path"]
-		mac             = lt.Values["mac"]
-		ipaddr          = lt.Values["ipaddr"]
-		trx             = Transform{}
+		lt     = ParseLocalArguments(os.Args[1:])
+		path   = lt.Values["path"]
+		mac    = lt.Values["mac"]
+		ipaddr = lt.Values["ipaddr"]
+		trx    = Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
 
-	f := openPath(credentialsFile)
+	f := openPath(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
 		die(errUnexpectedFileType, f.Name())
 	}
 
-	r, err := netio.Open(credentialsFile, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
 		die("failed to read file header", errFileHeader.Error())
 	}
+
 	if header.Type != types.Type_NC_Credentials {
 		die("file does not contain Credentials records", header.Type.String())
 	}
@@ -81,6 +79,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 	var (
 		min uint64 = 10000000
 		max uint64 = 0
+		err error
 	)
 
 	if count != nil {
@@ -89,7 +88,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(credentials, mac, &min, &max)
@@ -101,10 +100,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 		}
 	}
 
-	r, err = netio.Open(credentialsFile, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r = openNetcapArchive(path)
 
 	// read netcap header - ignore err as it has been checked before
 	_, _ = r.ReadHeader()
@@ -117,7 +113,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 			panic(err)
 		}
 
-		transform(lt, &trx, credentials, min, max, credentialsFile, mac, ipaddr)
+		transform(lt, &trx, credentials, min, max, path, mac, ipaddr)
 	}
 
 	err = r.Close()

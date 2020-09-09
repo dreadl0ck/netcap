@@ -39,27 +39,24 @@ type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
 // SSHTransform applies a maltego transformation over SSH sshs seen for a target SSH.
 func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	var (
-		lt      = ParseLocalArguments(os.Args[1:])
-		sshFile = lt.Values["path"]
-		mac     = lt.Values["mac"]
-		ipaddr  = lt.Values["ipaddr"]
+		lt     = ParseLocalArguments(os.Args[1:])
+		path   = lt.Values["path"]
+		mac    = lt.Values["mac"]
+		ipaddr = lt.Values["ipaddr"]
 
 		trx = Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
 
-	f := openPath(sshFile)
+	f := openPath(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
 		die(errUnexpectedFileType, f.Name())
 	}
 
-	r, err := netio.Open(sshFile, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r := openNetcapArchive(path)
 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
@@ -86,6 +83,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	var (
 		min uint64 = 10000000
 		max uint64 = 0
+		err error
 	)
 
 	if count != nil {
@@ -94,7 +92,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				panic(err)
+				die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(ssh, mac, &min, &max)
@@ -106,10 +104,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		}
 	}
 
-	r, err = netio.Open(sshFile, defaults.BufferSize)
-	if err != nil {
-		panic(err)
-	}
+	r = openNetcapArchive(path)
 
 	// read netcap header - ignore err as it has been checked before
 	_, _ = r.ReadHeader()
@@ -122,7 +117,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, ssh, min, max, sshFile, mac, ipaddr)
+		transform(lt, &trx, ssh, min, max, path, mac, ipaddr)
 	}
 
 	err = r.Close()

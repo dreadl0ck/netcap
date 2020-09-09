@@ -25,7 +25,10 @@ import (
 	netio "github.com/dreadl0ck/netcap/io"
 )
 
-const errUnexpectedFileType = "unexpected file type"
+const (
+	errUnexpectedFileType    = "unexpected file type"
+	errUnexpectedReadFailure = "unexpected read failure"
+)
 
 // EscapeText ensures that the input text is safe to embed within XML.
 func EscapeText(text string) string {
