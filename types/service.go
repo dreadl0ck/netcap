@@ -113,7 +113,7 @@ func (a *Service) metricValues() []string {
 		formatInt32(a.BytesServer),
 		formatInt32(a.BytesClient),
 		a.Hostname,
-		//a.OS,
+		// a.OS,
 	}
 }
 

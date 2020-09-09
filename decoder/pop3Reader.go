@@ -20,8 +20,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/http"
@@ -38,10 +36,12 @@ import (
 	"github.com/araddon/dateparse"
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 /*
@@ -97,7 +97,6 @@ func validPop3ServerCommand(cmd string) bool {
 
 // Decode parses the stream according to the POP3 protocol.
 func (h *pop3Reader) Decode() {
-
 	// prevent nil pointer access if decoder is not initialized
 	if pop3Decoder.writer == nil {
 		return

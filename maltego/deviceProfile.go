@@ -83,7 +83,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		lt   = ParseLocalArguments(os.Args[1:])
 		path = lt.Values["path"]
 		mac  = lt.Values["mac"]
-		trx = Transform{}
+		trx  = Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
@@ -153,9 +153,9 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		}
 
 		r, err = netio.Open(path, defaults.BufferSize)
-	if err != nil {
-		die(err.Error(), "failed to open file")
-	}
+		if err != nil {
+			die(err.Error(), "failed to open file")
+		}
 
 		// read off netcap header - ignore err as it has been checked before
 		_, _ = r.ReadHeader()

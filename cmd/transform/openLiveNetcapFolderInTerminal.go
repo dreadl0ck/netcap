@@ -34,8 +34,6 @@ func openLiveNetcapFolderInTerminal() {
 	log.Println("vals", lt.Values)
 	path := getPathLiveCaptureOutDir(lt.Values["name"])
 
-
-
 	log.Println("command for opening path:", openCommandName)
 	args = append(args, path)
 

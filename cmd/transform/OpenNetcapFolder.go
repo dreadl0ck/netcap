@@ -48,7 +48,6 @@ func openNetcapFolder() {
 	path := lt.Values["path"]
 	path = path + ".net"
 
-
 	log.Println("command for opening path:", openCommandName)
 	args = append(args, path)
 

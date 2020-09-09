@@ -2,13 +2,14 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func toCaptureProcess() {
@@ -17,7 +18,6 @@ func toCaptureProcess() {
 
 	// check if a custom snaplen was provided as property
 	if snaplen, ok := lt.Values["snaplen"]; ok {
-
 		if snaplen != "" {
 			n, err := strconv.Atoi(snaplen)
 			if err != nil {
@@ -48,7 +48,6 @@ func toCaptureProcess() {
 
 	// check if a custom bpf was provided as property
 	if bpf, ok := lt.Values["bpf"]; ok {
-
 		if bpf != "" {
 			args = append(args, "-bpf="+bpf)
 		}
@@ -57,8 +56,8 @@ func toCaptureProcess() {
 	log.Println("args:", args)
 
 	cmd := exec.Command("/usr/local/bin/net", args...)
-	//args = append([]string{"/usr/local/bin/net"}, args...)
-	//cmd := exec.Command("/bin/bash", append([]string{"-ci"}, strings.Join(args, " "))...)
+	// args = append([]string{"/usr/local/bin/net"}, args...)
+	// cmd := exec.Command("/bin/bash", append([]string{"-ci"}, strings.Join(args, " "))...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stderr
 	err := cmd.Start()

@@ -17,13 +17,14 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 const (

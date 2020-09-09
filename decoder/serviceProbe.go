@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -33,7 +31,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
 	"github.com/umisama/go-cpe"
+	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -157,7 +157,6 @@ func writeSoftwareFromBanner(serv *service, ident, probeIdent string) {
 }
 
 func matchServiceProbes(serv *service, banner []byte, ident string) {
-
 	var (
 		expectedCategory string
 		found            bool

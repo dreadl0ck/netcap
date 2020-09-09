@@ -16,15 +16,15 @@ package decoder
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"go.uber.org/zap"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"

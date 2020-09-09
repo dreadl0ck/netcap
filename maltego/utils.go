@@ -17,11 +17,12 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
-	netio "github.com/dreadl0ck/netcap/io"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	netio "github.com/dreadl0ck/netcap/io"
 )
 
 const errUnexpectedFileType = "unexpected file type"
@@ -41,7 +42,7 @@ func EscapeText(text string) string {
 func die(err string, msg string) {
 	trx := Transform{}
 	// add error message for the user
-	trx.AddUIMessage(msg + ": " + err, UIMessageFatal)
+	trx.AddUIMessage(msg+": "+err, UIMessageFatal)
 	fmt.Println(trx.ReturnOutput())
 	log.Println(msg, err)
 	os.Exit(0) // don't signal an error for the transform invocation
@@ -49,7 +50,6 @@ func die(err string, msg string) {
 
 // TODO: update path in function where this is called
 func openPath(path string) *os.File {
-
 	log.Println("open path:", path)
 	f, err := os.Open(path)
 	if err != nil {
@@ -66,7 +66,6 @@ func openPath(path string) *os.File {
 }
 
 func openNetcapArchive(path string) *netio.Reader {
-
 	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 

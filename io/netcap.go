@@ -15,10 +15,10 @@ package io
 
 import (
 	"errors"
-	"go.uber.org/zap"
 	"io"
 
 	"github.com/gogo/protobuf/proto"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"

@@ -14,7 +14,6 @@
 package decoder
 
 import (
-	"github.com/dreadl0ck/netcap/utils"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var captureServices bool

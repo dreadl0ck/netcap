@@ -47,7 +47,6 @@ type sshReader struct {
 
 // Decode parses the stream according to the SSH protocol.
 func (h *sshReader) Decode() {
-
 	// prevent nil pointer access if decoder is not initialized
 	if sshDecoder.writer == nil {
 		return

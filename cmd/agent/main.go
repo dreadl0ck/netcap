@@ -19,11 +19,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/denisbrodbeck/machineid"
 	"io/ioutil"
 	"log"
 	"os"
 
+	"github.com/denisbrodbeck/machineid"
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/gogo/protobuf/proto"
 

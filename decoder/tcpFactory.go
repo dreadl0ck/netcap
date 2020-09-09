@@ -14,14 +14,14 @@
 package decoder
 
 import (
-	"github.com/dreadl0ck/netcap/utils"
-	"go.uber.org/zap"
 	"sync"
 
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/ip4defrag"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var streamFactory = newStreamFactory()

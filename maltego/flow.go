@@ -170,7 +170,6 @@ type flowTransformationFunc = func(lt LocalTransform, trx *Transform, flow *type
 
 // FlowTransform applies a maltego transformation over Flow audit records.
 func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
-
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]

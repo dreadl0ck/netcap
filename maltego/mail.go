@@ -59,7 +59,7 @@ func LoadMails() map[string]*types.Mail {
 		mail = new(types.Mail)
 		pm   proto.Message
 		ok   bool
-		err error
+		err  error
 	)
 
 	pm = mail

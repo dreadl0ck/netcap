@@ -14,20 +14,20 @@
 package utils
 
 import (
-	"github.com/dreadl0ck/gopacket"
 	"strings"
+
+	"github.com/dreadl0ck/gopacket"
 )
 
 // CreateFlowIdentFromLayerFlows creates a flow identifier string.
 // format: srcIP:srcPort->dstIP:dstPort
 func CreateFlowIdentFromLayerFlows(net gopacket.Flow, trans gopacket.Flow) string {
-
 	// IPv4:
 	// echo "255.255.255.255:65000->255.255.255.255:65000" | wc -c
 	// 45
 	// TODO: handle IPv6
 	// TODO: compare byte slice performance VS strings.Builder
-	var b = make([]byte, 0, 45)
+	b := make([]byte, 0, 45)
 
 	b = append(b, []byte(net.Src().String())...)
 	b = append(b, []byte(":")...)
@@ -43,13 +43,12 @@ func CreateFlowIdentFromLayerFlows(net gopacket.Flow, trans gopacket.Flow) strin
 // CreateFlowIdent creates a flow identifier string.
 // format: srcIP:srcPort->dstIP:dstPort
 func CreateFlowIdent(srcIP, srcPort, dstIP, dstPort string) string {
-
 	// IPv4:
 	// echo "255.255.255.255:65000->255.255.255.255:65000" | wc -c
 	// 45
 	// TODO: handle IPv6
 	// TODO: compare byte slice performance VS strings.Builder
-	var b = make([]byte, 0, 45)
+	b := make([]byte, 0, 45)
 
 	b = append(b, []byte(srcIP)...)
 	b = append(b, []byte(":")...)

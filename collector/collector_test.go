@@ -15,7 +15,6 @@ import (
 
 // TestCaptureLive will test capturing traffic live from the loopback interface
 func TestCaptureLive(t *testing.T) {
-
 	// prepare default config
 	DefaultConfig.DecoderConfig.Out = "../tests/collector-test-live"
 	DefaultConfig.DecoderConfig.Source = "unit tests live capture"

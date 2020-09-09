@@ -42,7 +42,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 		mac           = lt.Values["mac"]
 		ipaddr        = lt.Values["ipaddr"]
 
-		trx           = Transform{}
+		trx = Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)

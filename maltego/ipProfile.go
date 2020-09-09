@@ -34,7 +34,7 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		lt       = ParseLocalArguments(os.Args[1:])
 		path     = filepath.Join(filepath.Dir(lt.Values["path"]), "IPProfile.ncap.gz")
 		profiles = make(map[string]*types.IPProfile)
-		err error
+		err      error
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)

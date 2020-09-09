@@ -18,7 +18,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"go.uber.org/zap"
 	"math"
 	"os"
 	"reflect"
@@ -27,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/evilsocket/islazy/tui"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"
