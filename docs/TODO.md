@@ -4,10 +4,6 @@
 
 - add constant for "/usr/local/bin/net"
 - fix ToSrc and ToDst Ports
-
-- flush audit records when stopping maltego live capture
-
-- HTTP from live capture: fix error due to .gz extension
 - use compression during live capture?
 
 ## v0.5 Documentation

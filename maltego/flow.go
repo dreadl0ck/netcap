@@ -184,10 +184,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 
 	log.Println("opening", flowAuditRecords)
 
-	f, err := os.Open(flowAuditRecords)
-	if err != nil {
-		die(err.Error(), "failed to open audit records")
-	}
+	f := openPath(flowAuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
@@ -222,6 +219,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 		min   uint64 = 10000000
 		max   uint64 = 0
 		sizes []int
+		err   error
 	)
 
 	if count != nil {
