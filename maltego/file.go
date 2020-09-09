@@ -45,10 +45,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		fileAuditRecords = filepath.Join(dir, "File.ncap.gz")
 	)
 
-	f, err := os.Open(fileAuditRecords)
-	if err != nil {
-		die(err.Error(), "audit record file not found")
-	}
+	f := openPath(fileAuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
@@ -81,6 +78,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 	var (
 		min uint64 = 10000000
 		max uint64 = 0
+		err error
 	)
 
 	if count != nil {
