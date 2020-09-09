@@ -49,7 +49,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 
 	netio.FPrintBuildInfo(os.Stderr)
 
-	f := openPath(path)
+	f, path := openFile(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {

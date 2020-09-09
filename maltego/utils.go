@@ -51,8 +51,8 @@ func die(err string, msg string) {
 	os.Exit(0) // don't signal an error for the transform invocation
 }
 
-// TODO: update path in function where this is called
-func openPath(path string) *os.File {
+func openFile(path string) (*os.File, string) {
+
 	log.Println("open path:", path)
 	f, err := os.Open(path)
 	if err != nil {
@@ -65,7 +65,7 @@ func openPath(path string) *os.File {
 		}
 	}
 
-	return f
+	return f, path
 }
 
 func openNetcapArchive(path string) *netio.Reader {

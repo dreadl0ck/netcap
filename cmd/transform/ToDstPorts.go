@@ -42,8 +42,8 @@ func toDstPorts() {
 			for _, ip := range profile.Contacts {
 				if ip == ipaddr {
 					if p, ok := profiles[ip]; ok {
-						for portNum, port := range p.DstPorts {
-							addDestinationPort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, p, path)
+						for _, port := range p.DstPorts {
+							addDestinationPort(trx, strconv.FormatInt(int64(port.PortNumber), 10), port, min, max, p, path)
 						}
 					}
 
@@ -53,8 +53,8 @@ func toDstPorts() {
 			for _, ip := range profile.DeviceIPs {
 				if ip == ipaddr {
 					if p, ok := profiles[ip]; ok {
-						for portNum, port := range p.DstPorts {
-							addDestinationPort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, p, path)
+						for _, port := range p.DstPorts {
+							addDestinationPort(trx, strconv.FormatInt(int64(port.PortNumber), 10), port, min, max, p, path)
 						}
 					}
 

@@ -184,7 +184,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 
 	log.Println("opening", flowAuditRecords)
 
-	f := openPath(flowAuditRecords)
+	f, path := openFile(flowAuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {

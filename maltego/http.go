@@ -40,29 +40,13 @@ type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *type
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
-		path             = lt.Values["path"]
 		ipaddr           = lt.Values["ipaddr"]
-		dir              = filepath.Dir(path)
+		dir              = filepath.Dir(lt.Values["path"])
 		httpAuditRecords = filepath.Join(dir, "HTTP.ncap.gz")
 		trx              = Transform{}
 	)
 
-	f, err := os.Open(httpAuditRecords)
-	if err != nil {
-
-		log.Println(err)
-		httpAuditRecords = strings.TrimSuffix(httpAuditRecords, ".gz")
-
-		f, err = os.Open(httpAuditRecords)
-		if err != nil {
-
-			trx.AddUIMessage("audit record file not found: "+err.Error(), UIMessageFatal)
-			fmt.Println(trx.ReturnOutput())
-			log.Println("input file must be an audit record file")
-
-			return
-		}
-	}
+	f, path := openFile(httpAuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
@@ -96,6 +80,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	var (
 		min uint64 = 10000000
 		max uint64 = 0
+		err error
 	)
 
 	if count != nil {

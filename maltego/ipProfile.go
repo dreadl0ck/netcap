@@ -58,7 +58,7 @@ func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformat
 
 	netio.FPrintBuildInfo(os.Stderr)
 
-	f := openPath(path)
+	f, path := openFile(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
@@ -152,7 +152,7 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
-	f := openPath(path)
+	f, path := openFile(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {

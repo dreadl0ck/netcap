@@ -5,6 +5,7 @@
 - add constant for "/usr/local/bin/net"
 - fix ToSrc and ToDst Ports
 - use compression during live capture?
+- ToServerNameIndicators
 
 ## v0.5 Documentation
 
