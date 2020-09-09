@@ -199,15 +199,9 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 			continue
 		}
 
-		ident := filepath.Join(outDir, f.Name())
+		path := filepath.Join(outDir, f.Name())
 		name := strings.TrimSuffix(f.Name(), defaults.FileExtensionCompressed)
-		//
-		//// stat generated profiles
-		//stat, err := os.Stat(ident)
-		//if err != nil {
-		//	utils.DebugLog.Println("invalid path: ", err)
-		//	continue
-		//}
+
 		if f.IsDir() {
 			log.Println("not a file: ", err)
 
@@ -217,16 +211,14 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 		// TODO: return structure from collect invocation
 		// that contains the number of records per type
 		// to avoid opening the file again
-		numRecords, errCount := io.Count(ident)
+		numRecords, errCount := io.Count(path)
 		if errCount != nil {
 			log.Fatal("failed to count audit records:", err)
 		}
 
-		ent := trx.AddEntity("netcap."+name+"AuditRecords", utils.Pluralize(name))
+		ent := trx.AddEntityWithPath("netcap."+name+"AuditRecords", utils.Pluralize(name), path)
 
-		ent.AddProperty("path", "Path", "strict", ident)
 		ent.AddProperty("description", "Description", "strict", name+defaults.FileExtensionCompressed)
-
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 
 		// add notes for specific audit records here

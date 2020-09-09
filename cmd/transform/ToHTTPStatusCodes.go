@@ -10,13 +10,13 @@ import (
 func toHTTPStatusCodes() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP != ipaddr {
 				return
 			}
 			if http.StatusCode != 0 {
 				val := strconv.FormatInt(int64(http.StatusCode), 10)
-				trx.AddEntity("netcap.HTTPStatusCode", val)
+				trx.AddEntityWithPath("netcap.HTTPStatusCode", val, path)
 			}
 		},
 		false,

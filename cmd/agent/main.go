@@ -168,7 +168,7 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("\n["+userName +"-" +id+ "] got", len(chans), "channels")
+	fmt.Println("\n["+userName+"-"+id+"] got", len(chans), "channels")
 
 	// iterate over encoder channels
 	for _, bi := range chans { // create a copy of loop variable

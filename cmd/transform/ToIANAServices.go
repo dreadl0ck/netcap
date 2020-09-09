@@ -34,7 +34,7 @@ func toIANAServices() {
 
 	maltego.FlowTransform(
 		maltego.CountOutgoingFlowBytesFiltered,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, path string, mac string, ipaddr string, top12 *[]int) {
 			i, err := strconv.Atoi(flow.DstPort)
 			if err != nil {
 				return
@@ -42,7 +42,7 @@ func toIANAServices() {
 
 			service := resolvers.LookupServiceByPort(i, strings.ToLower(flow.TransportProto))
 			if service != "" {
-				ent := trx.AddEntity("netcap.Service", service)
+				ent := trx.AddEntityWithPath("netcap.Service", service, path)
 				ent.SetLinkLabel(humanize.Bytes(uint64(flow.TotalSize)))
 				ent.SetLinkThickness(maltego.GetThickness(uint64(flow.TotalSize), min, max))
 			}

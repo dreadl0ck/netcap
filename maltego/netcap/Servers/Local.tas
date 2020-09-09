@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-08 00:44:52.368 CEST</LastSync>
+ <LastSync>2020-09-09 14:39:35.537 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -52,7 +52,7 @@
   <Transform name="netcap.ToIANAServices"></Transform>
   <Transform name="netcap.ToLiveAuditRecords"></Transform>
   <Transform name="netcap.ToLoginInformation"></Transform>
-  <Transform name="netcap.ToProducts"></Transform>
+  <Transform name="netcap.ToSoftwareProducts"></Transform>
   <Transform name="netcap.ToSSHClients"></Transform>
   <Transform name="netcap.ToSSHServers"></Transform>
   <Transform name="netcap.ToSoftwareExploits"></Transform>

@@ -12,13 +12,13 @@ func toApplicationCategories() {
 
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.MacAddr != mac {
 				return
 			}
 			for _, ip := range profile.Contacts {
 				if ip == ipaddr {
-					toCategory(profiles, ip, mac, profilesFile, trx)
+					toCategory(profiles, ip, mac, path, trx)
 
 					break
 				}
@@ -26,7 +26,7 @@ func toApplicationCategories() {
 
 			for _, ip := range profile.DeviceIPs {
 				if ip == ipaddr {
-					toCategory(profiles, ip, mac, profilesFile, trx)
+					toCategory(profiles, ip, mac, path, trx)
 
 					break
 				}
@@ -35,18 +35,17 @@ func toApplicationCategories() {
 	)
 }
 
-func toCategory(profiles map[string]*types.IPProfile, ip, mac, profilesFile string, trx *maltego.Transform) {
+func toCategory(profiles map[string]*types.IPProfile, ip, mac, path string, trx *maltego.Transform) {
 	if p, ok := profiles[ip]; ok {
 		for _, proto := range p.Protocols {
 			if proto.Category == "" {
 				continue
 			}
 
-			ent := trx.AddEntity("maltego.Service", proto.Category)
+			ent := trx.AddEntityWithPath("maltego.Service", proto.Category, path)
 
 			ent.AddProperty("mac", "MacAddress", "strict", mac)
 			ent.AddProperty("ipaddr", "IPAddress", "strict", p.Addr)
-			ent.AddProperty("path", "Path", "strict", profilesFile)
 
 			ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 		}

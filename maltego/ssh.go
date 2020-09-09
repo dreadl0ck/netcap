@@ -44,11 +44,12 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		mac     = lt.Values["mac"]
 		ipaddr  = lt.Values["ipaddr"]
 		stdout  = os.Stdout
+		trx     = Transform{}
 	)
 
 	os.Stdout = os.Stderr
-
 	netio.PrintBuildInfo()
+	os.Stdout = stdout
 
 	f, err := os.Open(sshFile)
 	if err != nil {
@@ -57,10 +58,11 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
-
-	os.Stdout = stdout
 
 	r, err := netio.Open(sshFile, defaults.BufferSize)
 	if err != nil {
@@ -81,7 +83,6 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		ssh = new(types.SSH)
 		pm  proto.Message
 		ok  bool
-		trx = Transform{}
 	)
 
 	pm = ssh

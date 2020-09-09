@@ -29,21 +29,26 @@ import (
 )
 
 // credentialsTransformationFunc is a transformation over Credentials profiles for a selected Credentials.
-type credentialsTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Credentials, min, max uint64, profilesFile string, mac string, ip string)
+type credentialsTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Credentials, min, max uint64, path string, mac string, ip string)
 
 // countFunc is a function that counts something over DeviceProfiles.
 type credentialsCountFunc = func(credentials *types.Credentials, mac string, min, max *uint64)
 
 // CredentialsTransform applies a maltego transformation over Credentials profiles seen for a target Credentials.
 func CredentialsTransform(count credentialsCountFunc, transform credentialsTransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	credentialsFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
 
-	stdout := os.Stdout
+	var (
+		lt              = ParseLocalArguments(os.Args[1:])
+		credentialsFile = lt.Values["path"]
+		mac             = lt.Values["mac"]
+		ipaddr          = lt.Values["ipaddr"]
+		stdout          = os.Stdout
+		trx             = Transform{}
+	)
+
 	os.Stdout = os.Stderr
 	netio.PrintBuildInfo()
+	os.Stdout = stdout
 
 	f, err := os.Open(credentialsFile)
 	if err != nil {
@@ -52,10 +57,11 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
-
-	os.Stdout = stdout
 
 	r, err := netio.Open(credentialsFile, defaults.BufferSize)
 	if err != nil {
@@ -75,7 +81,6 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 		credentials = new(types.Credentials)
 		pm          proto.Message
 		ok          bool
-		trx         = Transform{}
 	)
 	pm = credentials
 

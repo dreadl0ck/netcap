@@ -71,10 +71,10 @@ func returnCaptureProcessEntity(pid int, path string, iface string) {
 	trx := maltego.Transform{}
 
 	name := "Capture Process" + "\nPID: " + pidStr
-	ent := trx.AddEntity("netcap.CaptureProcess", name)
+	ent := trx.AddEntityWithPath("netcap.CaptureProcess", name, path)
 
 	ent.AddProperty("pid", "PID", "strict", pidStr)
-	ent.AddProperty("path", "Path", "strict", path)
+
 	ent.AddProperty("iface", "Interface", "strict", iface)
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

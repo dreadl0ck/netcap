@@ -12,16 +12,16 @@ func toHTTPHostnames() {
 
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.Host != "" {
-				ent := trx.AddEntity("netcap.Website", http.Host)
+				ent := trx.AddEntityWithPath("netcap.Website", http.Host, path)
 
 				hostStats[http.Host]++
 				ent.SetLinkLabel(strconv.Itoa(hostStats[http.Host]))
 				// ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 
 				ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-				ent.AddProperty("path", "Path", "strict", profilesFile)
+
 			}
 		},
 		false,

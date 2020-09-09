@@ -35,30 +35,36 @@ type DHCPCountFunc func()
 
 // DHCPTransformationFunc is a transformation over DHCP audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ip string)
+type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *types.DHCPv4, min, max uint64, path string, ip string)
 
 // DHCPTransform applies a maltego transformation over DHCP audit records.
 func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, continueTransform bool) {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
-	ipaddr := lt.Values["ipaddr"]
 
-	dir := filepath.Dir(profilesFile)
-	httpAuditRecords := filepath.Join(dir, "DHCPv4.ncap.gz")
-	f, err := os.Open(httpAuditRecords)
+	var (
+		lt               = ParseLocalArguments(os.Args[1:])
+		path             = lt.Values["path"]
+		ipaddr           = lt.Values["ipaddr"]
+		dir              = filepath.Dir(path)
+		dhcpAuditRecords = filepath.Join(dir, "DHCPv4.ncap.gz")
+		trx              = Transform{}
+	)
+
+	f, err := os.Open(dhcpAuditRecords)
 	if err != nil {
 		log.Println(err)
-		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
 
-	r, err := netio.Open(httpAuditRecords, defaults.BufferSize)
+	r, err := netio.Open(dhcpAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +82,6 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 		dhcp = new(types.DHCPv4)
 		pm   proto.Message
 		ok   bool
-		trx  = Transform{}
 	)
 	pm = dhcp
 
@@ -107,7 +112,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 		}
 	}
 
-	r, err = netio.Open(httpAuditRecords, defaults.BufferSize)
+	r, err = netio.Open(dhcpAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -123,7 +128,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 			panic(err)
 		}
 
-		transform(lt, &trx, dhcp, min, max, profilesFile, ipaddr)
+		transform(lt, &trx, dhcp, min, max, dhcpAuditRecords, ipaddr)
 	}
 
 	err = r.Close()

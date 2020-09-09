@@ -8,12 +8,12 @@ import (
 func toHTTPUserAgents() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP != ipaddr {
 				return
 			}
 			if http.UserAgent != "" {
-				trx.AddEntity("netcap.UserAgent", http.UserAgent)
+				trx.AddEntityWithPath("netcap.UserAgent", http.UserAgent, path)
 			}
 		},
 		false,

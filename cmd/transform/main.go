@@ -47,7 +47,7 @@ func Run() {
 		lookupDHCPFingerprint,
 		toSSHClients,
 		toSSHServers,
-		toProducts,
+		toSoftwareProducts,
 		toCredentialsByService,
 		toLoginInformation,
 		toFetchedMails,

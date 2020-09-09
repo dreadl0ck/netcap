@@ -10,7 +10,7 @@ import (
 func toFileTypesForIP() {
 	maltego.FilesTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, path string, ipaddr string) {
 			if file.SrcIP == ipaddr || file.DstIP == ipaddr {
 				typ := file.ContentTypeDetected
 				parts := strings.Split(file.ContentTypeDetected, ";")
@@ -18,9 +18,9 @@ func toFileTypesForIP() {
 					typ = parts[0]
 				}
 
-				ent := trx.AddEntity("netcap.ContentType", typ)
+				ent := trx.AddEntityWithPath("netcap.ContentType", typ, path)
 				ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-				ent.AddProperty("path", "Path", "strict", profilesFile)
+
 			}
 		},
 	)

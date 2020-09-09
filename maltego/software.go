@@ -29,21 +29,25 @@ import (
 )
 
 // softwareTransformationFunc is a transformation over Software profiles for a selected Software.
-type softwareTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Software, min, max uint64, profilesFile string, mac string, ip string)
+type softwareTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Software, min, max uint64, path string, mac string, ip string)
 
 // countFunc is a function that counts something over DeviceProfiles.
 type softwareCountFunc = func(software *types.Software, mac string, min, max *uint64)
 
 // SoftwareTransform applies a maltego transformation over Software profiles seen for a target Software.
 func SoftwareTransform(count softwareCountFunc, transform softwareTransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	softwaresFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
+	var (
+		lt            = ParseLocalArguments(os.Args[1:])
+		softwaresFile = lt.Values["path"]
+		mac           = lt.Values["mac"]
+		ipaddr        = lt.Values["ipaddr"]
+		stdout        = os.Stdout
+		trx           = Transform{}
+	)
 
-	stdout := os.Stdout
 	os.Stdout = os.Stderr
 	netio.PrintBuildInfo()
+	os.Stdout = stdout
 
 	f, err := os.Open(softwaresFile)
 	if err != nil {
@@ -52,10 +56,11 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
-
-	os.Stdout = stdout
 
 	r, err := netio.Open(softwaresFile, defaults.BufferSize)
 	if err != nil {
@@ -75,7 +80,6 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 		software = new(types.Software)
 		pm       proto.Message
 		ok       bool
-		trx      = Transform{}
 	)
 	pm = software
 

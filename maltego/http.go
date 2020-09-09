@@ -35,24 +35,23 @@ type HTTPCountFunc = func(http *types.HTTP, min, max *uint64)
 
 // HTTPTransformationFunc is a transformation over HTTP audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *types.HTTP, min, max uint64, profilesFile string, ip string)
+type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *types.HTTP, min, max uint64, path string, ip string)
 
 // HTTPTransform applies a maltego transformation over HTTP audit records.
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
-		profilesFile     = lt.Values["path"]
+		path             = lt.Values["path"]
 		ipaddr           = lt.Values["ipaddr"]
-		dir              = filepath.Dir(profilesFile)
+		dir              = filepath.Dir(path)
 		httpAuditRecords = filepath.Join(dir, "HTTP.ncap.gz")
+		trx              = Transform{}
 	)
 
 	f, err := os.Open(httpAuditRecords)
 	if err != nil {
 		// write an empty reply if the audit record file was not found.
 		log.Println(err)
-
-		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
 
 		return
@@ -60,7 +59,10 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
 
 	r, err := netio.Open(httpAuditRecords, defaults.BufferSize)
@@ -82,7 +84,6 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 		http = new(types.HTTP)
 		pm   proto.Message
 		ok   bool
-		trx  = Transform{}
 	)
 
 	pm = http
@@ -130,7 +131,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 			panic(err)
 		}
 
-		transform(lt, &trx, http, min, max, profilesFile, ipaddr)
+		transform(lt, &trx, http, min, max, path, ipaddr)
 	}
 
 	err = r.Close()

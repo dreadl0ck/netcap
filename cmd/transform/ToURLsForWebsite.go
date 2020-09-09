@@ -13,7 +13,7 @@ func toURLsForWebsite() {
 
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			host := lt.Value
 			if http.Host == host {
 				if http.URL == "" {
@@ -22,7 +22,7 @@ func toURLsForWebsite() {
 				bareURL := http.Host + stripQueryString(http.URL)
 				log.Println(bareURL)
 
-				ent := trx.AddEntity("netcap.URL", bareURL)
+				ent := trx.AddEntityWithPath("netcap.URL", bareURL, path)
 
 				// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
 				ent.AddProperty("properties.url", "URL", "strict", bareURL)

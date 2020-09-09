@@ -35,31 +35,36 @@ type POP3CountFunc func()
 
 // POP3TransformationFunc is a transformation over POP3 audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type POP3TransformationFunc = func(lt LocalTransform, trx *Transform, pop3 *types.POP3, min, max uint64, profilesFile string, ip string)
+type POP3TransformationFunc = func(lt LocalTransform, trx *Transform, pop3 *types.POP3, min, max uint64, path string, ip string)
 
 // POP3Transform applies a maltego transformation over POP3 audit records.
 func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
-	ipaddr := lt.Values["ipaddr"]
+	var (
+		lt               = ParseLocalArguments(os.Args[1:])
+		path             = lt.Values["path"]
+		ipaddr           = lt.Values["ipaddr"]
+		dir              = filepath.Dir(path)
+		pop3AuditRecords = filepath.Join(dir, "POP3.ncap.gz")
+		trx              = Transform{}
+	)
 
-	dir := filepath.Dir(profilesFile)
-	httpAuditRecords := filepath.Join(dir, "POP3.ncap.gz")
-	f, err := os.Open(httpAuditRecords)
+	f, err := os.Open(pop3AuditRecords)
 	if err != nil {
 		// write an empty reply if the audit record file was not found.
 		log.Println(err)
-		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
 
-	r, err := netio.Open(httpAuditRecords, defaults.BufferSize)
+	r, err := netio.Open(pop3AuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +82,6 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		pop3 = new(types.POP3)
 		pm   proto.Message
 		ok   bool
-		trx  = Transform{}
 	)
 	pm = pop3
 
@@ -108,7 +112,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		}
 	}
 
-	r, err = netio.Open(httpAuditRecords, defaults.BufferSize)
+	r, err = netio.Open(pop3AuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +128,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, pop3, min, max, profilesFile, ipaddr)
+		transform(lt, &trx, pop3, min, max, path, ipaddr)
 	}
 
 	err = r.Close()

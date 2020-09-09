@@ -253,12 +253,6 @@ func copyFile(src, dst string) {
 		log.Fatal(err)
 	}
 
-	defer func() {
-		if errClose := out.Close(); errClose != nil {
-			fmt.Println(errClose)
-		}
-	}()
-
 	_, err = io.Copy(out, in)
 	if err != nil {
 		log.Fatal(err)

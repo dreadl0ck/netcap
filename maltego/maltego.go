@@ -135,6 +135,15 @@ func (tr *Transform) AddEntity(enType, enValue string) *EntityObj {
 	return ent
 }
 
+// AddEntityWithPath adds an entity to the transform.
+func (tr *Transform) AddEntityWithPath(enType, enValue, path string) *EntityObj {
+	ent := NewEntityObj(enType, EscapeText(enValue), 100)
+	ent.AddProperty("path", "Path", "strict", path)
+	tr.entities = append(tr.entities, ent)
+
+	return ent
+}
+
 // AddUIMessage adds a UI message to the transform.
 func (tr *Transform) AddUIMessage(message, messageType string) {
 	tr.UIMessages = append(tr.UIMessages, []string{messageType, message})
@@ -212,9 +221,9 @@ func (m *EntityObj) AddProperty(fieldName, displayName, matchingRule, value stri
 }
 
 // AddDisplayInformation adds display information.
-func (m *EntityObj) AddDisplayInformation(di, dl string) {
-	info := []string{dl, di}
-	m.displayInformation = append(m.displayInformation, info)
+func (m *EntityObj) AddDisplayInformation(info, name string) {
+	i := []string{name, info}
+	m.displayInformation = append(m.displayInformation, i)
 }
 
 func (m *EntityObj) setLinkColor(color string) {

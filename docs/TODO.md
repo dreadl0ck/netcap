@@ -2,6 +2,9 @@
 
 ## WIP
 
+ToHostForService
+ToLiveAuditRecords
+
 ## v0.5 Documentation
 
 - Blog: Threat hunting with Netcap and Maltego
@@ -57,32 +60,32 @@
 
 ## Maltego Plugin
 
+- software and vulnerabilities: add flows as display info
 - add proper display data for all entities possible (show images and add links etc)
 - add TCP and UDP colored streams as display data
 
 - add Open Image
 - mark if files extracted from HTTP are a Server Reply or client data sent via GET / POST
 
-- on netcap.URL: To Visitors
-- To Emails From File: handle common email obfuscation ala: user [at] mail [dot] com
-
+- make A general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
+- add transform to do a reverse DNS lookup for \*IP hosts instead of the local lookup
+- add a transform to open executable files for analysis, set tool via env var
+- on netcap.URL and netcap.Website: To Visitors
 - add a Machine for Live Capture that periodically refreshes the audit records
-- add transform to scan and analyze a website
-- add machine to watch and analyze a website (maybe useful for CTFs or during security assessment?)
 
 cleanups:
 
+- live capture: give proper error when interface name is not present or wrong
+- add constants for hex colors: ent.SetLinkColor("#000000")
+- add constants for netcap types for AddEntity()
+
 - addEntity wrapper that always adds path property field?
 - add transform debug toggle via env var? dump input lt.Values for transform
-- add constants for netcap types for AddEntity()
-- add constants for ent.SetLinkDirection("output-to-input")
-- add constants for hex colors: ent.SetLinkColor("#000000")
 - remove setting path attribute on entities to the path of the DeviceProfiles for all types + document
 
 - improve and test content type and executable detection (fix application/gzip) stdlib has exec format header parsers in debug pkg
 - include machines into generated config archive
 
-- live capture: give proper error when interface name is not present or wrong
 - ensure using Service and software audit records work also when not all DBs are available
 
 - add Show All Services transform: show both TCP and UDP
@@ -111,10 +114,6 @@ on audit record archives:
 - on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
 - on Connections: GetLongRunningSessions
 
-- make A general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
-- add transform to do a reverse DNS lookup for \*IP hosts instead of the local lookup
-- add a transform to open executable files for analysis, set tool via env var
-
 - Viewlets:
   - Suspicious events:
     - dial to IP directly over HTTP
@@ -123,6 +122,10 @@ on audit record archives:
     - http content type does not match content
 
 - integrate scanning against YARA / suricata rules and add Malware Custom Audit Records
+
+- To Emails From File: handle common email obfuscation ala: user [at] mail [dot] com
+- add transform to scan and analyze a website
+- add machine to watch and analyze a website (maybe useful for CTFs or during security assessment?)
 
 entities:
 

@@ -9,15 +9,15 @@ import (
 func toHTTPCookies() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP != ipaddr {
 				return
 			}
 			for _, c := range http.ReqCookies {
-				addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, profilesFile, http.Method)
+				addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, path, http.Method)
 			}
 			for _, c := range http.ResCookies {
-				addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, profilesFile, http.Method)
+				addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, path, http.Method)
 			}
 		},
 		false,

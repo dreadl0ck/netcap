@@ -56,7 +56,7 @@ func toPhoneNumbersFromFile() {
 		p, errParsePhone := phonenumbers.Parse(r, "US")
 		if errParsePhone == nil {
 			if phonenumbers.IsValidNumber(p) {
-				ent := trx.AddEntity("netcap.PhoneNumber", r)
+				ent := trx.AddEntityWithPath("netcap.PhoneNumber", r, path)
 				ent.AddProperty("properties.phonenumber", "Phone Number", "strict", r)
 			}
 		}

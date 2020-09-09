@@ -8,14 +8,14 @@ import (
 func toHTTPParameters() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP != ipaddr {
 				return
 			}
 			for key := range http.Parameters {
-				ent := trx.AddEntity("netcap.HTTPParameter", key)
+				ent := trx.AddEntityWithPath("netcap.HTTPParameter", key, path)
 				ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-				ent.AddProperty("path", "Path", "strict", profilesFile)
+
 				ent.SetLinkLabel(http.Method)
 			}
 		},

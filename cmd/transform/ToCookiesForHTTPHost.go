@@ -9,17 +9,17 @@ import (
 func toCookiesForHTTPHost() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP != ipaddr {
 				return
 			}
 			host := lt.Value
 			if http.Host == host {
 				for _, c := range http.ReqCookies {
-					addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, profilesFile, http.Method)
+					addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, path, http.Method)
 				}
 				for _, c := range http.ResCookies {
-					addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, profilesFile, http.Method)
+					addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, path, http.Method)
 				}
 			}
 		},
@@ -27,10 +27,10 @@ func toCookiesForHTTPHost() {
 	)
 }
 
-func addCookie(trx *maltego.Transform, c *types.HTTPCookie, timestamp string, ipaddr string, profilesFile string, method string) {
-	ent := trx.AddEntity("netcap.HTTPCookie", c.Name)
+func addCookie(trx *maltego.Transform, c *types.HTTPCookie, timestamp string, ipaddr string, path string, method string) {
+	ent := trx.AddEntityWithPath("netcap.HTTPCookie", c.Name, path)
 	ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-	ent.AddProperty("path", "Path", "strict", profilesFile)
+
 	ent.AddProperty("timestamp", "Timestamp", "strict", timestamp)
 	ent.SetLinkLabel(method)
 }

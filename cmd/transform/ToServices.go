@@ -11,7 +11,7 @@ import (
 func toServices() {
 	maltego.ServiceTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, path string, mac string, ipaddr string) {
 			val := service.IP + ":" + strconv.Itoa(int(service.Port))
 			if len(service.Vendor) > 0 {
 				val += "\n" + service.Vendor
@@ -26,7 +26,7 @@ func toServices() {
 				val += "\n" + service.Hostname
 			}
 
-			ent := trx.AddEntity("netcap.Service", val)
+			ent := trx.AddEntityWithPath("netcap.Service", val, path)
 			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(service.Timestamp))
 			ent.AddProperty("product", "Product", "strict", service.Product)
 			ent.AddProperty("version", "Version", "strict", service.Version)
@@ -38,7 +38,6 @@ func toServices() {
 			ent.AddProperty("bytesserver", "BytesServer", "strict", strconv.Itoa(int(service.BytesServer)))
 			ent.AddProperty("vendor", "Vendor", "strict", service.Vendor)
 			ent.AddProperty("name", "Name", "strict", service.Name)
-			ent.AddProperty("path", "Path", "strict", profilesFile)
 
 			if len(service.Banner) > 0 {
 				ent.AddDisplayInformation("<pre>"+maltego.EscapeText(service.Banner)+"</pre>", "Transferred Data")

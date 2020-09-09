@@ -77,7 +77,7 @@ var transforms = []transformCoreInfo{
 	{"ToIANAServices", "netcap.FlowAuditRecords", "Show all IANA services identified by the flows destination port"},
 	{"ToLiveAuditRecords", "netcap.CaptureProcess", "Show current state of captured traffic"},
 	{"ToLoginInformation", "netcap.CredentialsAuditRecords", "Show captured login credentials"},
-	{"ToProducts", "netcap.SoftwareAuditRecords", "Show software products and version information"},
+	{"ToSoftwareProducts", "netcap.SoftwareAuditRecords", "Show software products and version information"},
 	{"ToSSHClients", "netcap.SSHAuditRecords", "Show detected SSH client"},
 	{"ToSSHServers", "netcap.SSHAuditRecords", "Show all SSH server software"},
 	{"ToSoftwareExploits", "netcap.ExploitAuditRecords", "Show potential exploits "},
@@ -186,7 +186,10 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	genTransformSet("netcap")
 	packMaltegoArchive("netcap")
 
-	copyFile("netcap.mtz", filepath.Join(os.Getenv("HOME"), "netcap.mtz"))
+	path := filepath.Join(os.Getenv("HOME"), "netcap.mtz")
+	copyFile("netcap.mtz", path)
+
+	fmt.Println("moved archive to", path)
 }
 
 // generate all transforms and pack as archive
@@ -331,7 +334,7 @@ func TestGenerateTransformServerListing(t *testing.T) {
 	lastSync := time.Now().Format("2006-01-02 15:04:05.000 MST")
 	// File: Servers/Local.tas
 	expected := `<MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>`+ lastSync + `</LastSync>
+ <LastSync>` + lastSync + `</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
