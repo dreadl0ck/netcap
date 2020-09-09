@@ -17,7 +17,7 @@ func toHostsForService() {
 
 	maltego.ServiceTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, path string, mac string, ipaddr string) {
 			if len(ip) == 0 {
 				ip = lt.Values["ip"]
 				portStr := lt.Values["port"]
@@ -32,12 +32,12 @@ func toHostsForService() {
 			if service.IP == ip && service.Port == port {
 				for _, f := range service.Flows {
 					srcIP, _, _, _ := utils.ParseFlowIdent(f)
-					ent := trx.AddEntity("netcap.IPAddr", srcIP)
+					ent := trx.AddEntityWithPath("netcap.IPAddr", srcIP, path)
 
 					ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(service.Timestamp))
 					ent.AddProperty("mac", "MacAddress", "strict", mac)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", srcIP)
-					ent.AddProperty("path", "Path", "strict", profilesFile)
+
 				}
 			}
 		},

@@ -8,19 +8,19 @@ import (
 func toHTTPContentTypes() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP == ipaddr || http.DstIP == ipaddr {
 				if http.ContentTypeDetected != "" {
 					// using ContentTypeDetected instead the one that was set on the HTTP request / response
-					ent := trx.AddEntity("netcap.ContentType", http.ContentTypeDetected)
+					ent := trx.AddEntityWithPath("netcap.ContentType", http.ContentTypeDetected, path)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-					ent.AddProperty("path", "Path", "strict", profilesFile)
+
 				}
 				if http.ResContentTypeDetected != "" {
 					// using ContentTypeDetected instead the one that was set on the HTTP request / response
-					ent := trx.AddEntity("netcap.ContentType", http.ResContentTypeDetected)
+					ent := trx.AddEntityWithPath("netcap.ContentType", http.ResContentTypeDetected, path)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-					ent.AddProperty("path", "Path", "strict", profilesFile)
+
 				}
 			}
 		},

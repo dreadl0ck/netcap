@@ -49,7 +49,7 @@ func toEmailsFromFile() {
 	log.Println("results", results)
 
 	for _, r := range results {
-		trx.AddEntity("netcap.Email", r.String())
+		trx.AddEntityWithPath("netcap.Email", r.String(), path)
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

@@ -34,7 +34,7 @@ func lookupDHCPFingerprint() {
 
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if uas, ok := userAgentStore[http.SrcIP]; ok {
 				for _, u := range uas {
 					if u == http.UserAgent {
@@ -57,7 +57,7 @@ func lookupDHCPFingerprint() {
 	}
 
 	var (
-		fp, mac string
+		fp, mac, path string
 		// mapped MAC addresses to IPs
 		addrMapping          = make(map[string]string)
 		mtrx                 *maltego.Transform
@@ -66,7 +66,7 @@ func lookupDHCPFingerprint() {
 
 	maltego.DHCPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, path string, ipaddr string) {
 			if dhcp.Operation == 2 {
 				if _, ok := addrMapping[dhcp.ClientHWAddr]; !ok {
 					log.Println("update addr mapping", dhcp.ClientHWAddr, dhcp.YourClientIP)
@@ -79,6 +79,7 @@ func lookupDHCPFingerprint() {
 			if fp == "" && mac == "" {
 				mac = lt.Values["clientMac"]
 				fp = lt.Values["fp"]
+				path = lt.Values["path"]
 				log.Println("searching for mac", mac, "fp", fp)
 			}
 			if dhcp.ClientHWAddr == mac && dhcp.Fingerprint == fp { // deep copy
@@ -136,7 +137,7 @@ func lookupDHCPFingerprint() {
 		// log.Println("got result", res.DeviceName, "for", messageToFingerprint.ClientHWAddr)
 
 		val := strings.ReplaceAll(res.DeviceName, "/", "\n") + "\n" + ip
-		ent := mtrx.AddEntity("netcap.dhcpResult", val)
+		ent := mtrx.AddEntityWithPath("netcap.dhcpResult", val, path)
 
 		ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(messageToFingerprint.Timestamp))
 		ent.AddProperty("clientIP", "ClientIP", "strict", messageToFingerprint.ClientIP)

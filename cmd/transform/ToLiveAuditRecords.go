@@ -31,10 +31,10 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 	// generate maltego transform
 	trx := maltego.Transform{}
 	for _, name := range allDecoders {
-		ident := filepath.Join(outDir, name+defaults.FileExtension)
+		path := filepath.Join(outDir, name+defaults.FileExtension)
 
 		// stat generated profiles
-		stat, err := os.Stat(ident)
+		stat, err := os.Stat(path)
 		if err != nil {
 			log.Println("invalid path: ", err)
 
@@ -49,7 +49,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		// TODO: return structure from collect invocation
 		// that contains the number of records per type
 		// to avoid opening the file again
-		numRecords, errCount := io.Count(ident)
+		numRecords, errCount := io.Count(path)
 		if errCount != nil {
 			log.Println("failed to count audit records:", errCount)
 
@@ -60,9 +60,8 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 			continue
 		}
 
-		ent := trx.AddEntity("netcap."+name+"AuditRecords", utils.Pluralize(name))
+		ent := trx.AddEntityWithPath("netcap."+name+"AuditRecords", utils.Pluralize(name), path)
 
-		ent.AddProperty("path", "Path", "strict", ident)
 		ent.AddProperty("description", "Description", "strict", name+defaults.FileExtensionCompressed)
 
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
@@ -73,7 +72,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 			di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 			ent.AddDisplayInformation(di, "Netcap Info")
 
-			num, errCountRecords := io.Count(ident)
+			num, errCountRecords := io.Count(path)
 			if errCountRecords != nil {
 				log.Println("failed to count audit records:", errCountRecords)
 			}

@@ -18,7 +18,7 @@ func toDestinationIPs() {
 
 	maltego.DeviceProfileTransform(
 		maltego.CountPacketsContactIPs,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string) {
 			if profile.MacAddr != mac {
 				return
 			}
@@ -38,9 +38,9 @@ func toDestinationIPs() {
 					}
 
 					if resolvers.IsPrivateIP(net.ParseIP(p.Addr)) {
-						ent = trx.AddEntity("netcap.InternalDestinationIP", val)
+						ent = trx.AddEntityWithPath("netcap.InternalDestinationIP", val, path)
 					} else {
-						ent = trx.AddEntity("netcap.ExternalDestinationIP", val)
+						ent = trx.AddEntityWithPath("netcap.ExternalDestinationIP", val, path)
 					}
 
 					ent.AddProperty("geolocation", "Geolocation", "strict", p.Geolocation)
@@ -49,7 +49,7 @@ func toDestinationIPs() {
 
 					ent.AddProperty("mac", "MacAddress", "strict", mac)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", p.Addr)
-					ent.AddProperty("path", "Path", "strict", profilesFile)
+
 					ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(profile.NumPackets, 10))
 
 					ent.SetLinkLabel(strconv.FormatInt(p.NumPackets, 10) + " pkts\n" + humanize.Bytes(p.Bytes))

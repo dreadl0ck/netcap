@@ -16,15 +16,15 @@ func toHTTPHostsFiltered() {
 
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP != ipaddr {
 				return
 			}
 			if http.Host != "" {
 				if !resolvers.IsWhitelistedDomain(http.Host) {
-					ent := trx.AddEntity("netcap.Website", http.Host)
+					ent := trx.AddEntityWithPath("netcap.Website", http.Host, path)
 					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
-					ent.AddProperty("path", "Path", "strict", profilesFile)
+
 				}
 			}
 		},

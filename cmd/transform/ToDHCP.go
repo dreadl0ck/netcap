@@ -16,7 +16,7 @@ func toDHCP() {
 
 	maltego.DHCPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, path string, ipaddr string) {
 			if dhcp.ClientIP == ipaddr {
 				for _, o := range dhcp.Options {
 					if utf8.Valid([]byte(o.Data)) && len(o.Data) != 1 {
@@ -45,7 +45,7 @@ func toDHCP() {
 							typ = "Domain Name"
 						}
 
-						trx.AddEntity("netcap.Device", typ+": "+buf.String())
+						trx.AddEntityWithPath("netcap.Device", typ+": "+buf.String(), path)
 					}
 				}
 			}

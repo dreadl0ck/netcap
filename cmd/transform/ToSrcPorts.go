@@ -22,7 +22,7 @@ func toSrcPorts() {
 
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.MacAddr != mac {
 				return
 			}
@@ -30,7 +30,7 @@ func toSrcPorts() {
 				if ip == ipaddr {
 					if ipp, ok := profiles[ip]; ok {
 						for portNum, port := range ipp.SrcPorts {
-							addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp)
+							addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp, path)
 						}
 					}
 				}
@@ -39,7 +39,7 @@ func toSrcPorts() {
 				if ip == ipaddr {
 					if ipp, ok := profiles[ip]; ok {
 						for portNum, port := range ipp.SrcPorts {
-							addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp)
+							addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp, path)
 						}
 					}
 				}
@@ -48,8 +48,8 @@ func toSrcPorts() {
 	)
 }
 
-func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile) {
-	ent := trx.AddEntity("netcap.SourcePort", portStr)
+func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile, path string) {
+	ent := trx.AddEntityWithPath("netcap.SourcePort", portStr, path)
 
 	np, err := strconv.Atoi(portStr)
 	if err != nil {

@@ -22,18 +22,18 @@ func toOutgoingFlowsFiltered() {
 
 	maltego.FlowTransform(
 		maltego.CountOutgoingFlowBytesFiltered,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ipaddr string, top12 *[]int) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, path string, mac string, ipaddr string, top12 *[]int) {
 			if flow.SrcIP == ipaddr {
 				name := resolvers.LookupDNSNameLocal(flow.DstIP)
 				if name != "" {
 					if !resolvers.IsWhitelistedDomain(name) {
 						if isInTop12(flow.TotalSize, top12) {
-							addOutFlow(trx, flow, min, max, name)
+							addOutFlow(trx, flow, min, max, name, path)
 						}
 					}
 				} else {
 					if isInTop12(flow.TotalSize, top12) {
-						addOutFlow(trx, flow, min, max, flow.DstIP)
+						addOutFlow(trx, flow, min, max, flow.DstIP, path)
 					}
 				}
 			}
@@ -41,8 +41,8 @@ func toOutgoingFlowsFiltered() {
 	)
 }
 
-func addOutFlow(trx *maltego.Transform, flow *types.Flow, min, max uint64, name string) {
-	ent := trx.AddEntity("netcap.Flow", flow.UID+"\n"+name)
+func addOutFlow(trx *maltego.Transform, flow *types.Flow, min, max uint64, name string, path string) {
+	ent := trx.AddEntityWithPath("netcap.Flow", flow.UID+"\n"+name, path)
 
 	di := "<h3>Outgoing Flow: " + flow.SrcIP + ":" + flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.UnixTimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.UnixTimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")

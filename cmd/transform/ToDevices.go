@@ -10,11 +10,10 @@ import (
 )
 
 func toDevices() {
-	maltego.DeviceProfileTransform(maltego.CountPacketsDevices, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string) {
+	maltego.DeviceProfileTransform(maltego.CountPacketsDevices, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string) {
 		ident := profile.MacAddr + "\n" + profile.DeviceManufacturer
-		ent := trx.AddEntity("netcap.Device", ident)
+		ent := trx.AddEntityWithPath("netcap.Device", ident, path)
 
-		ent.AddProperty("path", "Path", "strict", profilesFile)
 		ent.AddProperty("mac", "Mac Address", "strict", profile.MacAddr)
 
 		ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))

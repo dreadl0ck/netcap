@@ -40,6 +40,8 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 	log.Println("open path:", path)
 
 	os.Stdout = os.Stderr
+	netio.PrintBuildInfo()
+	os.Stdout = stdOut
 
 	f, err := os.Open(path)
 	if err != nil {
@@ -50,8 +52,6 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
 		log.Fatal("input file must be an audit record file")
 	}
-
-	os.Stdout = stdOut
 
 	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {

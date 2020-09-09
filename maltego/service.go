@@ -29,7 +29,7 @@ import (
 )
 
 // serviceTransformationFunc is a transformation over Service profiles for a selected Service.
-type serviceTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Service, min, max uint64, profilesFile string, mac string, ip string)
+type serviceTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Service, min, max uint64, path string, mac string, ip string)
 
 // countFunc is a function that counts something over DeviceProfiles.
 type serviceCountFunc = func(service *types.Service, mac string, min, max *uint64)
@@ -42,22 +42,28 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 		mac          = lt.Values["mac"]
 		ipaddr       = lt.Values["ipaddr"]
 		stdout       = os.Stdout
+		trx          = Transform{}
 	)
 
 	os.Stdout = os.Stderr
 	netio.PrintBuildInfo()
+	os.Stdout = stdout
 
 	f, err := os.Open(servicesFile)
 	if err != nil {
-		log.Fatal(err)
+		trx.AddUIMessage("path property not set!", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file path property not set")
+		return
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
-
-	os.Stdout = stdout
 
 	r, err := netio.Open(servicesFile, defaults.BufferSize)
 	if err != nil {
@@ -77,7 +83,6 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 		service = new(types.Service)
 		pm      proto.Message
 		ok      bool
-		trx     = Transform{}
 	)
 	pm = service
 

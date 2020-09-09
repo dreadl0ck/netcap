@@ -33,31 +33,37 @@ import (
 type filesCountFunc func()
 
 // filesTransformationFunc is a transformation over File audit records.
-type filesTransformationFunc = func(lt LocalTransform, trx *Transform, file *types.File, min, max uint64, profilesFile string, ip string)
+type filesTransformationFunc = func(lt LocalTransform, trx *Transform, file *types.File, min, max uint64, path string, ip string)
 
 // FilesTransform applies a maltego transformation over File audit records.
 func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
-	ipaddr := lt.Values["ipaddr"]
 
-	dir := filepath.Dir(profilesFile)
-	httpAuditRecords := filepath.Join(dir, "File.ncap.gz")
-	f, err := os.Open(httpAuditRecords)
+	var (
+		lt               = ParseLocalArguments(os.Args[1:])
+		path             = lt.Values["path"]
+		ipaddr           = lt.Values["ipaddr"]
+		trx              = Transform{}
+		dir              = filepath.Dir(path)
+		fileAuditRecords = filepath.Join(dir, "File.ncap.gz")
+	)
+
+	f, err := os.Open(fileAuditRecords)
 	if err != nil {
 		// write an empty reply if the audit record file was not found.
 		log.Println(err)
-		trx := Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
 
-	r, err := netio.Open(httpAuditRecords, defaults.BufferSize)
+	r, err := netio.Open(fileAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +82,6 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		file = new(types.File)
 		pm   proto.Message
 		ok   bool
-		trx  = Transform{}
 	)
 	pm = file
 
@@ -107,7 +112,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		}
 	}
 
-	r, err = netio.Open(httpAuditRecords, defaults.BufferSize)
+	r, err = netio.Open(fileAuditRecords, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -123,7 +128,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, file, min, max, profilesFile, ipaddr)
+		transform(lt, &trx, file, min, max, fileAuditRecords, ipaddr)
 	}
 
 	err = r.Close()

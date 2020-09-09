@@ -8,12 +8,12 @@ import (
 func toHTTPServerNames() {
 	maltego.HTTPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP != ipaddr {
 				return
 			}
 			if http.ServerName != "" {
-				trx.AddEntity("netcap.ServerName", http.ServerName)
+				trx.AddEntityWithPath("netcap.ServerName", http.ServerName, path)
 			}
 		},
 		false,

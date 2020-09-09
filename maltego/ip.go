@@ -30,34 +30,37 @@ import (
 
 // IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ip string)
+type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string, ip string)
 
 // IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile.
 func IPTransform(count countFunc, transform IPTransformationFunc) {
 	var (
-		lt           = ParseLocalArguments(os.Args[1:])
-		profilesFile = lt.Values["path"]
-		mac          = lt.Values["mac"]
-		ipaddr       = lt.Values["ipaddr"]
-		stdout       = os.Stdout
+		lt     = ParseLocalArguments(os.Args[1:])
+		path   = lt.Values["path"]
+		mac    = lt.Values["mac"]
+		ipaddr = lt.Values["ipaddr"]
+		stdout = os.Stdout
+		trx    = Transform{}
 	)
 
 	os.Stdout = os.Stderr
 	netio.PrintBuildInfo()
+	os.Stdout = stdout
 
-	f, err := os.Open(profilesFile)
+	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
 
-	os.Stdout = stdout
-
-	r, err := netio.Open(profilesFile, defaults.BufferSize)
+	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +79,6 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 		profile = new(types.DeviceProfile)
 		pm      proto.Message
 		ok      bool
-		trx     = Transform{}
 	)
 
 	pm = profile
@@ -109,7 +111,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 		}
 	}
 
-	r, err = netio.Open(profilesFile, defaults.BufferSize)
+	r, err = netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +127,7 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, profile, min, max, profilesFile, mac, ipaddr)
+		transform(lt, &trx, profile, min, max, path, mac, ipaddr)
 	}
 
 	err = r.Close()

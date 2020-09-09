@@ -15,6 +15,7 @@ package maltego
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -29,26 +30,32 @@ import (
 
 // LoadMails will load the email audit records into memory and return them.
 func LoadMails() map[string]*types.Mail {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
+	var (
+		lt     = ParseLocalArguments(os.Args[1:])
+		path   = lt.Values["path"]
+		mails  = make(map[string]*types.Mail)
+		stdOut = os.Stdout
+		trx    = Transform{}
+	)
 
-	mails := make(map[string]*types.Mail)
-	stdOut := os.Stdout
 	os.Stdout = os.Stderr
+	netio.PrintBuildInfo()
+	os.Stdout = stdOut
 
-	f, err := os.Open(profilesFile)
+	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return nil
 	}
 
-	os.Stdout = stdOut
-
-	r, err := netio.Open(profilesFile, defaults.BufferSize)
+	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}

@@ -166,35 +166,41 @@ var countOutgoingFlowPackets = func(flow *types.Flow, ipaddr string, min, max *u
 }
 
 // flowTransformationFunc is a transformation over Flow audit records.
-type flowTransformationFunc = func(lt LocalTransform, trx *Transform, flow *types.Flow, min, max uint64, profilesFile string, mac string, ip string, sizes *[]int)
+type flowTransformationFunc = func(lt LocalTransform, trx *Transform, flow *types.Flow, min, max uint64, path string, mac string, ip string, sizes *[]int)
 
 // FlowTransform applies a maltego transformation over Flow audit records.
 func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
-	lt := ParseLocalArguments(os.Args[1:])
-	profilesFile := lt.Values["path"]
-	mac := lt.Values["mac"]
-	ipaddr := lt.Values["ipaddr"]
 
-	stdout := os.Stdout
+	var (
+		lt               = ParseLocalArguments(os.Args[1:])
+		path             = lt.Values["path"]
+		mac              = lt.Values["mac"]
+		ipaddr           = lt.Values["ipaddr"]
+		stdout           = os.Stdout
+		dir              = filepath.Dir(path)
+		flowAuditRecords = filepath.Join(dir, "Flow.ncap.gz")
+		trx              = Transform{}
+	)
+
 	os.Stdout = os.Stderr
-
 	netio.PrintBuildInfo()
+	os.Stdout = stdout
 
-	dir := filepath.Dir(profilesFile)
-	flowAuditRecords := filepath.Join(dir, "Flow.ncap.gz")
 	log.Println("opening", flowAuditRecords)
 
 	f, err := os.Open(flowAuditRecords)
 	if err != nil {
+		// TODO: display errors to user
 		log.Fatal(err)
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
-
-	os.Stdout = stdout
 
 	r, err := netio.Open(flowAuditRecords, defaults.BufferSize)
 	if err != nil {
@@ -215,7 +221,6 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 		flow = new(types.Flow)
 		pm   proto.Message
 		ok   bool
-		trx  = Transform{}
 	)
 
 	pm = flow
@@ -273,7 +278,7 @@ func FlowTransform(count flowCountFunc, transform flowTransformationFunc) {
 			panic(err)
 		}
 
-		transform(lt, &trx, flow, min, max, profilesFile, mac, ipaddr, &top12)
+		transform(lt, &trx, flow, min, max, path, mac, ipaddr, &top12)
 	}
 
 	err = r.Close()

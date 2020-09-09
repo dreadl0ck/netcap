@@ -12,7 +12,7 @@ func toGeolocation() {
 
 	maltego.IPTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.MacAddr != mac {
 				return
 			}
@@ -22,7 +22,7 @@ func toGeolocation() {
 						if p.Geolocation == "" {
 							continue
 						}
-						addGeolocation(trx, p, min, max)
+						addGeolocation(trx, p, min, max, path)
 					}
 				}
 			}
@@ -32,7 +32,7 @@ func toGeolocation() {
 						if p.Geolocation == "" {
 							continue
 						}
-						addGeolocation(trx, p, min, max)
+						addGeolocation(trx, p, min, max, path)
 					}
 				}
 			}
@@ -40,8 +40,8 @@ func toGeolocation() {
 	)
 }
 
-func addGeolocation(trx *maltego.Transform, ip *types.IPProfile, min, max uint64) {
-	ent := trx.AddEntity("netcap.Location", ip.Geolocation)
+func addGeolocation(trx *maltego.Transform, ip *types.IPProfile, min, max uint64, path string) {
+	ent := trx.AddEntityWithPath("netcap.Location", ip.Geolocation, path)
 	ent.SetLinkLabel(strconv.FormatInt(ip.NumPackets, 10) + " pkts")
 	ent.SetLinkThickness(maltego.GetThickness(uint64(ip.NumPackets), min, max))
 }

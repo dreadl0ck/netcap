@@ -19,22 +19,27 @@ import (
 )
 
 func toDNSQuestions() {
-	lt := maltego.ParseLocalArguments(os.Args)
-	dnsAuditRecords := lt.Values["path"]
+	var (
+		lt              = maltego.ParseLocalArguments(os.Args)
+		dnsAuditRecords = lt.Values["path"]
+		trx             = maltego.Transform{}
+	)
 
 	log.Println(defaultOpenCommand, dnsAuditRecords)
 
 	f, err := os.Open(dnsAuditRecords)
 	if err != nil {
 		log.Println("failed to open", err)
-		trx := maltego.Transform{}
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", maltego.UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
 
 	r, err := netio.Open(dnsAuditRecords, defaults.BufferSize)
@@ -55,7 +60,6 @@ func toDNSQuestions() {
 		dns = new(types.DNS)
 		pm  proto.Message
 		ok  bool
-		trx = maltego.Transform{}
 	)
 
 	pm = dns
@@ -85,7 +89,7 @@ func toDNSQuestions() {
 				}
 				results[q.Name]++
 
-				ent := trx.AddEntity("netcap.DNSName", q.Name)
+				ent := trx.AddEntityWithPath("netcap.DNSName", q.Name, dnsAuditRecords)
 				ent.AddProperty("srcIP", "SourceIP", "strict", dns.SrcIP)
 				ent.SetLinkLabel(strconv.Itoa(results[q.Name]))
 			}

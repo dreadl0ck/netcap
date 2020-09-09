@@ -345,3 +345,8 @@ commands:
         description: generate icons for maltego integration
         exec: |
             go clean -testcache && go test -v -run="GenerateAuditRecordIcons" -tags="icons" github.com/dreadl0ck/netcap/maltego
+
+    gen-maltego-config:
+        dependencies:
+          - make-icons
+        exec: go test -v -run="TestGenerateFullMaltegoConfiguration" -tags="icons" github.com/dreadl0ck/netcap/maltego

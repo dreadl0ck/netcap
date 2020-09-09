@@ -8,10 +8,10 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func toProducts() {
+func toSoftwareProducts() {
 	maltego.SoftwareTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, soft *types.Software, min, max uint64, profilesFile string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, soft *types.Software, min, max uint64, path string, mac string, ipaddr string) {
 			val := soft.Vendor + " " + soft.Product + " " + soft.Version
 			if len(soft.SourceName) > 0 {
 				if soft.SourceName == "Generic version harvester" {
@@ -23,16 +23,8 @@ func toProducts() {
 				}
 				val += "\n" + soft.SourceName
 			}
-			for i, f := range soft.Flows {
-				if i == 3 {
-					val += "\n..."
 
-					break
-				}
-				val += "\n" + f
-			}
-
-			ent := trx.AddEntity("netcap.Software", val)
+			ent := trx.AddEntityWithPath("netcap.Software", val, path)
 			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(soft.Timestamp))
 			ent.AddProperty("vendor", "Vendor", "strict", soft.Vendor)
 			ent.AddProperty("product", "Product", "strict", soft.Product)
@@ -41,6 +33,8 @@ func toProducts() {
 			ent.AddProperty("sourcename", "SourceName", "strict", soft.SourceName)
 			ent.AddProperty("sourcedata", "SourceData", "strict", soft.SourceData)
 			ent.AddProperty("notes", "Notes", "strict", soft.Notes)
+
+			ent.AddDisplayInformation(strings.Join(soft.Flows, "<br>"), "Flows")
 		},
 	)
 }

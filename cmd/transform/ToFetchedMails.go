@@ -16,7 +16,7 @@ func toFetchedMails() {
 
 	maltego.POP3Transform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, profilesFile string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, path string, ipaddr string) {
 			for _, id := range pop3.MailIDs {
 				if m, ok := mails[id]; ok {
 
@@ -26,7 +26,7 @@ func toFetchedMails() {
 						fmt.Println(err)
 					}
 
-					ent := trx.AddEntity("netcap.Email", buf.String())
+					ent := trx.AddEntityWithPath("netcap.Email", buf.String(), path)
 
 					var attachments string
 					for _, p := range m.Body {

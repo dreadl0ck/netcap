@@ -75,34 +75,37 @@ func countIP(ips map[string]*types.IPProfile, ip string, min, max *uint64) {
 type countFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
 
 // deviceProfileTransformationFunc is transform over DeviceProfiles.
-type deviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, profilesFile string, mac string)
+type deviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string)
 
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records.
 func DeviceProfileTransform(count countFunc, transform deviceProfileTransformationFunc) {
 	var (
-		lt           = ParseLocalArguments(os.Args[1:])
-		profilesFile = lt.Values["path"]
-		mac          = lt.Values["mac"]
-		stdout       = os.Stdout
+		lt     = ParseLocalArguments(os.Args[1:])
+		path   = lt.Values["path"]
+		mac    = lt.Values["mac"]
+		stdout = os.Stdout
+		trx    = Transform{}
 	)
 
 	os.Stdout = os.Stderr
-
 	netio.PrintBuildInfo()
+	os.Stdout = stdout
 
-	f, err := os.Open(profilesFile)
+	f, err := os.Open(path)
 	if err != nil {
+		// TODO: display error to user
 		log.Fatal(err)
 	}
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		log.Fatal("input file must be an audit record file")
+		trx.AddUIMessage("input file must be an audit record file", UIMessageFatal)
+		fmt.Println(trx.ReturnOutput())
+		log.Println("input file must be an audit record file")
+		return
 	}
 
-	os.Stdout = stdout
-
-	r, err := netio.Open(profilesFile, defaults.BufferSize)
+	r, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		panic(err)
 	}
@@ -121,7 +124,6 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		profile = new(types.DeviceProfile)
 		pm      proto.Message
 		ok      bool
-		trx     = Transform{}
 	)
 
 	pm = profile
@@ -153,7 +155,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 			log.Println("failed to close audit record file: ", err)
 		}
 
-		r, err = netio.Open(profilesFile, defaults.BufferSize)
+		r, err = netio.Open(path, defaults.BufferSize)
 		if err != nil {
 			panic(err)
 		}
@@ -170,7 +172,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 			panic(err)
 		}
 
-		transform(lt, &trx, profile, min, max, profilesFile, mac)
+		transform(lt, &trx, profile, min, max, path, mac)
 	}
 
 	err = r.Close()
