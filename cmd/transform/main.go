@@ -92,7 +92,7 @@ func Run() {
 		toMailUserPassword,
 		toMailUsers,
 		toMails,
-		toSNIs,
+		toServerNameIndicators,
 		toSrcPorts,
 		toOutgoingFlowsFiltered,
 		toURLsForWebsite,

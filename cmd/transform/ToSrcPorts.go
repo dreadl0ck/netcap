@@ -42,8 +42,8 @@ func toSrcPorts() {
 			for _, ip := range profile.Contacts {
 				if ip == ipaddr {
 					if ipp, ok := profiles[ip]; ok {
-						for portNum, port := range ipp.SrcPorts {
-							addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp, path)
+						for _, port := range ipp.SrcPorts {
+							addSourcePort(trx, strconv.FormatInt(int64(port.PortNumber), 10), port, min, max, ipp, path)
 						}
 					}
 				}

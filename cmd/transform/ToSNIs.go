@@ -5,7 +5,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func toSNIs() {
+func toServerNameIndicators() {
 	profiles := maltego.LoadIPProfiles()
 
 	maltego.IPTransform(

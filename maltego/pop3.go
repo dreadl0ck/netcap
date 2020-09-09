@@ -47,13 +47,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 		trx              = Transform{}
 	)
 
-	f, err := os.Open(pop3AuditRecords)
-	if err != nil {
-		trx.AddUIMessage("audit record file not found: "+err.Error(), UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file must be an audit record file")
-		return
-	}
+	f, path := openFile(pop3AuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
@@ -67,6 +61,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	if errFileHeader != nil {
 		die("failed to read file header", errFileHeader.Error())
 	}
+
 	if header.Type != types.Type_NC_POP3 {
 		die("file does not contain POP3 records", header.Type.String())
 	}
@@ -85,6 +80,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc) {
 	var (
 		min uint64 = 10000000
 		max uint64 = 0
+		err error
 	)
 
 	if count != nil {

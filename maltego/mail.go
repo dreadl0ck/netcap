@@ -18,6 +18,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -31,12 +32,12 @@ import (
 func LoadMails() map[string]*types.Mail {
 	var (
 		lt    = ParseLocalArguments(os.Args[1:])
-		path  = lt.Values["path"]
+		path  = filepath.Join(filepath.Dir(lt.Values["path"]), "Mail.ncap.gz")
 		mails = make(map[string]*types.Mail)
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
-	f := openPath(path)
+	f, path := openFile(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
