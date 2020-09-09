@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-09 16:20:17.408 CEST</LastSync>
+ <LastSync>2020-09-09 23:55:03.912 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -59,6 +59,7 @@
   <Transform name="netcap.ToSoftwareVulnerabilities"></Transform>
   <Transform name="netcap.ToServices"></Transform>
   <Transform name="netcap.ToDevices"></Transform>
+  <Transform name="netcap.ToHosts"></Transform>
   <Transform name="netcap.OpenExploit"></Transform>
   <Transform name="netcap.OpenFile"></Transform>
   <Transform name="netcap.OpenFolder"></Transform>
