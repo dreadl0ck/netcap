@@ -3,21 +3,24 @@ package transform
 import (
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/types"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
 // dieIfExecutable can be used to check if the file at the passed in location is executable
-// if so, the function will crash the program and print an error for maltego.
+// if so, the function will exit the program cleanly and print an error for maltego.
 func dieIfExecutable(trx *maltego.Transform, loc string) {
 	// the open tool uses the file extension to decide which program to pass the file to
-	// if there is an extension for known executable formats - abort
+	// if there is an extension for known executable formats - abort directly
 	ext := filepath.Ext(loc)
 	log.Println("file extension", ext)
 
@@ -25,12 +28,10 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 		log.Println("detected known executable file extension - aborting to prevent accidental execution!")
 		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
-
-		return
+		os.Exit(0)
 	}
 
 	// if there is no extension, use content type detection to determine if its an executable
-	// TODO: improve and test content type check and executable file detection
 	log.Println("open path for determining content type:", loc)
 
 	f, err := os.OpenFile(loc, os.O_RDONLY, defaults.DirectoryPermission)
@@ -45,8 +46,8 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 		}
 	}()
 
+	// read file banner to determine content type
 	buf := make([]byte, 512)
-
 	_, err = io.ReadFull(f, buf)
 	if err != nil && !errors.Is(err, io.EOF) {
 		log.Fatal(err)
@@ -56,17 +57,18 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 	cType := http.DetectContentType(buf)
 	log.Println("cType:", cType)
 
+	// get file stats to determine if executable bit is set
 	stat, err := os.Stat(loc)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if cType == octetStream && isExecAny(stat.Mode()) {
+	// if content type is octet or the file has the executable bit set, abort
+	if cType == octetStream || isExecAny(stat.Mode()) {
 		log.Println("detected executable file - aborting to prevent accidental execution!")
 		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
-
-		return
+		os.Exit(0)
 	}
 }
 
@@ -77,4 +79,38 @@ func die(err string, msg string) {
 	fmt.Println(trx.ReturnOutput())
 	log.Println(msg, err)
 	os.Exit(0) // don't signal an error for the transform invocation
+}
+
+func joinMap(m interface{}, delim string) string {
+
+	var out []string
+
+	switch t := m.(type) {
+	case map[string]string:
+		out = make([]string, len(t))
+		var i int
+
+		for k, v := range t {
+			out[i] = k + ":" + v
+			i++
+		}
+	case map[string]int64:
+		out = make([]string, len(t))
+		var i int
+
+		for k, v := range t {
+			out[i] = k + ":" + strconv.FormatInt(v, 10)
+			i++
+		}
+	case map[string]*types.Protocol:
+		out = make([]string, len(t))
+		var i int
+
+		for k, v := range t {
+			out[i] = k + ":" + v.Category + ":" + strconv.FormatUint(v.Packets, 10) + " packets"
+			i++
+		}
+	}
+
+	return strings.Join(out, delim)
 }

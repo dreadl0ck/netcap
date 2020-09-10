@@ -109,21 +109,8 @@ func toAuditRecords() {
 
 	// check if input PCAP path is set
 	if inputFile == "" {
-		trx.AddUIMessage("Input file path property not set!", maltego.UIMessageFatal)
-		fmt.Println(trx.ReturnOutput())
-		log.Println("input file path property not set")
-
-		return
+		die("input file path property not set", "")
 	}
-
-	// check if input PCAP path exists
-	//inputStat, err := os.Stat(inputFile)
-	//if err != nil {
-	//	trx.AddUIMessage("Input file path does not exist! error: "+err.Error(), maltego.UIM_FATAL)
-	//	fmt.Println(trx.ReturnOutput())
-	//	log.Println("input file path does not exist", err)
-	//	return
-	//}
 
 	log.Println("inputFile:", inputFile)
 
@@ -132,16 +119,13 @@ func toAuditRecords() {
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
 
-	// create storage path for audit records
-	// start := time.Now()
-
 	// create the output directory in the same place as the input file
 	// the directory for this will be named like the input file with an added .net extension
 	outDir := inputFile + ".net"
 
 	err := os.MkdirAll(outDir, defaults.DirectoryPermission)
 	if err != nil {
-		log.Println(err)
+		die(err.Error(), "failed to create output directory")
 	}
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
@@ -155,9 +139,7 @@ func toAuditRecords() {
 	// if not, use native pcapgo version
 	isPcap, err := collector.IsPcap(inputFile)
 	if err != nil {
-		// invalid path
-		fmt.Println("failed to open file:", err)
-		os.Exit(1)
+		die(err.Error(), "failed to open input file")
 	}
 
 	// logic is split for both types here
@@ -177,9 +159,8 @@ func toAuditRecords() {
 
 	r, err = pcap.OpenOffline(inputFile)
 	if err != nil {
-		log.Fatal(err)
+		die(err.Error(), "failed to open input file")
 	}
-
 	defer r.Close()
 
 	// restore stdout

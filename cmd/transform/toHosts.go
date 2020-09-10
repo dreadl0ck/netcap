@@ -2,6 +2,7 @@ package transform
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/dustin/go-humanize"
 
@@ -16,5 +17,10 @@ func toHosts() {
 
 		ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
 		ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
+		ent.AddDisplayInformation(strings.Join(profile.Applications, "<br>"), "Applications")
+		ent.AddDisplayInformation(strings.Join(profile.DNSNames, "<br>"), "DNS Names")
+		ent.AddDisplayInformation(joinMap(profile.Ja3, "<br>"), "JA3")
+		ent.AddDisplayInformation(joinMap(profile.SNIs, "<br>"), "SNIs")
+		ent.AddDisplayInformation(joinMap(profile.Protocols, "<br>"), "Protocols")
 	})
 }
