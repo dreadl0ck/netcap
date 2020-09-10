@@ -109,6 +109,11 @@ func Run() {
 		toExifDataForImage,
 		toHostsForService,
 		toServices,
+		toIANAServicesForConnections,
+		toFlowsForService,
+		toConnectionsForService,
+		toJA3Hashes,
+		toJA3SHashes,
 	} {
 		if os.Args[2] == getFuncName(f) {
 			f()

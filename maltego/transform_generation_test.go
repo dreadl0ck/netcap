@@ -75,6 +75,7 @@ var transforms = []transformCoreInfo{
 	{"ToFileTypes", "netcap.FileAuditRecords", "Show MIME types for extracted files"},
 	{"ToHTTPHostnames", "netcap.HTTPAuditRecords", "Show all visited website hostnames"},
 	{"ToIANAServices", "netcap.FlowAuditRecords", "Show all IANA services identified by the flows destination port"},
+	{"ToIANAServicesForConnections", "netcap.ConnectionAuditRecords", "Show all IANA services identified by the connection destination port"},
 	{"ToLiveAuditRecords", "netcap.CaptureProcess", "Show current state of captured traffic"},
 	{"ToLoginInformation", "netcap.CredentialsAuditRecords", "Show captured login credentials"},
 	{"ToSoftwareProducts", "netcap.SoftwareAuditRecords", "Show software products and version information"},
@@ -85,6 +86,10 @@ var transforms = []transformCoreInfo{
 	{"ToServices", "netcap.ServiceAuditRecords", "Show detected network services"},
 	{"ToDevices", "netcap.DeviceProfileAuditRecords", "Show all discovered device audit records"},
 	{"ToHosts", "netcap.IPProfileAuditRecords", "Show all discovered ip hosts"},
+	{"ToJA3Hashes", "netcap.TLSClientHelloAuditRecords", "Show all discovered ja3 client hashes"},
+	{"ToJA3SHashes", "netcap.TLSServerHelloAuditRecords", "Show all discovered ja3 server hashes"},
+	{"ToFlowsForService", "netcap.Service", "Show all flows for the selected service"},
+	{"ToConnectionsForService", "netcap.Service", "Show all connections for the selected service"},
 
 	{"OpenExploit", "netcap.Exploit", "Open the exploit source with the default system program for the filetype"},
 	{"OpenFile", "netcap.File", "Opens a file with the default application"},
