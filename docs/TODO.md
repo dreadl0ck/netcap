@@ -2,15 +2,12 @@
 
 ## WIP
 
-- add constant for "/usr/local/bin/net"
-- fix ToSrc and ToDst Ports
 - use compression during live capture?
+- add constant for "/usr/local/bin/net"
+- add constant for "strict"
 
-add:
-- ToFlowsForService
-- ToConnectionsForService
-
-- TLSClient and TLSServer Hellos
+- IPProfile transforms
+- ToFilesForWebsite
 
 ## v0.5 Documentation
 
