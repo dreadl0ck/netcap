@@ -4,6 +4,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -37,7 +38,7 @@ func toFlowsForService() {
 	maltego.FlowTransform(nil, func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, path string, mac string, ip string, sizes *[]int) {
 		if serviceType == "" {
 			// set the serviceType we are searching for once
-			serviceType = lt.Values["service"]
+			serviceType = lt.Value
 		}
 
 		i, err := strconv.Atoi(flow.DstPort)
@@ -65,7 +66,7 @@ func toFlowsForService() {
 }
 
 func addFlow(trx *maltego.Transform, flow *types.Flow, path string, min, max uint64) {
-	ent := trx.AddEntityWithPath("netcap.Flow", flow.UID, path)
+	ent := trx.AddEntityWithPath("netcap.Flow",utils.CreateFlowIdent(flow.SrcIP, flow.SrcPort, flow.DstIP, flow.DstPort), path)
 	ent.SetLinkLabel(strconv.FormatInt(int64(flow.NumPackets), 10) + " pkts\n" + humanize.Bytes(uint64(flow.TotalSize)))
 	ent.SetLinkThickness(maltego.GetThickness(uint64(flow.TotalSize), min, max))
 	ent.AddProperty("srcip", "SrcIP", "strict", flow.SrcIP)

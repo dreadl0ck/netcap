@@ -68,7 +68,7 @@ const (
 	CloseInactiveTimeout = 1 * time.Hour
 
 	// AllowMissingInit TCP State Machine.
-	AllowMissingInit = false
+	AllowMissingInit = true
 
 	// DefragIPv4 controls defragmentation for IPv4.
 	DefragIPv4 = true

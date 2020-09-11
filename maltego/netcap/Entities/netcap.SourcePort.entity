@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SourcePort" displayName="SourcePort" displayNamePlural="SourcePorts" description="A TCP / UDP source port" category="Netcap" smallIconResource="Netcap/local_convenience_store" largeIconResource="Netcap/local_convenience_store" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SourcePort" displayName="SourcePort" displayNamePlural="SourcePorts" description="A TCP / UDP source port" category="Netcap" smallIconResource="Netcap/device_hub" largeIconResource="Netcap/device_hub" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.sourceport" displayValue="properties.sourceport">
   <Groups></Groups>
   <Fields>

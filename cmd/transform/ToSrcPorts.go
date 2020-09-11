@@ -51,8 +51,8 @@ func toSrcPorts() {
 			for _, ip := range profile.DeviceIPs {
 				if ip == ipaddr {
 					if ipp, ok := profiles[ip]; ok {
-						for portNum, port := range ipp.SrcPorts {
-							addSourcePort(trx, strconv.FormatInt(int64(portNum), 10), port, min, max, ipp, path)
+						for _, port := range ipp.SrcPorts {
+							addSourcePort(trx, strconv.FormatInt(int64(port.PortNumber), 10), port, min, max, ipp, path)
 						}
 					}
 				}
@@ -62,7 +62,6 @@ func toSrcPorts() {
 }
 
 func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile, path string) {
-	ent := trx.AddEntityWithPath("netcap.SourcePort", portStr, path)
 
 	np, err := strconv.Atoi(portStr)
 	if err != nil {
@@ -76,6 +75,7 @@ func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min
 		di          = "<h3>Port</h3><p>Timestamp: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p><p>ServiceName: " + serviceName + "</p>"
 	)
 
+	ent := trx.AddEntityWithPath("netcap.SourcePort",portStr + "\n" + serviceName, path)
 	ent.AddDisplayInformation(di, "Netcap Info")
 	ent.AddProperty("label", "Label", "strict", portStr+"\n"+serviceName)
 

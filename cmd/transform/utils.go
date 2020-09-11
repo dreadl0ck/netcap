@@ -81,36 +81,61 @@ func die(err string, msg string) {
 	os.Exit(0) // don't signal an error for the transform invocation
 }
 
-func joinMap(m interface{}, delim string) string {
+func createJa3TableHTML(m map[string]string) string {
 
-	var out []string
+	var out = []string{"<table style='width:100%'>"}
 
-	switch t := m.(type) {
-	case map[string]string:
-		out = make([]string, len(t))
-		var i int
+	out = append(out, `<tr>
+    <th>Ja3</th>
+    <th>Lookup Result</th>
+  </tr>`)
 
-		for k, v := range t {
-			out[i] = k + ":" + v
-			i++
-		}
-	case map[string]int64:
-		out = make([]string, len(t))
-		var i int
-
-		for k, v := range t {
-			out[i] = k + ":" + strconv.FormatInt(v, 10)
-			i++
-		}
-	case map[string]*types.Protocol:
-		out = make([]string, len(t))
-		var i int
-
-		for k, v := range t {
-			out[i] = k + ":" + v.Category + ":" + strconv.FormatUint(v.Packets, 10) + " packets"
-			i++
+	for k, v := range m {
+		if v != "" {
+			out = append(out, "<tr><td style='color:red'>" + k + "</td><td>" + v + "</td></tr>")
+		} else {
+			out = append(out, "<tr><td>" + k + "</td><td>" + v + "</td></tr>")
 		}
 	}
 
-	return strings.Join(out, delim)
+	out = append(out, "</table>")
+
+	return strings.Join(out, "")
+}
+
+func createSNITableHTML(m map[string]int64) string {
+
+	var out = []string{"<table style='width:100%'>"}
+
+	out = append(out, `<tr>
+    <th>SNI</th>
+    <th>Number of Packets</th>
+  </tr>`)
+
+	for k, v := range m {
+		out = append(out, "<tr><td>" + k + "</td><td>" + strconv.FormatInt(v, 10) + "</td></tr>")
+	}
+
+	out = append(out, "</table>")
+
+	return strings.Join(out, "")
+}
+
+func createProtocolsTableHTML(m map[string]*types.Protocol) string {
+
+	var out = []string{"<table style='width:100%'>"}
+
+	out = append(out, `<tr>
+    <th>Application</th>
+	<th>Category</th>
+    <th>Number of Packets</th>
+  </tr>`)
+
+	for k, v := range m {
+		out = append(out, "<tr><td>" + k + "</td><td>" +  v.Category + "</td><td>" + strconv.FormatUint(v.Packets, 10) + "</td></tr>")
+	}
+
+	out = append(out, "</table>")
+
+	return strings.Join(out, "")
 }

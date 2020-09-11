@@ -19,8 +19,8 @@ func toHosts() {
 		ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
 		ent.AddDisplayInformation(strings.Join(profile.Applications, "<br>"), "Applications")
 		ent.AddDisplayInformation(strings.Join(profile.DNSNames, "<br>"), "DNS Names")
-		ent.AddDisplayInformation(joinMap(profile.Ja3, "<br>"), "JA3")
-		ent.AddDisplayInformation(joinMap(profile.SNIs, "<br>"), "SNIs")
-		ent.AddDisplayInformation(joinMap(profile.Protocols, "<br>"), "Protocols")
+		ent.AddDisplayInformation(createJa3TableHTML(profile.Ja3), "JA3")
+		ent.AddDisplayInformation(createSNITableHTML(profile.SNIs), "SNIs")
+		ent.AddDisplayInformation(createProtocolsTableHTML(profile.Protocols), "Protocols")
 	})
 }

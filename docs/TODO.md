@@ -9,6 +9,15 @@
 - IPProfile transforms
 - ToFilesForWebsite
 
+// TODO: connection UIDs
+//gommunityid.MakeFlowTuple(
+//	netFlow.Src().Raw(),
+//	netFlow.Dst().Raw(),
+//	binary.BigEndian.Uint16(transportFlow.Src().Raw()),
+//	binary.BigEndian.Uint16(transportFlow.Dst().Raw()),
+//	1,
+//)
+
 ## v0.5 Documentation
 
 - Blog: Threat hunting with Netcap and Maltego

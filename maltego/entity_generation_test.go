@@ -46,8 +46,8 @@ var maltegoEntities = []entityCoreInfo{
 
 	{"DHCPClient", "cast_connected", "A DHCP client", "", nil},
 	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", "", nil},
-	{"DestinationPort", "local_convenience_store", "A TCP / UDP destination port", "", nil},
-	{"SourcePort", "local_convenience_store", "A TCP / UDP source port", "", nil},
+	{"DestinationPort", "device_hub", "A TCP / UDP destination port", "", nil},
+	{"SourcePort", "device_hub", "A TCP / UDP source port", "", nil},
 	{"HTTPCookie", "settings_input_svideo", "A HTTP session cookie", "", nil},
 	{"HTTPParameter", "live_help", "", "A HTTP request parameter name", nil},
 	{"HTTPParameterValue", "settings_ethernet", "A HTTP request parameter value", "", nil},

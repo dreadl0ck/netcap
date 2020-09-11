@@ -491,7 +491,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 			h.parent.Unlock()
 			if req != nil {
 				name = path.Base(req.request.URL.Path)
-				source += " from " + req.request.URL.Path
+				source += " from " + req.request.Host + req.request.URL.Path
 				ctype = strings.Join(req.request.Header[headerContentType], " ")
 			}
 		}
