@@ -19,7 +19,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -37,7 +36,7 @@ import (
 
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets: false,
-	Workers:             runtime.NumCPU(),
+	Workers:             1,
 	PacketBufferSize:    defaults.PacketBuffer,
 	SnapLen:             defaults.SnapLen,
 	Promisc:             false,
@@ -71,7 +70,7 @@ var maltegoBaseConfig = collector.Config{
 		ClosePendingTimeOut:            5 * time.Second,
 		FileStorage:                    defaults.FileStorage,
 		CalculateEntropy:               false,
-		SaveConns:                      false,
+		SaveConns:                      true,
 		TCPDebug:                       false,
 		UseRE2:                         true,
 		BannerSize:                     512,

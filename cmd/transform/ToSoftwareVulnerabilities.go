@@ -22,9 +22,6 @@ func toSoftwareVulnerabilities() {
 				//}
 				val += "\n" + product
 			}
-			if len(vuln.Description) > 0 {
-				val += "\n" + vuln.Description
-			}
 
 			ent := trx.AddEntityWithPath("netcap.Vulnerability", val, path)
 			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(vuln.Timestamp))
@@ -33,6 +30,7 @@ func toSoftwareVulnerabilities() {
 			ent.AddProperty("flows", "flows", "strict", strings.Join(vuln.Software.Flows, ","))
 			ent.AddProperty("software", "Software", "strict", vuln.Software.Product+" "+vuln.Software.Version)
 
+			ent.AddDisplayInformation(vuln.Description, "Description")
 			ent.AddDisplayInformation(strings.Join(vuln.Software.Flows, "<br>"), "Flows")
 		},
 	)

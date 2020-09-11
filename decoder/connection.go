@@ -166,7 +166,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		conn.Unlock()
 	} else { // create a new Connection
 		co := &types.Connection{}
-		co.UID = calcMd5(co.String())
+		co.UID = calcMd5(connID.String())
 		co.TimestampFirst = p.Metadata().Timestamp.UnixNano()
 		co.TimestampLast = p.Metadata().Timestamp.UnixNano()
 

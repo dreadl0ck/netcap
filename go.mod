@@ -53,6 +53,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
+	github.com/satta/gommunityid v0.0.0-20190829061545-23c89d1f08fb
 	github.com/sirupsen/logrus v1.6.0
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/tinylib/msgp v1.1.2 // indirect

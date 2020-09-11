@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-10 13:03:22.740 CEST</LastSync>
+ <LastSync>2020-09-10 23:30:46.197 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>

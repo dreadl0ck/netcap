@@ -14,7 +14,7 @@
 package decoder
 
 import (
-	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -84,19 +84,19 @@ func (fd *flowCustomDecoder) Destroy() (name string, size int64) {
 func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	// get identifier
 	var (
-		net       gopacket.Flow
-		transport gopacket.Flow
+		netFlow       gopacket.Flow
+		transportFlow gopacket.Flow
 	)
 
 	if nl := p.NetworkLayer(); nl != nil {
-		net = nl.NetworkFlow()
+		netFlow = nl.NetworkFlow()
 	}
 
 	if tl := p.TransportLayer(); tl != nil {
-		transport = tl.TransportFlow()
+		transportFlow = tl.TransportFlow()
 	}
 
-	flowID := fmt.Sprintf("%s:%s", net, transport)
+	flowID := utils.CreateFlowIdent(netFlow.Src().String(), transportFlow.Src().String(), netFlow.Dst().String(), transportFlow.Dst().String())
 
 	// lookup flow
 	fd.Flows.Lock()

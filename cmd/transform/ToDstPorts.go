@@ -66,7 +66,6 @@ func toDstPorts() {
 }
 
 func addDestinationPort(trx *maltego.Transform, portStr string, port *types.Port, min, max uint64, ip *types.IPProfile, path string) {
-	ent := trx.AddEntityWithPath("netcap.DestinationPort", portStr, path)
 
 	np, err := strconv.Atoi(portStr)
 	if err != nil {
@@ -79,6 +78,8 @@ func addDestinationPort(trx *maltego.Transform, portStr string, port *types.Port
 		serviceName = resolvers.LookupServiceByPort(np, port.Protocol)
 		di          = "<h3>Port</h3><p>Timestamp: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p><p>ServiceName: " + serviceName + "</p>"
 	)
+
+	ent := trx.AddEntityWithPath("netcap.DestinationPort", portStr + "\n" + serviceName, path)
 
 	ent.AddDisplayInformation(di, "Netcap Info")
 	ent.AddProperty("label", "Label", "strict", portStr+"\n"+serviceName)

@@ -61,7 +61,11 @@ func openFile(path string) (*os.File, string) {
 
 		f, err = os.Open(strings.TrimSuffix(path, ".gz"))
 		if err != nil {
-			die(err.Error(), "failed to open audit records")
+			log.Println("failed to open path", err)
+			trx := Transform{}
+			trx.AddUIMessage("failed to open path: "+err.Error(), UIMessageInform)
+			fmt.Println(trx.ReturnOutput())
+			os.Exit(0) // don't signal an error for the transform invocation
 		}
 	}
 
