@@ -72,6 +72,7 @@ commands:
             - check-version
             - gen-proto-release
             - build-linux
+            - build-linux-nodpi
         exec: goreleaser release --rm-dist
 
     # run a test release
@@ -81,8 +82,7 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
-            #- build-linux
-        exec: goreleaser release --rm-dist --skip-publish --skip-validate --debug; zeus version-bump-test-undo
+        exec: goreleaser release --rm-dist --skip-publish --skip-validate --debug; zeus version-bump-test-undo; zeus build-linux; zeus build-linux-nodpi;
 
     ## Utils
     ##
