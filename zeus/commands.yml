@@ -259,7 +259,7 @@ commands:
         description: pack all dbs that can be shared as a zip archive
         help: the resulting archive will be put into the resolvers folder
         exec: |
-            cd /usr/local/etc/netcap && zip -r resolver-dbs.zip /usr/local/etc/netcap/dbs -x *.mmdb *hosts* && cd - && cp /usr/local/etc/netcap/resolver-dbs.zip resolvers/resolver-dbs.zip
+            cd /usr/local/etc/netcap && zip -r resolver-dbs.zip dbs -x *.mmdb *hosts* && cd - && cp /usr/local/etc/netcap/resolver-dbs.zip resolvers/resolver-dbs.zip
             du -sh resolvers/resolver-dbs.zip
 
     install-bash-completion:
