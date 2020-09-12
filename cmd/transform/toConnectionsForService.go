@@ -58,8 +58,8 @@ func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, m
 
 	ent.SetLinkLabel(strconv.FormatInt(int64(conn.NumPackets), 10) + " pkts\n" + humanize.Bytes(uint64(conn.TotalSize)))
 	ent.SetLinkThickness(maltego.GetThickness(uint64(conn.TotalSize), min, max))
-	ent.AddProperty("srcip", "SrcIP", "strict", conn.SrcIP)
-	ent.AddProperty("srcport", "SrcPort", "strict", conn.SrcPort)
-	ent.AddProperty("dstip", "DstIP", "strict", conn.DstIP)
-	ent.AddProperty("dstport", "DstPort", "strict", conn.DstPort)
+	ent.AddProperty("srcip", "SrcIP", maltego.Strict, conn.SrcIP)
+	ent.AddProperty("srcport", "SrcPort", maltego.Strict, conn.SrcPort)
+	ent.AddProperty("dstip", "DstIP", maltego.Strict, conn.DstIP)
+	ent.AddProperty("dstport", "DstPort", maltego.Strict, conn.DstPort)
 }

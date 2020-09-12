@@ -6,8 +6,6 @@
 ## WIP
 
 - use compression during live capture?
-- add constant for "/usr/local/bin/net"
-- add constant for "strict"
 
 - IPProfile transforms
 - ToFilesForWebsite

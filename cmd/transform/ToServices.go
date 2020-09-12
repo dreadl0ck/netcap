@@ -27,17 +27,17 @@ func toServices() {
 			}
 
 			ent := trx.AddEntityWithPath("netcap.Service", val, path)
-			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(service.Timestamp))
-			ent.AddProperty("product", "Product", "strict", service.Product)
-			ent.AddProperty("version", "Version", "strict", service.Version)
-			ent.AddProperty("protocol", "Protocol", "strict", service.Protocol)
-			ent.AddProperty("ip", "IP", "strict", service.IP)
-			ent.AddProperty("port", "Port", "strict", strconv.Itoa(int(service.Port)))
-			ent.AddProperty("hostname", "Hostname", "strict", service.Hostname)
-			ent.AddProperty("bytesclient", "BytesClient", "strict", strconv.Itoa(int(service.BytesClient)))
-			ent.AddProperty("bytesserver", "BytesServer", "strict", strconv.Itoa(int(service.BytesServer)))
-			ent.AddProperty("vendor", "Vendor", "strict", service.Vendor)
-			ent.AddProperty("name", "Name", "strict", service.Name)
+			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(service.Timestamp))
+			ent.AddProperty("product", "Product", maltego.Strict, service.Product)
+			ent.AddProperty("version", "Version", maltego.Strict, service.Version)
+			ent.AddProperty("protocol", "Protocol", maltego.Strict, service.Protocol)
+			ent.AddProperty("ip", "IP", maltego.Strict, service.IP)
+			ent.AddProperty("port", "Port", maltego.Strict, strconv.Itoa(int(service.Port)))
+			ent.AddProperty("hostname", "Hostname", maltego.Strict, service.Hostname)
+			ent.AddProperty("bytesclient", "BytesClient", maltego.Strict, strconv.Itoa(int(service.BytesClient)))
+			ent.AddProperty("bytesserver", "BytesServer", maltego.Strict, strconv.Itoa(int(service.BytesServer)))
+			ent.AddProperty("vendor", "Vendor", maltego.Strict, service.Vendor)
+			ent.AddProperty("name", "Name", maltego.Strict, service.Name)
 
 			if len(service.Banner) > 0 {
 				ent.AddDisplayInformation("<pre>"+maltego.EscapeText(service.Banner)+"</pre>", "Transferred Data")

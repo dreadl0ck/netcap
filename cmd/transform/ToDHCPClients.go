@@ -34,21 +34,21 @@ func toDHCPClients() {
 
 			ent := trx.AddEntityWithPath("netcap.DHCPClient", ident, path)
 
-			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(dhcp.Timestamp))
-			ent.AddProperty("clientIP", "ClientIP", "strict", dhcp.ClientIP)
-			ent.AddProperty("serverIP", "ServerIP", "strict", dhcp.NextServerIP)
-			ent.AddProperty("fp", "Fingerprint", "strict", dhcp.Fingerprint)
-			ent.AddProperty("clientMac", "ClientHWAddr", "strict", dhcp.ClientHWAddr)
+			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(dhcp.Timestamp))
+			ent.AddProperty("clientIP", "ClientIP", maltego.Strict, dhcp.ClientIP)
+			ent.AddProperty("serverIP", "ServerIP", maltego.Strict, dhcp.NextServerIP)
+			ent.AddProperty("fp", "Fingerprint", maltego.Strict, dhcp.Fingerprint)
+			ent.AddProperty("clientMac", "ClientHWAddr", maltego.Strict, dhcp.ClientHWAddr)
 
 			for _, o := range dhcp.Options {
 				if utils.IsASCII([]byte(o.Data)) && len(o.Data) > 1 {
 					switch o.Type {
 					case 60:
-						ent.AddProperty("vendor", "Vendor", "strict", o.Data)
+						ent.AddProperty("vendor", "Vendor", maltego.Strict, o.Data)
 					case 12:
-						ent.AddProperty("host", "Hostname", "strict", o.Data)
+						ent.AddProperty("host", "Hostname", maltego.Strict, o.Data)
 					case 15:
-						ent.AddProperty("domain", "Domain", "strict", o.Data)
+						ent.AddProperty("domain", "Domain", maltego.Strict, o.Data)
 					}
 				}
 			}

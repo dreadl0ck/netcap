@@ -22,7 +22,7 @@ func toFileTypes() {
 			//// di := "<h3>File</h3><p>Timestamp: " + file.Timestamp + "</p><p>Source: " + file.Source + "</p><p>MD5: " + file.Hash + "</p><p>ContentType: " + file.ContentType + "</p><p>Length: " + strconv.Itoa(int(file.Length)) + "</p><p>Ident: " + file.Ident + "</p><p>SrcIP: " + file.Context.SrcIP + "</p><p>DstIP: " + file.Context.DstIP + "</p><p>SrcPort: " + file.Context.SrcPort + "</p><p>DstPort: " + file.Context.DstPort + "</p><p>Location: " + file.Location + "</p>"
 			//// ent.AddDisplayInformation(di, "Netcap Info")
 
-			ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+			ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
 		},
 	)
 }

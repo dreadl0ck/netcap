@@ -14,7 +14,7 @@ func toDevices() {
 		ident := profile.MacAddr + "\n" + profile.DeviceManufacturer
 		ent := trx.AddEntityWithPath("netcap.Device", ident, path)
 
-		ent.AddProperty("mac", "Mac Address", "strict", profile.MacAddr)
+		ent.AddProperty("mac", "Mac Address", maltego.Strict, profile.MacAddr)
 
 		ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
 		ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))

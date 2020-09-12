@@ -46,11 +46,11 @@ func toFilesForContentType() {
 					} else {
 						ent.SetIconURL("file://" + filepath.Join(filepath.Join(filepath.Dir(path), ".."), file.Location))
 					}
-					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
 
-					ent.AddProperty("location", "Location", "strict", file.Location)
-					ent.AddProperty("name", "Name", "strict", file.Name)
-					ent.AddProperty("length", "Length", "strict", strconv.FormatInt(file.Length, 10))
+					ent.AddProperty("location", "Location", maltego.Strict, file.Location)
+					ent.AddProperty("name", "Name", maltego.Strict, file.Name)
+					ent.AddProperty("length", "Length", maltego.Strict, strconv.FormatInt(file.Length, 10))
 				}
 			}
 		},

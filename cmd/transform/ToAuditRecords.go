@@ -198,7 +198,7 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 
 		ent := trx.AddEntityWithPath("netcap."+name+"AuditRecords", utils.Pluralize(name), path)
 
-		ent.AddProperty("description", "Description", "strict", name+defaults.FileExtensionCompressed)
+		ent.AddProperty("description", "Description", maltego.Strict, name+defaults.FileExtensionCompressed)
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 
 		// add notes for specific audit records here

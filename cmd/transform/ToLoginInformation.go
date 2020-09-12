@@ -16,12 +16,12 @@ func toLoginInformation() {
 			}
 
 			ent := trx.AddEntityWithPath("netcap.Credentials", val, path)
-			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(cred.Timestamp))
-			ent.AddProperty("service", "Service", "strict", cred.Service)
-			ent.AddProperty("flow", "Flow", "strict", cred.Flow)
-			ent.AddProperty("notes", "Notes", "strict", cred.Notes)
-			ent.AddProperty("user", "User", "strict", cred.User)
-			ent.AddProperty("password", "Password", "strict", cred.Password)
+			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(cred.Timestamp))
+			ent.AddProperty("service", "Service", maltego.Strict, cred.Service)
+			ent.AddProperty("flow", "Flow", maltego.Strict, cred.Flow)
+			ent.AddProperty("notes", "Notes", maltego.Strict, cred.Notes)
+			ent.AddProperty("user", "User", maltego.Strict, cred.User)
+			ent.AddProperty("password", "Password", maltego.Strict, cred.Password)
 		},
 	)
 }

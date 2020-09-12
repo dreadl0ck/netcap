@@ -44,8 +44,8 @@ func toCategory(profiles map[string]*types.IPProfile, ip, mac, path string, trx 
 
 			ent := trx.AddEntityWithPath("maltego.Service", proto.Category, path)
 
-			ent.AddProperty("mac", "MacAddress", "strict", mac)
-			ent.AddProperty("ipaddr", "IPAddress", "strict", p.Addr)
+			ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
+			ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, p.Addr)
 
 			ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 		}

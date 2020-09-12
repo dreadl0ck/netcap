@@ -17,10 +17,10 @@ func toSSHClients() {
 				}
 
 				ent := trx.AddEntityWithPath("netcap.SSHClient", val, path)
-				ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(ssh.Timestamp))
-				ent.AddProperty("ident", "Ident", "strict", ssh.Ident)
-				ent.AddProperty("flow", "Flow", "strict", ssh.Flow)
-				ent.AddProperty("algorithms", "Algorithms", "strict", ssh.Algorithms)
+				ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(ssh.Timestamp))
+				ent.AddProperty("ident", "Ident", maltego.Strict, ssh.Ident)
+				ent.AddProperty("flow", "Flow", maltego.Strict, ssh.Flow)
+				ent.AddProperty("algorithms", "Algorithms", maltego.Strict, ssh.Algorithms)
 			}
 		},
 	)

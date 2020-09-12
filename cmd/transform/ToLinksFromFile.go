@@ -54,7 +54,7 @@ func toLinksFromFile() {
 		ent := trx.AddEntityWithPath("netcap.URL", r, path)
 
 		// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
-		ent.AddProperty("properties.url", "URL", "strict", r)
+		ent.AddProperty("properties.url", "URL", maltego.Strict, r)
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

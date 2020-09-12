@@ -28,6 +28,12 @@ import (
 const (
 	errUnexpectedFileType    = "unexpected file type"
 	errUnexpectedReadFailure = "unexpected read failure"
+
+	// ExecutablePath points to the netcap binary on disk
+	ExecutablePath = "/usr/local/bin/net"
+
+	// Strict is used for enabling strict property matching
+	Strict = "strict"
 )
 
 // EscapeText ensures that the input text is safe to embed within XML.

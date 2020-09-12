@@ -57,7 +57,7 @@ func toPhoneNumbersFromFile() {
 		if errParsePhone == nil {
 			if phonenumbers.IsValidNumber(p) {
 				ent := trx.AddEntityWithPath("netcap.PhoneNumber", r, path)
-				ent.AddProperty("properties.phonenumber", "Phone Number", "strict", r)
+				ent.AddProperty("properties.phonenumber", "Phone Number", maltego.Strict, r)
 			}
 		}
 	}

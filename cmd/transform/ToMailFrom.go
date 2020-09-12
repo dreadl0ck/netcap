@@ -16,7 +16,7 @@ func toMailFrom() {
 					if m, ok := mails[id]; ok {
 						if m.From != "" {
 							ent := trx.AddEntityWithPath("netcap.Email", m.From, path)
-							ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+							ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
 
 						}
 					}

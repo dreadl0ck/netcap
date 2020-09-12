@@ -27,7 +27,7 @@ func toURLsForHost() {
 			ent := trx.AddEntityWithPath("netcap.URL", bareURL, path)
 
 			// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
-			ent.AddProperty("properties.url", "URL", "strict", bareURL)
+			ent.AddProperty("properties.url", "URL", maltego.Strict, bareURL)
 
 			urlStats[bareURL]++
 			ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]) + "\n" + http.Method)
