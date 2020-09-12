@@ -24,3 +24,10 @@ priv.key
 pub.key
 
 dist/
+vulnDBs
+tests
+FlameGraph
+test-params
+*.net
+docs
+resolver-dbs.zip

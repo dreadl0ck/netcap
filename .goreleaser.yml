@@ -1,31 +1,34 @@
 before:
   hooks:
     # You may remove this if you don't use go modules.
-    - go mod download
+    #- go mod download
     # you may remove this if you don't need go generate
-    - go generate ./...
+    #- go generate ./...
 builds:
   - main: ./cmd
-    #id: net
     binary: net
     env:
-      - CGO_ENABLED=1
+      #- CGO_ENABLED=1
       # experiments to compile godpi with nDPI module
-    #    - CC=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-gcc
-    #    - CXX=/usr/local/Cellar/mingw-w64/7.0.0_1/bin/x86_64-w64-mingw32-g++
-    #    - LDFLAGS="-L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib"
-    #    - CPPFLAGS="-I/usr/local/opt/libpcap/include -I/usr/local/Cellar/liblinear/2.30/include"
-    #    - PKG_CONFIG_PATH="/usr/local/opt/libpcap/lib/pkgconfig"
+      #- CC=/usr/local/Cellar/mingw-w64/7.0.0_2/bin/x86_64-w64-mingw32-gcc
+      #- CXX=/usr/local/Cellar/mingw-w64/7.0.0_2/bin/x86_64-w64-mingw32-g++
+#      - LDFLAGS="-L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib -s -w -lndpi -lpcap -lm -pthread"
+#      - CFLAGS="-I/usr/local/Cellar/libpcap/1.9.1/include/"
+#      - CPPFLAGS="-I/usr/local/opt/libpcap/include -I/usr/local/Cellar/liblinear/2.30/include -I/usr/local/Cellar/mingw-w64/7.0.0_1/toolchain-x86_64/x86_64-w64-mingw32/include"
+#      - PKG_CONFIG_PATH="/usr/local/opt/libpcap/lib/pkgconfig"
 
     # For more info refer to: https://golang.org/doc/install/source#environment
     goos:
       - darwin
-      - windows
+      #- windows
 
     # Custom ldflags templates.
     # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
     ldflags:
-      - -L /usr/local/opt/libpcap/lib -s -w
+      - "" # -L /usr/local/opt/libpcap/lib -s -w
+
+    flags:
+      - -tags="nodpi"
 
     # GOARCH to build for.
     # For more info refer to: https://golang.org/doc/install/source#environment

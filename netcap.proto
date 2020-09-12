@@ -29,7 +29,7 @@ syntax = "proto3";
 // generated protocol buffer code will be put into the "types" package
 package types;
 
-option go_package = "typespb";
+option go_package = "types";
 option java_multiple_files = true;
 option java_outer_classname = "NetcapProto";
 option java_package = "com.types";

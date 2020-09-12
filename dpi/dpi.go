@@ -1,4 +1,4 @@
-// +build !windows
+// +build !windows, !nodpi
 
 /*
  * NETCAP - Traffic Analysis Framework
