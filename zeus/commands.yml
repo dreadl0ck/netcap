@@ -82,7 +82,7 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
-        exec: goreleaser release --rm-dist --skip-publish --skip-validate --debug; zeus version-bump-test-undo; zeus build-linux; zeus build-linux-nodpi;
+        exec: goreleaser release --rm-dist --skip-publish --skip-validate --debug; zeus version-bump-test-undo; zeus build-linux; zeus build-linux-nodpi; tree dist; open dist;
 
     ## Utils
     ##

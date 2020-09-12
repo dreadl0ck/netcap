@@ -54,7 +54,6 @@ Install windows compiler toolchain on mac:
 - proxy testing and use simplecert
 - count device and ip profiles on stats structure
 - document stream decoder implementation
-- adjust alpine build script similar to the one for ubuntu
 
 - check source todos
 - error handling iteration: improve error messages and reduce panic() usage

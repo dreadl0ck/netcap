@@ -74,9 +74,6 @@ shasum -a 256 ${ARCHIVE}.tar.gz >> checksums.txt
 rm ${ARCHIVE}/LICENSE
 rm ${ARCHIVE}/README.md
 
-# TODO: make pushing configurable
-exit 0
-
 echo "[INFO] pushing container to docker registry"
 docker push "$tag"
 
