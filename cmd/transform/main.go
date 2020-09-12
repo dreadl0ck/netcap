@@ -78,6 +78,7 @@ func Run() {
 		toHosts,
 		toParameterValues,
 		toParametersForHTTPHost,
+		toNetworkInterfaces,
 		toHTTPContentTypes,
 		toHTTPCookies,
 		toHTTPHosts,

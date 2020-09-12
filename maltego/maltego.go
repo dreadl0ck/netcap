@@ -35,6 +35,21 @@ const (
 	UIMessagePartialError = "PartialError"
 	UIMessageInform       = "Inform"
 	UIMessageDebug        = "Debug"
+
+	// Strict is used for enabling strict property matching
+	Strict = "strict"
+
+	// Loose enables loose property matching
+	Loose = "loose"
+)
+
+// LinkDirection determines the direction of node interconnections (links).
+type LinkDirection string
+
+const (
+	OutputToInput LinkDirection = "output-to-input"
+	InputToOutput LinkDirection = "input-to-output"
+	Bidirectional   LinkDirection = "bidirectional"
 )
 
 func getThicknessInterval(val, min, max uint64) int {
@@ -227,44 +242,36 @@ func (m *EntityObj) AddDisplayInformation(info, name string) {
 }
 
 func (m *EntityObj) setLinkColor(color string) {
-	m.AddProperty("link#maltego.link.color", "LinkColor", "", color)
+	m.AddProperty("link#maltego.link.color", "LinkColor", Loose, color)
 }
 
 func (m *EntityObj) setLinkStyle(style string) {
-	m.AddProperty("link#maltego.link.style", "LinkStyle", "", style)
+	m.AddProperty("link#maltego.link.style", "LinkStyle", Loose, style)
 }
 
 // SetLinkThickness sets the link thickness.
 func (m *EntityObj) SetLinkThickness(thick int) {
 	thickInt := strconv.Itoa(thick)
-	m.AddProperty("link#maltego.link.thickness", "LinkThickness", "", thickInt)
+	m.AddProperty("link#maltego.link.thickness", "LinkThickness", Loose, thickInt)
 }
 
 // SetLinkLabel sets the link label.
 func (m *EntityObj) SetLinkLabel(label string) {
-	m.AddProperty("link#maltego.link.label", "Label", "", label)
+	m.AddProperty("link#maltego.link.label", "Label", Loose, label)
 }
 
 func (m *EntityObj) setBookmark(bookmark string) {
-	m.AddProperty("bookmark#", "Bookmark", "", bookmark)
+	m.AddProperty("bookmark#", "Bookmark", Loose, bookmark)
 }
 
 // SetNote sets a note on the entity.
 func (m *EntityObj) SetNote(note string) {
-	m.AddProperty("notes#", "Notes", "", note)
+	m.AddProperty("notes#", "Notes", Loose, note)
 }
-
-// LinkDirection determines the direction of node interconnections (links).
-type LinkDirection string
-
-const (
-	DirectionOutputToInput LinkDirection = "output-to-input"
-	DirectionInputToOutput LinkDirection = "input-to-output"
-)
 
 // SetLinkDirection sets the link direction
 func (m *EntityObj) SetLinkDirection(dir LinkDirection) {
-	m.AddProperty("link#maltego.link.direction", "Direction", "loose", string(dir))
+	m.AddProperty("link#maltego.link.direction", "Direction", Loose, string(dir))
 }
 
 func (m *EntityObj) returnEntity() string {

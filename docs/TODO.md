@@ -5,9 +5,7 @@
 
 ## WIP
 
-- use compression during live capture?
-
-- transform to show available interfaces
+- use compression during live capture
 
 - IPProfile transforms
 - ToFilesForWebsite
@@ -74,6 +72,7 @@ Install windows compiler toolchain on mac:
 - make a nice visual cheat sheet with all audit records and all fields
 - create a cli helper to display all fields for a given audit record
 - add explanation to each field in the proto definition via tags? could be used to generate docs
+- add commandline completion via go package 
 
 ## Maltego Plugin
 

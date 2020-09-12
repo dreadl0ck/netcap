@@ -68,8 +68,8 @@ cd dist
 # create tar archive for linux
 tar -cvf ${ARCHIVE}.tar.gz ${ARCHIVE}
 
-# add checksum - goreleaser needs to be patched for this to work
-# by default the checksums.txt file is truncated when being opened
+# add checksum
+# goreleaser will truncate the checksums.txt file upon opening
 shasum -a 256 ${ARCHIVE}.tar.gz >> checksums.txt
 
 # remove license and readme from binary folder

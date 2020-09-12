@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-11 08:30:24.884 CEST</LastSync>
+ <LastSync>2020-09-12 20:59:28.716 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -81,6 +81,7 @@
   <Transform name="netcap.ToLinksFromFile"></Transform>
   <Transform name="netcap.ToEmailsFromFile"></Transform>
   <Transform name="netcap.ToPhoneNumbersFromFile"></Transform>
+  <Transform name="netcap.ToNetworkInterfaces"></Transform>
   <Transform name="netcap.LookupDHCPFingerprint"></Transform>
   <Transform name="netcap.StopCaptureProcess"></Transform>
  </Transforms>
