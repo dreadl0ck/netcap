@@ -8,8 +8,8 @@ builds:
     goarch:
       - amd64
   - main: ./cmd
-    binary: nodpi/net
-    id: netcap_nodpi
+    binary: macOS_nodpi/net
+    id: netcap_macOS_nodpi
     goos:
       - darwin
     ldflags:
@@ -17,7 +17,7 @@ builds:
     flags:
       - -tags=nodpi
   - main: ./cmd
-    id: netcap_win_nodpi
+    id: netcap_nodpi
     binary: net
     env:
     #- CGO_ENABLED=1
