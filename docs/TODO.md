@@ -7,6 +7,8 @@
 
 - use compression during live capture?
 
+- transform to show available interfaces
+
 - IPProfile transforms
 - ToFilesForWebsite
 
