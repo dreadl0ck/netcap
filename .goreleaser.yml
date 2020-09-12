@@ -20,7 +20,7 @@ builds:
     # For more info refer to: https://golang.org/doc/install/source#environment
     goos:
       - darwin
-      #- windows
+      - windows
 
     # Custom ldflags templates.
     # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
@@ -28,7 +28,7 @@ builds:
       - "" # -L /usr/local/opt/libpcap/lib -s -w
 
     flags:
-      - -tags="nodpi"
+      - -tags=nodpi
 
     # GOARCH to build for.
     # For more info refer to: https://golang.org/doc/install/source#environment
