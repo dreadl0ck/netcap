@@ -44,35 +44,37 @@ if [[ $CONTAINER_ID == "" ]]; then
 	exit 1
 fi
 
+ARCHIVE="netcap_${VERSION}_linux_amd64_musl"
+
 echo "[INFO] preparing dist folder, CONTAINER_ID: $CONTAINER_ID"
 
 # clean up
-rm -rf dist/linux_amd64_musl
+rm -rf dist/${ARCHIVE}
 
 # create path in dist
-mkdir -p dist/linux_amd64_musl
+mkdir -p dist/${ARCHIVE}
 
 # copy binaries from container
-docker cp $CONTAINER_ID:/usr/bin/net dist/linux_amd64_musl/net
+docker cp $CONTAINER_ID:/usr/bin/net dist/${ARCHIVE}/net
 
 # remove container
 docker rm $CONTAINER_ID
 
-cp LICENSE dist/linux_amd64_musl
-cp README.md dist/linux_amd64_musl
+cp LICENSE dist/${ARCHIVE}
+cp README.md dist/${ARCHIVE}
 
 cd dist
 
 # create tar archive for linux
-tar -cvf netcap_musl_${VERSION}_linux_amd64_musl.tar.gz linux_amd64_musl
+tar -cvf ${ARCHIVE}.tar.gz ${ARCHIVE}
 
 # add checksum - goreleaser needs to be patched for this to work
 # by default the checksums.txt file is truncated when being opened
-shasum -a 256 netcap_musl_${VERSION}_linux_amd64_musl.tar.gz >> checksums.txt
+shasum -a 256 ${ARCHIVE}.tar.gz >> checksums.txt
 
 # remove license and readme from binary folder
-rm linux_amd64_musl/LICENSE
-rm linux_amd64_musl/README.md
+rm ${ARCHIVE}/LICENSE
+rm ${ARCHIVE}/README.md
 
 echo "[INFO] pushing container to docker registry"
 docker push "$tag"
