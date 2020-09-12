@@ -31,3 +31,7 @@ test-params
 *.net
 docs
 resolver-dbs.zip
+netcap.mtz
+entities.mtz
+transforms.mtz
+mied18.pdf

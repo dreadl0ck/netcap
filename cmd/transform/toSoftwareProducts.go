@@ -25,14 +25,14 @@ func toSoftwareProducts() {
 			}
 
 			ent := trx.AddEntityWithPath("netcap.Software", val, path)
-			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(soft.Timestamp))
-			ent.AddProperty("vendor", "Vendor", "strict", soft.Vendor)
-			ent.AddProperty("product", "Product", "strict", soft.Product)
-			ent.AddProperty("version", "Version", "strict", soft.Version)
-			ent.AddProperty("flows", "Flows", "strict", strings.Join(soft.Flows, " | "))
-			ent.AddProperty("sourcename", "SourceName", "strict", soft.SourceName)
-			ent.AddProperty("sourcedata", "SourceData", "strict", soft.SourceData)
-			ent.AddProperty("notes", "Notes", "strict", soft.Notes)
+			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(soft.Timestamp))
+			ent.AddProperty("vendor", "Vendor", maltego.Strict, soft.Vendor)
+			ent.AddProperty("product", "Product", maltego.Strict, soft.Product)
+			ent.AddProperty("version", "Version", maltego.Strict, soft.Version)
+			ent.AddProperty("flows", "Flows", maltego.Strict, strings.Join(soft.Flows, " | "))
+			ent.AddProperty("sourcename", "SourceName", maltego.Strict, soft.SourceName)
+			ent.AddProperty("sourcedata", "SourceData", maltego.Strict, soft.SourceData)
+			ent.AddProperty("notes", "Notes", maltego.Strict, soft.Notes)
 
 			ent.AddDisplayInformation(strings.Join(soft.Flows, "<br>"), "Flows")
 		},

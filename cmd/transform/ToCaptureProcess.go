@@ -55,8 +55,8 @@ func toCaptureProcess() {
 
 	log.Println("args:", args)
 
-	cmd := exec.Command("/usr/local/bin/net", args...)
-	// args = append([]string{"/usr/local/bin/net"}, args...)
+	cmd := exec.Command(maltego.ExecutablePath, args...)
+	// args = append([]string{maltego.ExecutablePath}, args...)
 	// cmd := exec.Command("/bin/bash", append([]string{"-ci"}, strings.Join(args, " "))...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stderr
@@ -89,9 +89,9 @@ func returnCaptureProcessEntity(pid int, path string, iface string) {
 	name := "Capture Process" + "\nPID: " + pidStr
 	ent := trx.AddEntityWithPath("netcap.CaptureProcess", name, path)
 
-	ent.AddProperty("pid", "PID", "strict", pidStr)
+	ent.AddProperty("pid", "PID", maltego.Strict, pidStr)
 
-	ent.AddProperty("iface", "Interface", "strict", iface)
+	ent.AddProperty("iface", "Interface", maltego.Strict, iface)
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())

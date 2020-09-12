@@ -29,8 +29,8 @@ func toCookiesForHTTPHost() {
 
 func addCookie(trx *maltego.Transform, c *types.HTTPCookie, timestamp string, ipaddr string, path string, method string) {
 	ent := trx.AddEntityWithPath("netcap.HTTPCookie", c.Name, path)
-	ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+	ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
 
-	ent.AddProperty("timestamp", "Timestamp", "strict", timestamp)
+	ent.AddProperty("timestamp", "Timestamp", maltego.Strict, timestamp)
 	ent.SetLinkLabel(method)
 }

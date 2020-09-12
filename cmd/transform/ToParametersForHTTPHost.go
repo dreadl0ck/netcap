@@ -16,7 +16,7 @@ func toParametersForHTTPHost() {
 			if http.Host == host {
 				for key := range http.Parameters {
 					ent := trx.AddEntityWithPath("netcap.HTTPParameter", key, path)
-					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
 
 				}
 			}

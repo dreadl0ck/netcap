@@ -82,7 +82,7 @@ func addDestinationPort(trx *maltego.Transform, portStr string, port *types.Port
 	ent := trx.AddEntityWithPath("netcap.DestinationPort", portStr + "\n" + serviceName, path)
 
 	ent.AddDisplayInformation(di, "Netcap Info")
-	ent.AddProperty("label", "Label", "strict", portStr+"\n"+serviceName)
+	ent.AddProperty("label", "Label", maltego.Strict, portStr+"\n"+serviceName)
 
 	ent.SetLinkLabel(strconv.FormatInt(int64(port.Packets), 10) + " pkts")
 	ent.SetLinkThickness(maltego.GetThickness(port.Packets, min, max))

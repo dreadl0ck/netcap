@@ -241,7 +241,7 @@ func newTransformSettings(id string, debug bool) transformSettings {
 					Name:  "transform.local.command",
 					Type:  "string",
 					Popup: false,
-					Text:  "/usr/local/bin/net",
+					Text:  maltego.ExecutablePath,
 				},
 				{
 					Name:  "transform.local.parameters",

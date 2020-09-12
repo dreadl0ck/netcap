@@ -138,7 +138,7 @@ func (tr *Transform) AddEntity(enType, enValue string) *EntityObj {
 // AddEntityWithPath adds an entity to the transform.
 func (tr *Transform) AddEntityWithPath(enType, enValue, path string) *EntityObj {
 	ent := NewEntityObj(enType, EscapeText(enValue), 100)
-	ent.AddProperty("path", "Path", "strict", path)
+	ent.AddProperty("path", "Path", Strict, path)
 	tr.entities = append(tr.entities, ent)
 
 	return ent
@@ -288,7 +288,7 @@ func (m *EntityObj) returnEntity() string {
 
 		for _, e := range m.AdditionalFields {
 			fieldName_, displayName_, matchingRule_, value_ := e[0], e[1], e[2], e[3]
-			if matchingRule_ == "strict" {
+			if matchingRule_ == Strict {
 				r += "<Field Name=\"" + fieldName_ + "\" DisplayName=\"" + displayName_ + "\">" + value_ + "</Field>\n"
 			} else {
 				r += "<Field MatchingRule=\"" + matchingRule_ + "\" Name=\"" + fieldName_ + "\" DisplayName=\"" + displayName_ + "\">" + value_ + "</Field>\n"

@@ -43,14 +43,14 @@ func toDestinationIPs() {
 						ent = trx.AddEntityWithPath("netcap.ExternalDestinationIP", val, path)
 					}
 
-					ent.AddProperty("geolocation", "Geolocation", "strict", p.Geolocation)
-					ent.AddProperty("dnsNames", "DNS Names", "strict", dnsNames)
-					ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(profile.Timestamp))
+					ent.AddProperty("geolocation", "Geolocation", maltego.Strict, p.Geolocation)
+					ent.AddProperty("dnsNames", "DNS Names", maltego.Strict, dnsNames)
+					ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(profile.Timestamp))
 
-					ent.AddProperty("mac", "MacAddress", "strict", mac)
-					ent.AddProperty("ipaddr", "IPAddress", "strict", p.Addr)
+					ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
+					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, p.Addr)
 
-					ent.AddProperty("numPackets", "Num Packets", "strict", strconv.FormatInt(profile.NumPackets, 10))
+					ent.AddProperty("numPackets", "Num Packets", maltego.Strict, strconv.FormatInt(profile.NumPackets, 10))
 
 					ent.SetLinkLabel(strconv.FormatInt(p.NumPackets, 10) + " pkts\n" + humanize.Bytes(p.Bytes))
 					ent.SetLinkThickness(maltego.GetThickness(uint64(p.NumPackets), min, max))

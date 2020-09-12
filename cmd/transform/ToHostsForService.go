@@ -36,9 +36,9 @@ func toHostsForService() {
 					srcIP, _, _, _ := utils.ParseFlowIdent(f)
 					ent := trx.AddEntityWithPath("netcap.IPAddr", srcIP, path)
 
-					ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(service.Timestamp))
-					ent.AddProperty("mac", "MacAddress", "strict", mac)
-					ent.AddProperty("ipaddr", "IPAddress", "strict", srcIP)
+					ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(service.Timestamp))
+					ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
+					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, srcIP)
 
 				}
 			}

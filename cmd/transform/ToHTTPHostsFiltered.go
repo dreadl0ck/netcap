@@ -37,7 +37,7 @@ func toHTTPHostsFiltered() {
 			if http.Host != "" {
 				if !resolvers.IsWhitelistedDomain(http.Host) {
 					ent := trx.AddEntityWithPath("netcap.Website", http.Host, path)
-					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
 
 				}
 			}

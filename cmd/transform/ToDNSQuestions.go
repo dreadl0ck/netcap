@@ -90,7 +90,7 @@ func toDNSQuestions() {
 				results[q.Name]++
 
 				ent := trx.AddEntityWithPath("netcap.DNSName", q.Name, dnsAuditRecords)
-				ent.AddProperty("srcIP", "SourceIP", "strict", dns.SrcIP)
+				ent.AddProperty("srcIP", "SourceIP", maltego.Strict, dns.SrcIP)
 				ent.SetLinkLabel(strconv.Itoa(results[q.Name]))
 			}
 		}

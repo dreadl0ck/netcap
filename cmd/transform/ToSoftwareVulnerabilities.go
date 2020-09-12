@@ -24,11 +24,11 @@ func toSoftwareVulnerabilities() {
 			}
 
 			ent := trx.AddEntityWithPath("netcap.Vulnerability", val, path)
-			ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(vuln.Timestamp))
-			ent.AddProperty("id", "ID", "strict", vuln.ID)
-			ent.AddProperty("notes", "Notes", "strict", vuln.Notes)
-			ent.AddProperty("flows", "flows", "strict", strings.Join(vuln.Software.Flows, ","))
-			ent.AddProperty("software", "Software", "strict", vuln.Software.Product+" "+vuln.Software.Version)
+			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(vuln.Timestamp))
+			ent.AddProperty("id", "ID", maltego.Strict, vuln.ID)
+			ent.AddProperty("notes", "Notes", maltego.Strict, vuln.Notes)
+			ent.AddProperty("flows", "flows", maltego.Strict, strings.Join(vuln.Software.Flows, ","))
+			ent.AddProperty("software", "Software", maltego.Strict, vuln.Software.Product+" "+vuln.Software.Version)
 
 			ent.AddDisplayInformation(vuln.Description, "Description")
 			ent.AddDisplayInformation(strings.Join(vuln.Software.Flows, "<br>"), "Flows")

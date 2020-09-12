@@ -61,7 +61,7 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 
 		ent := trx.AddEntityWithPath("netcap."+name+"AuditRecords", utils.Pluralize(name), path)
 
-		ent.AddProperty("description", "Description", "strict", name+defaults.FileExtension)
+		ent.AddProperty("description", "Description", maltego.Strict, name+defaults.FileExtension)
 
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 

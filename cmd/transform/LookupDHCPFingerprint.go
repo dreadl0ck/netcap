@@ -139,9 +139,9 @@ func lookupDHCPFingerprint() {
 		val := strings.ReplaceAll(res.DeviceName, "/", "\n") + "\n" + ip
 		ent := mtrx.AddEntityWithPath("netcap.dhcpResult", val, path)
 
-		ent.AddProperty("timestamp", "Timestamp", "strict", utils.UnixTimeToUTC(messageToFingerprint.Timestamp))
-		ent.AddProperty("clientIP", "ClientIP", "strict", messageToFingerprint.ClientIP)
-		ent.AddProperty("serverIP", "ServerIP", "strict", messageToFingerprint.NextServerIP)
+		ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(messageToFingerprint.Timestamp))
+		ent.AddProperty("clientIP", "ClientIP", maltego.Strict, messageToFingerprint.ClientIP)
+		ent.AddProperty("serverIP", "ServerIP", maltego.Strict, messageToFingerprint.NextServerIP)
 	}
 
 	mtrx.AddUIMessage("completed!", maltego.UIMessageInform)

@@ -19,7 +19,7 @@ func toFileTypesForIP() {
 				}
 
 				ent := trx.AddEntityWithPath("netcap.ContentType", typ, path)
-				ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+				ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
 
 			}
 		},

@@ -13,7 +13,7 @@ func toMailUserPassword() {
 				user := lt.Value
 				if pop3.User == user && pop3.Pass != "" {
 					ent := trx.AddEntityWithPath("maltego.Password", pop3.Pass, path)
-					ent.AddProperty("ipaddr", "IPAddress", "strict", ipaddr)
+					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
 
 				}
 			}
