@@ -1,23 +1,37 @@
 #!/bin/bash
 
-cp Dockerfile-ubuntu Dockerfile
+if $NODPI; then
+  echo "[INFO] copying the docker/ubuntu-nodpi/Dockerfile into the project root"
+  cp docker/ubuntu-nodpi/Dockerfile Dockerfile
+else
+  echo "[INFO] copying the docker/ubuntu/Dockerfile into the project root"
+  cp docker/ubuntu/Dockerfile Dockerfile
+fi
 
+# generate version, add update the VERSION env var in the Dockerfile that was moved to the project root
+zeus gen-version
 
 tag="dreadl0ck/netcap:ubuntu-v${VERSION}"
 
-echo "[INFO] building docker image $tag"
+echo "[INFO] $tag args: ${ARGS}"
 
 # in case of cache annoyances:
 # docker rm -f $(docker ps -a -q)
 # docker rmi -f $(docker images -a -q)
 
 # build image
-docker build -t "$tag" .
+# dont quote ARGS or passing arguments wont work anymore
+docker build ${ARGS} -t "$tag" .
+if (( $? != 0 )); then
+	echo "[ERROR] building container failed"
+	exit 1
+fi
 
 echo "[INFO] running docker image $tag"
 
 docker run "$tag"
 
+# echo "[INFO] docker images"
 # docker image ls
 
 # grab container ID

@@ -1,4 +1,4 @@
-// +build windows
+// +build nodpi
 
 /*
  * NETCAP - Traffic Analysis Framework
@@ -15,15 +15,17 @@
 
 package dpi
 
-// this file function stubs for windows that do nothing, but allow us to compile
-// getting the C bindings to cross compile for windows is a pain
-// so currently no DPI support for windows
-
+// this file contains function stubs that do nothing, but allow us to compile
 import (
 	"github.com/dreadl0ck/gopacket"
 
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// IsEnabled will return true if goDPI has been initialized
+func IsEnabled() bool {
+	return false
+}
 
 func Init() {}
 

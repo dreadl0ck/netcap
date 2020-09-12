@@ -1,21 +1,39 @@
 #!/bin/bash
 
 echo "[INFO] building docker image"
-cp Dockerfile-alpine Dockerfile
 
-# in case of cache annoyances:
+if $NODPI; then
+  echo "[INFO] copying the docker/alpine-nodpi/Dockerfile into the project root"
+  cp docker/alpine-nodpi/Dockerfile Dockerfile
+else
+  echo "[INFO] copying the docker/alpine/Dockerfile into the project root"
+  cp docker/alpine/Dockerfile Dockerfile
+fi
+
+# generate version, add update the VERSION env var in the Dockerfile that was moved to the project root
+zeus gen-version
+
+# flush cache manually:
 # docker rm -f $(docker ps -a -q)
 # docker rmi -f $(docker images -a -q)
 
 tag="dreadl0ck/netcap:alpine-v${VERSION}"
 
+echo "[INFO] $tag args: ${ARGS}"
+
 # build image
-docker build --no-cache -t "$tag" .
+# dont quote ARGS or passing arguments wont work anymore
+docker build ${ARGS} -t "$tag" .
+if (( $? != 0 )); then
+	echo "[ERROR] building container failed"
+	exit 1
+fi
 
 echo "[INFO] running docker image"
 
 docker run "$tag"
 
+# echo "[INFO] docker images"
 # docker image ls
 
 # grab container ID

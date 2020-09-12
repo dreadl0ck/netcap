@@ -1,5 +1,8 @@
 # TODOs
 
+- cleanup dbs folder
+- add dbs in docker containers
+
 ## WIP
 
 - use compression during live capture?
@@ -20,6 +23,10 @@
 
 ## v0.5 Documentation
 
+Install windows compiler toolchain on mac:
+
+    brew install mingw-w64
+
 - Blog: Threat hunting with Netcap and Maltego
 - Blog: Metrics with Prometheus and Grafana
 - Blog: Framework Introduction and Setup
@@ -36,7 +43,6 @@
 
 - use new 1.13 strings.ToValidUTF8()
 - remove length field from UDP and IPv6
-- add support to compile without dynamically linked dpi libs
 - add issues for hacktoberfest
 - update logging for service probe matching
 - build an abstraction for merging the chunks in Decode()
@@ -46,7 +52,6 @@
 
 - godoc cleanup
 - proxy testing and use simplecert
-- dockerfiles: add docker directory and then subdirs for different dists: eg: docker/ubuntu/Dockerfile
 - count device and ip profiles on stats structure
 - document stream decoder implementation
 - adjust alpine build script similar to the one for ubuntu

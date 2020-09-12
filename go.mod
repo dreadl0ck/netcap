@@ -15,7 +15,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dlclark/regexp2 v1.2.0
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
-	github.com/dreadl0ck/go-dpi v0.0.0-20200429152202-653b4f217bbf
+	github.com/dreadl0ck/go-dpi v0.0.0-20200912122706-f830a777c45f
 	github.com/dreadl0ck/gopacket v1.1.16-0.20200831153559-a0d2e73e902d
 	github.com/dreadl0ck/ja3 v1.0.0-dreadl0ck-gopacket
 	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
@@ -53,7 +53,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
-	github.com/satta/gommunityid v0.0.0-20190829061545-23c89d1f08fb
 	github.com/sirupsen/logrus v1.6.0
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/tinylib/msgp v1.1.2 // indirect
