@@ -334,20 +334,22 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 
 		pMu.Unlock()
 
-		s = append(s, &software{
-			Software: &types.Software{
-				Timestamp: h.Timestamp,
-				Product:   userInfo.product,
-				Vendor:    userInfo.vendor,
-				Version:   userInfo.version,
-				// DeviceProfiles: []string{dpIdent},
-				SourceName: "UserAgent",
-				SourceData: h.UserAgent,
-				Service:    serviceHTTP,
-				Flows:      []string{flowIdent},
-				Notes:      userInfo.full,
-			},
-		})
+		if userInfo.product != "" || userInfo.vendor != "" || userInfo.version != "" {
+			s = append(s, &software{
+				Software: &types.Software{
+					Timestamp: h.Timestamp,
+					Product:   userInfo.product,
+					Vendor:    userInfo.vendor,
+					Version:   userInfo.version,
+					// DeviceProfiles: []string{dpIdent},
+					SourceName: "UserAgent",
+					SourceData: h.UserAgent,
+					Service:    serviceHTTP,
+					Flows:      []string{flowIdent},
+					Notes:      userInfo.full,
+				},
+			})
+		}
 	}
 
 	// HTTP Server Name
