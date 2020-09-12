@@ -136,7 +136,7 @@ func indexData(in string) {
 		}
 
 		// wget https://cve.mitre.org/data/downloads/allitems.csv
-		file, err := os.Open(filepath.Join(resolvers.DataBaseSource, "allitems.csv"))
+		file, err := os.Open(filepath.Join(resolvers.DataBaseSource, "mitre", "allitems.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -163,7 +163,7 @@ func indexData(in string) {
 		}
 
 		// reopen file handle
-		file, err = os.Open(filepath.Join(resolvers.DataBaseSource, "files_exploits.csv"))
+		file, err = os.Open(filepath.Join(resolvers.DataBaseSource, "exploitdb", "files_exploits.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -217,7 +217,7 @@ func indexData(in string) {
 		}
 
 		// wget https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv
-		file, err := os.Open(filepath.Join(resolvers.DataBaseSource, "files_exploits.csv"))
+		file, err := os.Open(filepath.Join(resolvers.DataBaseSource, "exploitdb", "files_exploits.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -246,7 +246,7 @@ func indexData(in string) {
 		}
 
 		// reopen file handle
-		file, err = os.Open(filepath.Join(resolvers.DataBaseSource, "files_exploits.csv"))
+		file, err = os.Open(filepath.Join(resolvers.DataBaseSource, "exploitdb", "files_exploits.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -299,7 +299,7 @@ func indexData(in string) {
 		fmt.Println("indexed exploit DB, num entries:", count)
 
 	case "nvd":
-		indexPath = filepath.Join(resolvers.DataBaseSource, "nvd-v2.bleve")
+		indexPath = filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
@@ -342,16 +342,17 @@ func indexData(in string) {
 
 		for _, year := range years {
 			fmt.Print("processing files for year ", year)
-			data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
+			file := filepath.Join(resolvers.DataBaseSource, "nvd", "nvdcve-1.1-"+year+".json")
+			data, err := ioutil.ReadFile(file)
 			if err != nil {
-				log.Fatal("Could not open file " + filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"))
+				log.Fatal("Could not open file " + file)
 			}
 
 			items := new(decoder.NVDVulnerabilityItems)
 
 			err = json.Unmarshal(data, items)
 			if err != nil {
-				log.Fatal("failed to unmarshal CVE items for file"+filepath.Join(resolvers.DataBaseSource, "nvdcve-1.1-"+year+".json"), err)
+				log.Fatal("failed to unmarshal CVE items for file"+file, err)
 			}
 
 			total += len(items.CVEItems)

@@ -128,7 +128,7 @@ func TestClassifyBanners(t *testing.T) {
 	conf = DefaultConfig
 
 	// Load vulnerabilities DB index
-	indexName := filepath.Join(resolvers.DataBaseSource, "nvd-v2.bleve")
+	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
 	var err error
 	vulnerabilitiesIndex, err = utils.OpenBleve(indexName)
 	if err != nil {
