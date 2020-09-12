@@ -18,6 +18,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/maltego"
 	"io"
 	"log"
 	"os"

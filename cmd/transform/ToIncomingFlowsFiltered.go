@@ -69,7 +69,7 @@ func addInFlow(trx *maltego.Transform, flow *types.Flow, min, max uint64, name s
 	di := "<h3>Incoming Flow: " + flow.SrcIP + ":" + flow.SrcPort + " -> " + flow.DstIP + ":" + flow.DstPort + "</h3><p>Timestamp: " + utils.UnixTimeToUTC(flow.TimestampFirst) + "</p><p>TimestampLast: " + utils.UnixTimeToUTC(flow.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(flow.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(flow.TotalSize)) + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")
 
-	ent.SetLinkDirection(maltego.DirectionOutputToInput)
+	ent.SetLinkDirection(maltego.OutputToInput)
 	ent.SetLinkLabel(humanize.Bytes(uint64(flow.TotalSize)))
 	ent.SetLinkThickness(maltego.GetThickness(uint64(flow.TotalSize), min, max))
 }

@@ -68,6 +68,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"ExifEntry", "info", "An Exif entry for an image file", "", nil},
 	{"MD5Hash", "info", "An MD5 hash entry for an extracted file", "maltego.Hash", nil},
 	{"PhoneNumber", "contact_phone", "A phone number", "maltego.PhoneNumber", nil},
+	{"Host", "dvr", "A computer host", "", nil},
 }
 
 // generate all entities and pack as archive
