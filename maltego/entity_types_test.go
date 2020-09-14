@@ -24,14 +24,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (
-	ident        = "Netcap"
-	netcapPrefix = "netcap."
-	propsPrefix  = "properties."
+	ident               = "Netcap"
+	netcapPrefix        = "netcap."
+	propsPrefix         = "properties."
+	netcapIdent         = "netcap"
+	netcapMachinePrefix = "netcap_"
 )
 
 type XMLEntity struct {
@@ -312,8 +315,8 @@ func genEntityArchive() {
 	}()
 
 	_, _ = fVersion.WriteString(`#
-#Sat Jun 13 21:48:54 CEST 2020
-maltego.client.version=4.2.11.13104
+#` + time.Now().Format(time.UnixDate) + `
+maltego.client.version=4.2.12
 maltego.client.subtitle=
 maltego.pandora.version=1.4.2
 maltego.client.name=Maltego Classic Eval

@@ -1,9 +1,12 @@
-<MaltegoEntity id="netcap.Software" displayName="Software" displayNamePlural="Software" description="A software product that was observed on the network" category="Netcap" smallIconResource="Netcap/Software" largeIconResource="Netcap/Software" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Software" displayName="Software" displayNamePlural="Software" description="A software product" category="Netcap" smallIconResource="Netcap/apps" largeIconResource="Netcap/apps" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.software" displayValue="properties.software">
   <Groups></Groups>
   <Fields>
    <Field name="properties.software" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Software">
     <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="path to the audit records on disk" displayName="Path">
+    <SampleValue></SampleValue>
    </Field>
   </Fields>
  </Properties>

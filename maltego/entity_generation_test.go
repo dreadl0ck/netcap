@@ -30,7 +30,6 @@ import (
 var maltegoEntities = []entityCoreInfo{
 	{"CaptureProcess", "remove_red_eye", "An operating system NETCAP process that captures traffic from a network interface", "", nil},
 	{"ContentType", "category", "A MIME type describes different multi-media formats", "", nil},
-	{"Credentials", "security", "Credentials for accessing services that require user authentication", "netcap.IPAddr", nil},
 	{"Email", "mail_outline", "An email message", "maltego.Email", nil},
 	{"Interface", "router", "A network interface", "", []propertyField{newRequiredStringField("name", "Name of the network interface"), newStringField("snaplen", "snap length for ethernet frames in bytes, default: 1514"), newStringField("bpf", "berkeley packet filter to apply")}},
 	{"PCAP", "sd_storage", "A packet capture dump file", "", []propertyField{newRequiredStringField("path", "Absolute path to the PCAP file")}},
@@ -48,7 +47,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", "", nil},
 	{"DestinationPort", "device_hub", "A TCP / UDP destination port", "", nil},
 	{"SourcePort", "device_hub", "A TCP / UDP source port", "", nil},
-	{"HTTPCookie", "settings_input_svideo", "A HTTP session cookie", "", nil},
+	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
 	{"HTTPParameter", "live_help", "", "A HTTP request parameter name", nil},
 	{"HTTPParameterValue", "settings_ethernet", "A HTTP request parameter value", "", nil},
 	{"HTTPStatusCode", "highlight", "A HTTP server response code", "", nil},
@@ -60,7 +59,6 @@ var maltegoEntities = []entityCoreInfo{
 	{"UserAgent", "supervisor_account", "A HTTP User Agent", "", nil},
 	{"Website", "web", "A HTTP Website", "maltego.Website", nil},
 	{"DNSName", "dns", "A DNS Name", "maltego.DNSName", nil},
-	{"File", "insert_drive_file", "A file", "maltego.File", nil},
 	{"Domain", "domain", "A domain", "maltego.Domain", nil},
 	{"Location", "location_on", "A location", "maltego.Location", nil},
 	{"URL", "open_in_browser", "A Uniform Resource Identifier", "maltego.URL", nil},
@@ -69,16 +67,24 @@ var maltegoEntities = []entityCoreInfo{
 	{"MD5Hash", "info", "An MD5 hash entry for an extracted file", "maltego.Hash", nil},
 	{"PhoneNumber", "contact_phone", "A phone number", "maltego.PhoneNumber", nil},
 	{"Host", "dvr", "A computer host", "", nil},
+
+	// overwrites
+	{"Credentials", "security", "Credentials for accessing services that require user authentication", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"File", "text_snippet", "A file", "maltego.File", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"Software", "apps", "A software product", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"Service", "miscellaneous_services", "A software product", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"IPProfile", "contact_page", "A behavior profile for an IP address", "netcap.IPAddr", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"Vulnerability", "warning", "A software exploit", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"Exploit", "coronavirus", "A software vulnerability", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"Flow", "arrow_right_alt", "A undirectional network flow", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"Connection", "compare_arrows", "A bidirectional network connection", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"TLSClientHello", "call_made", "A TLS Client", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"TLSServerHello", "call_received", "A TLS Server", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 }
 
 // generate all entities and pack as archive
 func TestGenerateAllEntities(t *testing.T) {
 	genEntityArchive()
-
-	// generate additional entities
-	for _, e := range maltegoEntities {
-		genEntity("entities", e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
-	}
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
@@ -92,6 +98,12 @@ func TestGenerateAllEntities(t *testing.T) {
 		genEntity("entities", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path", "path to the audit records on disk"))
 		genEntity("entities", name, name, e.Description, "")
 	})
+
+	// generate additional entities after generating the others
+	// this allows to overwrite entities for which we want a custom icon for example
+	for _, e := range maltegoEntities {
+		genEntity("entities", e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
+	}
 
 	packEntityArchive()
 

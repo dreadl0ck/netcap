@@ -16,7 +16,9 @@ package maltego_test
 import (
 	"encoding/xml"
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/maltego"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -118,7 +120,7 @@ var transforms = []transformCoreInfo{
 
 func genFullConfigArchive() {
 	// clean
-	_ = os.RemoveAll("netcap")
+	_ = os.RemoveAll(netcapIdent)
 
 	// create directories
 	_ = os.MkdirAll("netcap/Servers", 0o700)
@@ -154,7 +156,7 @@ func genFullConfigArchive() {
 	// Sat Jun 13 21:48:54 CEST 2020
 	_, _ = fVersion.WriteString(`#
 #` + time.Now().Format(time.UnixDate) + `
-maltego.client.version=4.2.11.13104
+maltego.client.version=4.2.12
 maltego.client.subtitle=
 maltego.pandora.version=1.4.2
 maltego.client.name=Maltego Classic Eval
@@ -170,36 +172,91 @@ maltego.graph.version=1.2`)
 func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	genFullConfigArchive()
 
-	// generate additional entities
-	for _, e := range maltegoEntities {
-		genEntity("netcap", e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
-	}
-
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
-		genEntity("netcap", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path", "path to the audit records on disk"))
-		genEntity("netcap", d.GetName(), d.GetName(), d.GetDescription(), "")
+		genEntity(netcapIdent, d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path", "path to the audit records on disk"))
+		genEntity(netcapIdent, d.GetName(), d.GetName(), d.GetDescription(), "")
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		genEntity("netcap", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path", "path to the audit records on disk"))
-		genEntity("netcap", name, name, e.Description, "")
+		genEntity(netcapIdent, name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path", "path to the audit records on disk"))
+		genEntity(netcapIdent, name, name, e.Description, "")
 	})
 
-	for _, tr := range transforms {
-		genTransform("netcap", tr.ID, tr.Description, tr.InputEntity)
+	// generate additional entities after generating the others
+	// this allows to overwrite entities for which we want a custom icon for example
+	for _, e := range maltegoEntities {
+		genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
 	}
 
-	genServerListing("netcap")
-	genTransformSet("netcap")
-	packMaltegoArchive("netcap")
+	for _, tr := range transforms {
+		genTransform(netcapIdent, tr.ID, tr.Description, tr.InputEntity)
+	}
+
+	genServerListing(netcapIdent)
+	genTransformSet(netcapIdent)
+	genMachines()
+	packMaltegoArchive(netcapIdent)
 
 	path := filepath.Join(os.Getenv("HOME"), "netcap.mtz")
 	copyFile("netcap.mtz", path)
 
 	fmt.Println("moved archive to", path)
+}
+
+func genMachines() {
+
+	path := filepath.Join(netcapIdent, "Machines")
+
+	err := os.Mkdir(path, defaults.DirectoryPermission)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	files, err := ioutil.ReadDir("machines")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+
+		// Machine Properties
+		propFile, err := os.Create(
+			filepath.Join(
+				path,
+				netcapMachinePrefix + strings.Replace(
+					filepath.Base(f.Name()),
+					".machine",
+					".properties",
+					1,
+				),
+			),
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, _ = propFile.WriteString(`#` + time.Now().Format(time.UnixDate) + `
+favorite=true
+enabled=true`)
+
+		err = propFile.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Machine
+
+		copyFile(
+			filepath.Join("machines", f.Name()),
+			filepath.Join(
+				path,
+				netcapMachinePrefix + filepath.Base(f.Name()),
+			),
+		)
+	}
 }
 
 // generate all transforms and pack as archive

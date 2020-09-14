@@ -1,9 +1,8 @@
 // NETCAP machine for processing PCAPs
-
 machine("netcap.AnalyzeNetworkTraffic",
-        displayName:"Analyze Network Traffic",
-        author:"Philipp Mieden",
-        description: "Analyze Network Traffic with NETCAP") {
+    displayName:"Analyze Network Traffic",
+    author:"Philipp Mieden",
+    description: "Analyze Network Traffic with NETCAP") {
 
     start {
 
@@ -19,6 +18,18 @@ machine("netcap.AnalyzeNetworkTraffic",
 
             path {
                 run("netcap.ToServices")
+            }
+
+            path {
+                run("netcap.ToHosts")
+            }
+
+            path {
+                run("netcap.ToJA3SHashes")
+            }
+
+            path {
+                run("netcap.ToJA3Hashes")
             }
 
             path {
