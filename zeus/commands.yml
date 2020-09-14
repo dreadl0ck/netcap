@@ -93,19 +93,19 @@ commands:
 
     pack-dist:
         exec: |
-            cp ../maltego/netcap.mtz ../dist/
-            cp ../resolvers/resolver-dbs.zip ../dist/
-            cp /usr/local/etc/netcap/livecapture.conf ../dist/
+            cp maltego/netcap.mtz dist/
+            cp resolvers/resolver-dbs.zip dist/
+            cp /usr/local/etc/netcap/livecapture.conf dist/
 
     pack-dist-dev:
         exec: |
-            cp ../maltego/netcap.mtz ../dist/
-            cp ../resolvers/resolver-dbs.zip ../dist/
-            cp /usr/local/etc/netcap/livecapture.conf ../dist/
-            cp -r /usr/local/etc/netcap/exploits ../dist/
-            cp /usr/local/etc/netcap/dbs/hosts ../dist/
-            cp /usr/local/etc/netcap/dbs/*.mmdb ../dist/
-            cp /usr/local/etc/netcap/fingerprint_api_key ../dist/
+            cp maltego/netcap.mtz dist/
+            cp resolvers/resolver-dbs.zip dist/
+            cp /usr/local/etc/netcap/livecapture.conf dist/
+            #cp -r /usr/local/etc/netcap/exploits dist/
+            cp /usr/local/etc/netcap/dbs/hosts dist/
+            cp /usr/local/etc/netcap/dbs/*.mmdb dist/
+            cp /usr/local/etc/netcap/fingerprint_api_key dist/
 
     ## Utils
     ##

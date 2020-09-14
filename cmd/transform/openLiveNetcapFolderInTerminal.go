@@ -10,8 +10,8 @@ import (
 
 func openLiveNetcapFolderInTerminal() {
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.Transform{}
+		lt                    = maltego.ParseLocalArguments(os.Args)
+		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenTerminalCommand(
 			[]string{getPathLiveCaptureOutDir(lt.Values["name"])},
 		)

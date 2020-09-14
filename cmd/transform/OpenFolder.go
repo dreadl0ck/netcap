@@ -24,8 +24,8 @@ import (
 
 func openFolder() {
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.Transform{}
+		lt                    = maltego.ParseLocalArguments(os.Args)
+		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenCommand(
 			[]string{filepath.Dir(lt.Values["location"])},
 		)

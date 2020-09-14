@@ -79,7 +79,7 @@ func addDestinationPort(trx *maltego.Transform, portStr string, port *types.Port
 		di          = "<h3>Port</h3><p>Timestamp: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p><p>ServiceName: " + serviceName + "</p>"
 	)
 
-	ent := trx.AddEntityWithPath("netcap.DestinationPort", portStr + "\n" + serviceName, path)
+	ent := trx.AddEntityWithPath("netcap.DestinationPort", portStr+"\n"+serviceName, path)
 
 	ent.AddDisplayInformation(di, "Netcap Info")
 	ent.AddProperty("label", "Label", maltego.Strict, portStr+"\n"+serviceName)

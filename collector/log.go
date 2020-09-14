@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"os"
 	"path/filepath"
 
@@ -35,7 +36,7 @@ func (c *Collector) initLogging() error {
 
 	if c.config.DecoderConfig.Out != "" {
 		if stat, err := os.Stat(c.config.DecoderConfig.Out); err != nil {
-			err = os.MkdirAll(c.config.DecoderConfig.Out, os.FileMode(outDirPermissionDefault))
+			err = os.MkdirAll(c.config.DecoderConfig.Out, defaults.DirectoryPermission)
 			if err != nil {
 				fmt.Println(err)
 			}

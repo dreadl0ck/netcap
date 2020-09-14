@@ -185,7 +185,7 @@ func removeEmptyNewlineDelimitedFile(name string) (size int64) {
 
 // createFile is a wrapper to create new audit record file.
 func createFile(name, ext string) *os.File {
-	f, err := os.OpenFile(name + ext, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, defaults.FilePermission)
+	f, err := os.OpenFile(name+ext, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, defaults.FilePermission)
 	if err != nil {
 		panic(err)
 	}

@@ -23,9 +23,9 @@ import (
 
 func openFile() {
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.Transform{}
-		loc = lt.Values["location"]
+		lt                    = maltego.ParseLocalArguments(os.Args)
+		trx                   = &maltego.Transform{}
+		loc                   = lt.Values["location"]
 		openCommandName, args = createOpenCommand(
 			[]string{loc},
 		)

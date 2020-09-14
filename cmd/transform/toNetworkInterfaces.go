@@ -45,4 +45,3 @@ func toNetworkInterfaces() {
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
-

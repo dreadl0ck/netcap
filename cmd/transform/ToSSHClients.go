@@ -21,7 +21,7 @@ func toSSHClients() {
 				ent.AddProperty("ident", "Ident", maltego.Strict, ssh.Ident)
 				ent.AddProperty("algorithms", "Algorithms", maltego.Strict, ssh.Algorithms)
 
-				ent.AddDisplayInformation(ssh.Flow + "<br>", "Flows")
+				ent.AddDisplayInformation(ssh.Flow+"<br>", "Flows")
 			}
 		},
 	)

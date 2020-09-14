@@ -17,7 +17,11 @@ import (
 )
 
 func toCaptureProcess() {
-	lt := maltego.ParseLocalArguments(os.Args[1:])
+
+	var (
+		lt    = maltego.ParseLocalArguments(os.Args[1:])
+		snapL int
+	)
 	log.Println("capture on interface:", lt.Value)
 
 	// check if a custom snaplen was provided as property
@@ -32,8 +36,7 @@ func toCaptureProcess() {
 				die("invalid snaplen", "snaplen must not be <= 0")
 			}
 
-			// set value in the base config
-			maltegoBaseConfig.SnapLen = n
+			snapL = n
 		}
 	}
 
@@ -57,7 +60,7 @@ func toCaptureProcess() {
 				}
 				iface = strings.TrimSpace(strings.Replace(elements[3], "\\Device\\Tcpip_", "\\Device\\NPF_", 1))
 				// remove string literals from start and end of string
-				iface = string([]rune(iface)[1:len(iface)-1])
+				iface = string([]rune(iface)[1 : len(iface)-1])
 				log.Println("got interface transport identifier", iface)
 				break
 			}
@@ -72,6 +75,11 @@ func toCaptureProcess() {
 		"-fileStorage=files",
 		"-config=" + filepath.Join("/usr", "local", "etc", "netcap", "livecapture.conf"),
 		"-noprompt",
+		"-http-shutdown=true",
+	}
+
+	if snapL > 0 {
+		args = append(args, "-snaplen="+strconv.Itoa(snapL))
 	}
 
 	// check if a custom bpf was provided as property
@@ -105,7 +113,7 @@ func toCaptureProcess() {
 		}
 	}()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 	returnCaptureProcessEntity(cmd.Process.Pid, outDir, lt.Value)
 
 	log.Println("exit 0", buf.String())

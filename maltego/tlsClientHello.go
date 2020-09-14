@@ -68,8 +68,8 @@ func TLSClientHelloTransform(count TLSClientHelloCountFunc, transform TLSClientH
 
 	var (
 		tlsClientHello = new(types.TLSClientHello)
-		pm   proto.Message
-		ok   bool
+		pm             proto.Message
+		ok             bool
 	)
 	pm = tlsClientHello
 

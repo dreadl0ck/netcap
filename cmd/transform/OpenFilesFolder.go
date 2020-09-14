@@ -25,8 +25,8 @@ import (
 
 func openFilesFolder() {
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.Transform{}
+		lt                    = maltego.ParseLocalArguments(os.Args)
+		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenCommand(
 			[]string{filepath.Join(filepath.Dir(lt.Values["path"]), defaults.FileStorage)},
 		)

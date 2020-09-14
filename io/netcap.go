@@ -197,14 +197,12 @@ func Count(filename string) (count int64, err error) {
 		}
 	}()
 
-	var (
-		header, errFileHeader = r.ReadHeader()
-		rec                   = InitRecord(header.Type)
-	)
-
+	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
 		return 0, errFileHeader
 	}
+
+	rec := InitRecord(header.Type)
 
 	for {
 		// read next record

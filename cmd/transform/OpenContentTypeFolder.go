@@ -68,8 +68,8 @@ func createOpenTerminalCommand(args []string) (string, []string) {
 
 func openContentTypeFolder() {
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.Transform{}
+		lt                    = maltego.ParseLocalArguments(os.Args)
+		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenCommand(
 			[]string{
 				filepath.Join(

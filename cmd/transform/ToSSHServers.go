@@ -20,7 +20,7 @@ func toSSHServers() {
 				ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(ssh.Timestamp))
 				ent.AddProperty("ident", "Ident", maltego.Strict, ssh.Ident)
 				ent.AddProperty("algorithms", "Algorithms", maltego.Strict, ssh.Algorithms)
-				ent.AddDisplayInformation(ssh.Flow + "<br>", "Flows")
+				ent.AddDisplayInformation(ssh.Flow+"<br>", "Flows")
 			}
 		},
 	)

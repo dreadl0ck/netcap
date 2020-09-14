@@ -15,6 +15,7 @@ package utils
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -56,7 +57,29 @@ func OpenBleve(path string) (bleve.Index, error) {
 	//	logger.DebugLog.Println("opening bleve db at path:", path)
 	//}
 
-	return bleve.Open(path)
+	type bleveHandle struct {
+		index bleve.Index
+		err   error
+	}
+
+	wait := func() chan bleveHandle {
+		var ch chan bleveHandle
+		go func() {
+			i, err := bleve.Open(path)
+			ch <- bleveHandle{
+				index: i,
+				err:   err,
+			}
+		}()
+		return ch
+	}
+
+	select {
+	case <-time.After(1 * time.Second):
+		return nil, errors.New("bleve handle open timed out")
+	case b := <-wait():
+		return b.index, b.err
+	}
 }
 
 // CloseBleve is a simple wrapper for the bleve close call

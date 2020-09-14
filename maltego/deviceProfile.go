@@ -129,7 +129,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		min      uint64 = 10000000
 		max      uint64 = 0
 		profiles        = LoadIPProfiles()
-		err error
+		err      error
 	)
 
 	if count != nil {

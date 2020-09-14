@@ -24,7 +24,6 @@ func toLiveAuditRecords() {
 		err := ioLog.Sync()
 		if err != nil {
 			log.Println(err)
-
 		}
 	}()
 
