@@ -33,7 +33,7 @@ import (
 var transforms = []transformCoreInfo{
 	{"ToApplicationCategories", "netcap.IPAddr", "Retrieve categories of classified applications"},
 	{"ToApplications", "netcap.IPAddr", "Show all applications used by the selected host"},
-	{"ToApplicationsForCategory", "maltego.Service", "Retrieve applications seen for a given category"},
+	{"ToApplicationsForCategory", "netcap.ApplicationCategory", "Retrieve applications seen for a given category"},
 	{"ToCookiesForHTTPHost", "netcap.Website", "Retrieve cookies seen for the given host"},
 	{"ToCookieValues", "netcap.HTTPCookie", "Retrieve values for a given cookie identifier"},
 	{"ToDHCP", "netcap.IPAddr", "Fetch DHCP options for host"},
@@ -85,9 +85,9 @@ var transforms = []transformCoreInfo{
 	{"ToSSHServers", "netcap.SSHAuditRecords", "Show all SSH server software"},
 	{"ToSoftwareExploits", "netcap.ExploitAuditRecords", "Show potential exploits "},
 	{"ToSoftwareVulnerabilities", "netcap.VulnerabilityAuditRecords", "Show all discovered vulnerable software"},
-	{"ToServices", "netcap.ServiceAuditRecords", "Show detected network services"},
+
 	{"ToDevices", "netcap.DeviceProfileAuditRecords", "Show all discovered device audit records"},
-	{"ToHosts", "netcap.IPProfileAuditRecords", "Show all discovered ip hosts"},
+	{"ToIPProfiles", "netcap.IPProfileAuditRecords", "Show all discovered ip hosts"},
 	{"ToJA3Hashes", "netcap.TLSClientHelloAuditRecords", "Show all discovered ja3 client hashes"},
 	{"ToJA3SHashes", "netcap.TLSServerHelloAuditRecords", "Show all discovered ja3 server hashes"},
 	{"ToFlowsForService", "netcap.Service", "Show all flows for the selected service"},
@@ -116,6 +116,14 @@ var transforms = []transformCoreInfo{
 	{"ToNetworkInterfaces", "netcap.Host", "Show all available network interfaces"},
 	{"LookupDHCPFingerprint", "netcap.DHCPClient", "Resolve the clients DHCP fingerprint via the fingerbank API"},
 	{"StopCaptureProcess", "netcap.CaptureProcess", "Stop the NETCAP capture process"},
+
+	{"ToServices", "netcap.ServiceType", "Show detected network services for the given service type"},
+	{"ToServiceTypes", "netcap.ServiceAuditRecords", "Show detected network service types"},
+
+	{"ToSourceDevices", "netcap.IPProfile", "Show the source devices for the given ip profile"},
+	{"ToApplicationsForProfile", "netcap.IPProfile", "Show the applications seen for the given ip profile"},
+	{"ToSNIsForProfile", "netcap.IPProfile", "Show the server name indicator seen for the given ip profile"},
+	{"ToJA3HashesForProfile", "netcap.IPProfile", "Show the ja3 hashes seen for the given ip profile"},
 }
 
 func genFullConfigArchive() {

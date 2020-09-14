@@ -42,7 +42,7 @@ func toCategory(profiles map[string]*types.IPProfile, ip, mac, path string, trx 
 				continue
 			}
 
-			ent := trx.AddEntityWithPath("maltego.Service", proto.Category, path)
+			ent := trx.AddEntityWithPath("netcap.ApplicationCategory", proto.Category, path)
 
 			ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
 			ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, p.Addr)

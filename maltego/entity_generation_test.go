@@ -67,6 +67,9 @@ var maltegoEntities = []entityCoreInfo{
 	{"MD5Hash", "info", "An MD5 hash entry for an extracted file", "maltego.Hash", nil},
 	{"PhoneNumber", "contact_phone", "A phone number", "maltego.PhoneNumber", nil},
 	{"Host", "dvr", "A computer host", "", nil},
+	{"ServiceType", "import_export", "A network service type", "", nil},
+	{"Application", "settings_applications", "An application discovered via DPI", "", nil},
+	{"ApplicationCategory", "design_services", "An application category discovered via DPI", "", nil},
 
 	// overwrites
 	{"Credentials", "security", "Credentials for accessing services that require user authentication", "", []propertyField{newStringField("path", "path to the audit records on disk")}},

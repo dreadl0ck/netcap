@@ -18,7 +18,7 @@
   </Fields>
  </Properties>
  <InputConstraints>
-  <Entity type="maltego.Service" min="1" max="1"></Entity>
+  <Entity type="netcap.ApplicationCategory" min="1" max="1"></Entity>
  </InputConstraints>
  <OutputEntities></OutputEntities>
  <defaultSets>

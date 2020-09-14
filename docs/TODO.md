@@ -1,23 +1,45 @@
 # TODOs
 
+- ToFilesForWebsite
+- OpenFlow / OpenConnection in Wireshark
+    - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
+- add Open Image transform
+- add a transform to open executable files for analysis, set tool via env var
+- on netcap.URL and netcap.Website: To Visitors
+- add ToHTTPHeaders
+- GetHostsForGeolocation
+- add proper display data for all entities possible (show images and add links etc)
+- add TCP and UDP colored streams as display data and remove binary data
+- ToFilesForHTTPHost
+- add transform debug toggle via env var? dump input lt.Values for transform
+
+- add Show All Services transform: show both TCP and UDP
+  - add different types for internal or external services
+    - add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
+- Cookies + Params: add counters to indicate flow volume
+
+on audit record archives:
+
+- on TCP/UDP: To Hosts, To Ports, To Streams
+- on POP3: To Mail Users
+- on IP: To Source IPs, To Destination IPs
+- on Ethernet: To Hardware Addresses
+- on ARP: To Hardware Addresses
+- on Connection: To Connections (src <-> dst format=?), To Connections with highest data transfer, To Connections with lowest data transfer, To IANA Services
+- on DHCPv6: To Devices
+- on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
+- on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
+- on Connections: GetLongRunningSessions
+
 - cleanup dbs folder
 - add dbs in docker containers
-- ToServicesCategories -> To Services
 - Add machine for HTTP analysis
 - Add machine for general overview
 - maltego on linux and windows: open path in terminal
-- windows install docs: 
-
-    install https://nmap.org/npcap/
-    install vscode and vt-100 plugin, 
-    add file type association for .bin files to vt100 for automatic highlighting of ANSI colors, and preview without escape sequences
 
 ## WIP
 
 - use compression during live capture
-
-- IPProfile transforms
-- ToFilesForWebsite
 
 // TODO: connection UIDs
 //gommunityid.MakeFlowTuple(
@@ -82,62 +104,17 @@ Install windows compiler toolchain on mac:
 - create a cli helper to display all fields for a given audit record
 - add explanation to each field in the proto definition via tags? could be used to generate docs
 - add commandline completion via go package 
+- integrate scanning against YARA / suricata rules and add Malware Custom Audit Records
 
 ## Maltego Plugin
 
-- software and vulnerabilities: add flows as display info
-- add proper display data for all entities possible (show images and add links etc)
-- add TCP and UDP colored streams as display data
-
-- add Open Image
 - mark if files extracted from HTTP are a Server Reply or client data sent via GET / POST
-
 - make A general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 - add transform to do a reverse DNS lookup for \*IP hosts instead of the local lookup
-- add a transform to open executable files for analysis, set tool via env var
-- on netcap.URL and netcap.Website: To Visitors
-- add a Machine for Live Capture that periodically refreshes the audit records
 
 cleanups:
 
-- live capture: give proper error when interface name is not present or wrong
-- add constants for hex colors: ent.SetLinkColor("#000000")
-- add constants for netcap types for AddEntity()
-
-- addEntity wrapper that always adds path property field?
-- add transform debug toggle via env var? dump input lt.Values for transform
-- remove setting path attribute on entities to the path of the DeviceProfiles for all types + document
-
 - improve and test content type and executable detection (fix application/gzip) stdlib has exec format header parsers in debug pkg
-- include machines into generated config archive
-
-- ensure using Service and software audit records work also when not all DBs are available
-
-- add Show All Services transform: show both TCP and UDP
-  - add different types for internal or external services
-    - add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
-
-- Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
-- make snaplen configurable: add as property to netcap.PCAP, default 1514
-- TLS fingerprints: ToJa3? for IPAddr entities
-
-- add ToHTTPHeaders
-- ToFilesForHTTPHost
-- Cookies + Params: add counters to indicate flow volume
-
-on audit record archives:
-
-- on TLSHellos: To JA3 Fingerprints
-- on TCP/UDP: To Hosts, To Ports, To Streams
-- on POP3: To Mail Users
-- on IP: To Source IPs, To Destination IPs
-- on Ethernet: To Hardware Addresses
-- on ARP: To Hardware Addresses
-- on Connection: To Connections (src <-> dst format=?), To Connections with highest data transfer, To Connections with lowest data transfer, To IANA Services
-- on DHCPv6: To Devices
-- on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
-- on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
-- on Connections: GetLongRunningSessions
 
 - Viewlets:
   - Suspicious events:
@@ -146,29 +123,22 @@ on audit record archives:
     - masquerated protocol (by using well known ports for example)
     - http content type does not match content
 
-- integrate scanning against YARA / suricata rules and add Malware Custom Audit Records
-
 - To Emails From File: handle common email obfuscation ala: user [at] mail [dot] com
 - add transform to scan and analyze a website
 - add machine to watch and analyze a website (maybe useful for CTFs or during security assessment?)
 
 entities:
 
-- add different colors for Internal and External IPs: or merge them? Also rename device ip to source ip and contact ip to destination ip
 - add different colors for audit record archives?
 - handle multiple cpe identifiers for a single service probe
-
 - add file extraction for POP3 emails and attachments
 
 - GetNotWWW (no www.local reverse DNS name?)
 - GetUnknownFlows(Filtered) (no http, pop3 flows)
-- GetHostsForGeolocation
-- GetApplicationsForCategory is broken
 
 - Create a netcap.Query entity: Add Execute and run the custom query
 - link src to dst ports? by creating different entities for src and dst ports?
 - improve DisplayInformation to allow tracking updates to an entity over time
-
 - Application: add timestamps when packets have been seen, currently the first seen timestamp for the associated ip profile is repeated
 
 ## Zeekify
@@ -194,7 +164,6 @@ entities:
 - add a die(msg string) function and use instead of panic(err), for centralized teardown and cleanup 
 - https://github.com/glycerine/offheap
 
-- service: add reverse dns lookup and cache all results offline in a boltdb?
 - add comments similar to wireshark info field to records
 - add verbose per packet logs via flag (+include packet number)
 
@@ -206,7 +175,6 @@ entities:
 - add optional time interval extraction?
 - tfRecords output
 
-- use offheap maps
 - implement selective layer decoding with gopacket to improve performance
 - add util to dump field and apply post processing: net dump -read UDP.ncap.gz -field Payload | base64 -d
 

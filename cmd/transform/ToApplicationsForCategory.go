@@ -46,7 +46,7 @@ func addApplicationForCategory(profiles map[string]*types.IPProfile, ip string, 
 	if p, ok := profiles[ip]; ok {
 		for protoName, proto := range p.Protocols {
 			if proto.Category == category {
-				ent := trx.AddEntityWithPath("maltego.Service", protoName, path)
+				ent := trx.AddEntityWithPath("netcap.Application", protoName, path)
 				ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 			}
 		}

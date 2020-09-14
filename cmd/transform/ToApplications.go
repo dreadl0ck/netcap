@@ -38,7 +38,7 @@ func toApplications() {
 func addApplication(profiles map[string]*types.IPProfile, ip string, trx *maltego.Transform, path string) {
 	if p, ok := profiles[ip]; ok {
 		for protoName, proto := range p.Protocols {
-			ent := trx.AddEntityWithPath("maltego.Service", protoName, path)
+			ent := trx.AddEntityWithPath("netcap.Application", protoName, path)
 
 			di := "<h3>Application</h3><p>Timestamp first seen: " + utils.UnixTimeToUTC(p.TimestampFirst) + "</p>"
 			ent.AddDisplayInformation(di, "Netcap Info")
