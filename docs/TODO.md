@@ -12,20 +12,6 @@
     install vscode and vt-100 plugin, 
     add file type association for .bin files to vt100 for automatic highlighting of ANSI colors, and preview without escape sequences
 
-- icons:
-    - cookie
-    - internal / external ips
-    - software 
-    - service
-    - file
-    - ipprofile
-    - flows
-    - connections
-    - vulnerabilities
-    - tls client hello
-    - tls server hello
-    - dnsName
-
 ## WIP
 
 - use compression during live capture

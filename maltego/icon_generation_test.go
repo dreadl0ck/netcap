@@ -60,7 +60,7 @@ func generateIcons() {
 	_ = os.RemoveAll("/tmp/icons")
 
 	_, err := git.PlainClone("/tmp/icons", false, &git.CloneOptions{
-		URL:      "https://github.com/material-icons/material-icons-png.git",
+		URL:      "https://github.com/dreadl0ck/material-icons-png.git",
 		Progress: os.Stdout,
 	})
 
