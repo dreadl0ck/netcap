@@ -121,7 +121,7 @@ func (w *CSVWriter) WriteHeader(t types.Type) error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *CSVWriter) Close() (name string, size int64) {
+func (w *CSVWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -133,7 +133,7 @@ func (w *CSVWriter) Close() (name string, size int64) {
 		closeGzipWriters(w.gWriter)
 	}
 
-	return closeFile(w.wc.Out, w.file, w.wc.Name)
+	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
 }
 
 // CSVProtoWriter implements writing audit records to disk in the CSV format.

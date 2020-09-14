@@ -122,7 +122,7 @@ func (w *JSONWriter) WriteHeader(t types.Type) error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *JSONWriter) Close() (name string, size int64) {
+func (w *JSONWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -134,7 +134,7 @@ func (w *JSONWriter) Close() (name string, size int64) {
 		closeGzipWriters(w.gWriter)
 	}
 
-	return closeFile(w.wc.Out, w.file, w.wc.Name)
+	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
 }
 
 // NullWriter is a writer that writes nothing to disk.
@@ -156,7 +156,7 @@ func (w *NullWriter) WriteHeader(_ types.Type) error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *NullWriter) Close() (name string, size int64) {
+func (w *NullWriter) Close(numRecords int64) (name string, size int64) {
 	return "", 0
 }
 

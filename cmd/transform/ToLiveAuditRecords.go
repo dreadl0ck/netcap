@@ -2,6 +2,8 @@ package transform
 
 import (
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,6 +17,19 @@ import (
 )
 
 func toLiveAuditRecords() {
+
+	// setup logger for io pkg
+	ioLog := zap.New(zapcore.NewNopCore())
+	defer func() {
+		err := ioLog.Sync()
+		if err != nil {
+			log.Println(err)
+
+		}
+	}()
+
+	io.SetLogger(ioLog)
+
 	var (
 		lt    = maltego.ParseLocalArguments(os.Args[1:])
 		path  = lt.Values["path"]
@@ -154,4 +169,5 @@ var allDecoders = []string{
 	"SMTP",
 	"Diameter",
 	"IPProfile",
+	"Mail",
 }

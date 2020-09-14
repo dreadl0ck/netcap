@@ -24,7 +24,7 @@ import (
 type AuditRecordWriter interface {
 	Write(msg proto.Message) error
 	WriteHeader(t types.Type) error
-	Close() (name string, size int64)
+	Close(numRecords int64) (name string, size int64)
 }
 
 // ChannelAuditRecordWriter extends the AuditRecordWriter

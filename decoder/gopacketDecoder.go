@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -104,6 +105,9 @@ type (
 		writer io.AuditRecordWriter
 		Type   types.Type
 		export bool
+
+		// used to keep track of the number of generated audit records
+		numRecords int64
 	}
 )
 
@@ -252,6 +256,7 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 			}
 		}
 
+		atomic.AddInt64(&dec.numRecords, 1)
 		err := dec.writer.Write(record)
 		if err != nil {
 			return err
@@ -293,5 +298,5 @@ func (cd *GoPacketDecoder) GetChan() <-chan []byte {
 
 // Destroy closes and flushes all writers.
 func (dec *GoPacketDecoder) Destroy() (name string, size int64) {
-	return dec.writer.Close()
+	return dec.writer.Close(dec.numRecords)
 }

@@ -49,7 +49,9 @@ func printUsage() {
 // cleanup when receiving OS signals.
 func cleanup() {
 	for _, p := range proxies {
-		p.writer.Close()
+		// pass numRecords > 0 so that files do not get removed.
+		// TODO: add support to determine the correct number of records at this place
+		p.writer.Close(1)
 	}
 }
 

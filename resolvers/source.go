@@ -34,7 +34,7 @@ var (
 func init() {
 	DataBaseSource = os.Getenv(env.DatabaseSource)
 	if DataBaseSource == "" {
-		DataBaseSource = "/usr/local/etc/netcap/dbs"
+		DataBaseSource = filepath.Join("/usr", "local", "etc", "netcap", "dbs")
 	}
 }
 
