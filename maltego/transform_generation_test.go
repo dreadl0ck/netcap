@@ -234,7 +234,7 @@ func genMachines() {
 		propFile, err := os.Create(
 			filepath.Join(
 				path,
-				netcapMachinePrefix + strings.Replace(
+				netcapMachinePrefix+strings.Replace(
 					filepath.Base(f.Name()),
 					".machine",
 					".properties",
@@ -261,7 +261,7 @@ enabled=true`)
 			filepath.Join("machines", f.Name()),
 			filepath.Join(
 				path,
-				netcapMachinePrefix + filepath.Base(f.Name()),
+				netcapMachinePrefix+filepath.Base(f.Name()),
 			),
 		)
 	}

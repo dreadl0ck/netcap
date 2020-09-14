@@ -66,7 +66,7 @@ func toFlowsForService() {
 }
 
 func addFlow(trx *maltego.Transform, flow *types.Flow, path string, min, max uint64) {
-	ent := trx.AddEntityWithPath("netcap.Flow",utils.CreateFlowIdent(flow.SrcIP, flow.SrcPort, flow.DstIP, flow.DstPort), path)
+	ent := trx.AddEntityWithPath("netcap.Flow", utils.CreateFlowIdent(flow.SrcIP, flow.SrcPort, flow.DstIP, flow.DstPort), path)
 	ent.SetLinkLabel(strconv.FormatInt(int64(flow.NumPackets), 10) + " pkts\n" + humanize.Bytes(uint64(flow.TotalSize)))
 	ent.SetLinkThickness(maltego.GetThickness(uint64(flow.TotalSize), min, max))
 	ent.AddProperty("srcip", "SrcIP", maltego.Strict, flow.SrcIP)

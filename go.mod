@@ -30,7 +30,7 @@ require (
 	github.com/felixge/fgprof v0.9.1
 	github.com/fogleman/gg v1.3.0
 	github.com/glycerine/go-unsnap-stream v0.0.0-20190901134440-81cf024a9e0a // indirect
-	github.com/go-errors/errors v1.1.1 // indirect
+	github.com/go-errors/errors v1.1.1
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect

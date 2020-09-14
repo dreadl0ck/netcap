@@ -18,9 +18,9 @@ const (
 	octetStream = "application/octet-stream"
 
 	// darwin platform name.
-	platformDarwin = "darwin"
+	platformDarwin  = "darwin"
 	platformWindows = "windows"
-	platformLinux = "linux"
+	platformLinux   = "linux"
 
 	// default macOS command to open files from maltego.
 	defaultOpenCommandDarwin = "open"

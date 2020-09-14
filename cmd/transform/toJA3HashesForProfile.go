@@ -16,4 +16,3 @@ func toJA3HashesForProfile() {
 		}
 	})
 }
-

@@ -181,6 +181,7 @@ func Run() {
 		FreeOSMem:             *flagFreeOSMemory,
 		LogErrors:             *flagLogErrors,
 		NoPrompt:              *flagNoPrompt,
+		HTTPShutdownEndpoint:  *flagHTTPShutdown,
 		DecoderConfig: &decoder.Config{
 			Buffer:        *flagBuffer,
 			MemBufferSize: *flagMemBufferSize,

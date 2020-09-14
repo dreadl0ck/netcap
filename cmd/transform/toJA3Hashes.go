@@ -12,7 +12,7 @@ func toJA3Hashes() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, hello *types.TLSClientHello, min, max uint64, path string, ipaddr string) {
 
-			ent := trx.AddEntityWithPath("netcap.TLSClientHello", hello.Ja3 + "\n" + hello.SrcIP + ":" + strconv.Itoa(int(hello.SrcPort)), path)
+			ent := trx.AddEntityWithPath("netcap.TLSClientHello", hello.Ja3+"\n"+hello.SrcIP+":"+strconv.Itoa(int(hello.SrcPort)), path)
 			ent.AddProperty("ip", "IP", maltego.Strict, hello.SrcIP)
 			ent.AddProperty("port", "Port", maltego.Strict, strconv.Itoa(int(hello.SrcPort)))
 		},

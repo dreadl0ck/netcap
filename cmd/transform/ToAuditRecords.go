@@ -35,11 +35,13 @@ import (
 )
 
 var maltegoBaseConfig = collector.Config{
-	WriteUnknownPackets: false,
-	Workers:             1,
-	PacketBufferSize:    defaults.PacketBuffer,
-	SnapLen:             defaults.SnapLen,
-	Promisc:             false,
+	WriteUnknownPackets:  false,
+	Workers:              1,
+	PacketBufferSize:     defaults.PacketBuffer,
+	SnapLen:              defaults.SnapLen,
+	Promisc:              false,
+	HTTPShutdownEndpoint: true,
+	NoPrompt:             true,
 	DecoderConfig: &decoder.Config{
 		Buffer:        true,
 		MemBufferSize: defaults.BufferSize,

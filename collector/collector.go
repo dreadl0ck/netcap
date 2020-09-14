@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"io"
 	"log"
 	"net/http"
@@ -92,7 +93,7 @@ type Collector struct {
 // New returns a new Collector instance.
 func New(config Config) *Collector {
 	if config.OutDirPermission == 0 {
-		config.OutDirPermission = os.FileMode(outDirPermissionDefault)
+		config.OutDirPermission = defaults.DirectoryPermission
 	}
 
 	return &Collector{
@@ -145,8 +146,9 @@ func (c *Collector) handleSignals() {
 		os.Exit(0)
 	}()
 
-	// TODO: make configurable
-	go c.serveCleanupHTTPEndpoint()
+	if c.config.HTTPShutdownEndpoint {
+		go c.serveCleanupHTTPEndpoint()
+	}
 }
 
 func (c *Collector) serveCleanupHTTPEndpoint() {
@@ -207,7 +209,18 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 		}()
 	})
 
-	log.Fatal(http.ListenAndServe("127.0.0.1:60589", nil))
+	err := http.ListenAndServe("127.0.0.1:60589", nil)
+	if err != nil {
+		log.Fatal(
+			"failed to bind http shutdown endpoint:\n",
+			err,
+			"\n > This usually happens when multiple instances of NETCAP are running,",
+			"\n > or another service is blocking port 60589.",
+			"\n > Please quit all remaining NETCAP processes and try again.",
+			"\n > Running multiple processes in parallel is currently not possible,",
+			"\n > due to atomic access to the resolver bleve databases.",
+		)
+	}
 }
 
 // to decode incoming packets in parallel

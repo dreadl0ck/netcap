@@ -24,8 +24,6 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var outDirPermissionDefault = 0o755
-
 // DefaultConfig is a sane example configuration.
 //goland:noinspection GoUnusedGlobalVariable,GoUnnecessarilyExportedIdentifiers
 var DefaultConfig = Config{
@@ -107,7 +105,14 @@ type Config struct {
 	// Use TCP reassembly
 	ReassembleConnections bool
 
+	// LogErrors will log verbose packet decoding errors into the errors.log file
 	LogErrors bool
 
+	// NoPrompt will disable all human interaction prompts
 	NoPrompt bool
+
+	// HTTPShutdownEndpoint will run a HTTP service on localhost:60589
+	// sending a GET request there can be used to trigger teardown and audit record flushing
+	// which can be used as alternative to using OS signals
+	HTTPShutdownEndpoint bool
 }

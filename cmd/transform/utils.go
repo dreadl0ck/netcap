@@ -92,9 +92,9 @@ func createJa3TableHTML(m map[string]string) string {
 
 	for k, v := range m {
 		if v != "" {
-			out = append(out, "<tr><td style='color:red'>" + k + "</td><td>" + v + "</td></tr>")
+			out = append(out, "<tr><td style='color:red'>"+k+"</td><td>"+v+"</td></tr>")
 		} else {
-			out = append(out, "<tr><td>" + k + "</td><td>" + v + "</td></tr>")
+			out = append(out, "<tr><td>"+k+"</td><td>"+v+"</td></tr>")
 		}
 	}
 
@@ -113,7 +113,7 @@ func createSNITableHTML(m map[string]int64) string {
   </tr>`)
 
 	for k, v := range m {
-		out = append(out, "<tr><td>" + k + "</td><td>" + strconv.FormatInt(v, 10) + "</td></tr>")
+		out = append(out, "<tr><td>"+k+"</td><td>"+strconv.FormatInt(v, 10)+"</td></tr>")
 	}
 
 	out = append(out, "</table>")
@@ -132,7 +132,7 @@ func createProtocolsTableHTML(m map[string]*types.Protocol) string {
   </tr>`)
 
 	for k, v := range m {
-		out = append(out, "<tr><td>" + k + "</td><td>" +  v.Category + "</td><td>" + strconv.FormatUint(v.Packets, 10) + "</td></tr>")
+		out = append(out, "<tr><td>"+k+"</td><td>"+v.Category+"</td><td>"+strconv.FormatUint(v.Packets, 10)+"</td></tr>")
 	}
 
 	out = append(out, "</table>")

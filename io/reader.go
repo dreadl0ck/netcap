@@ -16,6 +16,7 @@ package io
 import (
 	"bufio"
 	"compress/gzip"
+	"github.com/go-errors/errors"
 	"os"
 	"path/filepath"
 
@@ -95,7 +96,7 @@ func (r *Reader) ReadHeader() (*types.Header, error) {
 	)
 
 	if err != nil {
-		panic("invalid netcap header in file: " + r.file.Name() + ", error: " + err.Error())
+		return nil, errors.New("invalid netcap header in file: " + r.file.Name() + ", error: " + err.Error())
 	}
 
 	return header, err

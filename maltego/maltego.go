@@ -49,7 +49,7 @@ type LinkDirection string
 const (
 	OutputToInput LinkDirection = "output-to-input"
 	InputToOutput LinkDirection = "input-to-output"
-	Bidirectional   LinkDirection = "bidirectional"
+	Bidirectional LinkDirection = "bidirectional"
 )
 
 func getThicknessInterval(val, min, max uint64) int {

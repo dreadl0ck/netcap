@@ -10,8 +10,8 @@ import (
 
 func openNetcapFolderInTerminal() {
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args)
-		trx             = &maltego.Transform{}
+		lt                    = maltego.ParseLocalArguments(os.Args)
+		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenTerminalCommand(
 			[]string{lt.Values["path"] + ".net"},
 		)

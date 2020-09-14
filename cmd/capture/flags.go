@@ -79,6 +79,7 @@ var (
 	flagProto            = fs.Bool("proto", true, "output data as protobuf")
 	flagJSON             = fs.Bool("json", false, "output data as JSON")
 	flagContext          = fs.Bool("context", true, "add packet flow context to selected audit records")
+	flagHTTPShutdown     = fs.Bool("http-shutdown", false, "create local endpoint to trigger teardown via HTTP")
 
 	flagMemBufferSize  = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 	flagListInterfaces = fs.Bool("interfaces", false, "list all visible network interfaces")
@@ -116,7 +117,7 @@ var (
 	flagStreamDecoderBufSize = fs.Int("sbuf-size", 0, "size for channel used to pass data to the stream decoders. default is unbuffered")
 	flagReassemblyDebug      = fs.Bool("reassembly-debug", false, "if true, the reassembly will log verbose debugging information")
 
-	flagNoPrompt     = fs.Bool("noprompt", false, "don't prompt for interaction during execution")
+	flagNoPrompt   = fs.Bool("noprompt", false, "don't prompt for interaction during execution")
 	flagDebug      = fs.Bool("debug", false, "display debug information")
 	flagMemprofile = fs.String("memprofile", "", "write memory profile")
 
