@@ -86,10 +86,10 @@ const (
 	FileStorage = "files"
 
 	// DirectoryPermission for all created folders.
-	DirectoryPermission = 0o744
+	DirectoryPermission = 0o777
 
 	// FilePermission for all created files.
-	FilePermission = 0o700
+	FilePermission = 0o777
 
 	// FileExtension of uncompressed netcap files.
 	FileExtension = ".ncap"

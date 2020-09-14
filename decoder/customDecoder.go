@@ -364,7 +364,7 @@ func (cd *customDecoder) Destroy() (name string, size int64) {
 		panic(err)
 	}
 
-	return cd.writer.Close()
+	return cd.writer.Close(cd.numRecords)
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder.

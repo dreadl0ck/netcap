@@ -103,7 +103,7 @@ func TestWriter(t *testing.T) {
 	}
 
 	// close and flush
-	_, size := w.Close()
+	_, size := w.Close(int64(len(tcps)))
 	if size == 0 {
 		t.Fatal("no bytes written")
 	}
@@ -147,7 +147,7 @@ func BenchmarkWriter(b *testing.B) {
 	}
 
 	// close and flush
-	_, size := w.Close()
+	_, size := w.Close(int64(b.N))
 	if size < 1 {
 		b.Fatal("no data written")
 	}

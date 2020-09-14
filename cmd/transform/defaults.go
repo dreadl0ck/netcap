@@ -19,9 +19,11 @@ const (
 
 	// darwin platform name.
 	platformDarwin = "darwin"
+	platformWindows = "windows"
+	platformLinux = "linux"
 
 	// default macOS command to open files from maltego.
-	defaultOpenCommand = "open"
+	defaultOpenCommandDarwin = "open"
 
 	// default linux command to open files from maltego
 	// you could also set it to xdg-open.
@@ -35,4 +37,15 @@ func makeLinuxCommand(commandName string, args []string) (string, []string) { //
 	}
 
 	return commandName, args
+}
+
+// adds arguments for different programs to the passed in arguments.
+func makeWindowsCommand(args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
+	return "cmd", append(
+		[]string{"/C"},
+		append(
+			[]string{"start"},
+			args...,
+		)...,
+	)
 }

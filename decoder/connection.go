@@ -93,7 +93,7 @@ func (cd *connectionDecoder) Destroy() (name string, size int64) {
 		panic(err)
 	}
 
-	return cd.writer.Close()
+	return cd.writer.Close(cd.numRecords)
 }
 
 func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {

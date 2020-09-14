@@ -82,7 +82,30 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
-        exec: goreleaser release --rm-dist --skip-publish --skip-validate --debug; zeus version-bump-test-undo; zeus build-linux; zeus build-linux-nodpi; tree dist; open dist;
+        exec: goreleaser release --rm-dist --skip-publish --skip-validate --debug; zeus version-bump-test-undo
+
+    release-test-full:
+         dependencies:
+            - release-test
+            - build-linux
+            - build-linux-nodpi
+         exec: open dist
+
+    pack-dist:
+        exec: |
+            cp ../maltego/netcap.mtz ../dist/
+            cp ../resolvers/resolver-dbs.zip ../dist/
+            cp /usr/local/etc/netcap/livecapture.conf ../dist/
+
+    pack-dist-dev:
+        exec: |
+            cp ../maltego/netcap.mtz ../dist/
+            cp ../resolvers/resolver-dbs.zip ../dist/
+            cp /usr/local/etc/netcap/livecapture.conf ../dist/
+            cp -r /usr/local/etc/netcap/exploits ../dist/
+            cp /usr/local/etc/netcap/dbs/hosts ../dist/
+            cp /usr/local/etc/netcap/dbs/*.mmdb ../dist/
+            cp /usr/local/etc/netcap/fingerprint_api_key ../dist/
 
     ## Utils
     ##
@@ -324,7 +347,7 @@ commands:
         exec: gosec ./...
 
     test:
-        exec: go test ./...
+        exec: go clean -testcache && go test ./...
 
     test-race:
         exec: GORACE="history_size=7" go test -race ./...

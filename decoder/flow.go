@@ -78,7 +78,7 @@ func (fd *flowCustomDecoder) Destroy() (name string, size int64) {
 		panic(err)
 	}
 
-	return fd.writer.Close()
+	return fd.writer.Close(fd.numRecords)
 }
 
 func (fd *flowCustomDecoder) handlePacket(p gopacket.Packet) proto.Message {

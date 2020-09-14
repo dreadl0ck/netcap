@@ -26,31 +26,62 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
+func createOpenCommand(args []string) (string, []string) {
+	name := os.Getenv(env.MaltegoOpenFileCommand)
+	if name == "" {
+		// if no command has been supplied via environment variable
+		// use the platform defaults
+		switch runtime.GOOS {
+		case platformDarwin:
+			name = defaultOpenCommandDarwin
+		case platformWindows:
+			name, args = makeWindowsCommand(args)
+		case platformLinux:
+			name, args = makeLinuxCommand(defaultOpenCommandLinux, args)
+		}
+	}
+
+	log.Println("created open command:", name, args)
+
+	return name, args
+}
+
+func createOpenTerminalCommand(args []string) (string, []string) {
+	name := os.Getenv(env.MaltegoOpenTerminalCommand)
+	if name == "" {
+		// if no command has been supplied via environment variable
+		// use the platform defaults
+		switch runtime.GOOS {
+		case platformDarwin:
+			name = "/Applications/iTerm.app/Contents/MacOS/iTerm2"
+		case platformWindows: // TODO: open path in terminal
+			name, args = makeWindowsCommand(args)
+		case platformLinux: // TODO: open path in terminal
+			name, args = makeLinuxCommand(defaultOpenCommandLinux, args)
+		}
+	}
+
+	log.Println("command for opening path:", name, args)
+
+	return name, args
+}
+
 func openContentTypeFolder() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
-		openCommandName = os.Getenv(env.MaltegoOpenFileCommand)
-		args            []string
+		openCommandName, args = createOpenCommand(
+			[]string{
+				filepath.Join(
+					filepath.Dir(lt.Values["path"]),
+					defaults.FileStorage,
+					lt.Values["properties.contenttype"],
+				),
+			},
+		)
 	)
 
-	// if no command has been supplied via environment variable
-	// then default to:
-	// - open for macOS
-	// - gio open for linux
-	if openCommandName == "" {
-		if runtime.GOOS == platformDarwin {
-			openCommandName = defaultOpenCommand
-		} else { // linux
-			openCommandName, args = makeLinuxCommand(defaultOpenCommandLinux, args)
-		}
-	}
-
-	path := filepath.Join(filepath.Dir(lt.Values["path"]), defaults.FileStorage, lt.Values["properties.contenttype"])
-
 	log.Println("command for opening path:", openCommandName)
-
-	args = append(args, path)
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {

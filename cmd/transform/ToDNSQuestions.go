@@ -25,7 +25,7 @@ func toDNSQuestions() {
 		trx             = maltego.Transform{}
 	)
 
-	log.Println(defaultOpenCommand, dnsAuditRecords)
+	log.Println(defaultOpenCommandDarwin, dnsAuditRecords)
 
 	f, err := os.Open(dnsAuditRecords)
 	if err != nil {

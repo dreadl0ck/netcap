@@ -30,7 +30,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
 	"github.com/namsral/flag"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/dreadl0ck/netcap"
@@ -122,9 +121,7 @@ func Dump(w *os.File, c DumpConfig) error {
 	defer func() {
 		errClose := r.Close()
 		if errClose != nil {
-			ioLog.Info("failed to close file",
-				zap.Error(errClose),
-			)
+			fmt.Println("failed to close file", errClose)
 		}
 	}()
 

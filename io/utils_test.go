@@ -91,7 +91,7 @@ func TestCloseFile(t *testing.T) {
 		t.Fatal("nil file handle received")
 	}
 
-	n, s := closeFile("tests", f, "TCP")
+	n, s := closeFile("tests", f, "TCP", 0)
 	if n != "TCP.ncap.gz" {
 		t.Fatal(n, " != TCP.ncap.gz")
 	}

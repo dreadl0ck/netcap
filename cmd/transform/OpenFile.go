@@ -15,37 +15,22 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
-	"runtime"
-
-	"github.com/dreadl0ck/netcap/env"
-	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func openFile() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
-		openCommandName = os.Getenv(env.MaltegoOpenFileCommand)
-		args            []string
+		loc = lt.Values["location"]
+		openCommandName, args = createOpenCommand(
+			[]string{loc},
+		)
 	)
 
-	// if no command has been supplied via environment variable
-	// then default to:
-	// - open for macOS
-	// - gio open for linux
-	if openCommandName == "" {
-		if runtime.GOOS == platformDarwin {
-			openCommandName = defaultOpenCommand
-		} else { // linux
-			openCommandName = defaultOpenCommandLinux
-			args = append(args, "open")
-		}
-	}
-
-	loc := lt.Values["location"]
 	dieIfExecutable(trx, loc)
 
 	args = append(args, loc)

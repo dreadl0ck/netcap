@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,7 +61,7 @@ func closeGzipWriters(writers ...*pgzip.Writer) {
 
 // closeFile closes the netcap file handle
 // and removes files that do only contain a header but no audit records.
-func closeFile(outDir string, file *os.File, typ string) (name string, size int64) {
+func closeFile(outDir string, file *os.File, typ string, numRecords int64) (name string, size int64) {
 	i, err := file.Stat()
 	if err != nil {
 		fmt.Println("[ERROR] failed to stat file:", err, "type", typ)
@@ -79,59 +78,25 @@ func closeFile(outDir string, file *os.File, typ string) (name string, size int6
 		fmt.Println("error while closing", i.Name(), "errSync", errSync, "errClose", errClose)
 	}
 
-	return i.Name(), removeAuditRecordFileIfEmpty(filepath.Join(outDir, i.Name()))
+	return i.Name(), removeAuditRecordFileIfEmpty(filepath.Join(outDir, i.Name()), numRecords)
 }
 
 // removeAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.
-func removeAuditRecordFileIfEmpty(name string) (size int64) {
+func removeAuditRecordFileIfEmpty(name string, numRecords int64) (size int64) {
 	if isCSV(name) || isJSON(name) {
 		return removeEmptyNewlineDelimitedFile(name)
 	}
 
-	// Check if audit record file contains records
-	// Open, read header and the first audit record and return
-	r, err := Open(name, defaults.BufferSize)
-	if err != nil { // TODO: cleanup
-		// suppress errors for OSPF because the file handle will be closed twice
-		// since both v2 and v3 have the same gopacket.LayerType == "OSPF"
-		if !strings.HasPrefix(name, "OSPF") {
-			fmt.Println("unable to open file:", name, "error", err)
+	if numRecords == 0 {
+		// remove file
+		err := os.Remove(name)
+		if err != nil {
+			fmt.Println("failed to remove file", err)
 		}
-
 		return 0
 	}
 
-	defer func() {
-		errClose := r.Close()
-		if errClose != nil {
-			fmt.Println("failed to close netcap.Reader:", errClose)
-		}
-	}()
-
-	var (
-		header, errFileHeader = r.ReadHeader()
-		record                = InitRecord(header.Type)
-	)
-
-	if errFileHeader != nil {
-		log.Fatal(errFileHeader)
-	}
-
-	err = r.Next(record)
-	if err != nil {
-		// remove file
-		err = os.Remove(name)
-		if err != nil {
-			fmt.Println("failed to remove file", err)
-
-			// return file size of zero
-			return 0
-		}
-
-		return
-	}
-
-	// dont remove file, it contains audit records
+	// don't remove file, it contains audit records
 	// return final file size
 	s, err := os.Stat(name)
 	if err != nil {
@@ -220,7 +185,7 @@ func removeEmptyNewlineDelimitedFile(name string) (size int64) {
 
 // createFile is a wrapper to create new audit record file.
 func createFile(name, ext string) *os.File {
-	f, err := os.Create(name + ext)
+	f, err := os.OpenFile(name + ext, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, defaults.FilePermission)
 	if err != nil {
 		panic(err)
 	}

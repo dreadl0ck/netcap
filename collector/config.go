@@ -108,4 +108,6 @@ type Config struct {
 	ReassembleConnections bool
 
 	LogErrors bool
+
+	NoPrompt bool
 }

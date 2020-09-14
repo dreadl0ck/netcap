@@ -104,7 +104,7 @@ func InitDHCPFingerprintAPIKey() {
 	if k != "" {
 		apiKey = "?key=" + k
 	} else {
-		data, err := ioutil.ReadFile(filepath.Join("/usr/local/etc/netcap", "fingerprint_api_key"))
+		data, err := ioutil.ReadFile(filepath.Join("/usr", "local", "etc", "netcap", "fingerprint_api_key"))
 		if err != nil {
 			log.Fatal(err)
 		}

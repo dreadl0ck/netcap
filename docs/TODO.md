@@ -2,6 +2,29 @@
 
 - cleanup dbs folder
 - add dbs in docker containers
+- ToServicesCategories -> To Services
+- Add machine for HTTP analysis
+- Add machine for general overview
+- maltego on linux and windows: open path in terminal
+- windows install docs: 
+
+    install https://nmap.org/npcap/
+    install vscode and vt-100 plugin, 
+    add file type association for .bin files to vt100 for automatic highlighting of ANSI colors, and preview without escape sequences
+
+- icons:
+    - cookie
+    - internal / external ips
+    - software 
+    - service
+    - file
+    - ipprofile
+    - flows
+    - connections
+    - vulnerabilities
+    - tls client hello
+    - tls server hello
+    - dnsName
 
 ## WIP
 

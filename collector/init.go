@@ -81,8 +81,8 @@ func (c *Collector) Init() (err error) {
 	_, errConns := os.Stat(tcpPath)
 	if len(files) > 0 || errStreams == nil || errConns == nil {
 
-		// only prompt if quiet mode is not active
-		if !c.config.Quiet {
+		// only prompt if quiet mode is not active AND prompting for human interaction is not disabled
+		if !c.config.Quiet && !c.config.NoPrompt {
 			msg := strconv.Itoa(len(files)) + " audit record files found in output path! Overwrite?"
 			if errStreams == nil {
 				msg = "Data from previous runs found in output path! Overwrite?"
@@ -169,7 +169,12 @@ func confirm(s string) bool {
 		return true
 	}
 
-	return strings.ToLower(strings.TrimSpace(res))[0] != 'n'
+	trimmed := strings.TrimSpace(res)
+	if len(trimmed) == 0 {
+		return true
+	}
+
+	return strings.ToLower(trimmed)[0] != 'n'
 }
 
 func handleDecoderInitError(err error, target string) {
