@@ -56,6 +56,10 @@ func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformat
 		trx    = Transform{}
 	)
 
+	if !strings.HasPrefix(filepath.Base(path), "IPProfile.ncap") {
+		path = filepath.Join(filepath.Dir(path), "IPProfile.ncap.gz")
+	}
+
 	netio.FPrintBuildInfo(os.Stderr)
 
 	f, path := openFile(path)
@@ -150,6 +154,8 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		profiles = make(map[string]*types.IPProfile)
 		err      error
 	)
+
+	log.Println("LoadIPProfiles called")
 
 	netio.FPrintBuildInfo(os.Stderr)
 	f, path := openFile(path)

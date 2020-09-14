@@ -17,7 +17,11 @@ machine("netcap.AnalyzeNetworkTraffic",
             }
 
             path {
-                run("netcap.ToServices")
+                run("netcap.ToServiceTypes")
+
+                path {
+                    run("netcap.ToServices")
+                }
             }
 
             path {

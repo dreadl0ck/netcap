@@ -19,6 +19,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -86,25 +87,20 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		trx  = Transform{}
 	)
 
-	netio.FPrintBuildInfo(os.Stderr)
-
-	f, err := os.Open(path)
-	if err != nil {
-
-		log.Println(err)
-		path = strings.TrimSuffix(path, ".gz")
-
-		f, err = os.Open(path)
-		if err != nil {
-			die(err.Error(), "failed to open audit records")
-		}
+	if !strings.HasPrefix(filepath.Base(path), "DeviceProfile.ncap") {
+		path = filepath.Join(filepath.Dir(path), "DeviceProfile.ncap.gz")
 	}
+
+	//netio.FPrintBuildInfo(os.Stderr)
+
+	f, path := openFile(path)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
 		die("input file must be an audit record file, but got", f.Name())
 	}
 
+	log.Println("open reader", path)
 	r := openNetcapArchive(path)
 
 	// read netcap header
@@ -133,6 +129,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		min      uint64 = 10000000
 		max      uint64 = 0
 		profiles        = LoadIPProfiles()
+		err error
 	)
 
 	if count != nil {

@@ -19,6 +19,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -44,6 +45,10 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 
 		trx = Transform{}
 	)
+
+	if !strings.HasPrefix(filepath.Base(path), "Software.ncap") {
+		path = filepath.Join(filepath.Dir(path), "Software.ncap.gz")
+	}
 
 	netio.FPrintBuildInfo(os.Stderr)
 

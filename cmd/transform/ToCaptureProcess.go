@@ -1,7 +1,9 @@
 package transform
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -82,21 +84,31 @@ func toCaptureProcess() {
 	log.Println("args:", args)
 
 	cmd := exec.Command(maltego.ExecutablePath, args...)
-	// TODO: on windows this will lead to a blocking transform
+	// TODO: on windows this will lead to a blocking transform - verify if this is still the case with writing into buffer
 	// add env var "NC_MALTEGO_DEBUG" for maltego debug mode
 	// and only attach in debug mode
-	//cmd.Stderr = os.Stderr
-	//cmd.Stdout = os.Stderr
+	var buf bytes.Buffer
+	cmd.Stderr = io.MultiWriter(&buf)
+
 	err := cmd.Start()
 	if err != nil {
 		die(err.Error(), "failed to start capture process")
 	}
 
 	log.Println("> PID", cmd.Process.Pid)
-	returnCaptureProcessEntity(cmd.Process.Pid, outDir, lt.Value)
+
+	// wait for command in background and crash with error if it returns
+	go func() {
+		err := cmd.Wait()
+		if err != nil {
+			die(err.Error(), buf.String())
+		}
+	}()
 
 	time.Sleep(1 * time.Second)
-	log.Println("exit 0")
+	returnCaptureProcessEntity(cmd.Process.Pid, outDir, lt.Value)
+
+	log.Println("exit 0", buf.String())
 	os.Exit(0)
 }
 

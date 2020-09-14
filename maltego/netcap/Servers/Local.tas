@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-14 16:30:34.666 CEST</LastSync>
+ <LastSync>2020-09-14 20:02:34.615 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -57,9 +57,8 @@
   <Transform name="netcap.ToSSHServers"></Transform>
   <Transform name="netcap.ToSoftwareExploits"></Transform>
   <Transform name="netcap.ToSoftwareVulnerabilities"></Transform>
-  <Transform name="netcap.ToServices"></Transform>
   <Transform name="netcap.ToDevices"></Transform>
-  <Transform name="netcap.ToHosts"></Transform>
+  <Transform name="netcap.ToIPProfiles"></Transform>
   <Transform name="netcap.ToJA3Hashes"></Transform>
   <Transform name="netcap.ToJA3SHashes"></Transform>
   <Transform name="netcap.ToFlowsForService"></Transform>
@@ -84,6 +83,12 @@
   <Transform name="netcap.ToNetworkInterfaces"></Transform>
   <Transform name="netcap.LookupDHCPFingerprint"></Transform>
   <Transform name="netcap.StopCaptureProcess"></Transform>
+  <Transform name="netcap.ToServices"></Transform>
+  <Transform name="netcap.ToServiceTypes"></Transform>
+  <Transform name="netcap.ToSourceDevices"></Transform>
+  <Transform name="netcap.ToApplicationsForProfile"></Transform>
+  <Transform name="netcap.ToSNIsForProfile"></Transform>
+  <Transform name="netcap.ToJA3HashesForProfile"></Transform>
  </Transforms>
  <Seeds></Seeds>
 </MaltegoServer>
