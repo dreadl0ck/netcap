@@ -36,7 +36,7 @@ func toNetworkInterfaces() {
 		log.Println(nic.Index, nic.Name, nic.Flags, nic.HardwareAddr, nic.MTU)
 
 		ent := trx.AddEntity("netcap.Interface", nic.Name)
-		ent.AddProperty("name", "Name", maltego.Strict, nic.Name)
+		ent.AddProperty("properties.interface", "Interface", maltego.Strict, nic.Name)
 		ent.AddProperty("index", "Index", maltego.Strict, strconv.Itoa(nic.Index))
 		ent.AddProperty("hardwareaddr", "HardwareAddr", maltego.Strict, nic.HardwareAddr.String())
 		ent.AddProperty("mtu", "MTU", maltego.Strict, strconv.Itoa(nic.MTU))

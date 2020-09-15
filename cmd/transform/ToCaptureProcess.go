@@ -121,9 +121,12 @@ func toCaptureProcess() {
 }
 
 func getPathLiveCaptureOutDir(iface string) string {
+	if iface == "" {
+		die("empty interface string received", "getPathLiveCaptureOutDir")
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		die(err.Error(), "failed to get user homedir")
 	}
 	return filepath.Join(home, iface+".net")
 }
@@ -138,9 +141,8 @@ func returnCaptureProcessEntity(pid int, path string, iface string) {
 	ent := trx.AddEntityWithPath("netcap.CaptureProcess", name, path)
 
 	ent.AddProperty("pid", "PID", maltego.Strict, pidStr)
-
 	ent.AddProperty("iface", "Interface", maltego.Strict, iface)
-
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
+
 	fmt.Println(trx.ReturnOutput())
 }

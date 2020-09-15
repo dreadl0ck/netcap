@@ -31,7 +31,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"CaptureProcess", "remove_red_eye", "An operating system NETCAP process that captures traffic from a network interface", "", nil},
 	{"ContentType", "category", "A MIME type describes different multi-media formats", "", nil},
 	{"Email", "mail_outline", "An email message", "maltego.Email", nil},
-	{"Interface", "router", "A network interface", "", []propertyField{newRequiredStringField("name", "Name of the network interface"), newStringField("snaplen", "snap length for ethernet frames in bytes, default: 1514"), newStringField("bpf", "berkeley packet filter to apply")}},
+	{"Interface", "router", "A network interface", "", []propertyField{newRequiredStringField("properties.interface", "Name of the network interface"), newStringField("snaplen", "snap length for ethernet frames in bytes, default: 1514"), newStringField("bpf", "berkeley packet filter to apply")}},
 	{"PCAP", "sd_storage", "A packet capture dump file", "", []propertyField{newRequiredStringField("path", "Absolute path to the PCAP file")}},
 	{"Device", "devices", "A device seen on the network", "", nil},
 	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},

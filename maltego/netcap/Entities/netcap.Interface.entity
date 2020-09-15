@@ -5,7 +5,7 @@
    <Field name="properties.interface" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="Interface">
     <SampleValue>-</SampleValue>
    </Field>
-   <Field name="name" type="string" nullable="false" hidden="false" readonly="false" description="Name of the network interface" displayName="Name">
+   <Field name="properties.interface" type="string" nullable="false" hidden="false" readonly="false" description="Name of the network interface" displayName="Properties.Interface">
     <SampleValue></SampleValue>
    </Field>
    <Field name="snaplen" type="string" nullable="true" hidden="false" readonly="false" description="snap length for ethernet frames in bytes, default: 1514" displayName="Snaplen">

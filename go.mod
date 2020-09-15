@@ -5,7 +5,8 @@ go 1.13
 require (
 	github.com/RoaringBitmap/roaring v0.5.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1
-	github.com/blevesearch/bleve v1.0.9
+	github.com/blevesearch/bleve v1.0.10
+	github.com/blevesearch/cld2 v0.0.0-20200327141045-8b5f551d37f5 // indirect
 	github.com/cheggaaa/pb v1.0.29
 	github.com/cheggaaa/pb/v3 v3.0.5
 	github.com/cznic/b v0.0.0-20181122101859-a26611c4d92d // indirect
@@ -36,6 +37,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99 // indirect
+	github.com/ikawaha/kagome.ipadic v1.1.2 // indirect
 	github.com/imdario/mergo v0.3.10 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/klauspost/compress v1.10.10 // indirect
@@ -54,6 +56,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/sirupsen/logrus v1.6.0
+	github.com/tebeka/snowball v0.4.2 // indirect
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe

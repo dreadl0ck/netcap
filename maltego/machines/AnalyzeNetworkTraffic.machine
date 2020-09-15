@@ -25,7 +25,7 @@ machine("netcap.AnalyzeNetworkTraffic",
             }
 
             path {
-                run("netcap.ToHosts")
+                run("netcap.ToIPProfiles")
             }
 
             path {

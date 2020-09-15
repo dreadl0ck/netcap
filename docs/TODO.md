@@ -1,5 +1,6 @@
 # TODOs
 
+- add helper function to avoid os.Args[1:] pattern
 - ToFilesForWebsite
 - OpenFlow / OpenConnection in Wireshark
     - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
