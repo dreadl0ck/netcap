@@ -147,6 +147,7 @@ func (c *Collector) handleSignals() {
 	}()
 
 	if c.config.HTTPShutdownEndpoint {
+		c.printlnStdOut("serving http shutdown endpoint")
 		go c.serveCleanupHTTPEndpoint()
 	}
 }

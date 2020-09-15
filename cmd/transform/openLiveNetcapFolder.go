@@ -23,18 +23,17 @@ import (
 
 func openLiveNetcapFolder() {
 	var (
-		lt                    = maltego.ParseLocalArguments(os.Args)
+		lt                    = maltego.ParseLocalArguments(os.Args[1:])
 		trx                   = &maltego.Transform{}
-		openCommandName, args = createOpenCommand([]string{getPathLiveCaptureOutDir(lt.Values["name"])})
+		openCommandName, args = createOpenCommand([]string{getPathLiveCaptureOutDir(lt.Value)})
 	)
 
 	log.Println("vals", lt.Values)
-	log.Println("command for opening path:", openCommandName)
+	log.Println("command for opening path:", openCommandName, args)
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {
-		log.Println(string(out))
-		log.Fatal(err)
+		die(err.Error(), "failed to open netcap folder:\n" + string(out))
 	}
 	log.Println(string(out))
 
