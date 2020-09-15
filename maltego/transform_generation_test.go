@@ -70,7 +70,7 @@ var transforms = []transformCoreInfo{
 	{"ToURLsForWebsite", "netcap.Website", "Retrieve all urls for a given host"},
 	{"ToAuditRecords", "netcap.PCAP", "Transform PCAP file into audit records"},
 	{"ToAuditRecordsWithDPI", "netcap.PCAP", "Retrieve audit records with Deep Packet Inspection enabled"},
-	{"ToCaptureProcess", "netcap.Interface", "Start network capture on the given interface"},
+	{"StartCaptureProcess", "netcap.Interface", "Start network capture on the given interface"},
 	{"ToDHCPClients", "netcap.DHCPv4AuditRecords", "Show all DHCP Clients"},
 	{"ToDNSQuestions", "netcap.DNSAuditRecords", "Show all DNS questions"},
 	{"ToFetchedMails", "netcap.POP3AuditRecords", "Show emails fetched over POP3"},
@@ -78,7 +78,7 @@ var transforms = []transformCoreInfo{
 	{"ToHTTPHostnames", "netcap.HTTPAuditRecords", "Show all visited website hostnames"},
 	{"ToIANAServices", "netcap.FlowAuditRecords", "Show all IANA services identified by the flows destination port"},
 	{"ToIANAServicesForConnections", "netcap.ConnectionAuditRecords", "Show all IANA services identified by the connection destination port"},
-	{"ToLiveAuditRecords", "netcap.CaptureProcess", "Show current state of captured traffic"},
+	{"ToLiveAuditRecords", "netcap.Interface", "Show current state of captured traffic"},
 	{"ToLoginInformation", "netcap.CredentialsAuditRecords", "Show captured login credentials"},
 	{"ToSoftwareProducts", "netcap.SoftwareAuditRecords", "Show software products and version information"},
 	{"ToSSHClients", "netcap.SSHAuditRecords", "Show detected SSH client"},
@@ -115,7 +115,7 @@ var transforms = []transformCoreInfo{
 
 	{"ToNetworkInterfaces", "netcap.Host", "Show all available network interfaces"},
 	{"LookupDHCPFingerprint", "netcap.DHCPClient", "Resolve the clients DHCP fingerprint via the fingerbank API"},
-	{"StopCaptureProcess", "netcap.CaptureProcess", "Stop the NETCAP capture process"},
+	{"StopCaptureProcess", "netcap.Interface", "Stop the NETCAP capture process"},
 
 	{"ToServices", "netcap.ServiceType", "Show detected network services for the given service type"},
 	{"ToServiceTypes", "netcap.ServiceAuditRecords", "Show detected network service types"},

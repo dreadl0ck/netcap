@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/dreadl0ck/netcap/maltego"
 )
@@ -31,6 +32,13 @@ func stopCaptureProcess() {
 		}
 	}
 
+	defer func() {
+		if errPanic := recover(); err != nil {
+			die(errPanic.(error).Error(), "process panic")
+		}
+	}()
+
 	log.Println("done!")
+	time.Sleep(3*time.Second)
 	toLiveAuditRecords()
 }

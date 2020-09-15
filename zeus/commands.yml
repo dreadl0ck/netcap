@@ -110,6 +110,11 @@ commands:
     ## Utils
     ##
 
+    procs:
+        description: show running netcap processes on this machine
+        exec: |
+            watch "ps ax | grep /usr/local/bin/net --color | grep -v watch | grep -v grep"
+
     clean:
         description: clean project
         exec: |

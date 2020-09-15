@@ -1,9 +1,8 @@
 package transform
 
 import (
-	"bytes"
 	"fmt"
-	"io"
+	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
@@ -11,12 +10,9 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func toCaptureProcess() {
+func startCaptureProcess() {
 
 	var (
 		lt    = maltego.ParseLocalArguments(os.Args[1:])
@@ -85,18 +81,15 @@ func toCaptureProcess() {
 	// check if a custom bpf was provided as property
 	if bpf, ok := lt.Values["bpf"]; ok {
 		if bpf != "" {
-			args = append(args, "-bpf="+bpf)
+			args = append(args, "-bpf=\""+bpf+"\"")
 		}
 	}
 
 	log.Println("args:", args)
 
 	cmd := exec.Command(maltego.ExecutablePath, args...)
-	// TODO: on windows this will lead to a blocking transform - verify if this is still the case with writing into buffer
-	// add env var "NC_MALTEGO_DEBUG" for maltego debug mode
-	// and only attach in debug mode
-	var buf bytes.Buffer
-	cmd.Stderr = io.MultiWriter(&buf)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stderr
 
 	err := cmd.Start()
 	if err != nil {
@@ -105,18 +98,21 @@ func toCaptureProcess() {
 
 	log.Println("> PID", cmd.Process.Pid)
 
-	// wait for command in background and crash with error if it returns
-	go func() {
-		err := cmd.Wait()
-		if err != nil {
-			die(err.Error(), buf.String())
+	defer func() {
+		if errPanic := recover(); err != nil {
+			die(errPanic.(error).Error(), "process panic")
 		}
 	}()
 
-	time.Sleep(5 * time.Second)
-	returnCaptureProcessEntity(cmd.Process.Pid, outDir, lt.Value)
+	err = cmd.Wait()
+	if err != nil {
+		die(err.Error(), "error while waiting for capture process")
+	}
 
-	log.Println("exit 0", buf.String())
+	trx := maltego.Transform{}
+	trx.AddUIMessage("completed", maltego.UIMessageInform)
+	fmt.Println(trx.ReturnOutput())
+
 	os.Exit(0)
 }
 
