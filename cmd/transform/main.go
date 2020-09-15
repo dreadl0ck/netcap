@@ -34,7 +34,7 @@ func Run() {
 	log.Println("os.Args:", os.Args)
 
 	for _, f := range []func(){
-		toCaptureProcess,
+		startCaptureProcess,
 		stopCaptureProcess,
 		toAuditRecords,
 		toLiveAuditRecords,

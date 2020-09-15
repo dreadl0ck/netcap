@@ -1,0 +1,141 @@
+// NETCAP machine for processing PCAPs
+machine("netcap.AnalyzeLiveTraffic",
+    displayName:"Analyze Live Network Traffic",
+    author:"Philipp Mieden",
+    description: "Analyze Live Network Traffic with NETCAP") {
+
+    start {
+
+        run("netcap.ToLiveAuditRecords")
+        status("generated audit records")
+        log("generated audit records")
+
+        paths {
+            path {
+                run("netcap.ToFileTypes")
+                run("netcap.ToFilesForContentType")
+            }
+
+            path {
+                run("netcap.ToServiceTypes")
+
+                path {
+                    run("netcap.ToServices")
+                }
+            }
+
+            path {
+                run("netcap.ToIPProfiles")
+            }
+
+            path {
+                run("netcap.ToJA3SHashes")
+            }
+
+            path {
+                run("netcap.ToJA3Hashes")
+            }
+
+            path {
+                run("netcap.ToDevices")
+
+                paths {
+                    path {
+                        // Source IPs
+                        run("netcap.ToSourceIPs")
+
+                        paths {
+                            path {
+                                run("netcap.ToMails")
+                            }
+                            path {
+                                run("netcap.ToHTTPUserAgents")
+                            }
+                            path {
+                                run("netcap.ToURLsForHost")
+                            }
+                            path {
+                                run("netcap.ToHTTPContentTypes")
+                                run("netcap.ToFilesForContentType")
+                            }
+                            path {
+                                run("netcap.ToHTTPCookies")
+                                run("netcap.ToCookieValues")
+                            }
+                            path {
+                                run("netcap.ToHTTPParameters")
+                                run("netcap.ToParameterValues")
+                            }
+                        }
+
+                        status("finished processing source IPs")
+                        log("finished processing source IPs")
+                    }
+                    path {
+                        // Destination IPs
+                        run("netcap.ToDestinationIPs")
+
+                        paths {
+                            path {
+                                run("netcap.ToGeolocation")
+                            }
+                            path {
+                                run("netcap.ToHTTPServerNames")
+                            }
+                            path {
+                                run("netcap.ToServerNameIndicators")
+                            }
+                        }
+
+                        status("finished processing destination IPs")
+                        log("finished processing destination IPs")
+                    }
+                }
+            }
+
+            status("processing remaining data")
+            log("processing remaining data")
+
+            path {
+                run("netcap.ToDNSQuestions")
+            }
+
+            path {
+                run("netcap.ToSoftwareVulnerabilities")
+            }
+
+            path {
+                run("netcap.ToSoftwareProducts")
+            }
+
+            path {
+                run("netcap.ToDHCPClients")
+            }
+
+            path {
+                run("netcap.ToLoginInformation")
+            }
+
+            path {
+                run("netcap.ToHTTPHostnames")
+            }
+
+            path {
+                run("netcap.ToIANAServices")
+            }
+
+            path {
+                run("netcap.ToSSHClients")
+                run("netcap.ToSSHServers")
+            }
+
+            path {
+                run("netcap.ToFetchedMails")
+            }
+
+            path {
+                run("netcap.ToSoftwareExploits")
+            }
+        }
+    }
+}

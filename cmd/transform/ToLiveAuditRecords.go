@@ -31,12 +31,11 @@ func toLiveAuditRecords() {
 
 	var (
 		lt    = maltego.ParseLocalArguments(os.Args[1:])
-		path  = lt.Values["path"]
-		iface = lt.Values["iface"]
+		path  = getPathLiveCaptureOutDir(lt.Value)
 	)
 
-	log.Println("path:", path)
-	writeLiveAuditRecords(path, iface, time.Now())
+	log.Println("path:", path, "iface", lt.Value)
+	writeLiveAuditRecords(path, lt.Value, time.Now())
 }
 
 func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
@@ -91,6 +90,8 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		//	ent.SetNote("Storage Path: " + outDir + "\nFile Size: " + humanize.Bytes(uint64(stat.Size())) + "\nNum Profiles: " + strconv.FormatInt(num, 10) + "\nInterface: " + iface + "\nStart Time: " + start.String())
 		}
 	}
+
+	time.Sleep(200 * time.Millisecond)
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())

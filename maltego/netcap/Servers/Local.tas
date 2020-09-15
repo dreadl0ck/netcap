@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-15 00:57:05.779 CEST</LastSync>
+ <LastSync>2020-09-15 23:18:09.353 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -42,7 +42,7 @@
   <Transform name="netcap.ToURLsForWebsite"></Transform>
   <Transform name="netcap.ToAuditRecords"></Transform>
   <Transform name="netcap.ToAuditRecordsWithDPI"></Transform>
-  <Transform name="netcap.ToCaptureProcess"></Transform>
+  <Transform name="netcap.StartCaptureProcess"></Transform>
   <Transform name="netcap.ToDHCPClients"></Transform>
   <Transform name="netcap.ToDNSQuestions"></Transform>
   <Transform name="netcap.ToFetchedMails"></Transform>

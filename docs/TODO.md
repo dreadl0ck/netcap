@@ -1,5 +1,8 @@
 # TODOs
 
+- add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
+- Software: To IP Profile, to Host etc
+- maltego move AuditRecords entities into dedicated namespace to ease selection in menu
 - add helper function to avoid os.Args[1:] pattern
 - ToFilesForWebsite
 - OpenFlow / OpenConnection in Wireshark

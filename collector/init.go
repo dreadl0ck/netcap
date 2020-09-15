@@ -116,6 +116,9 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
+	// handle signal for a clean exit
+	c.handleSignals()
+
 	start := time.Now()
 
 	// initialize decoders
@@ -140,9 +143,6 @@ func (c *Collector) Init() (err error) {
 	if err = c.createErrorsPcap(); err != nil {
 		log.Fatal("failed to create pcap decoding errors file: ", err)
 	}
-
-	// handle signal for a clean exit
-	c.handleSignals()
 
 	if c.config.FreeOSMem != 0 {
 		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
