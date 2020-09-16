@@ -33,7 +33,7 @@ func openLiveNetcapFolder() {
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {
-		die(err.Error(), "failed to open netcap folder:\n" + string(out))
+		die(err.Error(), "failed to open netcap folder:\n"+string(out))
 	}
 	log.Println(string(out))
 
