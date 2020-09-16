@@ -16,6 +16,7 @@ package decoder
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Jeffail/gabs/v2"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -74,32 +75,24 @@ var (
 	jaCacheMutex     sync.Mutex
 	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)(\d+)\.(\d+)\.(\d+)(.*?)(?:$)`)
 	// Used to store CMS related information, and to do the CMS lookup.
-	cmsDB                = make(map[string]*CMSInfo)
+	cmsDB                = make(map[string]*cmsInfo)
 	vulnerabilitiesIndex bleve.Index
 	exploitsIndex        bleve.Index
 )
 
-type CMSInfo struct {
+type cmsInfo struct {
 	Cats []int  `json:"cats"`
 	Cpe  string `json:"cpe"`
-	// TODO: variable types, sometimes string, sometimes []string -> add preprocessing...
-	//HTML    []string `json:"html"`
-	Icon string `json:"icon"`
-	// TODO: variable types, sometimes string, sometimes []string -> add preprocessing...
-	//Implies string `json:"implies"`
-	Js struct {
-		VBulletin string `json:"vBulletin"`
-	} `json:"js"`
-	Cookies map[string]string `json:"cookies"`
-	Meta    struct {
-		Generator string `json:"generator"`
-	} `json:"meta"`
-	Website       string            `json:"website"`
-	Headers       map[string]string `json:"headers"`
+	HTML    []string          `json:"html"`
+	Implies []string          `json:"implies"`
+	Script  []string          `json:"script"`
+	Icon    string            `json:"icon"`
+	Js      map[string]string `json:"js"`
+	Meta    map[string]string `json:"meta"`
+	Website string            `json:"website"`
 
-	// not present in JSON - populated at runtime by netcap
-	HeaderRegexes map[string]*regexp.Regexp
-	CookieRegexes map[string]*regexp.Regexp
+	Cookies map[string]*regexp.Regexp `json:"cookies"`
+	Headers map[string]*regexp.Regexp `json:"headers"`
 }
 
 // Size returns the number of elements in the Items map.
@@ -444,7 +437,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 		for product, info := range cmsDB {
 
 			// compare the known headers
-			for hKey, re := range info.HeaderRegexes {
+			for hKey, re := range info.Headers {
 
 				matchesHeader := func() bool {
 					// to each of the headers from the current response
@@ -500,7 +493,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 							Timestamp:  h.Timestamp,
 							Product:    product,
 							Notes:      "", // TODO: add info from implies field
-							Website: info.Website,
+							Website:    info.Website,
 							SourceName: sourceName,
 							SourceData: sourceData,
 							Service:    serviceHTTP,
@@ -795,54 +788,116 @@ func loadCmsDB() error {
 		return err
 	}
 
-	// unmarshal CMS db JSON
-	err = json.Unmarshal(data, &cmsDB)
+	// use gabs to parse JSON because some fields have varying types...
+	jsonParsed, err := gabs.ParseJSON(data)
 	if err != nil {
 		return err
 	}
 
-	// parse the contained regexes and add them to the CMSInfo datastructures
-	for framework, e := range cmsDB {
+	// parse the contained regexes and add them to the cmsInfo datastructures
+	for framework := range jsonParsed.ChildrenMap() {
 
-		// init maps
-		e.HeaderRegexes = make(map[string]*regexp.Regexp)
-		e.CookieRegexes = make(map[string]*regexp.Regexp)
+		i := new(cmsInfo)
 
-		// process headers
-		for name, re := range e.Headers {
-			// add to map for lookups by name during runtime
-			cmsHeaders[name] = struct{}{}
+		//fmt.Printf("key: %v, value: %v\n", framework, child.Data().(map[string]interface{}))
 
-			// compile the supplied regex
-			r, err := regexp.Compile(re)
-			if err != nil {
-				decoderLog.Info("failed to compile regex from CMS db HEADER",
-					zap.Error(err),
-					zap.String("re", re),
-					zap.String("framework", framework),
-				)
-			} else {
-				e.HeaderRegexes[name] = r
+		if s, ok := jsonParsed.Path(framework + ".icon").Data().(string); ok {
+			i.Icon = s
+		}
+		if s, ok := jsonParsed.Path(framework + ".cpe").Data().(string); ok {
+			i.Cpe = s
+		}
+
+		if s, ok := jsonParsed.Path(framework + ".headers").Data().(map[string]interface{}); ok {
+
+			i.Headers = make(map[string]*regexp.Regexp)
+
+			// process headers
+			for name, re := range s {
+				// add to map for lookups by name during runtime
+				cmsHeaders[name] = struct{}{}
+
+				// compile the supplied regex
+				r, err := regexp.Compile(fmt.Sprint(re))
+				if err != nil {
+					decoderLog.Info("failed to compile regex from CMS db HEADER",
+						zap.Error(err),
+						zap.String("re", fmt.Sprint(re)),
+						zap.String("framework", framework),
+					)
+				} else {
+					i.Headers[name] = r
+				}
 			}
 		}
 
-		// process cookies
-		for name, re := range e.Cookies {
-			// add to map for lookups by name during runtime
-			cmsCookies[name] = struct{}{}
+		if s, ok := jsonParsed.Path(framework + ".cookies").Data().(map[string]interface{}); ok {
 
-			// compile the supplied regex
-			r, err := regexp.Compile(re)
-			if err != nil {
-				decoderLog.Info("failed to compile regex from CMS db COOKIE",
-					zap.Error(err),
-					zap.String("re", re),
-					zap.String("framework", framework),
-				)
-			} else {
-				e.CookieRegexes[name] = r
+			i.Cookies = make(map[string]*regexp.Regexp)
+
+			// process cookies
+			for name, re := range s {
+				// add to map for lookups by name during runtime
+				cmsCookies[name] = struct{}{}
+
+				// compile the supplied regex
+				r, err := regexp.Compile(fmt.Sprint(re))
+				if err != nil {
+					decoderLog.Info("failed to compile regex from CMS db COOKIE",
+						zap.Error(err),
+						zap.String("re", fmt.Sprint(re)),
+						zap.String("framework", framework),
+					)
+				} else {
+					i.Cookies[name] = r
+				}
 			}
 		}
+
+		if s, ok := jsonParsed.Path(framework + ".js").Data().(map[string]interface{}); ok {
+			m := make(map[string]string)
+			for k, v := range s {
+				m[k] = fmt.Sprint(v)
+			}
+			i.Js = m
+		}
+
+		if s, ok := jsonParsed.Path(framework + ".meta").Data().(map[string]interface{}); ok {
+			m := make(map[string]string)
+			for k, v := range s {
+				m[k] = fmt.Sprint(v)
+			}
+			i.Js = m
+		}
+
+		if s, ok := jsonParsed.Path(framework + ".website").Data().(string); ok {
+			i.Website = s
+		}
+
+		if s, ok := jsonParsed.Path(framework + ".implies").Data().(string); ok {
+			i.Implies = []string{s}
+		}
+		if s, ok := jsonParsed.Path(framework + ".implies").Data().([]string); ok {
+			i.Implies = s
+		}
+
+		if s, ok := jsonParsed.Path(framework + ".script").Data().(string); ok {
+			i.Script = []string{s}
+		}
+		if s, ok := jsonParsed.Path(framework + ".script").Data().([]string); ok {
+			i.Script = s
+		}
+
+		if s, ok := jsonParsed.Path(framework + ".html").Data().(string); ok {
+			i.HTML = []string{s}
+		}
+		if s, ok := jsonParsed.Path(framework + ".html").Data().([]string); ok {
+			i.HTML = s
+		}
+
+		//spew.Dump(i)
+
+		cmsDB[framework] = i
 	}
 
 	return nil

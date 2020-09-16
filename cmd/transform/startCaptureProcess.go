@@ -36,8 +36,6 @@ func startCaptureProcess() {
 		}
 	}
 
-
-
 	outDir := getPathLiveCaptureOutDir(lt.Value)
 	log.Println("writing output to:", outDir)
 

@@ -18,7 +18,7 @@ func stopCaptureProcess() {
 
 	http.DefaultClient.Timeout = 0
 	resp, err := http.Get("http://127.0.0.1:60589/cleanup")
-	if err != nil && !errors.Is(err, io.EOF){
+	if err != nil && !errors.Is(err, io.EOF) {
 		trx.AddUIMessage("failed to stop process: "+err.Error(), maltego.UIMessageFatal)
 		fmt.Println(trx.ReturnOutput())
 		return
@@ -39,6 +39,6 @@ func stopCaptureProcess() {
 	}()
 
 	log.Println("done!")
-	time.Sleep(3*time.Second)
+	time.Sleep(3 * time.Second)
 	toLiveAuditRecords()
 }
