@@ -88,7 +88,7 @@ func countPackets(path string) (count int64, err error) {
 
 	for {
 		// loop over packets and discard all data
-		_, _, err = r.ReadPacketData()
+		_, _, err = r.ZeroCopyReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
