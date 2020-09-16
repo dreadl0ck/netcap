@@ -70,11 +70,13 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(allProtosTotal)
-	prometheus.MustRegister(unknownProtosTotal)
-	prometheus.MustRegister(decodingErrorsTotal)
-	prometheus.MustRegister(customDecoderTime)
-	prometheus.MustRegister(gopacketDecoderTime)
-	prometheus.MustRegister(reassemblyTime)
-	prometheus.MustRegister(newPacketsPerSecond)
+	prometheus.MustRegister(
+		allProtosTotal,
+		unknownProtosTotal,
+		decodingErrorsTotal,
+		customDecoderTime,
+		gopacketDecoderTime,
+		reassemblyTime,
+		newPacketsPerSecond,
+	)
 }

@@ -31,7 +31,6 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
-	"github.com/evilsocket/islazy/tui"
 	"github.com/gogo/protobuf/proto"
 	"github.com/ua-parser/uap-go/uaparser"
 	"go.uber.org/zap"
@@ -71,12 +70,35 @@ var (
 	ja3Cache         = make(map[string]string)
 	jaCacheMutex     sync.Mutex
 	reGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)(\d+)\.(\d+)\.(\d+)(.*?)(?:$)`)
-	hasshMap         = make(map[string][]sshSoftware)
 	// Used to store CMS related information, and to do the CMS lookup.
-	cmsDB                = make(map[string]interface{})
+	cmsDB                = make(map[string]*CMSInfo)
 	vulnerabilitiesIndex bleve.Index
 	exploitsIndex        bleve.Index
 )
+
+type CMSInfo struct {
+	Cats []int  `json:"cats"`
+	Cpe  string `json:"cpe"`
+	// TODO: variable types, sometimes string, sometimes []string -> add preprocessing...
+	//HTML    []string `json:"html"`
+	Icon string `json:"icon"`
+	// TODO: variable types, sometimes string, sometimes []string -> add preprocessing...
+	//Implies string `json:"implies"`
+	Js struct {
+		VBulletin string `json:"vBulletin"`
+	} `json:"js"`
+	Cookies struct {
+		Bbsessionhash  string `json:"bbsessionhash"`
+		Bblastactivity string `json:"bblastactivity"`
+		Bblastvisit    string `json:"bblastvisit"`
+	} `json:"cookies"`
+	Meta struct {
+		Generator string `json:"generator"`
+	} `json:"meta"`
+	Website string            `json:"website"`
+	Headers map[string]string `json:"headers"`
+	HeaderRegexes map[string]*regexp.Regexp
+}
 
 // Size returns the number of elements in the Items map.
 func (a *atomicSoftwareMap) Size() int {
@@ -258,22 +280,22 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 		dpIdent += " <" + dp.DeviceManufacturer + ">"
 	}
 
-	// Only do JA3 fingerprinting when both ja3 and ja3s are present, aka when the server Hello is captured
-	// TODO: improve this loops efficiency
+	// Only do JA3 fingerprinting when both fingerprints for client and server are present
+	// TODO: improve efficiency for this lookup
 	if len(JA3) > 0 && len(JA3s) > 0 {
-		for _, serverIdent := range ja3db.Servers {
-			serverName := serverIdent.Server
 
-			for _, clientIdent := range serverIdent.Clients {
-				clientName := clientIdent.Os + "(" + clientIdent.Arch + ")"
+		// for each server
+		for _, srv := range ja3db.Servers {
 
-				for _, processInstance := range clientIdent.Processes {
-					processName := processInstance.Process
+			// for each client
+			for _, c := range srv.Clients {
 
-					if processInstance.JA3 == JA3 && processInstance.JA3s == JA3s {
-						pMu.Lock()
-						values := regExpServerName.FindStringSubmatch(serverName)
+				// for each process
+				for _, p := range c.Processes {
 
+					// if the process had both client and server fingerprints
+					if p.JA3 == JA3 && p.JA3s == JA3s {
+						values := regExpServerName.FindStringSubmatch(srv.Server)
 						s = append(s, &software{
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
@@ -290,9 +312,9 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 						}, &software{
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
-								Product:        processName, // Name of the browser, including version
-								Vendor:         clientName,  // Name of the OS
-								Version:        "",          // TODO parse client name
+								Product:        p.Process,                           // Name of the browser, including version
+								Vendor:         c.Os + "(" + c.Arch + ")", // Name of the OS
+								Version:        "",                                  // TODO parse client name
 								DeviceProfiles: []string{dpIdent},
 								SourceName:     "JA3",
 								SourceData:     JA3,
@@ -301,7 +323,6 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 								Flows:          []string{flowIdent},
 							},
 						})
-						pMu.Unlock()
 					}
 				}
 			}
@@ -391,45 +412,47 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 		}
 	}
 
-	// Try to detect apps
-	// TODO: optimize this loops performance
-	httpStore.Lock()
-	if receivedHeaders, ok := httpStore.CMSHeaders[h.DstIP]; ok {
-		httpStore.Unlock()
+	var serverHeaders = make([]headerForApps, 0, len(h.ResponseHeader))
 
-		var (
-			headers map[string]interface{}
-			hdrs    interface{}
-		)
+	// Iterate over all response headers and check if they are known CMS headers.
+	for key, val := range h.ResponseHeader {
+		if _, ok := cmsHeadersList[key]; ok {
+			serverHeaders = append(serverHeaders, headerForApps{HeaderName: key, HeaderValue: val})
+		}
+	}
+	if len(serverHeaders) > 0 {
 
-		for k, v := range cmsDB {
-			if headers, ok = v.(map[string]interface{}); ok {
-				if hdrs, ok = headers["headers"]; ok {
-					for key, val := range hdrs.(map[string]interface{}) {
-						for _, receivedHeader := range receivedHeaders {
-							re, err := regexp.Compile(val.(string))
-							if err != nil {
-								fmt.Println("Failed to compile:    " + val.(string))
-							} else if strings.EqualFold(receivedHeader.HeaderName, key) &&
-								(re.MatchString(receivedHeader.HeaderValue) || val == "") {
-								s = append(s, &software{
-									Software: &types.Software{
-										Timestamp:  h.Timestamp,
-										Product:    k,
-										Version:    "",
-										SourceName: key,
-										Service:    serviceHTTP,
-										Flows:      []string{flowIdent},
-									},
-								})
-							}
-						}
+		// for all items in the CMS db
+		for product, info := range cmsDB {
+
+			// compare the known headers
+			for hKey, re := range info.HeaderRegexes {
+
+				// to each of the headers from the current response
+				for _, receivedHeader := range serverHeaders {
+
+					// if header names are identical (case insensitive!)
+					if strings.EqualFold(receivedHeader.HeaderName, hKey) ||
+
+						// OR the regex matches the value of the header
+						re.MatchString(receivedHeader.HeaderValue) {
+
+						// we found a match
+						s = append(s, &software{
+							Software: &types.Software{
+								Timestamp:  h.Timestamp,
+								Product:    product,
+								Version:    "",
+								SourceName: hKey,
+								SourceData: receivedHeader.HeaderValue,
+								Service:    serviceHTTP,
+								Flows:      []string{flowIdent},
+							},
+						})
 					}
 				}
 			}
 		}
-	} else {
-		httpStore.Unlock()
 	}
 
 	return s
@@ -650,19 +673,27 @@ var softwareDecoder = newCustomDecoder(
 
 		decoderLog.Info("loaded HASSH digests", zap.Int("total", len(hashDBMap)))
 
+		// read CMS db JSON
 		data, err = ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "cmsdb.json"))
 		if err != nil {
 			return err
 		}
 
+		// unmarshal CMS db JSON
 		err = json.Unmarshal(data, &cmsDB)
 		if err != nil {
 			return err
 		}
 
-		for _, entry := range hasshDB {
-			hasshMap[entry.Hash] = entry.Software // TODO: note from Giac: Holds redundant info, but couldn't figure a more elegant way to do this
+		// parse the contained regexes and add them to the CMSInfo datastructures
+		for _, e := range cmsDB {
+			e.HeaderRegexes = make(map[string]*regexp.Regexp)
+			for name, re := range e.Headers {
+				e.HeaderRegexes[name] = regexp.MustCompile(re)
+			}
 		}
+
+		decoderLog.Info("loaded CMS db", zap.Int("total", len(cmsDB)))
 
 		// Load vulnerabilities DB index
 		indexName := filepath.Join(resolvers.DataBaseSource, vulnDBPath)
@@ -682,18 +713,19 @@ var softwareDecoder = newCustomDecoder(
 		return nil
 	},
 	func(e *customDecoder) error {
-		httpStore.Lock()
-		var rows [][]string
-		for ip, ua := range httpStore.UserAgents {
-			rows = append(rows, []string{ip, ua})
-		}
-		tui.Table(decoderLogFileHandle, []string{"IP", "UserAgents"}, rows)
-		rows = [][]string{}
-		for ip, sn := range httpStore.ServerNames {
-			rows = append(rows, []string{ip, sn})
-		}
-		tui.Table(decoderLogFileHandle, []string{"IP", "ServerNames"}, rows)
-		httpStore.Unlock()
+		// TODO: make collecting and dumping unique useragents, server names and header fields configurable
+		//httpStore.Lock()
+		//var rows [][]string
+		//for ip, ua := range httpStore.UserAgents {
+		//	rows = append(rows, []string{ip, ua})
+		//}
+		//tui.Table(decoderLogFileHandle, []string{"IP", "UserAgents"}, rows)
+		//rows = [][]string{}
+		//for ip, sn := range httpStore.ServerNames {
+		//	rows = append(rows, []string{ip, sn})
+		//}
+		//tui.Table(decoderLogFileHandle, []string{"IP", "ServerNames"}, rows)
+		//httpStore.Unlock()
 
 		// flush writer
 		for _, item := range softwareStore.Items {
