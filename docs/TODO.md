@@ -19,7 +19,7 @@
 
 - add Show All Services transform: show both TCP and UDP
   - add different types for internal or external services
-    - add Show Services without Data Exchange to include services that transferred no data and exlcude those by default?
+    - add Show Services without Data Exchange to include services that transferred no data and exclude those by default?
 - Cookies + Params: add counters to indicate flow volume
 
 on audit record archives:
@@ -154,6 +154,7 @@ entities:
 
 ## General
 
+- rapid7 dbs / API integration: https://help.rapid7.com/insightvm/en-us/api/index.html
 - implement a net dump summary table like: https://github.com/jbaggs/conn-summary
 - httpMetaStore cleanup
 - stream protocol identification: add stream signature with patterns for client and server streams 

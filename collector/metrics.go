@@ -39,10 +39,42 @@ var (
 		},
 		[]string{"Protocol", "Error"},
 	)
+	customDecoderTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nc_custom_decoder_time",
+			Help: "Time taken for each custom decoder invocation",
+		},
+		[]string{"Decoder"},
+	)
+	gopacketDecoderTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nc_gopacket_decoder_time",
+			Help: "Time taken for each gopacket decoder invocation",
+		},
+		[]string{"Decoder"},
+	)
+	reassemblyTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nc_reassembly_time",
+			Help: "Time taken for each packet to be processed by the TCP reassembly",
+		},
+		[]string{},
+	)
+	newPacketsPerSecond = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nc_new_packets_per_second",
+			Help: "Number of new packets being processed per second",
+		},
+		[]string{},
+	)
 )
 
 func init() {
 	prometheus.MustRegister(allProtosTotal)
 	prometheus.MustRegister(unknownProtosTotal)
 	prometheus.MustRegister(decodingErrorsTotal)
+	prometheus.MustRegister(customDecoderTime)
+	prometheus.MustRegister(gopacketDecoderTime)
+	prometheus.MustRegister(reassemblyTime)
+	prometheus.MustRegister(newPacketsPerSecond)
 }

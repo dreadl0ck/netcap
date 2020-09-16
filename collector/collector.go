@@ -469,6 +469,8 @@ func (c *Collector) printProgressInterval() chan struct{} {
 					pps  = (curr - last) / interval
 				)
 
+				newPacketsPerSecond.WithLabelValues().Set(float64(pps))
+
 				atomic.StoreInt64(&c.numPacketsLast, curr)
 
 				if !c.config.Quiet { // print

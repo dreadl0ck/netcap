@@ -163,7 +163,8 @@ func Run() {
 	var exportMetrics bool
 	if *flagMetricsAddr != "" {
 		metrics.ServeMetricsAt(*flagMetricsAddr, nil)
-		exportMetrics = true
+		// TODO: make the packet metrics configurable separately, for performance analysis it is faster to only use the core metrics
+		//exportMetrics = true
 	}
 
 	// init collector

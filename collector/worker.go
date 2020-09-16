@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/dreadl0ck/gopacket"
 
@@ -63,7 +64,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 
 			// pass packet to reassembly
 			if c.config.ReassembleConnections {
+				t := time.Now()
 				decoder.ReassemblePacket(goPacket, assembler)
+				reassemblyTime.WithLabelValues().Set(float64(time.Since(t).Nanoseconds()))
 			}
 
 			// create context for packet
@@ -118,7 +121,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 				// pick decoders from the encoderMap by looking up the layer type
 				if decoders, ok = c.goPacketDecoders[layer.LayerType()]; ok {
 					for _, dec = range decoders {
+						t := time.Now()
 						err = dec.Decode(ctx, goPacket, layer)
+						gopacketDecoderTime.WithLabelValues(layer.LayerType().String()).Set(float64(time.Since(t).Nanoseconds()))
 						if err != nil {
 							if c.config.DecoderConfig.ExportMetrics {
 								decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
@@ -150,7 +155,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan *packet {
 		done:
 			// call custom decoders
 			for _, customDec = range c.customDecoders {
+				t := time.Now()
 				err = customDec.Decode(goPacket)
+				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(time.Since(t).Nanoseconds()))
 				if err != nil {
 					if c.config.DecoderConfig.ExportMetrics {
 						decodingErrorsTotal.WithLabelValues(customDec.GetName(), err.Error()).Inc()
