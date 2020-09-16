@@ -36,6 +36,8 @@ func startCaptureProcess() {
 		}
 	}
 
+
+
 	outDir := getPathLiveCaptureOutDir(lt.Value)
 	log.Println("writing output to:", outDir)
 
@@ -85,8 +87,23 @@ func startCaptureProcess() {
 		}
 	}
 
+	// check if a custom bpf was provided as property
+	if bpf, ok := lt.Values["bpf"]; ok {
+		if bpf != "" {
+			args = append(args, "-bpf=\""+bpf+"\"")
+		}
+	}
+
+	// check if a custom bpf was provided as property
+	if bpf, ok := lt.Values["bpf"]; ok {
+		if bpf != "" {
+			args = append(args, "-bpf=\""+bpf+"\"")
+		}
+	}
+
 	log.Println("args:", args)
 
+	// TODO: invoke on the shell VS start within this process?
 	cmd := exec.Command(maltego.ExecutablePath, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stderr

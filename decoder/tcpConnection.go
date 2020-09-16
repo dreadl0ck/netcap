@@ -50,6 +50,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"runtime/pprof"
 	"sort"
 	"strconv"
@@ -292,6 +293,8 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 		log.Fatal("l != len(data): ", l, " != ", len(data), " ident:", t.ident)
 	}
 
+	ti := time.Now()
+
 	// pass data either to client or server
 	if dir == reassembly.TCPDirClientToServer {
 		t.client.DataChan() <- &streamData{
@@ -306,6 +309,8 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 			dir: dir,
 		}
 	}
+
+	streamFeedDataTime.WithLabelValues(dir.String()).Set(float64(time.Since(ti).Nanoseconds()))
 }
 
 //
@@ -430,6 +435,8 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 	decoderLog.Debug("ReassemblyComplete", zap.String("ident", t.ident))
 
+	ti := time.Now()
+
 	// save data for the current stream
 	if t.client != nil {
 		t.client.MarkSaved()
@@ -439,6 +446,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		if err != nil {
 			fmt.Println("failed to save stream", err)
 		}
+		streamProcessingTime.WithLabelValues(reassembly.TCPDirClientToServer.String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
 
 	if t.server != nil {
@@ -446,6 +454,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 		// server
 		saveTCPServiceBanner(t.server)
+		streamProcessingTime.WithLabelValues(reassembly.TCPDirServerToClient.String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
 
 	// channels don't have to be closed.
@@ -484,8 +493,12 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 			}
 		}
 
+		ti = time.Now()
+
 		// call the associated decoder
 		t.decoder.Decode()
+
+		streamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
 
 	reassemblyLog.Debug("stream closed",

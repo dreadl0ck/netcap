@@ -114,7 +114,7 @@ var (
 	flagHexdump              = fs.Bool("hexdump", false, "dump packets used in stream reassembly as hex to the reassembly.log file")
 	flagWaitForConnections   = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
 	flagWriteincomplete      = fs.Bool("writeincomplete", false, "write incomplete response")
-	flagStreamDecoderBufSize = fs.Int("sbuf-size", 0, "size for channel used to pass data to the stream decoders. default is unbuffered")
+	flagStreamDecoderBufSize = fs.Int("sbuf-size", 1000, "size for channel used to pass data to the stream decoders. default is unbuffered")
 	flagReassemblyDebug      = fs.Bool("reassembly-debug", false, "if true, the reassembly will log verbose debugging information")
 
 	flagNoPrompt   = fs.Bool("noprompt", false, "don't prompt for interaction during execution")
@@ -138,7 +138,7 @@ var (
 	flagBannerSize          = fs.Int("bsize", 256, "size of the stored service banners in bytes")
 	flagHarvesterBannerSize = fs.Int("hbsize", 256, "size of the data passed to the credential harvesters in bytes")
 	flagCustomCredsRegex    = fs.String("reCustom", "", "possibility of passing a custom regex for harvesting credentials")
-	flagStreamBufferSize    = fs.Int("stream-buffer", 100, "stream buffer size for tcp stream processor")
+	flagStreamBufferSize    = fs.Int("stream-buffer", 1000, "stream buffer size for tcp stream processor")
 
 	flagCompressionBlockSize = fs.Int("compression-block-size", defaults.CompressionBlockSize, "block size used for parallel compression")
 	flagCompressionLevel     = fs.String("compression-level", compressionLevelToString(defaults.CompressionLevel), "level of compression")

@@ -15,9 +15,43 @@ package decoder
 
 import (
 	"fmt"
-	"runtime"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/prometheus/client_golang/prometheus"
 	"sync"
+	"time"
 )
+
+var (
+	streamDecodeTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nc_stream_decode_time",
+			Help: "Time taken to process a TCP stream",
+		},
+		[]string{"Decoder"},
+	)
+	streamFeedDataTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nc_stream_feed_data_time",
+			Help: "Time taken to feed data to a TCP stream consumer",
+		},
+		[]string{"Direction"},
+	)
+	streamProcessingTime = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "nc_stream_processing_time",
+			Help: "Time taken to save the data to disk",
+		},
+		[]string{"Direction"},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(
+		streamProcessingTime,
+		streamDecodeTime,
+		streamFeedDataTime,
+	)
+}
 
 // internal data structure to parallelize processing of tcp streams
 // when the core engine is stopped and the remaining open connections are processed.
@@ -80,6 +114,7 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 				continue
 			}
 
+			t := time.Now()
 			if s.IsClient() {
 				// save the entire conversation.
 				// we only need to do this once, when the client part of the connection is closed
@@ -87,11 +122,15 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 				if err != nil {
 					fmt.Println("failed to save connection", err)
 				}
+
+				streamProcessingTime.WithLabelValues(reassembly.TCPDirClientToServer.String()).Set(float64(time.Since(t).Nanoseconds()))
 			} else {
 				s.SortAndMergeFragments()
 
 				// save the service banner
 				saveTCPServiceBanner(s)
+
+				streamProcessingTime.WithLabelValues(reassembly.TCPDirServerToClient.String()).Set(float64(time.Since(t).Nanoseconds()))
 			}
 
 			tsp.Lock()
@@ -114,7 +153,9 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 // spawn the configured number of workers.
 func (tsp *tcpStreamProcessor) initWorkers(streamBufferSize int) {
 	tsp.streamBufferSize = streamBufferSize
-	tsp.workers = make([]chan streamReader, runtime.NumCPU())
+
+	// TODO: make configurable
+	tsp.workers = make([]chan streamReader, 1000)
 
 	for i := range tsp.workers {
 		tsp.workers[i] = tsp.streamWorker(&tsp.wg)
