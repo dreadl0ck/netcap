@@ -49,6 +49,9 @@ const (
 	servicePOP3   = "POP3"
 	serviceTelnet = "Telnet"
 	serviceFTP    = "FTP"
+
+	sourceHeader = "HTTP Header"
+	sourceCookie = "HTTP Cookie"
 )
 
 type software struct {
@@ -87,17 +90,16 @@ type CMSInfo struct {
 	Js struct {
 		VBulletin string `json:"vBulletin"`
 	} `json:"js"`
-	Cookies struct {
-		Bbsessionhash  string `json:"bbsessionhash"`
-		Bblastactivity string `json:"bblastactivity"`
-		Bblastvisit    string `json:"bblastvisit"`
-	} `json:"cookies"`
-	Meta struct {
+	Cookies map[string]string `json:"cookies"`
+	Meta    struct {
 		Generator string `json:"generator"`
 	} `json:"meta"`
-	Website string            `json:"website"`
-	Headers map[string]string `json:"headers"`
+	Website       string            `json:"website"`
+	Headers       map[string]string `json:"headers"`
+
+	// not present in JSON - populated at runtime by netcap
 	HeaderRegexes map[string]*regexp.Regexp
+	CookieRegexes map[string]*regexp.Regexp
 }
 
 // Size returns the number of elements in the Items map.
@@ -312,9 +314,9 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 						}, &software{
 							Software: &types.Software{
 								Timestamp:      i.timestamp,
-								Product:        p.Process,                           // Name of the browser, including version
+								Product:        p.Process,                 // Name of the browser, including version
 								Vendor:         c.Os + "(" + c.Arch + ")", // Name of the OS
-								Version:        "",                                  // TODO parse client name
+								Version:        "",                        // TODO parse client name
 								DeviceProfiles: []string{dpIdent},
 								SourceName:     "JA3",
 								SourceData:     JA3,
@@ -412,14 +414,30 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 		}
 	}
 
-	var serverHeaders = make([]headerForApps, 0, len(h.ResponseHeader))
+	var (
+		serverHeaders = make([]header, 0, len(h.ResponseHeader))
+		serverCookies = make([]cookie, 0, len(h.ResCookies))
+	)
 
-	// Iterate over all response headers and check if they are known CMS headers.
+	// Iterate over all response headers and collect values for known headers of frontend frameworks
 	for key, val := range h.ResponseHeader {
-		if _, ok := cmsHeadersList[key]; ok {
-			serverHeaders = append(serverHeaders, headerForApps{HeaderName: key, HeaderValue: val})
+		if _, ok := cmsHeaders[key]; ok {
+			serverHeaders = append(serverHeaders, header{name: key, value: val})
 		}
 	}
+
+	// Iterate over all response cookies and collect values for known cookies of frontend frameworks
+	for _, co := range h.ResCookies {
+		if _, ok := cmsCookies[co.Name]; ok {
+			serverCookies = append(serverCookies, cookie{name: co.Name, value: co.Value})
+		}
+	}
+
+	var (
+		sourceName string
+		sourceData string
+	)
+
 	if len(serverHeaders) > 0 {
 
 		// for all items in the CMS db
@@ -428,27 +446,70 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 			// compare the known headers
 			for hKey, re := range info.HeaderRegexes {
 
-				// to each of the headers from the current response
-				for _, receivedHeader := range serverHeaders {
+				matchesHeader := func() bool {
+					// to each of the headers from the current response
+					for _, receivedHeader := range serverHeaders {
 
-					// if header names are identical (case insensitive!)
-					if strings.EqualFold(receivedHeader.HeaderName, hKey) ||
+						if strings.EqualFold(receivedHeader.name, hKey) {
+							sourceName = sourceHeader
+							sourceData = "header name match"
 
-						// OR the regex matches the value of the header
-						re.MatchString(receivedHeader.HeaderValue) {
+							return true
+						}
 
-						// we found a match
-						s = append(s, &software{
-							Software: &types.Software{
-								Timestamp:  h.Timestamp,
-								Product:    product,
-								Version:    "",
-								SourceName: hKey,
-								SourceData: receivedHeader.HeaderValue,
-								Service:    serviceHTTP,
-								Flows:      []string{flowIdent},
-							},
-						})
+						// or the regex matches the value of the header
+						if re.MatchString(receivedHeader.value) {
+							sourceName = sourceHeader
+							sourceData = "regex match on value: " + receivedHeader.value
+
+							return true
+						}
+					}
+					return false
+				}
+
+				matchesCookie := func() bool {
+
+					// to each of the cookies from the current response
+					for _, receivedCookie := range serverCookies {
+						if strings.EqualFold(receivedCookie.name, hKey) {
+							sourceName = sourceCookie
+							sourceData = "cookie name match"
+
+							return true
+						}
+
+						// or the regex matches the value of the header
+						if re.MatchString(receivedCookie.value) {
+							sourceName = sourceCookie
+							sourceData = "regex match on value: " + receivedCookie.value
+
+							return true
+						}
+					}
+
+					return false
+				}
+
+				// if header names are identical (case insensitive!)
+				if matchesHeader() || matchesCookie() {
+
+					// we found a match
+					s = append(s, &software{
+						Software: &types.Software{
+							Timestamp:  h.Timestamp,
+							Product:    product,
+							Notes:      "", // TODO: add info from implies field
+							Website: info.Website,
+							SourceName: sourceName,
+							SourceData: sourceData,
+							Service:    serviceHTTP,
+							Flows:      []string{flowIdent},
+						},
+					})
+
+					if conf.StopAfterServiceProbeMatch {
+						return s
 					}
 				}
 			}
@@ -674,23 +735,9 @@ var softwareDecoder = newCustomDecoder(
 		decoderLog.Info("loaded HASSH digests", zap.Int("total", len(hashDBMap)))
 
 		// read CMS db JSON
-		data, err = ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "cmsdb.json"))
+		err = loadCmsDB()
 		if err != nil {
 			return err
-		}
-
-		// unmarshal CMS db JSON
-		err = json.Unmarshal(data, &cmsDB)
-		if err != nil {
-			return err
-		}
-
-		// parse the contained regexes and add them to the CMSInfo datastructures
-		for _, e := range cmsDB {
-			e.HeaderRegexes = make(map[string]*regexp.Regexp)
-			for name, re := range e.Headers {
-				e.HeaderRegexes[name] = regexp.MustCompile(re)
-			}
 		}
 
 		decoderLog.Info("loaded CMS db", zap.Int("total", len(cmsDB)))
@@ -740,7 +787,67 @@ var softwareDecoder = newCustomDecoder(
 	},
 )
 
-// TODO: move into customDecoder and use in other places to remove unnecessary package level decoders
+// load JSON database for frontend frameworks from the file system
+func loadCmsDB() error {
+	// read CMS db JSON
+	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "cmsdb.json"))
+	if err != nil {
+		return err
+	}
+
+	// unmarshal CMS db JSON
+	err = json.Unmarshal(data, &cmsDB)
+	if err != nil {
+		return err
+	}
+
+	// parse the contained regexes and add them to the CMSInfo datastructures
+	for framework, e := range cmsDB {
+
+		// init maps
+		e.HeaderRegexes = make(map[string]*regexp.Regexp)
+		e.CookieRegexes = make(map[string]*regexp.Regexp)
+
+		// process headers
+		for name, re := range e.Headers {
+			// add to map for lookups by name during runtime
+			cmsHeaders[name] = struct{}{}
+
+			// compile the supplied regex
+			r, err := regexp.Compile(re)
+			if err != nil {
+				decoderLog.Info("failed to compile regex from CMS db HEADER",
+					zap.Error(err),
+					zap.String("re", re),
+					zap.String("framework", framework),
+				)
+			} else {
+				e.HeaderRegexes[name] = r
+			}
+		}
+
+		// process cookies
+		for name, re := range e.Cookies {
+			// add to map for lookups by name during runtime
+			cmsCookies[name] = struct{}{}
+
+			// compile the supplied regex
+			r, err := regexp.Compile(re)
+			if err != nil {
+				decoderLog.Info("failed to compile regex from CMS db COOKIE",
+					zap.Error(err),
+					zap.String("re", re),
+					zap.String("framework", framework),
+				)
+			} else {
+				e.CookieRegexes[name] = r
+			}
+		}
+	}
+
+	return nil
+}
+
 // writeDeviceProfile writes the profile.
 func (cd *customDecoder) write(r types.AuditRecord) {
 	if conf.ExportMetrics {

@@ -110,6 +110,13 @@ Install windows compiler toolchain on mac:
 - add commandline completion via go package 
 - integrate scanning against YARA / suricata rules and add Malware Custom Audit Records
 
+## Frontend Fingerprinting
+
+- use js for identifying frontend frameworks
+- use url regexes for identifying frontend frameworks
+- use html meta information for identifying frontend frameworks
+- use the implies value for enriching the Notes section
+
 ## Maltego Plugin
 
 - mark if files extracted from HTTP are a Server Reply or client data sent via GET / POST
