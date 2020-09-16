@@ -867,7 +867,7 @@ func loadCmsDB() error {
 			for k, v := range s {
 				m[k] = fmt.Sprint(v)
 			}
-			i.Js = m
+			i.Meta = m
 		}
 
 		if s, ok := jsonParsed.Path(framework + ".website").Data().(string); ok {
