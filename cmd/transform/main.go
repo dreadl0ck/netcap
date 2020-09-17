@@ -120,6 +120,13 @@ func Run() {
 		toConnectionsForService,
 		toJA3Hashes,
 		toJA3SHashes,
+		openConnectionInWireshark,
+		openFlowInWireshark,
+		openHostTrafficInWireshark,
+		openTrafficInWireshark,
+		openDeviceTrafficInWireshark,
+		openServiceInWireshark,
+		openSoftwareTrafficInWireshark,
 	} {
 		if os.Args[2] == getFuncName(f) {
 			f()

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.CiscoDiscoveryAuditRecords" displayName="CiscoDiscoveryAuditRecords" displayNamePlural="CiscoDiscoveryAuditRecords" description="An archive of CiscoDiscovery audit records" category="Netcap" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.CiscoDiscoveryAuditRecords" displayName="CiscoDiscoveryAuditRecords" displayNamePlural="CiscoDiscoveryAuditRecords" description="An archive of CiscoDiscovery audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ciscodiscoveryauditrecords" displayValue="properties.ciscodiscoveryauditrecords">
   <Groups></Groups>
   <Fields>

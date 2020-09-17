@@ -124,6 +124,15 @@ var transforms = []transformCoreInfo{
 	{"ToApplicationsForProfile", "netcap.IPProfile", "Show the applications seen for the given ip profile"},
 	{"ToSNIsForProfile", "netcap.IPProfile", "Show the server name indicator seen for the given ip profile"},
 	{"ToJA3HashesForProfile", "netcap.IPProfile", "Show the ja3 hashes seen for the given ip profile"},
+
+	// Wireshark integration
+	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},
+	{"OpenFlowInWireshark", "netcap.Flow", "Open the selected flow in wireshark"},
+	{"OpenServiceInWireshark", "netcap.Service", "Open all traffic from and towards the selected service in wireshark"},
+	{"OpenHostTrafficInWireshark", "netcap.IPProfile", "Open all traffic from and towards the selected host in wireshark"},
+	{"OpenTrafficInWireshark", "netcap.IPAddr", "Open all traffic from and towards the selected host in wireshark"},
+	{"OpenDeviceTrafficInWireshark", "netcap.Device", "Open all traffic from and towards the selected device in wireshark"},
+	{"OpenSoftwareTrafficInWireshark", "netcap.Software", "Open traffic identified as the selected software in wireshark"},
 }
 
 func genFullConfigArchive() {
@@ -183,20 +192,36 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
-		genEntity(netcapIdent, d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", newStringField("path", "path to the audit records on disk"))
-		genEntity(netcapIdent, d.GetName(), d.GetName(), d.GetDescription(), "")
+		genEntity(
+			netcapIdent,
+			d.GetName()+"AuditRecords",
+			"insert_drive_file",
+			"An archive of "+d.GetName()+" audit records",
+			"",
+			true,
+			newStringField("path", "path to the audit records on disk"),
+		)
+		genEntity(netcapIdent, d.GetName(), d.GetName(), d.GetDescription(), "", false)
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		genEntity(netcapIdent, name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", newStringField("path", "path to the audit records on disk"))
-		genEntity(netcapIdent, name, name, e.Description, "")
+		genEntity(
+			netcapIdent,
+			name+"AuditRecords",
+			"insert_drive_file",
+			"An archive of "+e.Layer.String()+" audit records",
+			"",
+			true,
+			newStringField("path", "path to the audit records on disk"),
+		)
+		genEntity(netcapIdent, name, name, e.Description, "", false)
 	})
 
 	// generate additional entities after generating the others
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
-		genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, e.Fields...)
+		genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, e.Fields...)
 	}
 
 	for _, tr := range transforms {

@@ -1,12 +1,15 @@
 # TODOs
 
+- fix DeviceProfile errors on IPProfile transforms
+- For nanosecond resolution use an InactiveHandle for Live capture!    
+- add generation code for https://github.com/AliasIO/wappalyzer/blob/master/src/technologies.json
+- resolve cmd db categories mapping and add to structures
+- add generation code for latest nmap service probes
+
 - add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
 - Software: To IP Profile, to Host etc
-- maltego move AuditRecords entities into dedicated namespace to ease selection in menu
 - add helper function to avoid os.Args[1:] pattern
 - ToFilesForWebsite
-- OpenFlow / OpenConnection in Wireshark
-    - Add OpenPacketsInWireshark: For IPAddr, Device, HTTPHost, Flow
 - add Open Image transform
 - add a transform to open executable files for analysis, set tool via env var
 - on netcap.URL and netcap.Website: To Visitors
@@ -109,6 +112,7 @@ Install windows compiler toolchain on mac:
 - add explanation to each field in the proto definition via tags? could be used to generate docs
 - add commandline completion via go package 
 - integrate scanning against YARA / suricata rules and add Malware Custom Audit Records
+- pcap diff tool
 
 ## Frontend Fingerprinting
 

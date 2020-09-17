@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.OSPFAuditRecords" displayName="OSPFAuditRecords" displayNamePlural="OSPFAuditRecords" description="An archive of OSPF audit records" category="Netcap" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.OSPFAuditRecords" displayName="OSPFAuditRecords" displayNamePlural="OSPFAuditRecords" description="An archive of OSPF audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ospfauditrecords" displayValue="properties.ospfauditrecords">
   <Groups></Groups>
   <Fields>

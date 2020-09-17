@@ -18,8 +18,7 @@ func toFileType() {
 
 	out, err := exec.Command("file", "-b", path).CombinedOutput()
 	if err != nil {
-		log.Println(string(out))
-		log.Fatal(err)
+		die(err.Error(), string(out))
 	}
 
 	trx.AddEntityWithPath("netcap.FileType", string(out), path)

@@ -31,6 +31,7 @@ import (
 
 const (
 	ident               = "Netcap"
+	identArchive        = "Netcap Archives"
 	netcapPrefix        = "netcap."
 	propsPrefix         = "properties."
 	netcapIdent         = "netcap"
@@ -101,7 +102,7 @@ type entityCoreInfo struct {
 	Fields      []propertyField
 }
 
-func newEntity(entName, imgName, description, parent string, propertyFields ...propertyField) XMLEntity {
+func newEntity(entName, imgName, description, parent string, isArchive bool, propertyFields ...propertyField) XMLEntity {
 	if !strings.Contains(imgName, "/") {
 		imgName = ident + "/" + imgName
 	}
@@ -113,7 +114,6 @@ func newEntity(entName, imgName, description, parent string, propertyFields ...p
 			DisplayName:       entName,
 			DisplayNamePlural: utils.Pluralize(entName),
 			Description:       description,
-			Category:          ident,
 			SmallIconResource: imgName,
 			LargeIconResource: imgName,
 			AllowedRoot:       true,
@@ -142,6 +142,12 @@ func newEntity(entName, imgName, description, parent string, propertyFields ...p
 			},
 		}
 	)
+
+	if isArchive {
+		ent.Category = identArchive
+	} else {
+		ent.Category = ident
+	}
 
 	if len(propertyFields) > 0 {
 		ent.Properties.Fields.Items = append(ent.Properties.Fields.Items, propertyFields...)
@@ -186,7 +192,7 @@ func newRequiredStringField(name string, description string) propertyField {
 	}
 }
 
-func genEntity(outDir string, entName string, imgName string, description string, parent string, fields ...propertyField) {
+func genEntity(outDir string, entName string, imgName string, description string, parent string, isArchive bool, fields ...propertyField) {
 	// not joking, Maltego fails to render images with this name
 	if imgName == "Vulnerability" {
 		imgName = "Vuln"
@@ -194,7 +200,7 @@ func genEntity(outDir string, entName string, imgName string, description string
 
 	var (
 		name = netcapPrefix + entName
-		ent  = newEntity(entName, imgName, description, parent, fields...)
+		ent  = newEntity(entName, imgName, description, parent, isArchive, fields...)
 	)
 
 	data, err := xml.MarshalIndent(ent, "", " ")
