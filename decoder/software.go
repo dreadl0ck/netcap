@@ -81,8 +81,8 @@ var (
 )
 
 type cmsInfo struct {
-	Cats []int  `json:"cats"`
-	Cpe  string `json:"cpe"`
+	Cats    []int             `json:"cats"`
+	Cpe     string            `json:"cpe"`
 	HTML    []string          `json:"html"`
 	Implies []string          `json:"implies"`
 	Script  []string          `json:"script"`
@@ -426,6 +426,10 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 		}
 	}
 
+	if len(serverCookies) == 0 && len(serverHeaders) == 0 {
+		return s
+	}
+
 	var (
 		sourceName string
 		sourceData string
@@ -437,69 +441,83 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 		for product, info := range cmsDB {
 
 			// compare the known headers
-			for hKey, re := range info.Headers {
+			for headerName, re := range info.Headers {
 
 				matchesHeader := func() bool {
 					// to each of the headers from the current response
 					for _, receivedHeader := range serverHeaders {
 
-						if strings.EqualFold(receivedHeader.name, hKey) {
+						equal := strings.EqualFold(receivedHeader.name, headerName)
+
+						// if header name matches and we have no regex to check the value against
+						if equal && re == nil {
 							sourceName = sourceHeader
 							sourceData = "header name match"
 
 							return true
 						}
 
-						// or the regex matches the value of the header
-						if re.MatchString(receivedHeader.value) {
-							sourceName = sourceHeader
-							sourceData = "regex match on value: " + receivedHeader.value
+						if re != nil {
+							// if the header name matches and the regex matches the value of the header
+							if equal && re.MatchString(receivedHeader.value) {
+								sourceName = sourceHeader
+								sourceData = "regex match on value: " + receivedHeader.value
 
-							return true
+								// fmt.Println(receivedHeader.name, receivedHeader.value, "MATCH", sourceHeader, product)
+
+								return true
+							}
 						}
 					}
 					return false
 				}
 
+				if matchesHeader() {
+
+					// we found a match
+					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent))
+
+					if conf.StopAfterServiceProbeMatch {
+						return s
+					}
+				}
+			}
+
+			// compare known cookies
+			for cookieName, re := range info.Cookies {
 				matchesCookie := func() bool {
 
 					// to each of the cookies from the current response
 					for _, receivedCookie := range serverCookies {
-						if strings.EqualFold(receivedCookie.name, hKey) {
+
+						equal := strings.EqualFold(receivedCookie.name, cookieName)
+						if equal && re == nil {
 							sourceName = sourceCookie
 							sourceData = "cookie name match"
 
 							return true
 						}
 
-						// or the regex matches the value of the header
-						if re.MatchString(receivedCookie.value) {
-							sourceName = sourceCookie
-							sourceData = "regex match on value: " + receivedCookie.value
+						if re != nil {
+							// or the regex matches the value of the header
+							if equal && re.MatchString(receivedCookie.value) {
+								sourceName = sourceCookie
+								sourceData = "regex match on value: " + receivedCookie.value
 
-							return true
+								// fmt.Println(receivedCookie.name, receivedCookie.value, "MATCH", sourceCookie, product)
+
+								return true
+							}
 						}
 					}
 
 					return false
 				}
 
-				// if header names are identical (case insensitive!)
-				if matchesHeader() || matchesCookie() {
+				if matchesCookie() {
 
 					// we found a match
-					s = append(s, &software{
-						Software: &types.Software{
-							Timestamp:  h.Timestamp,
-							Product:    product,
-							Notes:      "", // TODO: add info from implies field
-							Website:    info.Website,
-							SourceName: sourceName,
-							SourceData: sourceData,
-							Service:    serviceHTTP,
-							Flows:      []string{flowIdent},
-						},
-					})
+					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent))
 
 					if conf.StopAfterServiceProbeMatch {
 						return s
@@ -510,6 +528,21 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 	}
 
 	return s
+}
+
+func makeSoftware(ts int64, product, website, sourceName, sourceData, flowIdent string) *software {
+	return &software{
+		Software: &types.Software{
+			Timestamp:  ts,
+			Product:    product,
+			Notes:      "", // TODO: add info from implies field
+			Website:    website,
+			SourceName: sourceName,
+			SourceData: sourceData,
+			Service:    serviceHTTP,
+			Flows:      []string{flowIdent},
+		},
+	}
 }
 
 // analyzeSoftware tries to identify software based on observations from the data

@@ -147,11 +147,11 @@ func toAuditRecords() {
 	// because the pcapng reader offers ZeroCopyReadPacketData()
 	if isPcap {
 		if err = c.CollectPcap(inputFile); err != nil {
-			log.Fatal("failed to collect audit records from pcap file: ", err)
+			die(err.Error(), "failed to collect audit records from pcap file")
 		}
 	} else {
 		if err = c.CollectPcapNG(inputFile); err != nil {
-			log.Fatal("failed to collect audit records from pcapng file: ", err)
+			die(err.Error(), "failed to collect audit records from pcapng file")
 		}
 	}
 

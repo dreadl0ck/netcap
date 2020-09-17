@@ -34,8 +34,7 @@ func openFilesFolder() {
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {
-		log.Println(string(out))
-		log.Fatal(err)
+		die(err.Error(), string(out))
 	}
 
 	log.Println(string(out))

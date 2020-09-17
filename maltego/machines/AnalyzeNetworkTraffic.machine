@@ -58,14 +58,6 @@ machine("netcap.AnalyzeNetworkTraffic",
                                 run("netcap.ToHTTPContentTypes")
                                 run("netcap.ToFilesForContentType")
                             }
-                            path {
-                                run("netcap.ToHTTPCookies")
-                                run("netcap.ToCookieValues")
-                            }
-                            path {
-                                run("netcap.ToHTTPParameters")
-                                run("netcap.ToParameterValues")
-                            }
                         }
 
                         status("finished processing source IPs")

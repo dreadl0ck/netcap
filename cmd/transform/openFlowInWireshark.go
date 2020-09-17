@@ -19,22 +19,36 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
-func openVulnerability() {
+func openFlowInWireshark() {
 	var (
-		lt                    = maltego.ParseLocalArguments(os.Args)
-		trx                   = &maltego.Transform{}
-		openCommandName, args = createOpenCommand(
-			[]string{
-				"https://nvd.nist.gov/vuln/detail/" + lt.Values["id"],
-			},
-		)
+		lt              = maltego.ParseLocalArguments(os.Args)
+		trx             = &maltego.Transform{}
+		in              = strings.TrimSuffix(filepath.Dir(lt.Values["path"]), ".net")
+		bpf             = makeConnectionBPF(lt)
+		outFile, exists = makeOutFilePath(in, bpf, lt, false, "")
+		args            = []string{"-r", in, "-w", outFile, bpf}
 	)
 
-	out, err := exec.Command(openCommandName, args...).CombinedOutput()
+	if !exists {
+		log.Println("tcpdump", args)
+
+		out, err := exec.Command("tcpdump", args...).CombinedOutput()
+		if err != nil {
+			die(err.Error(), "open file failed:\n"+string(out))
+		}
+
+		log.Println(string(out))
+	}
+
+	log.Println(wiresharkPath, outFile)
+
+	out, err := exec.Command(wiresharkPath, outFile).CombinedOutput()
 	if err != nil {
-		die(err.Error(), string(out))
+		die(err.Error(), "open file failed:\n"+string(out))
 	}
 
 	log.Println(string(out))
