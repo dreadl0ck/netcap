@@ -203,12 +203,17 @@ func parseUserAgent(ua string) *userAgent {
 		vendor = determineVendor(product)
 	}
 
+	var osName = uaClient.Os.ToString()
+	if osName == "Other" {
+		osName = ""
+	}
+
 	return &userAgent{
 		client:  uaClient,
 		product: product,
 		vendor:  vendor,
 		version: version,
-		os:      uaClient.Os.ToString(),
+		os:      osName,
 		full:    strings.TrimSpace(full),
 	}
 }
@@ -379,8 +384,8 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
 				Product:   values[1], // Name of the server (Apache, Nginx, ...)
-				Notes:     values[3], // potentially operating system
 				Version:   values[2], // Version as found after the '/'
+				OS:        values[3], // potentially operating system
 				// DeviceProfiles: []string{dpIdent},
 				SourceName: "ServerName",
 				SourceData: h.ServerName,
