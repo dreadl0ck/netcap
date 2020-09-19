@@ -36,6 +36,8 @@ var transforms = []transformCoreInfo{
 	{"ToApplicationsForCategory", "netcap.ApplicationCategory", "Retrieve applications seen for a given category"},
 	{"ToCookiesForHTTPHost", "netcap.Website", "Retrieve cookies seen for the given host"},
 	{"ToCookieValues", "netcap.HTTPCookie", "Retrieve values for a given cookie identifier"},
+	{"ToHeadersForHTTPHost", "netcap.Website", "Retrieve headers seen for the given host"},
+	{"ToHeaderValues", "netcap.HTTPHeader", "Retrieve values for a given header identifier"},
 	{"ToDHCP", "netcap.IPAddr", "Fetch DHCP options for host"},
 	{"ToDNSQuestions", "netcap.IPAddr", "Show all captured DNS questions for the selected host"},
 	{"ToDestinationIPs", "netcap.Device", "Get destination hosts seen for the selected device"},
@@ -133,6 +135,9 @@ var transforms = []transformCoreInfo{
 	{"OpenTrafficInWireshark", "netcap.IPAddr", "Open all traffic from and towards the selected host in wireshark"},
 	{"OpenDeviceTrafficInWireshark", "netcap.Device", "Open all traffic from and towards the selected device in wireshark"},
 	{"OpenSoftwareTrafficInWireshark", "netcap.Software", "Open traffic identified as the selected software in wireshark"},
+	{"OpenVulnerabilityTrafficInWireshark", "netcap.Vulnerability", "Open the traffic indicating the selected vulnerability in wireshark"},
+
+	{"OpenFileInDisassembler", "netcap.File", "Open binary file in disassembler for analysis"},
 }
 
 func genFullConfigArchive() {

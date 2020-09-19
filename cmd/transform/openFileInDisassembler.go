@@ -15,35 +15,26 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
-func openExploit() {
+func openFileInDisassembler() {
 	var (
-		lt             = maltego.ParseLocalArguments(os.Args)
-		trx            = &maltego.Transform{}
-		exploitDirPath = os.Getenv(env.MaltegoExploitDirectory)
+		lt      = maltego.ParseLocalArguments(os.Args)
+		trx     = &maltego.Transform{}
+		loc     = lt.Values["location"]
+		openCmd = "/Applications/Hopper Disassembler v4.app/Contents/MacOS/hopper"
+		args    = []string{"-e", loc}
 	)
 
-	if exploitDirPath == "" {
-		exploitDirPath = filepath.Join("/usr", "local", "etc", "netcap")
-	}
+	log.Println("final command for opening file:", openCmd, args)
 
-	filePath := filepath.Join(exploitDirPath, lt.Values["file"])
-	dieIfExecutable(filePath)
-
-	openCommandName, args := createOpenCommand(
-		[]string{filePath},
-	)
-
-	out, err := exec.Command(openCommandName, args...).CombinedOutput()
+	out, err := exec.Command(openCmd, args...).CombinedOutput()
 	if err != nil {
-		die(err.Error(), "open exploit failed:\n"+string(out))
+		die(err.Error(), "open file failed:\n"+string(out))
 	}
 
 	log.Println(string(out))

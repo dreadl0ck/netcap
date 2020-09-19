@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-17 17:39:39.819 CEST</LastSync>
+ <LastSync>2020-09-19 13:16:32.521 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -8,6 +8,8 @@
   <Transform name="netcap.ToApplicationsForCategory"></Transform>
   <Transform name="netcap.ToCookiesForHTTPHost"></Transform>
   <Transform name="netcap.ToCookieValues"></Transform>
+  <Transform name="netcap.ToHeadersForHTTPHost"></Transform>
+  <Transform name="netcap.ToHeaderValues"></Transform>
   <Transform name="netcap.ToDHCP"></Transform>
   <Transform name="netcap.ToDNSQuestions"></Transform>
   <Transform name="netcap.ToDestinationIPs"></Transform>
@@ -96,6 +98,8 @@
   <Transform name="netcap.OpenTrafficInWireshark"></Transform>
   <Transform name="netcap.OpenDeviceTrafficInWireshark"></Transform>
   <Transform name="netcap.OpenSoftwareTrafficInWireshark"></Transform>
+  <Transform name="netcap.OpenVulnerabilityTrafficInWireshark"></Transform>
+  <Transform name="netcap.OpenFileInDisassembler"></Transform>
  </Transforms>
  <Seeds></Seeds>
 </MaltegoServer>

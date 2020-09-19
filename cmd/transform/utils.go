@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/types"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -18,17 +19,14 @@ import (
 
 // dieIfExecutable can be used to check if the file at the passed in location is executable
 // if so, the function will exit the program cleanly and print an error for maltego.
-func dieIfExecutable(trx *maltego.Transform, loc string) {
+func dieIfExecutable(loc string) {
 	// the open tool uses the file extension to decide which program to pass the file to
 	// if there is an extension for known executable formats - abort directly
 	ext := filepath.Ext(loc)
 	log.Println("file extension", ext)
 
 	if ext == ".exe" || ext == ".bin" {
-		log.Println("detected known executable file extension - aborting to prevent accidental execution!")
-		trx.AddUIMessage("completed!", maltego.UIMessageInform)
-		fmt.Println(trx.ReturnOutput())
-		os.Exit(0)
+		die("detected known executable file extension", "aborting to prevent accidental execution")
 	}
 
 	// if there is no extension, use content type detection to determine if its an executable
@@ -36,7 +34,7 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 
 	f, err := os.OpenFile(loc, os.O_RDONLY, defaults.DirectoryPermission)
 	if err != nil {
-		log.Fatal(err)
+		die(err.Error(), "failed to open path")
 	}
 
 	defer func() {
@@ -50,7 +48,15 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 	buf := make([]byte, 512)
 	_, err = io.ReadFull(f, buf)
 	if err != nil && !errors.Is(err, io.EOF) {
-		log.Fatal(err)
+		if !errors.Is(err, io.ErrUnexpectedEOF) {
+			die(err.Error(), "failed to read file banner")
+		}
+		// unexpected EOF: we got less than 512 bytes of data
+		// read the entire thing and update the buffer
+		buf, err = ioutil.ReadAll(f)
+		if err != nil {
+			die(err.Error(), "failed to read file")
+		}
 	}
 
 	// check if file is executable to prevent accidental execution
@@ -60,15 +66,12 @@ func dieIfExecutable(trx *maltego.Transform, loc string) {
 	// get file stats to determine if executable bit is set
 	stat, err := os.Stat(loc)
 	if err != nil {
-		log.Fatal(err)
+		die(err.Error(), "failed to stat file")
 	}
 
 	// if content type is octet or the file has the executable bit set, abort
 	if cType == octetStream || isExecAny(stat.Mode()) {
-		log.Println("detected executable file - aborting to prevent accidental execution!")
-		trx.AddUIMessage("completed!", maltego.UIMessageInform)
-		fmt.Println(trx.ReturnOutput())
-		os.Exit(0)
+		die("detected executable file format", "aborting to prevent accidental execution")
 	}
 }
 

@@ -61,8 +61,11 @@ func Run() {
 		toApplications,
 		toApplicationsForCategory,
 		openFile,
+		openFileInDisassembler,
 		toCookieValues,
 		toCookiesForHTTPHost,
+		toHeadersForHTTPHost,
+		toHeaderValues,
 		toDHCP,
 		openFolder,
 		toDestinationIPs,
@@ -127,6 +130,7 @@ func Run() {
 		openDeviceTrafficInWireshark,
 		openServiceInWireshark,
 		openSoftwareTrafficInWireshark,
+		openVulnerabilityTrafficInWireshark,
 	} {
 		if os.Args[2] == getFuncName(f) {
 			f()
