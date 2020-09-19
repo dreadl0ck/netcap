@@ -1,12 +1,11 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"net/url"
 	"strconv"
-
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
 )
 
 func toURLsForHost() {
@@ -21,7 +20,7 @@ func toURLsForHost() {
 			if http.URL == "" {
 				return
 			}
-			bareURL := http.Host + stripQueryString(http.URL)
+			bareURL := stripQueryString(http.URL)
 			log.Println(bareURL)
 
 			ent := trx.AddEntityWithPath("netcap.URL", bareURL, path)
