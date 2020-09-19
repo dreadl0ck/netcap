@@ -150,7 +150,7 @@ func (u *udpStreamPool) saveAllUDPConnections() {
 			clientTransport = s.data[0].transport
 			clientNetwork = s.data[0].net
 			firstPacket = s.data[0].ci.Timestamp
-			ident = filepath.Clean(fmt.Sprintf("%s-%s", clientNetwork, clientTransport))
+			ident = utils.CreateFlowIdentFromLayerFlows(clientNetwork, clientTransport)
 		} else {
 			// skip empty conns
 			continue

@@ -31,15 +31,20 @@ func toHostsForService() {
 				log.Println("searching for ip", ip, "and port", port)
 			}
 
-			if service.IP == ip && service.Port == port {
+			if service.IP == ip && (port == 0 || service.Port == port) {
+				log.Println(service.Flows)
 				for _, f := range service.Flows {
-					srcIP, _, _, _ := utils.ParseFlowIdent(f)
-					ent := trx.AddEntityWithPath("netcap.IPAddr", srcIP, path)
-
-					ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(service.Timestamp))
-					ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, srcIP)
-
+					srcIP, _, dstIP, _ := utils.ParseFlowIdent(f)
+					if srcIP != "" {
+						ent := trx.AddEntityWithPath("netcap.IPAddr", srcIP, path)
+						ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(service.Timestamp))
+						ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, srcIP)
+					}
+					if dstIP != "" {
+						ent := trx.AddEntityWithPath("netcap.IPAddr", dstIP, path)
+						ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(service.Timestamp))
+						ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, srcIP)
+					}
 				}
 			}
 		},
