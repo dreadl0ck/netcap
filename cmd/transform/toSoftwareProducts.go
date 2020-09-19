@@ -21,6 +21,9 @@ func toSoftwareProducts() {
 						val += "\n" + soft.SourceData
 					}
 				}
+				if len(soft.OS) > 0 {
+					val += "\n" + soft.OS
+				}
 				val += "\n" + soft.SourceName
 			}
 
