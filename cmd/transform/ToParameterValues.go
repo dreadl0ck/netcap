@@ -6,15 +6,23 @@ import (
 )
 
 func toParameterValues() {
+	var (
+		paramName string
+		host string
+	)
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
-			if http.SrcIP != ipaddr {
-				return
+
+			if host == "" {
+				paramName = lt.Values["properties.httpparameter"]
+				host = lt.Values["host"]
+				if host == "" {
+					die("host not set", "")
+				}
 			}
-			param := lt.Values["properties.httpparameter"]
 			for key, val := range http.Parameters {
-				if key == param {
+				if key == paramName {
 					trx.AddEntityWithPath("netcap.HTTPParameterValue", val, path)
 				}
 			}

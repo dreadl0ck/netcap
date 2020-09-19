@@ -14,10 +14,10 @@ func toHTTPCookies() {
 				return
 			}
 			for _, c := range http.ReqCookies {
-				addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, path, http.Method)
+				addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, path, http.Method, http.Host)
 			}
 			for _, c := range http.ResCookies {
-				addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, path, http.Method)
+				addCookie(trx, c, utils.UnixTimeToUTC(http.Timestamp), ipaddr, path, http.Method, http.Host)
 			}
 		},
 		false,

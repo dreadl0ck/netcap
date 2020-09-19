@@ -9,9 +9,6 @@ func toParametersForHTTPHost() {
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
-			if http.SrcIP != ipaddr {
-				return
-			}
 			host := lt.Value
 			if http.Host == host {
 				for key := range http.Parameters {

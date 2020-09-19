@@ -48,6 +48,10 @@ var maltegoEntities = []entityCoreInfo{
 	{"DestinationPort", "device_hub", "A TCP / UDP destination port", "", nil},
 	{"SourcePort", "device_hub", "A TCP / UDP source port", "", nil},
 	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
+
+	{"HTTPHeader", "http", "A HTTP header", "", nil},
+	{"HTTPHeaderValue", "pending", "A HTTP header value", "", nil},
+
 	{"HTTPParameter", "live_help", "", "A HTTP request parameter name", nil},
 	{"HTTPParameterValue", "settings_ethernet", "A HTTP request parameter value", "", nil},
 	{"HTTPStatusCode", "highlight", "A HTTP server response code", "", nil},
@@ -77,7 +81,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"Software", "apps", "A software product", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Service", "miscellaneous_services", "A software product", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"IPProfile", "contact_page", "A behavior profile for an IP address", "netcap.IPAddr", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"Vulnerability", "warning", "A software exploit", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"Vulnerability", "bug_report", "A software exploit", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Exploit", "coronavirus", "A software vulnerability", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Flow", "arrow_right_alt", "A undirectional network flow", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Connection", "compare_arrows", "A bidirectional network connection", "", []propertyField{newStringField("path", "path to the audit records on disk")}},

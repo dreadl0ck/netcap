@@ -31,7 +31,7 @@ func openFile() {
 		)
 	)
 
-	dieIfExecutable(trx, loc)
+	dieIfExecutable(loc)
 
 	args = append(args, loc)
 	log.Println("final command for opening files:", openCommandName, args)

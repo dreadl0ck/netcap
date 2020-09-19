@@ -1909,6 +1909,7 @@ message Software {
   string SourceData = 10;
   string Notes = 11;
   string Website = 12;
+  string OS = 13;
 }
 
 message Service {

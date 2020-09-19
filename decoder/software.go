@@ -123,6 +123,7 @@ type userAgent struct {
 	vendor  string
 	version string
 	full    string
+	os      string
 }
 
 type process struct {
@@ -207,6 +208,7 @@ func parseUserAgent(ua string) *userAgent {
 		product: product,
 		vendor:  vendor,
 		version: version,
+		os:      uaClient.Os.ToString(),
 		full:    strings.TrimSpace(full),
 	}
 }
@@ -363,6 +365,7 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 					Service:    serviceHTTP,
 					Flows:      []string{flowIdent},
 					Notes:      userInfo.full,
+					OS:         userInfo.os,
 				},
 			})
 		}
