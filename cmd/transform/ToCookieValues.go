@@ -8,7 +8,7 @@ import (
 func toCookieValues() {
 	var (
 		cookieName string
-		host string
+		host       string
 	)
 
 	maltego.HTTPTransform(
@@ -37,7 +37,6 @@ func toCookieValues() {
 		false,
 	)
 }
-
 
 // TODO: set timestamp as property.
 func addCookieValue(trx *maltego.Transform, c *types.HTTPCookie, path string) {

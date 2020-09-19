@@ -28,6 +28,8 @@ const (
 	// default linux command to open files from maltego
 	// you could also set it to xdg-open.
 	defaultOpenCommandLinux = "gio"
+
+	defaultDisasmCommandMacOS = "/Applications/Hopper Disassembler v4.app/Contents/MacOS/hopper"
 )
 
 // adds arguments for different programs to the passed in arguments.

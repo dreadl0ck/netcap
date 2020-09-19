@@ -32,4 +32,7 @@ const (
 
 	// MaltegoOpenFileCommand is the default file handler used when opening files from Maltego.
 	MaltegoOpenFileCommand = "NETCAP_MALTEGO_OPEN_FILE_CMD"
+
+	// MaltegoOpenDisassemblerCommand can be used to overwrite the default disassembler program for your platform
+	MaltegoOpenDisassemblerCommand = "NETCAP_MALTEGO_OPEN_DISASM_CMD"
 )
