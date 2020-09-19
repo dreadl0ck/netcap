@@ -15,19 +15,20 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 func openFileInDisassembler() {
 	var (
-		lt      = maltego.ParseLocalArguments(os.Args)
-		trx     = &maltego.Transform{}
-		loc     = lt.Values["location"]
-		openCmd = "/Applications/Hopper Disassembler v4.app/Contents/MacOS/hopper"
-		args    = []string{"-e", loc}
+		lt            = maltego.ParseLocalArguments(os.Args)
+		trx           = &maltego.Transform{}
+		loc           = lt.Values["location"]
+		openCmd, args = makeOpenDisasmCmd(loc)
 	)
 
 	log.Println("final command for opening file:", openCmd, args)
@@ -41,4 +42,29 @@ func openFileInDisassembler() {
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
+}
+
+func makeOpenDisasmCmd(loc string) (openCmd string, args []string) {
+	openCmd = os.Getenv(env.MaltegoOpenDisassemblerCommand)
+	if openCmd != "" {
+		return openCmd, args
+	}
+
+	if openCmd == "" {
+		// if no command has been supplied via environment variable
+		// use the platform defaults
+		switch runtime.GOOS {
+		case platformDarwin:
+			openCmd = defaultDisasmCommandMacOS
+			args = []string{"-e", loc}
+		case platformWindows:
+			// TODO:
+			openCmd = "TODO"
+		case platformLinux:
+			// TODO:
+			openCmd = "TODO"
+		}
+	}
+
+	return
 }

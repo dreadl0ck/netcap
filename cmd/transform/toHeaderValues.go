@@ -8,7 +8,7 @@ import (
 func toHeaderValues() {
 	var (
 		headerName string
-		host string
+		host       string
 	)
 	maltego.HTTPTransform(
 		nil,

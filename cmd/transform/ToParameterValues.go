@@ -8,7 +8,7 @@ import (
 func toParameterValues() {
 	var (
 		paramName string
-		host string
+		host      string
 	)
 	maltego.HTTPTransform(
 		nil,

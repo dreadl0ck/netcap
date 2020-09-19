@@ -1,29 +1,30 @@
 # TODOs
 
+finish: - add a transform to open executable files for analysis, set tool via env var
+
+- add Open Image transform
+- Software: To IP Profile, to Host etc
+- on netcap.URL and netcap.Website: To Visitors
+- add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
+- ToFilesForWebsite
+- ToFilesForHTTPHost
+- add TCP and UDP colored streams as display data and remove binary data
 - fix DeviceProfile errors on IPProfile transforms
+
 - For nanosecond resolution use an InactiveHandle for Live capture!    
 - add generation code for https://github.com/AliasIO/wappalyzer/blob/master/src/technologies.json
 - resolve cmd db categories mapping and add to structures
 - add generation code for latest nmap service probes
 
-- add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
-- Software: To IP Profile, to Host etc
 - add helper function to avoid os.Args[1:] pattern
-- ToFilesForWebsite
-- add Open Image transform
-- add a transform to open executable files for analysis, set tool via env var
-- on netcap.URL and netcap.Website: To Visitors
-- add ToHTTPHeaders
 - GetHostsForGeolocation
 - add proper display data for all entities possible (show images and add links etc)
-- add TCP and UDP colored streams as display data and remove binary data
-- ToFilesForHTTPHost
 - add transform debug toggle via env var? dump input lt.Values for transform
 
-- add Show All Services transform: show both TCP and UDP
-  - add different types for internal or external services
-    - add Show Services without Data Exchange to include services that transferred no data and exclude those by default?
-- Cookies + Params: add counters to indicate flow volume
+- to services: show transport protocol first
+- add different types for internal or external services 
+- add transform that shows only services that transferred data
+- Headers + Cookies + Params: add counters to indicate flow volume
 
 on audit record archives:
 
@@ -35,7 +36,6 @@ on audit record archives:
 - on Connection: To Connections (src <-> dst format=?), To Connections with highest data transfer, To Connections with lowest data transfer, To IANA Services
 - on DHCPv6: To Devices
 - on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
-- on netcap.Website: To Website Visitors, To Website Parameters, To Website Cookies
 - on Connections: GetLongRunningSessions
 
 - cleanup dbs folder
