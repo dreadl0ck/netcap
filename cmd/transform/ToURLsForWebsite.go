@@ -19,7 +19,7 @@ func toURLsForWebsite() {
 				if http.URL == "" {
 					return
 				}
-				bareURL := http.Host + stripQueryString(http.URL)
+				bareURL := stripQueryString(http.URL)
 				log.Println(bareURL)
 
 				ent := trx.AddEntityWithPath("netcap.URL", bareURL, path)
