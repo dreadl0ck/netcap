@@ -9,6 +9,7 @@ import (
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"html"
 	"io/ioutil"
 	"log"
 	"os"
@@ -92,9 +93,10 @@ func makeConversationHTML(service string, conn *types.Connection, path string) s
 	if err != nil {
 		return err.Error()
 	}
-	str := strings.ReplaceAll(string(data), "\n", "<br>")
+	str := strings.ReplaceAll(html.EscapeString(string(data)), "\n", "<br>")
 	str = strings.ReplaceAll(str, ansi.Red, "<p style='color: red;'>")
-	str = strings.ReplaceAll(str, ansi.Blue, "</p><p style='color: dodgerblue;'>")
+	str = strings.ReplaceAll(str, ansi.Blue, "<p style='color: dodgerblue;'>")
+	str = strings.ReplaceAll(str, ansi.Reset, "</p>")
 
-	return maltego.EscapeText(str) + "</p>"
+	return maltego.EscapeText(str)
 }
