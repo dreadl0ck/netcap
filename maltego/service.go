@@ -36,7 +36,7 @@ type serviceTransformationFunc = func(lt LocalTransform, trx *Transform, profile
 type serviceCountFunc = func(service *types.Service, mac string, min, max *uint64)
 
 // ServiceTransform applies a maltego transformation over Service profiles seen for a target Service.
-func ServiceTransform(count serviceCountFunc, transform serviceTransformationFunc) {
+func ServiceTransform(count serviceCountFunc, transform serviceTransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
@@ -136,6 +136,8 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
-	fmt.Println(trx.ReturnOutput())
+	if !continueTransform {
+		trx.AddUIMessage("completed!", UIMessageInform)
+		fmt.Println(trx.ReturnOutput())
+	}
 }

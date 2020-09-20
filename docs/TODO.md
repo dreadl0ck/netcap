@@ -1,9 +1,5 @@
 # TODOs
 
-- GetDomains from file
-- GetIPs from file
-- Services: add num bytes transferred
-
 - on netcap.URL and netcap.Website: To Visitors
 - ToFilesForWebsite
 - ToFilesForHTTPHost
