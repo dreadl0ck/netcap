@@ -131,6 +131,11 @@ var transforms = []transformCoreInfo{
 	{"ToSNIsForProfile", "netcap.IPProfile", "Show the server name indicator seen for the given ip profile"},
 	{"ToJA3HashesForProfile", "netcap.IPProfile", "Show the ja3 hashes seen for the given ip profile"},
 
+	{"ToVisitorsForURL", "netcap.URL", "Show all visitors for the selected URL"},
+	{"ToVisitorsForWebsite", "netcap.Website", "Show all visitors for the selected website"},
+	{"ToProvidersForURL", "netcap.URL", "Show all providers for the selected URL"},
+	{"ToProvidersForWebsite", "netcap.Website", "Show all providers for the selected website"},
+
 	// Wireshark integration
 	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},
 	{"OpenFlowInWireshark", "netcap.Flow", "Open the selected flow in wireshark"},

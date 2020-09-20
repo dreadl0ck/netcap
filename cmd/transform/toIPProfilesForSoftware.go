@@ -18,7 +18,7 @@ func toIPProfilesForSoftware() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, soft *types.Software, min, max uint64, path string, mac string, ipaddr string) {
 
-			if product == "" {
+			if product == "" && vendor == "" {
 				product = lt.Values["product"]
 				version = lt.Values["version"]
 				vendor = lt.Values["vendor"]
