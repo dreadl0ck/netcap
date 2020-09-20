@@ -14,8 +14,6 @@
 package collector
 
 import (
-	"time"
-
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/pcap"
 
@@ -34,7 +32,7 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 	var chans []BatchInfo //nolint:prealloc
 
 	// open live handle
-	handle, err := pcap.OpenLive(in, int32(c.config.SnapLen), true, 30*time.Minute)
+	handle, err := pcap.OpenLive(in, int32(c.config.SnapLen), c.config.Promisc, c.config.Timeout)
 	if err != nil {
 		return chans, nil, err
 	}

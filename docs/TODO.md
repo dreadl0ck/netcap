@@ -1,7 +1,5 @@
 # TODOs
 
-finish: - add a transform to open executable files for analysis, set tool via env var
-
 - add Open Image transform
 - Software: To IP Profile, to Host etc
 - on netcap.URL and netcap.Website: To Visitors

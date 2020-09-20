@@ -183,6 +183,7 @@ func Run() {
 		LogErrors:             *flagLogErrors,
 		NoPrompt:              *flagNoPrompt,
 		HTTPShutdownEndpoint:  *flagHTTPShutdown,
+		Timeout:               *flagTimeout,
 		DecoderConfig: &decoder.Config{
 			Buffer:        *flagBuffer,
 			MemBufferSize: *flagMemBufferSize,
