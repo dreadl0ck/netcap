@@ -481,6 +481,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 			ctype        string
 			numResponses = len(h.responses)
 			numRequests  = len(h.requests)
+			host         string
 		)
 		h.parent.Unlock()
 
@@ -490,6 +491,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 			req := h.requests[numResponses-1]
 			h.parent.Unlock()
 			if req != nil {
+				host = req.request.Host
 				name = path.Base(req.request.URL.Path)
 				source += " from " + req.request.Host + req.request.URL.Path
 				ctype = strings.Join(req.request.Header[headerContentType], " ")
@@ -497,7 +499,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 		}
 
 		// save file to disk
-		return h.saveFile(source, name, err, body, encoding, ctype)
+		return h.saveFile(source, name, err, body, encoding, ctype, host)
 	}
 
 	return nil
@@ -560,7 +562,7 @@ func createContentTypePathIfRequired(fsPath string) {
 }
 
 // TODO: write unit tests and cleanup.
-func (h *httpReader) saveFile(source, name string, err error, body []byte, encoding []string, contentType string) error {
+func (h *httpReader) saveFile(source, name string, err error, body []byte, encoding []string, contentType, host string) error {
 	// prevent saving zero bytes
 	if len(body) == 0 {
 		return nil
@@ -727,6 +729,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		DstIP:               h.parent.net.Dst().String(),
 		SrcPort:             utils.DecodePort(h.parent.transport.Src().Raw()),
 		DstPort:             utils.DecodePort(h.parent.transport.Dst().Raw()),
+		Host:                host,
 	})
 
 	return nil
@@ -794,7 +797,15 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	if req.Method == methodPost {
 		// write request payload to disk if configured
 		if (err == nil || conf.WriteIncomplete) && conf.FileStorage != "" {
-			return h.saveFile("HTTP POST REQUEST to "+req.URL.Path, path.Base(req.URL.Path), err, body, req.Header[headerContentEncoding], strings.Join(req.Header[headerContentType], " "))
+			return h.saveFile(
+				"HTTP POST REQUEST to "+req.URL.Path,
+				path.Base(req.URL.Path),
+				err,
+				body,
+				req.Header[headerContentEncoding],
+				strings.Join(req.Header[headerContentType], " "),
+				req.Host,
+			)
 		}
 	}
 

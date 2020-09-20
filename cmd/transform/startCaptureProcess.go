@@ -125,7 +125,7 @@ func startCaptureProcess() {
 
 	err = cmd.Wait()
 	if err != nil {
-		die(err.Error(), "error while waiting for capture process:\n" + buf.String())
+		die(err.Error(), "error while waiting for capture process:\n"+buf.String())
 	}
 
 	trx := maltego.Transform{}

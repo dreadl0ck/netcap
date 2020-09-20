@@ -135,6 +135,7 @@ var transforms = []transformCoreInfo{
 	{"ToVisitorsForWebsite", "netcap.Website", "Show all visitors for the selected website"},
 	{"ToProvidersForURL", "netcap.URL", "Show all providers for the selected URL"},
 	{"ToProvidersForWebsite", "netcap.Website", "Show all providers for the selected website"},
+	{"ToFilesForWebsite", "netcap.Website", "Show all files for the selected website"},
 
 	// Wireshark integration
 	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},

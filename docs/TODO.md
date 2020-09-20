@@ -1,8 +1,5 @@
 # TODOs
 
-- ToFilesForWebsite
-- ToFilesForHTTPHost
-
 - add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
 - add TCP and UDP colored streams as display data and remove binary data
 - fix DeviceProfile errors on IPProfile transforms
@@ -119,6 +116,7 @@ Install windows compiler toolchain on mac:
 
 ## Maltego Plugin
 
+- add To Files for IPProfile, set File host field also for extracted files from pop3
 - mark if files extracted from HTTP are a Server Reply or client data sent via GET / POST
 - make A general Audit record archive transform: To Summary: Number of Records, Total Size, Fields and Value Distribution
 - add transform to do a reverse DNS lookup for \*IP hosts instead of the local lookup
