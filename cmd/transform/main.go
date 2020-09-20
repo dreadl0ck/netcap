@@ -110,7 +110,7 @@ func Run() {
 		openLiveNetcapFolderInTerminal,
 		openFilesFolder,
 		openContentTypeFolder,
-		toMD5HashesForFile,
+		toMD5HashesForFileName,
 		toLinksFromFile,
 		toEmailsFromFile,
 		toPhoneNumbersFromFile,
