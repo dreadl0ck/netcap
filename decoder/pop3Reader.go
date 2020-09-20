@@ -204,7 +204,7 @@ func (h *pop3Reader) Decode() {
 }
 
 // TODO: use saveFile to extract attachments.
-func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encoding []string) error {
+func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encoding []string, host string) error {
 	// prevent saving zero bytes
 	if len(body) == 0 {
 		return nil
@@ -339,6 +339,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		DstIP:       h.parent.net.Dst().String(),
 		SrcPort:     utils.DecodePort(h.parent.transport.Src().Raw()),
 		DstPort:     utils.DecodePort(h.parent.transport.Dst().Raw()),
+		Host:        host,
 	})
 
 	return nil
