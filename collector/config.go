@@ -15,6 +15,7 @@ package collector
 
 import (
 	"os"
+	"time"
 
 	"github.com/dreadl0ck/gopacket"
 
@@ -115,4 +116,13 @@ type Config struct {
 	// sending a GET request there can be used to trigger teardown and audit record flushing
 	// which can be used as alternative to using OS signals
 	HTTPShutdownEndpoint bool
+
+	// Timeout for live capture
+	// if you set this to 0, the pcap.BlockForever option will be used
+	// From the macOS docs on libpcap:
+	//   The read timeout is used to arrange that the read not necessarily return
+	//   immediately when a packet is seen, but that it wait for some amount of time
+	//   to allow more packets to arrive and to read multiple packets from the OS
+	//   kernel in one operation.
+	Timeout time.Duration
 }

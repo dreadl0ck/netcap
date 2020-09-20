@@ -39,6 +39,7 @@ var (
 	flagInput                  = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagMetricsAddr            = fs.String("metrics", "", "serve metrics at")
 	flagOutDir                 = fs.String("out", "", "specify output directory, will be created if it does not exist")
+	flagTimeout                = fs.Duration("timeout", 0, "set the timeout for live capture, providing a value of zero will be substituted with pcap.BlockForever.")
 
 	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 
