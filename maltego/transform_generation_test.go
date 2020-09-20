@@ -109,7 +109,7 @@ var transforms = []transformCoreInfo{
 	{"OpenLiveNetcapFolderInTerminal", "netcap.Interface", "Open the storage folder for the selected network interface in the terminal"},
 
 	{"ToHostsForService", "netcap.Service", "Show all hosts that have been contacting the service"},
-	{"ToMD5HashesForFile", "netcap.File", "Get the MD5 hashes for all files seen with the provided file name"},
+	{"ToMD5HashesForFileName", "netcap.File", "Get the MD5 hashes for all files seen with the provided file name"},
 	{"ToMD5HashesForImage", "maltego.Image", "Get the MD5 hashes associated with the image file"},
 	{"ToExifDataForImage", "maltego.Image", "Get the exif data from the image file"},
 	{"ToLinksFromFile", "netcap.File", "Extract all hyperlinks from the file"},

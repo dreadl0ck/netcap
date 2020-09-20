@@ -9,7 +9,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func toMD5HashesForFile() {
+func toMD5HashesForFileName() {
 	var (
 		name   string
 		length int64
