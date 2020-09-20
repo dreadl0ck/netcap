@@ -1,6 +1,5 @@
 # TODOs
 
-- on netcap.URL and netcap.Website: To Visitors
 - ToFilesForWebsite
 - ToFilesForHTTPHost
 

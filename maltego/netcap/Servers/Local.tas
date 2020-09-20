@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-20 19:49:40.099 CEST</LastSync>
+ <LastSync>2020-09-20 21:32:37.327 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -95,6 +95,10 @@
   <Transform name="netcap.ToApplicationsForProfile"></Transform>
   <Transform name="netcap.ToSNIsForProfile"></Transform>
   <Transform name="netcap.ToJA3HashesForProfile"></Transform>
+  <Transform name="netcap.ToVisitorsForURL"></Transform>
+  <Transform name="netcap.ToVisitorsForWebsite"></Transform>
+  <Transform name="netcap.ToProvidersForURL"></Transform>
+  <Transform name="netcap.ToProvidersForWebsite"></Transform>
   <Transform name="netcap.OpenConnectionInWireshark"></Transform>
   <Transform name="netcap.OpenFlowInWireshark"></Transform>
   <Transform name="netcap.OpenServiceInWireshark"></Transform>
