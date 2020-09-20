@@ -19,6 +19,13 @@ import (
 	"github.com/dreadl0ck/gopacket"
 )
 
+var flowIdentReplacer = strings.NewReplacer(":", "-", "->", "--")
+
+// CleanIdent will clean a path
+func CleanIdent(path string) string {
+	return flowIdentReplacer.Replace(path)
+}
+
 // CreateFlowIdentFromLayerFlows creates a flow identifier string.
 // format: srcIP:srcPort->dstIP:dstPort
 func CreateFlowIdentFromLayerFlows(net gopacket.Flow, trans gopacket.Flow) string {

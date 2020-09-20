@@ -227,7 +227,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		ext = fileExtensionForContentType(cType)
 
 		// file basename
-		base = filepath.Clean(name+"-"+path.Base(flowIdentReplacer.Replace(h.parent.ident))) + ext
+		base = filepath.Clean(name+"-"+path.Base(utils.CleanIdent(h.parent.ident))) + ext
 	)
 
 	if err != nil {
@@ -271,9 +271,9 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		}
 
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+flowIdentReplacer.Replace(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(cType))
+			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+utils.CleanIdent(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(cType))
 		} else {
-			target = path.Join(root, filepath.Clean(name+"-"+flowIdentReplacer.Replace(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(cType))
+			target = path.Join(root, filepath.Clean(name+"-"+utils.CleanIdent(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(cType))
 		}
 
 		n++

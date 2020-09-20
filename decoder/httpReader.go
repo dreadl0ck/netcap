@@ -585,7 +585,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		ext = fileExtensionForContentType(ctype)
 
 		// file basename
-		base = filepath.Clean(name+"-"+path.Base(flowIdentReplacer.Replace(h.parent.ident))) + ext
+		base = filepath.Clean(name+"-"+path.Base(utils.CleanIdent(h.parent.ident))) + ext
 	)
 	if err != nil {
 		base = "incomplete-" + base
@@ -618,9 +618,9 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		}
 
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+flowIdentReplacer.Replace(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+utils.CleanIdent(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		} else {
-			target = path.Join(root, filepath.Clean(name+"-"+flowIdentReplacer.Replace(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
+			target = path.Join(root, filepath.Clean(name+"-"+utils.CleanIdent(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
 		}
 
 		n++

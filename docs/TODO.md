@@ -1,7 +1,6 @@
 # TODOs
 
 - add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
-- add TCP and UDP colored streams as display data and remove binary data
 - fix DeviceProfile errors on IPProfile transforms
 
 - For nanosecond resolution use an InactiveHandle for Live capture!    
