@@ -14,7 +14,7 @@ func toFiles() {
 		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, path string, ipaddr string) {
 			if file.SrcIP == ipaddr {
 				if file.Name != "" {
-					ent := trx.AddEntityWithPath("netcap.File", file.Name+"\n"+file.ContentType, path)
+					ent := trx.AddEntityWithPath("netcap.File", file.Name+"\n"+file.ContentTypeDetected, path)
 
 					di := "<h3>File</h3><p>Timestamp: " + utils.UnixTimeToUTC(file.Timestamp) + "</p><p>Source: " + file.Source + "</p><p>MD5: " + file.Hash + "</p><p>ContentType: " + file.ContentType + "</p><p>ContentTypeDetected: " + file.ContentTypeDetected + "</p><p>Host: " + file.Host + "</p><p>Length: " + strconv.Itoa(int(file.Length)) + "</p><p>Ident: " + file.Ident + "</p><p>SrcIP: " + file.SrcIP + "</p><p>DstIP: " + file.DstIP + "</p><p>SrcPort: " + strconv.FormatInt(int64(file.SrcPort), 10) + "</p><p>DstPort: " + strconv.FormatInt(int64(file.DstPort), 10) + "</p><p>Location: " + file.Location + "</p>"
 					ent.AddDisplayInformation(di, "Netcap Info")
