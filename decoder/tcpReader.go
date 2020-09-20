@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
@@ -31,8 +30,6 @@ import (
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
-
-var flowIdentReplacer = strings.NewReplacer(":", "-", "->", "--")
 
 /*
  * TCP
@@ -183,7 +180,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		root = filepath.Join(conf.Out, "tcpConnections", typ)
 
 		// file basename
-		base = filepath.Clean(path.Base(flowIdentReplacer.Replace(ident))) + binaryFileExtension
+		base = filepath.Clean(path.Base(utils.CleanIdent(ident))) + binaryFileExtension
 	)
 
 	// make sure root path exists
