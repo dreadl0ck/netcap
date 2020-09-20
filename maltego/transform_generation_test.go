@@ -97,6 +97,7 @@ var transforms = []transformCoreInfo{
 
 	{"OpenExploit", "netcap.Exploit", "Open the exploit source with the default system program for the filetype"},
 	{"OpenFile", "netcap.File", "Opens a file with the default application"},
+	{"OpenImage", "maltego.Image", "Opens an image file with the default application"},
 	{"OpenFolder", "netcap.File", "Open the folder in which the file resides"},
 	{"OpenNetcapFolder", "netcap.PCAP", "Open the storage folder for the selected PCAP file"},
 	{"OpenNetcapFolderInTerminal", "netcap.PCAP", "Open the storage folder for the selected PCAP file in the terminal"},

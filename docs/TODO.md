@@ -1,11 +1,15 @@
 # TODOs
 
-- add Open Image transform
 - Software: To IP Profile, to Host etc
+- GetDomains from file
+- GetIPs from file
+- Services: add num bytes transferred
+
 - on netcap.URL and netcap.Website: To Visitors
-- add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
 - ToFilesForWebsite
 - ToFilesForHTTPHost
+
+- add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
 - add TCP and UDP colored streams as display data and remove binary data
 - fix DeviceProfile errors on IPProfile transforms
 
@@ -162,6 +166,10 @@ entities:
 - add examples for basic data queries similar to: https://old.zeek.org/current/solutions/logs/index.html
 
 ## General
+
+- add support to compile only with a subset of features
+- PACE2 integration for DPI
+- add compile option with dbs compiled into binary
 
 - rapid7 dbs / API integration: https://help.rapid7.com/insightvm/en-us/api/index.html
 - implement a net dump summary table like: https://github.com/jbaggs/conn-summary

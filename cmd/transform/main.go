@@ -106,6 +106,7 @@ func Run() {
 		toURLsForWebsite,
 		openNetcapFolderInTerminal,
 		openLiveNetcapFolder,
+		openImage,
 		openLiveNetcapFolderInTerminal,
 		openFilesFolder,
 		openContentTypeFolder,
