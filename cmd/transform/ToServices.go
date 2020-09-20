@@ -56,7 +56,7 @@ func toServices() {
 				//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
 
 				if len(service.Banner) > 0 {
-					ent.AddDisplayInformation("<pre>"+maltego.EscapeText(html.EscapeString(service.Banner))+"</pre>", "Transferred Data")
+					ent.AddDisplayInformation("<pre style='color: dodgerblue;'>"+maltego.EscapeText(html.EscapeString(service.Banner))+"</pre>", "Transferred Data")
 				}
 			}
 		},
