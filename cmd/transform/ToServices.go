@@ -50,7 +50,7 @@ func toServices() {
 				ent.AddProperty("vendor", "Vendor", maltego.Strict, service.Vendor)
 				ent.AddProperty("name", "Name", maltego.Strict, service.Name)
 
-				ent.SetLinkLabel(humanize.Bytes(uint64(service.BytesServer)))
+				ent.SetLinkLabel(humanize.Bytes(uint64(service.BytesServer)) + " server\n" + humanize.Bytes(uint64(service.BytesClient)) + " client")
 				// TODO: set thickness
 				//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
 
