@@ -76,6 +76,7 @@ func Run() {
 		toDstPorts,
 		toIncomingFlowsFiltered,
 		toFileTypes,
+		toFilesForWebsite,
 		toFiles,
 		toFileType,
 		toFilesForContentType,

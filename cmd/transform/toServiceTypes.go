@@ -11,7 +11,7 @@ func toServiceTypes() {
 
 	var (
 		// ips to total bytes transferred (client + server)
-		services = make(map[string]int64)
+		services        = make(map[string]int64)
 		auditRecordPath string
 	)
 

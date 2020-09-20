@@ -8,9 +8,9 @@ import (
 
 func toVisitorsForURL() {
 	var (
-		p = maltego.LoadIPProfiles()
-		ips = make(map[string]struct{})
-		url string
+		p    = maltego.LoadIPProfiles()
+		ips  = make(map[string]struct{})
+		url  string
 		host string
 	)
 
@@ -32,7 +32,7 @@ func toVisitorsForURL() {
 					return
 				}
 
-				if http.URL != url  {
+				if http.URL != url {
 					return
 				}
 

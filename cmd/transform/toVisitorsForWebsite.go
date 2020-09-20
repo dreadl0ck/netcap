@@ -7,8 +7,8 @@ import (
 
 func toVisitorsForWebsite() {
 	var (
-		p = maltego.LoadIPProfiles()
-		ips = make(map[string]struct{})
+		p    = maltego.LoadIPProfiles()
+		ips  = make(map[string]struct{})
 		host string
 	)
 

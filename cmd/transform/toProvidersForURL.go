@@ -8,9 +8,9 @@ import (
 
 func toProvidersForURL() {
 	var (
-		p = maltego.LoadIPProfiles()
-		ips = make(map[string]struct{})
-		url string
+		p    = maltego.LoadIPProfiles()
+		ips  = make(map[string]struct{})
+		url  string
 		host string
 	)
 
@@ -32,7 +32,7 @@ func toProvidersForURL() {
 					return
 				}
 
-				if http.URL != url  {
+				if http.URL != url {
 					return
 				}
 
