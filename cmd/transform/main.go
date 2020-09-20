@@ -48,6 +48,7 @@ func Run() {
 		toSSHClients,
 		toSSHServers,
 		toSoftwareProducts,
+		toIPProfilesForSoftware,
 		toCredentialsByService,
 		toLoginInformation,
 		toFetchedMails,

@@ -1,6 +1,5 @@
 # TODOs
 
-- Software: To IP Profile, to Host etc
 - GetDomains from file
 - GetIPs from file
 - Services: add num bytes transferred
