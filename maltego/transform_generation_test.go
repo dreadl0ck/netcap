@@ -90,6 +90,7 @@ var transforms = []transformCoreInfo{
 
 	{"ToDevices", "netcap.DeviceProfileAuditRecords", "Show all discovered device audit records"},
 	{"ToIPProfiles", "netcap.IPProfileAuditRecords", "Show all discovered ip hosts"},
+	{"ToIPProfilesForSoftware", "netcap.Software", "Show all ip hosts for the selected software"},
 	{"ToJA3Hashes", "netcap.TLSClientHelloAuditRecords", "Show all discovered ja3 client hashes"},
 	{"ToJA3SHashes", "netcap.TLSServerHelloAuditRecords", "Show all discovered ja3 server hashes"},
 	{"ToFlowsForService", "netcap.Service", "Show all flows for the selected service"},
