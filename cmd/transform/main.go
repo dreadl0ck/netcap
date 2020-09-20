@@ -113,6 +113,8 @@ func Run() {
 		openContentTypeFolder,
 		toMD5HashesForFileName,
 		toLinksFromFile,
+		toDomainsFromFile,
+		toIPsFromFile,
 		toEmailsFromFile,
 		toPhoneNumbersFromFile,
 		toMD5HashesForImage,

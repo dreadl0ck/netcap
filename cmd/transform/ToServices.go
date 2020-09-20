@@ -2,6 +2,7 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"strconv"
 
 	"github.com/dreadl0ck/netcap/maltego"
@@ -49,10 +50,15 @@ func toServices() {
 				ent.AddProperty("vendor", "Vendor", maltego.Strict, service.Vendor)
 				ent.AddProperty("name", "Name", maltego.Strict, service.Name)
 
+				ent.SetLinkLabel(humanize.Bytes(uint64(service.BytesServer)))
+				// TODO: set thickness
+				//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
+
 				if len(service.Banner) > 0 {
 					ent.AddDisplayInformation("<pre>"+maltego.EscapeText(service.Banner)+"</pre>", "Transferred Data")
 				}
 			}
 		},
+		false,
 	)
 }

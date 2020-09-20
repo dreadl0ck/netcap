@@ -48,5 +48,6 @@ func toHostsForService() {
 				}
 			}
 		},
+		false,
 	)
 }

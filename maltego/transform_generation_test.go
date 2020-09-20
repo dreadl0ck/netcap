@@ -114,6 +114,8 @@ var transforms = []transformCoreInfo{
 	{"ToMD5HashesForImage", "maltego.Image", "Get the MD5 hashes associated with the image file"},
 	{"ToExifDataForImage", "maltego.Image", "Get the exif data from the image file"},
 	{"ToLinksFromFile", "netcap.File", "Extract all hyperlinks from the file"},
+	{"ToDomainsFromFile", "netcap.File", "Extract all domain names from the file"},
+	{"ToIPsFromFile", "netcap.File", "Extract all ips from the file"},
 	{"ToEmailsFromFile", "netcap.File", "Extract all email addresses from the file"},
 	{"ToPhoneNumbersFromFile", "netcap.File", "Extract all phone numbers from the file"},
 
