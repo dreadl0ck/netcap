@@ -1,8 +1,10 @@
 package transform
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/dreadl0ck/netcap/maltego"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -101,9 +103,11 @@ func startCaptureProcess() {
 
 	log.Println("args:", args)
 
+	var buf bytes.Buffer
+
 	// TODO: invoke on the shell VS start within this process?
 	cmd := exec.Command(maltego.ExecutablePath, args...)
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = io.MultiWriter(os.Stderr, &buf)
 	cmd.Stdout = os.Stderr
 
 	err := cmd.Start()
@@ -121,7 +125,7 @@ func startCaptureProcess() {
 
 	err = cmd.Wait()
 	if err != nil {
-		die(err.Error(), "error while waiting for capture process")
+		die(err.Error(), "error while waiting for capture process:\n" + buf.String())
 	}
 
 	trx := maltego.Transform{}

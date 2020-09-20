@@ -46,6 +46,9 @@ func (c *Collector) Init() (err error) {
 	// set configuration for decoder pkg
 	decoder.SetConfig(c.config.DecoderConfig)
 
+	// handle signals for a clean exit
+	c.handleSignals()
+
 	// init logfile if necessary
 	if c.netcapLogFile == nil && c.config.Quiet {
 		err = c.initLogging()
@@ -125,9 +128,6 @@ func (c *Collector) Init() (err error) {
 			}
 		}
 	}
-
-	// handle signal for a clean exit
-	c.handleSignals()
 
 	start := time.Now()
 
