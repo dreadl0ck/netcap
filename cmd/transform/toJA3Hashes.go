@@ -16,7 +16,7 @@ func toJA3Hashes() {
 			ent := trx.AddEntityWithPath("netcap.TLSClientHello", hello.Ja3, path)
 			ent.AddProperty("ip", "IP", maltego.Strict, hello.SrcIP)
 			ent.AddProperty("port", "Port", maltego.Strict, strconv.Itoa(int(hello.SrcPort)))
-			ent.AddDisplayInformation(utils.CreateFlowIdent(hello.SrcIP, strconv.Itoa(int(hello.SrcPort)), hello.DstIP, strconv.Itoa(int(hello.DstPort))) + "<br>", "Flows")
+			ent.AddDisplayInformation(utils.CreateFlowIdent(hello.SrcIP, strconv.Itoa(int(hello.SrcPort)), hello.DstIP, strconv.Itoa(int(hello.DstPort)))+"<br>", "Flows")
 		},
 	)
 }

@@ -39,15 +39,17 @@ type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *type
 // DHCPTransform applies a maltego transformation over DHCP audit records.
 func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, continueTransform bool) {
 	var (
-		lt               = ParseLocalArguments(os.Args[1:])
-		path             = lt.Values["path"]
-		ipaddr           = lt.Values["ipaddr"]
-		dir              = filepath.Dir(path)
-		dhcpAuditRecords = filepath.Join(dir, "DHCPv4.ncap.gz")
-		trx              = Transform{}
+		lt     = ParseLocalArguments(os.Args[1:])
+		path   = lt.Values["path"]
+		ipaddr = lt.Values["ipaddr"]
+		trx    = Transform{}
 	)
 
-	f, err := os.Open(dhcpAuditRecords)
+	if !strings.HasPrefix(filepath.Base(path), "DHCPv4.ncap") {
+		path = filepath.Join(filepath.Dir(path), "DHCPv4.ncap.gz")
+	}
+
+	f, err := os.Open(path)
 	if err != nil {
 		log.Println(err)
 		fmt.Println(trx.ReturnOutput())
@@ -117,7 +119,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 			panic(err)
 		}
 
-		transform(lt, &trx, dhcp, min, max, dhcpAuditRecords, ipaddr)
+		transform(lt, &trx, dhcp, min, max, path, ipaddr)
 	}
 
 	err = r.Close()

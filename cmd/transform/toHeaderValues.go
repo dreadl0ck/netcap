@@ -20,7 +20,7 @@ func toHeaderValues() {
 					die("host not set", "")
 				}
 			}
-			if http.Host == host {
+			if http.Host == host || http.SrcIP == ipaddr {
 				if val, ok := http.RequestHeader[headerName]; ok {
 					addHeaderValue(trx, val, path, host, headerName)
 				}

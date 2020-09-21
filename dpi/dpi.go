@@ -31,6 +31,8 @@ import (
 
 var disableDPI = true
 
+const categoryUnknown = "UNKNOWN"
+
 // IsEnabled will return true if goDPI has been initialized
 func IsEnabled() bool {
 	return disableDPI
@@ -96,8 +98,15 @@ func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 func NewProto(res *ClassificationResult) *types.Protocol {
 	return &types.Protocol{
 		Packets:  1,
-		Category: string(res.Class),
+		Category: getCategoryString(res.Class),
 	}
+}
+
+func getCategoryString(in Category) string {
+	if in == "" {
+		return categoryUnknown
+	}
+	return string(in)
 }
 
 // GetProtocolsTimeout returns a map of all the identified protocol names to a result datastructure

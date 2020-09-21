@@ -75,7 +75,7 @@ func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, m
 func makeConversationHTML(service string, conn *types.Connection, path string) string {
 	streamFilePath := filepath.Join(
 		filepath.Dir(path),
-		strings.ToLower(conn.TransportProto) + "Connections",
+		strings.ToLower(conn.TransportProto)+"Connections",
 		service,
 		utils.CleanIdent(
 			utils.CreateFlowIdent(
@@ -84,7 +84,7 @@ func makeConversationHTML(service string, conn *types.Connection, path string) s
 				conn.DstIP,
 				conn.DstPort,
 			),
-		) + ".bin",
+		)+".bin",
 	)
 
 	log.Println("path", streamFilePath)

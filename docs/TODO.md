@@ -1,7 +1,9 @@
 # TODOs
 
+- remove Flow audit records?
+- add constant for "ipaddr"
+
 - add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
-- fix DeviceProfile errors on IPProfile transforms
 
 - For nanosecond resolution use an InactiveHandle for Live capture!    
 - add generation code for https://github.com/AliasIO/wappalyzer/blob/master/src/technologies.json

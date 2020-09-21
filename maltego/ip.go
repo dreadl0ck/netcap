@@ -30,10 +30,13 @@ import (
 
 // IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string, ip string)
+type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string)
+
+// deviceProfileCountFunc is a function that counts something over DeviceProfiles.
+type ipProfileCountFunc = func(profile *types.IPProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
 
 // IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile.
-func IPTransform(count countFunc, transform IPTransformationFunc) {
+func IPTransform(count ipProfileCountFunc, transform IPTransformationFunc) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
@@ -59,12 +62,12 @@ func IPTransform(count countFunc, transform IPTransformationFunc) {
 		die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_DeviceProfile {
-		die("file does not contain DeviceProfile records", header.Type.String())
+	if header.Type != types.Type_NC_IPProfile {
+		die("file does not contain IPProfile records", header.Type.String())
 	}
 
 	var (
-		profile = new(types.DeviceProfile)
+		profile = new(types.IPProfile)
 		pm      proto.Message
 		ok      bool
 	)

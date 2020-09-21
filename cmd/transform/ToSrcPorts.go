@@ -31,31 +31,14 @@ func toSrcPorts() {
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
-	profiles := maltego.LoadIPProfiles()
-
-	maltego.IPTransform(
+	maltego.IPProfileTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string, ipaddr string) {
-			if profile.MacAddr != mac {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
+			if profile.Addr != ipaddr {
 				return
 			}
-			for _, ip := range profile.Contacts {
-				if ip == ipaddr {
-					if ipp, ok := profiles[ip]; ok {
-						for _, port := range ipp.SrcPorts {
-							addSourcePort(trx, strconv.FormatInt(int64(port.PortNumber), 10), port, min, max, ipp, path)
-						}
-					}
-				}
-			}
-			for _, ip := range profile.DeviceIPs {
-				if ip == ipaddr {
-					if ipp, ok := profiles[ip]; ok {
-						for _, port := range ipp.SrcPorts {
-							addSourcePort(trx, strconv.FormatInt(int64(port.PortNumber), 10), port, min, max, ipp, path)
-						}
-					}
-				}
+			for _, port := range profile.SrcPorts {
+				addSourcePort(trx, strconv.FormatInt(int64(port.PortNumber), 10), port, min, max, profile, path)
 			}
 		},
 	)
