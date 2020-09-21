@@ -36,7 +36,8 @@ var transforms = []transformCoreInfo{
 	{"ToApplicationsForCategory", "netcap.ApplicationCategory", "Retrieve applications seen for a given category"},
 	{"ToCookiesForHTTPHost", "netcap.Website", "Retrieve cookies seen for the given host"},
 	{"ToCookieValues", "netcap.HTTPCookie", "Retrieve values for a given cookie identifier"},
-	{"ToHeadersForHTTPHost", "netcap.Website", "Retrieve headers seen for the given host"},
+	{"ToHeadersForHTTPHost", "netcap.Website", "Retrieve headers seen for the given website"},
+	{"ToHTTPHeaders", "netcap.IPAddr", "Retrieve headers seen for the given host"},
 	{"ToHeaderValues", "netcap.HTTPHeader", "Retrieve values for a given header identifier"},
 	{"ToDHCP", "netcap.IPAddr", "Fetch DHCP options for host"},
 	{"ToDNSQuestions", "netcap.IPAddr", "Show all captured DNS questions for the selected host"},
@@ -127,8 +128,6 @@ var transforms = []transformCoreInfo{
 	{"ToServiceTypes", "netcap.ServiceAuditRecords", "Show detected network service types"},
 
 	{"ToSourceDevices", "netcap.IPProfile", "Show the source devices for the given ip profile"},
-	{"ToApplicationsForProfile", "netcap.IPProfile", "Show the applications seen for the given ip profile"},
-	{"ToSNIsForProfile", "netcap.IPProfile", "Show the server name indicator seen for the given ip profile"},
 	{"ToJA3HashesForProfile", "netcap.IPProfile", "Show the ja3 hashes seen for the given ip profile"},
 
 	{"ToVisitorsForURL", "netcap.URL", "Show all visitors for the selected URL"},

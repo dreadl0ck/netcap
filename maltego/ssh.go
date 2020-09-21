@@ -32,7 +32,7 @@ import (
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type SSHTransformationFunc = func(lt LocalTransform, trx *Transform, ssh *types.SSH, min, max uint64, sshsFile string, mac string, ip string)
 
-// SSHCountFunc countFunc is a function that counts something over DeviceProfiles.
+// SSHCountFunc deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
 

@@ -32,7 +32,7 @@ import (
 // serviceTransformationFunc is a transformation over Service profiles for a selected Service.
 type serviceTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Service, min, max uint64, path string, mac string, ip string)
 
-// countFunc is a function that counts something over DeviceProfiles.
+// deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 type serviceCountFunc = func(service *types.Service, mac string, min, max *uint64)
 
 // ServiceTransform applies a maltego transformation over Service profiles seen for a target Service.

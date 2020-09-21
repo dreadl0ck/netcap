@@ -31,7 +31,7 @@ import (
 // credentialsTransformationFunc is a transformation over Credentials profiles for a selected Credentials.
 type credentialsTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Credentials, min, max uint64, path string, mac string, ip string)
 
-// countFunc is a function that counts something over DeviceProfiles.
+// deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 type credentialsCountFunc = func(credentials *types.Credentials, mac string, min, max *uint64)
 
 // CredentialsTransform applies a maltego transformation over Credentials profiles seen for a target Credentials.

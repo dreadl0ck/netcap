@@ -39,9 +39,6 @@ var CountIPPackets = func(profile *types.IPProfile, mac string, min, max *uint64
 	}
 }
 
-// countFunc is a function that counts something over IPProfiles.
-type ipProfileCountFunc = func(profile *types.IPProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
-
 // IPProfileTransformationFunc is a transformation over IP profiles
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type IPProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string)

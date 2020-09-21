@@ -72,14 +72,14 @@ func countIP(ips map[string]*types.IPProfile, ip string, min, max *uint64) {
 	}
 }
 
-// countFunc is a function that counts something over DeviceProfiles.
-type countFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
+// deviceProfileCountFunc is a function that counts something over DeviceProfiles.
+type deviceProfileCountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
 
 // deviceProfileTransformationFunc is transform over DeviceProfiles.
 type deviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string)
 
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records.
-func DeviceProfileTransform(count countFunc, transform deviceProfileTransformationFunc) {
+func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfileTransformationFunc) {
 	var (
 		lt   = ParseLocalArguments(os.Args[1:])
 		path = lt.Values["path"]
@@ -91,7 +91,7 @@ func DeviceProfileTransform(count countFunc, transform deviceProfileTransformati
 		path = filepath.Join(filepath.Dir(path), "DeviceProfile.ncap.gz")
 	}
 
-	//netio.FPrintBuildInfo(os.Stderr)
+	netio.FPrintBuildInfo(os.Stderr)
 
 	f, path := openFile(path)
 
