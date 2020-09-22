@@ -36,7 +36,7 @@ func toVisitorsForURL() {
 					return
 				}
 
-				if http.SrcIP != ipaddr {
+				if http.DstIP != ipaddr {
 					return
 				}
 

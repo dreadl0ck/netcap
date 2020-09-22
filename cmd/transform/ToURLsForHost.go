@@ -14,24 +14,24 @@ func toURLsForHost() {
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
-			if http.SrcIP != ipaddr {
-				return
+			if http.SrcIP == ipaddr || http.DstIP == ipaddr {
+				if http.URL == "" {
+					return
+				}
+
+				bareURL := stripQueryString(http.URL)
+				log.Println(bareURL)
+
+				ent := trx.AddEntityWithPath("netcap.URL", bareURL, path)
+
+				// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
+				ent.AddProperty("properties.url", "URL", maltego.Strict, bareURL)
+				ent.AddProperty("host", "Host", maltego.Strict, http.Host)
+				ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+
+				urlStats[bareURL]++
+				ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]) + "\n" + http.Method)
 			}
-			if http.URL == "" {
-				return
-			}
-			bareURL := stripQueryString(http.URL)
-			log.Println(bareURL)
-
-			ent := trx.AddEntityWithPath("netcap.URL", bareURL, path)
-
-			// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
-			ent.AddProperty("properties.url", "URL", maltego.Strict, bareURL)
-			ent.AddProperty("host", "Host", maltego.Strict, http.Host)
-			ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
-
-			urlStats[bareURL]++
-			ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]) + "\n" + http.Method)
 		},
 		false,
 	)

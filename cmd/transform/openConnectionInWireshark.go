@@ -21,10 +21,21 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
-const wiresharkPath = "/usr/local/bin/wireshark"
+var (
+	wiresharkPath = "/usr/local/bin/wireshark"
+	tcpdumpPath = "tcpdump"
+)
+
+func init() {
+	if runtime.GOOS == platformWindows {
+		tcpdumpPath = "tcpdump.exe"
+		wiresharkPath = "C:\\Program Files\\Wireshark\\Wireshark.exe"
+	}
+}
 
 // TODO: refactor this method, last three params are only used for the software transform atm
 func makeOutFilePath(in, bpf string, lt maltego.LocalTransform, flows bool, bpfSummary string) (name string, exists bool) {
@@ -72,9 +83,9 @@ func openConnectionInWireshark() {
 	)
 
 	if !exists {
-		log.Println("tcpdump", args)
+		log.Println(tcpdumpPath, args)
 
-		out, err := exec.Command("tcpdump", args...).CombinedOutput()
+		out, err := exec.Command(tcpdumpPath, args...).CombinedOutput()
 		if err != nil {
 			die(err.Error(), "open file failed:\n"+string(out))
 		}

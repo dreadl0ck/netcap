@@ -34,9 +34,9 @@ func openServiceInWireshark() {
 	)
 
 	if !exists {
-		log.Println("tcpdump", args)
+		log.Println(tcpdumpPath, args)
 
-		out, err := exec.Command("tcpdump", args...).CombinedOutput()
+		out, err := exec.Command(tcpdumpPath, args...).CombinedOutput()
 		if err != nil {
 			die(err.Error(), "open file failed:\n"+string(out))
 		}

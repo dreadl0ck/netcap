@@ -129,7 +129,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 
 	for {
 		// fetch the next packet data and packet header
-		data, ci, err = r.ZeroCopyReadPacketData()
+		data, ci, err = r.ReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break

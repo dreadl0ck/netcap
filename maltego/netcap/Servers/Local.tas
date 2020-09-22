@@ -1,14 +1,12 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-21 09:33:18.198 CEST</LastSync>
+ <LastSync>2020-09-21 23:15:31.055 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
   <Transform name="netcap.ToApplicationCategories"></Transform>
   <Transform name="netcap.ToApplications"></Transform>
   <Transform name="netcap.ToApplicationsForCategory"></Transform>
-  <Transform name="netcap.ToCookiesForHTTPHost"></Transform>
   <Transform name="netcap.ToCookieValues"></Transform>
-  <Transform name="netcap.ToHeadersForHTTPHost"></Transform>
   <Transform name="netcap.ToHTTPHeaders"></Transform>
   <Transform name="netcap.ToHeaderValues"></Transform>
   <Transform name="netcap.ToDHCP"></Transform>
@@ -38,11 +36,9 @@
   <Transform name="netcap.ToMails"></Transform>
   <Transform name="netcap.ToOutgoingFlowsFiltered"></Transform>
   <Transform name="netcap.ToParameterValues"></Transform>
-  <Transform name="netcap.ToParametersForHTTPHost"></Transform>
   <Transform name="netcap.ToServerNameIndicators"></Transform>
   <Transform name="netcap.ToSrcPorts"></Transform>
   <Transform name="netcap.ToURLsForHost"></Transform>
-  <Transform name="netcap.ToURLsForWebsite"></Transform>
   <Transform name="netcap.ToAuditRecords"></Transform>
   <Transform name="netcap.ToAuditRecordsWithDPI"></Transform>
   <Transform name="netcap.StartCaptureProcess"></Transform>
@@ -95,10 +91,9 @@
   <Transform name="netcap.ToSourceDevices"></Transform>
   <Transform name="netcap.ToJA3HashesForProfile"></Transform>
   <Transform name="netcap.ToVisitorsForURL"></Transform>
-  <Transform name="netcap.ToVisitorsForWebsite"></Transform>
-  <Transform name="netcap.ToProvidersForURL"></Transform>
-  <Transform name="netcap.ToProvidersForWebsite"></Transform>
-  <Transform name="netcap.ToFilesForWebsite"></Transform>
+  <Transform name="netcap.ToVisitorsForHost"></Transform>
+  <Transform name="netcap.ToProviderIPProfilesForURL"></Transform>
+  <Transform name="netcap.ToProviderIPProfilesForHost"></Transform>
   <Transform name="netcap.OpenConnectionInWireshark"></Transform>
   <Transform name="netcap.OpenFlowInWireshark"></Transform>
   <Transform name="netcap.OpenServiceInWireshark"></Transform>

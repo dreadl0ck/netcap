@@ -66,7 +66,7 @@ func (c *Collector) CollectLive(iface, bpf string) error {
 	// read packets from channel
 	for {
 		// read next packet
-		data, ci, err = handle.ZeroCopyReadPacketData()
+		data, ci, err = handle.ReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
