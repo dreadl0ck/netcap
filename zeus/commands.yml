@@ -82,6 +82,15 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
+        exec: goreleaser release --rm-dist --skip-publish --skip-validate; zeus version-bump-test-undo
+
+    # run a test release
+    release-test-debug:
+        description: test run to release a new version with debug mode
+        dependencies:
+            - gen-version
+            - version-bump-test
+            - gen-proto-release
         exec: goreleaser release --rm-dist --skip-publish --skip-validate --debug; zeus version-bump-test-undo
 
     release-test-full:
@@ -398,3 +407,10 @@ commands:
 
     open-maltego-logs:
         exec: code "/Users/$USER/Library/Application Support/maltego/"
+
+    export-windows-vm:
+        description: export the windows VM
+        exec: |
+          cd /Applications/VMware\ Fusion.app/Contents/Library/VMware\ OVF\ Tool/
+          ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/WinDev2008Eval.vmwarevm/WinDev2008Eval.vmx ~/Documents/NetcapWin10.ova
+          du -sh ~/Documents/NetcapWin10.ova

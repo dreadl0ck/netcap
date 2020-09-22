@@ -5,14 +5,6 @@ icons:
 - InternalIPProfile VS ExternalIPProfile
 - InternalIP VS ExternalIP
 
-docs:
-- windows:  taskkill /IM "net.exe" /F
-- export windows VM zeus command: 
-
-    cd /Applications/VMware\ Fusion.app/Contents/Library/VMware\ OVF\ Tool/
-    ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/WinDev2008Eval.vmwarevm/WinDev2008Eval.vmx ~/Documents/NetcapWin10.ova
-    du -sh ~/Documents/NetcapWin10.ova
-
 - add tests using https://godoc.org/golang.org/x/tools/cmd/stress
 - add capinfos transform
 - add tests to ensure there are no race bugs

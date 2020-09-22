@@ -6,6 +6,12 @@ description: Windows
 
 Install NPcap driver: https://nmap.org/npcap/
 
+## Notes
+
+Kill all netcap processes:
+
+    taskkill /IM "net.exe" /F
+
 ## Syntax coloring when viewing TCP / UDP streams 
 
 Install vscode and the _vt-100_ extension.
