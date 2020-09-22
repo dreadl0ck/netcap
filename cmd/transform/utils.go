@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -115,8 +116,18 @@ func createSNITableHTML(m map[string]int64) string {
     <th>Number of Packets</th>
   </tr>`)
 
+	var snis sniSlice
 	for k, v := range m {
-		out = append(out, "<tr><td>"+k+"</td><td>"+strconv.FormatInt(v, 10)+"</td></tr>")
+		snis = append(snis, &sni{
+			name: k,
+			numPackets: v,
+		})
+	}
+
+	sort.Sort(snis)
+
+	for _, s := range snis {
+		out = append(out, "<tr><td>"+s.name+"</td><td>"+strconv.FormatInt(s.numPackets, 10)+"</td></tr>")
 	}
 
 	out = append(out, "</table>")
@@ -141,4 +152,73 @@ func createProtocolsTableHTML(m map[string]*types.Protocol) string {
 	out = append(out, "</table>")
 
 	return strings.Join(out, "")
+}
+
+func createPortsTableHTML(ports []*types.Port) string {
+
+	var out = []string{"<table style='width:100%'>"}
+
+	out = append(out, `<tr>
+    <th>PortNumber</th>
+	<th>Packets</th>
+    <th>Bytes</th>
+	<th>Protocol</th>
+  </tr>`)
+
+	sort.Sort(portSlice(ports))
+
+	for _,  p := range ports {
+		out = append(out, "<tr><td>"+strconv.Itoa(int(p.PortNumber))+"</td><td>"+strconv.FormatUint(p.Packets, 10)+"</td><td>"+strconv.FormatUint(p.Bytes, 10)+"</td><td>" + p.Protocol + "</td></tr>")
+	}
+
+	out = append(out, "</table>")
+
+	return strings.Join(out, "")
+}
+
+// portSlice implements sort.Interface to sort port stats fragments based on the number of bytes transferred.
+type portSlice []*types.Port
+
+// Len returns the length.
+func (d portSlice) Len() int {
+	return len(d)
+}
+
+// Less will check if the value at index i is less than the one at index j.
+func (d portSlice) Less(i, j int) bool {
+	data1 := d[i]
+	data2 := d[j]
+
+	return data1.Bytes < data2.Bytes
+}
+
+// Swap will flip both values.
+func (d portSlice) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
+}
+
+type sni struct {
+	name string
+	numPackets int64
+}
+
+// sniSlice implements sort.Interface
+type sniSlice []*sni
+
+// Len returns the length.
+func (d sniSlice) Len() int {
+	return len(d)
+}
+
+// Less will check if the value at index i is less than the one at index j.
+func (d sniSlice) Less(i, j int) bool {
+	data1 := d[i]
+	data2 := d[j]
+
+	return data1.numPackets < data2.numPackets
+}
+
+// Swap will flip both values.
+func (d sniSlice) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
 }

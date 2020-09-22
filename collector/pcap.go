@@ -181,7 +181,6 @@ func (c *Collector) CollectPcap(path string) error {
 	)
 
 	for { // fetch the next packet data and packet header
-		// for pcap, currently ZeroCopyReadPacketData() is not supported
 		data, ci, err = r.ReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {

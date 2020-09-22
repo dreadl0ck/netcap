@@ -5,7 +5,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func toVisitorsForWebsite() {
+func toVisitorsForHost() {
 	var (
 		p    = maltego.LoadIPProfiles()
 		ips  = make(map[string]struct{})
@@ -25,7 +25,7 @@ func toVisitorsForWebsite() {
 					return
 				}
 
-				if http.SrcIP != ipaddr {
+				if http.DstIP != ipaddr {
 					return
 				}
 

@@ -106,7 +106,13 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 		p.Bytes += dataLen
 
 		// Transport Layer
-		updatePorts(i, p, source)
+		if tl := i.p.TransportLayer(); tl != nil {
+			if source {
+				doSrcPortUpdate(p, utils.DecodePort(tl.TransportFlow().Src().Raw()), tl.LayerType().String(), dataLen)
+			} else {
+				doDstPortUpdate(p, utils.DecodePort(tl.TransportFlow().Dst().Raw()), tl.LayerType().String(), dataLen)
+			}
+		}
 
 		// Session Layer: TLS
 		ch := tlsx.GetClientHelloBasic(i.p)
@@ -158,7 +164,7 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 	loc, _ := resolvers.LookupGeolocation(ipAddr)
 
 	// Transport Layer: Port information
-	srcPorts, dstPorts := initPorts(i)
+	srcPorts, dstPorts := initPorts(i, source)
 
 	// Session Layer: TLS
 
@@ -215,31 +221,13 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 	return p
 }
 
-func updatePorts(i *packetInfo, p *ipProfile, source bool) {
-	if tl := i.p.TransportLayer(); tl != nil {
-		var (
-			// get packet size
-			dataLen   = uint64(len(i.p.Data()))
-			srcPort   = utils.DecodePort(tl.TransportFlow().Src().Raw())
-			dstPort   = utils.DecodePort(tl.TransportFlow().Dst().Raw())
-			layerType = tl.LayerType().String()
-		)
-
-		// check if the passed in ip profile is the source address for the current packet
-		if source {
-			doPortUpdate(p, srcPort, dstPort, layerType, dataLen)
-		} else {
-			doPortUpdate(p, dstPort, srcPort, layerType, dataLen)
-		}
-	}
-}
-
-func doPortUpdate(p *ipProfile, srcPort, dstPort int32, layerType string, dataLen uint64) {
+func doSrcPortUpdate(p *ipProfile, srcPort int32, layerType string, dataLen uint64) {
 	var found bool
 
 	// source port
 	for _, port := range p.SrcPorts {
 		if port.PortNumber == srcPort && port.Protocol == layerType {
+
 			atomic.AddUint64(&port.Bytes, dataLen)
 			atomic.AddUint64(&port.Packets, 1)
 
@@ -257,9 +245,10 @@ func doPortUpdate(p *ipProfile, srcPort, dstPort int32, layerType string, dataLe
 			Protocol:   layerType,
 		})
 	}
+}
 
-	// reset
-	found = false
+func doDstPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint64) {
+	var found bool
 
 	// destination port
 	for _, port := range p.DstPorts {
@@ -283,7 +272,7 @@ func doPortUpdate(p *ipProfile, srcPort, dstPort int32, layerType string, dataLe
 	}
 }
 
-func initPorts(i *packetInfo) (
+func initPorts(i *packetInfo, source bool) (
 	srcPorts,
 	dstPorts []*types.Port,
 ) {
@@ -291,21 +280,23 @@ func initPorts(i *packetInfo) (
 		// get packet size
 		dataLen := uint64(len(i.p.Data()))
 
-		// source port
-		srcPorts = append(srcPorts, &types.Port{
-			PortNumber: utils.DecodePort(tl.TransportFlow().Src().Raw()),
-			Bytes:      dataLen,
-			Packets:    1,
-			Protocol:   tl.LayerType().String(),
-		})
-
-		// destination port
-		dstPorts = append(dstPorts, &types.Port{
-			PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
-			Bytes:      dataLen,
-			Packets:    1,
-			Protocol:   tl.LayerType().String(),
-		})
+		if source {
+			// source port
+			srcPorts = append(srcPorts, &types.Port{
+				PortNumber: utils.DecodePort(tl.TransportFlow().Src().Raw()),
+				Bytes:      dataLen,
+				Packets:    1,
+				Protocol:   tl.LayerType().String(),
+			})
+		} else {
+			// destination port
+			dstPorts = append(dstPorts, &types.Port{
+				PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
+				Bytes:      dataLen,
+				Packets:    1,
+				Protocol:   tl.LayerType().String(),
+			})
+		}
 	}
 
 	return

@@ -37,7 +37,6 @@ var maltegoEntities = []entityCoreInfo{
 	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},
 	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
 
-	// TODO: icons
 	{"InternalSourceIP", "cloud_upload", "An internal source address", "netcap.IPAddr", nil},
 	{"ExternalSourceIP", "cloud_upload", "An external source address", "netcap.IPAddr", nil},
 	{"InternalDestinationIP", "cloud_download", "An internal destination address", "netcap.IPAddr", nil},
@@ -61,7 +60,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"TCPService", "device_hub", "A TCP network service", "", nil},
 	{"UDPService", "developer_board", "A UDP network service", "", nil},
 	{"UserAgent", "supervisor_account", "A HTTP User Agent", "", nil},
-	{"Website", "web", "A HTTP Website", "maltego.Website", nil},
+	{"Host", "web", "A HTTP Hostname", "netcap.IPAddr", nil},
 	{"DNSName", "dns", "A DNS Name", "maltego.DNSName", nil},
 	{"Domain", "domain", "A domain", "maltego.Domain", nil},
 	{"Location", "location_on", "A location", "maltego.Location", nil},
@@ -70,7 +69,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"ExifEntry", "info", "An Exif entry for an image file", "", nil},
 	{"MD5Hash", "info", "An MD5 hash entry for an extracted file", "maltego.Hash", nil},
 	{"PhoneNumber", "contact_phone", "A phone number", "maltego.PhoneNumber", nil},
-	{"Host", "dvr", "A computer host", "", nil},
+	{"Computer", "dvr", "A computer host", "", nil},
 	{"ServiceType", "import_export", "A network service type", "", nil},
 	{"Application", "settings_applications", "An application discovered via DPI", "", nil},
 	{"ApplicationCategory", "design_services", "An application category discovered via DPI", "", nil},

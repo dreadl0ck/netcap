@@ -8,7 +8,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func toFilesForWebsite() {
+func toFilesForHost() {
 	maltego.FilesTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, path string, ipaddr string) {

@@ -66,7 +66,7 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 	for {
 
 		// read next packet
-		data, ci, err = handle.ZeroCopyReadPacketData()
+		data, ci, err = handle.ReadPacketData()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break

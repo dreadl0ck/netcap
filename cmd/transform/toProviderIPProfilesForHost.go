@@ -3,14 +3,12 @@ package transform
 import (
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"log"
 )
 
-func toProvidersForURL() {
+func toProviderIPProfilesForHost() {
 	var (
 		p    = maltego.LoadIPProfiles()
 		ips  = make(map[string]struct{})
-		url  string
 		host string
 	)
 
@@ -18,13 +16,8 @@ func toProvidersForURL() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 
-			if url == "" {
-				url = lt.Values["properties.url"]
-				host = lt.Values["host"]
-				if url == "" || host == "" {
-					die("properties.url or host is not set", "")
-				}
-				log.Println("got URL", url, "and host", host, "ipaddr", ipaddr)
+			if host == "" {
+				host = lt.Value
 			}
 
 			if http.Host == host {
@@ -32,15 +25,11 @@ func toProvidersForURL() {
 					return
 				}
 
-				if http.URL != url {
+				if http.DstIP != ipaddr {
 					return
 				}
 
-				if http.SrcIP != ipaddr {
-					return
-				}
-
-				// check if dstIP host has already been added
+				// check if srcIP host has already been added
 				if _, ok := ips[http.DstIP]; !ok {
 					if profile, exists := p[http.DstIP]; exists {
 						addIPProfile(trx, profile, path, min, max)

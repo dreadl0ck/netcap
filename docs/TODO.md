@@ -1,10 +1,26 @@
 # TODOs
+    
+icons:
+- Src VS Dst Ports
+- InternalIPProfile VS ExternalIPProfile
+- InternalIP VS ExternalIP
 
+docs:
+- windows:  taskkill /IM "net.exe" /F
+- export windows VM zeus command: 
+
+    cd /Applications/VMware\ Fusion.app/Contents/Library/VMware\ OVF\ Tool/
+    ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/WinDev2008Eval.vmwarevm/WinDev2008Eval.vmx ~/Documents/NetcapWin10.ova
+    du -sh ~/Documents/NetcapWin10.ova
+
+- add tests using https://godoc.org/golang.org/x/tools/cmd/stress
+- add capinfos transform
+- add tests to ensure there are no race bugs
 - remove Flow audit records?
 - add constant for "ipaddr"
 
 - add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
-
+- warn about use of ZeroCopyReadPacketData
 - For nanosecond resolution use an InactiveHandle for Live capture!    
 - add generation code for https://github.com/AliasIO/wappalyzer/blob/master/src/technologies.json
 - resolve cmd db categories mapping and add to structures
