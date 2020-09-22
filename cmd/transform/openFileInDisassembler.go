@@ -58,11 +58,11 @@ func makeOpenDisasmCmd(loc string) (openCmd string, args []string) {
 			openCmd = defaultDisasmCommandMacOS
 			args = []string{"-e", loc}
 		case platformWindows:
-			// TODO:
-			openCmd = "TODO"
+			openCmd = "C:\\Program Files\\IDA Freeware 7.0\\ida64.exe"
+			args = []string{loc}
 		case platformLinux:
-			// TODO:
-			openCmd = "TODO"
+			openCmd = "ida64"
+			args = []string{loc}
 		}
 	}
 
