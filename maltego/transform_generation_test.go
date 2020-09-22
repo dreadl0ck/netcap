@@ -117,7 +117,7 @@ var transforms = []transformCoreInfo{
 	{"ToEmailsFromFile", "netcap.File", "Extract all email addresses from the file"},
 	{"ToPhoneNumbersFromFile", "netcap.File", "Extract all phone numbers from the file"},
 
-	{"ToNetworkInterfaces", "netcap.Host", "Show all available network interfaces"},
+	{"ToNetworkInterfaces", "netcap.Computer", "Show all available network interfaces"},
 	{"LookupDHCPFingerprint", "netcap.DHCPClient", "Resolve the clients DHCP fingerprint via the fingerbank API"},
 	{"StopCaptureProcess", "netcap.Interface", "Stop the NETCAP capture process"},
 
