@@ -109,8 +109,10 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 		if tl := i.p.TransportLayer(); tl != nil {
 			if source {
 				doSrcPortUpdate(p, utils.DecodePort(tl.TransportFlow().Src().Raw()), tl.LayerType().String(), dataLen)
+				doContactedPortUpdate(p, utils.DecodePort(tl.TransportFlow().Dst().Raw()), tl.LayerType().String(), dataLen)
 			} else {
 				doDstPortUpdate(p, utils.DecodePort(tl.TransportFlow().Dst().Raw()), tl.LayerType().String(), dataLen)
+				doContactedPortUpdate(p, utils.DecodePort(tl.TransportFlow().Src().Raw()), tl.LayerType().String(), dataLen)
 			}
 		}
 
@@ -164,7 +166,7 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 	loc, _ := resolvers.LookupGeolocation(ipAddr)
 
 	// Transport Layer: Port information
-	srcPorts, dstPorts := initPorts(i, source)
+	srcPorts, dstPorts, contactedPorts := initPorts(i, source)
 
 	// Session Layer: TLS
 
@@ -210,6 +212,7 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 			Bytes:          dataLen,
 			SrcPorts:       srcPorts,
 			DstPorts:       dstPorts,
+			ContactedPorts: contactedPorts,
 			SNIs:           sniMap,
 		},
 	}
@@ -247,6 +250,31 @@ func doSrcPortUpdate(p *ipProfile, srcPort int32, layerType string, dataLen uint
 	}
 }
 
+func doContactedPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint64) {
+	var found bool
+
+	for _, port := range p.ContactedPorts {
+		if port.PortNumber == dstPort && port.Protocol == layerType {
+
+			atomic.AddUint64(&port.Bytes, dataLen)
+			atomic.AddUint64(&port.Packets, 1)
+
+			found = true
+
+			break
+		}
+	}
+
+	if !found {
+		p.ContactedPorts = append(p.ContactedPorts, &types.Port{
+			PortNumber: dstPort,
+			Bytes:      dataLen,
+			Packets:    1,
+			Protocol:   layerType,
+		})
+	}
+}
+
 func doDstPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint64) {
 	var found bool
 
@@ -274,7 +302,8 @@ func doDstPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint
 
 func initPorts(i *packetInfo, source bool) (
 	srcPorts,
-	dstPorts []*types.Port,
+	dstPorts,
+	contactedPorts []*types.Port,
 ) {
 	if tl := i.p.TransportLayer(); tl != nil {
 		// get packet size
@@ -288,10 +317,24 @@ func initPorts(i *packetInfo, source bool) (
 				Packets:    1,
 				Protocol:   tl.LayerType().String(),
 			})
+			// contacted port
+			contactedPorts = append(contactedPorts, &types.Port{
+				PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
+				Bytes:      dataLen,
+				Packets:    1,
+				Protocol:   tl.LayerType().String(),
+			})
 		} else {
 			// destination port
 			dstPorts = append(dstPorts, &types.Port{
 				PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
+				Bytes:      dataLen,
+				Packets:    1,
+				Protocol:   tl.LayerType().String(),
+			})
+			// contacted port
+			contactedPorts = append(contactedPorts, &types.Port{
+				PortNumber: utils.DecodePort(tl.TransportFlow().Src().Raw()),
 				Bytes:      dataLen,
 				Packets:    1,
 				Protocol:   tl.LayerType().String(),

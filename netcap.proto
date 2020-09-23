@@ -1748,13 +1748,13 @@ message IPProfile {
   int64 TimestampFirst = 5;
   int64 TimestampLast = 6;
   repeated string Applications = 7;
-  map<string, string> Ja3 = 8; // ja3 to lookup
+  map<string, string> Ja3 = 8; // ja3 to lookup result
   map<string, Protocol> Protocols = 9;
   uint64 Bytes = 10;
   map<string, int64> SNIs = 11;
-  // mapped port numbers to packet count and bytes transferred for Src / Dst.
   repeated Port SrcPorts = 12;
   repeated Port DstPorts = 13;
+  repeated Port ContactedPorts = 14;
 }
 
 message Protocol {

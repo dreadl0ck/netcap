@@ -64,6 +64,7 @@ func Run() {
 		openFile,
 		openFileInDisassembler,
 		toCookieValues,
+		toContactedPorts,
 		toHTTPHeaders,
 		toHeaderValues,
 		toDHCP,

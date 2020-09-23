@@ -1,6 +1,6 @@
 # TODOs
 
-- add To Contacted Ports transform for IPProfile
+- ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
 
 - add tests using https://godoc.org/golang.org/x/tools/cmd/stress
 - add capinfos transform

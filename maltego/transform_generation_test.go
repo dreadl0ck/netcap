@@ -42,7 +42,11 @@ var transforms = []transformCoreInfo{
 	{"ToDNSQuestions", "netcap.IPAddr", "Show all captured DNS questions for the selected host"},
 	{"ToDestinationIPs", "netcap.Device", "Get destination hosts seen for the selected device"},
 	{"ToSourceIPs", "netcap.Device", "Get all IPs that the device has been using"},
+
+	{"ToSrcPorts", "netcap.IPAddr", "Retrieve all source ports seen for the selected host"},
 	{"ToDstPorts", "netcap.IPAddr", "Retrieve all destination ports seen for the selected host"},
+	{"ToContactedPorts", "netcap.IPAddr", "Retrieve all contacted ports seen for the selected host"},
+
 	{"ToFileType", "netcap.File", "Retrieve file type via unix file util"},
 	{"ToFileTypes", "netcap.IPAddr", "Get all fille types for the selected IPAddr"},
 	{"ToFiles", "netcap.IPAddr", "Get all files seen from the selected IP"},
@@ -66,7 +70,6 @@ var transforms = []transformCoreInfo{
 	{"ToOutgoingFlowsFiltered", "netcap.IPAddr", "Show all outgoing flows filtered against the configured whitelist"},
 	{"ToParameterValues", "netcap.HTTPParameter", "Retrieve all values seen for an HTTP parameter"},
 	{"ToServerNameIndicators", "netcap.IPAddr", "Retrieve the TLS Server Name Indicators seen for the selected host"},
-	{"ToSrcPorts", "netcap.IPAddr", "Retrieve all source ports seen for the selected host"},
 	{"ToURLsForHost", "netcap.IPAddr", "Retrieve all URLs seen for the selected host"},
 	{"ToAuditRecords", "netcap.PCAP", "Transform PCAP file into audit records"},
 	{"ToAuditRecordsWithDPI", "netcap.PCAP", "Retrieve audit records with Deep Packet Inspection enabled"},
