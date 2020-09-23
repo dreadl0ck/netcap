@@ -146,18 +146,3 @@ func getPathLiveCaptureOutDir(iface string) string {
 	return filepath.Join(home, iface+".net")
 }
 
-func returnCaptureProcessEntity(pid int, path string, iface string) {
-	pidStr := strconv.Itoa(pid)
-
-	// generate maltego transform
-	trx := maltego.Transform{}
-
-	name := "Capture Process" + "\nPID: " + pidStr
-	ent := trx.AddEntityWithPath("netcap.CaptureProcess", name, path)
-
-	ent.AddProperty("pid", "PID", maltego.Strict, pidStr)
-	ent.AddProperty("iface", "Interface", maltego.Strict, iface)
-	trx.AddUIMessage("completed!", maltego.UIMessageInform)
-
-	fmt.Println(trx.ReturnOutput())
-}

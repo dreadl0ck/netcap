@@ -121,16 +121,16 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 		conn.Lock()
 
-		// check if received packet from the same flow
-		// was captured BEFORE the flows first seen timestamp
-		if !(conn.TimestampFirst < p.Metadata().Timestamp.UnixNano()) {
+		// check if received packet from the same connection
+		// was captured BEFORE the connections first seen timestamp
+		if p.Metadata().Timestamp.Before(time.Unix(0, conn.TimestampFirst).UTC()) {
 			calcDuration = true
 
 			// rewrite timestamp
 			conn.TimestampFirst = p.Metadata().Timestamp.UnixNano()
 
 			// rewrite source and destination parameters
-			// since the first packet decides about the flow direction
+			// since the first packet decides about the connection direction
 			if ll := p.LinkLayer(); ll != nil {
 				conn.SrcMAC = ll.LinkFlow().Src().String()
 				conn.DstMAC = ll.LinkFlow().Dst().String()
@@ -159,6 +159,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		conn.TotalSize += int32(len(p.Data()))
 
 		// only calculate duration when timestamps have changed
+		// TODO: calculate duration once when stream is flushed for performance
 		if calcDuration {
 			conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
 		}
@@ -194,7 +195,6 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		}
 
 		conns := atomic.AddInt64(&stats.numConns, 1)
-
 		// flush
 		if conf.ConnFlushInterval != 0 && conns%int64(conf.ConnFlushInterval) == 0 {
 			cd.flushConns(p)
