@@ -1,11 +1,6 @@
 # TODOs
 
-- open in disassembler transform fixes
-
-icons:
-- Src VS Dst Ports
-- InternalIPProfile VS ExternalIPProfile
-- InternalIP VS ExternalIP
+- add To Contacted Ports transform for IPProfile
 
 - add tests using https://godoc.org/golang.org/x/tools/cmd/stress
 - add capinfos transform

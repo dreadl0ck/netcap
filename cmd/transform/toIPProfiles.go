@@ -1,6 +1,8 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/resolvers"
+	"net"
 	"strconv"
 	"strings"
 
@@ -18,7 +20,13 @@ func toIPProfiles() {
 
 func addIPProfile(trx *maltego.Transform, profile *types.IPProfile, path string, min, max uint64) {
 	ident := profile.Addr + "\n" + profile.Geolocation
-	ent := trx.AddEntityWithPath("netcap.IPProfile", ident, path)
+
+	var ent *maltego.EntityObj
+	if resolvers.IsPrivateIP(net.ParseIP(profile.Addr)) {
+		ent = trx.AddEntityWithPath("netcap.InternalIPProfile", ident, path)
+	} else {
+		ent = trx.AddEntityWithPath("netcap.ExternalIPProfile", ident, path)
+	}
 
 	ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
 	ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
