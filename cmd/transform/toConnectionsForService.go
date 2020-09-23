@@ -73,6 +73,12 @@ func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, m
 }
 
 func makeConversationHTML(service string, conn *types.Connection, path string) string {
+
+	if service == "" {
+		service = "unknown"
+	}
+
+retry:
 	streamFilePath := filepath.Join(
 		filepath.Dir(path),
 		strings.ToLower(conn.TransportProto)+"Connections",
@@ -91,8 +97,13 @@ func makeConversationHTML(service string, conn *types.Connection, path string) s
 
 	data, err := ioutil.ReadFile(streamFilePath)
 	if err != nil {
+		if service == "unknown" {
+			service = "ascii"
+			goto retry
+		}
 		return err.Error()
 	}
+
 	str := strings.ReplaceAll(html.EscapeString(string(data)), "\n", "<br>")
 	str = strings.ReplaceAll(str, ansi.Red, "<p style='color: red;'>")
 	str = strings.ReplaceAll(str, ansi.Blue, "<p style='color: dodgerblue;'>")

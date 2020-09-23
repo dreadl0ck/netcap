@@ -1,6 +1,7 @@
 # TODOs
 
-- ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
+- rename: ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
+- throw an error if there are extra cmdline args present that are not flags
 
 - add tests using https://godoc.org/golang.org/x/tools/cmd/stress
 - add capinfos transform

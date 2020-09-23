@@ -28,7 +28,6 @@ import (
 
 // additional entities that are not actual NETCAP audit records
 var maltegoEntities = []entityCoreInfo{
-	{"CaptureProcess", "remove_red_eye", "An operating system NETCAP process that captures traffic from a network interface", "", nil},
 	{"ContentType", "category", "A MIME type describes different multi-media formats", "", nil},
 	{"Email", "mail_outline", "An email message", "maltego.Email", nil},
 	{"Interface", "router", "A network interface", "", []propertyField{newRequiredStringField("properties.interface", "Name of the network interface"), newStringField("snaplen", "snap length for ethernet frames in bytes, default: 1514"), newStringField("bpf", "berkeley packet filter to apply")}},
@@ -44,9 +43,11 @@ var maltegoEntities = []entityCoreInfo{
 
 	{"DHCPClient", "cast_connected", "A DHCP client", "", nil},
 	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", "", nil},
-	{"DestinationPort", "arrow_back", "A TCP / UDP destination port", "", nil},
-	{"SourcePort", "arrow_forward", "A TCP / UDP source port", "", nil},
-	{"ContactedPort", "arrow_upward", "A TCP / UDP contact port", "", nil},
+
+	{"Port", "device_hub", "A TCP / UDP destination port", "", nil},
+	{"DestinationPort", "arrow_back", "A TCP / UDP destination port", "netcap.Port", nil},
+	{"SourcePort", "arrow_forward", "A TCP / UDP source port", "netcap.Port", nil},
+	{"ContactedPort", "arrow_upward", "A TCP / UDP contact port", "netcap.Port", nil},
 
 	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
 
@@ -122,12 +123,6 @@ func TestGenerateAllEntities(t *testing.T) {
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
 	genEntityArchive()
 	genEntity("entities", "Vulnerability", "Vulnerability", "A software vulnerability", "", false)
-	packEntityArchive()
-}
-
-func TestGenerateAndPackCaptureProcessEntity(t *testing.T) {
-	genEntityArchive()
-	genEntity("entities", "CaptureProcess", "remove_red_eye", "A capture process", "", false)
 	packEntityArchive()
 }
 

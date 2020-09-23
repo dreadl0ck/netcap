@@ -39,10 +39,10 @@ const (
 	FlowFlushInterval = 1000
 
 	// ConnTimeOut will be used to set age threshold if the corresponding FlushInterval > 0.
-	ConnTimeOut = 10 * time.Second
+	ConnTimeOut = 24 * time.Hour
 
 	// FlowTimeOut will be used to set age threshold if the corresponding FlushInterval > 0.
-	FlowTimeOut = 10 * time.Minute
+	FlowTimeOut = 24 * time.Hour
 
 	// CompressionBlockSize is the block size used for parallel compression.
 	CompressionBlockSize = 1024 * 1024 * 1 // 1 MB
@@ -55,17 +55,17 @@ const (
 	// in order to capture as much information as possible.
 
 	// ReassemblyTimeout How long to wait for remaining open streams to close, before initiating teardown.
-	ReassemblyTimeout = 5 * time.Second
+	ReassemblyTimeout = 1 * time.Second
 
 	// FlushEvery TODO: refactor to flush periodically, instead of every n packets?
 	// controls how often collected reassembly data is flushed to consumers.
 	FlushEvery = 100
 
 	// ClosePendingTimeout Close streams with pending bytes after.
-	ClosePendingTimeout = 1 * time.Hour
+	ClosePendingTimeout = 24 * time.Hour
 
 	// CloseInactiveTimeout Close inactive streams after.
-	CloseInactiveTimeout = 1 * time.Hour
+	CloseInactiveTimeout = 24 * time.Hour
 
 	// AllowMissingInit TCP State Machine.
 	AllowMissingInit = true

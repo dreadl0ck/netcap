@@ -125,6 +125,8 @@ func Run() {
 		toIANAServicesForConnections,
 		toFlowsForService,
 		toConnectionsForService,
+		toConnectionsForHost,
+		toConnectionsForPort,
 		toJA3Hashes,
 		toJA3SHashes,
 		openConnectionInWireshark,
@@ -134,6 +136,7 @@ func Run() {
 		openDeviceTrafficInWireshark,
 		openServiceInWireshark,
 		openSoftwareTrafficInWireshark,
+		openTrafficForPortInWireshark,
 		openVulnerabilityTrafficInWireshark,
 	} {
 		if os.Args[2] == getFuncName(f) {

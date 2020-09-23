@@ -95,7 +95,10 @@ var transforms = []transformCoreInfo{
 	{"ToJA3Hashes", "netcap.TLSClientHelloAuditRecords", "Show all discovered ja3 client hashes"},
 	{"ToJA3SHashes", "netcap.TLSServerHelloAuditRecords", "Show all discovered ja3 server hashes"},
 	{"ToFlowsForService", "netcap.Service", "Show all flows for the selected service"},
+
 	{"ToConnectionsForService", "netcap.Service", "Show all connections for the selected service"},
+	{"ToConnectionsForHost", "netcap.IPAddr", "Show all connections for the selected host"},
+	{"ToConnectionsForPort", "netcap.Port", "Show all connections for the selected port"},
 
 	{"OpenExploit", "netcap.Exploit", "Open the exploit source with the default system program for the filetype"},
 	{"OpenFile", "netcap.File", "Opens a file with the default application"},
@@ -144,6 +147,7 @@ var transforms = []transformCoreInfo{
 	{"OpenDeviceTrafficInWireshark", "netcap.Device", "Open all traffic from and towards the selected device in wireshark"},
 	{"OpenSoftwareTrafficInWireshark", "netcap.Software", "Open traffic identified as the selected software in wireshark"},
 	{"OpenVulnerabilityTrafficInWireshark", "netcap.Vulnerability", "Open the traffic indicating the selected vulnerability in wireshark"},
+	{"OpenTrafficForPortInWireshark", "netcap.Port", "Open traffic for the selected port in wireshark"},
 
 	{"OpenFileInDisassembler", "netcap.File", "Open binary file in disassembler for analysis"},
 }

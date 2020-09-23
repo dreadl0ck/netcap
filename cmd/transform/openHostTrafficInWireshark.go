@@ -57,7 +57,7 @@ func openHostTrafficInWireshark() {
 	fmt.Println(trx.ReturnOutput())
 }
 
-// creates a bpf to filter for traffic of a mac address
+// creates a bpf to filter for traffic of an ip address
 // eg: "host 127.0.0.1"
 func makeHostBPF(lt maltego.LocalTransform) string {
 	var b strings.Builder

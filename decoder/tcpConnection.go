@@ -505,7 +505,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		zap.String("ident", t.ident),
 	)
 
-	// do not remove the connection to allow last ACK
+	// optionally, do not remove the connection to allow last ACK
 	return conf.RemoveClosedStreams
 }
 

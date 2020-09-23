@@ -15,15 +15,13 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/gopacket/pcap"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/dreadl0ck/gopacket/pcap"
 
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
@@ -36,7 +34,7 @@ import (
 
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets:  false,
-	Workers:              1,
+	Workers:              12,
 	PacketBufferSize:     defaults.PacketBuffer,
 	SnapLen:              defaults.SnapLen,
 	Promisc:              false,
@@ -65,11 +63,11 @@ var maltegoBaseConfig = collector.Config{
 		WriteIncomplete:                false,
 		MemProfile:                     "",
 		ConnFlushInterval:              1000,
-		ConnTimeOut:                    10 * time.Second,
+		ConnTimeOut:                    defaults.ConnTimeOut,
 		FlowFlushInterval:              2000,
-		FlowTimeOut:                    10 * time.Second,
-		CloseInactiveTimeOut:           24 * time.Hour,
-		ClosePendingTimeOut:            5 * time.Second,
+		FlowTimeOut:                    defaults.FlowTimeOut,
+		CloseInactiveTimeOut:           defaults.CloseInactiveTimeout,
+		ClosePendingTimeOut:            defaults.ClosePendingTimeout,
 		FileStorage:                    defaults.FileStorage,
 		CalculateEntropy:               false,
 		SaveConns:                      true,

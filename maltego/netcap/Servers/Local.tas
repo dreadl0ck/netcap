@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-23 11:53:16.023 CEST</LastSync>
+ <LastSync>2020-09-23 13:36:27.396 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -64,6 +64,8 @@
   <Transform name="netcap.ToJA3SHashes"></Transform>
   <Transform name="netcap.ToFlowsForService"></Transform>
   <Transform name="netcap.ToConnectionsForService"></Transform>
+  <Transform name="netcap.ToConnectionsForHost"></Transform>
+  <Transform name="netcap.ToConnectionsForPort"></Transform>
   <Transform name="netcap.OpenExploit"></Transform>
   <Transform name="netcap.OpenFile"></Transform>
   <Transform name="netcap.OpenImage"></Transform>
@@ -103,6 +105,7 @@
   <Transform name="netcap.OpenDeviceTrafficInWireshark"></Transform>
   <Transform name="netcap.OpenSoftwareTrafficInWireshark"></Transform>
   <Transform name="netcap.OpenVulnerabilityTrafficInWireshark"></Transform>
+  <Transform name="netcap.OpenTrafficForPortInWireshark"></Transform>
   <Transform name="netcap.OpenFileInDisassembler"></Transform>
  </Transforms>
  <Seeds></Seeds>
