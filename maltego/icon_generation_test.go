@@ -41,6 +41,7 @@ var icon = `<Icon>
 
 func TestGenerateAuditRecordIcons(t *testing.T) {
 	generateIcons()
+	generateAdditionalIcons()
 
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
 		fmt.Println(d.GetName())
@@ -95,6 +96,46 @@ func generateIcons() {
 		fmt.Println("renamed", oldPath, "to", newPath)
 
 		generateSizes(newBase, newPath)
+	}
+}
+
+// this will generate a subset of the icons with a different imgType
+// call after generateIcons, the image repo needs to be present
+func generateAdditionalIcons() {
+
+	// image name to type
+	var subset = map[string]string{
+		"cloud_upload": "outline",
+		"cloud_download": "outline",
+		"contact_page": "outline",
+	}
+
+	files, err := ioutil.ReadDir("/tmp/icons/png/black")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+
+		// only process files included in the subset
+		if imgType, ok := subset[f.Name()]; ok {
+			fmt.Println(f.Name())
+
+			var (
+				oldPath = filepath.Join("/tmp", "icons", "png", "black", filepath.Base(f.Name()), imgType + "-4x.png")
+				newBase = filepath.Join("/tmp", "icons", "renamed", filepath.Base(f.Name()) + "_" + imgType)
+				newPath = newBase + ".png"
+			)
+
+			err = os.Rename(oldPath, newPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println("renamed", oldPath, "to", newPath)
+
+			generateSizes(newBase, newPath)
+		}
 	}
 }
 

@@ -37,15 +37,17 @@ var maltegoEntities = []entityCoreInfo{
 	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},
 	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
 
-	{"InternalSourceIP", "cloud_upload", "An internal source address", "netcap.IPAddr", nil},
+	{"InternalSourceIP", "cloud_upload_outline", "An internal source address", "netcap.IPAddr", nil},
 	{"ExternalSourceIP", "cloud_upload", "An external source address", "netcap.IPAddr", nil},
-	{"InternalDestinationIP", "cloud_download", "An internal destination address", "netcap.IPAddr", nil},
+	{"InternalDestinationIP", "cloud_download_outline", "An internal destination address", "netcap.IPAddr", nil},
 	{"ExternalDestinationIP", "cloud_download", "An external destination address", "netcap.IPAddr", nil},
 
 	{"DHCPClient", "cast_connected", "A DHCP client", "", nil},
 	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", "", nil},
-	{"DestinationPort", "device_hub", "A TCP / UDP destination port", "", nil},
-	{"SourcePort", "device_hub", "A TCP / UDP source port", "", nil},
+	{"DestinationPort", "arrow_back", "A TCP / UDP destination port", "", nil},
+	{"SourcePort", "arrow_forward", "A TCP / UDP source port", "", nil},
+	//{"SourcePort", "arrow_forward", "A TCP / UDP source port", "", nil},
+
 	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
 
 	{"HTTPHeader", "http", "A HTTP header", "", nil},
@@ -79,7 +81,8 @@ var maltegoEntities = []entityCoreInfo{
 	{"File", "text_snippet", "A file", "maltego.File", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Software", "apps", "A software product", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Service", "miscellaneous_services", "A software product", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"IPProfile", "contact_page", "A behavior profile for an IP address", "netcap.IPAddr", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"InternalIPProfile", "contact_page_outline", "A behavior profile for an internal IP address", "netcap.IPAddr", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"ExternalIPProfile", "contact_page", "A behavior profile for an external IP address", "netcap.IPAddr", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Vulnerability", "bug_report", "A software exploit", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Exploit", "coronavirus", "A software vulnerability", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
 	{"Flow", "arrow_right_alt", "A undirectional network flow", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
