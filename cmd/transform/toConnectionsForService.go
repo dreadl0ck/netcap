@@ -68,11 +68,17 @@ func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, m
 	ent.AddProperty("dstport", "DstPort", maltego.Strict, conn.DstPort)
 	ent.AddProperty("protocol", "Protocol", maltego.Strict, conn.TransportProto)
 	ent.AddProperty("service", "Service", maltego.Strict, service)
+	ent.AddProperty("totalsize", "TotalSize", maltego.Strict, strconv.Itoa(int(conn.TotalSize)))
+	ent.AddProperty("apppayloadsize", "AppPayloadSize", maltego.Strict, strconv.Itoa(int(conn.AppPayloadSize)))
 
 	ent.AddDisplayInformation(makeConversationHTML(service, conn, path), "Conversation: Client (Red), Server (Blue)")
 }
 
 func makeConversationHTML(service string, conn *types.Connection, path string) string {
+
+	if conn.AppPayloadSize == 0 {
+		return "no application layer data transferred"
+	}
 
 	if service == "" {
 		service = "unknown"
