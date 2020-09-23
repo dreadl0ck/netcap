@@ -1,13 +1,18 @@
 # TODOs
 
 - rename: ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
-- throw an error if there are extra cmdline args present that are not flags
+- remove Flow audit records?
+- add constant for "ipaddr"
+
+- move checkArgs() to utils pkg and use in other cli tools 
+
+- update docs: connection timeouts and flush intervals
+- maltego: make showing empty streams configurable, or add a dedicated transform
+    - disable processing TCP streams with missing handshake?
 
 - add tests using https://godoc.org/golang.org/x/tools/cmd/stress
 - add capinfos transform
 - add tests to ensure there are no race bugs
-- remove Flow audit records?
-- add constant for "ipaddr"
 
 - add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
 - warn about use of ZeroCopyReadPacketData

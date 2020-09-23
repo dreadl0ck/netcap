@@ -48,6 +48,11 @@ func Run() {
 		log.Fatal(err)
 	}
 
+	// crash if there are two consecutive args provided, to avoid running wrong configurations
+	// fs.Parse does not protect against this
+	// TODO: move to utils and use in other cli tools
+	checkArgs()
+
 	if *flagGenerateConfig {
 		io.GenerateConfig(fs, "capture")
 
@@ -378,4 +383,20 @@ func generateElasticIndices(elasticAddrs []string) {
 			StartTime:     time.Now(),
 		})
 	})
+}
+
+func checkArgs() {
+	var expectArg bool
+	for i, a := range os.Args[2:] {
+		if strings.HasPrefix(a, "-") {
+			expectArg = true
+			continue
+		}
+		if expectArg {
+			expectArg = false
+		} else {
+			args := os.Args[2:]
+			log.Fatal("two consecutive args detected, typo? ", ansi.Red, args[i-1:], ansi.Reset)
+		}
+	}
 }
