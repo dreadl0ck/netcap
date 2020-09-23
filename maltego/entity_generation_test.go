@@ -46,7 +46,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"DHCPResult", "fingerprint", "A DHCP fingerprint result", "", nil},
 	{"DestinationPort", "arrow_back", "A TCP / UDP destination port", "", nil},
 	{"SourcePort", "arrow_forward", "A TCP / UDP source port", "", nil},
-	//{"SourcePort", "arrow_forward", "A TCP / UDP source port", "", nil},
+	{"ContactedPort", "arrow_upward", "A TCP / UDP contact port", "", nil},
 
 	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
 

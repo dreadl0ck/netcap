@@ -38,4 +38,5 @@ func addIPProfile(trx *maltego.Transform, profile *types.IPProfile, path string,
 	ent.AddDisplayInformation(createProtocolsTableHTML(profile.Protocols), "Protocols")
 	ent.AddDisplayInformation(createPortsTableHTML(profile.SrcPorts), "Source Ports")
 	ent.AddDisplayInformation(createPortsTableHTML(profile.DstPorts), "Destination Ports")
+	ent.AddDisplayInformation(createPortsTableHTML(profile.ContactedPorts), "Contacted Ports")
 }
