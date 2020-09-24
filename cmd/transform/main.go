@@ -138,6 +138,7 @@ func Run() {
 		openSoftwareTrafficInWireshark,
 		openTrafficForPortInWireshark,
 		openVulnerabilityTrafficInWireshark,
+		reloadAuditRecordsFromDisk,
 	} {
 		if os.Args[2] == getFuncName(f) {
 			f()

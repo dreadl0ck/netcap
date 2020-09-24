@@ -30,10 +30,7 @@ func toCategory(p *types.IPProfile, mac, path string, trx *maltego.Transform) {
 		}
 
 		ent := trx.AddEntityWithPath("netcap.ApplicationCategory", proto.Category, path)
-
 		ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
-		ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, p.Addr)
-
 		ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 	}
 }

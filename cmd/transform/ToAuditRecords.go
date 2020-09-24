@@ -57,7 +57,7 @@ var maltegoBaseConfig = collector.Config{
 		NoOptCheck:                     defaults.NoOptCheck,
 		IgnoreFSMerr:                   defaults.IgnoreFSMErr,
 		AllowMissingInit:               defaults.AllowMissingInit,
-		Debug:                          false,
+		Debug:                          true,
 		HexDump:                        false,
 		WaitForConnections:             true,
 		WriteIncomplete:                false,

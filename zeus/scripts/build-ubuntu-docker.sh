@@ -11,7 +11,7 @@ fi
 # generate version, add update the VERSION env var in the Dockerfile that was moved to the project root
 zeus gen-version
 
-tag="dreadl0ck/netcap:ubuntu-v${VERSION}"
+tag="dreadl0ck/netcap:ubuntu-${VERSION}"
 
 echo "[INFO] $tag args: ${ARGS}"
 

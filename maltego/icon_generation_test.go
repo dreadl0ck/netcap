@@ -105,9 +105,9 @@ func generateAdditionalIcons() {
 
 	// image name to type
 	var subset = map[string]string{
-		"cloud_upload": "outline",
+		"cloud_upload":   "outline",
 		"cloud_download": "outline",
-		"contact_page": "outline",
+		"contact_page":   "outline",
 	}
 
 	files, err := ioutil.ReadDir("/tmp/icons/png/black")
@@ -122,8 +122,8 @@ func generateAdditionalIcons() {
 			fmt.Println(f.Name())
 
 			var (
-				oldPath = filepath.Join("/tmp", "icons", "png", "black", filepath.Base(f.Name()), imgType + "-4x.png")
-				newBase = filepath.Join("/tmp", "icons", "renamed", filepath.Base(f.Name()) + "_" + imgType)
+				oldPath = filepath.Join("/tmp", "icons", "png", "black", filepath.Base(f.Name()), imgType+"-4x.png")
+				newBase = filepath.Join("/tmp", "icons", "renamed", filepath.Base(f.Name())+"_"+imgType)
 				newPath = newBase + ".png"
 			)
 

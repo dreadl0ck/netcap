@@ -143,7 +143,7 @@ func (c *Collector) createErrorsPcap() error {
 	return nil
 }
 
-// writePacketToUnknownPcap writse a packet to the unknown.pcap file
+// writePacketToUnknownPcap writes a packet to the unknown.pcap file
 // if WriteUnknownPackets is set in the config.
 func (c *Collector) writePacketToUnknownPcap(p gopacket.Packet) error {
 	if c.config.WriteUnknownPackets {

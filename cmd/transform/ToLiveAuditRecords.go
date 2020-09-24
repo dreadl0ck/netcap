@@ -2,12 +2,14 @@ package transform
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
 	"path/filepath"
 	strconv "strconv"
+	"strings"
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -35,10 +37,24 @@ func toLiveAuditRecords() {
 	)
 
 	log.Println("path:", path, "iface", lt.Value)
-	writeLiveAuditRecords(path, lt.Value, time.Now())
+	writeLiveAuditRecords(path)
 }
 
-func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
+func writeLiveAuditRecords(outDir string) {
+
+	var allDecoders []string
+
+	// generate entities for audit records
+	// *AuditRecords entity and an entity for the actual audit record instance
+	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+		allDecoders = append(allDecoders, d.GetName())
+	})
+
+	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
+		name := strings.ReplaceAll(e.Layer.String(), "/", "")
+		allDecoders = append(allDecoders, name)
+	})
+
 	// generate maltego transform
 	trx := maltego.Transform{}
 	for _, name := range allDecoders {
@@ -47,9 +63,14 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 		// stat generated profiles
 		stat, err := os.Stat(path)
 		if err != nil {
-			log.Println("invalid path: ", err)
+			log.Println("invalid path:", err, "trying", defaults.FileExtensionCompressed, "extension")
 
-			continue
+			path = filepath.Join(outDir, name+defaults.FileExtensionCompressed)
+			stat, err = os.Stat(path)
+			if err != nil {
+				log.Println("invalid path:", err)
+				continue
+			}
 		}
 		if stat.IsDir() {
 			log.Println("not a file: ", err)
@@ -95,79 +116,4 @@ func writeLiveAuditRecords(outDir string, iface string, start time.Time) {
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
-}
-
-// TODO: this should be generated not hardcoded!
-var allDecoders = []string{
-	"TLSClientHello",
-	"TLSServerHello",
-	"HTTP",
-	"Flow",
-	"Connection",
-	"DeviceProfile",
-	"File",
-	"POP3",
-	"Software",
-	"Service",
-	"Credentials",
-	"SSH",
-	"Vulnerability",
-	"Exploit",
-	"TCP",
-	"UDP",
-	"IPv4",
-	"IPv6",
-	"DHCPv4",
-	"DHCPv6",
-	"ICMPv4",
-	"ICMPv6",
-	"ICMPv6Echo",
-	"ICMPv6NeighborSolicitation",
-	"ICMPv6RouterSolicitation",
-	"DNS",
-	"ARP",
-	"Ethernet",
-	"Dot1Q",
-	"Dot11",
-	"NTP",
-	"SIP",
-	"IGMP",
-	"LLC",
-	"IPv6HopByHop",
-	"SCTP",
-	"SNAP",
-	"LinkLayerDiscovery",
-	"ICMPv6NeighborAdvertisement",
-	"ICMPv6RouterAdvertisement",
-	"EthernetCTP",
-	"EthernetCTPReply",
-	"LinkLayerDiscoveryInfo",
-	"IPSecAH",
-	"IPSecESP",
-	"Geneve",
-	"IPv6Fragment",
-	"VXLAN",
-	"USB",
-	"LCM",
-	"MPLS",
-	"Modbus",
-	"OSPF",
-	"OSPF",
-	"BFD",
-	"GRE",
-	"FDDI",
-	"EAP",
-	"VRRP",
-	"EAPOL",
-	"EAPOLKey",
-	"CiscoDiscovery",
-	"CiscoDiscoveryInfo",
-	"USBRequestBlockSetup",
-	"NortelDiscovery",
-	"CIP",
-	"EthernetIP",
-	"SMTP",
-	"Diameter",
-	"IPProfile",
-	"Mail",
 }

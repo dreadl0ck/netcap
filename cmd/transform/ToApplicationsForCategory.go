@@ -15,12 +15,9 @@ func toApplicationsForCategory() {
 	maltego.IPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
-			if profile.Addr != ipaddr {
-				return
-			}
 
 			if category == "" {
-				category = lt.Values["description"]
+				category = lt.Value
 			}
 
 			addApplicationForCategory(profile, category, trx, path)
