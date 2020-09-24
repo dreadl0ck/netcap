@@ -1,5 +1,7 @@
 # TODOs
 
+open service type folder for extracted streams
+
 ubuntu move ida to path that maltego will find:
  
     mv idafree-7.0/* ~/.local/bin/
