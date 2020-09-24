@@ -79,7 +79,7 @@ func findExecutable(name string) string {
 	if err != nil {
 		// on linux and macOS: search the binary in /usr/local/bin
 		if runtime.GOOS == platformDarwin || runtime.GOOS == platformLinux {
-			p := filepath.Join("/usr", "local", "bin", wireshark)
+			p := filepath.Join("/usr", "local", "bin", name)
 			path, err = exec.LookPath(p)
 			if err != nil {
 				die(err.Error(), "executable not found: " + p)
