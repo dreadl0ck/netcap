@@ -34,11 +34,6 @@ func toConnectionsForHost() {
 
 	maltego.ConnectionTransform(nil, func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ip string, sizes *[]int) {
 
-		// TODO: make showing empty stream configurable, or add a dedicated transform?
-		if conn.AppPayloadSize == 0 {
-			return
-		}
-
 		if conn.SrcIP == ip || conn.DstIP == ip {
 			i, err := strconv.Atoi(conn.DstPort)
 			if err != nil {
