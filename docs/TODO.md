@@ -1,5 +1,6 @@
 # TODOs
 
+open connection in wireshark does not work for live streams, add better error message
 open service type folder for extracted streams
 
 ubuntu move ida to path that maltego will find:

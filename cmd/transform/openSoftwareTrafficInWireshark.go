@@ -35,9 +35,9 @@ func openSoftwareTrafficInWireshark() {
 	)
 
 	if !exists {
-		log.Println(tcpdumpPath, args)
+		log.Println(tcpdump, args)
 
-		out, err := exec.Command(tcpdumpPath, args...).CombinedOutput()
+		out, err := exec.Command(findExecutable(tcpdump), args...).CombinedOutput()
 		if err != nil {
 			die(err.Error(), "open file failed:\n"+string(out))
 		}
@@ -45,9 +45,9 @@ func openSoftwareTrafficInWireshark() {
 		log.Println(string(out))
 	}
 
-	log.Println(wiresharkPath, outFile)
+	log.Println(wireshark, outFile)
 
-	out, err := exec.Command(wiresharkPath, outFile).CombinedOutput()
+	out, err := exec.Command(findExecutable(wireshark), outFile).CombinedOutput()
 	if err != nil {
 		die(err.Error(), "open file failed:\n"+string(out))
 	}
