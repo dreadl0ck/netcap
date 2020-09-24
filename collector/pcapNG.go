@@ -116,6 +116,8 @@ func (c *Collector) CollectPcapNG(path string) error {
 		}
 	}()
 
+	c.handleLinkType(r.LinkType())
+
 	// initialize collector
 	if err = c.Init(); err != nil {
 		return err

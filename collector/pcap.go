@@ -146,28 +146,7 @@ func (c *Collector) CollectPcap(path string) error {
 		}
 	}()
 
-	c.printlnStdOut("detected link type:", r.LinkType())
-
-	switch r.LinkType() {
-	case layers.LinkTypeEthernet:
-		c.config.BaseLayer = layers.LayerTypeEthernet
-	case layers.LinkTypeRaw:
-		c.config.BaseLayer = layers.LayerTypeIPv4
-	case layers.LinkTypeIPv4:
-		c.config.BaseLayer = layers.LayerTypeIPv4
-	case layers.LinkTypeIPv6:
-		c.config.BaseLayer = layers.LayerTypeIPv6
-	case layers.LinkTypeNull:
-		c.config.BaseLayer = layers.LayerTypeLoopback
-	case layers.LinkTypeFDDI:
-		c.config.BaseLayer = layers.LayerTypeFDDI
-	case layers.LinkTypeIEEE802_11:
-		c.config.BaseLayer = layers.LayerTypeDot11
-	case layers.LinkTypeIEEE80211Radio:
-		c.config.BaseLayer = layers.LayerTypeRadioTap
-	default:
-		log.Fatal("unhandled link type: ", r.LinkType())
-	}
+	c.handleLinkType(r.LinkType())
 
 	// initialize collector
 	if err = c.Init(); err != nil {
@@ -212,4 +191,29 @@ func (c *Collector) CollectPcap(path string) error {
 	c.cleanup(false)
 
 	return nil
+}
+
+func (c *Collector) handleLinkType(lt layers.LinkType) {
+	c.printlnStdOut("detected link type:", lt)
+
+	switch lt {
+	case layers.LinkTypeEthernet:
+		c.config.BaseLayer = layers.LayerTypeEthernet
+	case layers.LinkTypeRaw:
+		c.config.BaseLayer = layers.LayerTypeIPv4
+	case layers.LinkTypeIPv4:
+		c.config.BaseLayer = layers.LayerTypeIPv4
+	case layers.LinkTypeIPv6:
+		c.config.BaseLayer = layers.LayerTypeIPv6
+	case layers.LinkTypeNull:
+		c.config.BaseLayer = layers.LayerTypeLoopback
+	case layers.LinkTypeFDDI:
+		c.config.BaseLayer = layers.LayerTypeFDDI
+	case layers.LinkTypeIEEE802_11:
+		c.config.BaseLayer = layers.LayerTypeDot11
+	case layers.LinkTypeIEEE80211Radio:
+		c.config.BaseLayer = layers.LayerTypeRadioTap
+	default:
+		log.Fatal("unhandled link type: ", lt)
+	}
 }

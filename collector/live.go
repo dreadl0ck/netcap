@@ -47,6 +47,8 @@ func (c *Collector) CollectLive(iface, bpf string) error {
 		}
 	}
 
+	c.handleLinkType(handle.LinkType())
+
 	// initialize collector
 	if err = c.Init(); err != nil {
 		return err
