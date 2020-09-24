@@ -95,6 +95,12 @@ func Pluralize(name string) string {
 		}
 	}
 
+	if strings.HasSuffix(name, "n") {
+		if _, ok := noPluralsMap[name]; !ok {
+			name += "s"
+		}
+	}
+
 	return name
 }
 

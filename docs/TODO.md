@@ -1,5 +1,13 @@
 # TODOs
 
+- fix POP3 and Mail transforms
+- fix lookup DHCP fingerprints
+- start capture process: spawn instance in current process to allow cancelling it via maltego UI
+- dump config in format from flag pkg and write into separate file
+- debug live capture incorrect stream directions when using multiple workers
+
+- no need to split logic for pcap and pcapng collection anymore, since ZeroCopyReadPacketData is no longer used (comments: "logic is split for both types here")
+- rename tcpConnections folder -> tcp (+ same for udp)
 - rename: ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
 - remove Flow audit records?
 - add constant for "ipaddr"

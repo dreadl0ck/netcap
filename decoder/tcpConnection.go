@@ -723,7 +723,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	if !conf.Quiet {
 		errorsMapMutex.Lock()
 		stats.Lock()
-		decoderLog.Info("HTTPDecoder stats: Processed %v packets (%v bytes) in %v (errors: %v, type:%v)",
+		decoderLog.Info("HTTPDecoder stats",
 			zap.Int64("packets", stats.count),
 			zap.Int64("bytes", stats.dataBytes),
 			zap.Duration("duration", time.Since(start)),

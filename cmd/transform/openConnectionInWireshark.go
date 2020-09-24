@@ -27,7 +27,7 @@ import (
 
 var (
 	wiresharkPath = "/usr/local/bin/wireshark"
-	tcpdumpPath = "tcpdump"
+	tcpdumpPath   = "tcpdump"
 )
 
 func init() {

@@ -73,6 +73,7 @@ var transforms = []transformCoreInfo{
 	{"ToURLsForHost", "netcap.IPAddr", "Retrieve all URLs seen for the selected host"},
 	{"ToAuditRecords", "netcap.PCAP", "Transform PCAP file into audit records"},
 	{"ToAuditRecordsWithDPI", "netcap.PCAP", "Retrieve audit records with Deep Packet Inspection enabled"},
+	{"ReloadAuditRecordsFromDisk", "netcap.PCAP", "Reload the audit records for the selected PCAP from disk"},
 	{"StartCaptureProcess", "netcap.Interface", "Start network capture on the given interface"},
 	{"ToDHCPClients", "netcap.DHCPv4AuditRecords", "Show all DHCP Clients"},
 	{"ToDNSQuestions", "netcap.DNSAuditRecords", "Show all DNS questions"},

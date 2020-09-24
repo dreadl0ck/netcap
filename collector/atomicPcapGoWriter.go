@@ -26,20 +26,25 @@ import (
 type atomicPcapGoWriter struct {
 	count int64
 	w     pcapgo.Writer
+	err   error
 	sync.Mutex
 }
 
 // writePacket writes a packet into the writer.
 func (a *atomicPcapGoWriter) writePacket(ci gopacket.CaptureInfo, data []byte) error {
-	// sync
+	// ensure synchronous access
 	a.Lock()
-	err := a.w.WritePacket(ci, data)
-	// dont use a defer here for performance
+
+	// reuse the error on writer to avoid reallocation
+	a.err = a.w.WritePacket(ci, data)
+
+	// don't use a defer for unlocking to improve performance
 	a.Unlock()
 
+	// atomically increase the audit record counter
 	atomic.AddInt64(&a.count, 1)
 
-	return err
+	return a.err
 }
 
 // newAtomicPcapGoWriter takes a pcapgo.Writer and returns an atomic version.

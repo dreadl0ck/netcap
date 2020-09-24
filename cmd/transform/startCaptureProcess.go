@@ -71,8 +71,11 @@ func startCaptureProcess() {
 		"-iface", iface,
 		"-out", outDir,
 		"-fileStorage=files",
-		"-config=" + filepath.Join("/usr", "local", "etc", "netcap", "livecapture.conf"),
+		"-conns",
+		"-debug",
+		//"-config=" + filepath.Join("/usr", "local", "etc", "netcap", "livecapture.conf"),
 		"-noprompt",
+		"-workers=1",
 		"-http-shutdown=true",
 	}
 
@@ -145,4 +148,3 @@ func getPathLiveCaptureOutDir(iface string) string {
 	}
 	return filepath.Join(home, iface+".net")
 }
-

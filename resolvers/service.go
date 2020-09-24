@@ -148,6 +148,8 @@ func InitServiceDB() {
 					tcpPortMap[index] = p
 				case r[2] == udp:
 					udpPortMap[index] = p
+				case r[3] == "Unassigned":
+					// ignore
 				default:
 					resolverLog.Debug("ignoring service probe",
 						zap.Strings("probe", r),

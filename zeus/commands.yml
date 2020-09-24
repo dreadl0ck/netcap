@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION:  0.5.5
+    VERSION:  0.5.6
 
 # command data
 commands:
@@ -414,3 +414,6 @@ commands:
           cd /Applications/VMware\ Fusion.app/Contents/Library/VMware\ OVF\ Tool/
           ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/WinDev2008Eval.vmwarevm/WinDev2008Eval.vmx ~/Documents/NetcapWin10.ova
           du -sh ~/Documents/NetcapWin10.ova
+
+    install-ubuntu:
+        description: build script to compile on ubuntu linux

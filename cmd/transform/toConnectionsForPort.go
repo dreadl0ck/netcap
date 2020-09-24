@@ -15,7 +15,7 @@ import (
 func toConnectionsForPort() {
 
 	var (
-		port string
+		port        string
 		resolverLog = zap.New(zapcore.NewNopCore())
 	)
 
@@ -54,5 +54,3 @@ func toConnectionsForPort() {
 		}
 	})
 }
-
-

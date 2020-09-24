@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -563,6 +564,9 @@ func createContentTypePathIfRequired(fsPath string) {
 
 // TODO: write unit tests and cleanup.
 func (h *httpReader) saveFile(source, name string, err error, body []byte, encoding []string, contentType, host string) error {
+
+	log.Println("httpReader.saveFile", source, name, err, len(body), encoding, contentType, host)
+
 	// prevent saving zero bytes
 	if len(body) == 0 {
 		return nil

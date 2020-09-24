@@ -13,6 +13,8 @@
 
 package transform
 
+import "strings"
+
 const (
 	// http content types.
 	octetStream = "application/octet-stream"
@@ -27,27 +29,47 @@ const (
 
 	// default linux command to open files from maltego
 	// you could also set it to xdg-open.
-	defaultOpenCommandLinux = "gio"
+	defaultOpenCommandLinux         = "gio"
+	defaultOpenTerminalCommandLinux = "gnome-terminal"
 
+	// TODO: don't hardcode paths, only specify the binary name and expect it to be found in $PATH
 	defaultDisasmCommandMacOS = "/Applications/Hopper Disassembler v4.app/Contents/MacOS/hopper"
 )
 
 // adds arguments for different programs to the passed in arguments.
-func makeLinuxCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
+func makeLinuxOpenCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
 	if commandName == "gio" {
-		args = append(args, "open")
+		args = append([]string{"open"}, args...)
 	}
 
 	return commandName, args
 }
 
 // adds arguments for different programs to the passed in arguments.
-func makeWindowsCommand(args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
+func makeWindowsOpenCommand(args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
 	return "cmd", append(
 		[]string{"/C"},
 		append(
 			[]string{"start"},
 			args...,
 		)...,
+	)
+}
+
+// gnome-terminal --working-directory=/path/to/dir
+func makeLinuxOpenTerminalCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
+	if commandName == "gnome-terminal" {
+		args = []string{"--working-directory=" + strings.Join(args, "")}
+	}
+
+	return commandName, args
+}
+
+// cmd.exe /K "cd /d H:\path\to\dir"
+// note: /d allows to change drive letters
+func makeWindowsOpenTerminalCommand(args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
+	return "cmd", append(
+		[]string{"/K"},
+		"cd /d "+strings.Join(args, " "),
 	)
 }

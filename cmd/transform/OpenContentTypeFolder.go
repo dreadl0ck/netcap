@@ -35,9 +35,9 @@ func createOpenCommand(args []string) (string, []string) {
 		case platformDarwin:
 			name = defaultOpenCommandDarwin
 		case platformWindows:
-			name, args = makeWindowsCommand(args)
+			name, args = makeWindowsOpenCommand(args)
 		case platformLinux:
-			name, args = makeLinuxCommand(defaultOpenCommandLinux, args)
+			name, args = makeLinuxOpenCommand(defaultOpenCommandLinux, args)
 		}
 	}
 
@@ -54,10 +54,10 @@ func createOpenTerminalCommand(args []string) (string, []string) {
 		switch runtime.GOOS {
 		case platformDarwin:
 			name = "/Applications/iTerm.app/Contents/MacOS/iTerm2"
-		case platformWindows: // TODO: open path in terminal
-			name, args = makeWindowsCommand(args)
-		case platformLinux: // TODO: open path in terminal
-			name, args = makeLinuxCommand(defaultOpenCommandLinux, args)
+		case platformWindows:
+			name, args = makeWindowsOpenTerminalCommand(args)
+		case platformLinux:
+			name, args = makeLinuxOpenTerminalCommand(defaultOpenTerminalCommandLinux, args)
 		}
 	}
 

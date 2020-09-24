@@ -79,7 +79,7 @@ func dieIfExecutable(loc string) {
 func die(err string, msg string) {
 	trx := maltego.Transform{}
 	// add error message for the user
-	trx.AddUIMessage(msg+": "+err, maltego.UIMessageFatal)
+	trx.AddUIMessage(maltego.EscapeText(msg+": "+err), maltego.UIMessageFatal)
 	fmt.Println(trx.ReturnOutput())
 	log.Println(msg, err)
 	os.Exit(0) // don't signal an error for the transform invocation
@@ -119,7 +119,7 @@ func createSNITableHTML(m map[string]int64) string {
 	var snis sniSlice
 	for k, v := range m {
 		snis = append(snis, &sni{
-			name: k,
+			name:       k,
 			numPackets: v,
 		})
 	}
@@ -167,8 +167,8 @@ func createPortsTableHTML(ports []*types.Port) string {
 
 	sort.Sort(portSlice(ports))
 
-	for _,  p := range ports {
-		out = append(out, "<tr><td>"+strconv.Itoa(int(p.PortNumber))+"</td><td>"+strconv.FormatUint(p.Packets, 10)+"</td><td>"+strconv.FormatUint(p.Bytes, 10)+"</td><td>" + p.Protocol + "</td></tr>")
+	for _, p := range ports {
+		out = append(out, "<tr><td>"+strconv.Itoa(int(p.PortNumber))+"</td><td>"+strconv.FormatUint(p.Packets, 10)+"</td><td>"+strconv.FormatUint(p.Bytes, 10)+"</td><td>"+p.Protocol+"</td></tr>")
 	}
 
 	out = append(out, "</table>")
@@ -198,7 +198,7 @@ func (d portSlice) Swap(i, j int) {
 }
 
 type sni struct {
-	name string
+	name       string
 	numPackets int64
 }
 

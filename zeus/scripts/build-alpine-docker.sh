@@ -17,7 +17,7 @@ zeus gen-version
 # docker rm -f $(docker ps -a -q)
 # docker rmi -f $(docker images -a -q)
 
-tag="dreadl0ck/netcap:alpine-v${VERSION}"
+tag="dreadl0ck/netcap:alpine-${VERSION}"
 
 echo "[INFO] $tag args: ${ARGS}"
 
