@@ -583,7 +583,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		ctype = trimEncoding(http.DetectContentType(body))
 
 		// root path
-		root = path.Join(conf.FileStorage, ctype)
+		root = path.Join(conf.Out, conf.FileStorage, ctype)
 
 		// file extension
 		ext = fileExtensionForContentType(ctype)
@@ -609,7 +609,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 		base = base[:250] + "..."
 	}
 	if base == conf.FileStorage {
-		base = path.Join(conf.FileStorage, "noname")
+		base = path.Join(conf.Out, conf.FileStorage, "noname")
 	}
 	var (
 		target = base
@@ -697,7 +697,7 @@ func (h *httpReader) saveFile(source, name string, err error, body []byte, encod
 			ctype = trimEncoding(http.DetectContentType(data))
 
 			// make sure root path exists
-			createContentTypePathIfRequired(path.Join(conf.FileStorage, ctype))
+			createContentTypePathIfRequired(path.Join(conf.Out, conf.FileStorage, ctype))
 
 			// switch the file extension and the path for the updated content type
 			ext = filepath.Ext(target)
