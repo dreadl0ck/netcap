@@ -32,8 +32,7 @@ const (
 	defaultOpenCommandLinux         = "gio"
 	defaultOpenTerminalCommandLinux = "gnome-terminal"
 
-	// TODO: don't hardcode paths, only specify the binary name and expect it to be found in $PATH
-	defaultDisasmCommandMacOS = "/Applications/Hopper Disassembler v4.app/Contents/MacOS/hopper"
+	defaultDisasmCommandMacOS = "hopper"
 )
 
 // adds arguments for different programs to the passed in arguments.
