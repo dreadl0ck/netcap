@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	wiresharkPath = "/usr/local/bin/wireshark"
+	wiresharkPath = "wireshark"
 	tcpdumpPath   = "tcpdump"
 )
 
