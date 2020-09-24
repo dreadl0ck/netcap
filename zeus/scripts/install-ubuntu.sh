@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+## Clone and compile DPI dependencies from source
+
 apt update
 apt install -y libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev
 update-ca-certificates

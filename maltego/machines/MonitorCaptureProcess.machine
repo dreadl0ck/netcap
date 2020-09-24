@@ -1,8 +1,8 @@
 // NETCAP machine for live capture
-machine("netcap.MonitorCaptureProcess",
-    displayName:"Monitor Capture Process",
+machine("netcap.MonitorNetworkInterface",
+    displayName:"Monitor Network Interface",
     author:"Philipp Mieden",
-    description: "Periodically refresh the audit records for a capture process") {
+    description: "Periodically refresh the audit records for a capture process on a network interface") {
 
     onTimer(30) {
         run("netcap.ToLiveAuditRecords")

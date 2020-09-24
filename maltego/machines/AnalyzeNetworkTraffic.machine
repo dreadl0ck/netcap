@@ -63,25 +63,25 @@ machine("netcap.AnalyzeNetworkTraffic",
                         status("finished processing source IPs")
                         log("finished processing source IPs")
                     }
-                    path {
-                        // Destination IPs
-                        run("netcap.ToDestinationIPs")
-
-                        paths {
-                            path {
-                                run("netcap.ToGeolocation")
-                            }
-                            path {
-                                run("netcap.ToHTTPServerNames")
-                            }
-                            path {
-                                run("netcap.ToServerNameIndicators")
-                            }
-                        }
-
-                        status("finished processing destination IPs")
-                        log("finished processing destination IPs")
-                    }
+//                    path {
+//                        // Destination IPs
+//                        run("netcap.ToDestinationIPs")
+//
+//                        paths {
+//                            path {
+//                                run("netcap.ToGeolocation")
+//                            }
+//                            path {
+//                                run("netcap.ToHTTPServerNames")
+//                            }
+//                            path {
+//                                run("netcap.ToServerNameIndicators")
+//                            }
+//                        }
+//
+//                        status("finished processing destination IPs")
+//                        log("finished processing destination IPs")
+//                    }
                 }
             }
 
