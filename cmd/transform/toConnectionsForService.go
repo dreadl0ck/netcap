@@ -76,8 +76,8 @@ func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, m
 
 func makeConversationHTML(service string, conn *types.Connection, path string) string {
 
-	if conn.AppPayloadSize == 0 {
-		return "no application layer data transferred"
+	if conn.TotalSize == 0 {
+		return "no data transferred"
 	}
 
 	if service == "" {
