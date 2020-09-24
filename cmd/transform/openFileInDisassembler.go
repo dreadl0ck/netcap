@@ -33,7 +33,14 @@ func openFileInDisassembler() {
 
 	log.Println("final command for opening file:", openCmd, args)
 
-	out, err := exec.Command(openCmd, args...).CombinedOutput()
+	// create command
+	cmd := exec.Command(openCmd, args...)
+
+	// set host env
+	cmd.Env = os.Environ()
+
+	// run
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		die(err.Error(), "open file failed:\n"+string(out))
 	}
