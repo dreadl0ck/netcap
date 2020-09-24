@@ -221,7 +221,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		cType = http.DetectContentType(body)
 
 		// root path
-		root = path.Join(conf.FileStorage, cType)
+		root = path.Join(conf.Out, conf.FileStorage, cType)
 
 		// file extension
 		ext = fileExtensionForContentType(cType)
@@ -256,7 +256,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	}
 
 	if base == conf.FileStorage {
-		base = path.Join(conf.FileStorage, "noname")
+		base = path.Join(conf.Out, conf.FileStorage, "noname")
 	}
 
 	var (
