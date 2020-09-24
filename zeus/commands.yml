@@ -301,7 +301,9 @@ commands:
 
     install-bash-completion:
         description: install the bash-completion for netcap
-        exec: cp cmd/net /usr/local/etc/bash_completion.d/net && . /usr/local/etc/bash_completion.d/net
+        exec: |
+            mkdir -p /usr/local/etc/bash_completion.d
+            cp cmd/net /usr/local/etc/bash_completion.d/net && . /usr/local/etc/bash_completion.d/net
 
     run-grafana:
         description: start grafana service locally

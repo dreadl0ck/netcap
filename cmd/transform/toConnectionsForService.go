@@ -45,11 +45,6 @@ func toConnectionsForService() {
 			serviceType = lt.Value
 		}
 
-		// TODO: make showing empty stream configurable, or add a dedicated transform?
-		if conn.AppPayloadSize == 0 {
-			return
-		}
-
 		i, err := strconv.Atoi(conn.DstPort)
 		if err != nil {
 			return

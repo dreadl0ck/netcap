@@ -39,11 +39,6 @@ func toConnectionsForPort() {
 			port = lt.Values["port"]
 		}
 
-		// TODO: make showing empty stream configurable, or add a dedicated transform?
-		if conn.AppPayloadSize == 0 {
-			return
-		}
-
 		if conn.SrcPort == port || conn.DstPort == port {
 			i, err := strconv.Atoi(conn.DstPort)
 			if err != nil {

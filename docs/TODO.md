@@ -1,5 +1,9 @@
 # TODOs
 
+ubuntu move ida to path that maltego will find:
+ 
+    mv idafree-7.0/* ~/.local/bin/
+
 - fix POP3 and Mail transforms
 - fix lookup DHCP fingerprints
 - start capture process: spawn instance in current process to allow cancelling it via maltego UI
