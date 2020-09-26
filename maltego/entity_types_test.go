@@ -193,10 +193,6 @@ func newRequiredStringField(name string, description string) propertyField {
 }
 
 func genEntity(outDir string, entName string, imgName string, description string, parent string, isArchive bool, fields ...propertyField) {
-	// not joking, Maltego fails to render images with this name
-	if imgName == "Vulnerability" {
-		imgName = "Vuln"
-	}
 
 	var (
 		name = netcapPrefix + entName
@@ -234,13 +230,18 @@ func genEntity(outDir string, entName string, imgName string, description string
 	var (
 		base    = filepath.Join("/tmp", "icons", "renamed", imgName)
 		dstBase = filepath.Join(outDir, "Icons", ident, imgName)
+		ext     = ".svg"
 	)
 
-	copyFile(base+"16.png", dstBase+".png")
-	copyFile(base+"24.png", dstBase+"24.png")
-	copyFile(base+"32.png", dstBase+"32.png")
-	copyFile(base+"48.png", dstBase+"48.png")
-	copyFile(base+"96.png", dstBase+"96.png")
+	if _, err = os.Stat(base + "16" + ext); err != nil {
+		ext = ".png"
+	}
+
+	copyFile(base+"16"+ext, dstBase+""+ext)
+	copyFile(base+"24"+ext, dstBase+"24"+ext)
+	copyFile(base+"32"+ext, dstBase+"32"+ext)
+	copyFile(base+"48"+ext, dstBase+"48"+ext)
+	copyFile(base+"96"+ext, dstBase+"96"+ext)
 }
 
 // copyFile the source file contents to destination
