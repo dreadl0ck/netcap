@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.ContentType" displayName="ContentType" displayNamePlural="ContentTypes" description="A MIME type describes different multi-media formats" category="Netcap" smallIconResource="Netcap/category" largeIconResource="Netcap/category" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.ContentType" displayName="ContentType" displayNamePlural="ContentTypes" description="A MIME type describes different multi-media formats" category="Netcap" smallIconResource="Netcap/category_black" largeIconResource="Netcap/category_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.contenttype" displayValue="properties.contenttype">
   <Groups></Groups>
   <Fields>

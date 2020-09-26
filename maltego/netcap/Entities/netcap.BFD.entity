@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.BFD" displayName="BFD" displayNamePlural="BFD" description="Bidirectional Forwarding Detection (BFD) is a network protocol that is used to detect faults between two forwarding engines connected by a link" category="Netcap" smallIconResource="Netcap/BFD" largeIconResource="Netcap/BFD" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.BFD" displayName="BFD" displayNamePlural="BFD" description="Bidirectional Forwarding Detection (BFD) is a network protocol that is used to detect faults between two forwarding engines connected by a link" category="Netcap" smallIconResource="Netcap/BFD_black" largeIconResource="Netcap/BFD_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.bfd" displayValue="properties.bfd">
   <Groups></Groups>
   <Fields>

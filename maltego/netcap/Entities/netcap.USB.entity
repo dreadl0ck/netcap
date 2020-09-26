@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.USB" displayName="USB" displayNamePlural="USB" description="Universal Serial Bus (USB) is an industry standard that establishes specifications for cables and connectors and protocols for connection, communication and power supply (interfacing) between computers, peripherals and other computers" category="Netcap" smallIconResource="Netcap/USB" largeIconResource="Netcap/USB" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.USB" displayName="USB" displayNamePlural="USB" description="Universal Serial Bus (USB) is an industry standard that establishes specifications for cables and connectors and protocols for connection, communication and power supply (interfacing) between computers, peripherals and other computers" category="Netcap" smallIconResource="Netcap/USB_black" largeIconResource="Netcap/USB_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.usb" displayValue="properties.usb">
   <Groups></Groups>
   <Fields>

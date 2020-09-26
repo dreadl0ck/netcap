@@ -60,9 +60,6 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 
 func TestGenerateAuditRecordIconsSVG(t *testing.T) {
 
-	// for mixing png and svg icons, generate png first, then svg
-	//generateIcons()
-
 	generateIconsSVG()
 	generateAdditionalIconsSVG()
 
@@ -175,7 +172,15 @@ func generateIconsSVG() {
 
 		fmt.Println("renamed", oldPath, "to", newPath)
 
-		generateSizesSVG(newBase, newPath)
+		fmt.Println(f.Name())
+
+		if colorNames, ok := coloredIcons[f.Name()]; ok {
+			for _, c := range colorNames {
+				generateSizesSVG(newBase, newPath, c)
+			}
+		} else {
+			generateSizesSVG(newBase, newPath, "black")
+		}
 	}
 }
 
@@ -184,6 +189,60 @@ var subset = map[string]string{
 	"cloud_upload":   "outline",
 	"cloud_download": "outline",
 	"contact_page":   "outline",
+}
+
+// image name to colors
+var coloredIcons = map[string][]string{
+	"insert_drive_file": colors,
+}
+
+var colors = []string{
+	"indianred",
+	"aquamarine",
+	"orangered",
+	"crimson",
+	"red",
+	"coral",
+	"slateblue",
+	"rebeccapurple",
+	"orange",
+	"gold",
+	"green",
+	"thistle",
+	"magenta",
+	"blueviolet",
+	"navy",
+	"tomato",
+	"indigo",
+	"lawngreen",
+	"salmon",
+	"seagreen",
+	"olivedrab",
+	"powderblue",
+	"olive",
+	"dodgerblue",
+	"firebrick",
+	"steelblue",
+	"aqua",
+	"skyblue",
+	"teal",
+	"blue",
+	"burlywood",
+	"tan",
+	"turquoise",
+	"rosybrown",
+	"sandybrown",
+	"goldenrod",
+	"peru",
+	"royalblue",
+	"deepskyblue",
+	"chocolate",
+	"saddlebrown",
+	"sienna",
+	"cadetblue",
+	"brown",
+	"maroon",
+	"midnightblue",
 }
 
 // this will generate a subset of the icons with a different imgType
@@ -245,7 +304,7 @@ func generateAdditionalIconsSVG() {
 
 			fmt.Println("renamed", oldPath, "to", newPath)
 
-			generateSizesSVG(newBase, newPath)
+			generateSizesSVG(newBase, newPath, "black")
 		}
 	}
 }
@@ -261,20 +320,7 @@ func generateSizes(newBase string, newPath string) {
 		log.Fatal(err)
 	}
 
-	fXML, err := os.Create(newBase + ".xml")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = fXML.WriteString(icon)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = fXML.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
+	createXMLIconFile(newBase)
 
 	for _, size := range []uint{16, 24, 32, 48, 96} {
 		newImage := resize.Resize(size, size, img, resize.Lanczos3)
@@ -296,37 +342,31 @@ func generateSizes(newBase string, newPath string) {
 	}
 }
 
-// SVG document
-type svg struct {
-	Namespace string `xml:"xmlns,attr"`
-	Width     string `xml:"width,attr"`
-	Height    string `xml:"height,attr"`
-	ViewBox   string `xml:"viewBox,attr"`
-	Doc       string `xml:",innerxml"`
+type materialIconSVG struct {
+	XMLName xml.Name `xml:"svg"`
+	Text    string   `xml:",chardata"`
+	Xmlns   string   `xml:"xmlns,attr"`
+	Width   string   `xml:"width,attr"`
+	Height  string   `xml:"height,attr"`
+	ViewBox string   `xml:"viewBox,attr"`
+	Paths    []*Path   `xml:"path"`
 }
 
-func (s *svg) resizeSVG(width, height int) {
+type Path struct {
+	Text    string `xml:",chardata"`
+	Opacity string `xml:"opacity,attr"`
+	D       string `xml:"d,attr"`
+	Style   string `xml:"style,attr"`
+}
+
+func (s *materialIconSVG) resizeSVG(width, height int) {
 	s.Height = strconv.Itoa(height)
 	s.Width = strconv.Itoa(width)
 }
 
-func generateSizesSVG(newBase string, newPath string) {
-
-	svgFile, err := os.Open(newPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return
-	}
-	defer svgFile.Close()
-
-	var s = new(svg)
-	if err = xml.NewDecoder(svgFile).Decode(&s); err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to parse (%v)\n", err)
-		return
-	}
-
+func createXMLIconFile(path string) {
 	// create XML info file for maltego
-	fXML, err := os.Create(newBase + ".xml")
+	fXML, err := os.Create(path + ".xml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -340,11 +380,37 @@ func generateSizesSVG(newBase string, newPath string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func generateSizesSVG(newBase string, newPath string, color string) {
+
+	svgFile, err := os.Open(newPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		return
+	}
+	defer svgFile.Close()
+
+	var s = new(materialIconSVG)
+	if err = xml.NewDecoder(svgFile).Decode(&s); err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to parse (%v)\n", err)
+		return
+	}
+
+	for _, p := range s.Paths {
+		p.Style = "fill: " + color + ";"
+	}
+
+	if s.ViewBox == "" {
+		s.ViewBox = "0 0 100 100"
+	}
+
+	createXMLIconFile(newBase + "_" + color)
 
 	for _, size := range []int{16, 24, 32, 48, 96} {
 
 		s.resizeSVG(size, size)
-		f, errCreate := os.Create(newBase + strconv.Itoa(size) + ".svg")
+		f, errCreate := os.Create(newBase + "_" + color + strconv.Itoa(size) + ".svg")
 		if errCreate != nil {
 			log.Fatal(errCreate)
 		}
@@ -413,7 +479,7 @@ func generateAuditRecordIcon(text string) {
 	dc.Clip()
 
 	var (
-		imgBase = filepath.Join("/tmp", "icons", "renamed", text)
+		imgBase = filepath.Join("/tmp", "icons", "material-icons-png", "renamed", text)
 		imgPath = imgBase + ".png"
 	)
 
@@ -429,11 +495,6 @@ func generateAuditRecordIcon(text string) {
 
 	generateSizes(imgBase, imgPath)
 }
-
-//<svg width="200" height="100">
-//<rect x="0" y="0" width="200" height="100" stroke="red" stroke-width="3px" fill="white"/>
-//<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">TEXT</text>
-//</svg>
 
 func generateAuditRecordIconSVG(text string) {
 
@@ -465,38 +526,5 @@ func generateAuditRecordIconSVG(text string) {
 		log.Fatal("invalid SVG", x)
 	}
 
-	generateSizesSVG(imgBase, imgPath)
+	generateSizesSVG(imgBase, imgPath, "black")
 }
-
-// using svggo pkg for SVG generation.
-//func generateAuditRecordIconSVG(text string) {
-//
-//	var (
-//		size   = 96
-//		buf    bytes.Buffer
-//		canvas = svggo.New(&buf)
-//	)
-//
-//	canvas.Start(size, size)
-//	//canvas.Rect(0, 0, size, size)
-//	canvas.Text(10, 10, text, "font-size:10px")
-//	canvas.End()
-//
-//	var (
-//		imgBase = filepath.Join("/tmp", "icons", "renamed", text)
-//		imgPath = imgBase + ".svg"
-//	)
-//
-//	file, err := os.Create(imgPath)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	defer file.Close()
-//
-//	_, err = file.Write(buf.Bytes())
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	generateSizesSVG(imgBase, imgPath)
-//}

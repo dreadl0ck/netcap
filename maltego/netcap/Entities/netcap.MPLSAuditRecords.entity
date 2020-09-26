@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.MPLSAuditRecords" displayName="MPLSAuditRecords" displayNamePlural="MPLSAuditRecords" description="An archive of MPLS audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.MPLSAuditRecords" displayName="MPLSAuditRecords" displayNamePlural="MPLSAuditRecords" description="An archive of MPLS audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_slateblue" largeIconResource="Netcap/insert_drive_file_slateblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.mplsauditrecords" displayValue="properties.mplsauditrecords">
   <Groups></Groups>
   <Fields>

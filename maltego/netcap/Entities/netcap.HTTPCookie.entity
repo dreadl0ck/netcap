@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.HTTPCookie" displayName="HTTPCookie" displayNamePlural="HTTPCookies" description="A HTTP cookie" category="Netcap" smallIconResource="Netcap/copyright" largeIconResource="Netcap/copyright" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.HTTPCookie" displayName="HTTPCookie" displayNamePlural="HTTPCookies" description="A HTTP cookie" category="Netcap" smallIconResource="Netcap/copyright_black" largeIconResource="Netcap/copyright_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.httpcookie" displayValue="properties.httpcookie">
   <Groups></Groups>
   <Fields>

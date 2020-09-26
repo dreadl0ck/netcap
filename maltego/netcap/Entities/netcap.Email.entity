@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Email" displayName="Email" displayNamePlural="Email" description="An email message" category="Netcap" smallIconResource="Netcap/mail_outline" largeIconResource="Netcap/mail_outline" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Email" displayName="Email" displayNamePlural="Email" description="An email message" category="Netcap" smallIconResource="Netcap/mail_outline_black" largeIconResource="Netcap/mail_outline_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <BaseEntities>
   <Entities>maltego.Email</Entities>
  </BaseEntities>

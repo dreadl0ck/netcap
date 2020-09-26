@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.NortelDiscoveryAuditRecords" displayName="NortelDiscoveryAuditRecords" displayNamePlural="NortelDiscoveryAuditRecords" description="An archive of NortelDiscovery audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.NortelDiscoveryAuditRecords" displayName="NortelDiscoveryAuditRecords" displayNamePlural="NortelDiscoveryAuditRecords" description="An archive of NortelDiscovery audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_olivedrab" largeIconResource="Netcap/insert_drive_file_olivedrab" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.norteldiscoveryauditrecords" displayValue="properties.norteldiscoveryauditrecords">
   <Groups></Groups>
   <Fields>

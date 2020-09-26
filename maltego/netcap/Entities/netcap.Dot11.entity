@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Dot11" displayName="Dot11" displayNamePlural="Dot11" description="IEEE 802.11 is part of the IEEE 802 set of local area network protocols, and specifies the set of media access control and physical layer protocols for implementing wireless local area network Wi-Fi" category="Netcap" smallIconResource="Netcap/Dot11" largeIconResource="Netcap/Dot11" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Dot11" displayName="Dot11" displayNamePlural="Dot11" description="IEEE 802.11 is part of the IEEE 802 set of local area network protocols, and specifies the set of media access control and physical layer protocols for implementing wireless local area network Wi-Fi" category="Netcap" smallIconResource="Netcap/Dot11_black" largeIconResource="Netcap/Dot11_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dot11" displayValue="properties.dot11">
   <Groups></Groups>
   <Fields>

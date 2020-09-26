@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.FlowAuditRecords" displayName="FlowAuditRecords" displayNamePlural="FlowAuditRecords" description="An archive of Flow audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.FlowAuditRecords" displayName="FlowAuditRecords" displayNamePlural="FlowAuditRecords" description="An archive of Flow audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_crimson" largeIconResource="Netcap/insert_drive_file_crimson" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.flowauditrecords" displayValue="properties.flowauditrecords">
   <Groups></Groups>
   <Fields>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DNSName" displayName="DNSName" displayNamePlural="DNSNames" description="A DNS Name" category="Netcap" smallIconResource="Netcap/dns" largeIconResource="Netcap/dns" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DNSName" displayName="DNSName" displayNamePlural="DNSNames" description="A DNS Name" category="Netcap" smallIconResource="Netcap/dns_black" largeIconResource="Netcap/dns_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <BaseEntities>
   <Entities>maltego.DNSName</Entities>
  </BaseEntities>

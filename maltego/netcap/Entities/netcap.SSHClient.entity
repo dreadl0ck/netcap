@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SSHClient" displayName="SSHClient" displayNamePlural="SSHClients" description="A Secure Shell Protocol Client" category="Netcap" smallIconResource="Netcap/call_made" largeIconResource="Netcap/call_made" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SSHClient" displayName="SSHClient" displayNamePlural="SSHClients" description="A Secure Shell Protocol Client" category="Netcap" smallIconResource="Netcap/call_made_black" largeIconResource="Netcap/call_made_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.sshclient" displayValue="properties.sshclient">
   <Groups></Groups>
   <Fields>

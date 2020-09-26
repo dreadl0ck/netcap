@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.MPLS" displayName="MPLS" displayNamePlural="MPLS" description="Multiprotocol Label Switching is a routing technique in telecommunications networks that directs data from one node to the next based on short path labels rather than long network addresses, thus avoiding complex lookups in a routing table and speeding traffic flows" category="Netcap" smallIconResource="Netcap/MPLS" largeIconResource="Netcap/MPLS" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.MPLS" displayName="MPLS" displayNamePlural="MPLS" description="Multiprotocol Label Switching is a routing technique in telecommunications networks that directs data from one node to the next based on short path labels rather than long network addresses, thus avoiding complex lookups in a routing table and speeding traffic flows" category="Netcap" smallIconResource="Netcap/MPLS_black" largeIconResource="Netcap/MPLS_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.mpls" displayValue="properties.mpls">
   <Groups></Groups>
   <Fields>

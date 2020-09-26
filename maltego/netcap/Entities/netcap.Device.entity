@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Device" displayName="Device" displayNamePlural="Devices" description="A device seen on the network" category="Netcap" smallIconResource="Netcap/devices" largeIconResource="Netcap/devices" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Device" displayName="Device" displayNamePlural="Devices" description="A device seen on the network" category="Netcap" smallIconResource="Netcap/devices_black" largeIconResource="Netcap/devices_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.device" displayValue="properties.device">
   <Groups></Groups>
   <Fields>

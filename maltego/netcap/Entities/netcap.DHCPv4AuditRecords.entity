@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DHCPv4AuditRecords" displayName="DHCPv4AuditRecords" displayNamePlural="DHCPv4AuditRecords" description="An archive of DHCPv4 audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DHCPv4AuditRecords" displayName="DHCPv4AuditRecords" displayNamePlural="DHCPv4AuditRecords" description="An archive of DHCPv4 audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_olivedrab" largeIconResource="Netcap/insert_drive_file_olivedrab" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dhcpv4auditrecords" displayValue="properties.dhcpv4auditrecords">
   <Groups></Groups>
   <Fields>

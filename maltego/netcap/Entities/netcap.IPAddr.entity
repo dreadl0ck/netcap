@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.IPAddr" displayName="IPAddr" displayNamePlural="IPAddr" description="An internet protocol (IP) network address" category="Netcap" smallIconResource="Netcap/router" largeIconResource="Netcap/router" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.IPAddr" displayName="IPAddr" displayNamePlural="IPAddr" description="An internet protocol (IP) network address" category="Netcap" smallIconResource="Netcap/router_black" largeIconResource="Netcap/router_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <BaseEntities>
   <Entities>maltego.IPv4Address</Entities>
  </BaseEntities>

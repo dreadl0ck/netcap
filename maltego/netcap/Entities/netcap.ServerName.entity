@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.ServerName" displayName="ServerName" displayNamePlural="ServerNames" description="A network server software name" category="Netcap" smallIconResource="Netcap/scanner" largeIconResource="Netcap/scanner" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.ServerName" displayName="ServerName" displayNamePlural="ServerNames" description="A network server software name" category="Netcap" smallIconResource="Netcap/scanner_black" largeIconResource="Netcap/scanner_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.servername" displayValue="properties.servername">
   <Groups></Groups>
   <Fields>

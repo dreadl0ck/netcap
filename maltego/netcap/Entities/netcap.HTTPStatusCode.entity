@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.HTTPStatusCode" displayName="HTTPStatusCode" displayNamePlural="HTTPStatusCodes" description="A HTTP server response code" category="Netcap" smallIconResource="Netcap/highlight" largeIconResource="Netcap/highlight" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.HTTPStatusCode" displayName="HTTPStatusCode" displayNamePlural="HTTPStatusCodes" description="A HTTP server response code" category="Netcap" smallIconResource="Netcap/highlight_black" largeIconResource="Netcap/highlight_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.httpstatuscode" displayValue="properties.httpstatuscode">
   <Groups></Groups>
   <Fields>

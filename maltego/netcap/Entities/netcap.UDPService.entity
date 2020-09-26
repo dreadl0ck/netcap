@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.UDPService" displayName="UDPService" displayNamePlural="UDPServices" description="A UDP network service" category="Netcap" smallIconResource="Netcap/developer_board" largeIconResource="Netcap/developer_board" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.UDPService" displayName="UDPService" displayNamePlural="UDPServices" description="A UDP network service" category="Netcap" smallIconResource="Netcap/developer_board_black" largeIconResource="Netcap/developer_board_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.udpservice" displayValue="properties.udpservice">
   <Groups></Groups>
   <Fields>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.HTTPParameterValue" displayName="HTTPParameterValue" displayNamePlural="HTTPParameterValues" description="A HTTP request parameter value" category="Netcap" smallIconResource="Netcap/settings_ethernet" largeIconResource="Netcap/settings_ethernet" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.HTTPParameterValue" displayName="HTTPParameterValue" displayNamePlural="HTTPParameterValues" description="A HTTP request parameter value" category="Netcap" smallIconResource="Netcap/settings_ethernet_black" largeIconResource="Netcap/settings_ethernet_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.httpparametervalue" displayValue="properties.httpparametervalue">
   <Groups></Groups>
   <Fields>
