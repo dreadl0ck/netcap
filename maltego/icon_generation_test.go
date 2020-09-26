@@ -344,19 +344,38 @@ func generateSizes(newBase string, newPath string) {
 
 type materialIconSVG struct {
 	XMLName xml.Name `xml:"svg"`
-	Text    string   `xml:",chardata"`
+
 	Xmlns   string   `xml:"xmlns,attr"`
 	Width   string   `xml:"width,attr"`
 	Height  string   `xml:"height,attr"`
 	ViewBox string   `xml:"viewBox,attr"`
-	Paths    []*Path   `xml:"path"`
+	Paths    []Path   `xml:"path"`
+
+	Rect     *struct {
+		Text        string `xml:",chardata"`
+		X           string `xml:"x,attr"`
+		Y           string `xml:"y,attr"`
+		Width       string `xml:"width,attr"`
+		Height      string `xml:"height,attr"`
+		Stroke      string `xml:"stroke,attr"`
+		StrokeWidth string `xml:"stroke-width,attr"`
+		Fill        string `xml:"fill,attr"`
+	} `xml:"rect,omitempty"`
+
+	Text *struct {
+		Text             string `xml:",chardata"`
+		X                string `xml:"x,attr"`
+		Y                string `xml:"y,attr"`
+		DominantBaseline string `xml:"dominant-baseline,attr"`
+		TextAnchor       string `xml:"text-anchor,attr"`
+	} `xml:"text,omitempty"`
 }
 
 type Path struct {
 	Text    string `xml:",chardata"`
 	Opacity string `xml:"opacity,attr"`
 	D       string `xml:"d,attr"`
-	Style   string `xml:"style,attr"`
+	Style   string `xml:"style,attr,omitempty"`
 }
 
 func (s *materialIconSVG) resizeSVG(width, height int) {
@@ -397,8 +416,8 @@ func generateSizesSVG(newBase string, newPath string, color string) {
 		return
 	}
 
-	for _, p := range s.Paths {
-		p.Style = "fill: " + color + ";"
+	for i := range s.Paths {
+		s.Paths[i].Style = "fill: " + color + ";"
 	}
 
 	if s.ViewBox == "" {
