@@ -82,7 +82,7 @@ func findExecutable(name string) string {
 			p := filepath.Join("/usr", "local", "bin", name)
 			path, err = exec.LookPath(p)
 			if err != nil {
-				die(err.Error(), "executable not found: " + p)
+				die(err.Error(), "executable not found: "+p)
 			}
 		}
 	}

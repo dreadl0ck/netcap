@@ -15,10 +15,12 @@ package maltego_test
 
 import (
 	"bytes"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"image"
 	"image/png"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,6 +31,7 @@ import (
 
 	"github.com/fogleman/gg"
 	"github.com/go-git/go-git/v5"
+	svgcheck "github.com/h2non/go-is-svg"
 	"github.com/nfnt/resize"
 
 	"github.com/dreadl0ck/netcap/decoder"
@@ -55,12 +58,37 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 	})
 }
 
+func TestGenerateAuditRecordIconsSVG(t *testing.T) {
+
+	// for mixing png and svg icons, generate png first, then svg
+	//generateIcons()
+
+	generateIconsSVG()
+	generateAdditionalIconsSVG()
+
+	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+		fmt.Println(d.GetName())
+		generateAuditRecordIconSVG(d.GetName())
+	})
+
+	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
+		name := strings.ReplaceAll(e.Layer.String(), "/", "")
+		fmt.Println(name)
+		generateAuditRecordIconSVG(name)
+	})
+}
+
 // Utils
 
-func generateIcons() {
-	_ = os.RemoveAll("/tmp/icons")
+const (
+	svgIconPath = "/tmp/icons/material-icons"
+	pngIconPath = "/tmp/icons/material-icons-png"
+)
 
-	_, err := git.PlainClone("/tmp/icons", false, &git.CloneOptions{
+func cloneIcons() {
+	_ = os.RemoveAll(pngIconPath)
+
+	_, err := git.PlainClone(pngIconPath, false, &git.CloneOptions{
 		URL:      "https://github.com/dreadl0ck/material-icons-png.git",
 		Progress: os.Stdout,
 	})
@@ -69,12 +97,17 @@ func generateIcons() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("cloned icon repository to", "/tmp/icons")
+	fmt.Println("cloned icon repository to", pngIconPath)
+}
+
+func generateIcons() {
+
+	cloneIcons()
 
 	// rename icons
-	_ = os.Mkdir("/tmp/icons/renamed", 0o700)
+	_ = os.Mkdir(filepath.Join(pngIconPath, "renamed"), 0o700)
 
-	files, err := ioutil.ReadDir("/tmp/icons/png/black")
+	files, err := ioutil.ReadDir(filepath.Join(pngIconPath, "png", "black"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,8 +116,8 @@ func generateIcons() {
 		fmt.Println(f.Name())
 
 		var (
-			oldPath = filepath.Join("/tmp", "icons", "png", "black", filepath.Base(f.Name()), "twotone-4x.png")
-			newBase = filepath.Join("/tmp", "icons", "renamed", filepath.Base(f.Name()))
+			oldPath = filepath.Join(pngIconPath, "png", "black", filepath.Base(f.Name()), "twotone-4x.png")
+			newBase = filepath.Join(pngIconPath, "renamed", filepath.Base(f.Name()))
 			newPath = newBase + ".png"
 		)
 
@@ -99,18 +132,65 @@ func generateIcons() {
 	}
 }
 
+func cloneIconsSVG() {
+	_ = os.RemoveAll(svgIconPath)
+
+	_, err := git.PlainClone(svgIconPath, false, &git.CloneOptions{
+		URL:      "https://github.com/dreadl0ck/material-icons.git",
+		Progress: os.Stdout,
+	})
+
+	if err != nil && !errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		log.Fatal(err)
+	}
+
+	fmt.Println("cloned icon repository to", svgIconPath)
+}
+
+func generateIconsSVG() {
+
+	cloneIconsSVG()
+
+	// rename icons
+	_ = os.Mkdir(filepath.Join(svgIconPath, "renamed"), 0o700)
+
+	files, err := ioutil.ReadDir(filepath.Join(svgIconPath, "svg"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		fmt.Println(f.Name())
+
+		var (
+			oldPath = filepath.Join(svgIconPath, "svg", filepath.Base(f.Name()), "twotone.svg")
+			newBase = filepath.Join(svgIconPath, "renamed", filepath.Base(f.Name()))
+			newPath = newBase + ".svg"
+		)
+
+		err = os.Rename(oldPath, newPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("renamed", oldPath, "to", newPath)
+
+		generateSizesSVG(newBase, newPath)
+	}
+}
+
+// image name to type
+var subset = map[string]string{
+	"cloud_upload":   "outline",
+	"cloud_download": "outline",
+	"contact_page":   "outline",
+}
+
 // this will generate a subset of the icons with a different imgType
 // call after generateIcons, the image repo needs to be present
 func generateAdditionalIcons() {
 
-	// image name to type
-	var subset = map[string]string{
-		"cloud_upload":   "outline",
-		"cloud_download": "outline",
-		"contact_page":   "outline",
-	}
-
-	files, err := ioutil.ReadDir("/tmp/icons/png/black")
+	files, err := ioutil.ReadDir(filepath.Join(pngIconPath, "png", "black"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,8 +202,8 @@ func generateAdditionalIcons() {
 			fmt.Println(f.Name())
 
 			var (
-				oldPath = filepath.Join("/tmp", "icons", "png", "black", filepath.Base(f.Name()), imgType+"-4x.png")
-				newBase = filepath.Join("/tmp", "icons", "renamed", filepath.Base(f.Name())+"_"+imgType)
+				oldPath = filepath.Join(pngIconPath, "png", "black", filepath.Base(f.Name()), imgType+"-4x.png")
+				newBase = filepath.Join(pngIconPath, "renamed", filepath.Base(f.Name())+"_"+imgType)
 				newPath = newBase + ".png"
 			)
 
@@ -135,6 +215,37 @@ func generateAdditionalIcons() {
 			fmt.Println("renamed", oldPath, "to", newPath)
 
 			generateSizes(newBase, newPath)
+		}
+	}
+}
+
+func generateAdditionalIconsSVG() {
+
+	files, err := ioutil.ReadDir(filepath.Join(svgIconPath, "svg"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+
+		// only process files included in the subset
+		if imgType, ok := subset[f.Name()]; ok {
+			fmt.Println(f.Name())
+
+			var (
+				oldPath = filepath.Join(svgIconPath, "svg", filepath.Base(f.Name()), imgType+".svg")
+				newBase = filepath.Join(svgIconPath, "renamed", filepath.Base(f.Name())+"_"+imgType)
+				newPath = newBase + ".svg"
+			)
+
+			err = os.Rename(oldPath, newPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println("renamed", oldPath, "to", newPath)
+
+			generateSizesSVG(newBase, newPath)
 		}
 	}
 }
@@ -185,10 +296,81 @@ func generateSizes(newBase string, newPath string) {
 	}
 }
 
+// SVG document
+type svg struct {
+	Namespace string `xml:"xmlns,attr"`
+	Width     string `xml:"width,attr"`
+	Height    string `xml:"height,attr"`
+	ViewBox   string `xml:"viewBox,attr"`
+	Doc       string `xml:",innerxml"`
+}
+
+func (s *svg) resizeSVG(width, height int) {
+	s.Height = strconv.Itoa(height)
+	s.Width = strconv.Itoa(width)
+}
+
+func generateSizesSVG(newBase string, newPath string) {
+
+	svgFile, err := os.Open(newPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		return
+	}
+	defer svgFile.Close()
+
+	var s = new(svg)
+	if err = xml.NewDecoder(svgFile).Decode(&s); err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to parse (%v)\n", err)
+		return
+	}
+
+	// create XML info file for maltego
+	fXML, err := os.Create(newBase + ".xml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = fXML.WriteString(icon)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = fXML.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, size := range []int{16, 24, 32, 48, 96} {
+
+		s.resizeSVG(size, size)
+		f, errCreate := os.Create(newBase + strconv.Itoa(size) + ".svg")
+		if errCreate != nil {
+			log.Fatal(errCreate)
+		}
+
+		var buf bytes.Buffer
+
+		if err = xml.NewEncoder(io.MultiWriter(f, &buf)).Encode(s); err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to encode (%v)\n", err)
+			return
+		}
+
+		err = f.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if !svgcheck.Is(buf.Bytes()) {
+			log.Fatal("invalid SVG image generated:", f.Name())
+		}
+	}
+}
+
 func generateAuditRecordIcon(text string) {
 	const size = 96
 
-	im, err := gg.LoadPNG("/tmp/icons/renamed/check_box_outline_blank.png")
+	im, err := gg.LoadPNG("/tmp/icons/material-icons-png/renamed/check_box_outline_blank.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -230,11 +412,6 @@ func generateAuditRecordIcon(text string) {
 
 	dc.Clip()
 
-	// not joking, Maltego fails to render images with this name
-	if text == "Vulnerability" {
-		text = "Vuln"
-	}
-
 	var (
 		imgBase = filepath.Join("/tmp", "icons", "renamed", text)
 		imgPath = imgBase + ".png"
@@ -252,3 +429,74 @@ func generateAuditRecordIcon(text string) {
 
 	generateSizes(imgBase, imgPath)
 }
+
+//<svg width="200" height="100">
+//<rect x="0" y="0" width="200" height="100" stroke="red" stroke-width="3px" fill="white"/>
+//<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">TEXT</text>
+//</svg>
+
+func generateAuditRecordIconSVG(text string) {
+
+	var (
+		size = 96
+		x    = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(size) + `" height="` + strconv.Itoa(size) + `">
+<rect x="0" y="0" width="` + strconv.Itoa(size) + `" height="` + strconv.Itoa(size) + `" stroke="red" stroke-width="3px" fill="white"/>
+<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">` + text + `</text>
+</svg>`
+	)
+
+	var (
+		imgBase = filepath.Join("/tmp", "icons", "material-icons", "renamed", text)
+		imgPath = imgBase + ".svg"
+	)
+
+	file, err := os.Create(imgPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(x)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !svgcheck.Is([]byte(x)) {
+		log.Fatal("invalid SVG", x)
+	}
+
+	generateSizesSVG(imgBase, imgPath)
+}
+
+// using svggo pkg for SVG generation.
+//func generateAuditRecordIconSVG(text string) {
+//
+//	var (
+//		size   = 96
+//		buf    bytes.Buffer
+//		canvas = svggo.New(&buf)
+//	)
+//
+//	canvas.Start(size, size)
+//	//canvas.Rect(0, 0, size, size)
+//	canvas.Text(10, 10, text, "font-size:10px")
+//	canvas.End()
+//
+//	var (
+//		imgBase = filepath.Join("/tmp", "icons", "renamed", text)
+//		imgPath = imgBase + ".svg"
+//	)
+//
+//	file, err := os.Create(imgPath)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	defer file.Close()
+//
+//	_, err = file.Write(buf.Bytes())
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	generateSizesSVG(imgBase, imgPath)
+//}

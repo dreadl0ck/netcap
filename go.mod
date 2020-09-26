@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/RoaringBitmap/roaring v0.5.0 // indirect
+	github.com/ajstarks/svgo v0.0.0-20200725142600-7a3c8b57fecb
 	github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1
 	github.com/blevesearch/bleve v1.0.10
 	github.com/cheggaaa/pb v1.0.29
@@ -37,6 +38,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99 // indirect
+	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
 	github.com/imdario/mergo v0.3.10 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/klauspost/compress v1.10.10 // indirect
