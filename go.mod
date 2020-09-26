@@ -5,7 +5,6 @@ go 1.13
 require (
 	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/RoaringBitmap/roaring v0.5.0 // indirect
-	github.com/ajstarks/svgo v0.0.0-20200725142600-7a3c8b57fecb
 	github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1
 	github.com/blevesearch/bleve v1.0.10
 	github.com/cheggaaa/pb v1.0.29
