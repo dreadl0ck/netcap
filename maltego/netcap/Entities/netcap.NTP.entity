@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.NTP" displayName="NTP" displayNamePlural="NTP" description="The Network Time Protocol is a networking protocol for clock synchronization between computer systems over packet-switched, variable-latency data networks" category="Netcap" smallIconResource="Netcap/NTP" largeIconResource="Netcap/NTP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.NTP" displayName="NTP" displayNamePlural="NTP" description="The Network Time Protocol is a networking protocol for clock synchronization between computer systems over packet-switched, variable-latency data networks" category="Netcap" smallIconResource="Netcap/NTP_black" largeIconResource="Netcap/NTP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ntp" displayValue="properties.ntp">
   <Groups></Groups>
   <Fields>

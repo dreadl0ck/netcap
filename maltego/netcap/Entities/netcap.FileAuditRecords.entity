@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.FileAuditRecords" displayName="FileAuditRecords" displayNamePlural="FileAuditRecords" description="An archive of File audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file" largeIconResource="Netcap/insert_drive_file" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.FileAuditRecords" displayName="FileAuditRecords" displayNamePlural="FileAuditRecords" description="An archive of File audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_rebeccapurple" largeIconResource="Netcap/insert_drive_file_rebeccapurple" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.fileauditrecords" displayValue="properties.fileauditrecords">
   <Groups></Groups>
   <Fields>

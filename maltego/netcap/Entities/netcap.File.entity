@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.File" displayName="File" displayNamePlural="Files" description="A file" category="Netcap" smallIconResource="Netcap/text_snippet" largeIconResource="Netcap/text_snippet" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.File" displayName="File" displayNamePlural="Files" description="A file" category="Netcap" smallIconResource="Netcap/text_snippet_black" largeIconResource="Netcap/text_snippet_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <BaseEntities>
   <Entities>maltego.File</Entities>
  </BaseEntities>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.TCP" displayName="TCP" displayNamePlural="TCP" description="The Transmission Control Protocol (TCP) is a connection-oriented communications protocol, that facilitates the exchange of messages between computing devices in a network" category="Netcap" smallIconResource="Netcap/TCP" largeIconResource="Netcap/TCP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.TCP" displayName="TCP" displayNamePlural="TCP" description="The Transmission Control Protocol (TCP) is a connection-oriented communications protocol, that facilitates the exchange of messages between computing devices in a network" category="Netcap" smallIconResource="Netcap/TCP_black" largeIconResource="Netcap/TCP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.tcp" displayValue="properties.tcp">
   <Groups></Groups>
   <Fields>

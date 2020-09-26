@@ -207,6 +207,8 @@ maltego.graph.version=1.2`)
 func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	genFullConfigArchive()
 
+	var count int
+
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
@@ -217,9 +219,15 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 			"An archive of "+d.GetName()+" audit records",
 			"",
 			true,
+			colors[count],
 			newStringField("path", "path to the audit records on disk"),
 		)
-		genEntity(netcapIdent, d.GetName(), d.GetName(), d.GetDescription(), "", false)
+		genEntity(netcapIdent, d.GetName(), d.GetName(), d.GetDescription(), "", false, "black")
+
+		count++
+		if count >= len(colors) {
+			count = 0
+		}
 	})
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
@@ -231,15 +239,21 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 			"An archive of "+e.Layer.String()+" audit records",
 			"",
 			true,
+			colors[count],
 			newStringField("path", "path to the audit records on disk"),
 		)
-		genEntity(netcapIdent, name, name, e.Description, "", false)
+		genEntity(netcapIdent, name, name, e.Description, "", false, "black")
+
+		count++
+		if count >= len(colors) {
+			count = 0
+		}
 	})
 
 	// generate additional entities after generating the others
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
-		genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, e.Fields...)
+		genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", e.Fields...)
 	}
 
 	for _, tr := range transforms {

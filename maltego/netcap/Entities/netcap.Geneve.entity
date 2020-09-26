@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Geneve" displayName="Geneve" displayNamePlural="Geneves" description="Geneve is a network virtualization overlay encapsulation protocol designed to establish tunnels between network virtualization end points (NVE) over an existing IP network" category="Netcap" smallIconResource="Netcap/Geneve" largeIconResource="Netcap/Geneve" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Geneve" displayName="Geneve" displayNamePlural="Geneves" description="Geneve is a network virtualization overlay encapsulation protocol designed to establish tunnels between network virtualization end points (NVE) over an existing IP network" category="Netcap" smallIconResource="Netcap/Geneve_black" largeIconResource="Netcap/Geneve_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.geneve" displayValue="properties.geneve">
   <Groups></Groups>
   <Fields>

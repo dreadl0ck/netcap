@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.LLC" displayName="LLC" displayNamePlural="LLC" description="The LLC sublayer acts as an interface between the media access control sublayer and the network layer" category="Netcap" smallIconResource="Netcap/LLC" largeIconResource="Netcap/LLC" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.LLC" displayName="LLC" displayNamePlural="LLC" description="The LLC sublayer acts as an interface between the media access control sublayer and the network layer" category="Netcap" smallIconResource="Netcap/LLC_black" largeIconResource="Netcap/LLC_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.llc" displayValue="properties.llc">
   <Groups></Groups>
   <Fields>

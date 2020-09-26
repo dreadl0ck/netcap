@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.LCM" displayName="LCM" displayNamePlural="LCM" description="LCM is a set of libraries and tools for message passing and data marshaling, targeted at real-time systems where high-bandwidth and low latency are critical" category="Netcap" smallIconResource="Netcap/LCM" largeIconResource="Netcap/LCM" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.LCM" displayName="LCM" displayNamePlural="LCM" description="LCM is a set of libraries and tools for message passing and data marshaling, targeted at real-time systems where high-bandwidth and low latency are critical" category="Netcap" smallIconResource="Netcap/LCM_black" largeIconResource="Netcap/LCM_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.lcm" displayValue="properties.lcm">
   <Groups></Groups>
   <Fields>

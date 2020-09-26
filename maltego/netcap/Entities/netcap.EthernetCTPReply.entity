@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.EthernetCTPReply" displayName="EthernetCTPReply" displayNamePlural="EthernetCTPReplies" description="Ethernet Configuration Testing Protocol is a diagnostic protocol included in the Xerox Ethernet II specification" category="Netcap" smallIconResource="Netcap/EthernetCTPReply" largeIconResource="Netcap/EthernetCTPReply" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.EthernetCTPReply" displayName="EthernetCTPReply" displayNamePlural="EthernetCTPReplies" description="Ethernet Configuration Testing Protocol is a diagnostic protocol included in the Xerox Ethernet II specification" category="Netcap" smallIconResource="Netcap/EthernetCTPReply_black" largeIconResource="Netcap/EthernetCTPReply_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ethernetctpreply" displayValue="properties.ethernetctpreply">
   <Groups></Groups>
   <Fields>

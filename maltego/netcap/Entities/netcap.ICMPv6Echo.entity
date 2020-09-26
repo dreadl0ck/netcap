@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.ICMPv6Echo" displayName="ICMPv6Echo" displayNamePlural="ICMPv6Echo" description="The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite" category="Netcap" smallIconResource="Netcap/ICMPv6Echo" largeIconResource="Netcap/ICMPv6Echo" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.ICMPv6Echo" displayName="ICMPv6Echo" displayNamePlural="ICMPv6Echo" description="The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite" category="Netcap" smallIconResource="Netcap/ICMPv6Echo_black" largeIconResource="Netcap/ICMPv6Echo_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.icmpv6echo" displayValue="properties.icmpv6echo">
   <Groups></Groups>
   <Fields>

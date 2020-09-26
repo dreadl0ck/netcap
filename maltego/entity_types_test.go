@@ -192,7 +192,9 @@ func newRequiredStringField(name string, description string) propertyField {
 	}
 }
 
-func genEntity(outDir string, entName string, imgName string, description string, parent string, isArchive bool, fields ...propertyField) {
+func genEntity(outDir string, entName string, imgName string, description string, parent string, isArchive bool, color string, fields ...propertyField) {
+
+	imgName = imgName + "_" + color
 
 	var (
 		name = netcapPrefix + entName
@@ -222,22 +224,26 @@ func genEntity(outDir string, entName string, imgName string, description string
 	// add icon files
 	_ = os.MkdirAll(filepath.Join(outDir, "Icons", ident), 0o700)
 
-	copyFile(
-		filepath.Join("/tmp", "icons", "renamed", imgName+".xml"),
-		filepath.Join(outDir, "Icons", ident, imgName+".xml"),
-	)
-
 	var (
-		base    = filepath.Join("/tmp", "icons", "renamed", imgName)
-		dstBase = filepath.Join(outDir, "Icons", ident, imgName)
-		ext     = ".svg"
+		ext  = ".svg"
+		dir  = "material-icons"
+		base = filepath.Join("/tmp", "icons", dir, "renamed", imgName)
 	)
 
 	if _, err = os.Stat(base + "16" + ext); err != nil {
 		ext = ".png"
+		dir = "material-icons-png"
+		base = filepath.Join("/tmp", "icons", dir, "renamed", imgName)
 	}
 
-	copyFile(base+"16"+ext, dstBase+""+ext)
+	dstBase := filepath.Join(outDir, "Icons", ident, imgName)
+
+	copyFile(
+		filepath.Join("/tmp", "icons", dir, "renamed", imgName+".xml"),
+		filepath.Join(outDir, "Icons", ident, imgName+".xml"),
+	)
+
+	copyFile(base+"16"+ext, dstBase+ext)
 	copyFile(base+"24"+ext, dstBase+"24"+ext)
 	copyFile(base+"32"+ext, dstBase+"32"+ext)
 	copyFile(base+"48"+ext, dstBase+"48"+ext)

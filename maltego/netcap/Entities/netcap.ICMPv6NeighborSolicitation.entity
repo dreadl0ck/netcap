@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.ICMPv6NeighborSolicitation" displayName="ICMPv6NeighborSolicitation" displayNamePlural="ICMPv6NeighborSolicitations" description="The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite" category="Netcap" smallIconResource="Netcap/ICMPv6NeighborSolicitation" largeIconResource="Netcap/ICMPv6NeighborSolicitation" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.ICMPv6NeighborSolicitation" displayName="ICMPv6NeighborSolicitation" displayNamePlural="ICMPv6NeighborSolicitations" description="The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite" category="Netcap" smallIconResource="Netcap/ICMPv6NeighborSolicitation_black" largeIconResource="Netcap/ICMPv6NeighborSolicitation_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.icmpv6neighborsolicitation" displayValue="properties.icmpv6neighborsolicitation">
   <Groups></Groups>
   <Fields>

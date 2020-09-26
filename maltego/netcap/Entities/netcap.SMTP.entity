@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SMTP" displayName="SMTP" displayNamePlural="SMTP" description="The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission" category="Netcap" smallIconResource="Netcap/SMTP" largeIconResource="Netcap/SMTP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SMTP" displayName="SMTP" displayNamePlural="SMTP" description="The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission" category="Netcap" smallIconResource="Netcap/SMTP_black" largeIconResource="Netcap/SMTP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.smtp" displayValue="properties.smtp">
   <Groups></Groups>
   <Fields>

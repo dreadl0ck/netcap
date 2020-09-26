@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SIP" displayName="SIP" displayNamePlural="SIP" description="The Session Initiation Protocol is a signaling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications" category="Netcap" smallIconResource="Netcap/SIP" largeIconResource="Netcap/SIP" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SIP" displayName="SIP" displayNamePlural="SIP" description="The Session Initiation Protocol is a signaling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications" category="Netcap" smallIconResource="Netcap/SIP_black" largeIconResource="Netcap/SIP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.sip" displayValue="properties.sip">
   <Groups></Groups>
   <Fields>

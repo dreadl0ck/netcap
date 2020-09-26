@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.CiscoDiscovery" displayName="CiscoDiscovery" displayNamePlural="CiscoDiscoveries" description="Cisco Discovery Protocol is a proprietary Data Link Layer protocol used to share information about other directly connected Cisco equipment, such as the operating system version and IP address" category="Netcap" smallIconResource="Netcap/CiscoDiscovery" largeIconResource="Netcap/CiscoDiscovery" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.CiscoDiscovery" displayName="CiscoDiscovery" displayNamePlural="CiscoDiscoveries" description="Cisco Discovery Protocol is a proprietary Data Link Layer protocol used to share information about other directly connected Cisco equipment, such as the operating system version and IP address" category="Netcap" smallIconResource="Netcap/CiscoDiscovery_black" largeIconResource="Netcap/CiscoDiscovery_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ciscodiscovery" displayValue="properties.ciscodiscovery">
   <Groups></Groups>
   <Fields>

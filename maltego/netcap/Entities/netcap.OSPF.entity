@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.OSPF" displayName="OSPF" displayNamePlural="OSPF" description="Open Shortest Path First (OSPF) v3 is a routing protocol for Internet Protocol (IP) networks with support for IPv6" category="Netcap" smallIconResource="Netcap/OSPF" largeIconResource="Netcap/OSPF" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.OSPF" displayName="OSPF" displayNamePlural="OSPF" description="Open Shortest Path First (OSPF) v3 is a routing protocol for Internet Protocol (IP) networks with support for IPv6" category="Netcap" smallIconResource="Netcap/OSPF_black" largeIconResource="Netcap/OSPF_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ospf" displayValue="properties.ospf">
   <Groups></Groups>
   <Fields>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.PCAP" displayName="PCAP" displayNamePlural="PCAP" description="A packet capture dump file" category="Netcap" smallIconResource="Netcap/sd_storage" largeIconResource="Netcap/sd_storage" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.PCAP" displayName="PCAP" displayNamePlural="PCAP" description="A packet capture dump file" category="Netcap" smallIconResource="Netcap/sd_storage_black" largeIconResource="Netcap/sd_storage_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.pcap" displayValue="properties.pcap">
   <Groups></Groups>
   <Fields>

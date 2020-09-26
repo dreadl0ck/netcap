@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DestinationPort" displayName="DestinationPort" displayNamePlural="DestinationPorts" description="A TCP / UDP destination port" category="Netcap" smallIconResource="Netcap/arrow_back" largeIconResource="Netcap/arrow_back" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DestinationPort" displayName="DestinationPort" displayNamePlural="DestinationPorts" description="A TCP / UDP destination port" category="Netcap" smallIconResource="Netcap/arrow_back_black" largeIconResource="Netcap/arrow_back_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <BaseEntities>
   <Entities>netcap.Port</Entities>
  </BaseEntities>
