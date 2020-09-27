@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.IPv6AuditRecords" displayName="IPv6AuditRecords" displayNamePlural="IPv6AuditRecords" description="An archive of IPv6 audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_seagreen" largeIconResource="Netcap/insert_drive_file_seagreen" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.IPv6AuditRecords" displayName="IPv6AuditRecords" displayNamePlural="IPv6AuditRecords" description="An archive of IPv6 audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_salmon" largeIconResource="Netcap/insert_drive_file_salmon" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ipv6auditrecords" displayValue="properties.ipv6auditrecords">
   <Groups></Groups>
   <Fields>

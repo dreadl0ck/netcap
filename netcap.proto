@@ -53,7 +53,6 @@ option java_package = "com.types";
 enum Type {
   NC_Header = 0;
   NC_Batch = 1;
-  NC_Flow = 2;
   NC_Connection = 3;
   NC_Ethernet = 7;
   NC_ARP = 8;
@@ -195,36 +194,9 @@ message PacketContext {
   int32 DstPort = 4;
 }
 
-//
-// * Network Flows
-//
-
-// a flow is identified by its network layer and transport layer flows separated by a colon
-// format: <networkFlow>:<tranportFlow>
-// e.g: 172.16.11.104->201.11.212.81:2673->1511
-message Flow {
-  int64 TimestampFirst = 1;
-  string LinkProto = 2;
-  string NetworkProto = 3;
-  string TransportProto = 4;
-  string ApplicationProto = 5;
-  string SrcMAC = 6;
-  string DstMAC = 7;
-  string SrcIP = 8;
-  string SrcPort = 9;
-  string DstIP = 10;
-  string DstPort = 11;
-  int32 TotalSize = 12; // total bytes transferred
-  int32 AppPayloadSize = 13; // size of application layer payload
-  int32 NumPackets = 14;
-  string UID = 15;
-  int64 TimestampLast = 16;
-  int64 Duration = 17;
-}
-
 // a connection has the following attributes:
 // Mac <-> Mac bidirectional Mac
-// IP <-> IP bisdirectional IP
+// IP <-> IP bidirectional IP
 // Port <-> Port bidirectional Port
 message Connection {
   int64 TimestampFirst = 1;

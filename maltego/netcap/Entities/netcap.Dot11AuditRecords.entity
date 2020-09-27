@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Dot11AuditRecords" displayName="Dot11AuditRecords" displayNamePlural="Dot11AuditRecords" description="An archive of Dot11 audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_tan" largeIconResource="Netcap/insert_drive_file_tan" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Dot11AuditRecords" displayName="Dot11AuditRecords" displayNamePlural="Dot11AuditRecords" description="An archive of Dot11 audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_burlywood" largeIconResource="Netcap/insert_drive_file_burlywood" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dot11auditrecords" displayValue="properties.dot11auditrecords">
   <Groups></Groups>
   <Fields>

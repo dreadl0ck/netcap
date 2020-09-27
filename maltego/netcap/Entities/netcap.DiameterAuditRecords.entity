@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DiameterAuditRecords" displayName="DiameterAuditRecords" displayNamePlural="DiameterAuditRecords" description="An archive of Diameter audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_firebrick" largeIconResource="Netcap/insert_drive_file_firebrick" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DiameterAuditRecords" displayName="DiameterAuditRecords" displayNamePlural="DiameterAuditRecords" description="An archive of Diameter audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_dodgerblue" largeIconResource="Netcap/insert_drive_file_dodgerblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.diameterauditrecords" displayValue="properties.diameterauditrecords">
   <Groups></Groups>
   <Fields>

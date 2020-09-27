@@ -95,8 +95,6 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.TLSClientHello)
 	case types.Type_NC_Connection:
 		record = new(types.Connection)
-	case types.Type_NC_Flow:
-		record = new(types.Flow)
 	case types.Type_NC_IPSecAH:
 		record = new(types.IPSecAH)
 	case types.Type_NC_IPSecESP:

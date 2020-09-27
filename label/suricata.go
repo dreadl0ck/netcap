@@ -200,8 +200,6 @@ func Suricata(inputPcap, outputPath string, useDescription bool, separator, sele
 				pbs = append(pbs, labelIPv6(&wg, filename, labels, outputPath, separator, selection))
 			case "Connection":
 				pbs = append(pbs, labelConnections(&wg, filename, labels, outputPath, separator, selection))
-			case "Flow":
-				pbs = append(pbs, labelFlows(&wg, filename, labels, outputPath, separator, selection))
 			case "HTTP":
 				pbs = append(pbs, labelHTTP(&wg, filename, labels, outputPath, separator, selection))
 			// TODO: make compatible with new TLS* audit records in v0.5

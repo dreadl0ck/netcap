@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.EthernetCTPReplyAuditRecords" displayName="EthernetCTPReplyAuditRecords" displayNamePlural="EthernetCTPReplyAuditRecords" description="An archive of EthernetCTPReply audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_brown" largeIconResource="Netcap/insert_drive_file_brown" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.EthernetCTPReplyAuditRecords" displayName="EthernetCTPReplyAuditRecords" displayNamePlural="EthernetCTPReplyAuditRecords" description="An archive of EthernetCTPReply audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_cadetblue" largeIconResource="Netcap/insert_drive_file_cadetblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ethernetctpreplyauditrecords" displayValue="properties.ethernetctpreplyauditrecords">
   <Groups></Groups>
   <Fields>

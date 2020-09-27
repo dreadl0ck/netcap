@@ -31,21 +31,21 @@ func toIANAServices() {
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
-	maltego.FlowTransform(
-		maltego.CountOutgoingFlowBytesFiltered,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, flow *types.Flow, min, max uint64, path string, mac string, ipaddr string, top12 *[]int) {
-			i, err := strconv.Atoi(flow.DstPort)
+	maltego.ConnectionTransform(
+		maltego.CountOutgoingConnBytesFiltered,
+		func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ipaddr string, top12 *[]int) {
+			i, err := strconv.Atoi(conn.DstPort)
 			if err != nil {
 				return
 			}
 
-			service := resolvers.LookupServiceByPort(i, strings.ToLower(flow.TransportProto))
+			service := resolvers.LookupServiceByPort(i, strings.ToLower(conn.TransportProto))
 			if service != "" {
 				ent := trx.AddEntityWithPath("netcap.Service", service, path)
-				ent.SetLinkLabel(humanize.Bytes(uint64(flow.TotalSize)))
-				ent.SetLinkThickness(maltego.GetThickness(uint64(flow.TotalSize), min, max))
-				ent.AddProperty("ip", "IP", maltego.Strict, flow.DstIP)
-				ent.AddProperty("port", "Port", maltego.Strict, flow.DstPort)
+				ent.SetLinkLabel(humanize.Bytes(uint64(conn.TotalSize)))
+				ent.SetLinkThickness(maltego.GetThickness(uint64(conn.TotalSize), min, max))
+				ent.AddProperty("ip", "IP", maltego.Strict, conn.DstIP)
+				ent.AddProperty("port", "Port", maltego.Strict, conn.DstPort)
 			}
 		},
 	)
