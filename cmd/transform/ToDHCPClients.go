@@ -12,7 +12,7 @@ import (
 func toDHCPClients() {
 	results := map[string]int{}
 
-	maltego.DHCPTransform(
+	maltego.DHCPV4Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, path string, ipaddr string) {
 			// DHCP operations fall into four phases: server discovery, IP lease offer, IP lease request, and IP lease acknowledgement.

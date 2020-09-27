@@ -12,7 +12,7 @@ func toApplicationsForCategory() {
 		category string
 	)
 
-	maltego.IPTransform(
+	maltego.IPProfileTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
 

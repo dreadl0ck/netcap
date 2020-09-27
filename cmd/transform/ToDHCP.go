@@ -14,7 +14,7 @@ import (
 func toDHCP() {
 	results := map[string]int{}
 
-	maltego.DHCPTransform(
+	maltego.DHCPV4Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, path string, ipaddr string) {
 			if dhcp.ClientIP == ipaddr {

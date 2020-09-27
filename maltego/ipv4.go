@@ -19,6 +19,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -28,15 +29,14 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
+type ipCountFunc = func(ip string, min, max *uint64)
+
+// IPv4TransformationFunc is a transformation over IPv4 audit records
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string)
+type IPv4TransformationFunc = func(lt LocalTransform, trx *Transform, ipv4 *types.IPv4, min, max uint64, path string, mac string, ip string)
 
-// deviceProfileCountFunc is a function that counts something over DeviceProfiles.
-type ipProfileCountFunc = func(profile *types.IPProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
-
-// IPTransform applies a maltego transformation over IP profiles seen for a target DeviceProfile.
-func IPTransform(count ipProfileCountFunc, transform IPTransformationFunc) {
+// IPv4Transform applies a maltego transformation over IP profiles
+func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
@@ -44,6 +44,10 @@ func IPTransform(count ipProfileCountFunc, transform IPTransformationFunc) {
 		ipaddr = lt.Values["ipaddr"]
 		trx    = Transform{}
 	)
+
+	if !strings.HasPrefix(filepath.Base(path), "IPv4.ncap") {
+		path = filepath.Join(filepath.Dir(path), "IPv4.ncap.gz")
+	}
 
 	netio.FPrintBuildInfo(os.Stderr)
 
@@ -62,12 +66,12 @@ func IPTransform(count ipProfileCountFunc, transform IPTransformationFunc) {
 		die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_IPProfile {
-		die("file does not contain IPProfile records", header.Type.String())
+	if header.Type != types.Type_NC_IPv4 {
+		die("file does not contain DeviceProfile records", header.Type.String())
 	}
 
 	var (
-		profile = new(types.IPProfile)
+		profile = new(types.IPv4)
 		pm      proto.Message
 		ok      bool
 	)
@@ -81,7 +85,6 @@ func IPTransform(count ipProfileCountFunc, transform IPTransformationFunc) {
 	var (
 		min      uint64 = 10000000
 		max      uint64 = 0
-		profiles        = LoadIPProfiles()
 		err      error
 	)
 
@@ -94,7 +97,7 @@ func IPTransform(count ipProfileCountFunc, transform IPTransformationFunc) {
 				die(err.Error(), errUnexpectedReadFailure)
 			}
 
-			count(profile, mac, &min, &max, profiles)
+			count(mac, &min, &max)
 		}
 
 		err = r.Close()
