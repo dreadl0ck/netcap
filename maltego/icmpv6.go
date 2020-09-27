@@ -1,6 +1,6 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonicmp [dot] ch>
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -28,26 +28,26 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// POP3CountFunc is a function that counts something over multiple POP3 audit records.
+// ICMPv6CountFunc is a function that counts something over multiple ICMPv6 audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type POP3CountFunc func()
+type ICMPv6CountFunc func()
 
-// POP3TransformationFunc is a transformation over POP3 audit records.
+// ICMPv6TransformationFunc is a transformation over ICMPv6 audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type POP3TransformationFunc = func(lt LocalTransform, trx *Transform, pop3 *types.POP3, min, max uint64, path string, ip string)
+type ICMPv6TransformationFunc = func(lt LocalTransform, trx *Transform, icmp *types.ICMPv6, min, max uint64, path string, ip string)
 
-// POP3Transform applies a maltego transformation over POP3 audit records.
-func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc, continueTransform bool) {
+// ICMPv6Transform applies a maltego transformation over ICMPv6 audit records.
+func ICMPv6Transform(count ICMPv6CountFunc, transform ICMPv6TransformationFunc) {
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values["ipaddr"]
 		dir              = filepath.Dir(path)
-		pop3AuditRecords = filepath.Join(dir, "POP3.ncap.gz")
+		icmpAuditRecords = filepath.Join(dir, "ICMPv6.ncap.gz")
 		trx              = Transform{}
 	)
 
-	f, path := openFile(pop3AuditRecords)
+	f, path := openFile(icmpAuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
@@ -62,16 +62,16 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc, contin
 		die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_POP3 {
-		die("file does not contain POP3 records", header.Type.String())
+	if header.Type != types.Type_NC_ICMPv6 {
+		die("file does not contain ICMPv6 records", header.Type.String())
 	}
 
 	var (
-		pop3 = new(types.POP3)
+		icmp = new(types.ICMPv6)
 		pm   proto.Message
 		ok   bool
 	)
-	pm = pop3
+	pm = icmp
 
 	if _, ok = pm.(types.AuditRecord); !ok {
 		panic("type does not implement types.AuditRecord interface")
@@ -85,7 +85,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc, contin
 
 	if count != nil {
 		for {
-			err = r.Next(pop3)
+			err = r.Next(icmp)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
@@ -107,14 +107,14 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc, contin
 	_, _ = r.ReadHeader()
 
 	for {
-		err = r.Next(pop3)
+		err = r.Next(icmp)
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)
 		}
 
-		transform(lt, &trx, pop3, min, max, path, ipaddr)
+		transform(lt, &trx, icmp, min, max, path, ipaddr)
 	}
 
 	err = r.Close()
@@ -122,8 +122,6 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc, contin
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	if !continueTransform {
-		trx.AddUIMessage("completed!", UIMessageInform)
-		fmt.Println(trx.ReturnOutput())
-	}
+	trx.AddUIMessage("completed!", UIMessageInform)
+	fmt.Println(trx.ReturnOutput())
 }

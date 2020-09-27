@@ -77,7 +77,12 @@ var transforms = []transformCoreInfo{
 	{"StartCaptureProcess", "netcap.Interface", "Start network capture on the given interface"},
 	{"ToDHCPClients", "netcap.DHCPv4AuditRecords", "Show all DHCP Clients"},
 	{"ToDNSQuestions", "netcap.DNSAuditRecords", "Show all DNS questions"},
-	{"ToFetchedMails", "netcap.POP3AuditRecords", "Show emails fetched over POP3"},
+
+	{"ToEmails", "netcap.MailAuditRecords", "Show extracted emails"},
+	{"ToICMPV4ControlMessages", "netcap.ICMPv4AuditRecords", "Show ICMPv4 control messages"},
+	{"ToICMPV6ControlMessages", "netcap.ICMPv6AuditRecords", "Show ICMPv6 control messages"},
+	{"ToHosts", "netcap.POP3AuditRecords", "Show hosts that used the POP3 protocol"},
+
 	{"ToFileTypes", "netcap.FileAuditRecords", "Show MIME types for extracted files"},
 	{"ToHTTPHostnames", "netcap.HTTPAuditRecords", "Show all visited website hostnames"},
 	{"ToIANAServices", "netcap.ConnectionAuditRecords", "Show all IANA services identified by the connection destination port"},

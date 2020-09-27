@@ -1,7 +1,5 @@
 # TODOs
 
-- POP3, mail and ICMP transforms
-
 - https://github.com/h2non/filetype
 - viewlet generation
 - open connection in wireshark does not work for live streams, add better error message
