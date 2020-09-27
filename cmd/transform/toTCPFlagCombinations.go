@@ -10,7 +10,7 @@ import (
 
 func toTCPFlagCombinations() {
 	var (
-		idents = make(map[string]int)
+		idents   = make(map[string]int)
 		pathName string
 	)
 

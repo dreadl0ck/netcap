@@ -74,8 +74,8 @@ func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueT
 
 	var (
 		arp = new(types.ARP)
-		pm   proto.Message
-		ok   bool
+		pm  proto.Message
+		ok  bool
 	)
 	pm = arp
 

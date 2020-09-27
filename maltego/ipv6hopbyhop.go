@@ -81,9 +81,9 @@ func IPv6HopByHopTransform(count ipv6CountFunc, transform IPv6HopByHopTransforma
 	}
 
 	var (
-		min      uint64 = 10000000
-		max      uint64 = 0
-		err      error
+		min uint64 = 10000000
+		max uint64 = 0
+		err error
 	)
 
 	if count != nil {

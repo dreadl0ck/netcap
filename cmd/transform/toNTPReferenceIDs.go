@@ -10,7 +10,7 @@ import (
 func toNTPReferenceIDs() {
 
 	var (
-		ids = make(map[uint32]int)
+		ids      = make(map[uint32]int)
 		pathName string
 	)
 

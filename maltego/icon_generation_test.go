@@ -345,13 +345,13 @@ func generateSizes(newBase string, newPath string) {
 type materialIconSVG struct {
 	XMLName xml.Name `xml:"svg"`
 
-	Xmlns   string   `xml:"xmlns,attr"`
-	Width   string   `xml:"width,attr"`
-	Height  string   `xml:"height,attr"`
-	ViewBox string   `xml:"viewBox,attr"`
-	Paths    []Path   `xml:"path"`
+	Xmlns   string `xml:"xmlns,attr"`
+	Width   string `xml:"width,attr"`
+	Height  string `xml:"height,attr"`
+	ViewBox string `xml:"viewBox,attr"`
+	Paths   []Path `xml:"path"`
 
-	Rect     *struct {
+	Rect *struct {
 		Text        string `xml:",chardata"`
 		X           string `xml:"x,attr"`
 		Y           string `xml:"y,attr"`

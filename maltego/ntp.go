@@ -74,8 +74,8 @@ func NTPTransform(count NTPCountFunc, transform NTPTransformationFunc, continueT
 
 	var (
 		ntp = new(types.NTP)
-		pm   proto.Message
-		ok   bool
+		pm  proto.Message
+		ok  bool
 	)
 	pm = ntp
 

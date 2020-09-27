@@ -11,7 +11,7 @@ import (
 func toEthernetTypes() {
 	var (
 		etherTypes = make(map[int32]int)
-		pathName string
+		pathName   string
 	)
 
 	maltego.EthernetTransform(
@@ -35,4 +35,3 @@ func toEthernetTypes() {
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
-

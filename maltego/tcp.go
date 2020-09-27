@@ -74,8 +74,8 @@ func TCPTransform(count TCPCountFunc, transform TCPTransformationFunc, continueT
 
 	var (
 		tcp = new(types.TCP)
-		pm   proto.Message
-		ok   bool
+		pm  proto.Message
+		ok  bool
 	)
 	pm = tcp
 

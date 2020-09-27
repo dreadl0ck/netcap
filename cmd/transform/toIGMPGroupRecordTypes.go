@@ -11,7 +11,7 @@ import (
 func toIGMPTypes() {
 	var (
 		igmpTypes = make(map[int32]int)
-		pathName string
+		pathName  string
 	)
 
 	maltego.IGMPTransform(
@@ -35,4 +35,3 @@ func toIGMPTypes() {
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
-

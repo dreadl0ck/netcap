@@ -9,7 +9,7 @@ import (
 
 func toIPV6TrafficClasses() {
 	var (
-		classes = make(map[int32]int)
+		classes  = make(map[int32]int)
 		pathName string
 	)
 
@@ -34,4 +34,3 @@ func toIPV6TrafficClasses() {
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
-

@@ -11,7 +11,7 @@ import (
 
 func toDHCPV6Options() {
 	var (
-		opts = make(map[int32]int)
+		opts     = make(map[int32]int)
 		pathName string
 	)
 
@@ -38,5 +38,3 @@ func toDHCPV6Options() {
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
-
-

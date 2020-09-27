@@ -127,7 +127,6 @@ func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 	fmt.Println(trx.ReturnOutput())
 }
 
-
 // LoadMails will load the email audit records into memory and return them.
 func LoadMails() map[string]*types.Mail {
 	var (
