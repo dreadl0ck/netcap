@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-27 22:58:30.503 CEST</LastSync>
+ <LastSync>2020-09-27 23:22:20.310 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -110,6 +110,8 @@
   <Transform name="netcap.ToDHCPV6MessageTypes"></Transform>
   <Transform name="netcap.ToDHCPV6Options"></Transform>
   <Transform name="netcap.ToUDPHosts"></Transform>
+  <Transform name="netcap.ToNTPHosts"></Transform>
+  <Transform name="netcap.ToNTPReferenceIDs"></Transform>
   <Transform name="netcap.OpenConnectionInWireshark"></Transform>
   <Transform name="netcap.OpenServiceInWireshark"></Transform>
   <Transform name="netcap.OpenHostTrafficInWireshark"></Transform>

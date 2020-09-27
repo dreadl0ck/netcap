@@ -63,6 +63,7 @@ var maltegoEntities = []entityCoreInfo{
 
 	{"DHCPv6MessageType", "chat", "A DHCPv6 message type", "", nil},
 	{"DHCPv6Option", "read_more", "A DHCPv6 option", "", nil},
+	{"NTPReferenceID", "qr_code", "A NTP Reference ID", "", nil},
 
 	{"HTTPHeader", "ballot", "A HTTP header", "", nil},
 	{"HTTPHeaderValue", "pending", "A HTTP header value", "", nil},
