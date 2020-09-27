@@ -174,7 +174,7 @@ func ConnectionTransform(count connCountFunc, transform connTransformationFunc) 
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
 		mac              = lt.Values["mac"]
-		ipaddr           = lt.Values["ipaddr"]
+		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		connAuditRecords = filepath.Join(dir, "Connection.ncap.gz")
 		trx              = Transform{}

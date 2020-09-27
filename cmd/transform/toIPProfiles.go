@@ -30,7 +30,7 @@ func addIPProfile(trx *maltego.Transform, profile *types.IPProfile, path string,
 
 	ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
 	ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
-	ent.AddProperty("ipaddr", "IPAddr", maltego.Strict, profile.Addr)
+	ent.AddProperty(maltego.PropertyIpAddr, "IPAddr", maltego.Strict, profile.Addr)
 	ent.AddDisplayInformation(strings.Join(profile.Applications, "<br>"), "Applications")
 	ent.AddDisplayInformation(strings.Join(profile.DNSNames, "<br>"), "DNS Names")
 	ent.AddDisplayInformation(createJa3TableHTML(profile.Ja3), "JA3")

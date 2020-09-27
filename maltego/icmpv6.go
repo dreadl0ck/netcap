@@ -41,7 +41,7 @@ func ICMPv6Transform(count ICMPv6CountFunc, transform ICMPv6TransformationFunc) 
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
-		ipaddr           = lt.Values["ipaddr"]
+		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		icmpAuditRecords = filepath.Join(dir, "ICMPv6.ncap.gz")
 		trx              = Transform{}

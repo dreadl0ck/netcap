@@ -13,13 +13,13 @@ func toHTTPContentTypes() {
 				if http.ContentTypeDetected != "" {
 					// using ContentTypeDetected instead the one that was set on the HTTP request / response
 					ent := trx.AddEntityWithPath("netcap.ContentType", http.ContentTypeDetected, path)
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 				}
 				if http.ResContentTypeDetected != "" {
 					// using ContentTypeDetected instead the one that was set on the HTTP request / response
 					ent := trx.AddEntityWithPath("netcap.ContentType", http.ResContentTypeDetected, path)
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 				}
 			}

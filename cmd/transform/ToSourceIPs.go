@@ -45,7 +45,7 @@ func toSourceIPs() {
 					ent.AddProperty("dnsNames", "DNS Names", maltego.Strict, dnsNames)
 
 					ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, p.Addr)
+					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, p.Addr)
 
 					ent.AddProperty("numPackets", "Num Packets", maltego.Strict, strconv.FormatInt(p.NumPackets, 10))
 

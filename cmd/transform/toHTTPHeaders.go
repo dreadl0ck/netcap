@@ -25,7 +25,7 @@ func toHTTPHeaders() {
 
 func addHeader(trx *maltego.Transform, headerName string, timestamp string, ipaddr string, path string, method string, host string) {
 	ent := trx.AddEntityWithPath("netcap.HTTPHeader", headerName, path)
-	ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+	ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 	ent.AddProperty("host", "Host", maltego.Strict, host)
 	ent.AddProperty("timestamp", "Timestamp", maltego.Strict, timestamp)
 	ent.SetLinkLabel(method)

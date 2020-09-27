@@ -12,7 +12,7 @@ func toMailAuthTokens() {
 			if pop3.ClientIP == ipaddr {
 				if pop3.AuthToken != "" {
 					ent := trx.AddEntityWithPath("maltego.Token", pop3.AuthToken, path)
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 				}
 			}

@@ -41,7 +41,7 @@ func DHCPV4Transform(count DHCPCountFunc, transform DHCPV4TransformationFunc, co
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
-		ipaddr = lt.Values["ipaddr"]
+		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
 	)
 

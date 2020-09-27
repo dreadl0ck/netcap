@@ -13,7 +13,6 @@
 - to contacted ports: add services, then the actual ports?
 
 - on ConnectionAuditRecords: GetLongRunningSessions
-- add constant for "ipaddr"
 - add capinfos transform for pcap
 
 - https://github.com/h2non/filetype

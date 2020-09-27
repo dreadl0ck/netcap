@@ -12,7 +12,7 @@ func toMailUsers() {
 			if pop3.ClientIP == ipaddr {
 				if pop3.User != "" {
 					ent := trx.AddEntityWithPath("maltego.Person", pop3.User, path)
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 				}
 			}

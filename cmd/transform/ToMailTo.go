@@ -16,7 +16,7 @@ func toMailTo() {
 					if m, ok := mails[id]; ok {
 						if m.To != "" {
 							ent := trx.AddEntityWithPath("netcap.Email", m.To, path)
-							ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+							ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 						}
 					}

@@ -41,7 +41,7 @@ func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc, contin
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
-		ipaddr           = lt.Values["ipaddr"]
+		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		pop3AuditRecords = filepath.Join(dir, "POP3.ncap.gz")
 		trx              = Transform{}

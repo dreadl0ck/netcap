@@ -41,7 +41,7 @@ func ICMPv4Transform(count ICMPv4CountFunc, transform ICMPv4TransformationFunc) 
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
-		ipaddr           = lt.Values["ipaddr"]
+		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		icmpAuditRecords = filepath.Join(dir, "ICMPv4.ncap.gz")
 		trx              = Transform{}

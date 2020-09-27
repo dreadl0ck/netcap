@@ -14,7 +14,7 @@ func toHTTPParameters() {
 				log.Println(ipaddr, http.Parameters)
 				for key := range http.Parameters {
 					ent := trx.AddEntityWithPath("netcap.HTTPParameter", key, path)
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 					ent.SetLinkLabel(http.Method)
 				}

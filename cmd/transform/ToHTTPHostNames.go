@@ -20,7 +20,7 @@ func toHTTPHostnames() {
 				ent.SetLinkLabel(strconv.Itoa(hostStats[http.Host]))
 				// ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 
-				ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, http.DstIP)
+				ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, http.DstIP)
 			}
 		},
 		false,
