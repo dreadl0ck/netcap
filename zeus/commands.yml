@@ -414,15 +414,15 @@ commands:
         description: export the windows VM
         exec: |
           cd /Applications/VMware\ Fusion.app/Contents/Library/VMware\ OVF\ Tool/
-          ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/WinDev2008Eval.vmwarevm/WinDev2008Eval.vmx ~/Documents/NetcapWin10.ova
-          du -sh ~/Documents/NetcapWin10.ova
+          ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/WinDev2008Eval.vmwarevm/WinDev2008Eval.vmx ~/Documents/Netcap_${VERSION}_Win10.ova
+          du -sh ~/Documents/Netcap_${VERSION}_Win10.ova
 
     export-ubuntu-vm:
         description: export the ubuntu VM
         exec: |
             cd /Applications/VMware\ Fusion.app/Contents/Library/VMware\ OVF\ Tool/
-            ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/NETCAP\ Ubuntu\ 64-bit\ 20.04.1.vmwarevm/NETCAP\ Ubuntu\ 64-bit\ 20.04.1.vmx ~/Documents/NetcapUbuntu.ova
-            du -sh ~/Documents/NetcapUbuntu.ova
+            ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/NETCAP\ Ubuntu\ 64-bit\ 20.04.1.vmwarevm/NETCAP\ Ubuntu\ 64-bit\ 20.04.1.vmx ~/Documents/Netcap_${VERSION}_Ubuntu.ova
+            du -sh ~/Documents/Netcap_${VERSION}_Ubuntu.ova
 
     install-ubuntu:
         description: build script to compile on ubuntu linux
