@@ -69,7 +69,7 @@ func DHCPV4Transform(count DHCPCountFunc, transform DHCPV4TransformationFunc, co
 		die("failed to read file header", errFileHeader.Error())
 	}
 	if header.Type != types.Type_NC_DHCPv4 {
-		die("file does not contain DHCPv4 records", header.Type.String())
+		die("file does not contain DHCP records", header.Type.String())
 	}
 
 	var (

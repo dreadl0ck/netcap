@@ -36,7 +36,7 @@ type ipCountFunc = func(ip string, min, max *uint64)
 type IPv4TransformationFunc = func(lt LocalTransform, trx *Transform, ipv4 *types.IPv4, min, max uint64, path string, mac string, ip string)
 
 // IPv4Transform applies a maltego transformation over IP profiles
-func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc) {
+func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
@@ -130,6 +130,8 @@ func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
-	fmt.Println(trx.ReturnOutput())
+	if !continueTransform {
+		trx.AddUIMessage("completed!", UIMessageInform)
+		fmt.Println(trx.ReturnOutput())
+	}
 }

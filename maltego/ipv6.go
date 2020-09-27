@@ -36,7 +36,7 @@ type ipv6CountFunc = func(ip string, min, max *uint64)
 type IPv6TransformationFunc = func(lt LocalTransform, trx *Transform, ipv6 *types.IPv6, min, max uint64, path string, mac string, ip string)
 
 // IPv6Transform applies a maltego transformation over IP profiles
-func IPv6Transform(count ipv6CountFunc, transform IPv6TransformationFunc) {
+func IPv6Transform(count ipv6CountFunc, transform IPv6TransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
@@ -130,6 +130,8 @@ func IPv6Transform(count ipv6CountFunc, transform IPv6TransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
-	fmt.Println(trx.ReturnOutput())
+	if !continueTransform {
+		trx.AddUIMessage("completed!", UIMessageInform)
+		fmt.Println(trx.ReturnOutput())
+	}
 }
