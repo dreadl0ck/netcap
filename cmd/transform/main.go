@@ -99,6 +99,8 @@ func Run() {
 		toEthernetTypes,
 		toIPV4Protocols,
 		toLinkTypes,
+		toIGMPTypes,
+		toIGMPGroupRecordTypes,
 		toIPV6TrafficClasses,
 		toMailFrom,
 		toMailTo,

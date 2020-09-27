@@ -58,6 +58,8 @@ var maltegoEntities = []entityCoreInfo{
 	{"IPProtocol", "multiple_stop", "An IP protocol", "", nil},
 	{"IPv6TrafficClass", "class", "An IPv6 traffic class", "", nil},
 	{"LinkType", "power_input", "An ARP Link Type", "", nil},
+	{"IGMPType", "panorama_fish_eye", "An IGMP type", "", nil},
+	{"IGMPGroupRecordType", "group", "An IGMPv3 group record type", "", nil},
 
 	{"HTTPHeader", "ballot", "A HTTP header", "", nil},
 	{"HTTPHeaderValue", "pending", "A HTTP header value", "", nil},
