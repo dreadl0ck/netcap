@@ -52,6 +52,7 @@ func Run() {
 		toCredentialsByService,
 		toLoginInformation,
 		toHosts,
+		toUDPHosts,
 		toEmails,
 		toICMPV4ControlMessages,
 		toICMPV6ControlMessages,
