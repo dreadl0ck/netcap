@@ -88,8 +88,8 @@ func (c *Collector) Init() (err error) {
 
 	files = append(files, filesBare...)
 
-	udpPath := filepath.Join(c.config.DecoderConfig.Out, "udpConnections")
-	tcpPath := filepath.Join(c.config.DecoderConfig.Out, "tcpConnections")
+	udpPath := filepath.Join(c.config.DecoderConfig.Out, "udp")
+	tcpPath := filepath.Join(c.config.DecoderConfig.Out, "tcp")
 	_, errStreams := os.Stat(udpPath)
 	_, errConns := os.Stat(tcpPath)
 	if len(files) > 0 || errStreams == nil || errConns == nil {

@@ -78,7 +78,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"UDPService", "developer_board", "A UDP network service", "", nil},
 	{"UserAgent", "supervisor_account", "A HTTP User Agent", "", nil},
 	{"Host", "web", "A HTTP Hostname", "netcap.IPAddr", nil},
-	{"DNSName", "dns", "A DNS Name", "maltego.DNSName", nil},
+	{"DNSName", "chrome_reader_mode", "A DNS Name", "maltego.DNSName", nil},
 	{"Domain", "domain", "A domain", "maltego.Domain", nil},
 	{"Location", "location_on", "A location", "maltego.Location", nil},
 	{"URL", "open_in_browser", "A Uniform Resource Identifier", "maltego.URL", nil},

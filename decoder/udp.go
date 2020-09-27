@@ -215,7 +215,7 @@ func saveUDPConnection(raw []byte, colored []byte, ident string, firstPacket tim
 		typ = getServiceName(banner, transport)
 
 		// path for storing the data
-		root = filepath.Join(conf.Out, "udpConnections", typ)
+		root = filepath.Join(conf.Out, "udp", typ)
 
 		// file basename
 		base = filepath.Clean(path.Base(utils.CleanIdent(ident))) + binaryFileExtension

@@ -129,7 +129,7 @@ machine("netcap.MonitorNetworkInterface",
             }
 
             path {
-                run("netcap.ToFetchedMails")
+                run("netcap.ToMails")
             }
 
             path {

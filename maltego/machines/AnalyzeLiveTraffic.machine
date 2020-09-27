@@ -122,7 +122,7 @@ machine("netcap.AnalyzeLiveTraffic",
             }
 
             path {
-                run("netcap.ToFetchedMails")
+                run("netcap.ToMails")
             }
 
             path {
