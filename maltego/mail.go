@@ -15,6 +15,7 @@ package maltego
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -27,6 +28,105 @@ import (
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// MailCountFunc is a function that counts something over multiple Mail audit records.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
+type MailCountFunc func()
+
+// MailTransformationFunc is a transformation over Mail audit records.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
+type MailTransformationFunc = func(lt LocalTransform, trx *Transform, mail *types.Mail, min, max uint64, path string, ip string)
+
+// MailTransform applies a maltego transformation over Mail audit records.
+func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
+	var (
+		lt               = ParseLocalArguments(os.Args[1:])
+		path             = lt.Values["path"]
+		ipaddr           = lt.Values["ipaddr"]
+		dir              = filepath.Dir(path)
+		mailAuditRecords = filepath.Join(dir, "Mail.ncap.gz")
+		trx              = Transform{}
+	)
+
+	f, path := openFile(mailAuditRecords)
+
+	// check if its an audit record file
+	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
+		die(errUnexpectedFileType, f.Name())
+	}
+
+	r := openNetcapArchive(path)
+
+	// read netcap header
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		die("failed to read file header", errFileHeader.Error())
+	}
+
+	if header.Type != types.Type_NC_Mail {
+		die("file does not contain Mail records", header.Type.String())
+	}
+
+	var (
+		mail = new(types.Mail)
+		pm   proto.Message
+		ok   bool
+	)
+	pm = mail
+
+	if _, ok = pm.(types.AuditRecord); !ok {
+		panic("type does not implement types.AuditRecord interface")
+	}
+
+	var (
+		min uint64 = 10000000
+		max uint64 = 0
+		err error
+	)
+
+	if count != nil {
+		for {
+			err = r.Next(mail)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				break
+			} else if err != nil {
+				die(err.Error(), errUnexpectedReadFailure)
+			}
+
+			count()
+		}
+
+		err = r.Close()
+		if err != nil {
+			log.Println("failed to close audit record file: ", err)
+		}
+	}
+
+	r = openNetcapArchive(path)
+
+	// read netcap header - ignore err as it has been checked before
+	_, _ = r.ReadHeader()
+
+	for {
+		err = r.Next(mail)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+
+		transform(lt, &trx, mail, min, max, path, ipaddr)
+	}
+
+	err = r.Close()
+	if err != nil {
+		log.Println("failed to close audit record file: ", err)
+	}
+
+	trx.AddUIMessage("completed!", UIMessageInform)
+	fmt.Println(trx.ReturnOutput())
+}
+
 
 // LoadMails will load the email audit records into memory and return them.
 func LoadMails() map[string]*types.Mail {

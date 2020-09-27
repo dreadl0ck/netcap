@@ -17,5 +17,6 @@ func toMailAuthTokens() {
 				}
 			}
 		},
+		false,
 	)
 }

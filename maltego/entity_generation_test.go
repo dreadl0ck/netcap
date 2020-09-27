@@ -49,6 +49,8 @@ var maltegoEntities = []entityCoreInfo{
 	{"SourcePort", "arrow_forward", "A TCP / UDP source port", "netcap.Port", nil},
 	{"ContactedPort", "arrow_upward", "A TCP / UDP contact port", "netcap.Port", nil},
 
+	{"ICMPv4ControlMessageType", "settings_system_daydream", "An ICMPv4 Type Code", "", nil},
+	{"ICMPv6ControlMessageType", "bubble_chart", "An ICMPv6 Type Code", "", nil},
 	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
 
 	{"HTTPHeader", "ballot", "A HTTP header", "", nil},
