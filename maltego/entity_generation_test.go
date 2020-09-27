@@ -54,6 +54,9 @@ var maltegoEntities = []entityCoreInfo{
 	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
 
 	{"TCPFlag", "flag", "A TCP flag", "", nil},
+	{"EthernetType", "title", "An Ethernet type", "", nil},
+	{"IPProtocol", "multiple_stop", "An IP protocol", "", nil},
+	{"IPv6TrafficClass", "class", "An IPv6 traffic class", "", nil},
 
 	{"HTTPHeader", "ballot", "A HTTP header", "", nil},
 	{"HTTPHeaderValue", "pending", "A HTTP header value", "", nil},

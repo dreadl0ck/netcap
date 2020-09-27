@@ -69,7 +69,7 @@ func EthernetTransform(count EthernetCountFunc, transform EthernetTransformation
 		die("failed to read file header", errFileHeader.Error())
 	}
 	if header.Type != types.Type_NC_Ethernet {
-		die("file does not contain Ethernetv4 records", header.Type.String())
+		die("file does not contain Ethernet records", header.Type.String())
 	}
 
 	var (

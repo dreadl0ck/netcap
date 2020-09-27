@@ -144,6 +144,9 @@ var transforms = []transformCoreInfo{
 	{"ToProviderIPProfilesForHost", "netcap.Host", "Show all ProviderIPProfiles for the selected website"},
 
 	{"ToTCPFlagCombinations", "netcap.TCPAuditRecords", "Show all TCP flag combinations seen"},
+	{"ToEthernetTypes", "netcap.EthernetAuditRecords", "Show all Ethernet types"},
+	{"ToIPV4Protocols", "netcap.IPv4AuditRecords", "Show all IPv4 protocol types"},
+	{"ToIPV6TrafficClasses", "netcap.IPv6AuditRecords", "Show all IPv6 traffic classes"},
 
 	// Wireshark integration
 	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},
