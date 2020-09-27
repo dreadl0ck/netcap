@@ -51,7 +51,7 @@ var maltegoEntities = []entityCoreInfo{
 
 	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
 
-	{"HTTPHeader", "http", "A HTTP header", "", nil},
+	{"HTTPHeader", "ballot", "A HTTP header", "", nil},
 	{"HTTPHeaderValue", "pending", "A HTTP header value", "", nil},
 
 	{"HTTPParameter", "live_help", "", "A HTTP request parameter name", nil},

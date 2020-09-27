@@ -1,7 +1,6 @@
 # TODOs
 
 - https://github.com/h2non/filetype
-- generate SVGs!!!
 - viewlet generation
 - tags: alpine-nodpi_v0.5.6 -> alpine_nodpi_v0.5.6 
 - open connection in wireshark does not work for live streams, add better error message
