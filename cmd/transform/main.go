@@ -98,6 +98,7 @@ func Run() {
 		toTCPFlagCombinations,
 		toEthernetTypes,
 		toIPV4Protocols,
+		toLinkTypes,
 		toIPV6TrafficClasses,
 		toMailFrom,
 		toMailTo,
