@@ -154,6 +154,8 @@ var transforms = []transformCoreInfo{
 	{"ToDHCPV6MessageTypes", "netcap.DHCPv6AuditRecords", "Show all DHCPv6 message types"},
 	{"ToDHCPV6Options", "netcap.DHCPv6AuditRecords", "Show all DHCPv6 options"},
 
+	{"ToUDPHosts", "netcap.UDPAuditRecords", "Show all hosts that communicated over UDP"},
+
 	// Wireshark integration
 	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},
 	{"OpenServiceInWireshark", "netcap.Service", "Open all traffic from and towards the selected service in wireshark"},
