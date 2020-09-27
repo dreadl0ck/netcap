@@ -74,8 +74,8 @@ func EthernetTransform(count EthernetCountFunc, transform EthernetTransformation
 
 	var (
 		ethernet = new(types.Ethernet)
-		pm   proto.Message
-		ok   bool
+		pm       proto.Message
+		ok       bool
 	)
 	pm = ethernet
 

@@ -11,7 +11,7 @@ import (
 func toLinkTypes() {
 	var (
 		linkTypes = make(map[int32]int)
-		pathName string
+		pathName  string
 	)
 
 	maltego.ARPTransform(
@@ -35,4 +35,3 @@ func toLinkTypes() {
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
-

@@ -35,4 +35,3 @@ func toIPV4Protocols() {
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
-

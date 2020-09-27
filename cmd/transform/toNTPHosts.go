@@ -10,7 +10,7 @@ func toNTPHosts() {
 
 	var (
 		profiles = maltego.LoadIPProfiles()
-		hosts = make(map[string]struct{})
+		hosts    = make(map[string]struct{})
 		pathName string
 	)
 

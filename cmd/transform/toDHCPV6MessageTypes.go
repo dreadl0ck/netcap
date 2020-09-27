@@ -36,5 +36,3 @@ func toDHCPV6MessageTypes() {
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
-
-

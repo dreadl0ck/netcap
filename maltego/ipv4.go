@@ -83,9 +83,9 @@ func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continue
 	}
 
 	var (
-		min      uint64 = 10000000
-		max      uint64 = 0
-		err      error
+		min uint64 = 10000000
+		max uint64 = 0
+		err error
 	)
 
 	if count != nil {

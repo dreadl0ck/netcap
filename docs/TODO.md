@@ -1,6 +1,19 @@
 # TODOs
 
-- add LinkType transforms
+// TODO: connection UIDs
+//gommunityid.MakeFlowTuple(
+//	netFlow.Src().Raw(),
+//	netFlow.Dst().Raw(),
+//	binary.BigEndian.Uint16(transportFlow.Src().Raw()),
+//	binary.BigEndian.Uint16(transportFlow.Dst().Raw()),
+//	1,
+//)
+
+- on ConnectionAuditRecords: GetLongRunningSessions
+- rename tcpConnections folder -> tcp (+ same for udp)
+- rename: ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
+- add constant for "ipaddr"
+- add capinfos transform for pcap
 
 - https://github.com/h2non/filetype
 - viewlet generation
@@ -15,10 +28,6 @@ ubuntu move ida to path that maltego will find:
 - dump config in format from flag pkg and write into separate file
 
 - no need to split logic for pcap and pcapng collection anymore, since ZeroCopyReadPacketData is no longer used (comments: "logic is split for both types here")
-- rename tcpConnections folder -> tcp (+ same for udp)
-- rename: ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
-- add constant for "ipaddr"
-
 - move checkArgs() to utils pkg and use in other cli tools 
 
 - update docs: connection timeouts and flush intervals
@@ -26,7 +35,6 @@ ubuntu move ida to path that maltego will find:
     - disable processing TCP streams with missing handshake?
 
 - add tests using https://godoc.org/golang.org/x/tools/cmd/stress
-- add capinfos transform
 - add tests to ensure there are no race bugs
 
 - add option for live capture in maltego: use DPI, append audit records instead of truncating files, set output path as property
@@ -46,36 +54,10 @@ ubuntu move ida to path that maltego will find:
 - add transform that shows only services that transferred data
 - Headers + Cookies + Params: add counters to indicate flow volume
 
-on audit record archives:
-
-- on TCP/UDP: To Hosts, To Ports, To Streams
-- on POP3: To Mail Users
-- on IP: To Source IPs, To Destination IPs
-- on Ethernet: To Hardware Addresses
-- on ARP: To Hardware Addresses
-- on Connection: To Connections (src <-> dst format=?), To Connections with highest data transfer, To Connections with lowest data transfer, To IANA Services
-- on DHCPv6: To Devices
-- on HTTP: To HTTP Clients, To HTTP Content Types, To HTTP URLs
-- on Connections: GetLongRunningSessions
-
 - cleanup dbs folder
 - add dbs in docker containers
-- Add machine for HTTP analysis
-- Add machine for general overview
-- maltego on linux and windows: open path in terminal
 
 ## WIP
-
-- use compression during live capture
-
-// TODO: connection UIDs
-//gommunityid.MakeFlowTuple(
-//	netFlow.Src().Raw(),
-//	netFlow.Dst().Raw(),
-//	binary.BigEndian.Uint16(transportFlow.Src().Raw()),
-//	binary.BigEndian.Uint16(transportFlow.Dst().Raw()),
-//	1,
-//)
 
 ## v0.5 Documentation
 

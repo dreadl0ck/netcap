@@ -83,9 +83,9 @@ func IPv6Transform(count ipv6CountFunc, transform IPv6TransformationFunc, contin
 	}
 
 	var (
-		min      uint64 = 10000000
-		max      uint64 = 0
-		err      error
+		min uint64 = 10000000
+		max uint64 = 0
+		err error
 	)
 
 	if count != nil {

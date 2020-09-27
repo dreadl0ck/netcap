@@ -74,8 +74,8 @@ func UDPTransform(count UDPCountFunc, transform UDPTransformationFunc, continueT
 
 	var (
 		udp = new(types.UDP)
-		pm   proto.Message
-		ok   bool
+		pm  proto.Message
+		ok  bool
 	)
 	pm = udp
 
