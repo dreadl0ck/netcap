@@ -15,7 +15,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func toDstPorts() {
+func toDestinationPorts() {
 	resolverLog := zap.New(zapcore.NewNopCore())
 	defer func() {
 		err := resolverLog.Sync()

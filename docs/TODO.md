@@ -9,9 +9,10 @@
 //	1,
 //)
 
+- SMTP transforms
+- to contacted ports: add services, then the actual ports?
+
 - on ConnectionAuditRecords: GetLongRunningSessions
-- rename tcpConnections folder -> tcp (+ same for udp)
-- rename: ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
 - add constant for "ipaddr"
 - add capinfos transform for pcap
 

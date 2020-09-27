@@ -134,7 +134,7 @@ machine("netcap.AnalyzeWebBrowsing",
             }
 
             path {
-                run("netcap.ToFetchedMails")
+                run("netcap.ToMails")
             }
 
             path {

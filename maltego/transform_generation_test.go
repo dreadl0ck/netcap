@@ -43,9 +43,9 @@ var transforms = []transformCoreInfo{
 	{"ToDestinationIPs", "netcap.Device", "Get destination hosts seen for the selected device"},
 	{"ToSourceIPs", "netcap.Device", "Get all IPs that the device has been using"},
 
-	{"ToSrcPorts", "netcap.IPAddr", "Retrieve all source ports seen for the selected host"},
-	{"ToDstPorts", "netcap.IPAddr", "Retrieve all destination ports seen for the selected host"},
-	{"ToContactedPorts", "netcap.IPAddr", "Retrieve all contacted ports seen for the selected host"},
+	{"ToSourcePorts", "netcap.IPAddr", "Retrieve all source ports seen for the selected host address"},
+	{"ToDestinationPorts", "netcap.IPAddr", "Retrieve all destination ports seen for the selected host address"},
+	{"ToContactedPorts", "netcap.IPAddr", "Retrieve all ports contacted by the selected host address"},
 
 	{"ToFileType", "netcap.File", "Retrieve file type via unix file util"},
 	{"ToFileTypes", "netcap.IPAddr", "Get all fille types for the selected IPAddr"},

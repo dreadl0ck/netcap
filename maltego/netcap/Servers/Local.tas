@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-27 23:22:20.310 CEST</LastSync>
+ <LastSync>2020-09-28 00:18:58.837 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -13,8 +13,8 @@
   <Transform name="netcap.ToDNSQuestions"></Transform>
   <Transform name="netcap.ToDestinationIPs"></Transform>
   <Transform name="netcap.ToSourceIPs"></Transform>
-  <Transform name="netcap.ToSrcPorts"></Transform>
-  <Transform name="netcap.ToDstPorts"></Transform>
+  <Transform name="netcap.ToSourcePorts"></Transform>
+  <Transform name="netcap.ToDestinationPorts"></Transform>
   <Transform name="netcap.ToContactedPorts"></Transform>
   <Transform name="netcap.ToFileType"></Transform>
   <Transform name="netcap.ToFileTypes"></Transform>

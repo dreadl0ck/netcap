@@ -177,7 +177,7 @@ func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.T
 		typ = getServiceName(banner, transport)
 
 		// path for storing the data
-		root = filepath.Join(conf.Out, "tcpConnections", typ)
+		root = filepath.Join(conf.Out, "tcp", typ)
 
 		// file basename
 		base = filepath.Clean(path.Base(utils.CleanIdent(ident))) + binaryFileExtension
