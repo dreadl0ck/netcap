@@ -151,6 +151,9 @@ var transforms = []transformCoreInfo{
 	{"ToIGMPTypes", "netcap.IGMPAuditRecords", "Show all IGMP types"},
 	{"ToIGMPGroupRecordTypes", "netcap.IGMPAuditRecords", "Show all IGMP group record types"},
 
+	{"ToDHCPV6MessageTypes", "netcap.DHCPv6AuditRecords", "Show all DHCPv6 message types"},
+	{"ToDHCPV6Options", "netcap.DHCPv6AuditRecords", "Show all DHCPv6 options"},
+
 	// Wireshark integration
 	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},
 	{"OpenServiceInWireshark", "netcap.Service", "Open all traffic from and towards the selected service in wireshark"},
