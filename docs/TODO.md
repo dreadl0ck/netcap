@@ -10,6 +10,7 @@
 //)
 
 - SMTP transforms
+- DNS transforms
 - to contacted ports: add services, then the actual ports?
 
 - on ConnectionAuditRecords: GetLongRunningSessions
