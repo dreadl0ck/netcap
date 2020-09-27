@@ -29,6 +29,13 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
+type IPTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string)
+
+// deviceProfileCountFunc is a function that counts something over DeviceProfiles.
+type ipProfileCountFunc = func(profile *types.IPProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
+
 // CountIPPackets returns the lowest and highest number of packets seen for a given IPProfile.
 var CountIPPackets = func(profile *types.IPProfile, mac string, min, max *uint64, _ map[string]*types.IPProfile) {
 	if uint64(profile.NumPackets) < *min {

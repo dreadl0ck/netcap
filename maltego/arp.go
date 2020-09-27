@@ -28,16 +28,16 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// DHCPCountFunc is a function that counts something over multiple DHCP audit records.
+// ARPCountFunc is a function that counts something over multiple ARP audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type DHCPCountFunc func()
+type ARPCountFunc func()
 
-// DHCPTransformationFunc is a transformation over DHCP audit records.
+// ARPTransformationFunc is a transformation over ARP audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type DHCPTransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *types.DHCPv4, min, max uint64, path string, ip string)
+type ARPTransformationFunc = func(lt LocalTransform, trx *Transform, arp *types.ARP, min, max uint64, path string, ip string)
 
-// DHCPTransform applies a maltego transformation over DHCP audit records.
-func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, continueTransform bool) {
+// ARPTransform applies a maltego transformation over ARP audit records.
+func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
@@ -45,8 +45,8 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 		trx    = Transform{}
 	)
 
-	if !strings.HasPrefix(filepath.Base(path), "DHCPv4.ncap") {
-		path = filepath.Join(filepath.Dir(path), "DHCPv4.ncap.gz")
+	if !strings.HasPrefix(filepath.Base(path), "ARP.ncap") {
+		path = filepath.Join(filepath.Dir(path), "ARP.ncap.gz")
 	}
 
 	f, err := os.Open(path)
@@ -68,16 +68,16 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	if errFileHeader != nil {
 		die("failed to read file header", errFileHeader.Error())
 	}
-	if header.Type != types.Type_NC_DHCPv4 {
-		die("file does not contain DHCPv4 records", header.Type.String())
+	if header.Type != types.Type_NC_ARP {
+		die("file does not contain ARP records", header.Type.String())
 	}
 
 	var (
-		dhcp = new(types.DHCPv4)
+		arp = new(types.ARP)
 		pm   proto.Message
 		ok   bool
 	)
-	pm = dhcp
+	pm = arp
 
 	if _, ok = pm.(types.AuditRecord); !ok {
 		panic("type does not implement types.AuditRecord interface")
@@ -90,7 +90,7 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 
 	if count != nil {
 		for {
-			err = r.Next(dhcp)
+			err = r.Next(arp)
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
@@ -112,14 +112,14 @@ func DHCPTransform(count DHCPCountFunc, transform DHCPTransformationFunc, contin
 	_, _ = r.ReadHeader()
 
 	for {
-		err = r.Next(dhcp)
+		err = r.Next(arp)
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			break
 		} else if err != nil {
 			panic(err)
 		}
 
-		transform(lt, &trx, dhcp, min, max, path, ipaddr)
+		transform(lt, &trx, arp, min, max, path, ipaddr)
 	}
 
 	err = r.Close()
