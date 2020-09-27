@@ -53,6 +53,8 @@ var maltegoEntities = []entityCoreInfo{
 	{"ICMPv6ControlMessageType", "bubble_chart", "An ICMPv6 Type Code", "", nil},
 	{"HTTPCookie", "copyright", "A HTTP cookie", "", nil},
 
+	{"TCPFlag", "flag", "A TCP flag", "", nil},
+
 	{"HTTPHeader", "ballot", "A HTTP header", "", nil},
 	{"HTTPHeaderValue", "pending", "A HTTP header value", "", nil},
 
