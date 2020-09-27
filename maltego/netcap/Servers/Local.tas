@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-27 13:41:14.682 CEST</LastSync>
+ <LastSync>2020-09-27 14:26:12.746 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -29,14 +29,14 @@
   <Transform name="netcap.ToHTTPServerNames"></Transform>
   <Transform name="netcap.ToHTTPStatusCodes"></Transform>
   <Transform name="netcap.ToHTTPUserAgents"></Transform>
-  <Transform name="netcap.ToIncomingFlowsFiltered"></Transform>
+  <Transform name="netcap.ToIncomingConnsFiltered"></Transform>
   <Transform name="netcap.ToMailAuthToken"></Transform>
   <Transform name="netcap.ToMailFrom"></Transform>
   <Transform name="netcap.ToMailTo"></Transform>
   <Transform name="netcap.ToMailUserPassword"></Transform>
   <Transform name="netcap.ToMailUsers"></Transform>
   <Transform name="netcap.ToMails"></Transform>
-  <Transform name="netcap.ToOutgoingFlowsFiltered"></Transform>
+  <Transform name="netcap.ToOutgoingConnsFiltered"></Transform>
   <Transform name="netcap.ToParameterValues"></Transform>
   <Transform name="netcap.ToServerNameIndicators"></Transform>
   <Transform name="netcap.ToURLsForHost"></Transform>
@@ -50,7 +50,6 @@
   <Transform name="netcap.ToFileTypes"></Transform>
   <Transform name="netcap.ToHTTPHostnames"></Transform>
   <Transform name="netcap.ToIANAServices"></Transform>
-  <Transform name="netcap.ToIANAServicesForConnections"></Transform>
   <Transform name="netcap.ToLiveAuditRecords"></Transform>
   <Transform name="netcap.ToLoginInformation"></Transform>
   <Transform name="netcap.ToSoftwareProducts"></Transform>
@@ -99,7 +98,6 @@
   <Transform name="netcap.ToProviderIPProfilesForURL"></Transform>
   <Transform name="netcap.ToProviderIPProfilesForHost"></Transform>
   <Transform name="netcap.OpenConnectionInWireshark"></Transform>
-  <Transform name="netcap.OpenFlowInWireshark"></Transform>
   <Transform name="netcap.OpenServiceInWireshark"></Transform>
   <Transform name="netcap.OpenHostTrafficInWireshark"></Transform>
   <Transform name="netcap.OpenTrafficInWireshark"></Transform>

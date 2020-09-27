@@ -1,8 +1,9 @@
 # TODOs
 
+- POP3, mail and ICMP transforms
+
 - https://github.com/h2non/filetype
 - viewlet generation
-- tags: alpine-nodpi_v0.5.6 -> alpine_nodpi_v0.5.6 
 - open connection in wireshark does not work for live streams, add better error message
 - open service type folder for extracted streams
 
@@ -10,16 +11,12 @@ ubuntu move ida to path that maltego will find:
  
     mv idafree-7.0/* ~/.local/bin/
 
-- fix POP3 and Mail transforms
-- fix lookup DHCP fingerprints
 - start capture process: spawn instance in current process to allow cancelling it via maltego UI
 - dump config in format from flag pkg and write into separate file
-- debug live capture incorrect stream directions when using multiple workers
 
 - no need to split logic for pcap and pcapng collection anymore, since ZeroCopyReadPacketData is no longer used (comments: "logic is split for both types here")
 - rename tcpConnections folder -> tcp (+ same for udp)
 - rename: ToSrcPorts -> ToSourcePorts, ToDstPorts -> ToDestinationPorts
-- remove Flow audit records?
 - add constant for "ipaddr"
 
 - move checkArgs() to utils pkg and use in other cli tools 

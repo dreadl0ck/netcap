@@ -15,6 +15,8 @@ package transform
 
 import (
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"log"
 	"strings"
 
@@ -25,6 +27,18 @@ import (
 )
 
 func lookupDHCPFingerprint() {
+
+	// setup logger for resolvers pkg
+	resolverLog := zap.New(zapcore.NewNopCore())
+	defer func() {
+		err := resolverLog.Sync()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	resolvers.SetLogger(resolverLog)
+
 	// init API key
 	resolvers.InitDHCPFingerprintAPIKey()
 	resolvers.InitDHCPFingerprintDB()
@@ -137,7 +151,7 @@ func lookupDHCPFingerprint() {
 		// log.Println("got result", res.DeviceName, "for", messageToFingerprint.ClientHWAddr)
 
 		val := strings.ReplaceAll(res.DeviceName, "/", "\n") + "\n" + ip
-		ent := mtrx.AddEntityWithPath("netcap.dhcpResult", val, path)
+		ent := mtrx.AddEntityWithPath("netcap.DHCPResult", val, path)
 
 		ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(messageToFingerprint.Timestamp))
 		ent.AddProperty("clientIP", "ClientIP", maltego.Strict, messageToFingerprint.ClientIP)

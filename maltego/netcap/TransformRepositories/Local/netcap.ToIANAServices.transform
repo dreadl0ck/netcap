@@ -1,4 +1,4 @@
-<MaltegoTransform name="netcap.ToIANAServices" displayName="To IANA Services [NETCAP]" abstract="false" template="false" visibility="public" description="Show all IANA services identified by the flows destination port" author="Philipp Mieden" requireDisplayInfo="false">
+<MaltegoTransform name="netcap.ToIANAServices" displayName="To IANA Services [NETCAP]" abstract="false" template="false" visibility="public" description="Show all IANA services identified by the connection destination port" author="Philipp Mieden" requireDisplayInfo="false">
  <TransformAdapter>com.paterva.maltego.transform.protocol.v2api.LocalTransformAdapterV2</TransformAdapter>
  <Properties>
   <Fields>
@@ -18,7 +18,7 @@
   </Fields>
  </Properties>
  <InputConstraints>
-  <Entity type="netcap.FlowAuditRecords" min="1" max="1"></Entity>
+  <Entity type="netcap.ConnectionAuditRecords" min="1" max="1"></Entity>
  </InputConstraints>
  <OutputEntities></OutputEntities>
  <defaultSets>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.ICMPv6NeighborAdvertisementAuditRecords" displayName="ICMPv6NeighborAdvertisementAuditRecords" displayNamePlural="ICMPv6NeighborAdvertisementAuditRecords" description="An archive of ICMPv6NeighborAdvertisement audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_saddlebrown" largeIconResource="Netcap/insert_drive_file_saddlebrown" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.ICMPv6NeighborAdvertisementAuditRecords" displayName="ICMPv6NeighborAdvertisementAuditRecords" displayNamePlural="ICMPv6NeighborAdvertisementAuditRecords" description="An archive of ICMPv6NeighborAdvertisement audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_chocolate" largeIconResource="Netcap/insert_drive_file_chocolate" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.icmpv6neighboradvertisementauditrecords" displayValue="properties.icmpv6neighboradvertisementauditrecords">
   <Groups></Groups>
   <Fields>

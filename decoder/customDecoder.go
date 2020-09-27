@@ -40,7 +40,6 @@ var (
 		tlsClientHelloDecoder,
 		tlsServerHelloDecoder,
 		httpDecoder,
-		flowDecoder,
 		connDecoder,
 		deviceProfileDecoder,
 		ipProfileDecoder,

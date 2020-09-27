@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.LCMAuditRecords" displayName="LCMAuditRecords" displayNamePlural="LCMAuditRecords" description="An archive of LCM audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_coral" largeIconResource="Netcap/insert_drive_file_coral" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.LCMAuditRecords" displayName="LCMAuditRecords" displayNamePlural="LCMAuditRecords" description="An archive of LCM audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_red" largeIconResource="Netcap/insert_drive_file_red" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.lcmauditrecords" displayValue="properties.lcmauditrecords">
   <Groups></Groups>
   <Fields>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.GeneveAuditRecords" displayName="GeneveAuditRecords" displayNamePlural="GeneveAuditRecords" description="An archive of Geneve audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_aquamarine" largeIconResource="Netcap/insert_drive_file_aquamarine" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.GeneveAuditRecords" displayName="GeneveAuditRecords" displayNamePlural="GeneveAuditRecords" description="An archive of Geneve audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_indianred" largeIconResource="Netcap/insert_drive_file_indianred" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.geneveauditrecords" displayValue="properties.geneveauditrecords">
   <Groups></Groups>
   <Fields>
