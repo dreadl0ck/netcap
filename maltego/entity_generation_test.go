@@ -61,6 +61,9 @@ var maltegoEntities = []entityCoreInfo{
 	{"IGMPType", "panorama_fish_eye", "An IGMP type", "", nil},
 	{"IGMPGroupRecordType", "group", "An IGMPv3 group record type", "", nil},
 
+	{"DHCPv6MessageType", "chat", "A DHCPv6 message type", "", nil},
+	{"DHCPv6Option", "read_more", "A DHCPv6 option", "", nil},
+
 	{"HTTPHeader", "ballot", "A HTTP header", "", nil},
 	{"HTTPHeaderValue", "pending", "A HTTP header value", "", nil},
 

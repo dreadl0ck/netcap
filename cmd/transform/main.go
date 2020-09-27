@@ -70,6 +70,8 @@ func Run() {
 		toHTTPHeaders,
 		toHeaderValues,
 		toDHCP,
+		toDHCPV6MessageTypes,
+		toDHCPV6Options,
 		openFolder,
 		toDestinationIPs,
 		toSourceIPs,
