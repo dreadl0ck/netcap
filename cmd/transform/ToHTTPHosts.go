@@ -14,7 +14,7 @@ func toHTTPHosts() {
 			}
 			if http.Host != "" {
 				ent := trx.AddEntityWithPath("netcap.Website", http.Host, path)
-				ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+				ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 			}
 		},
 		false,

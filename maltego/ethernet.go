@@ -41,7 +41,7 @@ func EthernetTransform(count EthernetCountFunc, transform EthernetTransformation
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
-		ipaddr = lt.Values["ipaddr"]
+		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
 	)
 

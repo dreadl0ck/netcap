@@ -46,7 +46,7 @@ func toFilesForContentType() {
 					} else {
 						ent.SetIconURL("file://" + filepath.Join(filepath.Join(filepath.Dir(path), ".."), file.Location))
 					}
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 					ent.AddProperty("location", "Location", maltego.Strict, file.Location)
 					ent.AddProperty("name", "Name", maltego.Strict, file.Name)

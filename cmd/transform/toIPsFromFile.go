@@ -59,12 +59,12 @@ func toIPsFromFile() {
 
 	for _, r := range ipv4Results {
 		ent := trx.AddEntityWithPath("netcap.IPAddr", r, path)
-		ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, r)
+		ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, r)
 	}
 
 	for _, r := range ipv6Results {
 		ent := trx.AddEntityWithPath("netcap.IPAddr", r, path)
-		ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, r)
+		ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, r)
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

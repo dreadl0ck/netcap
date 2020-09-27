@@ -42,7 +42,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
 		mac    = lt.Values["mac"]
-		ipaddr = lt.Values["ipaddr"]
+		ipaddr = lt.Values[PropertyIpAddr]
 
 		trx = Transform{}
 	)

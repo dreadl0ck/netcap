@@ -41,7 +41,7 @@ func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continue
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
 		mac    = lt.Values["mac"]
-		ipaddr = lt.Values["ipaddr"]
+		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
 	)
 

@@ -24,7 +24,7 @@ func toVisitorsForURL() {
 				if url == "" || host == "" {
 					die("properties.url or host is not set", "")
 				}
-				log.Println("got URL", url, "and host", host, "ipaddr", ipaddr)
+				log.Println("got URL", url, "and host", host, maltego.PropertyIpAddr, ipaddr)
 			}
 
 			if http.Host == host {

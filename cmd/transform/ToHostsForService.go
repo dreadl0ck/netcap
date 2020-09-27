@@ -38,12 +38,12 @@ func toHostsForService() {
 					if srcIP != "" {
 						ent := trx.AddEntityWithPath("netcap.IPAddr", srcIP, path)
 						ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(service.Timestamp))
-						ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, srcIP)
+						ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, srcIP)
 					}
 					if dstIP != "" {
 						ent := trx.AddEntityWithPath("netcap.IPAddr", dstIP, path)
 						ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(service.Timestamp))
-						ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, srcIP)
+						ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, srcIP)
 					}
 				}
 			}

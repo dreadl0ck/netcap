@@ -31,6 +31,9 @@ const (
 
 	// ExecutablePath points to the netcap binary on disk
 	ExecutablePath = "/usr/local/bin/net"
+
+	PropertyIpAddr      = "ipaddr"
+	PropertyIpAddrLabel = "IPAddress"
 )
 
 // EscapeText ensures that the input text is safe to embed within XML.

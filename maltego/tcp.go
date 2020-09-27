@@ -41,7 +41,7 @@ func TCPTransform(count TCPCountFunc, transform TCPTransformationFunc, continueT
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
 		path   = lt.Values["path"]
-		ipaddr = lt.Values["ipaddr"]
+		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
 	)
 

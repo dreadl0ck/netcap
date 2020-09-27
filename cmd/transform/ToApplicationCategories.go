@@ -13,7 +13,7 @@ func toApplicationCategories() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
 			if ipaddr == "" {
-				ipaddr = lt.Values["ipaddr"]
+				ipaddr = lt.Values[maltego.PropertyIpAddr]
 				if ipaddr == "" {
 					die("ipaddr property not set", "")
 				}

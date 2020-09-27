@@ -27,7 +27,7 @@ func toURLsForHost() {
 				// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
 				ent.AddProperty("properties.url", "URL", maltego.Strict, bareURL)
 				ent.AddProperty("host", "Host", maltego.Strict, http.Host)
-				ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, ipaddr)
+				ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 				urlStats[bareURL]++
 				ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]) + "\n" + http.Method)

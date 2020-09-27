@@ -42,7 +42,7 @@ func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
-		ipaddr           = lt.Values["ipaddr"]
+		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		mailAuditRecords = filepath.Join(dir, "Mail.ncap.gz")
 		trx              = Transform{}

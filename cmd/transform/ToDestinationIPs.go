@@ -48,7 +48,7 @@ func toDestinationIPs() {
 					ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(profile.Timestamp))
 
 					ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
-					ent.AddProperty("ipaddr", "IPAddress", maltego.Strict, p.Addr)
+					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, p.Addr)
 
 					ent.AddProperty("numPackets", "Num Packets", maltego.Strict, strconv.FormatInt(profile.NumPackets, 10))
 

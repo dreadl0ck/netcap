@@ -41,7 +41,7 @@ func TLSClientHelloTransform(count TLSClientHelloCountFunc, transform TLSClientH
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
-		ipaddr           = lt.Values["ipaddr"]
+		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		pop3AuditRecords = filepath.Join(dir, "TLSClientHello.ncap.gz")
 		trx              = Transform{}

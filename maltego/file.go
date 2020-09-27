@@ -39,7 +39,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
-		ipaddr           = lt.Values["ipaddr"]
+		ipaddr           = lt.Values[PropertyIpAddr]
 		trx              = Transform{}
 		dir              = filepath.Dir(path)
 		fileAuditRecords = filepath.Join(dir, "File.ncap.gz")

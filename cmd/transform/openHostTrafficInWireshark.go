@@ -63,7 +63,7 @@ func makeHostBPF(lt maltego.LocalTransform) string {
 	var b strings.Builder
 
 	b.WriteString("host ")
-	b.WriteString(lt.Values["ipaddr"])
+	b.WriteString(lt.Values[maltego.PropertyIpAddr])
 
 	return b.String()
 }
