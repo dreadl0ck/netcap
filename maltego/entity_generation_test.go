@@ -57,6 +57,7 @@ var maltegoEntities = []entityCoreInfo{
 	{"EthernetType", "title", "An Ethernet type", "", nil},
 	{"IPProtocol", "multiple_stop", "An IP protocol", "", nil},
 	{"IPv6TrafficClass", "class", "An IPv6 traffic class", "", nil},
+	{"LinkType", "power_input", "An ARP Link Type", "", nil},
 
 	{"HTTPHeader", "ballot", "A HTTP header", "", nil},
 	{"HTTPHeaderValue", "pending", "A HTTP header value", "", nil},

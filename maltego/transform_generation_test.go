@@ -147,6 +147,7 @@ var transforms = []transformCoreInfo{
 	{"ToEthernetTypes", "netcap.EthernetAuditRecords", "Show all Ethernet types"},
 	{"ToIPV4Protocols", "netcap.IPv4AuditRecords", "Show all IPv4 protocol types"},
 	{"ToIPV6TrafficClasses", "netcap.IPv6AuditRecords", "Show all IPv6 traffic classes"},
+	{"ToLinkTypes", "netcap.ARPAuditRecords", "Show all ARP link types"},
 
 	// Wireshark integration
 	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},
