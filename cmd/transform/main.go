@@ -53,6 +53,8 @@ func Run() {
 		toLoginInformation,
 		toHosts,
 		toUDPHosts,
+		toNTPHosts,
+		toNTPReferenceIDs,
 		toEmails,
 		toICMPV4ControlMessages,
 		toICMPV6ControlMessages,

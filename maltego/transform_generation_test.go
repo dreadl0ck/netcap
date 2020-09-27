@@ -156,6 +156,9 @@ var transforms = []transformCoreInfo{
 
 	{"ToUDPHosts", "netcap.UDPAuditRecords", "Show all hosts that communicated over UDP"},
 
+	{"ToNTPHosts", "netcap.NTPAuditRecords", "Show all hosts that communicated via NTP"},
+	{"ToNTPReferenceIDs", "netcap.NTPAuditRecords", "Show all NTP reference ids"},
+
 	// Wireshark integration
 	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},
 	{"OpenServiceInWireshark", "netcap.Service", "Open all traffic from and towards the selected service in wireshark"},
