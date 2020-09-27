@@ -95,6 +95,7 @@ func Run() {
 		toURLsForHost,
 		toHTTPUserAgents,
 		toMailAuthTokens,
+		toTCPFlagCombinations,
 		toMailFrom,
 		toMailTo,
 		toMailUserPassword,

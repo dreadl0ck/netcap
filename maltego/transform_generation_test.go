@@ -143,6 +143,8 @@ var transforms = []transformCoreInfo{
 	{"ToProviderIPProfilesForURL", "netcap.URL", "Show all ProviderIPProfiles for the selected URL"},
 	{"ToProviderIPProfilesForHost", "netcap.Host", "Show all ProviderIPProfiles for the selected website"},
 
+	{"ToTCPFlagCombinations", "netcap.TCPAuditRecords", "Show all TCP flag combinations seen"},
+
 	// Wireshark integration
 	{"OpenConnectionInWireshark", "netcap.Connection", "Open the selected connection in wireshark"},
 	{"OpenServiceInWireshark", "netcap.Service", "Open all traffic from and towards the selected service in wireshark"},
