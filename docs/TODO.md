@@ -11,7 +11,7 @@
 
 - SMTP transforms
 - DNS transforms
-- to contacted ports: add services, then the actual ports?
+- to ports: add services, then the actual ports?
 
 - on ConnectionAuditRecords: GetLongRunningSessions
 - add capinfos transform for pcap
