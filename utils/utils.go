@@ -51,10 +51,8 @@ func DecodePort(raw []byte) int32 {
 // OpenBleve is a simple wrapper for the bleve open call
 // it's used to log any open operations.
 func OpenBleve(path string) (bleve.Index, error) {
-	// TODO: to log or not to log
-	//if logger.DebugLogFileHandle != nil {
-	//	logger.DebugLog.Println("opening bleve db at path:", path)
-	//}
+
+	log.Println("opening bleve db at path:", path)
 
 	return bleve.Open(path)
 }
