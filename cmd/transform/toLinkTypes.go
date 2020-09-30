@@ -17,7 +17,7 @@ func toLinkTypes() {
 	maltego.ARPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, a *types.ARP, min, max uint64, path string, mac string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			linkTypes[a.AddrType]++

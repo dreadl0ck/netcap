@@ -571,7 +571,7 @@ func (h *pop3Reader) parseMails() (mailIDs []string, user, pass, token string) {
 				if reply.Command == pop3OK {
 					state = stateAuthenticated
 
-					if len(h.pop3Requests) < h.reqIndex {
+					if len(h.pop3Requests) >= h.reqIndex {
 						r = h.pop3Requests[h.reqIndex]
 						if r != nil {
 							token = r.Command
@@ -617,6 +617,8 @@ func (h *pop3Reader) parseMails() (mailIDs []string, user, pass, token string) {
 				continue
 			case "QUIT":
 				return
+			default:
+				log.Println("unhandled POP3 command: ", r.Command)
 			}
 		}
 		h.resIndex++

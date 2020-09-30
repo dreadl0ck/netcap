@@ -17,7 +17,7 @@ func toTCPFlagCombinations() {
 	maltego.TCPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, tcp *types.TCP, min, max uint64, path string, ipaddr string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			idents[flagsToString(tcp)]++

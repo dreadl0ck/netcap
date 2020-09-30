@@ -19,7 +19,7 @@ func toHosts() {
 		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, path string, ipaddr string) {
 			hosts[pop3.ServerIP] = struct{}{}
 			hosts[pop3.ClientIP] = struct{}{}
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 		},
