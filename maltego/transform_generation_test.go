@@ -70,7 +70,7 @@ var transforms = []transformCoreInfo{
 	{"ToOutgoingConnsFiltered", "netcap.IPAddr", "Show all outgoing flows filtered against the configured whitelist"},
 	{"ToParameterValues", "netcap.HTTPParameter", "Retrieve all values seen for an HTTP parameter"},
 	{"ToServerNameIndicators", "netcap.IPAddr", "Retrieve the TLS Server Name Indicators seen for the selected host"},
-	{"ToURLsForHost", "netcap.IPAddr", "Retrieve all URLs seen for the selected host"},
+	{"ToHTTPUniformResourceLocators", "netcap.IPAddr", "Retrieve all URLs seen for the selected host"},
 	{"ToAuditRecords", "netcap.PCAP", "Transform PCAP file into audit records"},
 	{"ToAuditRecordsWithDPI", "netcap.PCAP", "Retrieve audit records with Deep Packet Inspection enabled"},
 	{"ReloadAuditRecordsFromDisk", "netcap.PCAP", "Reload the audit records for the selected PCAP from disk"},

@@ -1,22 +1,17 @@
 package transform
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"time"
-
-	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"log"
+	"os"
 
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
-func toIncomingFlowsFiltered() {
+func toIncomingConnsFiltered() {
 	resolverLog := zap.New(zapcore.NewNopCore())
 	defer func() {
 		err := resolverLog.Sync()
@@ -31,6 +26,7 @@ func toIncomingFlowsFiltered() {
 	os.Stdout = os.Stderr
 	resolvers.InitLocalDNS()
 	resolvers.InitDNSWhitelist()
+	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
 	maltego.ConnectionTransform(
@@ -41,12 +37,12 @@ func toIncomingFlowsFiltered() {
 				if name != "" {
 					if !resolvers.IsWhitelistedDomain(name) {
 						if isInTop12(conn.TotalSize, top12) {
-							addInConn(trx, conn, min, max, name, path)
+							addConnection(trx, conn, path, min, max, maltego.OutputToInput)
 						}
 					}
 				} else {
 					if isInTop12(conn.TotalSize, top12) {
-						addInConn(trx, conn, min, max, conn.SrcIP, path)
+						addConnection(trx, conn, path, min, max, maltego.OutputToInput)
 					}
 				}
 			}
@@ -61,15 +57,4 @@ func isInTop12(val int32, sizes *[]int) bool {
 		}
 	}
 	return false
-}
-
-func addInConn(trx *maltego.Transform, conn *types.Connection, min, max uint64, name string, path string) {
-	ent := trx.AddEntityWithPath("netcap.Flow", conn.UID+"\n"+name, path)
-
-	di := "<h3>Incoming Flow: " + conn.SrcIP + ":" + conn.SrcPort + " -> " + conn.DstIP + ":" + conn.DstPort + "</h3><p>Timestamp: " + utils.UnixTimeToUTC(conn.TimestampFirst) + "</p><p>TimestampLast: " + utils.UnixTimeToUTC(conn.TimestampLast) + "</p><p>Duration: " + fmt.Sprint(time.Duration(conn.Duration)) + "</p><p>TotalSize: " + humanize.Bytes(uint64(conn.TotalSize)) + "</p>"
-	ent.AddDisplayInformation(di, "Netcap Info")
-
-	ent.SetLinkDirection(maltego.OutputToInput)
-	ent.SetLinkLabel(humanize.Bytes(uint64(conn.TotalSize)))
-	ent.SetLinkThickness(maltego.GetThickness(uint64(conn.TotalSize), min, max))
 }

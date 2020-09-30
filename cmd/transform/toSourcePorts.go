@@ -55,7 +55,7 @@ func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min
 
 	var (
 		serviceName = resolvers.LookupServiceByPort(np, port.Protocol)
-		di          = "<h3>Port</h3><p>Timestamp: " + utils.UnixTimeToUTC(ip.TimestampFirst) + "</p><p>ServiceName: " + serviceName + "</p>"
+		di          = utils.UnixTimeToUTC(ip.TimestampFirst) + " " + ip.Addr + "<br>"
 	)
 
 	ent := trx.AddEntityWithPath("netcap.SourcePort", portStr+"\n"+serviceName, path)
