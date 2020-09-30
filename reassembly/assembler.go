@@ -728,7 +728,7 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Seq
 	a.cleanSG(half, ac)
 
 	if end {
-		a.closeHalfConnection(conn, half)
+		a.closeHalfConnection(conn, half, "END signal received (FIN or RST flag)")
 	}
 
 	if Debug {
@@ -823,7 +823,7 @@ func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
 	// Well, it's embarrassing it there is still something in half.saved
 	// FIXME: change API to give back saved + new/no packets
 	if half.first == nil {
-		a.closeHalfConnection(conn, half)
+		a.closeHalfConnection(conn, half, "no bytes saved")
 
 		return
 	}
@@ -840,7 +840,7 @@ func (a *Assembler) skipFlush(conn *connection, half *halfconnection) {
 	}
 }
 
-func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) {
+func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection, reason string) {
 	if Debug {
 		log.Printf("%v closing", conn)
 	}
@@ -863,7 +863,7 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) 
 			conn.firstFlow = conn.s2c.flow
 		}
 
-		if half.stream.ReassemblyComplete(&conn.ac, conn.firstFlow) {
+		if half.stream.ReassemblyComplete(&conn.ac, conn.firstFlow, reason) {
 			a.connPool.remove(conn)
 		}
 	}
@@ -977,12 +977,13 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 		}
 	}
 
+	// TODO: This causes streams being flushed too early when processing packets concurrently and out of order!
 	// Close the connection only if both halfs of the connection last seen before tc.
-	if !half.closed && half.first == nil && conn.lastSeen().Before(tc) {
-		a.closeHalfConnection(conn, half)
-
-		closed = true
-	}
+	//if !half.closed && half.first == nil && conn.lastSeen().Before(tc) {
+	//	a.closeHalfConnection(conn, half, "both halfs of the connection last seen before tc")
+	//
+	//	closed = true
+	//}
 
 	return flushed, closed
 }
@@ -1002,7 +1003,7 @@ func (a *Assembler) FlushAll() (closed int) {
 			}
 
 			if !half.closed {
-				a.closeHalfConnection(conn, half)
+				a.closeHalfConnection(conn, half, "force-flushed")
 			}
 		}
 		conn.mu.Unlock()
@@ -1027,7 +1028,7 @@ func (a *Assembler) FlushAllProgress() (closed int) {
 			}
 
 			if !half.closed {
-				a.closeHalfConnection(conn, half)
+				a.closeHalfConnection(conn, half, "force-flushed")
 			}
 		}
 		conn.mu.Unlock()

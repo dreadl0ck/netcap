@@ -8,8 +8,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 )
 
 func toConnectionsForHost() {
@@ -35,12 +33,7 @@ func toConnectionsForHost() {
 	maltego.ConnectionTransform(nil, func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ip string, sizes *[]int) {
 
 		if conn.SrcIP == ip || conn.DstIP == ip {
-			i, err := strconv.Atoi(conn.DstPort)
-			if err != nil {
-				return
-			}
-			service := resolvers.LookupServiceByPort(i, strings.ToLower(conn.TransportProto))
-			addConn(trx, conn, path, min, max, service)
+			addConnection(trx, conn, path, min, max, maltego.InputToOutput)
 		}
 	})
 }

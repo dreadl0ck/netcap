@@ -52,14 +52,15 @@ func toConnectionsForService() {
 
 		service := resolvers.LookupServiceByPort(i, strings.ToLower(conn.TransportProto))
 		if service == serviceType {
-			addConn(trx, conn, path, min, max, service)
+			addConn(trx, conn, path, min, max, maltego.InputToOutput, service)
 		}
 	})
 }
 
-func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, max uint64, service string) {
+func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, max uint64, direction maltego.LinkDirection, service string) {
 	ent := trx.AddEntityWithPath("netcap.Connection", utils.CreateFlowIdent(conn.SrcIP, conn.SrcPort, conn.DstIP, conn.DstPort), path)
 
+	ent.SetLinkDirection(direction)
 	ent.SetLinkLabel(strconv.FormatInt(int64(conn.NumPackets), 10) + " pkts\n" + humanize.Bytes(uint64(conn.TotalSize)))
 	ent.SetLinkThickness(maltego.GetThickness(uint64(conn.TotalSize), min, max))
 	ent.AddProperty("srcip", "SrcIP", maltego.Strict, conn.SrcIP)
@@ -72,6 +73,16 @@ func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, m
 	ent.AddProperty("apppayloadsize", "AppPayloadSize", maltego.Strict, strconv.Itoa(int(conn.AppPayloadSize)))
 
 	ent.AddDisplayInformation(makeConversationHTML(service, conn, path), "Conversation: Client (Red), Server (Blue)")
+}
+
+func addConnection(trx *maltego.Transform, conn *types.Connection, path string, min, max uint64, direction maltego.LinkDirection) {
+
+	i, err := strconv.Atoi(conn.DstPort)
+	if err != nil {
+		return
+	}
+
+	addConn(trx, conn, path, min, max, direction, resolvers.LookupServiceByPort(i, strings.ToLower(conn.TransportProto)))
 }
 
 func makeConversationHTML(service string, conn *types.Connection, path string) string {
@@ -87,7 +98,7 @@ func makeConversationHTML(service string, conn *types.Connection, path string) s
 retry:
 	streamFilePath := filepath.Join(
 		filepath.Dir(path),
-		strings.ToLower(conn.TransportProto)+"Connections",
+		strings.ToLower(conn.TransportProto),
 		service,
 		utils.CleanIdent(
 			utils.CreateFlowIdent(

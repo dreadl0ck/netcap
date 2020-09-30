@@ -34,7 +34,7 @@ import (
 
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets:  false,
-	Workers:              12,
+	Workers:              1,
 	PacketBufferSize:     defaults.PacketBuffer,
 	SnapLen:              defaults.SnapLen,
 	Promisc:              false,

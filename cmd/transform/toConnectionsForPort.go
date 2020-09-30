@@ -8,8 +8,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 )
 
 func toConnectionsForPort() {
@@ -40,12 +38,7 @@ func toConnectionsForPort() {
 		}
 
 		if conn.SrcPort == port || conn.DstPort == port {
-			i, err := strconv.Atoi(conn.DstPort)
-			if err != nil {
-				return
-			}
-			service := resolvers.LookupServiceByPort(i, strings.ToLower(conn.TransportProto))
-			addConn(trx, conn, path, min, max, service)
+			addConnection(trx, conn, path, min, max, maltego.InputToOutput)
 		}
 	})
 }

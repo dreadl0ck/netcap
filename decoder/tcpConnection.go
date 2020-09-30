@@ -430,10 +430,19 @@ func (t *tcpConnection) reorder(ac reassembly.AssemblerContext, firstFlow gopack
 // It should return true if the connection should be removed from the pool
 // It can return false if it want to see subsequent packets with Accept(), e.g. to
 // see FIN-ACK, for deeper state-machine analysis.
-func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow) bool {
+func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow, reason string) bool {
+
+	// reorder the stream fragments
 	t.reorder(ac, firstFlow)
 
-	decoderLog.Debug("ReassemblyComplete", zap.String("ident", t.ident))
+	decoderLog.Debug("ReassemblyComplete",
+		zap.String("ident", t.ident),
+		zap.String("reason", reason),
+		zap.Bool("clientIsNil", t.client == nil),
+		zap.Bool("clientSaved:", t.client.Saved()),
+		zap.Bool("serverIsNil", t.server == nil),
+		zap.Bool("serverSaved:", t.server.Saved()),
+	)
 
 	ti := time.Now()
 
@@ -444,7 +453,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		// client
 		err := saveConnection(t.conversationRaw(), t.conversationDataColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
 		if err != nil {
-			fmt.Println("failed to save stream", err)
+			reassemblyLog.Error("failed to save stream", zap.Error(err), zap.String("ident", t.client.Ident()))
 		}
 		streamProcessingTime.WithLabelValues(reassembly.TCPDirClientToServer.String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
