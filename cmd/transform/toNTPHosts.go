@@ -17,7 +17,7 @@ func toNTPHosts() {
 	maltego.NTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ntp *types.NTP, min, max uint64, path string, ipaddr string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			hosts[ntp.SrcIP] = struct{}{}

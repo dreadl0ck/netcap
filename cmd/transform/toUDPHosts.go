@@ -17,7 +17,7 @@ func toUDPHosts() {
 	maltego.UDPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, udp *types.UDP, min, max uint64, path string, ipaddr string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			hosts[udp.SrcIP] = struct{}{}

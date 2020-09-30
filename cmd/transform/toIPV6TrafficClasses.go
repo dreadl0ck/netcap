@@ -16,7 +16,7 @@ func toIPV6TrafficClasses() {
 	maltego.IPv6Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ip *types.IPv6, min, max uint64, path string, mac string, ipaddr string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			classes[ip.TrafficClass]++

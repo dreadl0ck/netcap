@@ -17,7 +17,7 @@ func toIPV4Protocols() {
 	maltego.IPv4Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ip *types.IPv4, min, max uint64, path string, mac string, ipaddr string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			ipProtos[ip.Protocol]++

@@ -17,7 +17,7 @@ func toEthernetTypes() {
 	maltego.EthernetTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, eth *types.Ethernet, min, max uint64, path string, ipaddr string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			etherTypes[eth.EthernetType]++

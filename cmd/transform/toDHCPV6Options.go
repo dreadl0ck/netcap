@@ -18,7 +18,7 @@ func toDHCPV6Options() {
 	maltego.DHCPV6Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, d *types.DHCPv6, min, max uint64, path string, mac string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			for _, o := range d.Options {

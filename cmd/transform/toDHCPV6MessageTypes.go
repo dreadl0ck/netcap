@@ -18,7 +18,7 @@ func toDHCPV6MessageTypes() {
 	maltego.DHCPV6Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, d *types.DHCPv6, min, max uint64, path string, mac string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			msgTypes[d.MsgType]++

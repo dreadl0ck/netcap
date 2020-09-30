@@ -61,7 +61,7 @@ var transforms = []transformCoreInfo{
 	{"ToHTTPStatusCodes", "netcap.IPAddr", "Show all HTTP status codes observed for the selected host"},
 	{"ToHTTPUserAgents", "netcap.IPAddr", "Retrieve all HTTP user agents seen from the selected host"},
 	{"ToIncomingConnsFiltered", "netcap.IPAddr", "Show all incoming flows filtered against the configured whitelist"},
-	{"ToMailAuthToken", "netcap.IPAddr", "Retrieve POP3 auth tokens"},
+	{"ToMailAuthTokens", "netcap.IPAddr", "Retrieve POP3 auth tokens"},
 	{"ToMailFrom", "netcap.IPAddr", "Retrieve all email addresses from the 'From' field"},
 	{"ToMailTo", "netcap.IPAddr", "Retrieve all email addresses from the 'To' field"},
 	{"ToMailUserPassword", "maltego.Person", "Retrieve the password for a mail user"},

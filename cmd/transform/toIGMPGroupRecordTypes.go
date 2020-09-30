@@ -17,7 +17,7 @@ func toIGMPTypes() {
 	maltego.IGMPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, i *types.IGMP, min, max uint64, path string, mac string) {
-			if path == "" {
+			if pathName == "" {
 				pathName = path
 			}
 			igmpTypes[i.Type]++

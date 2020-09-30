@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2020-09-28 10:41:43.786 CEST</LastSync>
+ <LastSync>2020-09-30 16:06:10.358 CEST</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -30,7 +30,7 @@
   <Transform name="netcap.ToHTTPStatusCodes"></Transform>
   <Transform name="netcap.ToHTTPUserAgents"></Transform>
   <Transform name="netcap.ToIncomingConnsFiltered"></Transform>
-  <Transform name="netcap.ToMailAuthToken"></Transform>
+  <Transform name="netcap.ToMailAuthTokens"></Transform>
   <Transform name="netcap.ToMailFrom"></Transform>
   <Transform name="netcap.ToMailTo"></Transform>
   <Transform name="netcap.ToMailUserPassword"></Transform>
@@ -39,7 +39,7 @@
   <Transform name="netcap.ToOutgoingConnsFiltered"></Transform>
   <Transform name="netcap.ToParameterValues"></Transform>
   <Transform name="netcap.ToServerNameIndicators"></Transform>
-  <Transform name="netcap.ToURLsForHost"></Transform>
+  <Transform name="netcap.ToHTTPUniformResourceLocators"></Transform>
   <Transform name="netcap.ToAuditRecords"></Transform>
   <Transform name="netcap.ToAuditRecordsWithDPI"></Transform>
   <Transform name="netcap.ReloadAuditRecordsFromDisk"></Transform>
