@@ -66,7 +66,7 @@ type Converter struct {
 	Text        string   `xml:",chardata"`
 	Value       string   `xml:"Value"`
 	RegexGroups struct {
-		Text       string `xml:",chardata"`
+		Text       string       `xml:",chardata"`
 		RegexGroup []RegexGroup `xml:"RegexGroup"`
 	} `xml:"RegexGroups"`
 }
@@ -121,7 +121,7 @@ type entityCoreInfo struct {
 }
 
 type regexConversion struct {
-	regex string
+	regex      string
 	properties []string
 }
 
@@ -173,7 +173,7 @@ func newEntity(entName, imgName, description, parent string, isArchive bool, r *
 		// set converter
 		ent.Converter = Converter{
 			//Value:   "<![CDATA[" + r.regex + "]]",
-			Value:   r.regex,
+			Value: r.regex,
 		}
 
 		// add property mappings

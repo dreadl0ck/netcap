@@ -180,7 +180,7 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
 </MaltegoEntity>`
 
 	e := newEntity("PCAP", "General/SharkAttack", "Packet capture file", "", false, &regexConversion{
-		regex:      "^(.+\\/([^\\/]+)[A-Za-z]*\\.pcap)",
+		regex: "^(.+\\/([^\\/]+)[A-Za-z]*\\.pcap)",
 		properties: []string{
 			"path",
 			"properties.pcap",
