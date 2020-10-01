@@ -21,13 +21,14 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 )
 
 func openFileInDisassembler() {
 	var (
 		lt            = maltego.ParseLocalArguments(os.Args)
 		trx           = &maltego.Transform{}
-		loc           = lt.Values["location"]
+		loc           = strings.TrimPrefix(lt.Values["location"], "file://")
 		openCmd, args = makeOpenDisasmCmd(loc)
 	)
 

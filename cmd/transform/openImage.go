@@ -19,13 +19,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func openImage() {
 	var (
 		lt                    = maltego.ParseLocalArguments(os.Args)
 		trx                   = &maltego.Transform{}
-		loc                   = lt.Values["location"]
+		loc                   = strings.TrimPrefix(lt.Values["location"], "file://")
 		openCommandName, args = createOpenCommand(
 			[]string{loc},
 		)
