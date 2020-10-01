@@ -85,7 +85,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 	}
 
 	// file exists.
-	clearLine()
+	c.clearLine()
 	c.printlnStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
 
 	// set input filesize on collector
@@ -101,7 +101,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 		return err
 	}
 
-	clearLine()
+	c.clearLine()
 	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
 	r, f, err := openPcapNG(path)

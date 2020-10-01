@@ -15,7 +15,6 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket/pcap"
 	"io/ioutil"
 	"log"
 	"os"
@@ -81,7 +80,7 @@ var maltegoBaseConfig = collector.Config{
 		CompressionLevel:               defaults.CompressionLevel,
 		CompressionBlockSize:           defaults.CompressionBlockSize,
 		DisableGenericVersionHarvester: true,
-		IgnoreDecoderInitErrors: true,
+		IgnoreDecoderInitErrors:        true,
 	},
 	BaseLayer:     utils.GetBaseLayer("ethernet"),
 	DecodeOptions: utils.GetDecodeOptions("datagrams"),
@@ -130,7 +129,7 @@ func toAuditRecords() {
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)
-	c.PrintConfiguration()
+	//c.PrintConfiguration()
 
 	// if not, use native pcapgo version
 	isPcap, err := collector.IsPcap(inputFile)
@@ -150,22 +149,13 @@ func toAuditRecords() {
 		}
 	}
 
-	// open PCAP file
-	var r *pcap.Handle
-
-	r, err = pcap.OpenOffline(inputFile)
-	if err != nil {
-		die(err.Error(), "failed to open input file")
-	}
-	defer r.Close()
-
 	writeAuditRecords(trx, outDir)
 }
 
 func writeAuditRecords(trx maltego.Transform, outDir string) {
 	files, err := ioutil.ReadDir(outDir)
 	if err != nil {
-		log.Fatal(err)
+		die(err.Error(), "failed to read directory")
 	}
 
 	for _, f := range files {

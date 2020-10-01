@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreadl0ck/gopacket/pcap"
-
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/maltego"
@@ -46,7 +44,7 @@ func toAuditRecordsWithDPI() {
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)
-	c.PrintConfiguration()
+	//c.PrintConfiguration()
 
 	// if not, use native pcapgo version
 	isPcap, err := collector.IsPcap(inputFile)
@@ -58,20 +56,13 @@ func toAuditRecordsWithDPI() {
 	// because the pcapng reader offers ZeroCopyReadPacketData()
 	if isPcap {
 		if err = c.CollectPcap(inputFile); err != nil {
-			log.Fatal("failed to collect audit records from pcap file: ", err)
+			die(err.Error(), "failed to collect audit records from pcap file")
 		}
 	} else {
 		if err = c.CollectPcapNG(inputFile); err != nil {
-			log.Fatal("failed to collect audit records from pcapng file: ", err)
+			die(err.Error(), "failed to collect audit records from pcapng file")
 		}
 	}
-
-	// open PCAP file
-	r, err := pcap.OpenOffline(inputFile)
-	if err != nil {
-		die(err.Error(), "failed to open input file")
-	}
-	defer r.Close()
 
 	writeAuditRecords(trx, outDir)
 }
