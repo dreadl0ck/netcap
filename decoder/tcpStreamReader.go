@@ -206,7 +206,7 @@ func (t *tcpStreamReader) ServiceIdent() string {
 	t.parent.Lock()
 	defer t.parent.Unlock()
 
-	return filepath.Clean(fmt.Sprintf("%s->%s", t.parent.server.Network().Dst(), t.parent.server.Transport().Dst()))
+	return filepath.Clean(fmt.Sprintf("%s:%s", t.parent.server.Network().Dst(), t.parent.server.Transport().Dst()))
 }
 
 // ServiceBanner will return the banner received from the server.
@@ -223,7 +223,7 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 				t.serviceBannerBytes++
 
 				if t.serviceBannerBytes == conf.BannerSize {
-					break
+					return t.serviceBanner.Bytes()
 				}
 			}
 		}

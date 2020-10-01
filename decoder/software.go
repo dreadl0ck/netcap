@@ -778,7 +778,7 @@ var softwareDecoder = newCustomDecoder(
 
 		// Load vulnerabilities DB index
 		indexName := filepath.Join(resolvers.DataBaseSource, vulnDBPath)
-		vulnerabilitiesIndex, err = utils.OpenBleve(indexName)
+		vulnerabilitiesIndex, err = openBleve(indexName)
 		if err != nil {
 			return err
 		}
@@ -815,7 +815,7 @@ var softwareDecoder = newCustomDecoder(
 			item.Unlock()
 		}
 
-		utils.CloseBleve(vulnerabilitiesIndex)
+		closeBleve(vulnerabilitiesIndex)
 
 		return nil
 	},

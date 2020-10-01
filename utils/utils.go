@@ -16,7 +16,6 @@ package utils
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -25,7 +24,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/blevesearch/bleve"
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/evilsocket/islazy/tui"
@@ -46,33 +44,6 @@ func DecodePort(raw []byte) int32 {
 	}
 
 	return int32(binary.BigEndian.Uint16(raw))
-}
-
-// OpenBleve is a simple wrapper for the bleve open call
-// it's used to log any open operations.
-func OpenBleve(path string) (bleve.Index, error) {
-
-	log.Println("opening bleve db at path:", path)
-
-	return bleve.Open(path)
-}
-
-// CloseBleve is a simple wrapper for the bleve close call
-// it's used to log any close operations.
-func CloseBleve(index io.Closer) {
-	if index == nil {
-		return
-	}
-
-	// TODO: to log or not to log
-	//if logger.DebugLogFileHandle != nil {
-	//	logger.DebugLog.Println("closing bleve db:", index)
-	//}
-
-	err := index.Close()
-	if err != nil {
-		fmt.Println(err)
-	}
 }
 
 // Pluralize returns the plural for a given noun.

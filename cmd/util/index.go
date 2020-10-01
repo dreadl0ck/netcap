@@ -130,7 +130,7 @@ func indexData(in string) {
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
-			index, _ = utils.OpenBleve(indexPath) // To search or update an existing index
+			index, _ = bleve.Open(indexPath) // To search or update an existing index
 		} else {
 			index = makeBleveIndex(indexPath) // To create a new index
 		}
@@ -208,7 +208,7 @@ func indexData(in string) {
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
-			index, err = utils.OpenBleve(indexPath) // To search or update an existing index
+			index, err = bleve.Open(indexPath) // To search or update an existing index
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -303,7 +303,7 @@ func indexData(in string) {
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
-			index, _ = utils.OpenBleve(indexPath) // To search or update an existing index
+			index, _ = bleve.Open(indexPath) // To search or update an existing index
 		} else {
 			index = makeBleveIndex(indexPath) // To create a new index
 		}
