@@ -410,6 +410,9 @@ type LocalTransform struct {
 	Values map[string]string
 }
 
+// handle some leftovers from escaping XML
+var replacer = strings.NewReplacer("&amp;", "&", "\\=", "=")
+
 // ParseLocalArguments parses the arguments supplied on the commandline.
 func ParseLocalArguments(args []string) LocalTransform {
 	if len(args) < 3 {
@@ -429,9 +432,9 @@ func ParseLocalArguments(args []string) LocalTransform {
 				for _, x := range vars {
 					kv := strings.Split(x, "=")
 					if len(kv) == 2 {
-						values[kv[0]] = kv[1]
+						values[kv[0]] = replacer.Replace(kv[1])
 					} else {
-						values[kv[0]] = ""
+						values[kv[0]] = replacer.Replace(strings.Join(kv[1:], "="))
 					}
 				}
 			}
