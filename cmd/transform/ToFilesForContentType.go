@@ -1,13 +1,13 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/utils"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toFilesForContentType() {
@@ -28,6 +28,7 @@ func toFilesForContentType() {
 				}
 
 				if typ == ct { // TODO: make a single file constructor and reuse it in toFiles!
+
 					var (
 						ent *maltego.EntityObj
 						val = file.Name + "\n" + strconv.FormatInt(file.Length, 10) + " bytes"
@@ -38,18 +39,18 @@ func toFilesForContentType() {
 						ent = trx.AddEntityWithPath("netcap.File", val, path)
 					}
 
-					di := "<h3>File</h3><p>Timestamp: " + utils.UnixTimeToUTC(file.Timestamp) + "</p><p>Source: " + file.Source + "</p><p>MD5: " + file.Hash + "</p><p>ContentType: " + file.ContentType + "</p><p>ContentTypeDetected: " + file.ContentTypeDetected + "</p><p>Host: " + file.Host + "</p><p>Length: " + strconv.Itoa(int(file.Length)) + "</p><p>Ident: " + file.Ident + "</p><p>SrcIP: " + file.SrcIP + "</p><p>DstIP: " + file.DstIP + "</p><p>SrcPort: " + strconv.FormatInt(int64(file.SrcPort), 10) + "</p><p>DstPort: " + strconv.FormatInt(int64(file.DstPort), 10) + "</p><p>Location: " + file.Location + "</p>"
+					di := "<h3>File</h3><p>Timestamp: " + utils.UnixTimeToUTC(file.Timestamp) + "</p><p>Source: " + file.Source + "</p><p>MD5: " + file.Hash + "</p><p>ContentType: " + file.ContentType + "</p><p>ContentTypeDetected: " + file.ContentTypeDetected + "</p><p>Host: " + file.Host + "</p><p>Length: " + strconv.Itoa(int(file.Length)) + "</p><p>Ident: " + file.Ident + "</p><p>SrcIP: " + file.SrcIP + "</p><p>DstIP: " + file.DstIP + "</p><p>SrcPort: " + strconv.FormatInt(int64(file.SrcPort), 10) + "</p><p>DstPort: " + strconv.FormatInt(int64(file.DstPort), 10) + "</p><p>Location: " + maltego.EscapeText(file.Location) + "</p>"
 					ent.AddDisplayInformation(di, "Netcap Info")
 
 					if filepath.IsAbs(file.Location) {
-						ent.SetIconURL("file://" + file.Location)
+						ent.SetIconURL("file://" + maltego.EscapeText(file.Location))
 					} else {
-						ent.SetIconURL("file://" + filepath.Join(filepath.Join(filepath.Dir(path), ".."), file.Location))
+						ent.SetIconURL("file://" + filepath.Join(filepath.Join(filepath.Dir(path), ".."), maltego.EscapeText(file.Location)))
 					}
 					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
-					ent.AddProperty("location", "Location", maltego.Strict, file.Location)
-					ent.AddProperty("name", "Name", maltego.Strict, file.Name)
+					ent.AddProperty("location", "Location", maltego.Strict, maltego.EscapeText(file.Location))
+					ent.AddProperty("name", "Name", maltego.Strict, maltego.EscapeText(file.Name))
 					ent.AddProperty("length", "Length", maltego.Strict, strconv.FormatInt(file.Length, 10))
 				}
 			}
