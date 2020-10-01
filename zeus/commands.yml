@@ -312,10 +312,16 @@ commands:
             du -sh resolvers/resolver-dbs.zip
 
     install-bash-completion:
-        description: install the bash-completion for netcap
+        description: install the bash-completion for netcap on macOS
         exec: |
             mkdir -p /usr/local/etc/bash_completion.d
             cp cmd/net /usr/local/etc/bash_completion.d/net && . /usr/local/etc/bash_completion.d/net
+
+    install-bash-completion-linux:
+        description: install the bash-completion for netcap on linux
+        exec: |
+            mkdir -p /usr/share/bash-completion/completions/
+            cp cmd/net /usr/share/bash-completion/completions/net && . /usr/share/bash-completion/completions/net
 
     run-grafana:
         description: start grafana service locally
