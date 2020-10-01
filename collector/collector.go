@@ -535,8 +535,8 @@ func (c *Collector) PrintConfiguration() {
 
 	netio.FPrintLogo(target)
 
-	if c.config.DecoderConfig.Debug {
-		// in debug mode: dump config to stdout
+	if c.config.DecoderConfig.Debug && !c.config.Quiet {
+		// in debug mode and when not silencing stdout via quiet mode: dump config to stdout
 		target = io.MultiWriter(os.Stdout, c.netcapLogFile)
 	} else {
 		// default: write configuration into netcap.log
