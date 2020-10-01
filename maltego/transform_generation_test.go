@@ -290,7 +290,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	for _, e := range maltegoEntities {
 		if e.Name == "PCAP" {
 			genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", &regexConversion{
-				regex: "^(.+(\\/|\\\\)([^(\\/|\\\\)]+)[A-Za-z]*\\.pcap(ng)?)",
+				regex: "^(.+(\\/|\\\\)(.*)\\.pcap(ng)?)",
 				properties: []string{
 					"path", // 1st group matches full path
 					"",
