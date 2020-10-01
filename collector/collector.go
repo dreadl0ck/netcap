@@ -541,7 +541,9 @@ func (c *Collector) PrintConfiguration() {
 	} else {
 		// default: write configuration into netcap.log
 		target = c.netcapLogFile
-		fmt.Println() // add newline
+		if !c.config.Quiet {
+			fmt.Println() // add newline
+		}
 	}
 
 	netio.FPrintBuildInfo(target)
