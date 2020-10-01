@@ -17,10 +17,12 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/textproto"
@@ -218,7 +220,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		fileName string
 
 		// detected content type
-		cType = http.DetectContentType(body)
+		cType = trimEncoding(http.DetectContentType(body))
 
 		// root path
 		root = path.Join(conf.Out, conf.FileStorage, cType)
@@ -289,15 +291,27 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	}
 
 	// explicitly declare io.Reader interface
-	var r io.Reader
+	var (
+		r             io.Reader
+		length        int
+		hash          string
+		cTypeDetected = trimEncoding(http.DetectContentType(body))
+	)
 
 	// now assign a new buffer
 	r = bytes.NewBuffer(body)
+
+	// Decode gzip
 	if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
 		r, err = gzip.NewReader(r)
 		if err != nil {
 			logReassemblyError("POP3-gunzip", "Failed to gzip decode: %s", err)
 		}
+	}
+
+	// Decode base64
+	if len(encoding) > 0 && (encoding[0] == "base64") {
+		r, _ = base64.NewDecoder(base64.StdEncoding, r).(io.Reader)
 	}
 
 	if err == nil {
@@ -323,23 +337,55 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 		if errClose != nil {
 			logReassemblyError(opPop3Save, fmt.Sprintf("%s: failed to close file handle %s (l:%d)", h.parent.ident, target, w), errClose)
 		}
+
+		// TODO: refactor to avoid reading the file contents into memory again
+		body, err = ioutil.ReadFile(target)
+		if err == nil {
+			// set hash to value for decompressed content and update size
+			hash = hex.EncodeToString(cryptoutils.MD5Data(body))
+			length = len(body)
+
+			// update content type
+			cTypeDetected = trimEncoding(http.DetectContentType(body))
+
+			// make sure root path exists
+			createContentTypePathIfRequired(path.Join(conf.Out, conf.FileStorage, cTypeDetected))
+
+			// switch the file extension and the path for the updated content type
+			ext = filepath.Ext(target)
+
+			// create new target: trim extension from old one and replace
+			// and replace the old content type in the path
+			newTarget := strings.Replace(strings.TrimSuffix(target, ext), cType, cTypeDetected, 1) + fileExtensionForContentType(cTypeDetected)
+
+			err = os.Rename(target, newTarget)
+			if err == nil {
+				target = newTarget
+			} else {
+				fmt.Println("failed to rename file after decompression", err)
+			}
+		}
+	} else {
+		hash = hex.EncodeToString(cryptoutils.MD5Data(body))
+		length = len(body)
 	}
 
 	// write file to disk
 	writeFile(&types.File{
-		Timestamp:   h.parent.firstPacket.UnixNano(),
-		Name:        fileName,
-		Length:      int64(len(body)),
-		Hash:        hex.EncodeToString(cryptoutils.MD5Data(body)),
-		Location:    target,
-		Ident:       h.parent.ident,
-		Source:      source,
-		ContentType: cType,
-		SrcIP:       h.parent.net.Src().String(),
-		DstIP:       h.parent.net.Dst().String(),
-		SrcPort:     utils.DecodePort(h.parent.transport.Src().Raw()),
-		DstPort:     utils.DecodePort(h.parent.transport.Dst().Raw()),
-		Host:        host,
+		Timestamp:           h.parent.firstPacket.UnixNano(),
+		Name:                fileName,
+		Length:              int64(length),
+		Hash:                hash,
+		Location:            target,
+		Ident:               h.parent.ident,
+		Source:              source,
+		ContentType:         cType,
+		ContentTypeDetected: cTypeDetected,
+		SrcIP:               h.parent.net.Src().String(),
+		DstIP:               h.parent.net.Dst().String(),
+		SrcPort:             utils.DecodePort(h.parent.transport.Src().Raw()),
+		DstPort:             utils.DecodePort(h.parent.transport.Dst().Raw()),
+		Host:                host,
 	})
 
 	return nil
@@ -709,6 +755,13 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 	for _, p := range mail.Body {
 		if strings.Contains(p.Header["Content-Disposition"], "attachment") {
 			mail.HasAttachments = true
+
+			if conf.FileStorage != "" {
+				err = h.saveFile("POP3", p.Filename, nil, []byte(p.Content), []string{p.Header["Content-Transfer-Encoding"]}, h.parent.server.ServiceIdent())
+				if err != nil {
+					decoderLog.Error("failed to save POP3 attachment", zap.Error(err))
+				}
+			}
 
 			break
 		}

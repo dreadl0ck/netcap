@@ -18,6 +18,8 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/blevesearch/bleve"
+	netio "github.com/dreadl0ck/netcap/io"
 	"math"
 	"os"
 	"reflect"
@@ -29,8 +31,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
+	"io"
 )
 
 const (
@@ -51,7 +53,7 @@ func MarkdownOverview() {
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
 	for _, e := range defaultGoPacketDecoders {
-		if csv, ok := io.InitRecord(e.Type).(types.AuditRecord); ok {
+		if csv, ok := netio.InitRecord(e.Type).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(e.Layer.String(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
@@ -61,7 +63,7 @@ func MarkdownOverview() {
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
 	for _, d := range defaultCustomDecoders {
-		if csv, ok := io.InitRecord(d.GetType()).(types.AuditRecord); ok {
+		if csv, ok := netio.InitRecord(d.GetType()).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(d.GetName(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
@@ -102,7 +104,7 @@ func calcMd5(s string) string {
 
 func countFields(t types.Type) int {
 	recordFields := 0
-	if r, ok := io.InitRecord(t).(types.AuditRecord); ok {
+	if r, ok := netio.InitRecord(t).(types.AuditRecord); ok {
 
 		auditRecord := reflect.ValueOf(r).Elem()
 
@@ -263,6 +265,30 @@ func logReassemblyError(task string, msg string, err error) {
 	errorsMapMutex.Unlock()
 
 	reassemblyLog.Error(msg, zap.Error(err))
+}
+
+// OpenBleve is a simple wrapper for the bleve open call
+// it's used to log any open operations.
+func openBleve(path string) (bleve.Index, error) {
+
+	decoderLog.Info("opening bleve db", zap.String("path", path))
+
+	return bleve.Open(path)
+}
+
+// CloseBleve is a simple wrapper for the bleve close call
+// it's used to log any close operations.
+func closeBleve(index io.Closer) {
+	if index == nil {
+		return
+	}
+
+	decoderLog.Info("closing bleve db", zap.String("index", fmt.Sprint(index)))
+
+	err := index.Close()
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 //func logReassemblyInfo(s string, a ...interface{}) {
