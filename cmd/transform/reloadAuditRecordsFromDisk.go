@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
+	"strings"
 )
 
 func reloadAuditRecordsFromDisk() {
@@ -24,7 +25,7 @@ func reloadAuditRecordsFromDisk() {
 
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
-		inputFile = lt.Values["path"]
+		inputFile = strings.TrimPrefix(lt.Values["path"], "file://")
 	)
 
 	// check if input PCAP path is set
