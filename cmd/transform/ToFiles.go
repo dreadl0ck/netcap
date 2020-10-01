@@ -18,7 +18,7 @@ func toFiles() {
 				if file.Name != "" {
 					var (
 						ent *maltego.EntityObj
-						val = file.Name+"\n"+file.ContentTypeDetected
+						val = file.Name + "\n" + file.ContentTypeDetected
 					)
 					if strings.HasPrefix(file.ContentTypeDetected, "image/") {
 						ent = trx.AddEntityWithPath("maltego.Image", val, path)

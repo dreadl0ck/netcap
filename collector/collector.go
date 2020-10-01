@@ -282,7 +282,11 @@ func (c *Collector) handlePacketTimeout(p *packet) {
 
 // print errors to stdout in red.
 func (c *Collector) printErrors() {
-	fmt.Println(ansi.Red, c.getErrorSummary(), ansi.Reset)
+	if c.config.Quiet {
+		_, _ = fmt.Fprintln(c.netcapLogFile, c.getErrorSummary(), ansi.Reset)
+	} else {
+		_, _ = fmt.Println(ansi.Red, c.getErrorSummary(), ansi.Reset)
+	}
 }
 
 // closes the logfile for errors.
@@ -475,7 +479,6 @@ func (c *Collector) printProgressInterval() chan struct{} {
 
 				if !c.config.Quiet { // print
 					c.clearLine()
-
 					_, _ = fmt.Fprintf(os.Stdout,
 						c.progressString,
 						utils.Progress(curr, num),

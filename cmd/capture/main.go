@@ -293,8 +293,6 @@ func Run() {
 		os.Exit(1)
 	}
 
-	// logic is split for both types here
-	// because the pcapng reader offers ZeroCopyReadPacketData()
 	if isPcap {
 		if err = c.CollectPcap(*flagInput); err != nil {
 			log.Fatal("failed to collect audit records from pcap file: ", err)

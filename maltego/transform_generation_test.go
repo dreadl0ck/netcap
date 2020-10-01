@@ -244,7 +244,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 				properties: []string{
 					"path",
 					"",
-					propsPrefix + strings.ToLower(d.GetName()+"AuditRecords"),  // 3rd group contains the name
+					propsPrefix + strings.ToLower(d.GetName()+"AuditRecords"), // 3rd group contains the name
 				},
 			},
 			newStringField("path", "path to the audit records on disk"),

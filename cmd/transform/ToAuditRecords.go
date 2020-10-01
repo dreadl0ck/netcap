@@ -129,7 +129,7 @@ func toAuditRecords() {
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)
-	//c.PrintConfiguration()
+	c.PrintConfiguration()
 
 	// if not, use native pcapgo version
 	isPcap, err := collector.IsPcap(inputFile)
@@ -137,8 +137,6 @@ func toAuditRecords() {
 		die(err.Error(), "failed to open input file")
 	}
 
-	// logic is split for both types here
-	// because the pcapng reader offers ZeroCopyReadPacketData()
 	if isPcap {
 		if err = c.CollectPcap(inputFile); err != nil {
 			die(err.Error(), "failed to collect audit records from pcap file")
