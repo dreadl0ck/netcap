@@ -112,7 +112,7 @@ func (c *Collector) CollectPcap(path string) error {
 	}
 
 	// file exists.
-	clearLine()
+	c.clearLine()
 	c.printlnStdOut("opening", path+" | size:", humanize.Bytes(uint64(stat.Size())))
 
 	// set input filesize on collector
@@ -128,10 +128,7 @@ func (c *Collector) CollectPcap(path string) error {
 		return err
 	}
 
-	if !c.config.Quiet {
-		clearLine()
-	}
-
+	c.clearLine()
 	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
 	r, f, err := OpenPCAP(path)

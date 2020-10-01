@@ -474,7 +474,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 				atomic.StoreInt64(&c.numPacketsLast, curr)
 
 				if !c.config.Quiet { // print
-					clearLine()
+					c.clearLine()
 
 					_, _ = fmt.Fprintf(os.Stdout,
 						c.progressString,

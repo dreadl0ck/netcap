@@ -58,8 +58,10 @@ func (c *Collector) printProgressLive() {
 	c.statMutex.Unlock()
 
 	if c.current%1000 == 0 {
-		clearLine()
-		fmt.Print("running since ", time.Since(c.start), ", captured ", c.current, " packets...")
+		c.clearLine()
+		if !c.config.Quiet {
+			fmt.Print("running since ", time.Since(c.start), ", captured ", c.current, " packets...")
+		}
 	}
 }
 
@@ -69,8 +71,10 @@ func dumpProto(pb proto.Message) {
 	println(proto.MarshalTextString(pb))
 }
 
-func clearLine() {
-	print("\033[2K\r")
+func (c *Collector) clearLine() {
+	if !c.config.Quiet {
+		print("\033[2K\r")
+	}
 }
 
 func share(current, total int64) string {
