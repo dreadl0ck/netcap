@@ -1,9 +1,11 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/io"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/dreadl0ck/gopacket/pcap"
 
@@ -15,7 +17,7 @@ import (
 func toAuditRecordsWithDPI() {
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
-		inputFile = lt.Values["path"]
+		inputFile = strings.TrimPrefix(lt.Values["path"], "file://")
 		trx       = maltego.Transform{}
 	)
 
@@ -24,12 +26,8 @@ func toAuditRecordsWithDPI() {
 		die("input file path property not set", "")
 	}
 
+	io.FPrintBuildInfo(os.Stderr)
 	log.Println("inputFile:", inputFile)
-
-	// redirect stdout filedescriptor to stderr
-	// since all stdout get interpreted as XML from maltego
-	stdout := os.Stdout
-	os.Stdout = os.Stderr
 
 	// create the output directory in the same place as the input file
 	// the directory for this will be named like the input file with an added .net extension
@@ -74,9 +72,6 @@ func toAuditRecordsWithDPI() {
 		die(err.Error(), "failed to open input file")
 	}
 	defer r.Close()
-
-	// restore stdout
-	os.Stdout = stdout
 
 	writeAuditRecords(trx, outDir)
 }
