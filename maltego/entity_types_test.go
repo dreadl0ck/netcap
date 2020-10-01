@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -56,6 +57,23 @@ type XMLEntity struct {
 
 	Entities   *baseEntities    `xml:"BaseEntities,omitempty"`
 	Properties entityProperties `xml:"Properties"`
+
+	Converter Converter `xml:"Converter"`
+}
+
+type Converter struct {
+	XMLName     xml.Name `xml:"Converter"`
+	Text        string   `xml:",chardata"`
+	Value       string   `xml:"Value"`
+	RegexGroups struct {
+		Text       string `xml:",chardata"`
+		RegexGroup []RegexGroup `xml:"RegexGroup"`
+	} `xml:"RegexGroups"`
+}
+
+type RegexGroup struct {
+	Text     string `xml:",chardata"`
+	Property string `xml:"property,attr"`
 }
 
 type baseEntities struct {
@@ -102,7 +120,12 @@ type entityCoreInfo struct {
 	Fields      []propertyField
 }
 
-func newEntity(entName, imgName, description, parent string, isArchive bool, propertyFields ...propertyField) XMLEntity {
+type regexConversion struct {
+	regex string
+	properties []string
+}
+
+func newEntity(entName, imgName, description, parent string, isArchive bool, r *regexConversion, propertyFields ...propertyField) XMLEntity {
 	if !strings.Contains(imgName, "/") {
 		imgName = ident + "/" + imgName
 	}
@@ -142,6 +165,24 @@ func newEntity(entName, imgName, description, parent string, isArchive bool, pro
 			},
 		}
 	)
+
+	if r != nil {
+		// make sure the regex is valid
+		_ = regexp.MustCompile(r.regex)
+
+		// set converter
+		ent.Converter = Converter{
+			//Value:   "<![CDATA[" + r.regex + "]]",
+			Value:   r.regex,
+		}
+
+		// add property mappings
+		for _, p := range r.properties {
+			ent.Converter.RegexGroups.RegexGroup = append(ent.Converter.RegexGroups.RegexGroup, RegexGroup{
+				Property: p,
+			})
+		}
+	}
 
 	if isArchive {
 		ent.Category = identArchive
@@ -192,13 +233,13 @@ func newRequiredStringField(name string, description string) propertyField {
 	}
 }
 
-func genEntity(outDir string, entName string, imgName string, description string, parent string, isArchive bool, color string, fields ...propertyField) {
+func genEntity(outDir string, entName string, imgName string, description string, parent string, isArchive bool, color string, regex *regexConversion, fields ...propertyField) {
 
 	imgName = imgName + "_" + color
 
 	var (
 		name = netcapPrefix + entName
-		ent  = newEntity(entName, imgName, description, parent, isArchive, fields...)
+		ent  = newEntity(entName, imgName, description, parent, isArchive, regex, fields...)
 	)
 
 	data, err := xml.MarshalIndent(ent, "", " ")

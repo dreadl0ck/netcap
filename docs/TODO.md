@@ -1,5 +1,6 @@
 # TODOs
 
+- drag n drop does not trigger the regex conversion
 - two entities: different value for property - will be combined and the last value for the property will be used?
 - to files for content type: remove encodings after ; in graph view
 - content types: add ip to label name for content types seen for a specific host VS general

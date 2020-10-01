@@ -115,8 +115,8 @@ func TestGenerateAllEntities(t *testing.T) {
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
 	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
-		genEntity("entities", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", true, colors[count], newStringField("path", "path to the audit records on disk"))
-		genEntity("entities", d.GetName(), d.GetName(), d.GetDescription(), "", false, "black")
+		genEntity("entities", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", true, colors[count], nil, newStringField("path", "path to the audit records on disk"))
+		genEntity("entities", d.GetName(), d.GetName(), d.GetDescription(), "", false, "black", nil)
 		count++
 
 		if count >= len(colors) {
@@ -126,8 +126,8 @@ func TestGenerateAllEntities(t *testing.T) {
 
 	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		genEntity("entities", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", true, colors[count], newStringField("path", "path to the audit records on disk"))
-		genEntity("entities", name, name, e.Description, "", false, "black")
+		genEntity("entities", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", true, colors[count], nil, newStringField("path", "path to the audit records on disk"))
+		genEntity("entities", name, name, e.Description, "", false, "black", nil)
 		count++
 
 		if count >= len(colors) {
@@ -138,7 +138,7 @@ func TestGenerateAllEntities(t *testing.T) {
 	// generate additional entities after generating the others
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
-		genEntity("entities", e.Name, e.Icon, e.Description, e.Parent, false, "black", e.Fields...)
+		genEntity("entities", e.Name, e.Icon, e.Description, e.Parent, false, "black", nil, e.Fields...)
 	}
 
 	packEntityArchive()
@@ -148,19 +148,19 @@ func TestGenerateAllEntities(t *testing.T) {
 
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
 	genEntityArchive()
-	genEntity("entities", "Vulnerability", "Vulnerability", "A software vulnerability", "", false, "black")
+	genEntity("entities", "Vulnerability", "Vulnerability", "A software vulnerability", "", false, "black", nil)
 	packEntityArchive()
 }
 
 func TestGenerateAndPackPCAPEntity(t *testing.T) {
 	genEntityArchive()
-	genEntity("entities", "PCAP", "sd_storage", "Packet capture file", "", false, "black", newStringField("path", "path to the audit records on disk"))
+	genEntity("entities", "PCAP", "sd_storage", "Packet capture file", "", false, "black", nil, newStringField("path", "path to the audit records on disk"))
 	packEntityArchive()
 }
 
 func TestGenerateAndPackAuditRecordEntity(t *testing.T) {
 	genEntityArchive()
-	genEntity("entities", "IPv4", "IPv4", "IPv4 Audit Records", "", false, "black", newStringField("path", "path to the audit records on disk"))
+	genEntity("entities", "IPv4", "IPv4", "IPv4 Audit Records", "", false, "black", nil, newStringField("path", "path to the audit records on disk"))
 	packEntityArchive()
 }
 
@@ -179,7 +179,13 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
  </Properties>
 </MaltegoEntity>`
 
-	e := newEntity("PCAP", "General/SharkAttack", "Packet capture file", "", false, newStringField("path", "path to the audit records on disk"))
+	e := newEntity("PCAP", "General/SharkAttack", "Packet capture file", "", false, &regexConversion{
+		regex:      "^(.+\\/([^\\/]+)[A-Za-z]*\\.pcap)",
+		properties: []string{
+			"path",
+			"properties.pcap",
+		},
+	}, newStringField("path", "path to the audit records on disk"))
 
 	data, err := xml.MarshalIndent(e, "", " ")
 	if err != nil {
