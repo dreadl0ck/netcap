@@ -10,4 +10,12 @@
    </Field>
   </Fields>
  </Properties>
+ <Converter>
+  <Value>^(.+(\/|\\)(Dot1Q)\.ncap(\.gz)?)</Value>
+  <RegexGroups>
+   <RegexGroup property="path"></RegexGroup>
+   <RegexGroup property=""></RegexGroup>
+   <RegexGroup property="properties.dot1qauditrecords"></RegexGroup>
+  </RegexGroups>
+ </Converter>
 </MaltegoEntity>

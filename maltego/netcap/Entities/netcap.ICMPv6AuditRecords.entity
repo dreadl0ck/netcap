@@ -10,4 +10,12 @@
    </Field>
   </Fields>
  </Properties>
+ <Converter>
+  <Value>^(.+(\/|\\)(ICMPv6)\.ncap(\.gz)?)</Value>
+  <RegexGroups>
+   <RegexGroup property="path"></RegexGroup>
+   <RegexGroup property=""></RegexGroup>
+   <RegexGroup property="properties.icmpv6auditrecords"></RegexGroup>
+  </RegexGroups>
+ </Converter>
 </MaltegoEntity>

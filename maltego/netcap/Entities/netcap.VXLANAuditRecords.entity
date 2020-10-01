@@ -10,4 +10,12 @@
    </Field>
   </Fields>
  </Properties>
+ <Converter>
+  <Value>^(.+(\/|\\)(VXLAN)\.ncap(\.gz)?)</Value>
+  <RegexGroups>
+   <RegexGroup property="path"></RegexGroup>
+   <RegexGroup property=""></RegexGroup>
+   <RegexGroup property="properties.vxlanauditrecords"></RegexGroup>
+  </RegexGroups>
+ </Converter>
 </MaltegoEntity>

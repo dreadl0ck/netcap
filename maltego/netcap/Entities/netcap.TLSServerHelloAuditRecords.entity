@@ -10,4 +10,12 @@
    </Field>
   </Fields>
  </Properties>
+ <Converter>
+  <Value>^(.+(\/|\\)(TLSServerHello)\.ncap(\.gz)?)</Value>
+  <RegexGroups>
+   <RegexGroup property="path"></RegexGroup>
+   <RegexGroup property=""></RegexGroup>
+   <RegexGroup property="properties.tlsserverhelloauditrecords"></RegexGroup>
+  </RegexGroups>
+ </Converter>
 </MaltegoEntity>

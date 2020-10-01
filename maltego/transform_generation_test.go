@@ -239,9 +239,17 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 			"",
 			true,
 			colors[count],
+			&regexConversion{
+				regex: "^(.+(\\/|\\\\)(" + d.GetName() + ")\\.ncap(\\.gz)?)",
+				properties: []string{
+					"path",
+					"",
+					propsPrefix + strings.ToLower(d.GetName()+"AuditRecords"),  // 3rd group contains the name
+				},
+			},
 			newStringField("path", "path to the audit records on disk"),
 		)
-		genEntity(netcapIdent, d.GetName(), d.GetName(), d.GetDescription(), "", false, "black")
+		genEntity(netcapIdent, d.GetName(), d.GetName(), d.GetDescription(), "", false, "black", nil)
 
 		count++
 		if count >= len(colors) {
@@ -259,9 +267,17 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 			"",
 			true,
 			colors[count],
+			&regexConversion{
+				regex: "^(.+(\\/|\\\\)(" + name + ")\\.ncap(\\.gz)?)",
+				properties: []string{
+					"path",
+					"",
+					propsPrefix + strings.ToLower(name+"AuditRecords"), // 3rd group contains the name
+				},
+			},
 			newStringField("path", "path to the audit records on disk"),
 		)
-		genEntity(netcapIdent, name, name, e.Description, "", false, "black")
+		genEntity(netcapIdent, name, name, e.Description, "", false, "black", nil)
 
 		count++
 		if count >= len(colors) {
@@ -272,7 +288,18 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	// generate additional entities after generating the others
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
-		genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", e.Fields...)
+		if e.Name == "PCAP" {
+			genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", &regexConversion{
+				regex: "^(.+(\\/|\\\\)([^(\\/|\\\\)]+)[A-Za-z]*\\.pcap(ng)?)",
+				properties: []string{
+					"path", // 1st group matches full path
+					"",
+					"properties.pcap", // 3rd group contains the pcap filename
+				},
+			}, e.Fields...)
+		} else {
+			genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", nil, e.Fields...)
+		}
 	}
 
 	for _, tr := range transforms {
