@@ -4,7 +4,6 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/collector"
@@ -39,7 +38,6 @@ func toAuditRecordsUsingDPI() {
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
 	maltegoBaseConfig.DecoderConfig.Source = inputFile
-	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, defaults.FileStorage)
 	maltegoBaseConfig.DPI = true
 
 	// init collector

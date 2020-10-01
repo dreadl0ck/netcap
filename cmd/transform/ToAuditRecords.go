@@ -125,7 +125,6 @@ func toAuditRecords() {
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
 	maltegoBaseConfig.DecoderConfig.Source = inputFile
-	maltegoBaseConfig.DecoderConfig.FileStorage = filepath.Join(outDir, defaults.FileStorage)
 
 	// init collector
 	c := collector.New(maltegoBaseConfig)
