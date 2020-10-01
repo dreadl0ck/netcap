@@ -27,7 +27,7 @@ func openFlowInWireshark() {
 	var (
 		lt              = maltego.ParseLocalArguments(os.Args)
 		trx             = &maltego.Transform{}
-		in              = strings.TrimSuffix(filepath.Dir(lt.Values["path"]), ".net")
+		in              = strings.TrimSuffix(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), ".net")
 		bpf             = makeConnectionBPF(lt)
 		outFile, exists = makeOutFilePath(in, bpf, lt, false, "")
 		args            = []string{"-r", in, "-w", outFile, bpf}

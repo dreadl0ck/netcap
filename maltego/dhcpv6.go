@@ -36,7 +36,7 @@ type DHCPV6TransformationFunc = func(lt LocalTransform, trx *Transform, dhcp *ty
 func DHCPV6Transform(count DHCPCountFunc, transform DHCPV6TransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
 	)

@@ -40,7 +40,7 @@ type UDPTransformationFunc = func(lt LocalTransform, trx *Transform, udp *types.
 func UDPTransform(count UDPCountFunc, transform UDPTransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
 	)

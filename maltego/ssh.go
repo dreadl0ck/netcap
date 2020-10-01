@@ -40,7 +40,7 @@ type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
 func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 

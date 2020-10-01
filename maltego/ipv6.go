@@ -39,7 +39,7 @@ type IPv6TransformationFunc = func(lt LocalTransform, trx *Transform, ipv6 *type
 func IPv6Transform(count ipv6CountFunc, transform IPv6TransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}

@@ -131,7 +131,7 @@ func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 func LoadMails() map[string]*types.Mail {
 	var (
 		lt    = ParseLocalArguments(os.Args[1:])
-		path  = filepath.Join(filepath.Dir(lt.Values["path"]), "Mail.ncap.gz")
+		path  = filepath.Join(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), "Mail.ncap.gz")
 		mails = make(map[string]*types.Mail)
 	)
 

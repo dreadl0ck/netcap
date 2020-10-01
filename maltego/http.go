@@ -41,7 +41,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	var (
 		lt               = ParseLocalArguments(os.Args[1:])
 		ipaddr           = lt.Values[PropertyIpAddr]
-		dir              = filepath.Dir(lt.Values["path"])
+		dir              = filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://"))
 		httpAuditRecords = filepath.Join(dir, "HTTP.ncap.gz")
 		trx              = Transform{}
 	)
