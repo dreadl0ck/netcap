@@ -37,7 +37,7 @@ type IPv6HopByHopTransformationFunc = func(lt LocalTransform, trx *Transform, ip
 func IPv6HopByHopTransform(count ipv6CountFunc, transform IPv6HopByHopTransformationFunc) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}

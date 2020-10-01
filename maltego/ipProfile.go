@@ -54,7 +54,7 @@ type IPProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profi
 func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformationFunc) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
@@ -154,7 +154,7 @@ func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformat
 func LoadIPProfiles() map[string]*types.IPProfile {
 	var (
 		lt       = ParseLocalArguments(os.Args[1:])
-		path     = filepath.Join(filepath.Dir(lt.Values["path"]), "IPProfile.ncap.gz")
+		path     = filepath.Join(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), "IPProfile.ncap.gz")
 		profiles = make(map[string]*types.IPProfile)
 		err      error
 	)

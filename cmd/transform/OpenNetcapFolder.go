@@ -19,6 +19,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func openNetcapFolder() {
@@ -27,7 +28,7 @@ func openNetcapFolder() {
 		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenCommand(
 			[]string{
-				lt.Values["path"] + ".net",
+				strings.TrimPrefix(lt.Values["path"], "file://") + ".net",
 			},
 		)
 	)

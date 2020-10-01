@@ -40,7 +40,7 @@ type IGMPTransformationFunc = func(lt LocalTransform, trx *Transform, igmp *type
 func IGMPTransform(count IGMPCountFunc, transform IGMPTransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
 	)

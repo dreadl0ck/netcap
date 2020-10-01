@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func openNetcapFolderInTerminal() {
@@ -13,7 +14,9 @@ func openNetcapFolderInTerminal() {
 		lt                    = maltego.ParseLocalArguments(os.Args)
 		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenTerminalCommand(
-			[]string{lt.Values["path"] + ".net"},
+			[]string{
+				strings.TrimPrefix(lt.Values["path"], "file://") + ".net",
+			},
 		)
 	)
 

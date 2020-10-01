@@ -95,7 +95,7 @@ func openConnectionInWireshark() {
 		lt              = maltego.ParseLocalArguments(os.Args[1:])
 		trx             = &maltego.Transform{}
 		bpf             = makeConnectionBPF(lt)
-		in              = strings.TrimSuffix(filepath.Dir(lt.Values["path"]), ".net")
+		in              = strings.TrimSuffix(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), ".net")
 		outFile, exists = makeOutFilePath(in, bpf, lt, false, "")
 		args            = []string{"-r", in, "-w", outFile, bpf}
 	)

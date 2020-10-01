@@ -40,7 +40,7 @@ type TCPTransformationFunc = func(lt LocalTransform, trx *Transform, tcp *types.
 func TCPTransform(count TCPCountFunc, transform TCPTransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}
 	)

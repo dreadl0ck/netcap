@@ -39,7 +39,7 @@ type softwareCountFunc = func(software *types.Software, mac string, min, max *ui
 func SoftwareTransform(count softwareCountFunc, transform softwareTransformationFunc) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 

@@ -38,7 +38,7 @@ type credentialsCountFunc = func(credentials *types.Credentials, mac string, min
 func CredentialsTransform(count credentialsCountFunc, transform credentialsTransformationFunc) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}

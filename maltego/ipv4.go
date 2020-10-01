@@ -39,7 +39,7 @@ type IPv4TransformationFunc = func(lt LocalTransform, trx *Transform, ipv4 *type
 func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = Transform{}

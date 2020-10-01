@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/env"
@@ -73,7 +74,7 @@ func openContentTypeFolder() {
 		openCommandName, args = createOpenCommand(
 			[]string{
 				filepath.Join(
-					filepath.Dir(lt.Values["path"]),
+					filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")),
 					defaults.FileStorage,
 					lt.Values["properties.contenttype"],
 				),

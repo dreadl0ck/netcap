@@ -39,7 +39,7 @@ type serviceCountFunc = func(service *types.Service, mac string, min, max *uint6
 func ServiceTransform(count serviceCountFunc, transform serviceTransformationFunc, continueTransform bool) {
 	var (
 		lt     = ParseLocalArguments(os.Args[1:])
-		path   = lt.Values["path"]
+		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 
