@@ -11,7 +11,7 @@
   </Fields>
  </Properties>
  <Converter>
-  <Value>^(.+(\/|\\)([^(\/|\\)]+)[A-Za-z]*\.pcap(ng)?)</Value>
+  <Value>^(.+(\/|\\)(.*)\.pcap(ng)?)</Value>
   <RegexGroups>
    <RegexGroup property="path"></RegexGroup>
    <RegexGroup property=""></RegexGroup>
