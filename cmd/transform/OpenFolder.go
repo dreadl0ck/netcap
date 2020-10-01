@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 func openFolder() {
@@ -27,7 +28,7 @@ func openFolder() {
 		lt                    = maltego.ParseLocalArguments(os.Args)
 		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenCommand(
-			[]string{filepath.Dir(lt.Values["location"])},
+			[]string{filepath.Dir(strings.TrimPrefix(lt.Values["location"], "file://"))},
 		)
 	)
 

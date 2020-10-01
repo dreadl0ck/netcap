@@ -18,7 +18,7 @@ func toPhoneNumbersFromFile() {
 	var (
 		lt   = maltego.ParseLocalArguments(os.Args)
 		trx  = &maltego.Transform{}
-		path = lt.Values["location"]
+		path = strings.TrimPrefix(lt.Values["location"], "file://")
 		err  error
 	)
 
