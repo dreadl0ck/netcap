@@ -12,7 +12,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-func toAuditRecordsWithDPI() {
+func toAuditRecordsUsingDPI() {
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = strings.TrimPrefix(lt.Values["path"], "file://")

@@ -38,7 +38,7 @@ func Run() {
 		stopCaptureProcess,
 		toAuditRecords,
 		toLiveAuditRecords,
-		toAuditRecordsWithDPI,
+		toAuditRecordsUsingDPI,
 		openNetcapFolder,
 		toFileTypesForIP,
 		toSoftwareExploits,
