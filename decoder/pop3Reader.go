@@ -205,8 +205,17 @@ func (h *pop3Reader) Decode() {
 	}
 }
 
-// TODO: use saveFile to extract attachments.
 func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encoding []string, host string) error {
+
+	decoderLog.Info("pop3Reader.saveFile",
+		zap.String("source", source),
+		zap.String("name", name),
+		zap.Error(err),
+		zap.Int("bodyLength", len(body)),
+		zap.Strings("encoding", encoding),
+		zap.String("host", host),
+	)
+
 	// prevent saving zero bytes
 	if len(body) == 0 {
 		return nil

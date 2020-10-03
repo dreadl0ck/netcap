@@ -37,6 +37,25 @@ machine("netcap.AnalyzeNetworkTraffic",
             }
 
             path {
+                run("netcap.ToNTPHosts")
+            }
+            path {
+                run("netcap.ToUDPHosts")
+            }
+            path {
+                run("netcap.ToTCPFlagCombinations")
+            }
+            path {
+                run("netcap.ToEthernetTypes")
+            }
+            path {
+                run("netcap.ToIPV6TrafficClasses")
+            }
+            path {
+                run("netcap.ToIPV4Protocols")
+            }
+
+            path {
                 run("netcap.ToDevices")
 
                 paths {
@@ -52,7 +71,7 @@ machine("netcap.AnalyzeNetworkTraffic",
                                 run("netcap.ToHTTPUserAgents")
                             }
                             path {
-                                run("netcap.ToURLsForHost")
+                                run("netcap.ToHTTPUniformResourceLocators")
                             }
                             path {
                                 run("netcap.ToHTTPContentTypes")
