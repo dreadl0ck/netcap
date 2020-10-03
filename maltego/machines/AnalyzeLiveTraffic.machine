@@ -55,6 +55,36 @@ machine("netcap.AnalyzeLiveTraffic",
                 run("netcap.ToIPV4Protocols")
             }
 
+
+            path {
+                run("netcap.ToEmails")
+            }
+            path {
+                run("netcap.ToHosts")
+            }
+            path {
+                run("netcap.ToIGMPTypes")
+            }
+            path {
+                run("netcap.ToIGMPGroupRecordTypes")
+            }
+            path {
+                run("netcap.ToLinkTypes")
+            }
+
+            path {
+                run("netcap.ToDHCPV6MessageTypes")
+            }
+            path {
+                run("netcap.ToDHCPV6Options")
+            }
+            path {
+                run("netcap.ToICMPV4ControlMessages")
+            }
+            path {
+                run("netcap.ToICMPV6ControlMessages")
+            }
+
             path {
                 run("netcap.ToDevices")
 

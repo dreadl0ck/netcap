@@ -56,6 +56,35 @@ machine("netcap.AnalyzeNetworkTraffic",
             }
 
             path {
+                run("netcap.ToEmails")
+            }
+            path {
+                run("netcap.ToHosts")
+            }
+            path {
+                run("netcap.ToIGMPTypes")
+            }
+            path {
+                run("netcap.ToIGMPGroupRecordTypes")
+            }
+            path {
+                run("netcap.ToLinkTypes")
+            }
+
+            path {
+                run("netcap.ToDHCPV6MessageTypes")
+            }
+            path {
+                run("netcap.ToDHCPV6Options")
+            }
+            path {
+                run("netcap.ToICMPV4ControlMessages")
+            }
+            path {
+                run("netcap.ToICMPV6ControlMessages")
+            }
+
+            path {
                 run("netcap.ToDevices")
 
                 paths {
@@ -69,9 +98,6 @@ machine("netcap.AnalyzeNetworkTraffic",
                             }
                             path {
                                 run("netcap.ToHTTPUserAgents")
-                            }
-                            path {
-                                run("netcap.ToHTTPUniformResourceLocators")
                             }
                             path {
                                 run("netcap.ToHTTPContentTypes")
