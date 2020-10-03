@@ -86,6 +86,9 @@ machine("netcap.AnalyzeNetworkTraffic",
             path {
                 run("netcap.ToSMTPCommandTypes")
             }
+            path {
+                run("netcap.ToDNSOpCodes")
+            }
 
             path {
                 run("netcap.ToDevices")

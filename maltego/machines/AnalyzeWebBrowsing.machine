@@ -87,6 +87,9 @@ machine("netcap.AnalyzeWebBrowsing",
             path {
                 run("netcap.ToSMTPCommandTypes")
             }
+            path {
+                run("netcap.ToDNSOpCodes")
+            }
 
             path {
                 run("netcap.ToDevices")
