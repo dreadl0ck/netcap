@@ -83,6 +83,9 @@ machine("netcap.AnalyzeNetworkTraffic",
             path {
                 run("netcap.ToICMPV6ControlMessages")
             }
+            path {
+                run("netcap.ToSMTPCommandTypes")
+            }
 
             path {
                 run("netcap.ToDevices")

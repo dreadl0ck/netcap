@@ -84,6 +84,9 @@ machine("netcap.AnalyzeWebBrowsing",
             path {
                 run("netcap.ToICMPV6ControlMessages")
             }
+            path {
+                run("netcap.ToSMTPCommandTypes")
+            }
 
             path {
                 run("netcap.ToDevices")
