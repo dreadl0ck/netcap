@@ -58,7 +58,7 @@ func (t *testFactoryBench) Accept(*layers.TCP, TCPFlowDirection, Sequence) bool 
 func (t *testFactoryBench) ReassembledSG(ScatterGather, AssemblerContext) {
 }
 
-func (t *testFactoryBench) ReassemblyComplete(AssemblerContext, gopacket.Flow) bool {
+func (t *testFactoryBench) ReassemblyComplete(AssemblerContext, gopacket.Flow, string) bool {
 	return true
 }
 
@@ -89,7 +89,7 @@ func (t *testFactory) ReassembledSG(sg ScatterGather, _ AssemblerContext) {
 	})
 }
 
-func (t *testFactory) ReassemblyComplete(AssemblerContext, gopacket.Flow) bool {
+func (t *testFactory) ReassemblyComplete(AssemblerContext, gopacket.Flow, string) bool {
 	return true
 }
 
@@ -115,7 +115,7 @@ func (tf *testMemoryFactory) ReassembledSG(sg ScatterGather, _ AssemblerContext)
 	tf.bytes += bytes
 }
 
-func (tf *testMemoryFactory) ReassemblyComplete(AssemblerContext, gopacket.Flow) bool {
+func (tf *testMemoryFactory) ReassemblyComplete(AssemblerContext, gopacket.Flow, string) bool {
 	return true
 }
 
