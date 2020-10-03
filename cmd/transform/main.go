@@ -136,6 +136,7 @@ func Run() {
 		toHostsForService,
 		toServices,
 		toServiceTypes,
+		toSMTPCommandTypes,
 		toIANAServices,
 		toConnectionsForService,
 		toConnectionsForHost,
