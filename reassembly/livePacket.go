@@ -7,7 +7,6 @@ type livePacket struct {
 	bytes []byte
 	start bool
 	end   bool
-	ci    gopacket.CaptureInfo
 	ac    AssemblerContext
 	seq   Sequence
 }
@@ -17,7 +16,7 @@ func (lp *livePacket) getBytes() []byte {
 }
 
 func (lp *livePacket) captureInfo() gopacket.CaptureInfo {
-	return lp.ci
+	return lp.ac.GetCaptureInfo()
 }
 
 func (lp *livePacket) assemblerContext() AssemblerContext {
@@ -47,7 +46,7 @@ func (lp *livePacket) isPacket() bool {
 // Creates a page (or set of pages) from a TCP packet: returns the first and last
 // page in its doubly-linked list of new pages.
 func (lp *livePacket) convertToPages(pc *pageCache, skip int, ac AssemblerContext) (*page, *page, int) {
-	ts := lp.ci.Timestamp
+	ts := lp.captureInfo().Timestamp
 	first := pc.next(ts)
 	current := first
 	current.prev = nil

@@ -287,7 +287,7 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 	}
 
-	action = a.handleBytes(bytes, seq, half, ac.GetCaptureInfo(), t.SYN, t.RST || t.FIN, action, ac)
+	action = a.handleBytes(bytes, seq, half, t.SYN, t.RST || t.FIN, action, ac)
 	if len(a.ret) > 0 {
 		action.nextSeq = a.sendToConnection(conn, half)
 	}
@@ -540,13 +540,12 @@ func (a *Assembler) overlapExisting(half *halfconnection, start Sequence, bytes 
 }
 
 // handleBytes will prepare send or queue the data.
-func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection, ci gopacket.CaptureInfo, start bool, end bool, action assemblerAction, ac AssemblerContext) assemblerAction {
+func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection, start bool, end bool, action assemblerAction, ac AssemblerContext) assemblerAction {
 	// TODO: remove for production?
 	a.cacheLP.bytes = bytes
 	a.cacheLP.start = start
 	a.cacheLP.end = end
 	a.cacheLP.seq = seq
-	a.cacheLP.ci = ci
 	a.cacheLP.ac = ac
 
 	if action.queue {
