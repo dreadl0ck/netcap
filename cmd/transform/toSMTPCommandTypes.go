@@ -31,7 +31,7 @@ func toSMTPCommandTypes() {
 	for command, num := range commands {
 		ent := trx.AddEntityWithPath("netcap.SMTPCommandType", getSMTPCommandName(command), pathName)
 		ent.AddProperty("code", "Code", maltego.Strict, strconv.Itoa(int(command)))
-		ent.SetLinkLabel(strconv.Itoa(int(num))))
+		ent.SetLinkLabel(strconv.Itoa(int(num)))
 		// TODO: num pkts / set thickness
 		//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
 	}
