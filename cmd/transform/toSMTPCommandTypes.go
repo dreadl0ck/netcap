@@ -5,7 +5,6 @@ import (
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dustin/go-humanize"
 	"strconv"
 )
 
@@ -32,7 +31,7 @@ func toSMTPCommandTypes() {
 	for command, num := range commands {
 		ent := trx.AddEntityWithPath("netcap.SMTPCommandType", getSMTPCommandName(command), pathName)
 		ent.AddProperty("code", "Code", maltego.Strict, strconv.Itoa(int(command)))
-		ent.SetLinkLabel(humanize.Bytes(uint64(num)))
+		ent.SetLinkLabel(strconv.Itoa(int(num))))
 		// TODO: num pkts / set thickness
 		//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
 	}
