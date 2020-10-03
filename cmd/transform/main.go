@@ -75,6 +75,7 @@ func Run() {
 		toDHCP,
 		toDHCPV6MessageTypes,
 		toDHCPV6Options,
+		toDNSOpCodes,
 		openFolder,
 		toDestinationIPs,
 		toSourceIPs,

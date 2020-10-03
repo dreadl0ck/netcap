@@ -60,7 +60,8 @@ var maltegoEntities = []entityCoreInfo{
 	{"LinkType", "power_input", "An ARP Link Type", "", nil},
 	{"IGMPType", "panorama_fish_eye", "An IGMP type", "", nil},
 	{"IGMPGroupRecordType", "group", "An IGMPv3 group record type", "", nil},
-	{"SMTPCommandType", "all_inbox", "An SMTP command type", "", nil},
+	{"SMTPCommandType", "all_inbox", "A SMTP command type", "", nil},
+	{"DNSOpCode", "api", "A DNS op code", "", nil},
 
 	{"DHCPv6MessageType", "chat", "A DHCPv6 message type", "", nil},
 	{"DHCPv6Option", "read_more", "A DHCPv6 option", "", nil},
