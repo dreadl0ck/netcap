@@ -87,7 +87,7 @@ var (
 	flagListInterfaces = fs.Bool("interfaces", false, "list all visible network interfaces")
 	flagQuiet          = fs.Bool("quiet", false, "don't print infos to stdout")
 
-	flagFileStorage = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
+	flagFileStorage = fs.String("fileStorage", "files", "path to created extracted files")
 
 	flagReverseDNS    = fs.Bool("reverse-dns", false, "resolve ips to domains via the operating systems default dns resolver")
 	flagLocalDNS      = fs.Bool("local-dns", false, "resolve DNS locally via hosts file in the database dir")
@@ -101,7 +101,7 @@ var (
 	flagReassembleConnections = fs.Bool("reassemble-connections", true, "reassemble TCP connections")
 
 	flagTCPDebug  = fs.Bool("tcp-debug", false, "add debug output for TCP connections to debug.log")
-	flagSaveConns = fs.Bool("conns", false, "save raw TCP connections")
+	flagSaveConns = fs.Bool("conns", true, "save raw TCP connections")
 
 	flagCalcEntropy = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
 	flagLogErrors   = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
