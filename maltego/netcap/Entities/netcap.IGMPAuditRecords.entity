@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.IGMPAuditRecords" displayName="IGMPAuditRecords" displayNamePlural="IGMPAuditRecords" description="An archive of IGMP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_rosybrown" largeIconResource="Netcap/insert_drive_file_rosybrown" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.IGMPAuditRecords" displayName="IGMPAuditRecords" displayNamePlural="IGMPAuditRecords" description="An archive of IGMP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_sandybrown" largeIconResource="Netcap/insert_drive_file_sandybrown" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.igmpauditrecords" displayValue="properties.igmpauditrecords">
   <Groups></Groups>
   <Fields>

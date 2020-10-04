@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.VXLANAuditRecords" displayName="VXLANAuditRecords" displayNamePlural="VXLANAuditRecords" description="An archive of VXLAN audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_orangered" largeIconResource="Netcap/insert_drive_file_orangered" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.VXLANAuditRecords" displayName="VXLANAuditRecords" displayNamePlural="VXLANAuditRecords" description="An archive of VXLAN audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_crimson" largeIconResource="Netcap/insert_drive_file_crimson" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.vxlanauditrecords" displayValue="properties.vxlanauditrecords">
   <Groups></Groups>
   <Fields>

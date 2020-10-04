@@ -20,7 +20,7 @@ func toTCPFlagCombinations() {
 			if pathName == "" {
 				pathName = path
 			}
-			idents[flagsToString(tcp)]++
+			idents[tcpFlagsToString(tcp)]++
 		},
 		true,
 	)
@@ -35,7 +35,7 @@ func toTCPFlagCombinations() {
 	fmt.Println(trx.ReturnOutput())
 }
 
-func flagsToString(tcp *types.TCP) string {
+func tcpFlagsToString(tcp *types.TCP) string {
 
 	var arr = make([]string, 0, 9)
 

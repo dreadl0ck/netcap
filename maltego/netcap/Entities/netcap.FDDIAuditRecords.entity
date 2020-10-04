@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.FDDIAuditRecords" displayName="FDDIAuditRecords" displayNamePlural="FDDIAuditRecords" description="An archive of FDDI audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_thistle" largeIconResource="Netcap/insert_drive_file_thistle" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.FDDIAuditRecords" displayName="FDDIAuditRecords" displayNamePlural="FDDIAuditRecords" description="An archive of FDDI audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_magenta" largeIconResource="Netcap/insert_drive_file_magenta" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.fddiauditrecords" displayValue="properties.fddiauditrecords">
   <Groups></Groups>
   <Fields>

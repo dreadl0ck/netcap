@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.GREAuditRecords" displayName="GREAuditRecords" displayNamePlural="GREAuditRecords" description="An archive of GRE audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_green" largeIconResource="Netcap/insert_drive_file_green" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.GREAuditRecords" displayName="GREAuditRecords" displayNamePlural="GREAuditRecords" description="An archive of GRE audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_thistle" largeIconResource="Netcap/insert_drive_file_thistle" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.greauditrecords" displayValue="properties.greauditrecords">
   <Groups></Groups>
   <Fields>
