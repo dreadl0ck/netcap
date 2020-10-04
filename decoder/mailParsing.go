@@ -82,7 +82,7 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 
 func parseMail(parent *tcpConnection, buf []byte, from, to string, logger *log.Logger, origin string) *types.Mail {
 
-	log.Println(ansi.Yellow, "parseMail, from:", from, "to:", to, parent.ident, "\n", string(buf), ansi.Reset)
+	logger.Println(ansi.Yellow, "parseMail, from:", from, "to:", to, parent.ident, "\n", string(buf), ansi.Reset)
 
 	var (
 		hdr, body = splitMailHeaderAndBody(buf)
