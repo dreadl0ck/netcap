@@ -662,8 +662,8 @@ func writeSoftware(software []*software, update func(s *software)) {
 
 		// trim version field if its too long
 		// likely a regex matched too much text
-		if len(s.Version) > 10 {
-			s.Version = s.Version[:10] + "..."
+		if len(s.Version) > 15 {
+			s.Version = s.Version[:15] + "..."
 		}
 		s.Unlock()
 		if item, ok := softwareStore.Items[ident]; ok {

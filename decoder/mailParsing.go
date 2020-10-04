@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/araddon/dateparse"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/mgutz/ansi"
@@ -103,8 +104,8 @@ func parseMail(parent *tcpConnection, buf []byte, from, to string, logger *log.L
 	}
 
 	mail := &types.Mail{
-		ReturnPath:      hdr["Return-Path"],
 		Timestamp:       ti,
+		ReturnPath:      hdr["Return-Path"],
 		DeliveryDate:    hdr["Delivery-Date"],
 		From:            from,
 		To:              to,
@@ -135,6 +136,61 @@ func parseMail(parent *tcpConnection, buf []byte, from, to string, logger *log.L
 			}
 
 			break
+		}
+	}
+
+	// software detection: check User-Agent header
+	if ua := hdr["User-Agent"]; ua != "" {
+
+		pMu.Lock()
+
+		userInfo, ok := userAgentCaching[ua]
+		if !ok {
+			userInfo = parseUserAgent(ua)
+			userAgentCaching[ua] = userInfo
+			decoderLog.Debug("UserAgent:", zap.String("userInfo", userInfo.full))
+		}
+
+		pMu.Unlock()
+
+		if userInfo.product != "" || userInfo.vendor != "" || userInfo.version != "" {
+			writeSoftware([]*software{
+				{
+					Software: &types.Software{
+						Timestamp: ti,
+						Product:   userInfo.product,
+						Vendor:    userInfo.vendor,
+						Version:   userInfo.version,
+						// DeviceProfiles: []string{dpIdent},
+						SourceName: "Mail UserAgent",
+						SourceData: ua,
+						Service:    origin,
+						Flows:      []string{parent.ident},
+						Notes:      userInfo.full,
+						OS:         userInfo.os,
+					},
+				},
+			}, nil)
+		}
+	}
+
+	// software detection: check X-Mailer header
+	if xm := hdr["X-Mailer"]; xm != "" {
+		if matches := reGenericVersion.FindStringSubmatch(xm); len(matches) > 0 {
+			fmt.Println(matches)
+			writeSoftware([]*software{
+				{
+					Software: &types.Software{
+						Timestamp:  ti,
+						Product:    strings.TrimSpace(matches[1]),
+						Vendor:     strings.Split(matches[1], " ")[0],
+						Version:    strings.TrimPrefix(matches[0], matches[1]),
+						SourceName: "X-Mailer",
+						Service:    origin,
+						Flows:      []string{parent.ident},
+					},
+				},
+			}, nil)
 		}
 	}
 
