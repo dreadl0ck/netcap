@@ -1,7 +1,5 @@
 # TODOs
 
-- remove SMTP support from gopacket fork
-
 - SMTP transforms
 - DNS transforms
     - toDNSFlags
