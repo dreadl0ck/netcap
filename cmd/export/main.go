@@ -147,12 +147,13 @@ func Run() {
 				ClosePendingTimeOut:  *flagClosePendingTimeout,
 				FileStorage:          *flagFileStorage,
 				CalculateEntropy:     *flagCalcEntropy,
+				Quiet:                false,
+				PrintProgress:        false,
 			},
 			BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 			DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 			// FileStorage:   defaults.FileStorage, // TODO:
-			Quiet: false,
-			DPI:   *flagDPI,
+			DPI: *flagDPI,
 			ResolverConfig: resolvers.Config{
 				ReverseDNS:    *flagReverseDNS,
 				LocalDNS:      *flagLocalDNS,

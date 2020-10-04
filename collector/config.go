@@ -36,7 +36,6 @@ var DefaultConfig = Config{
 	DPI:                 false,
 	BaseLayer:           utils.GetBaseLayer("ethernet"),
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
-	Quiet:               false,
 	DecoderConfig:       decoder.DefaultConfig,
 	ResolverConfig:      resolvers.DefaultConfig,
 	LogErrors:           false,
@@ -53,7 +52,6 @@ var DefaultConfigDPI = Config{
 	DPI:                 true,
 	BaseLayer:           utils.GetBaseLayer("ethernet"),
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
-	Quiet:               false,
 	DecoderConfig:       decoder.DefaultConfig,
 	ResolverConfig:      resolvers.DefaultConfig,
 	LogErrors:           false,
@@ -96,9 +94,6 @@ type Config struct {
 
 	// Decoding options for gopacket
 	DecodeOptions gopacket.DecodeOptions
-
-	// Dont print any output to the console
-	Quiet bool
 
 	// Enable deep packet inspection
 	DPI bool

@@ -32,6 +32,7 @@ var (
 	// used for colored debug logging
 	serviceLog *log.Logger
 	pop3Log    *log.Logger
+	smtpLog    *log.Logger
 )
 
 // SetDecoderLogger sets the general decoder logger for the decoder package.
@@ -54,4 +55,9 @@ func SetServiceLogger(lg *log.Logger) {
 // SetPOP3Logger sets the pop3 logger for the decoder package.
 func SetPOP3Logger(lg *log.Logger) {
 	pop3Log = lg
+}
+
+// SetPOP3Logger sets the pop3 logger for the decoder package.
+func SetSMTPLogger(lg *log.Logger) {
+	smtpLog = lg
 }

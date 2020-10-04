@@ -1,9 +1,19 @@
 # TODOs
 
+- remove SMTP support from gopacket fork
+- integrate software detection in smtp parsing
+
+e.g via X headers:
+
+    X-Mailer: Microsoft Outlook Express 6.00.3790.3959
+    X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.3959
+
 - SMTP transforms
 - DNS transforms
     - toDNSFlags
     - toDNSResponseCodes
+    
+- buffer writing extracted streams to disk
 
 - add UDP stream decoder support
 - flushing of UDP and TCP streams

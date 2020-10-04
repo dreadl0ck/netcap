@@ -59,7 +59,7 @@ func (c *Collector) printProgressLive() {
 
 	if c.current%1000 == 0 {
 		c.clearLine()
-		if !c.config.Quiet {
+		if !c.config.DecoderConfig.Quiet {
 			fmt.Print("running since ", time.Since(c.start), ", captured ", c.current, " packets...")
 		}
 	}
@@ -72,7 +72,7 @@ func dumpProto(pb proto.Message) {
 }
 
 func (c *Collector) clearLine() {
-	if !c.config.Quiet {
+	if !c.config.DecoderConfig.Quiet {
 		print("\033[2K\r")
 	}
 }
@@ -106,7 +106,7 @@ func rawBPF(filter string) ([]bpf.RawInstruction, error) {
 }
 
 func (c *Collector) printlnStdOut(args ...interface{}) {
-	if c.config.Quiet {
+	if c.config.DecoderConfig.Quiet {
 		_, _ = fmt.Fprintln(c.netcapLogFile, args...)
 	} else {
 		_, _ = fmt.Fprintln(c.netcapLogFile, args...)
@@ -115,7 +115,7 @@ func (c *Collector) printlnStdOut(args ...interface{}) {
 }
 
 func (c *Collector) printStdOut(args ...interface{}) {
-	if c.config.Quiet {
+	if c.config.DecoderConfig.Quiet {
 		_, _ = fmt.Fprint(c.netcapLogFile, args...)
 	} else {
 		_, _ = fmt.Fprint(os.Stdout, args...)

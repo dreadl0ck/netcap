@@ -238,8 +238,11 @@ type Config struct {
 	// fatal should be invoked in the init function to crash and indicate failure.
 	IgnoreDecoderInitErrors bool
 
-	// Quiet disables logging to stdout
+	// Dont print any output to the console
 	Quiet bool
+
+	// Force printing progress to stderr even in quiet mode
+	PrintProgress bool
 
 	// TCPStreamProcessor
 	StreamBufferSize int

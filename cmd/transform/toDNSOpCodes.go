@@ -12,7 +12,7 @@ func toDNSOpCodes() {
 
 	var (
 		// dns op code to number of occurrences
-		codes        = make(map[int32]int64)
+		codes    = make(map[int32]int64)
 		pathName string
 	)
 

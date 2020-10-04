@@ -32,7 +32,6 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
-	"time"
 	"unicode"
 
 	"github.com/araddon/dateparse"
@@ -345,7 +344,7 @@ func (h *pop3Reader) saveFile(source, name string, err error, body []byte, encod
 	return nil
 }
 
-func mailDebug(args ...interface{}) {
+func pop3Debug(args ...interface{}) {
 	pop3Log.Println(args...)
 }
 
@@ -365,7 +364,7 @@ func (h *pop3Reader) readRequest(b *bufio.Reader) error {
 		return err
 	}
 
-	mailDebug(ansi.Red, h.parent.ident, "readRequest", line, ansi.Reset)
+	pop3Debug(ansi.Red, h.parent.ident, "readRequest", line, ansi.Reset)
 
 	cmd, args := getCommand(line)
 
@@ -396,7 +395,7 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 		return err
 	}
 
-	mailDebug(ansi.Blue, h.parent.ident, "readResponse", line, ansi.Reset)
+	pop3Debug(ansi.Blue, h.parent.ident, "readResponse", line, ansi.Reset)
 
 	cmd, args := getCommand(line)
 
@@ -478,11 +477,7 @@ func (h *pop3Reader) parseMails() (mailIDs []string, user, pass, token string) {
 				var n int
 				// ensure safe array access
 				if len(h.pop3Responses) < h.resIndex {
-					time.Sleep(100 * time.Millisecond) // not there yet? wait a little and retry
-
-					if len(h.pop3Responses) < h.resIndex {
-						continue
-					}
+					continue
 				}
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
@@ -502,11 +497,7 @@ func (h *pop3Reader) parseMails() (mailIDs []string, user, pass, token string) {
 				var n int
 				// ensure safe array access
 				if len(h.pop3Responses) < h.resIndex {
-					time.Sleep(100 * time.Millisecond) // not there yet? wait a little and retry
-
-					if len(h.pop3Responses) < h.resIndex {
-						continue
-					}
+					continue
 				}
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
@@ -617,8 +608,13 @@ func (h *pop3Reader) parseMails() (mailIDs []string, user, pass, token string) {
 				continue
 			case "QUIT":
 				return
+			case "STAT":
+				h.resIndex++
+
+				continue
 			default:
-				log.Println("unhandled POP3 command: ", r.Command)
+				pop3Debug("unhandled POP3 command: ", r.Command)
+				h.resIndex++
 			}
 		}
 		h.resIndex++
@@ -647,6 +643,8 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 		}
 
 		if line == "" {
+			// newline means begin of email body for SMTP
+			collectBody = true
 			continue
 		}
 
@@ -661,6 +659,7 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 		// multi line values start with a whitespace
 		if len(parts[0]) > 0 && unicode.IsUpper(rune(parts[0][0])) {
 			if parts[0] == "Envelope-To" {
+				// Envelope-To means begin of email body for POP3
 				collectBody = true
 			}
 			header[parts[0]] = strings.Join(parts[1:], ": ")
@@ -673,13 +672,14 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 }
 
 func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
-	mailDebug(ansi.Yellow, "parseMail", h.parent.ident, ansi.Reset)
+	pop3Debug(ansi.Yellow, "parseMail", h.parent.ident, ansi.Reset)
 
-	header, body := splitMailHeaderAndBody(buf)
+	var (
+		hdr, body = splitMailHeaderAndBody(buf)
+		ti int64
+	)
 
-	var ti int64
-
-	ts, err := dateparse.ParseAny(header["Delivery-Date"])
+	ts, err := dateparse.ParseAny(hdr["Delivery-Date"])
 	if err != nil {
 		decoderLog.Error("failed to parse delivery date string from mail header", zap.Error(err))
 	} else {
@@ -687,21 +687,21 @@ func (h *pop3Reader) parseMail(buf []byte) *types.Mail {
 	}
 
 	mail := &types.Mail{
-		ReturnPath:      header["Return-Path"],
+		ReturnPath:      hdr["Return-Path"],
 		Timestamp:       ti,
-		DeliveryDate:    header["Delivery-Date"],
-		From:            header["From"],
-		To:              header["To"],
-		CC:              header["CC"],
-		Subject:         header["Subject"],
-		Date:            header["Date"],
-		MessageID:       header["Message-ID"],
-		References:      header["References"],
-		InReplyTo:       header["In-Reply-To"],
-		ContentLanguage: header["Content-Language"],
-		XOriginatingIP:  header["x-originating-ip"],
-		ContentType:     header[headerContentType],
-		EnvelopeTo:      header["Envelope-To"],
+		DeliveryDate:    hdr["Delivery-Date"],
+		From:            hdr["From"],
+		To:              hdr["To"],
+		CC:              hdr["CC"],
+		Subject:         hdr["Subject"],
+		Date:            hdr["Date"],
+		MessageID:       hdr["Message-ID"],
+		References:      hdr["References"],
+		InReplyTo:       hdr["In-Reply-To"],
+		ContentLanguage: hdr["Content-Language"],
+		XOriginatingIP:  hdr["x-originating-ip"],
+		ContentType:     hdr[headerContentType],
+		EnvelopeTo:      hdr["Envelope-To"],
 		Body:            h.parseParts(body),
 		ID:              newMailID(),
 		Origin:          "POP3",
@@ -734,7 +734,7 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 		tr           = textproto.NewReader(bufio.NewReader(bytes.NewReader([]byte(body))))
 	)
 
-	mailDebug(ansi.White, h.parent.ident, body)
+	pop3Debug(ansi.White, h.parent.ident, "body:", body, ansi.Reset)
 
 	for {
 		line, err := tr.ReadLine()
@@ -742,19 +742,19 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else {
-				mailDebug(ansi.Yellow, h.parent.ident, "failed to read line: "+err.Error())
+				pop3Debug(ansi.Yellow, h.parent.ident, "failed to read line: "+err.Error())
 
 				return parts
 			}
 		}
 
-		mailDebug(ansi.Green, h.parent.ident, "readLine", line)
+		pop3Debug(ansi.Green, h.parent.ident, "readLine", line)
 
 		if currentPart != nil {
 			if parsePayload {
 				// check if its an end marker for the current part
 				if strings.HasSuffix(line, currentPart.ID+"--") {
-					mailDebug(ansi.Cyan, "end", currentPart.ID, ansi.Reset)
+					pop3Debug(ansi.Cyan, "end", currentPart.ID, ansi.Reset)
 					parts = append(parts, copyMailPart(currentPart))
 					parsePayload = false
 					currentPart = nil
@@ -767,7 +767,7 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 						Header: make(map[string]string),
 					}
 					parsePayload = false
-					mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+					pop3Debug(ansi.Red, "start", currentPart.ID, ansi.Reset)
 
 					// second type of start marker
 				} else if strings.HasPrefix(line, "--") && len(line) > 25 && !strings.Contains(line, ">") {
@@ -777,30 +777,30 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 						Header: make(map[string]string),
 					}
 					parsePayload = false
-					mailDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+					pop3Debug(ansi.Red, "start", currentPart.ID, ansi.Reset)
 
 					// its content
 				} else {
 					currentPart.Content += line + "\n"
-					mailDebug(ansi.Blue, "adding content", line, ansi.Reset)
+					pop3Debug(ansi.Blue, "adding content", line, ansi.Reset)
 				}
 				continue
 			}
 			pts := strings.Split(line, ": ")
 			if len(pts) == 2 {
 				currentPart.Header[pts[0]] = pts[1]
-				mailDebug(ansi.Yellow, h.parent.ident, "parsed header field: "+pts[0], ansi.Reset)
+				pop3Debug(ansi.Yellow, h.parent.ident, "parsed header field: "+pts[0], ansi.Reset)
 			} else {
 				pts = strings.Split(line, "filename=")
 				if len(pts) == 2 {
 					currentPart.Filename = strings.Trim(pts[1], "\"")
-					mailDebug(ansi.Yellow, h.parent.ident, "parsed filename field: "+currentPart.Filename, ansi.Reset)
+					pop3Debug(ansi.Yellow, h.parent.ident, "parsed filename field: "+currentPart.Filename, ansi.Reset)
 				}
 			}
 
 			if line == "\n" || line == "" {
 				parsePayload = true
-				mailDebug(ansi.Green, "start parsing payload", ansi.Reset)
+				pop3Debug(ansi.Green, "start parsing payload", ansi.Reset)
 			}
 
 			continue
@@ -811,7 +811,7 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 				ID:     strings.TrimPrefix(line, partIdent),
 				Header: make(map[string]string),
 			}
-			mailDebug(ansi.Red, h.parent.ident, "start: "+currentPart.ID, ansi.Reset)
+			pop3Debug(ansi.Red, h.parent.ident, "start: "+currentPart.ID, ansi.Reset)
 
 			continue
 		}
@@ -821,13 +821,13 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 				ID:     strings.TrimPrefix(line, "--"),
 				Header: make(map[string]string),
 			}
-			mailDebug(ansi.Red, h.parent.ident, "start: "+currentPart.ID, ansi.Reset)
+			pop3Debug(ansi.Red, h.parent.ident, "start: "+currentPart.ID, ansi.Reset)
 
 			continue
 		}
 
 		// single parts have no markers
-		mailDebug(ansi.Red, "no marker found", line, ansi.Reset)
+		pop3Debug(ansi.Red, "no marker found", line, ansi.Reset)
 
 		currentPart = &types.MailPart{
 			ID:     "none",
@@ -837,17 +837,17 @@ func (h *pop3Reader) parseParts(body string) []*types.MailPart {
 
 		if len(pts) == 2 {
 			currentPart.Header[pts[0]] = pts[1]
-			mailDebug(ansi.Yellow, h.parent.ident, "parsed header field: "+pts[0])
+			pop3Debug(ansi.Yellow, h.parent.ident, "parsed header field: "+pts[0])
 		} else {
 			pts = strings.Split(line, "filename=")
 			if len(pts) == 2 {
 				currentPart.Filename = strings.Trim(pts[1], "\"")
-				mailDebug(ansi.Yellow, "parsed filename field", currentPart.Filename, ansi.Reset)
+				pop3Debug(ansi.Yellow, "parsed filename field", currentPart.Filename, ansi.Reset)
 			}
 		}
 		if line == "\n" || line == "" {
 			parsePayload = true
-			mailDebug(ansi.Green, "start parsing payload", ansi.Reset)
+			pop3Debug(ansi.Green, "start parsing payload", ansi.Reset)
 		}
 	}
 
