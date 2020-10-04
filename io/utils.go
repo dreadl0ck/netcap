@@ -127,6 +127,7 @@ func Dump(w *os.File, c DumpConfig) error {
 
 	if c.Separator == "\\t" || c.TabSeparated {
 		c.Separator = "\t"
+		c.CSV = true
 	}
 
 	var (
