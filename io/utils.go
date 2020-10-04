@@ -228,9 +228,9 @@ func Dump(w *os.File, c DumpConfig) error {
 		}
 	}
 
-	// avoid breaking JSON parsers by appending number of records
-	if !c.JSON {
-		_, _ = w.WriteString(strconv.Itoa(count) + " records.")
+	// print number of records when dumping structured
+	if c.Structured || c.Table {
+		_, _ = w.WriteString(strconv.Itoa(count) + " records.\n")
 	}
 
 	return nil
