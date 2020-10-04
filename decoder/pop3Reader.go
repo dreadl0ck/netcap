@@ -98,6 +98,11 @@ func (h *pop3Reader) Decode() {
 
 	// fmt.Println(servicePOP3, h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
 
+	var commands []string
+	for _, c := range h.pop3Requests {
+		commands = append(commands, c.Command)
+	}
+
 	mails, user, pass, token := h.processPOP3Conversation()
 	pop3Msg := &types.POP3{
 		Timestamp: h.parent.firstPacket.UnixNano(),
@@ -107,6 +112,7 @@ func (h *pop3Reader) Decode() {
 		User:      user,
 		Pass:      pass,
 		MailIDs:   mails,
+		Commands: commands,
 	}
 
 	if user != "" || pass != "" {
