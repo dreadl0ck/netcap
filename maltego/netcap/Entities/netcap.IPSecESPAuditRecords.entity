@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.IPSecESPAuditRecords" displayName="IPSecESPAuditRecords" displayNamePlural="IPSecESPAuditRecords" description="An archive of IPSecESP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_midnightblue" largeIconResource="Netcap/insert_drive_file_midnightblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.IPSecESPAuditRecords" displayName="IPSecESPAuditRecords" displayNamePlural="IPSecESPAuditRecords" description="An archive of IPSecESP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_indianred" largeIconResource="Netcap/insert_drive_file_indianred" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ipsecespauditrecords" displayValue="properties.ipsecespauditrecords">
   <Groups></Groups>
   <Fields>

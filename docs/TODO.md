@@ -1,9 +1,7 @@
 # TODOs
 
-- SMTP transforms
-- DNS transforms
-    - toDNSFlags
-    - toDNSResponseCodes
+- more SMTP transforms
+- more DNS transforms / DNSSEC
     
 - buffer writing extracted streams to disk
 

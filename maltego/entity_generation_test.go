@@ -36,6 +36,9 @@ var maltegoEntities = []entityCoreInfo{
 	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},
 	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
 
+	{"DNSFlagCombination", "outlined_flag", "A combination of DNS flags", "", nil},
+	{"DNSResponseCode", "contact_support", "A DNS response code", "", nil},
+
 	{"InternalSourceIP", "cloud_upload_outline", "An internal source address", "netcap.IPAddr", nil},
 	{"ExternalSourceIP", "cloud_upload", "An external source address", "netcap.IPAddr", nil},
 	{"InternalDestinationIP", "cloud_download_outline", "An internal destination address", "netcap.IPAddr", nil},

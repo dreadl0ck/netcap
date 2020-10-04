@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.NTPAuditRecords" displayName="NTPAuditRecords" displayNamePlural="NTPAuditRecords" description="An archive of NTP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_tan" largeIconResource="Netcap/insert_drive_file_tan" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.NTPAuditRecords" displayName="NTPAuditRecords" displayNamePlural="NTPAuditRecords" description="An archive of NTP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_turquoise" largeIconResource="Netcap/insert_drive_file_turquoise" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ntpauditrecords" displayValue="properties.ntpauditrecords">
   <Groups></Groups>
   <Fields>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DNSAuditRecords" displayName="DNSAuditRecords" displayNamePlural="DNSAuditRecords" description="An archive of DNS audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_aqua" largeIconResource="Netcap/insert_drive_file_aqua" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DNSAuditRecords" displayName="DNSAuditRecords" displayNamePlural="DNSAuditRecords" description="An archive of DNS audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_skyblue" largeIconResource="Netcap/insert_drive_file_skyblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dnsauditrecords" displayValue="properties.dnsauditrecords">
   <Groups></Groups>
   <Fields>

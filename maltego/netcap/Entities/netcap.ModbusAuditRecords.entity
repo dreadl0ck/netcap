@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.ModbusAuditRecords" displayName="ModbusAuditRecords" displayNamePlural="ModbusAuditRecords" description="An archive of Modbus audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_slateblue" largeIconResource="Netcap/insert_drive_file_slateblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.ModbusAuditRecords" displayName="ModbusAuditRecords" displayNamePlural="ModbusAuditRecords" description="An archive of Modbus audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_rebeccapurple" largeIconResource="Netcap/insert_drive_file_rebeccapurple" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.modbusauditrecords" displayValue="properties.modbusauditrecords">
   <Groups></Groups>
   <Fields>

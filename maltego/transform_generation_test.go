@@ -77,6 +77,8 @@ var transforms = []transformCoreInfo{
 	{"StartCaptureProcess", "netcap.Interface", "Start network capture on the given interface"},
 	{"ToDHCPClients", "netcap.DHCPv4AuditRecords", "Show all DHCP Clients"},
 	{"ToDNSQuestions", "netcap.DNSAuditRecords", "Show all DNS questions"},
+	{"ToDNSResponseCodes", "netcap.DNSAuditRecords", "Show all DNS response codes"},
+	{"ToDNSFlagCombinations", "netcap.DNSAuditRecords", "Show all DNS flag combinations"},
 
 	{"ToEmails", "netcap.MailAuditRecords", "Show extracted emails"},
 	{"ToICMPV4ControlMessages", "netcap.ICMPv4AuditRecords", "Show ICMPv4 control messages"},
