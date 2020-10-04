@@ -137,6 +137,11 @@ func Dump(w *os.File, c DumpConfig) error {
 		colorMap map[string]string
 	)
 
+	// disable structured dumping explicitly, since its enabled by default.
+	if c.CSV || c.JSON || c.Table {
+		c.Structured = false
+	}
+
 	if errFileHeader != nil {
 		return errFileHeader
 	}
