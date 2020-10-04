@@ -17,7 +17,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/araddon/dateparse"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/mgutz/ansi"
@@ -177,7 +176,6 @@ func parseMail(parent *tcpConnection, buf []byte, from, to string, logger *log.L
 	// software detection: check X-Mailer header
 	if xm := hdr["X-Mailer"]; xm != "" {
 		if matches := reGenericVersion.FindStringSubmatch(xm); len(matches) > 0 {
-			fmt.Println(matches)
 			writeSoftware([]*software{
 				{
 					Software: &types.Software{
