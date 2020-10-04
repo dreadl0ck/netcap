@@ -351,7 +351,7 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 			continue
 		case smtpDATA:
 
-			mail := parseMail(h.parent, []byte(r.Data), from, to)
+			mail := parseMail(h.parent, []byte(r.Data), from, to, smtpLog, serviceSMTP)
 			writeMail(mail)
 			mailIDs = append(mailIDs, mail.ID)
 			numMails++
@@ -395,4 +395,3 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 		}
 	}
 }
-

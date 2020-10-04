@@ -124,7 +124,7 @@ func saveFile(parent *tcpConnection, source, name string, err error, body []byte
 
 	f, err := os.Create(target)
 	if err != nil {
-		logReassemblyError("SMTP-create", fmt.Sprintf("cannot create %s", target), err)
+		logReassemblyError("save-file-create", fmt.Sprintf("cannot create %s", target), err)
 
 		return err
 	}
@@ -144,7 +144,7 @@ func saveFile(parent *tcpConnection, source, name string, err error, body []byte
 	if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
 		r, err = gzip.NewReader(r)
 		if err != nil {
-			logReassemblyError("SMTP-gunzip", "Failed to gzip decode: %s", err)
+			logReassemblyError("save-file-gunzip", "Failed to gzip decode: %s", err)
 		}
 	}
 
@@ -156,9 +156,9 @@ func saveFile(parent *tcpConnection, source, name string, err error, body []byte
 	if err == nil {
 		w, errCopy := io.Copy(f, r)
 		if errCopy != nil {
-			logReassemblyError(opSMTPSave, fmt.Sprintf("%s: failed to save %s (l:%d)", parent.ident, target, w), errCopy)
+			logReassemblyError("save-file", fmt.Sprintf("%s: failed to save %s (l:%d)", parent.ident, target, w), errCopy)
 		} else {
-			reassemblyLog.Debug("saved SMTP data",
+			reassemblyLog.Debug("saved save-file data",
 				zap.String("ident", parent.ident),
 				zap.String("target", target),
 				zap.Int64("written", w),
@@ -168,13 +168,13 @@ func saveFile(parent *tcpConnection, source, name string, err error, body []byte
 		if _, ok := r.(*gzip.Reader); ok {
 			errClose := r.(*gzip.Reader).Close()
 			if errClose != nil {
-				logReassemblyError(opSMTPSave, fmt.Sprintf("%s: failed to close gzip reader %s (l:%d)", parent.ident, target, w), errClose)
+				logReassemblyError("save-file", fmt.Sprintf("%s: failed to close gzip reader %s (l:%d)", parent.ident, target, w), errClose)
 			}
 		}
 
 		errClose := f.Close()
 		if errClose != nil {
-			logReassemblyError(opSMTPSave, fmt.Sprintf("%s: failed to close file handle %s (l:%d)", parent.ident, target, w), errClose)
+			logReassemblyError("save-file", fmt.Sprintf("%s: failed to close file handle %s (l:%d)", parent.ident, target, w), errClose)
 		}
 
 		// TODO: refactor to avoid reading the file contents into memory again

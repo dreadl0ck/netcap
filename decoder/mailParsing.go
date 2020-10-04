@@ -22,13 +22,13 @@ import (
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 	"io"
+	"log"
 	"net/textproto"
 	"strings"
 	"unicode"
 )
 
 const partIdent = "------=_Part_"
-
 
 func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 	var (
@@ -80,9 +80,9 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 	}
 }
 
-func parseMail(parent *tcpConnection, buf []byte, from, to string) *types.Mail {
+func parseMail(parent *tcpConnection, buf []byte, from, to string, logger *log.Logger, origin string) *types.Mail {
 
-	smtpDebug(ansi.Yellow, "parseMail, from:", from, "to:", to, parent.ident, "\n", string(buf), ansi.Reset)
+	log.Println(ansi.Yellow, "parseMail, from:", from, "to:", to, parent.ident, "\n", string(buf), ansi.Reset)
 
 	var (
 		hdr, body = splitMailHeaderAndBody(buf)
@@ -118,9 +118,9 @@ func parseMail(parent *tcpConnection, buf []byte, from, to string) *types.Mail {
 		XOriginatingIP:  hdr["x-originating-ip"],
 		ContentType:     hdr[headerContentType],
 		EnvelopeTo:      hdr["Envelope-To"],
-		Body:            parseMailParts(parent, body),
+		Body:            parseMailParts(parent, body, logger),
 		ID:              newMailID(),
-		Origin:          "SMTP",
+		Origin:          origin,
 	}
 
 	for _, p := range mail.Body {
@@ -128,10 +128,9 @@ func parseMail(parent *tcpConnection, buf []byte, from, to string) *types.Mail {
 			mail.HasAttachments = true
 
 			if conf.FileStorage != "" {
-				err = saveFile(parent, "SMTP", p.Filename, nil, []byte(p.Content), []string{p.Header["Content-Transfer-Encoding"]}, parent.server.ServiceIdent(), "")
+				err = saveFile(parent, origin, p.Filename, nil, []byte(p.Content), []string{p.Header["Content-Transfer-Encoding"]}, parent.server.ServiceIdent(), "")
 				if err != nil {
-					decoderLog.Error("failed to save SMTP attachment", zap.Error(err))
-					smtpDebug("failed to save SMTP attachment", err)
+					decoderLog.Error("failed to save attachment", zap.Error(err), zap.String("origin", origin))
 				}
 			}
 
@@ -142,7 +141,7 @@ func parseMail(parent *tcpConnection, buf []byte, from, to string) *types.Mail {
 	return mail
 }
 
-func parseMailParts(parent *tcpConnection, body string) []*types.MailPart {
+func parseMailParts(parent *tcpConnection, body string, logger *log.Logger) []*types.MailPart {
 	var (
 		parts        []*types.MailPart
 		currentPart  *types.MailPart
@@ -150,7 +149,7 @@ func parseMailParts(parent *tcpConnection, body string) []*types.MailPart {
 		tr           = textproto.NewReader(bufio.NewReader(bytes.NewReader([]byte(body))))
 	)
 
-	smtpDebug(ansi.White, "parseMailParts", parent.ident, "body:", body, ansi.Reset)
+	logger.Println(ansi.White, "parseMailParts", parent.ident, "body:", body, ansi.Reset)
 
 	for {
 		line, err := tr.ReadLine()
@@ -158,19 +157,19 @@ func parseMailParts(parent *tcpConnection, body string) []*types.MailPart {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else {
-				smtpDebug(ansi.Yellow, parent.ident, "failed to read line: "+err.Error())
+				logger.Println(ansi.Yellow, parent.ident, "failed to read line: "+err.Error())
 
 				return parts
 			}
 		}
 
-		smtpDebug(ansi.Green, parent.ident, "readLine", line)
+		logger.Println(ansi.Green, parent.ident, "readLine", line)
 
 		if currentPart != nil {
 			if parsePayload {
 				// check if its an end marker for the current part
 				if strings.HasSuffix(line, currentPart.ID+"--") {
-					smtpDebug(ansi.Cyan, "end", currentPart.ID, ansi.Reset)
+					logger.Println(ansi.Cyan, "end", currentPart.ID, ansi.Reset)
 					parts = append(parts, copyMailPart(currentPart))
 					parsePayload = false
 					currentPart = nil
@@ -183,7 +182,7 @@ func parseMailParts(parent *tcpConnection, body string) []*types.MailPart {
 						Header: make(map[string]string),
 					}
 					parsePayload = false
-					smtpDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+					logger.Println(ansi.Red, "start", currentPart.ID, ansi.Reset)
 
 					// second type of start marker
 				} else if strings.HasPrefix(line, "--") && len(line) > 25 && !strings.Contains(line, ">") {
@@ -193,30 +192,30 @@ func parseMailParts(parent *tcpConnection, body string) []*types.MailPart {
 						Header: make(map[string]string),
 					}
 					parsePayload = false
-					smtpDebug(ansi.Red, "start", currentPart.ID, ansi.Reset)
+					logger.Println(ansi.Red, "start", currentPart.ID, ansi.Reset)
 
 					// its content
 				} else {
 					currentPart.Content += line + "\n"
-					smtpDebug(ansi.Blue, "adding content", line, ansi.Reset)
+					logger.Println(ansi.Blue, "adding content", line, ansi.Reset)
 				}
 				continue
 			}
 			pts := strings.Split(line, ": ")
 			if len(pts) == 2 {
 				currentPart.Header[pts[0]] = pts[1]
-				smtpDebug(ansi.Yellow, parent.ident, "parsed header field: "+pts[0], ansi.Reset)
+				logger.Println(ansi.Yellow, parent.ident, "parsed header field: "+pts[0], ansi.Reset)
 			} else {
 				pts = strings.Split(line, "filename=")
 				if len(pts) == 2 {
 					currentPart.Filename = strings.Trim(pts[1], "\"")
-					smtpDebug(ansi.Yellow, parent.ident, "parsed filename field: "+currentPart.Filename, ansi.Reset)
+					logger.Println(ansi.Yellow, parent.ident, "parsed filename field: "+currentPart.Filename, ansi.Reset)
 				}
 			}
 
 			if line == "\n" || line == "" {
 				parsePayload = true
-				smtpDebug(ansi.Green, "start parsing payload", ansi.Reset)
+				logger.Println(ansi.Green, "start parsing payload", ansi.Reset)
 			}
 
 			continue
@@ -227,7 +226,7 @@ func parseMailParts(parent *tcpConnection, body string) []*types.MailPart {
 				ID:     strings.TrimPrefix(line, partIdent),
 				Header: make(map[string]string),
 			}
-			smtpDebug(ansi.Red, parent.ident, "start: "+currentPart.ID, ansi.Reset)
+			logger.Println(ansi.Red, parent.ident, "start: "+currentPart.ID, ansi.Reset)
 
 			continue
 		}
@@ -237,13 +236,13 @@ func parseMailParts(parent *tcpConnection, body string) []*types.MailPart {
 				ID:     strings.TrimPrefix(line, "--"),
 				Header: make(map[string]string),
 			}
-			smtpDebug(ansi.Red, parent.ident, "start: "+currentPart.ID, ansi.Reset)
+			logger.Println(ansi.Red, parent.ident, "start: "+currentPart.ID, ansi.Reset)
 
 			continue
 		}
 
 		// single parts have no markers
-		smtpDebug(ansi.Red, "no marker found", line, ansi.Reset)
+		logger.Println(ansi.Red, "no marker found", line, ansi.Reset)
 
 		currentPart = &types.MailPart{
 			ID:     "none",
@@ -253,17 +252,17 @@ func parseMailParts(parent *tcpConnection, body string) []*types.MailPart {
 
 		if len(pts) == 2 {
 			currentPart.Header[pts[0]] = pts[1]
-			smtpDebug(ansi.Yellow, parent.ident, "parsed header field: "+pts[0])
+			logger.Println(ansi.Yellow, parent.ident, "parsed header field: "+pts[0])
 		} else {
 			pts = strings.Split(line, "filename=")
 			if len(pts) == 2 {
 				currentPart.Filename = strings.Trim(pts[1], "\"")
-				smtpDebug(ansi.Yellow, "parsed filename field", currentPart.Filename, ansi.Reset)
+				logger.Println(ansi.Yellow, "parsed filename field", currentPart.Filename, ansi.Reset)
 			}
 		}
 		if line == "\n" || line == "" {
 			parsePayload = true
-			smtpDebug(ansi.Green, "start parsing payload", ansi.Reset)
+			logger.Println(ansi.Green, "start parsing payload", ansi.Reset)
 		}
 	}
 

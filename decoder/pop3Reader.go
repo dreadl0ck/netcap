@@ -291,7 +291,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == pop3Dot {
-						mail := parseMail(h.parent, []byte(mailBuf), "", "")
+						mail := parseMail(h.parent, []byte(mailBuf), "", "", pop3Log, servicePOP3)
 						writeMail(mail)
 						mailIDs = append(mailIDs, mail.ID)
 						mailBuf = ""
@@ -427,5 +427,3 @@ func newMailID() string {
 
 	return s
 }
-
-
