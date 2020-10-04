@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/blevesearch/bleve"
+	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"math"
@@ -29,6 +30,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/evilsocket/islazy/tui"
 	"go.uber.org/zap"
@@ -46,6 +48,38 @@ var (
 	typeMap      = make(map[string]int)
 	fieldNameMap = make(map[string]int)
 )
+
+func trimEncoding(ctype string) string {
+	parts := strings.Split(ctype, ";")
+	if len(parts) > 1 {
+		return parts[0]
+	}
+	return ctype
+}
+
+// keep track which paths for content types of extracted files have already been created.
+var (
+	contentTypeMap   = make(map[string]struct{})
+	contentTypeMapMu sync.Mutex
+)
+
+// createContentTypePathIfRequired will create the passed in filesystem path once
+// it is safe for concurrent access and will block until the path has been created on disk.
+func createContentTypePathIfRequired(fsPath string) {
+	contentTypeMapMu.Lock()
+	if _, ok := contentTypeMap[fsPath]; !ok { // the path has not been created yet
+		// add to map
+		contentTypeMap[fsPath] = struct{}{}
+
+		// create path
+		err := os.MkdirAll(fsPath, defaults.DirectoryPermission)
+		if err != nil {
+			logReassemblyError("HTTP-create-path", fmt.Sprintf("cannot create folder %s", fsPath), err)
+		}
+	}
+	// free lock again
+	contentTypeMapMu.Unlock()
+}
 
 // MarkdownOverview dumps a Markdown summary of all available decoders and their fields.
 func MarkdownOverview() {

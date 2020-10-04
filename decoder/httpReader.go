@@ -16,27 +16,19 @@ package decoder
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
-	"strconv"
+
 	"strings"
-	"sync"
 	"sync/atomic"
 
-	"github.com/dreadl0ck/cryptoutils"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (
@@ -58,40 +50,6 @@ type header struct {
 type cookie struct {
 	name  string
 	value string
-}
-
-// httpMetaStore is a thread safe in-memory store for interesting HTTP artifacts.
-// TODO: currently not in use, make it configurable
-type httpMetaStore struct {
-
-	// mapped ip address to server names
-	ServerNames map[string]string
-
-	// mapped ip address to user agents
-	UserAgents map[string]string
-
-	// mapped ip address to user agents
-	Vias map[string]string
-
-	// mapped ip address to user agents
-	XPoweredBy map[string]string
-
-	// mapped ips to known header and cookies of frontend frameworks
-	CMSHeaders map[string][]header
-	CMSCookies map[string][]cookie
-
-	sync.Mutex
-}
-
-// global store for selected http meta information
-// TODO: add a util to dump.
-var httpStore = &httpMetaStore{
-	ServerNames: make(map[string]string),
-	UserAgents:  make(map[string]string),
-	Vias:        make(map[string]string),
-	XPoweredBy:  make(map[string]string),
-	CMSHeaders:  make(map[string][]header),
-	CMSCookies:  make(map[string][]cookie),
 }
 
 /*
@@ -237,81 +195,6 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 	}
 }
 
-// populate the global http meta information store
-// unused at the moment because too inefficient
-func updateHTTPStore(h *types.HTTP) {
-	// ------ LOCK the store
-	httpStore.Lock()
-
-	if h.UserAgent != "" {
-		if ua, ok := httpStore.UserAgents[h.SrcIP]; ok {
-			if !strings.Contains(ua, h.UserAgent) {
-				httpStore.UserAgents[h.SrcIP] = ua + "| " + h.UserAgent
-			}
-		} else {
-			httpStore.UserAgents[h.SrcIP] = h.UserAgent
-		}
-	}
-
-	if h.ServerName != "" {
-		if sn, ok := httpStore.ServerNames[h.DstIP]; ok {
-			if !strings.Contains(sn, h.ServerName) {
-				httpStore.ServerNames[h.DstIP] = sn + "| " + h.ServerName
-			}
-		} else {
-			httpStore.ServerNames[h.DstIP] = h.ServerName
-		}
-	}
-
-	if val, ok := h.ResponseHeader["Via"]; ok {
-		var sn string
-		if sn, ok = httpStore.Vias[h.DstIP]; ok {
-			if !strings.Contains(sn, val) {
-				httpStore.Vias[h.DstIP] = sn + "| " + val
-			}
-		} else {
-			httpStore.Vias[h.DstIP] = val
-		}
-	}
-
-	if val, ok := h.ResponseHeader["X-Powered-By"]; ok {
-		var sn string
-		if sn, ok = httpStore.XPoweredBy[h.DstIP]; ok {
-			if !strings.Contains(sn, val) {
-				httpStore.XPoweredBy[h.DstIP] = sn + "| " + val
-			}
-		} else {
-			httpStore.XPoweredBy[h.DstIP] = val
-		}
-	}
-
-	// Iterate over all response headers and check if they are known CMS headers.
-	// If so, add them to the httpStore for the DstIP
-	for key, val := range h.ResponseHeader {
-		if _, ok := cmsHeaders[key]; ok {
-			httpStore.CMSHeaders[h.DstIP] = append(httpStore.CMSHeaders[h.DstIP], header{name: key, value: val})
-		}
-	}
-
-	// If HTTP instructions are sent to set a cookie used by CMSs (of other apps), add the key and possible value to the httpStore
-	if toSet, ok := h.ResponseHeader["Set-Cookie"]; ok {
-		var (
-			parsedCookie = strings.Split(toSet, "=")
-			cookieKey    = parsedCookie[0]
-			cookieValue  string
-		)
-		if len(parsedCookie) > 1 {
-			cookieValue = parsedCookie[1]
-		}
-		if _, ok = cmsCookies[cookieKey]; ok {
-			httpStore.CMSCookies[h.DstIP] = append(httpStore.CMSCookies[h.DstIP], cookie{name: cookieKey, value: cookieValue})
-		}
-	}
-
-	// ------ UNLOCK the store
-	httpStore.Unlock()
-}
-
 func (t *tcpConnection) writeHTTP(h *types.HTTP) {
 
 	// TODO: this kills performance
@@ -444,7 +327,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 		}
 
 		// save file to disk
-		return h.saveFile(source, name, err, body, encoding, ctype, host)
+		return saveFile(h.parent, source, name, err, body, encoding, ctype, host)
 	}
 
 	return nil
@@ -472,223 +355,6 @@ func (h *httpReader) findRequest(res *http.Response) string {
 	}
 
 	return reqURL
-}
-
-func trimEncoding(ctype string) string {
-	parts := strings.Split(ctype, ";")
-	if len(parts) > 1 {
-		return parts[0]
-	}
-	return ctype
-}
-
-// keep track which paths for content types of extracted files have already been created.
-var (
-	contentTypeMap   = make(map[string]struct{})
-	contentTypeMapMu sync.Mutex
-)
-
-// createContentTypePathIfRequired will create the passed in filesystem path once
-// it is safe for concurrent access and will block until the path has been created on disk.
-func createContentTypePathIfRequired(fsPath string) {
-	contentTypeMapMu.Lock()
-	if _, ok := contentTypeMap[fsPath]; !ok { // the path has not been created yet
-		// add to map
-		contentTypeMap[fsPath] = struct{}{}
-
-		// create path
-		err := os.MkdirAll(fsPath, defaults.DirectoryPermission)
-		if err != nil {
-			logReassemblyError("HTTP-create-path", fmt.Sprintf("cannot create folder %s", fsPath), err)
-		}
-	}
-	// free lock again
-	contentTypeMapMu.Unlock()
-}
-
-// TODO: write unit tests and cleanup.
-func (h *httpReader) saveFile(source, name string, err error, body []byte, encoding []string, contentType, host string) error {
-
-	decoderLog.Info("httpReader.saveFile",
-		zap.String("source", source),
-		zap.String("name", name),
-		zap.Error(err),
-		zap.Int("bodyLength", len(body)),
-		zap.Strings("encoding", encoding),
-		zap.String("contentType", contentType),
-		zap.String("host", host),
-	)
-
-	// prevent saving zero bytes
-	if len(body) == 0 {
-		return nil
-	}
-
-	if name == "" || name == "/" {
-		name = "unknown"
-	}
-
-	var (
-		fileName string
-
-		// detected content type
-		ctype = trimEncoding(http.DetectContentType(body))
-
-		// root path
-		root = path.Join(conf.Out, conf.FileStorage, ctype)
-
-		// file extension
-		ext = fileExtensionForContentType(ctype)
-
-		// file basename
-		base = filepath.Clean(name+"-"+path.Base(utils.CleanIdent(h.parent.ident))) + ext
-	)
-	if err != nil {
-		base = "incomplete-" + base
-	}
-	if filepath.Ext(name) == "" {
-		fileName = name + ext
-	} else {
-		fileName = name
-	}
-
-	// make sure root path exists
-	createContentTypePathIfRequired(root)
-
-	// add base
-	base = path.Join(root, base)
-	if len(base) > 250 {
-		base = base[:250] + "..."
-	}
-	if base == conf.FileStorage {
-		base = path.Join(conf.Out, conf.FileStorage, "noname")
-	}
-	var (
-		target = base
-		n      = 0
-	)
-	for {
-		_, errStat := os.Stat(target)
-		if errStat != nil {
-			break
-		}
-
-		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+utils.CleanIdent(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
-		} else {
-			target = path.Join(root, filepath.Clean(name+"-"+utils.CleanIdent(h.parent.ident))+"-"+strconv.Itoa(n)+fileExtensionForContentType(ctype))
-		}
-
-		n++
-	}
-
-	decoderLog.Info("saving file", zap.String("target", target))
-
-	f, err := os.Create(target)
-	if err != nil {
-		logReassemblyError("HTTP-create", fmt.Sprintf("cannot create %s", target), err)
-
-		return err
-	}
-
-	var (
-		// explicitly declare io.Reader interface
-		r      io.Reader
-		length int
-		hash   string
-	)
-
-	// now assign a new buffer
-	r = bytes.NewBuffer(body)
-	if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
-		r, err = gzip.NewReader(r)
-		if err != nil {
-			logReassemblyError("HTTP-gunzip", "Failed to gzip decode: %s", err)
-		}
-	}
-
-	if err == nil {
-		var written int64
-		written, err = io.Copy(f, r)
-
-		if err != nil {
-			logReassemblyError("HTTP-save", fmt.Sprintf("%s: failed to copy %s (l:%d)", h.parent.ident, target, written), err)
-		}
-
-		if _, ok := r.(*gzip.Reader); ok {
-			err = r.(*gzip.Reader).Close()
-			if err != nil {
-				logReassemblyError("HTTP-save", fmt.Sprintf("%s: failed to close gzip reader %s (l:%d)", h.parent.ident, target, written), err)
-			}
-		}
-
-		err = f.Close()
-		if err != nil {
-			logReassemblyError("HTTP-save", fmt.Sprintf("%s: failed to close %s (l:%d)", h.parent.ident, target, written), err)
-		} else {
-			reassemblyLog.Debug("saved HTTP data",
-				zap.String("ident", h.parent.ident),
-				zap.String("target", target),
-				zap.Int64("written", written),
-			)
-		}
-
-		var data []byte
-
-		// TODO: refactor to avoid reading the file contents into memory again
-		data, err = ioutil.ReadFile(target)
-		if err == nil {
-			// set hash to value for decompressed content and update size
-			hash = hex.EncodeToString(cryptoutils.MD5Data(data))
-			length = len(data)
-
-			// save previous content type
-			ctypeOld := ctype
-
-			// update content type
-			ctype = trimEncoding(http.DetectContentType(data))
-
-			// make sure root path exists
-			createContentTypePathIfRequired(path.Join(conf.Out, conf.FileStorage, ctype))
-
-			// switch the file extension and the path for the updated content type
-			ext = filepath.Ext(target)
-
-			// create new target: trim extension from old one and replace
-			// and replace the old content type in the path
-			newTarget := strings.Replace(strings.TrimSuffix(target, ext), ctypeOld, ctype, 1) + fileExtensionForContentType(ctype)
-
-			err = os.Rename(target, newTarget)
-			if err == nil {
-				target = newTarget
-			} else {
-				fmt.Println("failed to rename file after decompression", err)
-			}
-		}
-	} else {
-		hash = hex.EncodeToString(cryptoutils.MD5Data(body))
-		length = len(body)
-	}
-
-	// write file to disk
-	writeFile(&types.File{
-		Timestamp:           h.parent.firstPacket.UnixNano(),
-		Name:                fileName,
-		Length:              int64(length),
-		Hash:                hash,
-		Location:            target,
-		Ident:               h.parent.ident,
-		Source:              source,
-		ContentTypeDetected: ctype,
-		ContentType:         contentType,
-		SrcIP:               h.parent.net.Src().String(),
-		DstIP:               h.parent.net.Dst().String(),
-		SrcPort:             utils.DecodePort(h.parent.transport.Src().Raw()),
-		DstPort:             utils.DecodePort(h.parent.transport.Dst().Raw()),
-		Host:                host,
-	})
-
-	return nil
 }
 
 // HTTP Request
@@ -753,7 +419,8 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	if req.Method == methodPost {
 		// write request payload to disk if configured
 		if (err == nil || conf.WriteIncomplete) && conf.FileStorage != "" {
-			return h.saveFile(
+			return saveFile(
+				h.parent,
 				"HTTP POST REQUEST to "+req.URL.Path,
 				path.Base(req.URL.Path),
 				err,
