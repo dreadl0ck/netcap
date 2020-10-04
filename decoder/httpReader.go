@@ -35,7 +35,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -126,69 +125,15 @@ func (h *httpReader) Decode() {
 		return
 	}
 
-	// parse conversation
-	var (
-		buf         bytes.Buffer
-		previousDir reassembly.TCPFlowDirection
+	decodeTCPConversation(
+		h.parent,
+		func(b *bufio.Reader) error {
+			return h.readRequest(b)
+		},
+		func(b *bufio.Reader) error {
+			return h.readResponse(b)
+		},
 	)
-
-	if len(h.parent.merged) > 0 {
-		previousDir = h.parent.merged[0].dir
-	}
-
-	for _, d := range h.parent.merged {
-		if d.dir == previousDir {
-			buf.Write(d.raw)
-		} else {
-			var (
-				err error
-				b   = bufio.NewReader(&buf)
-			)
-
-			if previousDir == reassembly.TCPDirClientToServer {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = h.readRequest(b)
-				}
-			} else {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = h.readResponse(b)
-				}
-			}
-			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-				decoderLog.Error("error reading HTTP",
-					zap.Error(err),
-					zap.String("ident", h.parent.ident),
-				)
-			}
-			buf.Reset()
-			previousDir = d.dir
-
-			buf.Write(d.raw)
-
-			continue
-		}
-	}
-
-	var (
-		err error
-		b   = bufio.NewReader(&buf)
-	)
-
-	if previousDir == reassembly.TCPDirClientToServer {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = h.readRequest(b)
-		}
-	} else {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = h.readResponse(b)
-		}
-	}
-	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-		decoderLog.Error("error reading HTTP",
-			zap.Error(err),
-			zap.String("ident", h.parent.ident),
-		)
-	}
 
 	// iterate over responses
 	for _, res := range h.responses { // populate types.HTTP with all infos from response

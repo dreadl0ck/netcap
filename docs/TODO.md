@@ -1,5 +1,13 @@
 # TODOs
 
+- SMTP transforms
+- DNS transforms
+    - toDNSFlags
+    - toDNSResponseCodes
+
+- add UDP stream decoder support
+- flushing of UDP and TCP streams
+
 - drag n drop does not trigger the regex conversion on macOS
 - two entities: different value for property - will be combined and the last value for the property will be used?
 - to files for content type: remove encodings after ; in graph view
@@ -14,10 +22,7 @@
 //	1,
 //)
 
-- SMTP transforms
-- DNS transforms
 - to ports: add services, then the actual ports?
-
 - on ConnectionAuditRecords: GetLongRunningSessions
 - add capinfos transform for pcap
 
