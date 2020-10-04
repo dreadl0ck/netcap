@@ -74,8 +74,8 @@ func DNSTransform(count DNSCountFunc, transform DNSTransformationFunc, continueT
 
 	var (
 		dns = new(types.DNS)
-		pm   proto.Message
-		ok   bool
+		pm  proto.Message
+		ok  bool
 	)
 	pm = dns
 

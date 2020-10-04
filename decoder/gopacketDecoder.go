@@ -87,7 +87,6 @@ var defaultGoPacketDecoders = []*GoPacketDecoder{
 	nortelDiscoveryDecoder,
 	cipDecoder,
 	ethernetIPDecoder,
-	smtpDecoder,
 	diameterDecoder,
 }
 

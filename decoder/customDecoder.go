@@ -52,6 +52,7 @@ var (
 		vulnerabilityDecoder,
 		exploitDecoder,
 		mailDecoder,
+		smtpDecoder,
 	} // contains all available custom decoders
 )
 

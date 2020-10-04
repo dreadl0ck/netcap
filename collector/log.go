@@ -115,6 +115,14 @@ func (c *Collector) initLogging() error {
 
 	decoder.SetPOP3Logger(lPop3)
 
+	// setup logger for smtp
+	lSMTP, smtpLogFile, err := logger.InitDebugLogger(c.config.DecoderConfig.Out, "smtp", c.config.DecoderConfig.Debug)
+	if err != nil {
+		return err
+	}
+
+	decoder.SetSMTPLogger(lSMTP)
+
 	// store pointers to zap loggers, in order to sync them on exit
 	c.zapLoggers = append(c.zapLoggers,
 		c.log,
@@ -134,6 +142,7 @@ func (c *Collector) initLogging() error {
 		reassemblyLogFile,
 		serviceLogFile,
 		pop3LogFile,
+		smtpLogFile,
 	)
 
 	// create errors.log file

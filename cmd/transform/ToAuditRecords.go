@@ -40,6 +40,8 @@ var maltegoBaseConfig = collector.Config{
 	HTTPShutdownEndpoint: true,
 	NoPrompt:             true,
 	DecoderConfig: &decoder.Config{
+		Quiet:         true,
+		PrintProgress: true,
 		Buffer:        true,
 		MemBufferSize: defaults.BufferSize,
 		Compression:   true,
@@ -84,7 +86,6 @@ var maltegoBaseConfig = collector.Config{
 	},
 	BaseLayer:     utils.GetBaseLayer("ethernet"),
 	DecodeOptions: utils.GetDecodeOptions("datagrams"),
-	Quiet:         true,
 	DPI:           false,
 	ResolverConfig: resolvers.Config{
 		ReverseDNS:    false,

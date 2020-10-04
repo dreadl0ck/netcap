@@ -1756,6 +1756,14 @@ message File {
 message SMTPResponse {
   int32 ResponseCode = 1;
   string Parameter = 2;
+  string Data = 3;
+}
+
+// SMTPRequest
+message SMTPRequest {
+  string Command = 1;
+  string Argument = 2;
+  string Data = 3;
 }
 
 // SMTPCommand represents a SMTP command
@@ -1769,12 +1777,12 @@ message SMTP {
   int64 Timestamp = 1;
   bool IsEncrypted = 2;
   bool IsResponse = 3;
-  repeated SMTPResponse ResponseLines = 4;
-  SMTPCommand Command = 5;
   string SrcIP = 6;
   string DstIP = 7;
   int32 SrcPort = 8;
   int32 DstPort = 9;
+  repeated string MailIDs = 10;
+  repeated string Commands = 11;
 }
 
 // Diameter is an authentication, authorization, and accounting protocol for computer networks.

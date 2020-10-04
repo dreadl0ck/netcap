@@ -29,10 +29,6 @@ var errAborted = errors.New("operation aborted by user")
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
-	// set quiet mode for decoder config if active in collector config
-	if c.config.Quiet {
-		c.config.DecoderConfig.Quiet = true
-	}
 
 	// Catch attempts to set the timeout to 0, this is explicitly not recommended.
 	// From the gopacket docs:
@@ -50,7 +46,7 @@ func (c *Collector) Init() (err error) {
 	c.handleSignals()
 
 	// init logfile if necessary
-	if c.netcapLogFile == nil && c.config.Quiet {
+	if c.netcapLogFile == nil && c.config.DecoderConfig.Quiet {
 		err = c.initLogging()
 		if err != nil {
 			return err
@@ -75,7 +71,7 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// initialize resolvers
-	resolvers.Init(c.config.ResolverConfig, c.config.Quiet)
+	resolvers.Init(c.config.ResolverConfig, c.config.DecoderConfig.Quiet)
 
 	if c.config.ResolverConfig.LocalDNS {
 		decoder.LocalDNS = true
@@ -95,7 +91,7 @@ func (c *Collector) Init() (err error) {
 	if len(files) > 0 || errStreams == nil || errConns == nil {
 
 		// only prompt if quiet mode is not active AND prompting for human interaction is not disabled
-		if !c.config.Quiet && !c.config.NoPrompt {
+		if !c.config.DecoderConfig.Quiet && !c.config.NoPrompt {
 			msg := strconv.Itoa(len(files)) + " audit record files found in output path! Overwrite?"
 			if errStreams == nil {
 				msg = "Data from previous runs found in output path! Overwrite?"

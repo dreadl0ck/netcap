@@ -499,6 +499,10 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 				t.decoder = &pop3Reader{
 					parent: t.client.(*tcpStreamReader).parent,
 				}
+			case bytes.HasPrefix(t.server.ServiceBanner(), []byte(strconv.Itoa(smtpServiceReady))) && bytes.Contains(t.server.ServiceBanner(), []byte("SMTP")):
+				t.decoder = &smtpReader{
+					parent: t.client.(*tcpStreamReader).parent,
+				}
 			}
 		}
 
@@ -659,7 +663,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		}
 
 		if !conf.Quiet {
-			fmt.Println("processing last TCP streams")
+			fmt.Println("\nprocessing last TCP streams")
 		}
 
 		// flush assemblers
@@ -670,7 +674,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				zap.Int("numAssemblers", len(assemblers)),
 			)
 
-			if i == 0 && !conf.Quiet {
+			if i == 0 && (!conf.Quiet || conf.PrintProgress) {
 				// only display progress bar for the first flush, since all following ones will be instant.
 				decoderLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
 			} else {

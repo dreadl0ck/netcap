@@ -181,7 +181,6 @@ func Run() {
 		SnapLen:               *flagSnapLen,
 		BaseLayer:             utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions:         utils.GetDecodeOptions(*flagDecodeOptions),
-		Quiet:                 *flagQuiet,
 		DPI:                   *flagDPI,
 		ReassembleConnections: *flagReassembleConnections,
 		FreeOSMem:             *flagFreeOSMemory,
@@ -190,6 +189,8 @@ func Run() {
 		HTTPShutdownEndpoint:  *flagHTTPShutdown,
 		Timeout:               *flagTimeout,
 		DecoderConfig: &decoder.Config{
+			Quiet:         *flagQuiet,
+			PrintProgress: *flagPrintProgress,
 			Buffer:        *flagBuffer,
 			MemBufferSize: *flagMemBufferSize,
 			Compression:   *flagCompress,

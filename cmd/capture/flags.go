@@ -15,7 +15,6 @@ package capture
 
 import (
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/namsral/flag"
@@ -53,7 +52,7 @@ var (
 	flagInterface    = fs.String("iface", "", "attach to network interface and capture in live mode")
 	flagCompress     = fs.Bool("comp", true, "compress output with gzip")
 	flagBuffer       = fs.Bool("buf", true, "buffer data in memory before writing to disk")
-	flagWorkers      = fs.Int("workers", runtime.NumCPU(), "number of workers")
+	flagWorkers      = fs.Int("workers", 1, "number of workers") // runtime.NumCPU()
 	flagPacketBuffer = fs.Int("pbuf", defaults.PacketBuffer, "set packet buffer size, for channels that feed data to workers")
 
 	flagCPUProfile    = fs.Bool("cpuprof", false, "create cpu profile")
@@ -86,6 +85,7 @@ var (
 	flagMemBufferSize  = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 	flagListInterfaces = fs.Bool("interfaces", false, "list all visible network interfaces")
 	flagQuiet          = fs.Bool("quiet", false, "don't print infos to stdout")
+	flagPrintProgress  = fs.Bool("progress", false, "force printing progress to stderr even in quiet mode")
 
 	flagFileStorage = fs.String("fileStorage", "files", "path to created extracted files")
 

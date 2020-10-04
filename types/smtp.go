@@ -40,20 +40,16 @@ func (a *SMTP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *SMTP) CSVRecord() []string {
-	var responses []string
-	for _, r := range a.ResponseLines {
-		responses = append(responses, r.getString())
-	}
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.IsEncrypted), // bool
 		strconv.FormatBool(a.IsResponse),  // bool
-		join(responses...),                // []*SMTPResponse
-		a.Command.getString(),             // *SMTPCommand
 		a.SrcIP,
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		join(a.MailIDs...),
+		join(a.Commands...),
 	})
 }
 

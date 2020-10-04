@@ -282,7 +282,7 @@ func (c *Collector) handlePacketTimeout(p *packet) {
 
 // print errors to stdout in red.
 func (c *Collector) printErrors() {
-	if c.config.Quiet {
+	if c.config.DecoderConfig.Quiet {
 		_, _ = fmt.Fprintln(c.netcapLogFile, c.getErrorSummary(), ansi.Reset)
 	} else {
 		_, _ = fmt.Println(ansi.Red, c.getErrorSummary(), ansi.Reset)
@@ -324,7 +324,7 @@ func (c *Collector) closeErrorLogFile() {
 // stats prints collector statistics.
 func (c *Collector) stats() {
 	var target io.Writer
-	if c.config.Quiet {
+	if c.config.DecoderConfig.Quiet {
 		target = c.netcapLogFile
 	} else {
 		target = io.MultiWriter(os.Stderr, c.netcapLogFile)
@@ -356,7 +356,7 @@ func (c *Collector) stats() {
 	// print legend if there are unknown protos
 	// -1 for "Payload" layer
 	if numUnknown-1 > 0 {
-		if !c.config.Quiet {
+		if !c.config.DecoderConfig.Quiet {
 			fmt.Println("* protocol supported by gopacket, but not implemented in netcap")
 		}
 	}
@@ -415,7 +415,7 @@ func (c *Collector) stats() {
 //	c.statMutex.Unlock()
 //
 //	if c.current%1000 == 0 {
-//		if !c.config.Quiet {
+//		if !c.config.DecoderConfig.Quiet {
 //			// using a strings.Builder for assembling string for performance
 //			// TODO: could be refactored to use a byte slice with a fixed length instead
 //			// TODO: add Builder to collector and flush it every cycle to reduce allocations
@@ -477,9 +477,9 @@ func (c *Collector) printProgressInterval() chan struct{} {
 
 				atomic.StoreInt64(&c.numPacketsLast, curr)
 
-				if !c.config.Quiet { // print
+				if !c.config.DecoderConfig.Quiet || c.config.DecoderConfig.PrintProgress { // print
 					c.clearLine()
-					_, _ = fmt.Fprintf(os.Stdout,
+					_, _ = fmt.Fprintf(os.Stderr,
 						c.progressString,
 						utils.Progress(curr, num),
 						// decoder.Flows.Size(), // TODO: fetch this info from stats?
@@ -523,7 +523,7 @@ func (c *Collector) PrintConfiguration() {
 	}
 
 	var target io.Writer
-	if c.config.Quiet {
+	if c.config.DecoderConfig.Quiet {
 		target = c.netcapLogFile
 	} else {
 		target = io.MultiWriter(os.Stdout, c.netcapLogFile)
@@ -538,13 +538,13 @@ func (c *Collector) PrintConfiguration() {
 
 	netio.FPrintLogo(target)
 
-	if c.config.DecoderConfig.Debug && !c.config.Quiet {
+	if c.config.DecoderConfig.Debug && !c.config.DecoderConfig.Quiet {
 		// in debug mode and when not silencing stdout via quiet mode: dump config to stdout
 		target = io.MultiWriter(os.Stdout, c.netcapLogFile)
 	} else {
 		// default: write configuration into netcap.log
 		target = c.netcapLogFile
-		if !c.config.Quiet {
+		if !c.config.DecoderConfig.Quiet {
 			fmt.Println() // add newline
 		}
 	}
