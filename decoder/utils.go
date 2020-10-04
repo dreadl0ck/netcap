@@ -14,12 +14,15 @@
 package decoder
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/blevesearch/bleve"
 	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"math"
 	"os"
 	"reflect"
@@ -66,6 +69,73 @@ func MarkdownOverview() {
 		if csv, ok := netio.InitRecord(d.GetType()).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(d.GetName(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
+	}
+}
+
+func decodeTCPConversation(parent *tcpConnection, client func(buf *bufio.Reader) error, server func(buf *bufio.Reader) error) {
+
+	var (
+		buf         bytes.Buffer
+		previousDir reassembly.TCPFlowDirection
+	)
+
+	if len(parent.merged) > 0 {
+		previousDir = parent.merged[0].dir
+	}
+
+	// parse conversation
+	for _, d := range parent.merged {
+		if d.dir == previousDir {
+			buf.Write(d.raw)
+		} else {
+			var (
+				err error
+				b   = bufio.NewReader(&buf)
+			)
+
+			if previousDir == reassembly.TCPDirClientToServer {
+				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+					err = client(b)
+				}
+			} else {
+				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+					err = server(b)
+				}
+			}
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+				decoderLog.Error("error reading TCP stream",
+					zap.Error(err),
+					zap.String("ident", parent.ident),
+				)
+			}
+			buf.Reset()
+			previousDir = d.dir
+
+			buf.Write(d.raw)
+
+			continue
+		}
+	}
+
+	var (
+		err error
+		b   = bufio.NewReader(&buf)
+	)
+
+	if previousDir == reassembly.TCPDirClientToServer {
+		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			err = client(b)
+		}
+	} else {
+		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+			err = server(b)
+		}
+	}
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+		decoderLog.Error("error reading TCP stream",
+			zap.Error(err),
+			zap.String("ident", parent.ident),
+		)
 	}
 }
 

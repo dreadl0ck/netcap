@@ -41,7 +41,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -104,69 +103,15 @@ func (h *pop3Reader) Decode() {
 		return
 	}
 
-	var (
-		buf         bytes.Buffer
-		previousDir reassembly.TCPFlowDirection
+	decodeTCPConversation(
+		h.parent,
+		func(b *bufio.Reader) error {
+			return h.readRequest(b)
+		},
+		func(b *bufio.Reader) error {
+			return h.readResponse(b)
+		},
 	)
-
-	if len(h.parent.merged) > 0 {
-		previousDir = h.parent.merged[0].dir
-	}
-
-	// parse conversation
-	for _, d := range h.parent.merged {
-		if d.dir == previousDir {
-			buf.Write(d.raw)
-		} else {
-			var (
-				err error
-				b   = bufio.NewReader(&buf)
-			)
-
-			if previousDir == reassembly.TCPDirClientToServer {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = h.readRequest(b)
-				}
-			} else {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = h.readResponse(b)
-				}
-			}
-			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-				decoderLog.Error("error reading POP3",
-					zap.Error(err),
-					zap.String("ident", h.parent.ident),
-				)
-			}
-			buf.Reset()
-			previousDir = d.dir
-
-			buf.Write(d.raw)
-
-			continue
-		}
-	}
-
-	var (
-		err error
-		b   = bufio.NewReader(&buf)
-	)
-
-	if previousDir == reassembly.TCPDirClientToServer {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = h.readRequest(b)
-		}
-	} else {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = h.readResponse(b)
-		}
-	}
-	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-		decoderLog.Error("error reading POP3",
-			zap.Error(err),
-			zap.String("ident", h.parent.ident),
-		)
-	}
 
 	// fmt.Println(servicePOP3, h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
 
@@ -199,7 +144,7 @@ func (h *pop3Reader) Decode() {
 	// write record to disk
 	atomic.AddInt64(&pop3Decoder.numRecords, 1)
 
-	err = pop3Decoder.writer.Write(pop3Msg)
+	err := pop3Decoder.writer.Write(pop3Msg)
 	if err != nil {
 		errorMap.Inc(err.Error())
 	}
