@@ -1833,6 +1833,7 @@ message POP3 {
   string User = 5;
   string Pass = 6;
   repeated string MailIDs = 7;
+  repeated string Commands = 8;
 }
 
 message Mail {
