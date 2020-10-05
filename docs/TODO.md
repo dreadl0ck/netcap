@@ -180,6 +180,24 @@ entities:
 - improve DisplayInformation to allow tracking updates to an entity over time
 - Application: add timestamps when packets have been seen, currently the first seen timestamp for the associated ip profile is repeated
 
+## Protocols / Audit Record Types
+
+- FTP
+- Traceroute detection
+- Executables
+- SOCKS
+- SMB
+- RDP
+- RADIUS
+- MySQL
+- MongoDB
+- Kerberos
+- DNP3
+- Protobuf
+- Syslog
+- NetControl
+- x509
+
 ## Zeekify
 
 - add support for communityID identifiers: https://github.com/satta/gommunityid
