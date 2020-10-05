@@ -1,6 +1,10 @@
 # TODOs
 
-- tsv dumping broken
+last CC maxmind geolite2 from 27 Dec 2019 (can be distributed):
+
+- https://web.archive.org/web/20191227182209/http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
+- https://web.archive.org/web/20191227182527/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz
+
 - more SMTP transforms
 - more DNS transforms / DNSSEC
     

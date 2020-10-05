@@ -16,8 +16,4 @@
    </Field>
   </Fields>
  </Properties>
- <Converter>
-  <Value></Value>
-  <RegexGroups></RegexGroups>
- </Converter>
 </MaltegoEntity>

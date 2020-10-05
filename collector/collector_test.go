@@ -18,7 +18,7 @@ func TestCaptureLive(t *testing.T) {
 	// prepare default config
 	DefaultConfig.DecoderConfig.Out = "../tests/collector-test-live"
 	DefaultConfig.DecoderConfig.Source = "unit tests live capture"
-	DefaultConfig.Quiet = true
+	DefaultConfig.DecoderConfig.Quiet = true
 
 	c := New(DefaultConfig)
 	c.PrintConfiguration()
@@ -82,10 +82,10 @@ func TestCapturePCAP(t *testing.T) {
 			CloseInactiveTimeOut: 24 * time.Hour,
 			ClosePendingTimeOut:  5 * time.Second,
 			FileStorage:          "",
+			Quiet:                true,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),
-		Quiet:         true,
 		DPI:           false,
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    false,

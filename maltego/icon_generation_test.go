@@ -110,7 +110,7 @@ func generateIcons() {
 	}
 
 	for _, f := range files {
-		fmt.Println(f.Name())
+		//fmt.Println(f.Name())
 
 		var (
 			oldPath = filepath.Join(pngIconPath, "png", "black", filepath.Base(f.Name()), "twotone-4x.png")
@@ -123,7 +123,7 @@ func generateIcons() {
 			log.Fatal(err)
 		}
 
-		fmt.Println("renamed", oldPath, "to", newPath)
+		//fmt.Println("renamed", oldPath, "to", newPath)
 
 		generateSizes(newBase, newPath)
 	}
@@ -157,7 +157,7 @@ func generateIconsSVG() {
 	}
 
 	for _, f := range files {
-		fmt.Println(f.Name())
+		//fmt.Println(f.Name())
 
 		var (
 			oldPath = filepath.Join(svgIconPath, "svg", filepath.Base(f.Name()), "twotone.svg")
@@ -170,9 +170,7 @@ func generateIconsSVG() {
 			log.Fatal(err)
 		}
 
-		fmt.Println("renamed", oldPath, "to", newPath)
-
-		fmt.Println(f.Name())
+		//fmt.Println("renamed", oldPath, "to", newPath)
 
 		if colorNames, ok := coloredIcons[f.Name()]; ok {
 			for _, c := range colorNames {
@@ -289,7 +287,7 @@ func generateAdditionalIconsSVG() {
 
 		// only process files included in the subset
 		if imgType, ok := subset[f.Name()]; ok {
-			fmt.Println(f.Name())
+			//fmt.Println(f.Name())
 
 			var (
 				oldPath = filepath.Join(svgIconPath, "svg", filepath.Base(f.Name()), imgType+".svg")
@@ -302,7 +300,7 @@ func generateAdditionalIconsSVG() {
 				log.Fatal(err)
 			}
 
-			fmt.Println("renamed", oldPath, "to", newPath)
+			//fmt.Println("renamed", oldPath, "to", newPath)
 
 			generateSizesSVG(newBase, newPath, "black")
 		}
