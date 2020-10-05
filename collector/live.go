@@ -89,7 +89,7 @@ func (c *Collector) CollectLive(iface, bpf string) error {
 
 		c.statMutex.Unlock()
 
-		c.handleRawPacketData(data, ci)
+		c.handleRawPacketData(data, &ci)
 	}
 
 	// stop progress reporting

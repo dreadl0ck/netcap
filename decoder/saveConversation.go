@@ -67,7 +67,12 @@ func saveConversation(proto string, raw []byte, colored []byte, ident string, fi
 	decoderLog.Info("saveConversation", zap.String("base", base))
 
 	stats.Lock()
-	stats.savedTCPConnections++
+	switch proto {
+	case protoTCP:
+		stats.savedTCPConnections++
+	case protoUDP:
+		stats.savedUDPConnections++
+	}
 	stats.Unlock()
 
 	// append to files

@@ -60,10 +60,7 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 			c.printProgressLive()
 
 			// TODO: avoid duplicate alloc
-			c.handlePacket(&packet{
-				data: p.Data(),
-				ci:   p.Metadata().CaptureInfo,
-			})
+			c.handlePacket(p)
 		}
 	}()
 

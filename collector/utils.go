@@ -27,17 +27,14 @@ import (
 	"golang.org/x/net/bpf"
 )
 
-type packet struct {
-	data []byte
-	ci   gopacket.CaptureInfo
-}
+func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
 
-func (c *Collector) handleRawPacketData(data []byte, ci gopacket.CaptureInfo) {
+	// when not using lazy here, the packet will be decoded on the main thread!
+	p := gopacket.NewPacket(data, c.config.BaseLayer, c.config.DecodeOptions)
+	p.Metadata().CaptureInfo = *ci
+
 	// pass packet to a worker routine
-	c.handlePacket(&packet{
-		data: data,
-		ci:   ci,
-	})
+	c.handlePacket(p)
 }
 
 // printProgressLive prints live statistics.

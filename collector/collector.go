@@ -50,7 +50,7 @@ var errInvalidOutputDirectory = errors.New("expected a directory, but got a file
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
-	workers                  []chan *packet
+	workers                  []chan gopacket.Packet
 	start                    time.Time
 	assemblers               []*reassembly.Assembler
 	customDecoders           []decoder.CustomDecoderAPI
@@ -226,7 +226,7 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines in round robin style.
-func (c *Collector) handlePacket(p *packet) {
+func (c *Collector) handlePacket(p gopacket.Packet) {
 	// make it work for 1 worker only, can be used for debugging
 	if c.numWorkers == 1 {
 		c.workers[0] <- p
@@ -248,12 +248,12 @@ func (c *Collector) handlePacket(p *packet) {
 
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines in round robin style.
-func (c *Collector) handlePacketTimeout(p *packet) {
+func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
 	select {
 	// send the packetInfo to the encoder routine
 	case c.workers[c.next] <- p:
 	case <-time.After(3 * time.Second):
-		pkt := gopacket.NewPacket(p.data, c.config.BaseLayer, gopacket.Default)
+		pkt := gopacket.NewPacket(p.Data(), c.config.BaseLayer, gopacket.Default)
 
 		var (
 			nf gopacket.Flow
