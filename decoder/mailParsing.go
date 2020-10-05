@@ -32,7 +32,7 @@ const partIdent = "------=_Part_"
 
 func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 	var (
-		header      = make(map[string]string)
+		hdr         = make(map[string]string)
 		r           = textproto.NewReader(bufio.NewReader(bytes.NewReader(buf)))
 		body        string
 		lastHeader  string
@@ -42,7 +42,7 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 	for {
 		line, err := r.ReadLine()
 		if err != nil {
-			return header, body
+			return hdr, body
 		}
 
 		if collectBody {
@@ -59,7 +59,7 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 
 		parts := strings.Split(line, ": ")
 		if len(parts) == 0 {
-			header[lastHeader] += "\n" + line
+			hdr[lastHeader] += "\n" + line
 
 			continue
 		}
@@ -71,11 +71,11 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 				// Envelope-To means begin of email body for POP3
 				collectBody = true
 			}
-			header[parts[0]] = strings.Join(parts[1:], ": ")
+			hdr[parts[0]] = strings.Join(parts[1:], ": ")
 			lastHeader = parts[0]
 		} else {
 			// multiline
-			header[lastHeader] += "\n" + line
+			hdr[lastHeader] += "\n" + line
 		}
 	}
 }

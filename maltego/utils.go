@@ -32,7 +32,10 @@ const (
 	// ExecutablePath points to the netcap binary on disk
 	ExecutablePath = "/usr/local/bin/net"
 
+	// PropertyIpAddr is the name of maltego property that contains the IP address
 	PropertyIpAddr      = "ipaddr"
+
+	// PropertyIpAddrLabel is the label for the ip address property
 	PropertyIpAddrLabel = "IPAddress"
 )
 

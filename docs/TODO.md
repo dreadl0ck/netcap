@@ -1,5 +1,10 @@
 # TODOs
 
+- make database source configurable
+- move to home folder on windows?
+- db update script
+- script installation, add setup check util command 
+
 last CC maxmind geolite2 from 27 Dec 2019 (can be distributed):
 
 - https://web.archive.org/web/20191227182209/http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz

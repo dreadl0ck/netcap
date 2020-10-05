@@ -99,5 +99,5 @@ func (r *Reader) ReadHeader() (*types.Header, error) {
 		return nil, errors.New("invalid netcap header in file: " + r.file.Name() + ", error: " + err.Error())
 	}
 
-	return header, err
+	return header, nil
 }
