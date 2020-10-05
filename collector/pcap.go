@@ -178,7 +178,7 @@ func (c *Collector) CollectPcap(path string) error {
 
 		c.statMutex.Unlock()
 
-		c.handleRawPacketData(data, ci)
+		c.handleRawPacketData(data, &ci)
 	}
 
 	// stop progress reporting
