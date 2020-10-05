@@ -14,19 +14,11 @@
 package decoder
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
-	"go.uber.org/zap"
-
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -158,87 +150,3 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 	return banner
 }
 
-func saveConnection(raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
-	// prevent processing zero bytes
-	if len(raw) == 0 {
-		return nil
-	}
-
-	banner := runHarvesters(raw, transport, ident, firstPacket)
-
-	if !conf.SaveConns {
-		return nil
-	}
-
-	// fmt.Println("save connection", ident, len(raw), len(colored))
-	// fmt.Println(string(colored))
-
-	var (
-		typ = getServiceName(banner, transport)
-
-		// path for storing the data
-		root = filepath.Join(conf.Out, "tcp", typ)
-
-		// file basename
-		base = filepath.Clean(path.Base(utils.CleanIdent(ident))) + binaryFileExtension
-	)
-
-	// make sure root path exists
-	err := os.MkdirAll(root, defaults.DirectoryPermission)
-	if err != nil {
-		decoderLog.Warn("failed to create directory",
-			zap.String("path", root),
-			zap.Int("perm", defaults.DirectoryPermission),
-		)
-	}
-
-	base = path.Join(root, base)
-
-	decoderLog.Info("saveConnection", zap.String("base", base))
-
-	stats.Lock()
-	stats.savedTCPConnections++
-	stats.Unlock()
-
-	// append to files
-	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaults.FilePermission)
-	if err != nil {
-		logReassemblyError("TCP connection create", fmt.Sprintf("failed to create %s", base), err)
-
-		return err
-	}
-
-	// do not colorize the data written to disk if its just a single keepalive byte
-	if len(raw) == 1 {
-		colored = raw
-	}
-
-	// save the colored version
-	// assign a new buffer
-	r := bytes.NewBuffer(colored)
-
-	w, err := io.Copy(f, r)
-	if err != nil {
-		logReassemblyError("TCP stream", fmt.Sprintf("%s: failed to save TCP connection %s (l:%d)", ident, base, w), err)
-	} else {
-		reassemblyLog.Info("saved TCP connection",
-			zap.String("ident", ident),
-			zap.String("base", base),
-			zap.Int64("bytesWritten", w),
-		)
-	}
-
-	err = f.Close()
-	if err != nil {
-		logReassemblyError("TCP connection", fmt.Sprintf("%s: failed to close TCP connection file %s (l:%d)", ident, base, w), err)
-	}
-
-	return nil
-}
-
-//goland:noinspection GoUnusedFunction
-//func tcpDebug(args ...interface{}) {
-//	if conf.TCPDebug {
-//		logger.DebugLog.Println(args...)
-//	}
-//}

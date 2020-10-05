@@ -118,7 +118,7 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 			if s.IsClient() {
 				// save the entire conversation.
 				// we only need to do this once, when the client part of the connection is closed
-				err := saveConnection(s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
+				err := saveConversation(protoTCP, s.ConversationRaw(), s.ConversationColored(), s.Ident(), s.FirstPacket(), s.Transport())
 				if err != nil {
 					fmt.Println("failed to save connection", err)
 				}
