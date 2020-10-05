@@ -2,13 +2,13 @@ package transform
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"strconv"
 )
 
 func toNTPReferenceIDs() {
-
 	var (
 		ids      = make(map[uint32]int)
 		pathName string

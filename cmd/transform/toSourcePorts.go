@@ -45,7 +45,6 @@ func toSourcePorts() {
 }
 
 func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile, path string) {
-
 	np, err := strconv.Atoi(portStr)
 	if err != nil {
 		fmt.Println(err)

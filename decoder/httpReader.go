@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
-
 	"strings"
 	"sync/atomic"
 
@@ -196,9 +195,8 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 }
 
 func (t *tcpConnection) writeHTTP(h *types.HTTP) {
-
 	// TODO: this kills performance
-	//updateHTTPStore(h)
+	// updateHTTPStore(h)
 
 	if conf.IncludePayloads {
 		h.RequestBody = t.client.DataSlice().bytes()

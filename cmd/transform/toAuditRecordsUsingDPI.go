@@ -1,13 +1,13 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/io"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/maltego"
 )
 

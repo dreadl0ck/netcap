@@ -428,7 +428,6 @@ func (t *tcpConnection) reorder(ac reassembly.AssemblerContext, firstFlow gopack
 // It can return false if it want to see subsequent packets with Accept(), e.g. to
 // see FIN-ACK, for deeper state-machine analysis.
 func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, firstFlow gopacket.Flow, reason string) bool {
-
 	// reorder the stream fragments
 	t.reorder(ac, firstFlow)
 

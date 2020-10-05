@@ -15,7 +15,6 @@ func toProviderIPProfilesForHost() {
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
-
 			if host == "" {
 				host = lt.Value
 			}

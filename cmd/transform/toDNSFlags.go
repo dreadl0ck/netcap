@@ -2,14 +2,14 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func toDNSFlagCombinations() {
-
 	var (
 		// dns flags to number of occurrences
 		flags    = make(map[string]int64)
@@ -33,7 +33,7 @@ func toDNSFlagCombinations() {
 		ent.AddProperty("flags", "Flags", maltego.Strict, flagCombination)
 		ent.SetLinkLabel(strconv.Itoa(int(num)))
 		// TODO: num pkts / set thickness
-		//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
+		// ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)
@@ -41,8 +41,7 @@ func toDNSFlagCombinations() {
 }
 
 func dnsFlagsToString(dns *types.DNS) string {
-
-	var arr = make([]string, 0, 9)
+	arr := make([]string, 0, 9)
 
 	if dns.AA {
 		arr = append(arr, "AA")

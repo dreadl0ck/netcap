@@ -15,13 +15,14 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func openSoftwareTrafficInWireshark() {
@@ -62,7 +63,6 @@ func openSoftwareTrafficInWireshark() {
 // defined by two hosts and two ports
 // eg: "(host 192.168.1.14 and port 56988) and (host 224.0.0.252 and port 5355)"
 func makeConnectionBPFFrom4Tuple(srcIP, srcPort, dstIP, dstPort string) string {
-
 	var b strings.Builder
 
 	b.WriteString("(host ")

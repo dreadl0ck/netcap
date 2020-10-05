@@ -15,14 +15,15 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 var (
@@ -39,7 +40,6 @@ func init() {
 
 // TODO: refactor this method, last three params are only used for the software transform atm
 func makeOutFilePath(in, bpf string, lt maltego.LocalTransform, flows bool, bpfSummary string) (name string, exists bool) {
-
 	log.Println("os.Environment:", os.Environ())
 
 	// output the files to an directory inside the netcap folder

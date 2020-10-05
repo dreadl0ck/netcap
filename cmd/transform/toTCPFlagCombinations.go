@@ -2,10 +2,11 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 func toTCPFlagCombinations() {
@@ -36,8 +37,7 @@ func toTCPFlagCombinations() {
 }
 
 func tcpFlagsToString(tcp *types.TCP) string {
-
-	var arr = make([]string, 0, 9)
+	arr := make([]string, 0, 9)
 
 	if tcp.FIN {
 		arr = append(arr, "FIN")

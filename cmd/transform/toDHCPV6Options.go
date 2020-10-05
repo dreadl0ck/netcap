@@ -2,8 +2,9 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket/layers"
 	"strconv"
+
+	"github.com/dreadl0ck/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"

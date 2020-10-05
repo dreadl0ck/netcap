@@ -28,7 +28,6 @@ import (
 )
 
 func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
-
 	// when not using lazy here, the packet will be decoded on the main thread!
 	p := gopacket.NewPacket(data, c.config.BaseLayer, c.config.DecodeOptions)
 	p.Metadata().CaptureInfo = *ci

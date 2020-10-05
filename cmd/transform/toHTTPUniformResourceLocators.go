@@ -1,14 +1,15 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toHTTPUniformResourceLocators() {
@@ -35,8 +36,8 @@ func toHTTPUniformResourceLocators() {
 				urlStats[bareURL]++
 				ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]) + "\n" + h.Method)
 
-				//ent.AddDisplayInformation(createURLTableHTML(h, "SourceIP", h.SrcIP), "Visitors")
-				//ent.AddDisplayInformation(createURLTableHTML(h, "DestinationIP", h.DstIP), "Providers")
+				// ent.AddDisplayInformation(createURLTableHTML(h, "SourceIP", h.SrcIP), "Visitors")
+				// ent.AddDisplayInformation(createURLTableHTML(h, "DestinationIP", h.DstIP), "Providers")
 
 				ent.AddDisplayInformation("<pre>"+utils.UnixTimeToUTC(h.Timestamp)+"    |    "+h.SrcIP+"    |    "+h.Method+"    |    "+strconv.Itoa(int(h.StatusCode))+"    |    "+http.StatusText(int(h.StatusCode))+"<br>", "Visitors")
 				ent.AddDisplayInformation("<pre>"+utils.UnixTimeToUTC(h.Timestamp)+"    |    "+h.DstIP+"    |    "+h.Method+"    |    "+strconv.Itoa(int(h.StatusCode))+"    |    "+http.StatusText(int(h.StatusCode))+"<br>", "Providers")
@@ -47,8 +48,7 @@ func toHTTPUniformResourceLocators() {
 }
 
 func createURLTableHTML(h *types.HTTP, ipType, ip string) string {
-
-	var out = []string{"<table style='width:100%'>"}
+	out := []string{"<table style='width:100%'>"}
 
 	out = append(out, `<tr>
     <th>Timestamp</th>
@@ -60,9 +60,9 @@ func createURLTableHTML(h *types.HTTP, ipType, ip string) string {
 	out = append(out, "<tr><td>"+utils.UnixTimeToUTC(h.Timestamp)+"</td><td>"+ip+"</td><td>"+strconv.Itoa(int(h.StatusCode))+"</td><td>"+http.StatusText(int(h.StatusCode))+"</td></tr>")
 
 	// colors
-	//out = append(out, "<tr><td style='color:red'>"+k+"</td><td>"+v+"</td></tr>")
+	// out = append(out, "<tr><td style='color:red'>"+k+"</td><td>"+v+"</td></tr>")
 
-	//out = append(out, "</table>")
+	// out = append(out, "</table>")
 
 	return strings.Join(out, "")
 }

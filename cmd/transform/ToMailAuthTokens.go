@@ -1,9 +1,10 @@
 package transform
 
 import (
+	"log"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"log"
 )
 
 func toMailAuthTokens() {

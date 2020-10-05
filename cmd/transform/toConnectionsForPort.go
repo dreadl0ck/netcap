@@ -1,17 +1,18 @@
 package transform
 
 import (
+	"log"
+	"os"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"log"
-	"os"
 )
 
 func toConnectionsForPort() {
-
 	var (
 		port        string
 		resolverLog = zap.New(zapcore.NewNopCore())

@@ -2,12 +2,12 @@ package transform
 
 import (
 	"fmt"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toUDPHosts() {
-
 	var (
 		profiles = maltego.LoadIPProfiles()
 		hosts    = make(map[string]struct{})

@@ -15,11 +15,11 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
 	"os"
 	"path/filepath"
 
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/logger"
 	"github.com/dreadl0ck/netcap/resolvers"

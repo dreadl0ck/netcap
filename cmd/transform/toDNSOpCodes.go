@@ -2,14 +2,15 @@ package transform
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/dreadl0ck/gopacket/layers"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"strconv"
 )
 
 func toDNSOpCodes() {
-
 	var (
 		// dns op code to number of occurrences
 		codes    = make(map[int32]int64)
@@ -33,7 +34,7 @@ func toDNSOpCodes() {
 		ent.AddProperty("code", "Code", maltego.Strict, strconv.Itoa(int(code)))
 		ent.SetLinkLabel(strconv.Itoa(int(num)))
 		// TODO: num pkts / set thickness
-		//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
+		// ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

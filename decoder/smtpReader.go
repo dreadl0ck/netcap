@@ -16,13 +16,14 @@ package decoder
 import (
 	"bufio"
 	"errors"
-	"github.com/mgutz/ansi"
-	"go.uber.org/zap"
 	"io"
 	"net/textproto"
 	"strconv"
 	"strings"
 	"sync/atomic"
+
+	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -105,7 +106,6 @@ type smtpReader struct {
 }
 
 func validSMTPCommand(cmd string) bool {
-
 	switch cmd {
 	case smtpDot,
 		smtpHELO,
@@ -183,7 +183,6 @@ func smtpDebug(args ...interface{}) {
 }
 
 func (h *smtpReader) readRequest(b *bufio.Reader) error {
-
 	var (
 		tp   = textproto.NewReader(b)
 		data []string
@@ -265,7 +264,6 @@ func getSMTPCommand(line string) (string, []string) {
 }
 
 func (h *smtpReader) readResponse(b *bufio.Reader) error {
-
 	var (
 		tp   = textproto.NewReader(b)
 		data []string
@@ -323,7 +321,7 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 	}
 
 	var (
-		//state    = stateNotAuthenticated
+		// state    = stateNotAuthenticated
 		numMails int
 		from, to string
 		next     = func() *types.SMTPRequest {

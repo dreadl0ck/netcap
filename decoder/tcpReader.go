@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
+
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )

@@ -20,10 +20,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/blevesearch/bleve"
-	"github.com/dreadl0ck/netcap/defaults"
-	netio "github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/reassembly"
+	"io"
 	"math"
 	"os"
 	"reflect"
@@ -32,12 +29,15 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/blevesearch/bleve"
 	"github.com/evilsocket/islazy/tui"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/defaults"
+	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
-	"io"
 )
 
 const (
@@ -107,7 +107,6 @@ func MarkdownOverview() {
 }
 
 func decodeTCPConversation(parent *tcpConnection, client func(buf *bufio.Reader) error, server func(buf *bufio.Reader) error) {
-
 	var (
 		buf         bytes.Buffer
 		previousDir reassembly.TCPFlowDirection
@@ -374,7 +373,6 @@ func logReassemblyError(task string, msg string, err error) {
 // OpenBleve is a simple wrapper for the bleve open call
 // it's used to log any open operations.
 func openBleve(path string) (bleve.Index, error) {
-
 	decoderLog.Info("opening bleve db", zap.String("path", path))
 
 	return bleve.Open(path)
