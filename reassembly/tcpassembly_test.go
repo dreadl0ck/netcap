@@ -111,8 +111,8 @@ func (tf *testMemoryFactory) Accept(*layers.TCP, TCPFlowDirection, Sequence) boo
 }
 
 func (tf *testMemoryFactory) ReassembledSG(sg ScatterGather, _ AssemblerContext) {
-	bytes, _ := sg.Lengths()
-	tf.bytes += bytes
+	availableBytes, _ := sg.Lengths()
+	tf.bytes += availableBytes
 }
 
 func (tf *testMemoryFactory) ReassemblyComplete(AssemblerContext, gopacket.Flow, string) bool {

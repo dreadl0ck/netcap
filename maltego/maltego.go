@@ -47,8 +47,13 @@ const (
 type LinkDirection string
 
 const (
+	// OutputToInput direction for maltego links
 	OutputToInput LinkDirection = "output-to-input"
+
+	// InputToOutput direction for maltego links
 	InputToOutput LinkDirection = "input-to-output"
+
+	// Bidirectional direction for maltego links
 	Bidirectional LinkDirection = "bidirectional"
 )
 

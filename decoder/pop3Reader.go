@@ -112,7 +112,7 @@ func (h *pop3Reader) Decode() {
 		User:      user,
 		Pass:      pass,
 		MailIDs:   mails,
-		Commands: commands,
+		Commands:  commands,
 	}
 
 	if user != "" || pass != "" {

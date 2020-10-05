@@ -22,8 +22,6 @@ import (
 
 var (
 	decoderLog *zap.Logger
-	// hold a reference to the file handle so we can dump summary data tables into it.
-	decoderLogFileHandle *os.File
 
 	reassemblyLog *zap.Logger
 	// hold a reference to the file handle so we can dump summary data tables into it.
@@ -38,7 +36,6 @@ var (
 // SetDecoderLogger sets the general decoder logger for the decoder package.
 func SetDecoderLogger(lg *zap.Logger, f *os.File) {
 	decoderLog = lg
-	decoderLogFileHandle = f
 }
 
 // SetReassemblyLogger sets the tcp stream reassembly logger for the decoder package.
@@ -57,7 +54,7 @@ func SetPOP3Logger(lg *log.Logger) {
 	pop3Log = lg
 }
 
-// SetPOP3Logger sets the pop3 logger for the decoder package.
+// SetSMTPLogger sets the pop3 logger for the decoder package.
 func SetSMTPLogger(lg *log.Logger) {
 	smtpLog = lg
 }

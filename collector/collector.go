@@ -178,7 +178,7 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 			// TODO: hold the connection open until the stream processing is going on.
 			// This way the stop command could flush the latest audit records to maltego once the netcap process exited.
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
+			_, _ = w.Write([]byte("OK"))
 
 			// do this in the background to allow the http request handler to finish cleanly
 			go func() {
@@ -202,7 +202,7 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 		// TODO: hold the connection open until the stream processing is going on.
 		// This way the stop command could flush the latest audit records to maltego once the netcap process exited.
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 
 		go func() {
 			time.Sleep(1 * time.Second)
