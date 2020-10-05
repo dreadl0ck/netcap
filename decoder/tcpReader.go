@@ -65,28 +65,17 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 	return "unknown"
 }
 
-func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacket time.Time) []byte {
+func runHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPacket time.Time) {
 	// only use harvesters when credential audit record type is loaded
 	// useHarvesters is set after the custom encoder initialization
 	if !useHarvesters {
-		return raw
+		return
 	}
 
 	var (
-		banner = make([]byte, 0, conf.HarvesterBannerSize)
-		found  bool
-		tried  *credentialHarvester
+		found bool
+		tried *credentialHarvester
 	)
-
-	// copy c.HarvesterBannerSize number of bytes from the raw conversation
-	// to use for the credential harvesters
-	for i, b := range raw {
-		if i >= conf.HarvesterBannerSize {
-			break
-		}
-
-		banner = append(banner, b)
-	}
 
 	// convert service port to integer
 	dstPort, err := strconv.Atoi(transport.Dst().String())
@@ -147,6 +136,5 @@ func runHarvesters(raw []byte, transport gopacket.Flow, ident string, firstPacke
 		}
 	}
 
-	return banner
+	return
 }
-

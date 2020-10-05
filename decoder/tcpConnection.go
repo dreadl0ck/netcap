@@ -61,7 +61,6 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/evilsocket/islazy/tui"
-	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -145,11 +144,9 @@ func NumSavedUDPConns() int64 {
 type tcpConnection struct {
 	net, transport gopacket.Flow
 
-	optchecker             reassembly.TCPOptionCheck
-	conversationRawBuf     bytes.Buffer
-	conversationColoredBuf bytes.Buffer
+	optchecker reassembly.TCPOptionCheck
 
-	merged      streamDataSlice
+	merged      dataFragments
 	firstPacket time.Time
 
 	client streamReader
@@ -161,8 +158,8 @@ type tcpConnection struct {
 
 	sync.Mutex
 
-	isHTTPS bool
-	fsmerr  bool
+	wasMerged bool
+	fsmerr    bool
 }
 
 // Accept decides whether the TCP packet should be accepted
@@ -298,15 +295,15 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 	// pass data either to client or server
 	if dir == reassembly.TCPDirClientToServer {
 		t.client.DataChan() <- &streamData{
-			raw: dataCpy,
-			ac:  ac,
-			dir: dir,
+			rawData: dataCpy,
+			ac:      ac,
+			dir:     dir,
 		}
 	} else {
 		t.server.DataChan() <- &streamData{
-			raw: dataCpy,
-			ac:  ac,
-			dir: dir,
+			rawData: dataCpy,
+			ac:      ac,
+			dir:     dir,
 		}
 	}
 
@@ -411,11 +408,11 @@ func (t *tcpConnection) reorder(ac reassembly.AssemblerContext, firstFlow gopack
 
 				// fix directions for all data fragments
 				for _, d := range t.client.DataSlice() {
-					d.dir = reassembly.TCPDirClientToServer
+					d.setDirection(reassembly.TCPDirClientToServer)
 				}
 
 				for _, d := range t.server.DataSlice() {
-					d.dir = reassembly.TCPDirServerToClient
+					d.setDirection(reassembly.TCPDirServerToClient)
 				}
 				t.Unlock()
 			}
@@ -450,8 +447,10 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	if t.client != nil {
 		t.client.MarkSaved()
 
+		t.sortAndMergeFragments()
+
 		// client
-		err := saveConversation(protoTCP, t.conversationRaw(), t.conversationDataColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
+		err := saveConversation(protoTCP, t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
 		if err != nil {
 			reassemblyLog.Error("failed to save stream", zap.Error(err), zap.String("ident", t.client.Ident()))
 		}
@@ -461,26 +460,12 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	if t.server != nil {
 		t.server.MarkSaved()
 
+		t.sortAndMergeFragments()
+
 		// server
 		saveTCPServiceBanner(t.server)
 		streamProcessingTime.WithLabelValues(reassembly.TCPDirServerToClient.String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
-
-	// channels don't have to be closed.
-	// they will be garbage collected if no goroutines reference them any more
-	// we will attempt to close anyway to free up so some resources if possible
-	// in case one is already closed there will be a panic
-	// we need to recover from that and do the same for the server
-	// by using two anonymous functions this is possible
-	// I created a snippet to verify: https://goplay.space/#m8-zwTuGrgS
-	func() {
-		defer recovery()
-		close(t.client.DataChan())
-	}()
-	func() {
-		defer recovery()
-		close(t.server.DataChan())
-	}()
 
 	if t.decoder != nil { // try to determine what type of raw tcp stream and update decoder
 		// TODO: move this functionality into a dedicated package and create a voting model
@@ -826,58 +811,17 @@ func waitForConns() chan struct{} {
 
 // sort the conversation fragments and fill the conversation buffers.
 func (t *tcpConnection) sortAndMergeFragments() {
-	// concatenate both client and server data fragments
-	t.merged = append(t.client.DataSlice(), t.server.DataSlice()...)
-
-	// sort based on their timestamps
-	sort.Sort(t.merged)
-
-	// create the buffer with the entire conversation
-	for _, d := range t.merged { // fmt.Println(t.ident, ansi.Yellow, d.ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset, d.ac.GetCaptureInfo().Length, d.dir)
-
-		t.conversationRawBuf.Write(d.raw)
-
-		if d.dir == reassembly.TCPDirClientToServer {
-			if conf.Debug {
-				var ts string
-				if d.ac != nil {
-					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
-				}
-
-				t.conversationColoredBuf.WriteString(ansi.Red + string(d.raw) + ansi.Reset + ts)
-			} else {
-				t.conversationColoredBuf.WriteString(ansi.Red + string(d.raw) + ansi.Reset)
-			}
-		} else {
-			if conf.Debug {
-				var ts string
-				if d.ac != nil {
-					ts = "\n[" + d.ac.GetCaptureInfo().Timestamp.String() + "]\n"
-				}
-
-				t.conversationColoredBuf.WriteString(ansi.Blue + string(d.raw) + ansi.Reset + ts)
-			} else {
-				t.conversationColoredBuf.WriteString(ansi.Blue + string(d.raw) + ansi.Reset)
-			}
-		}
-	}
-}
-
-func (t *tcpConnection) conversationRaw() []byte {
 	t.Lock()
-	defer t.Unlock()
+	if !t.wasMerged {
 
-	// do this only once, this method will be called once for each side of a connection
-	if len(t.conversationRawBuf.Bytes()) == 0 {
-		t.sortAndMergeFragments()
+		// only do this once per connection
+		t.wasMerged = true
+
+		// concatenate both client and server data fragments
+		t.merged = append(t.client.DataSlice(), t.server.DataSlice()...)
+
+		// sort based on their timestamps
+		sort.Sort(t.merged)
 	}
-
-	return t.conversationRawBuf.Bytes()
-}
-
-func (t *tcpConnection) conversationDataColored() []byte {
-	t.Lock()
-	defer t.Unlock()
-
-	return t.conversationColoredBuf.Bytes()
+	t.Unlock()
 }

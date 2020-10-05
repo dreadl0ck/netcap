@@ -58,15 +58,15 @@ func (h *sshReader) Decode() {
 	)
 
 	for _, d := range h.parent.merged {
-		if d.dir == reassembly.TCPDirClientToServer {
+		if d.direction() == reassembly.TCPDirClientToServer {
 			// 2255k bytes should be enough to capture ident (max 255 bytes) + kexInit (usually ~1200-1700 bytes)
 			if clientBuf.Len() < 2255 {
-				clientBuf.Write(d.raw)
+				clientBuf.Write(d.raw())
 			}
 		} else {
 			// 2255k bytes should be enough to capture ident (max 255 bytes) + kexInit (usually ~1200-1700 bytes)
 			if serverBuf.Len() < 2255 {
-				serverBuf.Write(d.raw)
+				serverBuf.Write(d.raw())
 			}
 		}
 	}

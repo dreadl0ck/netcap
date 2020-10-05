@@ -17,6 +17,8 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 	"os"
 	"path"
@@ -28,20 +30,19 @@ import (
 )
 
 // save TCP / UDP conversations to disk
-func saveConversation(proto string, raw []byte, colored []byte, ident string, firstPacket time.Time, transport gopacket.Flow) error {
+func saveConversation(proto string, conversation dataFragments, ident string, firstPacket time.Time, transport gopacket.Flow) error {
+
 	// prevent processing zero bytes
-	if len(raw) == 0 {
+	if len(conversation) == 0 || conversation.size() == 0 {
 		return nil
 	}
 
-	banner := runHarvesters(raw, transport, ident, firstPacket)
+	banner := createBannerFromConversation(conversation)
+	runHarvesters(banner, transport, ident, firstPacket)
 
 	if !conf.SaveConns {
 		return nil
 	}
-
-	// fmt.Println("save connection", ident, len(raw), len(colored))
-	// fmt.Println(string(colored))
 
 	var (
 		typ = getServiceName(banner, transport)
@@ -83,35 +84,85 @@ func saveConversation(proto string, raw []byte, colored []byte, ident string, fi
 		return err
 	}
 
-	// do not colorize the data written to disk if its just a single keepalive byte
-	if len(raw) == 1 {
-		colored = raw
-	}
-
 	// TODO: make buffer size configurable
 	w := bufio.NewWriterSize(f, 4096)
-	n, err := w.Write(colored)
 
-	// TODO: add benchmarks to see what is faster and causes less allocations / syscalls
-	// save the colored version
-	// assign a new buffer
-	//r := bytes.NewBuffer(colored)
-	//n, err := io.Copy(f, r)
+	if proto == protoTCP {
+		// create the buffer with the entire conversation
+		for _, d := range conversation {
+
+			if d.direction() == reassembly.TCPDirClientToServer {
+				w.WriteString(ansi.Red)
+				w.Write(d.raw())
+				w.WriteString(ansi.Reset)
+			} else {
+				w.WriteString(ansi.Blue)
+				w.Write(d.raw())
+				w.WriteString(ansi.Reset)
+			}
+
+			if conf.Debug {
+				var ts string
+				if d.context() != nil {
+					ts = "\n[" + d.context().GetCaptureInfo().Timestamp.String() + "]\n"
+				}
+
+				w.WriteString(ts)
+			}
+		}
+	} else {
+		clientTransport := conversation[0].transport()
+		for _, d := range conversation {
+			if d.transport() == clientTransport {
+				// client
+				w.WriteString(ansi.Red)
+				w.Write(d.raw())
+				w.WriteString(ansi.Reset)
+			} else {
+				// server
+				w.WriteString(ansi.Blue)
+				w.Write(d.raw())
+				w.WriteString(ansi.Reset)
+			}
+			if conf.Debug {
+				w.WriteString("\n[" + d.captureInfo().Timestamp.String() + "]\n")
+			}
+		}
+	}
+
+	// close file
+	err = f.Close()
 	if err != nil {
-		logReassemblyError(proto + " conversation", fmt.Sprintf("%s: failed to save TCP connection %s (l:%d)", ident, base, n), err)
+		logReassemblyError("TCP connection", fmt.Sprintf("%s: failed to close TCP connection file %s", ident, base), err)
 	} else {
 		reassemblyLog.Info("saved conversation",
 			zap.String("ident", ident),
 			zap.String("proto", proto),
 			zap.String("base", base),
-			zap.Int("bytesWritten", int(n)),
 		)
 	}
 
-	err = f.Close()
-	if err != nil {
-		logReassemblyError("TCP connection", fmt.Sprintf("%s: failed to close TCP connection file %s (l:%d)", ident, base, n), err)
+	return nil
+}
+
+func createBannerFromConversation(conversation dataFragments) []byte {
+	var (
+		banner    = make([]byte, 0, conf.HarvesterBannerSize)
+		processed int
+	)
+
+	// copy c.HarvesterBannerSize number of bytes from the raw conversation
+	// to use for the credential harvesters
+	for _, d := range conversation {
+		for _, b := range d.raw() {
+			if processed >= conf.HarvesterBannerSize {
+				break
+			}
+
+			processed++
+			banner = append(banner, b)
+		}
 	}
 
-	return nil
+	return banner
 }

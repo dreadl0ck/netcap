@@ -13,20 +13,17 @@
 
 package decoder
 
-// udpDataSlice implements sort.Interface to sort data fragments based on their timestamps.
-type udpDataSlice []*udpData
+import (
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap/reassembly"
+)
 
-// Len will return the length.
-func (d udpDataSlice) Len() int {
-	return len(d)
-}
-
-// Less will return true if the value at index i is smaller than the other one.
-func (d udpDataSlice) Less(i, j int) bool {
-	return d[i].ci.Timestamp.Before(d[j].ci.Timestamp)
-}
-
-// Swap will switch the values.
-func (d udpDataSlice) Swap(i, j int) {
-	d[i], d[j] = d[j], d[i]
+type dataFragment interface {
+	raw() []byte
+	context() reassembly.AssemblerContext
+	direction() reassembly.TCPFlowDirection
+	setDirection(reassembly.TCPFlowDirection)
+	captureInfo() gopacket.CaptureInfo
+	network() gopacket.Flow
+	transport() gopacket.Flow
 }

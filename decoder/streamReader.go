@@ -14,12 +14,9 @@
 package decoder
 
 import (
-	"bytes"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
-
-	"github.com/dreadl0ck/netcap/reassembly"
 )
 
 // streamReader is an interface for processing a uni-directional stream of TCP network data
@@ -37,7 +34,7 @@ type streamReader interface {
 	DataChan() chan *streamData
 
 	// DataSlice will return all gathered data fragments.
-	DataSlice() streamDataSlice
+	DataSlice() dataFragments
 
 	// Cleanup will tear down the stream processing.
 	Cleanup(f *tcpConnectionFactory)
@@ -56,6 +53,9 @@ type streamReader interface {
 
 	// Ident returns the stream identifier.
 	Ident() string
+
+	// Merged returns the sorted conversation
+	Merged() dataFragments
 
 	// Network returns the network flow.
 	Network() gopacket.Flow
@@ -84,12 +84,6 @@ type streamReader interface {
 	// ServiceIdent will return the identifier of the service (serverIP:serverPort).
 	ServiceIdent() string
 
-	// ConversationRaw provides access to the raw entire conversation.
-	ConversationRaw() []byte
-
-	// ConversationColored provides access to the ANSI colored entire conversation.
-	ConversationColored() []byte
-
 	// SortAndMergeFragments sorts all stream fragments based on their timestamp
 	// and generate the conversation buffers.
 	SortAndMergeFragments()
@@ -101,64 +95,3 @@ type streamDecoder interface {
 	// Decode parses the stream according to the identified protocol.
 	Decode()
 }
-
-// streamData is a fragment of data we received from a streamReader
-// its contains the raw bytes as well an assembler context with timestamp information.
-type streamData struct {
-	raw []byte
-	ac  reassembly.AssemblerContext
-	dir reassembly.TCPFlowDirection
-}
-
-// streamDataSlice implements sort.Interface to sort data fragments based on their timestamps.
-type streamDataSlice []*streamData
-
-func (d streamDataSlice) bytes() []byte {
-	var b bytes.Buffer
-
-	for _, data := range d {
-		b.Write(data.raw)
-	}
-
-	return b.Bytes()
-}
-
-// Len returns the length.
-func (d streamDataSlice) Len() int {
-	return len(d)
-}
-
-// Less will check if the value at index i is less than the one at index j.
-func (d streamDataSlice) Less(i, j int) bool {
-	data1 := d[i]
-	data2 := d[j]
-
-	if data1.ac == nil || data2.ac == nil {
-		return false
-	}
-
-	return data1.ac.GetCaptureInfo().Timestamp.Before(data2.ac.GetCaptureInfo().Timestamp)
-}
-
-// Swap will flip both values.
-func (d streamDataSlice) Swap(i, j int) {
-	d[i], d[j] = d[j], d[i]
-}
-
-// stream contains both flows for a connection.
-// type stream struct {
-// 	a gopacket.Flow
-// 	b gopacket.Flow
-// }
-//
-// // reverse flips source and destination.
-// func (s *stream) reverse() *stream {
-// 	return &stream{
-// 		s.a.Reverse(),
-// 		s.b.Reverse(),
-// 	}
-// }
-//
-// func (s *stream) String() string {
-// 	return s.a.String() + " : " + s.b.String()
-// }
