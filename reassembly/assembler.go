@@ -596,6 +596,10 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 		skip = half.nextSeq.difference(a.ret[0].getSeq())
 	}
 
+	// TODO: this mechanism needs to be refactored in order to fully support concurrent reassembly
+	// Prepending saved bytes in combination with appending continuous bytes,
+	// leads to potentially flushing combined messages from the client / server to the stream consumers.
+
 	last := a.ret[0].getSeq().add(a.ret[0].length())
 
 	// Prepend saved bytes

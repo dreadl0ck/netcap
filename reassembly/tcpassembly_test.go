@@ -819,7 +819,7 @@ func TestFlush(t *testing.T) {
 					want: []Reassembly{
 						// flushed after flush interval.
 						{
-							Skip:  -1,
+							Skip:  6,
 							Bytes: []byte{4, 5, 6, 7},
 						},
 					},

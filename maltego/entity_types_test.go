@@ -58,7 +58,7 @@ type XMLEntity struct {
 	Entities   *baseEntities    `xml:"BaseEntities,omitempty"`
 	Properties entityProperties `xml:"Properties"`
 
-	Converter Converter `xml:"Converter"`
+	Converter *Converter `xml:"Converter,omitempty"`
 }
 
 type Converter struct {
@@ -171,7 +171,7 @@ func newEntity(entName, imgName, description, parent string, isArchive bool, r *
 		_ = regexp.MustCompile(r.regex)
 
 		// set converter
-		ent.Converter = Converter{
+		ent.Converter = &Converter{
 			//Value:   "<![CDATA[" + r.regex + "]]",
 			Value: r.regex,
 		}

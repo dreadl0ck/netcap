@@ -23,7 +23,6 @@ import (
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 type regexTest struct {
@@ -130,20 +129,20 @@ func TestClassifyBanners(t *testing.T) {
 	// Load vulnerabilities DB index
 	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
 	var err error
-	vulnerabilitiesIndex, err = utils.OpenBleve(indexName)
+	vulnerabilitiesIndex, err = openBleve(indexName)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer utils.CloseBleve(vulnerabilitiesIndex)
+	defer closeBleve(vulnerabilitiesIndex)
 
 	indexName = filepath.Join(resolvers.DataBaseSource, "exploit-db.bleve")
-	exploitsIndex, err = utils.OpenBleve(indexName)
+	exploitsIndex, err = openBleve(indexName)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer utils.CloseBleve(exploitsIndex)
+	defer closeBleve(exploitsIndex)
 
 	// conf.Debug = true
 	// important: needs to be set prior to loading probes
