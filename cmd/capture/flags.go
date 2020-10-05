@@ -87,7 +87,7 @@ var (
 	flagQuiet          = fs.Bool("quiet", false, "don't print infos to stdout")
 	flagPrintProgress  = fs.Bool("progress", false, "force printing progress to stderr even in quiet mode")
 
-	flagFileStorage = fs.String("fileStorage", "files", "path to created extracted files")
+	flagFileStorage = fs.String("fileStorage", "files", "path to extracted files")
 
 	flagReverseDNS    = fs.Bool("reverse-dns", false, "resolve ips to domains via the operating systems default dns resolver")
 	flagLocalDNS      = fs.Bool("local-dns", false, "resolve DNS locally via hosts file in the database dir")

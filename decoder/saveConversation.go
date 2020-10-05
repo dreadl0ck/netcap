@@ -19,6 +19,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
@@ -31,11 +32,14 @@ import (
 )
 
 // save TCP / UDP conversations to disk
+// this also invokes the harvesters on the conversation banner
 func saveConversation(proto string, conversation dataFragments, ident string, firstPacket time.Time, transport gopacket.Flow) error {
 	// prevent processing zero bytes
 	if len(conversation) == 0 || conversation.size() == 0 {
 		return nil
 	}
+
+	//fmt.Println("saving conv", conversation.size(), ident)
 
 	banner := createBannerFromConversation(conversation)
 	runHarvesters(banner, transport, ident, firstPacket)
@@ -76,10 +80,19 @@ func saveConversation(proto string, conversation dataFragments, ident string, fi
 	}
 	stats.Unlock()
 
+retry:
 	// append to files
 	f, err := os.OpenFile(base, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, defaults.FilePermission)
 	if err != nil {
+
 		logReassemblyError("conversation-create", fmt.Sprintf("%s: failed to create %s", ident, base), err)
+
+		// sleep and try again to handle too many open files error
+		if strings.Contains(err.Error(), "too many open files") {
+			time.Sleep(500 * time.Millisecond)
+
+			goto retry
+		}
 
 		return err
 	}
@@ -130,15 +143,36 @@ func saveConversation(proto string, conversation dataFragments, ident string, fi
 		}
 	}
 
+	err = w.Flush()
+	if err != nil {
+		reassemblyLog.Info("failed to flush buffer",
+			zap.String("ident", ident),
+			zap.String("proto", proto),
+			zap.String("base", base),
+			zap.String("proto", proto),
+		)
+	}
+
+	err = f.Sync()
+	if err != nil {
+		reassemblyLog.Info("failed to sync file",
+			zap.String("ident", ident),
+			zap.String("proto", proto),
+			zap.String("base", base),
+			zap.String("proto", proto),
+		)
+	}
+
 	// close file
 	err = f.Close()
 	if err != nil {
-		logReassemblyError("TCP connection", fmt.Sprintf("%s: failed to close TCP connection file %s", ident, base), err)
+		logReassemblyError(proto+" conversation", fmt.Sprintf("%s: failed to close TCP connection file %s", ident, base), err)
 	} else {
 		reassemblyLog.Info("saved conversation",
 			zap.String("ident", ident),
 			zap.String("proto", proto),
 			zap.String("base", base),
+			zap.String("proto", proto),
 		)
 	}
 

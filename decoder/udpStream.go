@@ -48,6 +48,12 @@ func newUDPStreamPool() *udpStreamPool {
 		streams: make(map[uint64]*udpStream),
 	}
 }
+func (u *udpStreamPool) size() int {
+	u.Lock()
+	defer u.Unlock()
+
+	return len(u.streams)
+}
 
 // takes an UDP packet and tracks the data seen for the conversation.
 func (u *udpStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
@@ -79,9 +85,12 @@ func (u *udpStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 }
 
 // TODO: currently this is only called on teardown. implement flushing continuously.
+// TODO: parallelize
 func (u *udpStreamPool) saveAllUDPConnections() {
 	u.Lock()
-	for _, s := range u.streams {
+	for i, s := range u.streams {
+
+		fmt.Println(i, "/", len(u.streams))
 		s.Lock()
 		sort.Sort(s.data)
 

@@ -307,7 +307,7 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 		}
 	}
 
-	streamFeedDataTime.WithLabelValues(dir.String()).Set(float64(time.Since(ti).Nanoseconds()))
+	tcpStreamFeedDataTime.WithLabelValues(dir.String()).Set(float64(time.Since(ti).Nanoseconds()))
 }
 
 //
@@ -453,7 +453,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		if err != nil {
 			reassemblyLog.Error("failed to save stream", zap.Error(err), zap.String("ident", t.client.Ident()))
 		}
-		streamProcessingTime.WithLabelValues(reassembly.TCPDirClientToServer.String()).Set(float64(time.Since(ti).Nanoseconds()))
+		tcpStreamProcessingTime.WithLabelValues(reassembly.TCPDirClientToServer.String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
 
 	if t.server != nil {
@@ -463,7 +463,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 		// server
 		saveTCPServiceBanner(t.server)
-		streamProcessingTime.WithLabelValues(reassembly.TCPDirServerToClient.String()).Set(float64(time.Since(ti).Nanoseconds()))
+		tcpStreamProcessingTime.WithLabelValues(reassembly.TCPDirServerToClient.String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
 
 	if t.decoder != nil { // try to determine what type of raw tcp stream and update decoder
@@ -495,7 +495,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		// call the associated decoder
 		t.decoder.Decode()
 
-		streamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
+		tcpStreamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
 
 	reassemblyLog.Debug("stream closed",
@@ -670,29 +670,8 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		numTotal := len(streamFactory.streamReaders)
 		streamFactory.Unlock()
 
-		sp := new(tcpStreamProcessor)
-		sp.initWorkers(conf.StreamBufferSize)
-		sp.numTotal = numTotal
-
-		// flush the remaining streams to disk
-		for _, s := range streamFactory.streamReaders {
-			if s != nil { // never feed a nil stream
-				sp.handleStream(s)
-			}
-		}
-
-		decoderLog.Info("waiting for stream processor wait group... ")
-		sp.wg.Wait()
-
-		// explicitly feed a nil stream to exit the goroutines used for processing
-		for _, w := range sp.workers {
-			w <- nil
-		}
-
-		// process UDP streams
-		if conf.SaveConns {
-			udpStreams.saveAllUDPConnections()
-		}
+		flushTCPStreams(numTotal)
+		flushUDPStreams(udpStreams.size())
 	}
 
 	if dpi.IsEnabled() {

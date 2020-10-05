@@ -257,7 +257,9 @@ func getSMTPCommand(line string) (string, []string) {
 
 	if strings.ToUpper(cmd[0]) == "MAIL" || strings.ToUpper(cmd[0]) == "RCPT" {
 		cmd = strings.Split(line, ": ")
-		cmd[1] = strings.Trim(cmd[1], "<>")
+		if len(cmd) > 1 {
+			cmd[1] = strings.Trim(cmd[1], "<>")
+		}
 	}
 
 	return strings.ToUpper(cmd[0]), cmd[1:]

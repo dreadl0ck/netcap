@@ -69,6 +69,9 @@ func (c *Collector) cleanup(force bool) {
 }
 
 func (c *Collector) teardown() {
+
+	c.log.Info("teardown")
+
 	// flush all gopacket decoders
 	for _, decoders := range c.goPacketDecoders {
 		for _, e := range decoders {
