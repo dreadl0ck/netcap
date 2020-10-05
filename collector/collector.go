@@ -390,7 +390,7 @@ func (c *Collector) stats() {
 
 	if c.config.DecoderConfig.SaveConns {
 		_, _ = fmt.Fprintln(target, "saved TCP connections:", decoder.NumSavedTCPConns())
-		_, _ = fmt.Fprintln(target, "saved UDP connections:", decoder.NumSavedUDPConns())
+		_, _ = fmt.Fprintln(target, "saved UDP conversations:", decoder.NumSavedUDPConns())
 	}
 }
 

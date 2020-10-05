@@ -12,8 +12,6 @@ last CC maxmind geolite2 from 27 Dec 2019 (can be distributed):
 
 - more SMTP transforms
 - more DNS transforms / DNSSEC
-    
-- buffer writing extracted streams to disk
 
 - add UDP stream decoder support
 - flushing of UDP and TCP streams

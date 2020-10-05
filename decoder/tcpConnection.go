@@ -126,7 +126,7 @@ func NumSavedTCPConns() int64 {
 	return stats.savedTCPConnections
 }
 
-// NumSavedUDPConns returns the number of saved UDP connections.
+// NumSavedUDPConns returns the number of saved UDP conversations.
 func NumSavedUDPConns() int64 {
 	stats.Lock()
 	defer stats.Unlock()
@@ -451,7 +451,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		t.client.MarkSaved()
 
 		// client
-		err := saveConnection(t.conversationRaw(), t.conversationDataColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
+		err := saveConversation(protoTCP, t.conversationRaw(), t.conversationDataColored(), t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
 		if err != nil {
 			reassemblyLog.Error("failed to save stream", zap.Error(err), zap.String("ident", t.client.Ident()))
 		}
@@ -787,7 +787,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			[]string{"overlap packets", strconv.FormatInt(stats.overlapPackets, 10)},
 			[]string{"overlap bytes", strconv.FormatInt(stats.overlapBytes, 10)},
 			[]string{"saved TCP connections", strconv.FormatInt(stats.savedTCPConnections, 10)},
-			[]string{"saved UDP connections", strconv.FormatInt(stats.savedUDPConnections, 10)},
+			[]string{"saved UDP conversations", strconv.FormatInt(stats.savedUDPConnections, 10)},
 			[]string{"numSoftware", strconv.FormatInt(stats.numSoftware, 10)},
 			[]string{"numServices", strconv.FormatInt(stats.numServices, 10)},
 		)
