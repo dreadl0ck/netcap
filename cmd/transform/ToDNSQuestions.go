@@ -8,8 +8,7 @@ import (
 )
 
 func toDNSQuestions() {
-
-	var results = make(map[string]int)
+	results := make(map[string]int)
 
 	maltego.DNSTransform(
 		nil,

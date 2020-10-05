@@ -2,13 +2,14 @@ package transform
 
 import (
 	"fmt"
+
+	"github.com/dustin/go-humanize"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dustin/go-humanize"
 )
 
 func toServiceTypes() {
-
 	var (
 		// ips to total bytes transferred (client + server)
 		services        = make(map[string]int64)
@@ -33,7 +34,7 @@ func toServiceTypes() {
 		ent := trx.AddEntityWithPath("netcap.ServiceType", service, auditRecordPath)
 		ent.SetLinkLabel(humanize.Bytes(uint64(numBytes)))
 		// TODO: num pkts / set thickness
-		//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
+		// ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

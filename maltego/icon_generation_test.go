@@ -59,7 +59,6 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 }
 
 func TestGenerateAuditRecordIconsSVG(t *testing.T) {
-
 	generateIconsSVG()
 	generateAdditionalIconsSVG()
 
@@ -98,7 +97,6 @@ func cloneIcons() {
 }
 
 func generateIcons() {
-
 	cloneIcons()
 
 	// rename icons
@@ -110,7 +108,7 @@ func generateIcons() {
 	}
 
 	for _, f := range files {
-		//fmt.Println(f.Name())
+		// fmt.Println(f.Name())
 
 		var (
 			oldPath = filepath.Join(pngIconPath, "png", "black", filepath.Base(f.Name()), "twotone-4x.png")
@@ -123,7 +121,7 @@ func generateIcons() {
 			log.Fatal(err)
 		}
 
-		//fmt.Println("renamed", oldPath, "to", newPath)
+		// fmt.Println("renamed", oldPath, "to", newPath)
 
 		generateSizes(newBase, newPath)
 	}
@@ -145,7 +143,6 @@ func cloneIconsSVG() {
 }
 
 func generateIconsSVG() {
-
 	cloneIconsSVG()
 
 	// rename icons
@@ -157,7 +154,7 @@ func generateIconsSVG() {
 	}
 
 	for _, f := range files {
-		//fmt.Println(f.Name())
+		// fmt.Println(f.Name())
 
 		var (
 			oldPath = filepath.Join(svgIconPath, "svg", filepath.Base(f.Name()), "twotone.svg")
@@ -170,7 +167,7 @@ func generateIconsSVG() {
 			log.Fatal(err)
 		}
 
-		//fmt.Println("renamed", oldPath, "to", newPath)
+		// fmt.Println("renamed", oldPath, "to", newPath)
 
 		if colorNames, ok := coloredIcons[f.Name()]; ok {
 			for _, c := range colorNames {
@@ -246,14 +243,12 @@ var colors = []string{
 // this will generate a subset of the icons with a different imgType
 // call after generateIcons, the image repo needs to be present
 func generateAdditionalIcons() {
-
 	files, err := ioutil.ReadDir(filepath.Join(pngIconPath, "png", "black"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, f := range files {
-
 		// only process files included in the subset
 		if imgType, ok := subset[f.Name()]; ok {
 			fmt.Println(f.Name())
@@ -277,17 +272,15 @@ func generateAdditionalIcons() {
 }
 
 func generateAdditionalIconsSVG() {
-
 	files, err := ioutil.ReadDir(filepath.Join(svgIconPath, "svg"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, f := range files {
-
 		// only process files included in the subset
 		if imgType, ok := subset[f.Name()]; ok {
-			//fmt.Println(f.Name())
+			// fmt.Println(f.Name())
 
 			var (
 				oldPath = filepath.Join(svgIconPath, "svg", filepath.Base(f.Name()), imgType+".svg")
@@ -300,7 +293,7 @@ func generateAdditionalIconsSVG() {
 				log.Fatal(err)
 			}
 
-			//fmt.Println("renamed", oldPath, "to", newPath)
+			// fmt.Println("renamed", oldPath, "to", newPath)
 
 			generateSizesSVG(newBase, newPath, "black")
 		}
@@ -400,7 +393,6 @@ func createXMLIconFile(path string) {
 }
 
 func generateSizesSVG(newBase string, newPath string, color string) {
-
 	svgFile, err := os.Open(newPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -408,7 +400,7 @@ func generateSizesSVG(newBase string, newPath string, color string) {
 	}
 	defer svgFile.Close()
 
-	var s = new(materialIconSVG)
+	s := new(materialIconSVG)
 	if err = xml.NewDecoder(svgFile).Decode(&s); err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to parse (%v)\n", err)
 		return
@@ -514,7 +506,6 @@ func generateAuditRecordIcon(text string) {
 }
 
 func generateAuditRecordIconSVG(text string) {
-
 	var (
 		size = 96
 		x    = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(size) + `" height="` + strconv.Itoa(size) + `">

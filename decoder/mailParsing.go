@@ -17,15 +17,17 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"github.com/araddon/dateparse"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/mgutz/ansi"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/textproto"
 	"strings"
 	"unicode"
+
+	"github.com/araddon/dateparse"
+	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 const partIdent = "------=_Part_"
@@ -81,7 +83,6 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 }
 
 func parseMail(parent *tcpConnection, buf []byte, from, to string, logger *log.Logger, origin string) *types.Mail {
-
 	logger.Println(ansi.Yellow, "parseMail, from:", from, "to:", to, parent.ident, "\n", string(buf), ansi.Reset)
 
 	var (

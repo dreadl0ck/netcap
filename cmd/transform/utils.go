@@ -3,7 +3,6 @@ package transform
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/types"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // dieIfExecutable can be used to check if the file at the passed in location is executable
@@ -86,8 +86,7 @@ func die(err string, msg string) {
 }
 
 func createJa3TableHTML(m map[string]string) string {
-
-	var out = []string{"<table style='width:100%'>"}
+	out := []string{"<table style='width:100%'>"}
 
 	out = append(out, `<tr>
     <th>Ja3</th>
@@ -108,8 +107,7 @@ func createJa3TableHTML(m map[string]string) string {
 }
 
 func createSNITableHTML(m map[string]int64) string {
-
-	var out = []string{"<table style='width:100%'>"}
+	out := []string{"<table style='width:100%'>"}
 
 	out = append(out, `<tr>
     <th>SNI</th>
@@ -136,8 +134,7 @@ func createSNITableHTML(m map[string]int64) string {
 }
 
 func createProtocolsTableHTML(m map[string]*types.Protocol) string {
-
-	var out = []string{"<table style='width:100%'>"}
+	out := []string{"<table style='width:100%'>"}
 
 	out = append(out, `<tr>
     <th>Application</th>
@@ -155,8 +152,7 @@ func createProtocolsTableHTML(m map[string]*types.Protocol) string {
 }
 
 func createPortsTableHTML(ports []*types.Port) string {
-
-	var out = []string{"<table style='width:100%'>"}
+	out := []string{"<table style='width:100%'>"}
 
 	out = append(out, `<tr>
     <th>PortNumber</th>

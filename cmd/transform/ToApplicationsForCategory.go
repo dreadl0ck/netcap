@@ -8,14 +8,11 @@ import (
 )
 
 func toApplicationsForCategory() {
-	var (
-		category string
-	)
+	var category string
 
 	maltego.IPProfileTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
-
 			if category == "" {
 				category = lt.Value
 			}

@@ -15,7 +15,6 @@ func toEmails() {
 	maltego.MailTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, m *types.Mail, min, max uint64, path string, ipaddr string) {
-
 			var buf bytes.Buffer
 			err := xml.EscapeText(&buf, []byte(m.Subject+"\n"+m.From))
 			if err != nil {
@@ -53,7 +52,6 @@ func toEmails() {
 
 			di := "<h3>EMail: " + m.Subject + "</h3><p>Timestamp First: " + utils.UnixTimeToUTC(m.Timestamp) + "</p><p>From: " + m.From + "</p><p>To: " + m.To + "</p><p>Text: " + buf.String() + "</p><p>Additional parts: " + attachments + "</p>"
 			ent.AddDisplayInformation(di, "Netcap Info")
-
 		},
 	)
 }

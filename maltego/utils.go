@@ -61,7 +61,6 @@ func die(err string, msg string) {
 }
 
 func openFile(path string) (*os.File, string) {
-
 	log.Println("open path:", path)
 	f, err := os.Open(path)
 	if err != nil {

@@ -23,7 +23,6 @@ import (
 )
 
 func toNetworkInterfaces() {
-
 	trx := &maltego.Transform{}
 
 	// get interfaces

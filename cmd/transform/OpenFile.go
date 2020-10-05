@@ -15,11 +15,12 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func openFile() {

@@ -16,14 +16,15 @@ package decoder
 import (
 	"bufio"
 	"errors"
-	"github.com/dreadl0ck/cryptoutils"
-	"github.com/mgutz/ansi"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/textproto"
 	"strings"
 	"sync/atomic"
+
+	"github.com/dreadl0ck/cryptoutils"
+	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/types"
 )

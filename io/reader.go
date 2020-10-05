@@ -16,10 +16,10 @@ package io
 import (
 	"bufio"
 	"compress/gzip"
-	"github.com/go-errors/errors"
 	"os"
 	"path/filepath"
 
+	"github.com/go-errors/errors"
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"

@@ -15,10 +15,11 @@ package transform
 
 import (
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"log"
 	"strings"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
@@ -27,7 +28,6 @@ import (
 )
 
 func lookupDHCPFingerprint() {
-
 	// setup logger for resolvers pkg
 	resolverLog := zap.New(zapcore.NewNopCore())
 	defer func() {

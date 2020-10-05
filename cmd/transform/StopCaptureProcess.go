@@ -12,7 +12,6 @@ import (
 )
 
 func stopCaptureProcess() {
-
 	trx := maltego.Transform{}
 	log.Println("sending cleanup request")
 

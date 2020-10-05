@@ -12,9 +12,7 @@ import (
 	"github.com/dreadl0ck/netcap/maltego"
 )
 
-var (
-	regexDomain = regexp.MustCompile(`(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,10}`)
-)
+var regexDomain = regexp.MustCompile(`(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,10}`)
 
 func toDomainsFromFile() {
 	var (

@@ -16,7 +16,6 @@ package decoder
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Jeffail/gabs/v2"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -27,6 +26,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Jeffail/gabs/v2"
 	"github.com/blevesearch/bleve"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
@@ -203,7 +203,7 @@ func parseUserAgent(ua string) *userAgent {
 		vendor = determineVendor(product)
 	}
 
-	var osName = uaClient.Os.ToString()
+	osName := uaClient.Os.ToString()
 	if osName == "Other" {
 		osName = ""
 	}
@@ -285,16 +285,12 @@ func whatSoftware(dp *deviceProfile, i *packetInfo, flowIdent, serviceNameSrc, s
 	// Only do JA3 fingerprinting when both fingerprints for client and server are present
 	// TODO: improve efficiency for this lookup
 	if len(JA3) > 0 && len(JA3s) > 0 {
-
 		// for each server
 		for _, srv := range ja3db.Servers {
-
 			// for each client
 			for _, c := range srv.Clients {
-
 				// for each process
 				for _, p := range c.Processes {
-
 					// if the process had both client and server fingerprints
 					if p.JA3 == JA3 && p.JA3s == JA3s {
 						values := regExpServerName.FindStringSubmatch(srv.Server)
@@ -444,7 +440,6 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 	)
 
 	if len(serverHeaders) > 0 {
-
 		// for all items in the CMS db
 		for product, info := range cmsDB {
 
@@ -494,7 +489,6 @@ func whatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*software) {
 			// compare known cookies
 			for cookieName, re := range info.Cookies {
 				matchesCookie := func() bool {
-
 					// to each of the cookies from the current response
 					for _, receivedCookie := range serverCookies {
 
@@ -840,7 +834,7 @@ func loadCmsDB() error {
 
 		i := new(cmsInfo)
 
-		//fmt.Printf("key: %v, value: %v\n", framework, child.Data().(map[string]interface{}))
+		// fmt.Printf("key: %v, value: %v\n", framework, child.Data().(map[string]interface{}))
 
 		if s, ok := jsonParsed.Path(framework + ".icon").Data().(string); ok {
 			i.Icon = s
@@ -936,7 +930,7 @@ func loadCmsDB() error {
 			i.HTML = s
 		}
 
-		//spew.Dump(i)
+		// spew.Dump(i)
 
 		cmsDB[framework] = i
 	}

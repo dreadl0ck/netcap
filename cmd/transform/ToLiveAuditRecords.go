@@ -2,9 +2,6 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,6 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/maltego"
@@ -19,7 +20,6 @@ import (
 )
 
 func toLiveAuditRecords() {
-
 	// setup logger for io pkg
 	ioLog := zap.New(zapcore.NewNopCore())
 	defer func() {
@@ -41,7 +41,6 @@ func toLiveAuditRecords() {
 }
 
 func writeLiveAuditRecords(outDir string) {
-
 	var allDecoders []string
 
 	// generate entities for audit records

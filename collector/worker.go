@@ -55,8 +55,8 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 			// create a new gopacket
 			// base layer is by default Ethernet
-			//goPacket = gopacket.NewPacket(pkt.data, c.config.BaseLayer, c.config.DecodeOptions)
-			//goPacket.Metadata().CaptureInfo = pkt.ci
+			// goPacket = gopacket.NewPacket(pkt.data, c.config.BaseLayer, c.config.DecodeOptions)
+			// goPacket.Metadata().CaptureInfo = pkt.ci
 
 			pkt.Metadata().Timestamp = pkt.Metadata().CaptureInfo.Timestamp
 			pkt.Metadata().Length = pkt.Metadata().CaptureInfo.Length

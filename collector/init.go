@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/gopacket/pcap"
 	"log"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/dreadl0ck/gopacket/pcap"
 	"github.com/mgutz/ansi"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -29,7 +29,6 @@ var errAborted = errors.New("operation aborted by user")
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
-
 	// Catch attempts to set the timeout to 0, this is explicitly not recommended.
 	// From the gopacket docs:
 	//   This means that if you only capture one packet,

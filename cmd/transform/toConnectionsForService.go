@@ -1,14 +1,6 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/dustin/go-humanize"
-	"github.com/mgutz/ansi"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"html"
 	"io/ioutil"
 	"log"
@@ -16,10 +8,19 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/dustin/go-humanize"
+	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toConnectionsForService() {
-
 	var (
 		serviceType string
 		resolverLog = zap.New(zapcore.NewNopCore())
@@ -76,7 +77,6 @@ func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, m
 }
 
 func addConnection(trx *maltego.Transform, conn *types.Connection, path string, min, max uint64, direction maltego.LinkDirection) {
-
 	i, err := strconv.Atoi(conn.DstPort)
 	if err != nil {
 		return
@@ -86,7 +86,6 @@ func addConnection(trx *maltego.Transform, conn *types.Connection, path string, 
 }
 
 func makeConversationHTML(service string, conn *types.Connection, path string) string {
-
 	if conn.TotalSize == 0 {
 		return "no data transferred"
 	}

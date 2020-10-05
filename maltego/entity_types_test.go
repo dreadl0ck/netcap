@@ -233,7 +233,6 @@ func newRequiredStringField(name string, description string) propertyField {
 }
 
 func genEntity(outDir string, entName string, imgName string, description string, parent string, isArchive bool, color string, regex *regexConversion, fields ...propertyField) {
-
 	imgName = imgName + "_" + color
 
 	var (

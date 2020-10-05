@@ -18,12 +18,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/cryptoutils"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
-	gzip "github.com/klauspost/pgzip"
-	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -32,11 +26,18 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/cryptoutils"
+	gzip "github.com/klauspost/pgzip"
+	"go.uber.org/zap"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // TODO: create a structure for passing all the args
 func saveFile(parent *tcpConnection, source, name string, err error, body []byte, encoding []string, host string, contentType string) error {
-
 	decoderLog.Info("smtpReader.saveFile",
 		zap.String("source", source),
 		zap.String("name", name),

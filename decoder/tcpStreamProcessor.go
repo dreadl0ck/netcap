@@ -15,10 +15,12 @@ package decoder
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/prometheus/client_golang/prometheus"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/dreadl0ck/netcap/reassembly"
 )
 
 var (

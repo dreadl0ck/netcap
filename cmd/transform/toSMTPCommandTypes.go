@@ -2,13 +2,13 @@ package transform
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"strconv"
 )
 
 func toSMTPCommandTypes() {
-
 	var (
 		// smtp command types to number of occurrences
 		commands = make(map[string]int64)
@@ -34,7 +34,7 @@ func toSMTPCommandTypes() {
 		ent.AddProperty("command", "Command", maltego.Strict, command)
 		ent.SetLinkLabel(strconv.Itoa(int(num)))
 		// TODO: num pkts / set thickness
-		//ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
+		// ent.SetLinkThickness(maltego.GetThickness(uint64(service.BytesServer), min, max))
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

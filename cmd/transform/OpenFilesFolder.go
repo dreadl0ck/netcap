@@ -15,13 +15,14 @@ package transform
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func openFilesFolder() {

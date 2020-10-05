@@ -18,7 +18,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
 	"io"
 	"log"
 	"os"
@@ -26,6 +25,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 // can be used to set the debug mode for all generated maltego transforms.

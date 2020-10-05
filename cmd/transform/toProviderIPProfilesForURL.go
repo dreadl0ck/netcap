@@ -1,9 +1,10 @@
 package transform
 
 import (
+	"log"
+
 	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
-	"log"
 )
 
 func toProviderIPProfilesForURL() {
@@ -17,7 +18,6 @@ func toProviderIPProfilesForURL() {
 	maltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
-
 			if url == "" {
 				url = lt.Values["properties.url"]
 				host = lt.Values["host"]

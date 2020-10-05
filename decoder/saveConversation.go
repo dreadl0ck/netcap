@@ -16,22 +16,22 @@ package decoder
 import (
 	"bufio"
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/mgutz/ansi"
-	"go.uber.org/zap"
 	"os"
 	"path"
 	"path/filepath"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
+	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 // save TCP / UDP conversations to disk
 func saveConversation(proto string, conversation dataFragments, ident string, firstPacket time.Time, transport gopacket.Flow) error {
-
 	// prevent processing zero bytes
 	if len(conversation) == 0 || conversation.size() == 0 {
 		return nil

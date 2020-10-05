@@ -28,7 +28,6 @@ import (
 )
 
 func createOpenCommand(args []string) (string, []string) {
-
 	name := os.Getenv(env.MaltegoOpenFileCommand)
 	if name == "" {
 		// if no command has been supplied via environment variable

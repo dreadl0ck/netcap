@@ -3,7 +3,6 @@ package transform
 import (
 	"bytes"
 	"fmt"
-	"github.com/dreadl0ck/netcap/maltego"
 	"io"
 	"log"
 	"os"
@@ -12,10 +11,11 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func startCaptureProcess() {
-
 	var (
 		lt    = maltego.ParseLocalArguments(os.Args[1:])
 		snapL int

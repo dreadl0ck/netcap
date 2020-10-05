@@ -16,8 +16,6 @@ package maltego_test
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/maltego"
 	"io/ioutil"
 	"log"
 	"os"
@@ -27,6 +25,8 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 // additional transforms
@@ -321,7 +321,6 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 }
 
 func genMachines() {
-
 	path := filepath.Join(netcapIdent, "Machines")
 
 	err := os.Mkdir(path, defaults.DirectoryPermission)

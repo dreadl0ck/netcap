@@ -1,17 +1,18 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/maltego"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
 	"strings"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func reloadAuditRecordsFromDisk() {
-
 	// setup logger for io pkg
 	ioLog := zap.New(zapcore.NewNopCore())
 	defer func() {
