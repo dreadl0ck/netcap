@@ -1,8 +1,9 @@
 package transform
 
 import (
+	"bufio"
 	"html"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -111,7 +112,7 @@ retry:
 
 	log.Println("path", streamFilePath)
 
-	data, err := ioutil.ReadFile(streamFilePath)
+	f, err := os.Open(streamFilePath)
 	if err != nil {
 		if service == "unknown" {
 			service = "ascii"
@@ -120,7 +121,24 @@ retry:
 		return err.Error()
 	}
 
-	str := strings.ReplaceAll(html.EscapeString(string(data)), "\n", "<br>")
+	var (
+		// TODO: make configurable
+		size = 1024
+		buf = make([]byte, size)
+	)
+
+	n, err := bufio.NewReader(f).Read(buf)
+	if err != nil && err != io.EOF {
+		return err.Error()
+	}
+
+	if n < size {
+		buf = buf[:n]
+	} else {
+		buf = append(buf, []byte("\n\n...  result truncated to " + strconv.Itoa(size) + " bytes.")...)
+	}
+
+	str := strings.ReplaceAll(html.EscapeString(strings.TrimSpace(string(buf))), "\n", "<br>")
 	str = strings.ReplaceAll(str, ansi.Red, "<p style='color: red;'>")
 	str = strings.ReplaceAll(str, ansi.Blue, "<p style='color: dodgerblue;'>")
 	str = strings.ReplaceAll(str, ansi.Reset, "</p>")
