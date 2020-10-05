@@ -172,7 +172,6 @@ func newEntity(entName, imgName, description, parent string, isArchive bool, r *
 
 		// set converter
 		ent.Converter = &Converter{
-			//Value:   "<![CDATA[" + r.regex + "]]",
 			Value: r.regex,
 		}
 
