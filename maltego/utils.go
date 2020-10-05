@@ -33,7 +33,7 @@ const (
 	ExecutablePath = "/usr/local/bin/net"
 
 	// PropertyIpAddr is the name of maltego property that contains the IP address
-	PropertyIpAddr      = "ipaddr"
+	PropertyIpAddr = "ipaddr"
 
 	// PropertyIpAddrLabel is the label for the ip address property
 	PropertyIpAddrLabel = "IPAddress"

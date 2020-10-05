@@ -114,13 +114,13 @@ func decodeTCPConversation(parent *tcpConnection, client func(buf *bufio.Reader)
 	)
 
 	if len(parent.merged) > 0 {
-		previousDir = parent.merged[0].dir
+		previousDir = parent.merged[0].direction()
 	}
 
 	// parse conversation
 	for _, d := range parent.merged {
-		if d.dir == previousDir {
-			buf.Write(d.raw)
+		if d.direction() == previousDir {
+			buf.Write(d.raw())
 		} else {
 			var (
 				err error
@@ -143,9 +143,9 @@ func decodeTCPConversation(parent *tcpConnection, client func(buf *bufio.Reader)
 				)
 			}
 			buf.Reset()
-			previousDir = d.dir
+			previousDir = d.direction()
 
-			buf.Write(d.raw)
+			buf.Write(d.raw())
 
 			continue
 		}

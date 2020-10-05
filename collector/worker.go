@@ -29,8 +29,8 @@ import (
 // and returns a channel for receiving input packets.
 func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet {
 	var (
-		in       = make(chan gopacket.Packet, c.config.PacketBufferSize)
-		pkt      gopacket.Packet
+		in  = make(chan gopacket.Packet, c.config.PacketBufferSize)
+		pkt gopacket.Packet
 
 		errLayer gopacket.ErrorLayer
 		err      error

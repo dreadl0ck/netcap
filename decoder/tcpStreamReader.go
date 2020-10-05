@@ -31,7 +31,7 @@ import (
 // this structure has an optimized field order to avoid excessive padding.
 type tcpStreamReader struct {
 	serviceBanner      bytes.Buffer
-	data               []*streamData
+	data               dataFragments
 	ident              string
 	parent             *tcpConnection
 	numBytes           int
@@ -61,7 +61,7 @@ func (t *tcpStreamReader) Read(p []byte) (int, error) {
 	}
 
 	// copy received data into the passed in buffer
-	l := copy(p, data.raw)
+	l := copy(p, data.rawData)
 
 	t.parent.Lock()
 	t.data = append(t.data, data)
@@ -86,7 +86,7 @@ func (t *tcpStreamReader) Cleanup(f *tcpConnectionFactory) {
 }
 
 // DataSlice will return all gathered data fragments.
-func (t *tcpStreamReader) DataSlice() streamDataSlice {
+func (t *tcpStreamReader) DataSlice() dataFragments {
 	return t.data
 }
 
@@ -99,7 +99,7 @@ func (t *tcpStreamReader) ClientStream() []byte {
 
 	// stores c.BannerSize number of bytes of the server side stream
 	for _, d := range t.parent.client.DataSlice() {
-		for _, b := range d.raw {
+		for _, b := range d.raw() {
 			buf.WriteByte(b)
 		}
 	}
@@ -117,22 +117,12 @@ func (t *tcpStreamReader) ServerStream() []byte {
 	// save server stream for banner identification
 	// stores c.BannerSize number of bytes of the server side stream
 	for _, d := range t.parent.server.DataSlice() {
-		for _, b := range d.raw {
+		for _, b := range d.raw() {
 			buf.WriteByte(b)
 		}
 	}
 
 	return buf.Bytes()
-}
-
-// ConversationRaw provides access to the raw entire conversation.
-func (t *tcpStreamReader) ConversationRaw() []byte {
-	return t.parent.conversationRaw()
-}
-
-// ConversationColored provides access to the ANSI colored entire conversation.
-func (t *tcpStreamReader) ConversationColored() []byte {
-	return t.parent.conversationDataColored()
 }
 
 // IsClient will return true if the stream is acting as the client.
@@ -218,7 +208,7 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 		// save server stream for banner identification
 		// stores c.BannerSize number of bytes of the server side stream
 		for _, d := range t.parent.server.DataSlice() {
-			for _, b := range d.raw {
+			for _, b := range d.raw() {
 				t.serviceBanner.WriteByte(b)
 				t.serviceBannerBytes++
 
@@ -274,4 +264,10 @@ func (t *tcpStreamReader) readStream(b io.ByteReader) error {
 			return err
 		}
 	}
+}
+
+// Merged returns all stream fragments
+func (t *tcpStreamReader) Merged() dataFragments {
+	t.parent.sortAndMergeFragments()
+	return t.parent.merged
 }

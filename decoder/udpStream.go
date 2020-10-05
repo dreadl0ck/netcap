@@ -24,7 +24,6 @@ import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/mgutz/ansi"
 )
 
 var udpStreams = newUDPStreamPool()
@@ -33,16 +32,8 @@ const typeUDP = "udp"
 
 // udpData represents a udp data stream.
 type udpStream struct {
-	data udpDataSlice
+	data dataFragments
 	sync.Mutex
-}
-
-// udpData represents a data fragment received from an UDP stream.
-type udpData struct {
-	raw       []byte
-	ci        gopacket.CaptureInfo
-	net       gopacket.Flow
-	transport gopacket.Flow
 }
 
 // udpStreamPool holds a pool of UDP streams.
@@ -65,25 +56,23 @@ func (u *udpStreamPool) handleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 
 		// update existing
 		s.Lock()
-		s.data = append(s.data, &udpData{
-			raw:       udpLayer.LayerPayload(),
-			ci:        packet.Metadata().CaptureInfo,
-			transport: packet.TransportLayer().TransportFlow(),
-			net:       packet.NetworkLayer().NetworkFlow(),
+		s.data = append(s.data, &streamData{
+			rawData: udpLayer.LayerPayload(),
+			ci:      packet.Metadata().CaptureInfo,
+			trans:   packet.TransportLayer().TransportFlow(),
+			net:     packet.NetworkLayer().NetworkFlow(),
 		})
 		s.Unlock()
 	} else {
 		// add new
-		u.streams[packet.TransportLayer().TransportFlow().FastHash()] = &udpStream{
-			data: []*udpData{
-				{
-					raw:       udpLayer.LayerPayload(),
-					ci:        packet.Metadata().CaptureInfo,
-					transport: packet.TransportLayer().TransportFlow(),
-					net:       packet.NetworkLayer().NetworkFlow(),
-				},
-			},
-		}
+		stream := new(udpStream)
+		stream.data = append(stream.data, &streamData{
+			rawData: udpLayer.LayerPayload(),
+			ci:      packet.Metadata().CaptureInfo,
+			trans:   packet.TransportLayer().TransportFlow(),
+			net:     packet.NetworkLayer().NetworkFlow(),
+		})
+		u.streams[packet.TransportLayer().TransportFlow().FastHash()] = stream
 		u.Unlock()
 	}
 }
@@ -99,17 +88,15 @@ func (u *udpStreamPool) saveAllUDPConnections() {
 			clientNetwork            gopacket.Flow
 			clientTransport          gopacket.Flow
 			firstPacket              time.Time
-			colored                  bytes.Buffer
-			raw                      bytes.Buffer
 			ident                    string
 			serverBytes, clientBytes int
 		)
 
 		// check who is client and who server based on first packet
 		if len(s.data) > 0 {
-			clientTransport = s.data[0].transport
-			clientNetwork = s.data[0].net
-			firstPacket = s.data[0].ci.Timestamp
+			clientTransport = s.data[0].transport()
+			clientNetwork = s.data[0].network()
+			firstPacket = s.data[0].captureInfo().Timestamp
 			ident = utils.CreateFlowIdentFromLayerFlows(clientNetwork, clientTransport)
 		} else {
 			// skip empty conns
@@ -119,26 +106,17 @@ func (u *udpStreamPool) saveAllUDPConnections() {
 		var serverBanner bytes.Buffer
 
 		for _, d := range s.data {
-			if d.transport == clientTransport {
-				clientBytes += len(d.raw)
-				// client
-				raw.Write(d.raw)
-				colored.WriteString(ansi.Red)
-				colored.Write(d.raw)
-				colored.WriteString(ansi.Reset)
+			if d.transport() == clientTransport {
+				clientBytes += len(d.raw())
 			} else {
 				// server
-				serverBytes += len(d.raw)
-				for _, b := range d.raw {
+				serverBytes += len(d.raw())
+				for _, b := range d.raw() {
 					if serverBanner.Len() == conf.BannerSize {
 						break
 					}
 					serverBanner.WriteByte(b)
 				}
-				raw.Write(d.raw)
-				colored.WriteString(ansi.Blue)
-				colored.Write(d.raw)
-				colored.WriteString(ansi.Reset)
 			}
 		}
 		s.Unlock()
@@ -146,7 +124,7 @@ func (u *udpStreamPool) saveAllUDPConnections() {
 		// TODO: call UDP stream decoders
 
 		// save stream data
-		err := saveConversation(protoUDP, raw.Bytes(), colored.Bytes(), ident, firstPacket, clientTransport)
+		err := saveConversation(protoUDP, s.data, ident, firstPacket, clientTransport)
 		if err != nil {
 			fmt.Println("failed to save UDP conversation:", err)
 		}
