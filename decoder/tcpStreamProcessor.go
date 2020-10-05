@@ -24,23 +24,23 @@ import (
 )
 
 var (
-	streamDecodeTime = prometheus.NewGaugeVec(
+	tcpStreamDecodeTime = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "nc_stream_decode_time",
+			Name: "nc_tcp_stream_decode_time",
 			Help: "Time taken to process a TCP stream",
 		},
 		[]string{"Decoder"},
 	)
-	streamFeedDataTime = prometheus.NewGaugeVec(
+	tcpStreamFeedDataTime = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "nc_stream_feed_data_time",
+			Name: "nc_tcp_stream_feed_data_time",
 			Help: "Time taken to feed data to a TCP stream consumer",
 		},
 		[]string{"Direction"},
 	)
-	streamProcessingTime = prometheus.NewGaugeVec(
+	tcpStreamProcessingTime = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "nc_stream_processing_time",
+			Name: "nc_tcp_stream_processing_time",
 			Help: "Time taken to save the data to disk",
 		},
 		[]string{"Direction"},
@@ -49,10 +49,31 @@ var (
 
 func init() {
 	prometheus.MustRegister(
-		streamProcessingTime,
-		streamDecodeTime,
-		streamFeedDataTime,
+		tcpStreamProcessingTime,
+		tcpStreamDecodeTime,
+		tcpStreamFeedDataTime,
 	)
+}
+
+func flushTCPStreams(numTotal int) {
+	sp := new(tcpStreamProcessor)
+	sp.initWorkers(conf.StreamBufferSize)
+	sp.numTotal = numTotal
+
+	// flush the remaining streams to disk
+	for _, s := range streamFactory.streamReaders {
+		if s != nil { // never feed a nil stream
+			sp.handleStream(s)
+		}
+	}
+
+	decoderLog.Info("waiting for stream processor wait group... ")
+	sp.wg.Wait()
+
+	// explicitly feed a nil stream to exit the goroutines used for processing
+	for _, w := range sp.workers {
+		w <- nil
+	}
 }
 
 // internal data structure to parallelize processing of tcp streams
@@ -125,14 +146,14 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 					fmt.Println("failed to save connection", err)
 				}
 
-				streamProcessingTime.WithLabelValues(reassembly.TCPDirClientToServer.String()).Set(float64(time.Since(t).Nanoseconds()))
+				tcpStreamProcessingTime.WithLabelValues(reassembly.TCPDirClientToServer.String()).Set(float64(time.Since(t).Nanoseconds()))
 			} else {
 				s.SortAndMergeFragments()
 
 				// save the service banner
 				saveTCPServiceBanner(s)
 
-				streamProcessingTime.WithLabelValues(reassembly.TCPDirServerToClient.String()).Set(float64(time.Since(t).Nanoseconds()))
+				tcpStreamProcessingTime.WithLabelValues(reassembly.TCPDirServerToClient.String()).Set(float64(time.Since(t).Nanoseconds()))
 			}
 
 			tsp.Lock()
