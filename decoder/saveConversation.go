@@ -52,7 +52,7 @@ func saveConversation(proto string, conversation dataFragments, ident string, fi
 		typ = getServiceName(banner, transport)
 
 		// path for storing the data
-		root = filepath.Join(conf.Out, proto, typ)
+		root = filepath.Join(conf.Out, strings.ToLower(proto), typ)
 
 		// file basename
 		base = filepath.Clean(path.Base(utils.CleanIdent(ident))) + binaryFileExtension
