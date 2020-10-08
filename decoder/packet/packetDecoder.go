@@ -28,17 +28,17 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var conf *decoder.Config
+var conf *config.Config
 
 // SetConfig can be used to set a configuration for the package.
-func SetConfig(cfg *decoder.Config) {
+func SetConfig(cfg *config.Config) {
 	conf = cfg
 }
 
@@ -125,7 +125,7 @@ func NewPacketDecoder(t types.Type, name, description string, postinit func(*Pac
 }
 
 // InitPacketDecoders initializes all packet decoders.
-func InitPacketDecoders(c *decoder.Config) (decoders []PacketDecoderAPI, err error) {
+func InitPacketDecoders(c *config.Config) (decoders []PacketDecoderAPI, err error) {
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeDecoders, ",")

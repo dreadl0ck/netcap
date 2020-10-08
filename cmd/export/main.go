@@ -26,7 +26,7 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/metrics"
@@ -116,7 +116,7 @@ func Run() {
 			SnapLen:             *flagSnapLen,
 			Promisc:             *flagPromiscMode,
 			LogErrors:           *flagLogErrors,
-			DecoderConfig: &decoder.Config{
+			DecoderConfig: &config.Config{
 				Buffer:               *flagBuffer,
 				Compression:          *flagCompress,
 				CSV:                  *flagCSV,

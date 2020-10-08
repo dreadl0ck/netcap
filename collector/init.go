@@ -17,11 +17,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -42,7 +45,13 @@ func (c *Collector) Init() (err error) {
 
 	// set configuration for decoder pkgs
 	packet.SetConfig(c.config.DecoderConfig)
-	stream.SetConfig(c.config.DecoderConfig)
+
+	decoderconfig.Instance = c.config.DecoderConfig
+
+	// create state machine options
+	tcp.StreamFactory.FSMOptions = reassembly.TCPSimpleFSMOptions{
+		SupportMissingEstablishment: c.config.DecoderConfig.AllowMissingInit,
+	}
 
 	// handle signals for a clean exit
 	c.handleSignals()
@@ -138,6 +147,8 @@ func (c *Collector) Init() (err error) {
 
 	c.streamDecoders, err = stream.InitDecoders(c.config.DecoderConfig)
 	handleDecoderInitError(err, "stream")
+
+	c.log.Info("initialized packet decoders", zap.Int("total", len(c.streamDecoders)))
 
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))

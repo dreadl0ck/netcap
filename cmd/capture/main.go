@@ -29,7 +29,7 @@ import (
 	// _ "net/http/pprof"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
@@ -189,7 +189,7 @@ func Run() {
 		NoPrompt:              *flagNoPrompt,
 		HTTPShutdownEndpoint:  *flagHTTPShutdown,
 		Timeout:               *flagTimeout,
-		DecoderConfig: &decoder.Config{
+		DecoderConfig: &config.Config{
 			Quiet:         *flagQuiet,
 			PrintProgress: *flagPrintProgress,
 			Buffer:        *flagBuffer,

@@ -37,8 +37,11 @@ import (
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/decoder/packet"
-	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/service"
+	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
+	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
@@ -57,7 +60,7 @@ type Collector struct {
 	assemblers               []*reassembly.Assembler
 	goPacketDecoders         map[gopacket.LayerType][]*packet.GoPacketDecoder
 	packetDecoders           []packet.PacketDecoderAPI
-	streamDecoders           []stream.DecoderAPI
+	streamDecoders           []decoder.StreamDecoderAPI
 	progressString           string
 	next                     int
 	unkownPcapWriterAtomic   *atomicPcapGoWriter
@@ -401,8 +404,8 @@ func (c *Collector) stats() {
 	}
 
 	if c.config.DecoderConfig.SaveConns {
-		_, _ = fmt.Fprintln(target, "saved TCP connections:", stream.NumSavedTCPConns())
-		_, _ = fmt.Fprintln(target, "saved UDP conversations:", stream.NumSavedUDPConns())
+		_, _ = fmt.Fprintln(target, "saved TCP connections:", tcp.NumSavedTCPConns())
+		_, _ = fmt.Fprintln(target, "saved UDP conversations:", udp.NumSavedUDPConns())
 	}
 }
 
@@ -497,7 +500,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 						// decoder.Flows.Size(), // TODO: fetch this info from stats?
 						// decoder.Connections.Size(), // TODO: fetch this info from stats?
 						packet.DeviceProfiles.Size(),
-						stream.ServiceStore.Size(),
+						service.ServiceStore.Size(),
 						int(curr),
 						pps,
 					)

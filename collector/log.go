@@ -18,8 +18,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dreadl0ck/netcap/decoder/db"
 	"github.com/dreadl0ck/netcap/decoder/packet"
-	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
+	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/logger"
@@ -92,45 +94,21 @@ func (c *Collector) initLogging() error {
 
 	packet.SetDecoderLogger(lDecoder, decoderLogFile)
 
+	lDB, dbLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "db", c.config.DecoderConfig.Debug)
+	if err != nil {
+		return err
+	}
+
+	db.SetLogger(lDB)
+
 	// setup logger for reassembly pkg
 	lReassembly, reassemblyLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "reassembly", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
-	stream.SetReassemblyLogger(lReassembly)
-
-	// setup logger for stream pkg
-	lStream, streamLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "stream", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
-	}
-
-	stream.SetStreamLogger(lStream)
-
-	// setup logger for services
-	lService, serviceLogFile, err := logger.InitDebugLogger(c.config.DecoderConfig.Out, "service", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
-	}
-
-	stream.SetServiceLogger(lService)
-
-	// setup logger for pop3
-	lPop3, pop3LogFile, err := logger.InitDebugLogger(c.config.DecoderConfig.Out, "pop3", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
-	}
-
-	stream.SetPOP3Logger(lPop3)
-
-	// setup logger for smtp
-	lSMTP, smtpLogFile, err := logger.InitDebugLogger(c.config.DecoderConfig.Out, "smtp", c.config.DecoderConfig.Debug)
-	if err != nil {
-		return err
-	}
-
-	stream.SetSMTPLogger(lSMTP)
+	streamutils.SetLogger(lReassembly)
+	tcp.SetLogger(lReassembly)
 
 	// store pointers to zap loggers, in order to sync them on exit
 	c.zapLoggers = append(c.zapLoggers,
@@ -139,6 +117,7 @@ func (c *Collector) initLogging() error {
 		lIO,
 		lDecoder,
 		lReassembly,
+		lDB,
 	)
 
 	// store file handles for closing on exit
@@ -149,10 +128,7 @@ func (c *Collector) initLogging() error {
 		ioLogFile,
 		decoderLogFile,
 		reassemblyLogFile,
-		serviceLogFile,
-		pop3LogFile,
-		smtpLogFile,
-		streamLogFile,
+		dbLogFile,
 	)
 
 	// create errors.log file
