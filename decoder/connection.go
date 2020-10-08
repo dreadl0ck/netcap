@@ -59,12 +59,12 @@ func (a *atomicConnMap) Size() int {
 }
 
 type connectionDecoder struct {
-	*customDecoder
+	*PacketDecoder
 	Conns *atomicConnMap
 }
 
 var connDecoder = &connectionDecoder{
-	customDecoder: &customDecoder{
+	PacketDecoder: &PacketDecoder{
 		Type:        types.Type_NC_Connection,
 		Name:        "Connection",
 		Description: "A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
@@ -87,13 +87,12 @@ func (cd *connectionDecoder) PostInit() error {
 
 // Destroy closes and flushes all writers and calls deinit if set.
 func (cd *connectionDecoder) Destroy() (name string, size int64) {
-	// call Deinit on FlowDecoder, instead of CustomDecoder
 	err := cd.DeInit()
 	if err != nil {
 		panic(err)
 	}
 
-	return cd.writer.Close(cd.numRecords)
+	return cd.Writer.Close(cd.NumRecordsWritten)
 }
 
 func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
@@ -194,11 +193,13 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 			Connection: co,
 		}
 
-		conns := atomic.AddInt64(&stats.numConns, 1)
+		// TODO: add dedicated stats structure for decoder pkg
+		//conns := atomic.AddInt64(&stream.stats.numConns, 1)
+
 		// flush
-		if conf.ConnFlushInterval != 0 && conns%int64(conf.ConnFlushInterval) == 0 {
-			cd.flushConns(p)
-		}
+		//if conf.ConnFlushInterval != 0 && conns%int64(conf.ConnFlushInterval) == 0 {
+		//	cd.flushConns(p)
+		//}
 	}
 	cd.Conns.Unlock()
 
@@ -244,9 +245,9 @@ func (cd *connectionDecoder) writeConn(conn *types.Connection) {
 		conn.Inc()
 	}
 
-	atomic.AddInt64(&cd.numRecords, 1)
+	atomic.AddInt64(&cd.NumRecordsWritten, 1)
 
-	err := cd.writer.Write(conn)
+	err := cd.Writer.Write(conn)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

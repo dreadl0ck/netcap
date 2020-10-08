@@ -14,7 +14,6 @@
 package decoder
 
 import (
-	"log"
 	"os"
 
 	"go.uber.org/zap"
@@ -26,11 +25,6 @@ var (
 	reassemblyLog *zap.Logger
 	// hold a reference to the file handle so we can dump summary data tables into it.
 	reassemblyLogFileHandle *os.File
-
-	// used for colored debug logging
-	serviceLog *log.Logger
-	pop3Log    *log.Logger
-	smtpLog    *log.Logger
 )
 
 // SetDecoderLogger sets the general decoder logger for the decoder package.
@@ -42,19 +36,4 @@ func SetDecoderLogger(lg *zap.Logger, f *os.File) {
 func SetReassemblyLogger(lg *zap.Logger, f *os.File) {
 	reassemblyLog = lg
 	reassemblyLogFileHandle = f
-}
-
-// SetServiceLogger sets the network service logger for the decoder package.
-func SetServiceLogger(lg *log.Logger) {
-	serviceLog = lg
-}
-
-// SetPOP3Logger sets the pop3 logger for the decoder package.
-func SetPOP3Logger(lg *log.Logger) {
-	pop3Log = lg
-}
-
-// SetSMTPLogger sets the pop3 logger for the decoder package.
-func SetSMTPLogger(lg *log.Logger) {
-	smtpLog = lg
 }

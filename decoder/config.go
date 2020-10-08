@@ -19,7 +19,6 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/reassembly"
 )
 
 var conf *Config
@@ -27,14 +26,9 @@ var conf *Config
 // SetConfig can be used to set a configuration for the package.
 func SetConfig(cfg *Config) {
 	conf = cfg
-
-	// create state machine options
-	streamFactory.fsmOptions = reassembly.TCPSimpleFSMOptions{
-		SupportMissingEstablishment: conf.AllowMissingInit,
-	}
 }
 
-// DefaultConfig is a sane example configuration for the encoder package.
+// DefaultConfig is a sane example configuration for the decoder package.
 var DefaultConfig = &Config{
 	Buffer:                     true,
 	MemBufferSize:              defaults.BufferSize,
@@ -234,7 +228,7 @@ type Config struct {
 
 	// IgnoreDecoderInitErrors allows to control whether to crash on Custom Decoder initialization errors (usually caused by missing database files)
 	// and enables users to use the decoders even if the files are not present, while just logging an error to stdout.
-	// If the init error does not allow the encoder to function at least partially,
+	// If the init error does not allow the decoder to function at least partially,
 	// fatal should be invoked in the init function to crash and indicate failure.
 	IgnoreDecoderInitErrors bool
 

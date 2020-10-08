@@ -14,6 +14,7 @@
 package decoder
 
 import (
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -25,7 +26,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-type deviceProfile struct {
+type DeviceProfile struct {
 	*types.DeviceProfile
 	sync.Mutex
 }
@@ -33,7 +34,7 @@ type deviceProfile struct {
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicDeviceProfileMap struct {
 	// SrcMAC to DeviceProfiles
-	Items map[string]*deviceProfile
+	Items map[string]*DeviceProfile
 	sync.Mutex
 }
 
@@ -48,9 +49,9 @@ func (a *atomicDeviceProfileMap) Size() int {
 var (
 	// DeviceProfiles hold all connections.
 	DeviceProfiles = &atomicDeviceProfileMap{
-		Items: make(map[string]*deviceProfile),
+		Items: make(map[string]*DeviceProfile),
 	}
-	deviceProfileDecoderInstance *customDecoder
+	deviceProfileDecoderInstance *PacketDecoder
 	deviceProfiles               int64
 
 	// flags for flushing intervals - no flushing for now.
@@ -61,7 +62,7 @@ var (
 )
 
 // GetDeviceProfile fetches a known profile and updates it or returns a new one.
-func getDeviceProfile(macAddr string, i *packetInfo) *deviceProfile {
+func GetDeviceProfile(macAddr string, i *decoderutils.PacketInfo) *DeviceProfile {
 	DeviceProfiles.Lock()
 	if p, ok := DeviceProfiles.Items[macAddr]; ok {
 		DeviceProfiles.Unlock()
@@ -81,60 +82,60 @@ func getDeviceProfile(macAddr string, i *packetInfo) *deviceProfile {
 }
 
 // updateDeviceProfile can be used to update the profile for the passed identifiers.
-func updateDeviceProfile(i *packetInfo) {
+func updateDeviceProfile(i *decoderutils.PacketInfo) {
 	// lookup profile
 	DeviceProfiles.Lock()
-	if p, ok := DeviceProfiles.Items[i.srcMAC]; ok {
+	if p, ok := DeviceProfiles.Items[i.SrcMAC]; ok {
 		applyDeviceProfileUpdate(p, i)
 	} else {
-		DeviceProfiles.Items[i.srcMAC] = newDeviceProfile(i)
+		DeviceProfiles.Items[i.SrcMAC] = newDeviceProfile(i)
 		deviceProfiles++
 	}
 	DeviceProfiles.Unlock()
 }
 
 // newDeviceProfile creates a new device specific profile.
-func newDeviceProfile(i *packetInfo) *deviceProfile {
+func newDeviceProfile(i *decoderutils.PacketInfo) *DeviceProfile {
 	var contacts []string
-	if ip := getIPProfile(i.dstIP, i, false); ip != nil {
+	if ip := getIPProfile(i.DstIP, i, false); ip != nil {
 		contacts = append(contacts, ip.IPProfile.Addr)
 	}
 
 	var devices []string
-	if ip := getIPProfile(i.srcIP, i, true); ip != nil {
+	if ip := getIPProfile(i.SrcIP, i, true); ip != nil {
 		devices = append(devices, ip.IPProfile.Addr)
 	}
 
-	return &deviceProfile{
+	return &DeviceProfile{
 		DeviceProfile: &types.DeviceProfile{
-			MacAddr:            i.srcMAC,
-			DeviceManufacturer: resolvers.LookupManufacturer(i.srcMAC),
+			MacAddr:            i.SrcMAC,
+			DeviceManufacturer: resolvers.LookupManufacturer(i.SrcMAC),
 			DeviceIPs:          devices,
 			Contacts:           contacts,
-			Timestamp:          i.timestamp,
+			Timestamp:          i.Timestamp,
 			NumPackets:         1,
-			Bytes:              uint64(len(i.p.Data())),
+			Bytes:              uint64(len(i.Packet.Data())),
 		},
 	}
 }
 
-func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
+func applyDeviceProfileUpdate(p *DeviceProfile, i *decoderutils.PacketInfo) {
 	p.Lock()
 
 	// deviceIPs
 	var found bool
 
 	for _, addr := range p.DeviceIPs {
-		if addr == i.srcIP {
+		if addr == i.SrcIP {
 			// update existing ip profile
-			_ = getIPProfile(i.srcIP, i, true).IPProfile
+			_ = getIPProfile(i.SrcIP, i, true).IPProfile
 			found = true
 		}
 	}
 
 	// if no existing one has been updated, its a new one
 	if !found {
-		ip := getIPProfile(i.srcIP, i, true)
+		ip := getIPProfile(i.SrcIP, i, true)
 		// if the packet has no network layer we wont get an IP here
 		// prevent adding a nil pointer to the array
 		if ip != nil {
@@ -146,16 +147,16 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
 	found = false
 
 	for _, addr := range p.Contacts {
-		if addr == i.dstIP {
+		if addr == i.DstIP {
 			// update existing ip profile
-			_ = getIPProfile(i.dstIP, i, false).IPProfile
+			_ = getIPProfile(i.DstIP, i, false).IPProfile
 			found = true
 		}
 	}
 
 	// if no existing one has been updated, its a new one
 	if !found {
-		ip := getIPProfile(i.dstIP, i, false)
+		ip := getIPProfile(i.DstIP, i, false)
 
 		// if the packet has no network layer we wont get an IP here
 		// prevent adding a nil pointer to the array
@@ -164,27 +165,27 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *packetInfo) {
 		}
 	}
 
-	p.Bytes += uint64(len(i.p.Data()))
+	p.Bytes += uint64(len(i.Packet.Data()))
 	p.NumPackets++
 	p.Unlock()
 }
 
-var deviceProfileDecoder = newCustomDecoder(
+var deviceProfileDecoder = NewPacketDecoder(
 	types.Type_NC_DeviceProfile,
 	"DeviceProfile",
 	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
-	func(d *customDecoder) error {
+	func(d *PacketDecoder) error {
 		deviceProfileDecoderInstance = d
 
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
 		// handle packet
-		updateDeviceProfile(newPacketInfo(p))
+		updateDeviceProfile(decoderutils.NewPacketInfo(p))
 
 		return nil
 	},
-	func(e *customDecoder) error {
+	func(e *PacketDecoder) error {
 		// flush writer
 		for _, item := range DeviceProfiles.Items {
 			item.Lock()
@@ -202,9 +203,9 @@ func writeDeviceProfile(d *types.DeviceProfile) {
 		d.Inc()
 	}
 
-	atomic.AddInt64(&deviceProfileDecoderInstance.numRecords, 1)
+	atomic.AddInt64(&deviceProfileDecoderInstance.NumRecordsWritten, 1)
 
-	err := deviceProfileDecoderInstance.writer.Write(d)
+	err := deviceProfileDecoderInstance.Writer.Write(d)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

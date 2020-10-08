@@ -14,6 +14,7 @@
 package decoder
 
 import (
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -34,7 +35,7 @@ var (
 	// without contacting a nameserver.
 	LocalDNS = true
 
-	ipProfileDecoderInstance *customDecoder
+	ipProfileDecoderInstance *PacketDecoder
 )
 
 // atomicIPProfileMap contains all connections and provides synchronized access.
@@ -63,11 +64,11 @@ type ipProfile struct {
 	sync.Mutex
 }
 
-var ipProfileDecoder = newCustomDecoder(
+var ipProfileDecoder = NewPacketDecoder(
 	types.Type_NC_IPProfile,
 	"IPProfile",
 	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
-	func(d *customDecoder) error {
+	func(d *PacketDecoder) error {
 		ipProfileDecoderInstance = d
 
 		return nil
@@ -75,7 +76,7 @@ var ipProfileDecoder = newCustomDecoder(
 	func(p gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *customDecoder) error {
+	func(e *PacketDecoder) error {
 		// flush writer
 		for _, item := range IPProfiles.Items {
 			item.Lock()
@@ -88,7 +89,7 @@ var ipProfileDecoder = newCustomDecoder(
 )
 
 // GetIPProfile fetches a known profile and updates it or returns a new one.
-func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
+func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipProfile {
 	if ipAddr == "" {
 		return nil
 	}
@@ -100,13 +101,13 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 		p.Lock()
 
 		p.NumPackets++
-		p.TimestampLast = i.timestamp
+		p.TimestampLast = i.Timestamp
 
-		dataLen := uint64(len(i.p.Data()))
+		dataLen := uint64(len(i.Packet.Data()))
 		p.Bytes += dataLen
 
 		// Transport Layer
-		if tl := i.p.TransportLayer(); tl != nil {
+		if tl := i.Packet.TransportLayer(); tl != nil {
 			if source {
 				doSrcPortUpdate(p, utils.DecodePort(tl.TransportFlow().Src().Raw()), tl.LayerType().String(), dataLen)
 				doContactedPortUpdate(p, utils.DecodePort(tl.TransportFlow().Dst().Raw()), tl.LayerType().String(), dataLen)
@@ -117,16 +118,16 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 		}
 
 		// Session Layer: TLS
-		ch := tlsx.GetClientHelloBasic(i.p)
+		ch := tlsx.GetClientHelloBasic(i.Packet)
 		if ch != nil {
 			if ch.SNI != "" {
 				p.SNIs[ch.SNI]++
 			}
 		}
 
-		ja3Hash := ja3.DigestHexPacket(i.p)
+		ja3Hash := ja3.DigestHexPacket(i.Packet)
 		if ja3Hash == "" {
-			ja3Hash = ja3.DigestHexPacketJa3s(i.p)
+			ja3Hash = ja3.DigestHexPacketJa3s(i.Packet)
 		}
 
 		if ja3Hash != "" {
@@ -137,7 +138,7 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 		}
 
 		// Application Layer: DPI
-		uniqueResults := dpi.GetProtocols(i.p)
+		uniqueResults := dpi.GetProtocols(i.Packet)
 		for protocol, res := range uniqueResults {
 			// check if proto exists already
 			var prot *types.Protocol
@@ -158,7 +159,7 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 	var (
 		protos  = make(map[string]*types.Protocol)
 		ja3Map  = make(map[string]string)
-		dataLen = uint64(len(i.p.Data()))
+		dataLen = uint64(len(i.Packet.Data()))
 		sniMap  = make(map[string]int64)
 	)
 
@@ -170,22 +171,22 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 
 	// Session Layer: TLS
 
-	ja3Hash := ja3.DigestHexPacket(i.p)
+	ja3Hash := ja3.DigestHexPacket(i.Packet)
 	if ja3Hash == "" {
-		ja3Hash = ja3.DigestHexPacketJa3s(i.p)
+		ja3Hash = ja3.DigestHexPacketJa3s(i.Packet)
 	}
 
 	if ja3Hash != "" {
 		ja3Map[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 	}
 
-	ch := tlsx.GetClientHelloBasic(i.p)
+	ch := tlsx.GetClientHelloBasic(i.Packet)
 	if ch != nil {
 		sniMap[ch.SNI] = 1
 	}
 
 	// Application Layer: DPI
-	uniqueResults := dpi.GetProtocols(i.p)
+	uniqueResults := dpi.GetProtocols(i.Packet)
 	for protocol, res := range uniqueResults {
 		protos[protocol] = dpi.NewProto(&res)
 	}
@@ -206,7 +207,7 @@ func getIPProfile(ipAddr string, i *packetInfo, source bool) *ipProfile {
 			NumPackets:     1,
 			Geolocation:    loc,
 			DNSNames:       names,
-			TimestampFirst: i.timestamp,
+			TimestampFirst: i.Timestamp,
 			Ja3:            ja3Map,
 			Protocols:      protos,
 			Bytes:          dataLen,
@@ -300,14 +301,14 @@ func doDstPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint
 	}
 }
 
-func initPorts(i *packetInfo, source bool) (
+func initPorts(i *decoderutils.PacketInfo, source bool) (
 	srcPorts,
 	dstPorts,
 	contactedPorts []*types.Port,
 ) {
-	if tl := i.p.TransportLayer(); tl != nil {
+	if tl := i.Packet.TransportLayer(); tl != nil {
 		// get packet size
-		dataLen := uint64(len(i.p.Data()))
+		dataLen := uint64(len(i.Packet.Data()))
 
 		if source {
 			// source port
@@ -351,9 +352,9 @@ func writeIPProfile(i *types.IPProfile) {
 		i.Inc()
 	}
 
-	atomic.AddInt64(&ipProfileDecoderInstance.numRecords, 1)
+	atomic.AddInt64(&ipProfileDecoderInstance.NumRecordsWritten, 1)
 
-	err := ipProfileDecoderInstance.writer.Write(i)
+	err := ipProfileDecoderInstance.Writer.Write(i)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

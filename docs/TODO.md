@@ -1,5 +1,6 @@
 # TODOs
 
+- regenerate nmap database and automate
 - port CIP, ENIP and ModbusTCP decoding to stream decoders, add to docs that decodeOpt datagrams must be set
 
 - make database source configurable
