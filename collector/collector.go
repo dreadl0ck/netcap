@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/stream"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"io"
 	"log"
 	"net/http"
@@ -53,7 +55,9 @@ type Collector struct {
 	workers                  []chan gopacket.Packet
 	start                    time.Time
 	assemblers               []*reassembly.Assembler
-	customDecoders           []decoder.CustomDecoderAPI
+	goPacketDecoders         map[gopacket.LayerType][]*decoder.GoPacketDecoder
+	packetDecoders           []decoder.PacketDecoderAPI
+	streamDecoders           []stream.DecoderAPI
 	progressString           string
 	next                     int
 	unkownPcapWriterAtomic   *atomicPcapGoWriter
@@ -62,8 +66,8 @@ type Collector struct {
 	errorsPcapWriterAtomic   *atomicPcapGoWriter
 	errorsPcapFile           *os.File
 	errorLogFile             *os.File
-	unknownProtosAtomic      *decoder.AtomicCounterMap
-	allProtosAtomic          *decoder.AtomicCounterMap
+	unknownProtosAtomic      *decoderutils.AtomicCounterMap
+	allProtosAtomic          *decoderutils.AtomicCounterMap
 	current                  int64
 	numWorkers               int
 	numPacketsLast           int64
@@ -73,8 +77,7 @@ type Collector struct {
 	unkownPcapWriterBuffered *bufio.Writer
 	numPackets               int64
 	config                   *Config
-	errorMap                 *decoder.AtomicCounterMap
-	goPacketDecoders         map[gopacket.LayerType][]*decoder.GoPacketDecoder
+	errorMap                 *decoderutils.AtomicCounterMap
 	wg                       sync.WaitGroup
 	mu                       sync.Mutex
 	statMutex                sync.Mutex
@@ -98,9 +101,9 @@ func New(config Config) *Collector {
 
 	return &Collector{
 		next:                1,
-		unknownProtosAtomic: decoder.NewAtomicCounterMap(),
-		allProtosAtomic:     decoder.NewAtomicCounterMap(),
-		errorMap:            decoder.NewAtomicCounterMap(),
+		unknownProtosAtomic: decoderutils.NewAtomicCounterMap(),
+		allProtosAtomic:     decoderutils.NewAtomicCounterMap(),
+		errorMap:            decoderutils.NewAtomicCounterMap(),
 		files:               map[string]string{},
 		config:              &config,
 		start:               time.Now(),
@@ -351,7 +354,7 @@ func (c *Collector) stats() {
 	numUnknown := len(c.unknownProtosAtomic.Items)
 
 	c.unknownProtosAtomic.Unlock()
-	tui.Table(target, []string{"Layer", "NumRecords", "Share"}, rows)
+	tui.Table(target, []string{"GoPacketDecoder", "NumRecords", "Share"}, rows)
 
 	// print legend if there are unknown protos
 	// -1 for "Payload" layer
@@ -361,16 +364,25 @@ func (c *Collector) stats() {
 		}
 	}
 
-	if len(c.customDecoders) > 0 {
+	if len(c.packetDecoders) > 0 {
 		rows = [][]string{}
-		for _, d := range c.customDecoders {
+		for _, d := range c.packetDecoders {
 			rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
 		}
 
-		tui.Table(target, []string{"CustomDecoder", "NumRecords", "Share"}, rows)
+		tui.Table(target, []string{"PacketDecoder", "NumRecords", "Share"}, rows)
 	}
 
-	res := "\n-> total bytes of data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
+	if len(c.streamDecoders) > 0 {
+		rows = [][]string{}
+		for _, d := range c.streamDecoders {
+			rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
+		}
+
+		tui.Table(target, []string{"StreamDecoder", "NumRecords", "Share"}, rows)
+	}
+
+	res := "\n-> total bytes of audit record data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
 
 	if c.unkownPcapWriterAtomic != nil {
 		if c.unkownPcapWriterAtomic.count > 0 {
@@ -389,8 +401,8 @@ func (c *Collector) stats() {
 	}
 
 	if c.config.DecoderConfig.SaveConns {
-		_, _ = fmt.Fprintln(target, "saved TCP connections:", decoder.NumSavedTCPConns())
-		_, _ = fmt.Fprintln(target, "saved UDP conversations:", decoder.NumSavedUDPConns())
+		_, _ = fmt.Fprintln(target, "saved TCP connections:", stream.NumSavedTCPConns())
+		_, _ = fmt.Fprintln(target, "saved UDP conversations:", stream.NumSavedUDPConns())
 	}
 }
 
@@ -485,7 +497,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 						// decoder.Flows.Size(), // TODO: fetch this info from stats?
 						// decoder.Connections.Size(), // TODO: fetch this info from stats?
 						decoder.DeviceProfiles.Size(),
-						decoder.ServiceStore.Size(),
+						stream.ServiceStore.Size(),
 						int(curr),
 						pps,
 					)

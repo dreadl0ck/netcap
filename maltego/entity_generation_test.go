@@ -119,7 +119,7 @@ func TestGenerateAllEntities(t *testing.T) {
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+	decoder.ApplyActionToCustomDecoders(func(d decoder.PacketDecoderAPI) {
 		genEntity("entities", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", true, colors[count], nil, newStringField("path", "path to the audit records on disk"))
 		genEntity("entities", d.GetName(), d.GetName(), d.GetDescription(), "", false, "black", nil)
 		count++

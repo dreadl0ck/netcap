@@ -46,7 +46,7 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 	generateIcons()
 	generateAdditionalIcons()
 
-	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+	decoder.ApplyActionToCustomDecoders(func(d decoder.PacketDecoderAPI) {
 		fmt.Println(d.GetName())
 		generateAuditRecordIcon(d.GetName())
 	})
@@ -62,7 +62,7 @@ func TestGenerateAuditRecordIconsSVG(t *testing.T) {
 	generateIconsSVG()
 	generateAdditionalIconsSVG()
 
-	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+	decoder.ApplyActionToCustomDecoders(func(d decoder.PacketDecoderAPI) {
 		fmt.Println(d.GetName())
 		generateAuditRecordIconSVG(d.GetName())
 	})

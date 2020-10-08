@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
@@ -37,7 +38,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 		decoders  []*decoder.GoPacketDecoder
 		dec       *decoder.GoPacketDecoder
-		customDec decoder.CustomDecoderAPI
+		customDec decoder.PacketDecoderAPI
 		ok        bool
 
 		netLayer       gopacket.NetworkLayer
@@ -65,7 +66,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			// pass packet to reassembly
 			if c.config.ReassembleConnections {
 				t := time.Now()
-				decoder.ReassemblePacket(pkt, assembler)
+				stream.ReassemblePacket(pkt, assembler)
 				reassemblyTime.WithLabelValues().Set(float64(time.Since(t).Nanoseconds()))
 			}
 
@@ -154,7 +155,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 		done:
 			// call custom decoders
-			for _, customDec = range c.customDecoders {
+			for _, customDec = range c.packetDecoders {
 				t := time.Now()
 				err = customDec.Decode(pkt)
 				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(time.Since(t).Nanoseconds()))
@@ -162,7 +163,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					if c.config.DecoderConfig.ExportMetrics {
 						decodingErrorsTotal.WithLabelValues(customDec.GetName(), err.Error()).Inc()
 					}
-					if err = c.logPacketError(pkt, "CustomDecoder Error: "+customDec.GetName()+": "+err.Error()); err != nil {
+					if err = c.logPacketError(pkt, "PacketDecoder Error: "+customDec.GetName()+": "+err.Error()); err != nil {
 						fmt.Println("failed to log packet error:", err)
 					}
 
@@ -197,7 +198,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 func (c *Collector) initWorkers() []chan gopacket.Packet {
 	workers := make([]chan gopacket.Packet, c.config.Workers)
 	for i := range workers {
-		a := reassembly.NewAssembler(decoder.GetStreamPool())
+		a := reassembly.NewAssembler(stream.GetStreamPool())
 		c.assemblers = append(c.assemblers, a)
 		workers[i] = c.worker(a)
 	}

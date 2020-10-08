@@ -329,7 +329,7 @@ func Run() {
 }
 
 func generateElasticIndices(elasticAddrs []string) {
-	decoder.ApplyActionToCustomDecoders(func(d decoder.CustomDecoderAPI) {
+	decoder.ApplyActionToPacketDecoders(func(d decoder.PacketDecoderAPI) {
 		io.CreateElasticIndex(&io.WriterConfig{
 			CSV:     *flagCSV,
 			Proto:   *flagProto,

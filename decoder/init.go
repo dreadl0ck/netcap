@@ -13,6 +13,8 @@
 
 package decoder
 
+import decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
+
 /*
  *	Package Level Initialization
  */
@@ -20,6 +22,6 @@ package decoder
 func init() {
 	// collect all names for gopacket decoders on startup
 	for _, e := range defaultGoPacketDecoders {
-		allDecoderNames[e.Layer.String()] = struct{}{}
+		decoderutils.AllDecoderNames[e.Layer.String()] = struct{}{}
 	}
 }

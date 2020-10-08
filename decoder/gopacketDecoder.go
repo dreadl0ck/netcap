@@ -16,6 +16,7 @@ package decoder
 
 import (
 	"fmt"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"log"
 	"strings"
 	"sync/atomic"
@@ -94,7 +95,7 @@ type (
 	// goPacketDecoderHandler is the handler function for a layer encoder.
 	goPacketDecoderHandler = func(layer gopacket.Layer, timestamp int64) proto.Message
 
-	// GoPacketDecoder represents an encoder for the gopacket.Layer type
+	// GoPacketDecoder represents an decoder for the gopacket.Layer type
 	// this structure has an optimized field order to avoid excessive padding.
 	GoPacketDecoder struct {
 		Description string
@@ -130,7 +131,7 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 	if len(in) > 0 && in[0] != "" { // iterate over includes
 		for _, name := range in {
 			if name != "" { // check if proto exists
-				if _, ok := allDecoderNames[name]; !ok {
+				if _, ok := decoderutils.AllDecoderNames[name]; !ok {
 					return nil, errors.Wrap(ErrInvalidDecoder, name)
 				}
 
@@ -153,11 +154,11 @@ func InitGoPacketDecoders(c *Config) (decoders map[gopacket.LayerType][]*GoPacke
 	// iterate over excluded decoders
 	for _, name := range ex {
 		if name != "" { // check if proto exists
-			if _, ok := allDecoderNames[name]; !ok {
+			if _, ok := decoderutils.AllDecoderNames[name]; !ok {
 				return nil, errors.Wrap(ErrInvalidDecoder, name)
 			}
 
-			// remove named encoder from defaultGoPacketDecoders
+			// remove named decoder from defaultGoPacketDecoders
 			for i, e := range defaultGoPacketDecoders {
 				if name == e.Layer.String() {
 					// remove encoder

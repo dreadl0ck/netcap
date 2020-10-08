@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"os"
 	"path/filepath"
 
@@ -97,7 +98,15 @@ func (c *Collector) initLogging() error {
 		return err
 	}
 
-	decoder.SetReassemblyLogger(lReassembly, reassemblyLogFile)
+	stream.SetReassemblyLogger(lReassembly)
+
+	// setup logger for stream pkg
+	lStream, streamLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "stream", c.config.DecoderConfig.Debug)
+	if err != nil {
+		return err
+	}
+
+	stream.SetStreamLogger(lStream)
 
 	// setup logger for services
 	lService, serviceLogFile, err := logger.InitDebugLogger(c.config.DecoderConfig.Out, "service", c.config.DecoderConfig.Debug)
@@ -105,7 +114,7 @@ func (c *Collector) initLogging() error {
 		return err
 	}
 
-	decoder.SetServiceLogger(lService)
+	stream.SetServiceLogger(lService)
 
 	// setup logger for pop3
 	lPop3, pop3LogFile, err := logger.InitDebugLogger(c.config.DecoderConfig.Out, "pop3", c.config.DecoderConfig.Debug)
@@ -113,7 +122,7 @@ func (c *Collector) initLogging() error {
 		return err
 	}
 
-	decoder.SetPOP3Logger(lPop3)
+	stream.SetPOP3Logger(lPop3)
 
 	// setup logger for smtp
 	lSMTP, smtpLogFile, err := logger.InitDebugLogger(c.config.DecoderConfig.Out, "smtp", c.config.DecoderConfig.Debug)
@@ -121,7 +130,7 @@ func (c *Collector) initLogging() error {
 		return err
 	}
 
-	decoder.SetSMTPLogger(lSMTP)
+	stream.SetSMTPLogger(lSMTP)
 
 	// store pointers to zap loggers, in order to sync them on exit
 	c.zapLoggers = append(c.zapLoggers,
@@ -143,6 +152,7 @@ func (c *Collector) initLogging() error {
 		serviceLogFile,
 		pop3LogFile,
 		smtpLogFile,
+		streamLogFile,
 	)
 
 	// create errors.log file

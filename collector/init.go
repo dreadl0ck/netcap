@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/stream"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -40,6 +42,7 @@ func (c *Collector) Init() (err error) {
 
 	// set configuration for decoder pkg
 	decoder.SetConfig(c.config.DecoderConfig)
+	stream.SetConfig(c.config.DecoderConfig)
 
 	// handle signals for a clean exit
 	c.handleSignals()
@@ -130,14 +133,17 @@ func (c *Collector) Init() (err error) {
 	c.goPacketDecoders, err = decoder.InitGoPacketDecoders(c.config.DecoderConfig)
 	handleDecoderInitError(err, "gopacket")
 
-	c.customDecoders, err = decoder.InitCustomDecoders(c.config.DecoderConfig)
-	handleDecoderInitError(err, "custom")
+	c.packetDecoders, err = decoder.InitPacketDecoders(c.config.DecoderConfig)
+	handleDecoderInitError(err, "packet")
+
+	c.streamDecoders, err = stream.InitDecoders(c.config.DecoderConfig)
+	handleDecoderInitError(err, "stream")
 
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))
 
 	// set pointer of collectors atomic counter map in encoder pkg
-	decoder.SetErrorMap(c.errorMap)
+	decoderutils.SetErrorMap(c.errorMap)
 
 	// create pcap files for packets
 	// with unknown protocols or errors while decoding

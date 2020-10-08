@@ -15,13 +15,13 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"log"
 	"time"
 
 	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
@@ -62,7 +62,7 @@ func (c *Collector) cleanup(force bool) {
 
 	if c.config.ReassembleConnections {
 		// teardown the TCP stream reassembly and print stats
-		decoder.CleanupReassembly(!force, c.assemblers)
+		stream.CleanupReassembly(!force, c.assemblers)
 	}
 
 	c.teardown()
@@ -84,7 +84,16 @@ func (c *Collector) teardown() {
 	}
 
 	// flush all custom decoders
-	for _, d := range c.customDecoders {
+	for _, d := range c.packetDecoders {
+		name, size := d.Destroy()
+		if size != 0 {
+			c.totalBytesWritten += size
+			c.files[name] = humanize.Bytes(uint64(size))
+		}
+	}
+
+	// flush all stream decoders
+	for _, d := range c.streamDecoders {
 		name, size := d.Destroy()
 		if size != 0 {
 			c.totalBytesWritten += size

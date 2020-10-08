@@ -14,12 +14,13 @@
 package decoder
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
 	"fmt"
+	"github.com/blevesearch/bleve"
+	"github.com/evilsocket/islazy/tui"
+	"go.uber.org/zap"
 	"io"
 	"math"
 	"os"
@@ -27,21 +28,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
-
-	"github.com/blevesearch/bleve"
-	"github.com/evilsocket/islazy/tui"
-	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
-)
-
-const (
-	binaryFileExtension = ".bin"
 )
 
 var (
@@ -49,36 +39,27 @@ var (
 	fieldNameMap = make(map[string]int)
 )
 
-func trimEncoding(ctype string) string {
-	parts := strings.Split(ctype, ";")
-	if len(parts) > 1 {
-		return parts[0]
-	}
-	return ctype
+// OpenBleve is a simple wrapper for the bleve open call
+// it's used to log any open operations.
+func openBleve(path string) (bleve.Index, error) {
+	decoderLog.Info("opening bleve db", zap.String("path", path))
+
+	return bleve.Open(path)
 }
 
-// keep track which paths for content types of extracted files have already been created.
-var (
-	contentTypeMap   = make(map[string]struct{})
-	contentTypeMapMu sync.Mutex
-)
-
-// createContentTypePathIfRequired will create the passed in filesystem path once
-// it is safe for concurrent access and will block until the path has been created on disk.
-func createContentTypePathIfRequired(fsPath string) {
-	contentTypeMapMu.Lock()
-	if _, ok := contentTypeMap[fsPath]; !ok { // the path has not been created yet
-		// add to map
-		contentTypeMap[fsPath] = struct{}{}
-
-		// create path
-		err := os.MkdirAll(fsPath, defaults.DirectoryPermission)
-		if err != nil {
-			logReassemblyError("HTTP-create-path", fmt.Sprintf("cannot create folder %s", fsPath), err)
-		}
+// CloseBleve is a simple wrapper for the bleve close call
+// it's used to log any close operations.
+func closeBleve(index io.Closer) {
+	if index == nil {
+		return
 	}
-	// free lock again
-	contentTypeMapMu.Unlock()
+
+	decoderLog.Info("closing bleve db", zap.String("index", fmt.Sprint(index)))
+
+	err := index.Close()
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 // MarkdownOverview dumps a Markdown summary of all available decoders and their fields.
@@ -95,106 +76,24 @@ func MarkdownOverview() {
 		}
 	}
 
-	fmt.Println("## CustomDecoders")
+	fmt.Println("## PacketDecoders")
 
 	fmt.Println("|Name|NumFields|Fields|")
 	fmt.Println("|----|---------|------|")
-	for _, d := range defaultCustomDecoders {
+	for _, d := range defaultPacketDecoders {
 		if csv, ok := netio.InitRecord(d.GetType()).(types.AuditRecord); ok {
 			fmt.Println("|"+pad(d.GetName(), 30)+"|", len(csv.CSVHeader()), "|"+strings.Join(csv.CSVHeader(), ", ")+"|")
 		}
 	}
 }
 
-func decodeTCPConversation(parent *tcpConnection, client func(buf *bufio.Reader) error, server func(buf *bufio.Reader) error) {
-	var (
-		buf         bytes.Buffer
-		previousDir reassembly.TCPFlowDirection
-	)
-
-	if len(parent.merged) > 0 {
-		previousDir = parent.merged[0].direction()
-	}
-
-	// parse conversation
-	for _, d := range parent.merged {
-		if d.direction() == previousDir {
-			buf.Write(d.raw())
-		} else {
-			var (
-				err error
-				b   = bufio.NewReader(&buf)
-			)
-
-			if previousDir == reassembly.TCPDirClientToServer {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = client(b)
-				}
-			} else {
-				for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					err = server(b)
-				}
-			}
-			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-				decoderLog.Error("error reading TCP stream",
-					zap.Error(err),
-					zap.String("ident", parent.ident),
-				)
-			}
-			buf.Reset()
-			previousDir = d.direction()
-
-			buf.Write(d.raw())
-
-			continue
-		}
-	}
-
-	var (
-		err error
-		b   = bufio.NewReader(&buf)
-	)
-
-	if previousDir == reassembly.TCPDirClientToServer {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = client(b)
-		}
-	} else {
-		for !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-			err = server(b)
-		}
-	}
-	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-		decoderLog.Error("error reading TCP stream",
-			zap.Error(err),
-			zap.String("ident", parent.ident),
-		)
-	}
-}
-
-func recovery() {
-	if r := recover(); r != nil {
-		errorsMapMutex.Lock()
-		errorsMap[fmt.Sprint(r)]++
-		errorsMapMutex.Unlock()
-	}
-}
-
-func printProgress(current, total int64) {
-	if current%5 == 0 {
-		clearLine()
-		print("flushing http traffic... (" + progress(current, total) + ")")
-	}
-}
-
-func progress(current, total int64) string {
-	percent := (float64(current) / float64(total)) * 100
-	return strconv.Itoa(int(percent)) + "%"
-}
-
-func clearLine() {
-	print("\033[2K\r")
-}
+//func recovery() {
+//	if r := recover(); r != nil {
+//		stream.errorsMapMutex.Lock()
+//		stream.errorsMap[fmt.Sprint(r)]++
+//		stream.errorsMapMutex.Unlock()
+//	}
+//}
 
 func calcMd5(s string) string {
 	var out []byte
@@ -274,9 +173,9 @@ func (p pairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 // Swap will switch the values.
 func (p pairList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
-// ApplyActionToCustomDecoders can be used to run custom code for all custom decoders.
-func ApplyActionToCustomDecoders(action func(CustomDecoderAPI)) {
-	for _, d := range defaultCustomDecoders {
+// ApplyActionToPacketDecoders can be used to run custom code for all packet decoders.
+func ApplyActionToPacketDecoders(action func(PacketDecoderAPI)) {
+	for _, d := range defaultPacketDecoders {
 		action(d)
 	}
 }
@@ -292,17 +191,17 @@ func ApplyActionToGoPacketDecoders(action func(*GoPacketDecoder)) {
 func ShowDecoders(verbose bool) {
 	var totalFields, totalAuditRecords int
 
-	fmt.Println("Custom Audit Records: Total", len(defaultCustomDecoders), "Format: DecoderName ( Number of Fields )")
+	fmt.Println("Custom Audit Records: Total", len(defaultPacketDecoders), "Format: DecoderName ( Number of Fields )")
 
-	for _, d := range defaultCustomDecoders {
+	for _, d := range defaultPacketDecoders {
 		totalAuditRecords++
 		f := countFields(d.GetType())
 		totalFields += f
 		fmt.Println(pad("+ "+d.GetType().String()+" ( "+strconv.Itoa(f)+" )", 35), d.GetDescription())
 	}
 
-	fmt.Println("> custom encoder fields: ", totalFields)
-	fmt.Println("> custom encoder audit records:", totalAuditRecords)
+	fmt.Println("> custom decoder fields: ", totalFields)
+	fmt.Println("> custom decoder audit records:", totalAuditRecords)
 
 	fmt.Println("\nLayer Audit Records: Total", len(defaultGoPacketDecoders), "Format: DecoderName ( Number of Fields )")
 
@@ -355,42 +254,6 @@ func entropy(data []byte) (entropy float64) {
 // pad the input up to the given number of space characters.
 func pad(in interface{}, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
-}
-
-func logReassemblyError(task string, msg string, err error) {
-	stats.Lock()
-	stats.numErrors++
-	stats.Unlock()
-
-	errorsMapMutex.Lock()
-	nb := errorsMap[task]
-	errorsMap[task] = nb + 1
-	errorsMapMutex.Unlock()
-
-	reassemblyLog.Error(msg, zap.Error(err))
-}
-
-// OpenBleve is a simple wrapper for the bleve open call
-// it's used to log any open operations.
-func openBleve(path string) (bleve.Index, error) {
-	decoderLog.Info("opening bleve db", zap.String("path", path))
-
-	return bleve.Open(path)
-}
-
-// CloseBleve is a simple wrapper for the bleve close call
-// it's used to log any close operations.
-func closeBleve(index io.Closer) {
-	if index == nil {
-		return
-	}
-
-	decoderLog.Info("closing bleve db", zap.String("index", fmt.Sprint(index)))
-
-	err := index.Close()
-	if err != nil {
-		fmt.Println(err)
-	}
 }
 
 //func logReassemblyInfo(s string, a ...interface{}) {

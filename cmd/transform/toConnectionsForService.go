@@ -137,7 +137,7 @@ retry:
 	var (
 		// TODO: make configurable
 		size = 1024
-		buf = make([]byte, size)
+		buf  = make([]byte, size)
 	)
 
 	n, err := bufio.NewReader(f).Read(buf)
@@ -148,7 +148,7 @@ retry:
 	if n < size {
 		buf = buf[:n]
 	} else {
-		buf = append(buf, []byte("\n\n...  result truncated to " + strconv.Itoa(size) + " bytes.")...)
+		buf = append(buf, []byte("\n\n...  result truncated to "+strconv.Itoa(size)+" bytes.")...)
 	}
 
 	str := strings.ReplaceAll(html.EscapeString(strings.TrimSpace(string(buf))), "\n", "<br>")
