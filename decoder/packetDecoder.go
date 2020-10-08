@@ -15,22 +15,20 @@ package decoder
 
 import (
 	"fmt"
-	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
-	"log"
-	"strings"
-	"sync/atomic"
-	"time"
-
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/netcap"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
+	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-
-	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/types"
+	"log"
+	"strings"
+	"sync/atomic"
+	"time"
 )
 
 var (
@@ -116,44 +114,6 @@ type (
 	}
 )
 
-// PostInit is called after the decoder has been initialized.
-func (pd *PacketDecoder) PostInit() error {
-	if pd.postInit == nil {
-		return nil
-	}
-
-	return pd.postInit(pd)
-}
-
-// DeInit is called prior to teardown.
-func (pd *PacketDecoder) DeInit() error {
-	if pd.deInit == nil {
-		return nil
-	}
-
-	return pd.deInit(pd)
-}
-
-// GetName returns the name of the decoder.
-func (pd *PacketDecoder) GetName() string {
-	return pd.Name
-}
-
-// SetWriter sets the netcap writer to use for the decoder.
-func (pd *PacketDecoder) SetWriter(w io.AuditRecordWriter) {
-	pd.Writer = w
-}
-
-// GetType returns the netcap type of the decoder.
-func (pd *PacketDecoder) GetType() types.Type {
-	return pd.Type
-}
-
-// GetDescription returns the description of the decoder.
-func (pd *PacketDecoder) GetDescription() string {
-	return pd.Description
-}
-
 // package level init.
 func init() {
 	// collect all names for packet decoders on startup
@@ -163,6 +123,18 @@ func init() {
 	// collect all names for gopacket decoders on startup
 	for _, d := range defaultGoPacketDecoders {
 		decoderutils.AllDecoderNames[d.Layer.String()] = struct{}{}
+	}
+}
+
+// NewPacketDecoder returns a new PacketDecoder instance.
+func NewPacketDecoder(t types.Type, name, description string, postinit func(*PacketDecoder) error, handler packetDecoderHandler, deinit func(*PacketDecoder) error) *PacketDecoder {
+	return &PacketDecoder{
+		Name:        name,
+		Handler:     handler,
+		deInit:      deinit,
+		postInit:    postinit,
+		Type:        t,
+		Description: description,
 	}
 }
 
@@ -280,27 +252,44 @@ func InitPacketDecoders(c *Config) (decoders []PacketDecoderAPI, err error) {
 	return decoders, nil
 }
 
-// isPacketDecoderLoaded checks if a decoder is loaded.
-func isPacketDecoderLoaded(name string) bool {
-	for _, e := range defaultPacketDecoders {
-		if e.GetName() == name {
-			return true
-		}
+// PacketDecoderAPI interface implementation
+
+// PostInit is called after the decoder has been initialized.
+func (pd *PacketDecoder) PostInit() error {
+	if pd.postInit == nil {
+		return nil
 	}
 
-	return false
+	return pd.postInit(pd)
 }
 
-// NewPacketDecoder returns a new PacketDecoder instance.
-func NewPacketDecoder(t types.Type, name, description string, postinit func(*PacketDecoder) error, handler packetDecoderHandler, deinit func(*PacketDecoder) error) *PacketDecoder {
-	return &PacketDecoder{
-		Name:        name,
-		Handler:     handler,
-		deInit:      deinit,
-		postInit:    postinit,
-		Type:        t,
-		Description: description,
+// DeInit is called prior to teardown.
+func (pd *PacketDecoder) DeInit() error {
+	if pd.deInit == nil {
+		return nil
 	}
+
+	return pd.deInit(pd)
+}
+
+// GetName returns the name of the decoder.
+func (pd *PacketDecoder) GetName() string {
+	return pd.Name
+}
+
+// SetWriter sets the netcap writer to use for the decoder.
+func (pd *PacketDecoder) SetWriter(w io.AuditRecordWriter) {
+	pd.Writer = w
+}
+
+// GetType returns the netcap type of the decoder.
+func (pd *PacketDecoder) GetType() types.Type {
+	return pd.Type
+}
+
+// GetDescription returns the description of the decoder.
+func (pd *PacketDecoder) GetDescription() string {
+	return pd.Description
 }
 
 // Decode is called for each layer
@@ -324,13 +313,14 @@ func (pd *PacketDecoder) Decode(p gopacket.Packet) error {
 			// assert to audit record
 			if r, ok := record.(types.AuditRecord); ok {
 
-				// TODO: remove for production builds?
-				defer func() {
-					if errRecover := recover(); errRecover != nil {
-						spew.Dump(r)
-						fmt.Println("recovered from panic", errRecover)
-					}
-				}()
+				if conf.Debug {
+					defer func() {
+						if errRecover := recover(); errRecover != nil {
+							spew.Dump(r)
+							fmt.Println("recovered from panic", errRecover)
+						}
+					}()
+				}
 
 				// export metrics
 				r.Inc()
@@ -372,13 +362,14 @@ func (pd *PacketDecoder) NumRecords() int64 {
 func (pd *PacketDecoder) Write(r types.AuditRecord) {
 	if conf.ExportMetrics {
 
-		// TODO: remove for production builds?
-		defer func() {
-			if errRecover := recover(); errRecover != nil {
-				spew.Dump(r)
-				fmt.Println("recovered from panic", errRecover)
-			}
-		}()
+		if conf.Debug {
+			defer func() {
+				if errRecover := recover(); errRecover != nil {
+					spew.Dump(r)
+					fmt.Println("recovered from panic", errRecover)
+				}
+			}()
+		}
 
 		r.Inc()
 	}
@@ -388,4 +379,19 @@ func (pd *PacketDecoder) Write(r types.AuditRecord) {
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}
+}
+
+/*
+ * Utils
+ */
+
+// isPacketDecoderLoaded checks if a decoder is loaded.
+func isPacketDecoderLoaded(name string) bool {
+	for _, e := range defaultPacketDecoders {
+		if e.GetName() == name {
+			return true
+		}
+	}
+
+	return false
 }

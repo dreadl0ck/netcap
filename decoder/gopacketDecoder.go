@@ -267,13 +267,14 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 			// assert to audit record
 			if auditRecord, ok := record.(types.AuditRecord); ok {
 
-				// TODO: remove for production builds?
-				defer func() {
-					if r := recover(); r != nil {
-						spew.Dump(auditRecord)
-						fmt.Println("recovered from panic", r)
-					}
-				}()
+				if conf.Debug {
+					defer func() {
+						if r := recover(); r != nil {
+							spew.Dump(auditRecord)
+							fmt.Println("recovered from panic", r)
+						}
+					}()
+				}
 
 				// export metrics
 				auditRecord.Inc()
