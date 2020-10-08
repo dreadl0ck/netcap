@@ -14,7 +14,6 @@
 package stream
 
 import (
-	"github.com/dreadl0ck/netcap/reassembly"
 	"reflect"
 	"strconv"
 	"sync"
@@ -22,6 +21,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -48,6 +48,7 @@ func newUDPStreamPool() *udpStreamPool {
 		streams: make(map[uint64]*udpStream),
 	}
 }
+
 func (u *udpStreamPool) size() int {
 	u.Lock()
 	defer u.Unlock()
@@ -138,7 +139,6 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 // TODO: ensure that only decoders of protocols are called that actually support being transported via UDP
 // TODO: specify transport protocols during decoder creation
 func (u *udpStream) decode() {
-
 	// choose the decoder to run against the data stream
 	var (
 		cr               = u.data[0].raw()

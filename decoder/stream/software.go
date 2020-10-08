@@ -16,27 +16,23 @@ package stream
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
-	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"io/ioutil"
-
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
-
 	"time"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/blevesearch/bleve"
-
 	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/ja3"
-
 	"github.com/ua-parser/uap-go/uaparser"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/decoder/packet"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -269,7 +265,7 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 
 // tries to determine the kind of software and version
 // based on the provided input data.
-func whatSoftware(dp *decoder.DeviceProfile, i *decoderutils.PacketInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (s []*software) {
+func whatSoftware(dp *packet.DeviceProfile, i *decoderutils.PacketInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (s []*software) {
 	var (
 		serviceIdent string
 		dpIdent      = dp.MacAddr
@@ -629,7 +625,7 @@ func analyzeSoftware(i *decoderutils.PacketInfo) {
 	}
 
 	// fetch the associated device profile
-	dp := decoder.GetDeviceProfile(i.SrcMAC, i)
+	dp := packet.GetDeviceProfile(i.SrcMAC, i)
 
 	// now that we have some information at hands
 	// try to determine what kind of software it is
@@ -676,9 +672,9 @@ func writeSoftware(software []*software, update func(s *software)) {
 			softwareStore.Items[ident] = s
 
 			// TODO: why track this here? the audit record writer will keep track of the number of records written
-			//stats.Lock()
-			//stats.numSoftware++
-			//stats.Unlock()
+			// stats.Lock()
+			// stats.numSoftware++
+			// stats.Unlock()
 
 			newSoftwareProducts = append(newSoftwareProducts, s.Software)
 		}
@@ -705,7 +701,7 @@ func newSoftware(i *decoderutils.PacketInfo) *software {
 	}
 }
 
-func updateSoftwareAuditRecord(dp *decoder.DeviceProfile, s *software, i *decoderutils.PacketInfo) {
+func updateSoftwareAuditRecord(dp *packet.DeviceProfile, s *software, i *decoderutils.PacketInfo) {
 	dpIdent := dp.MacAddr
 	if dp.DeviceManufacturer != "" {
 		dpIdent += " <" + dp.DeviceManufacturer + ">"

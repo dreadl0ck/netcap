@@ -15,12 +15,12 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder/stream"
 	"time"
 
 	"github.com/dreadl0ck/gopacket"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -36,9 +36,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 		errLayer gopacket.ErrorLayer
 		err      error
 
-		decoders  []*decoder.GoPacketDecoder
-		dec       *decoder.GoPacketDecoder
-		customDec decoder.PacketDecoderAPI
+		decoders  []*packet.GoPacketDecoder
+		dec       *packet.GoPacketDecoder
+		customDec packet.PacketDecoderAPI
 		ok        bool
 
 		netLayer       gopacket.NetworkLayer

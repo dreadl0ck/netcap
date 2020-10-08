@@ -5,16 +5,18 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/blevesearch/bleve"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/utils"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/blevesearch/bleve"
+	"go.uber.org/zap"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 const (
@@ -110,7 +112,7 @@ func trimEncoding(ctype string) string {
 	return ctype
 }
 
-//func decodeTCPConversation(parent *tcpConnection, client func(buf *bufio.Reader) error, server func(buf *bufio.Reader) error) {
+// func decodeTCPConversation(parent *tcpConnection, client func(buf *bufio.Reader) error, server func(buf *bufio.Reader) error) {
 func decodeConversation(ident string, data dataFragments, client func(buf *bufio.Reader) error, server func(buf *bufio.Reader) error) {
 	var (
 		buf         bytes.Buffer

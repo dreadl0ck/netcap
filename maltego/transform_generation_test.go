@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/maltego"
 )
@@ -233,7 +234,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	decoder.ApplyActionToCustomDecoders(func(d decoder.PacketDecoderAPI) {
+	decoder.ApplyActionToCustomDecoders(func(d packet.PacketDecoderAPI) {
 		genEntity(
 			netcapIdent,
 			d.GetName()+"AuditRecords",
@@ -260,7 +261,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 		}
 	})
 
-	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
+	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		genEntity(
 			netcapIdent,

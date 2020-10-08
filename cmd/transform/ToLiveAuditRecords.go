@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/maltego"
@@ -58,11 +58,11 @@ func writeLiveAuditRecords(outDir string) {
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	decoder.ApplyActionToPacketDecoders(func(d decoder.PacketDecoderAPI) {
+	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
 		allDecoders = append(allDecoders, d.GetName())
 	})
 
-	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
+	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		allDecoders = append(allDecoders, name)
 	})

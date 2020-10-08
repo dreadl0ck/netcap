@@ -30,6 +30,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/metrics"
@@ -67,7 +68,7 @@ func Run() {
 
 	// print a markdown overview of all available decoders and fields
 	if *flagPrintProtocolOverview {
-		decoder.MarkdownOverview()
+		packet.MarkdownOverview()
 
 		return
 	}
@@ -114,7 +115,7 @@ func Run() {
 
 	// print decoders and exit
 	if *flagDecoders {
-		decoder.ShowDecoders(true)
+		packet.ShowDecoders(true)
 
 		return
 	}
@@ -329,7 +330,7 @@ func Run() {
 }
 
 func generateElasticIndices(elasticAddrs []string) {
-	decoder.ApplyActionToPacketDecoders(func(d decoder.PacketDecoderAPI) {
+	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
 		io.CreateElasticIndex(&io.WriterConfig{
 			CSV:     *flagCSV,
 			Proto:   *flagProto,
@@ -356,7 +357,7 @@ func generateElasticIndices(elasticAddrs []string) {
 		})
 	})
 
-	decoder.ApplyActionToGoPacketDecoders(func(d *decoder.GoPacketDecoder) {
+	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
 		io.CreateElasticIndex(&io.WriterConfig{
 			CSV:     *flagCSV,
 			Proto:   *flagProto,

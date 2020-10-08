@@ -21,13 +21,6 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 )
 
-var conf *Config
-
-// SetConfig can be used to set a configuration for the package.
-func SetConfig(cfg *Config) {
-	conf = cfg
-}
-
 // DefaultConfig is a sane example configuration for the decoder package.
 var DefaultConfig = &Config{
 	Buffer:                     true,
