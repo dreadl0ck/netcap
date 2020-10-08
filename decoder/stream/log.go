@@ -1,9 +1,10 @@
 package stream
 
 import (
-	"go.uber.org/zap"
 	"log"
 	"os"
+
+	"go.uber.org/zap"
 )
 
 var (

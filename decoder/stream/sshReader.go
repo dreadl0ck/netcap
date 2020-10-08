@@ -43,8 +43,8 @@ type conversationInfo struct {
 	firstClientPacket time.Time
 	firstServerPacket time.Time
 
-	clientIP string
-	serverIP string
+	clientIP   string
+	serverIP   string
 	clientPort int32
 	serverPort int32
 }

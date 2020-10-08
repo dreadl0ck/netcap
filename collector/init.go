@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder/stream"
-	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,7 +17,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
@@ -40,8 +40,8 @@ func (c *Collector) Init() (err error) {
 		c.config.Timeout = pcap.BlockForever
 	}
 
-	// set configuration for decoder pkg
-	decoder.SetConfig(c.config.DecoderConfig)
+	// set configuration for decoder pkgs
+	packet.SetConfig(c.config.DecoderConfig)
 	stream.SetConfig(c.config.DecoderConfig)
 
 	// handle signals for a clean exit
@@ -76,7 +76,7 @@ func (c *Collector) Init() (err error) {
 	resolvers.Init(c.config.ResolverConfig, c.config.DecoderConfig.Quiet)
 
 	if c.config.ResolverConfig.LocalDNS {
-		decoder.LocalDNS = true
+		packet.LocalDNS = true
 	}
 
 	// check for files from previous run in the output directory
@@ -130,10 +130,10 @@ func (c *Collector) Init() (err error) {
 	start := time.Now()
 
 	// initialize decoders
-	c.goPacketDecoders, err = decoder.InitGoPacketDecoders(c.config.DecoderConfig)
+	c.goPacketDecoders, err = packet.InitGoPacketDecoders(c.config.DecoderConfig)
 	handleDecoderInitError(err, "gopacket")
 
-	c.packetDecoders, err = decoder.InitPacketDecoders(c.config.DecoderConfig)
+	c.packetDecoders, err = packet.InitPacketDecoders(c.config.DecoderConfig)
 	handleDecoderInitError(err, "packet")
 
 	c.streamDecoders, err = stream.InitDecoders(c.config.DecoderConfig)
@@ -189,7 +189,7 @@ func confirm(s string) bool {
 }
 
 func handleDecoderInitError(err error, target string) {
-	if errors.Is(err, decoder.ErrInvalidDecoder) {
+	if errors.Is(err, packet.ErrInvalidDecoder) {
 		invalidDecoder(strings.Split(errors.Unwrap(err).Error(), ":")[0])
 	} else if err != nil {
 		log.Fatal("failed to initialize "+target+" decoders: ", err)
@@ -198,6 +198,6 @@ func handleDecoderInitError(err error, target string) {
 
 func invalidDecoder(name string) {
 	fmt.Println("invalid encoder: " + ansi.Red + name + ansi.Reset)
-	decoder.ShowDecoders(false)
+	packet.ShowDecoders(false)
 	os.Exit(1)
 }

@@ -39,7 +39,7 @@ func saveConversation(proto string, conversation dataFragments, ident string, fi
 		return nil
 	}
 
-	//fmt.Println("saving conv", conversation.size(), ident)
+	// fmt.Println("saving conv", conversation.size(), ident)
 
 	banner := createBannerFromConversation(conversation)
 	runHarvesters(banner, transport, ident, firstPacket)

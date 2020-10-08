@@ -5,7 +5,9 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// DecoderAPI describes functionality of a decoder.
 type DecoderAPI interface {
+
 	// PostInit is called after the decoder has been initialized
 	PostInit() error
 

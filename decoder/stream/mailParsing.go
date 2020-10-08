@@ -130,7 +130,7 @@ func parseMail(conv *conversationInfo, buf []byte, from, to string, logger *log.
 			mail.HasAttachments = true
 
 			if conf.FileStorage != "" {
-				err = saveFile(conv, origin, p.Filename, nil, []byte(p.Content), []string{p.Header["Content-Transfer-Encoding"]}, conv.serverIP + ":" + strconv.Itoa(int(conv.serverPort)), "")
+				err = saveFile(conv, origin, p.Filename, nil, []byte(p.Content), []string{p.Header["Content-Transfer-Encoding"]}, conv.serverIP+":"+strconv.Itoa(int(conv.serverPort)), "")
 				if err != nil {
 					streamLog.Error("failed to save attachment", zap.Error(err), zap.String("origin", origin))
 				}

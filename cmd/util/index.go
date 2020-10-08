@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder/stream"
 	"io"
 	"io/ioutil"
 	"log"
@@ -34,6 +33,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/dustin/go-humanize"
 
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )

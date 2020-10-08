@@ -15,8 +15,9 @@ package stream
 
 import (
 	"bytes"
-	"github.com/dreadl0ck/netcap/types"
 	"strconv"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 var smtpDecoder = NewStreamDecoder(

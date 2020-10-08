@@ -16,7 +16,6 @@ package stream
 import (
 	"bufio"
 	"errors"
-	"github.com/dreadl0ck/netcap/decoder/utils"
 	"io"
 	"log"
 	"net/textproto"
@@ -27,6 +26,7 @@ import (
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/types"
 )
 

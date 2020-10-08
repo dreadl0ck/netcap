@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder/stream"
-	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"io"
 	"log"
 	"net/http"
@@ -39,7 +37,9 @@ import (
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
@@ -55,8 +55,8 @@ type Collector struct {
 	workers                  []chan gopacket.Packet
 	start                    time.Time
 	assemblers               []*reassembly.Assembler
-	goPacketDecoders         map[gopacket.LayerType][]*decoder.GoPacketDecoder
-	packetDecoders           []decoder.PacketDecoderAPI
+	goPacketDecoders         map[gopacket.LayerType][]*packet.GoPacketDecoder
+	packetDecoders           []packet.PacketDecoderAPI
 	streamDecoders           []stream.DecoderAPI
 	progressString           string
 	next                     int
@@ -496,7 +496,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 						utils.Progress(curr, num),
 						// decoder.Flows.Size(), // TODO: fetch this info from stats?
 						// decoder.Connections.Size(), // TODO: fetch this info from stats?
-						decoder.DeviceProfiles.Size(),
+						packet.DeviceProfiles.Size(),
 						stream.ServiceStore.Size(),
 						int(curr),
 						pps,

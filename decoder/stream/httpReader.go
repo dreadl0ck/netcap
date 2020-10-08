@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -28,6 +27,7 @@ import (
 
 	"go.uber.org/zap"
 
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -206,8 +206,8 @@ func writeHTTP(h *types.HTTP, ident string) {
 
 	if conf.IncludePayloads {
 		// TODO: only include request body, not the entire stream contents...
-		//h.RequestBody = t.client.DataSlice().bytes()
-		//h.ResponseBody = t.server.DataSlice().bytes()
+		// h.RequestBody = t.client.DataSlice().bytes()
+		// h.ResponseBody = t.server.DataSlice().bytes()
 	}
 
 	// export metrics if configured

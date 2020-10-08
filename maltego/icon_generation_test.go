@@ -35,6 +35,7 @@ import (
 	"github.com/nfnt/resize"
 
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
 )
 
 // Icons/Netcap/sim_card_alert.xml
@@ -46,12 +47,12 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 	generateIcons()
 	generateAdditionalIcons()
 
-	decoder.ApplyActionToCustomDecoders(func(d decoder.PacketDecoderAPI) {
+	decoder.ApplyActionToCustomDecoders(func(d packet.PacketDecoderAPI) {
 		fmt.Println(d.GetName())
 		generateAuditRecordIcon(d.GetName())
 	})
 
-	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
+	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		fmt.Println(name)
 		generateAuditRecordIcon(name)
@@ -62,12 +63,12 @@ func TestGenerateAuditRecordIconsSVG(t *testing.T) {
 	generateIconsSVG()
 	generateAdditionalIconsSVG()
 
-	decoder.ApplyActionToCustomDecoders(func(d decoder.PacketDecoderAPI) {
+	decoder.ApplyActionToCustomDecoders(func(d packet.PacketDecoderAPI) {
 		fmt.Println(d.GetName())
 		generateAuditRecordIconSVG(d.GetName())
 	})
 
-	decoder.ApplyActionToGoPacketDecoders(func(e *decoder.GoPacketDecoder) {
+	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
 		name := strings.ReplaceAll(e.Layer.String(), "/", "")
 		fmt.Println(name)
 		generateAuditRecordIconSVG(name)

@@ -15,13 +15,13 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder/stream"
 	"log"
 	"time"
 
 	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
@@ -69,7 +69,6 @@ func (c *Collector) cleanup(force bool) {
 }
 
 func (c *Collector) teardown() {
-
 	c.log.Info("teardown")
 
 	// flush all gopacket decoders

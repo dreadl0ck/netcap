@@ -30,6 +30,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -81,7 +82,7 @@ func Run() {
 	}
 
 	if *flagDecoders {
-		decoder.ShowDecoders(true)
+		packet.ShowDecoders(true)
 
 		return
 	}

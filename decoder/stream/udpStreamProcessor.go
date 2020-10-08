@@ -16,13 +16,14 @@ package stream
 import (
 	"bytes"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/netcap/utils"
 	"sort"
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/gopacket"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (
@@ -50,7 +51,6 @@ func init() {
 }
 
 func flushUDPStreams(numTotal int) {
-
 	sp := new(udpStreamProcessor)
 	sp.initWorkers(conf.StreamBufferSize)
 	sp.numTotal = numTotal

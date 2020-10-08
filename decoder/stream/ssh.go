@@ -15,6 +15,7 @@ package stream
 
 import (
 	"bytes"
+
 	"github.com/dreadl0ck/netcap/types"
 )
 

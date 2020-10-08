@@ -15,11 +15,11 @@ package collector
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder/stream"
 	"os"
 	"path/filepath"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/logger"
@@ -90,7 +90,7 @@ func (c *Collector) initLogging() error {
 		return err
 	}
 
-	decoder.SetDecoderLogger(lDecoder, decoderLogFile)
+	packet.SetDecoderLogger(lDecoder, decoderLogFile)
 
 	// setup logger for reassembly pkg
 	lReassembly, reassemblyLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "reassembly", c.config.DecoderConfig.Debug)

@@ -15,18 +15,20 @@ package stream
 
 import (
 	"fmt"
+	"strings"
+	"sync/atomic"
+	"time"
+
+	"github.com/mgutz/ansi"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/mgutz/ansi"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-	"strings"
-	"sync/atomic"
-	"time"
 )
 
 var (
@@ -89,7 +91,6 @@ type (
 	// DecoderAPI describes an interface that all stream decoders need to implement
 	// this allows to supply a custom structure and maintain state for advanced protocol analysis.
 	DecoderAPI interface {
-
 		core.DecoderAPI
 
 		// CanDecode determines if this decoder can understand the protocol used

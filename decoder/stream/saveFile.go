@@ -229,11 +229,11 @@ func saveFile(conv *conversationInfo, source, name string, err error, body []byt
 		ContentType:         contentType,
 		ContentTypeDetected: cTypeDetected,
 		// TODO: set the actual flow direction of the file, not the one of the connection
-		SrcIP:               conv.clientIP,
-		DstIP:               conv.serverIP,
-		SrcPort:             conv.serverPort,
-		DstPort:             conv.clientPort,
-		Host:                host,
+		SrcIP:   conv.clientIP,
+		DstIP:   conv.serverIP,
+		SrcPort: conv.serverPort,
+		DstPort: conv.clientPort,
+		Host:    host,
 	})
 
 	return nil

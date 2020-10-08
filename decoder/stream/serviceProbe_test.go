@@ -15,7 +15,6 @@ package stream
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
 	"path/filepath"
 	"regexp"
 	"testing"
@@ -23,6 +22,7 @@ import (
 
 	"github.com/mgutz/ansi"
 
+	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 
