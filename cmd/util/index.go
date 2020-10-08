@@ -33,7 +33,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap/decoder/stream"
+	vuln "github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -348,7 +348,7 @@ func indexData(in string) {
 				log.Fatal("Could not open file " + file)
 			}
 
-			items := new(stream.NVDVulnerabilityItems)
+			items := new(vuln.NVDVulnerabilityItems)
 
 			err = json.Unmarshal(data, items)
 			if err != nil {

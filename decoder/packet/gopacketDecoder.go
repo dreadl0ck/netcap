@@ -28,7 +28,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -113,7 +113,7 @@ type (
 )
 
 // InitGoPacketDecoders initializes all gopacket decoders.
-func InitGoPacketDecoders(c *decoder.Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
+func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
 
 	var (

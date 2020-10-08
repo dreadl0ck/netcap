@@ -20,7 +20,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 
 	"github.com/dreadl0ck/netcap/decoder/packet"
-	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -66,7 +66,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			// pass packet to reassembly
 			if c.config.ReassembleConnections {
 				t := time.Now()
-				stream.ReassemblePacket(pkt, assembler)
+				tcp.ReassemblePacket(pkt, assembler)
 				reassemblyTime.WithLabelValues().Set(float64(time.Since(t).Nanoseconds()))
 			}
 
@@ -198,7 +198,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 func (c *Collector) initWorkers() []chan gopacket.Packet {
 	workers := make([]chan gopacket.Packet, c.config.Workers)
 	for i := range workers {
-		a := reassembly.NewAssembler(stream.GetStreamPool())
+		a := reassembly.NewAssembler(tcp.GetStreamPool())
 		c.assemblers = append(c.assemblers, a)
 		workers[i] = c.worker(a)
 	}

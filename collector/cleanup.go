@@ -21,7 +21,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
@@ -62,7 +62,7 @@ func (c *Collector) cleanup(force bool) {
 
 	if c.config.ReassembleConnections {
 		// teardown the TCP stream reassembly and print stats
-		stream.CleanupReassembly(!force, c.assemblers)
+		tcp.CleanupReassembly(!force, c.assemblers)
 	}
 
 	c.teardown()

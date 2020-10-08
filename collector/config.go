@@ -19,7 +19,7 @@ import (
 
 	"github.com/dreadl0ck/gopacket"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
@@ -36,7 +36,7 @@ var DefaultConfig = Config{
 	DPI:                 false,
 	BaseLayer:           utils.GetBaseLayer("ethernet"),
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
-	DecoderConfig:       decoder.DefaultConfig,
+	DecoderConfig:       config.DefaultConfig,
 	ResolverConfig:      resolvers.DefaultConfig,
 	LogErrors:           false,
 }
@@ -52,7 +52,7 @@ var DefaultConfigDPI = Config{
 	DPI:                 true,
 	BaseLayer:           utils.GetBaseLayer("ethernet"),
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
-	DecoderConfig:       decoder.DefaultConfig,
+	DecoderConfig:       config.DefaultConfig,
 	ResolverConfig:      resolvers.DefaultConfig,
 	LogErrors:           false,
 }
@@ -63,7 +63,7 @@ var DefaultConfigDPI = Config{
 type Config struct {
 
 	// Decoder configuration
-	DecoderConfig *decoder.Config
+	DecoderConfig *config.Config
 
 	// Baselayer to start decoding from
 	BaseLayer gopacket.LayerType

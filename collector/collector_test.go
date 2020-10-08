@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
@@ -52,7 +52,7 @@ func TestCapturePCAP(t *testing.T) {
 		PacketBufferSize:    100,
 		SnapLen:             defaults.SnapLen,
 		Promisc:             false,
-		DecoderConfig: &decoder.Config{
+		DecoderConfig: &config.Config{
 			Buffer:               true,
 			Compression:          true,
 			CSV:                  false,

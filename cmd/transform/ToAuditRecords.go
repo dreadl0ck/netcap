@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/maltego"
@@ -39,7 +39,7 @@ var maltegoBaseConfig = collector.Config{
 	Promisc:              false,
 	HTTPShutdownEndpoint: true,
 	NoPrompt:             true,
-	DecoderConfig: &decoder.Config{
+	DecoderConfig: &config.Config{
 		Quiet:         true,
 		PrintProgress: true,
 		Buffer:        true,

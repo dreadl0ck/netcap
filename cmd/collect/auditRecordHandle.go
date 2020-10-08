@@ -24,7 +24,7 @@ import (
 	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/delimited"
 	"github.com/dreadl0ck/netcap/io"
@@ -53,7 +53,7 @@ func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 
 	fmt.Println("new audit record handle", path)
 
-	conf := decoder.DefaultConfig
+	conf := config.DefaultConfig
 	conf.Source = b.ClientID
 	conf.IncludePayloads = b.ContainsPayloads
 	conf.MemBufferSize = *flagMemBufferSize
