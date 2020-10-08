@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/core"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -87,35 +88,9 @@ type (
 
 	// DecoderAPI describes an interface that all stream decoders need to implement
 	// this allows to supply a custom structure and maintain state for advanced protocol analysis.
-	// TODO: embed PacketDecoderAPI here, since most functionality is the same?
 	DecoderAPI interface {
 
-		// PostInit is called after the decoder has been initialized
-		PostInit() error
-
-		// DeInit is called prior to teardown
-		DeInit() error
-
-		// GetName returns the name of the decoder
-		GetName() string
-
-		// SetWriter sets the netcap writer to use for the decoder
-		SetWriter(netio.AuditRecordWriter)
-
-		// GetType returns the netcap type of the decoder
-		GetType() types.Type
-
-		// GetDescription returns the description of the decoder
-		GetDescription() string
-
-		// GetChan returns a channel to receive serialized audit records from the decoder
-		GetChan() <-chan []byte
-
-		// Destroy initiates teardown
-		Destroy() (string, int64)
-
-		// NumRecords returns the number of processed audit records
-		NumRecords() int64
+		core.DecoderAPI
 
 		// CanDecode determines if this decoder can understand the protocol used
 		CanDecode(client []byte, server []byte) bool
