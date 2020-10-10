@@ -1,6 +1,6 @@
 # TODOs
 
-- decoders: refactor signleton pattern to provide an initializer function
+- decoders: refactor singleton pattern and provide an initializer function instead
 - stream decoders: add zap logger to decoder structure?
 
 - refactor pkg structure?
