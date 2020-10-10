@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/decoder/db"
 	"github.com/dreadl0ck/netcap/logger"
 )
 
@@ -14,13 +15,20 @@ import (
 // So we abuse it here to guarantee the logfile handles are initialized for all tests.
 func init() {
 	var err error
-	credLog, _, err = logger.InitZapLogger("tests", "decoder", true)
+	credLog, _, err = logger.InitZapLogger("../../tests", "decoder", true)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	dbLog, _, err := logger.InitZapLogger("../../tests", "db", false)
+	if err != nil {
+		panic(err)
+	}
+
+	db.SetLogger(dbLog)
+
 	// TODO
-	//stream.serviceLog, _, err = logger.InitDebugLogger("tests", "service", true)
+	//stream.serviceLog, _, err = logger.InitDebugLogger("../../tests", "service", true)
 	//if err != nil {
 	//	log.Fatal(err)
 	//}

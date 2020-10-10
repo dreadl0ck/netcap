@@ -19,9 +19,17 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 )
 
-var softwareTests = []stream.regexTest{
+type regexTest struct {
+	name     string
+	input    string
+	expected string
+}
+
+var softwareTests = []regexTest{
 	{
 		name:     "Windows Netcat",
 		input:    "Test123\nMicrosoft Windows [Version 10.0.10586]\n(c) 2015 Microsoft Corporation. All rights reserved. \nC:\\cygwin\\netcat>",
@@ -44,7 +52,7 @@ var softwareTests = []stream.regexTest{
 	},
 }
 
-func (r stream.regexTest) testSoftwareHarvester(t *testing.T) {
+func (r regexTest) testSoftwareHarvester(t *testing.T) {
 	s := softwareHarvester([]byte(r.input), "", time.Now(), "test", "test", []string{})
 
 	parts := strings.Split(r.expected, "-")
@@ -59,7 +67,7 @@ func (r stream.regexTest) testSoftwareHarvester(t *testing.T) {
 			fmt.Println(hex.Dump([]byte(p)))
 			fmt.Println("length received", len(s[i].Notes))
 			fmt.Println(hex.Dump([]byte(s[i].Notes)))
-			t.Fatal("Expected: ", stream.conf, " Received: ", s[i].Notes, "all:", s[i])
+			t.Fatal("Expected: ", decoderconfig.DefaultConfig, " Received: ", s[i].Notes, "all:", s[i])
 		}
 	}
 }

@@ -34,8 +34,9 @@ import (
 	svgcheck "github.com/h2non/go-is-svg"
 	"github.com/nfnt/resize"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 )
 
 // Icons/Netcap/sim_card_alert.xml
@@ -47,15 +48,20 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 	generateIcons()
 	generateAdditionalIcons()
 
-	decoder.ApplyActionToCustomDecoders(func(d packet.PacketDecoderAPI) {
-		fmt.Println(d.GetName())
+	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
 		generateAuditRecordIcon(d.GetName())
 	})
 
-	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
-		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		fmt.Println(name)
-		generateAuditRecordIcon(name)
+	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
+		generateAuditRecordIcon(d.Layer.String())
+	})
+
+	stream.ApplyActionToStreamDecoders(func(d core.StreamDecoderAPI) {
+		generateAuditRecordIcon(d.GetName())
+	})
+
+	stream.ApplyActionToAbstractDecoders(func(d core.DecoderAPI) {
+		generateAuditRecordIcon(d.GetName())
 	})
 }
 
@@ -63,15 +69,20 @@ func TestGenerateAuditRecordIconsSVG(t *testing.T) {
 	generateIconsSVG()
 	generateAdditionalIconsSVG()
 
-	decoder.ApplyActionToCustomDecoders(func(d packet.PacketDecoderAPI) {
-		fmt.Println(d.GetName())
+	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
 		generateAuditRecordIconSVG(d.GetName())
 	})
 
-	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
-		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		fmt.Println(name)
-		generateAuditRecordIconSVG(name)
+	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
+		generateAuditRecordIconSVG(d.Layer.String())
+	})
+
+	stream.ApplyActionToStreamDecoders(func(d core.StreamDecoderAPI) {
+		generateAuditRecordIconSVG(d.GetName())
+	})
+
+	stream.ApplyActionToAbstractDecoders(func(d core.DecoderAPI) {
+		generateAuditRecordIconSVG(d.GetName())
 	})
 }
 
@@ -444,14 +455,20 @@ func generateSizesSVG(newBase string, newPath string, color string) {
 }
 
 func generateAuditRecordIcon(text string) {
-	const size = 96
+
+	var (
+		name = strings.ReplaceAll(text, "/", "")
+		size = 96.0
+	)
+
+	fmt.Println(name)
 
 	im, err := gg.LoadPNG("/tmp/icons/material-icons-png/renamed/check_box_outline_blank.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	dc := gg.NewContext(size, size)
+	dc := gg.NewContext(int(size), int(size))
 	// dc.SetRGB(1, 1, 1)
 	dc.Clear()
 	dc.SetRGB(0, 0, 0)
@@ -459,13 +476,13 @@ func generateAuditRecordIcon(text string) {
 	var fontSize float64
 
 	switch {
-	case len(text) > 12:
+	case len(name) > 12:
 		fontSize = 8
-	case len(text) > 10:
+	case len(name) > 10:
 		fontSize = 11
-	case len(text) > 8:
+	case len(name) > 8:
 		fontSize = 12
-	case len(text) > 6:
+	case len(name) > 6:
 		fontSize = 13
 	default:
 		fontSize = 15
@@ -479,17 +496,17 @@ func generateAuditRecordIcon(text string) {
 	dc.DrawImage(im, 0, 0)
 	// dc.DrawStringWrapped(text, size/2, size/2, 0.5, 0.5, 80, 1, 0)
 
-	if strings.Contains(text, "ICMPv6") {
+	if strings.Contains(name, "ICMPv6") {
 		dc.DrawStringAnchored("ICMPv6", size/2, size/2, 0.5, 0.5)
-		dc.DrawStringAnchored(strings.TrimPrefix(text, "ICMPv6"), size/2, size/2, 0.5, 1.5)
+		dc.DrawStringAnchored(strings.TrimPrefix(name, "ICMPv6"), size/2, size/2, 0.5, 1.5)
 	} else {
-		dc.DrawStringAnchored(text, size/2, size/2, 0.5, 0.5)
+		dc.DrawStringAnchored(name, size/2, size/2, 0.5, 0.5)
 	}
 
 	dc.Clip()
 
 	var (
-		imgBase = filepath.Join("/tmp", "icons", "material-icons-png", "renamed", text)
+		imgBase = filepath.Join("/tmp", "icons", "material-icons-png", "renamed", name)
 		imgPath = imgBase + ".png"
 	)
 
@@ -507,16 +524,23 @@ func generateAuditRecordIcon(text string) {
 }
 
 func generateAuditRecordIconSVG(text string) {
+
 	var (
+		name = strings.ReplaceAll(text, "/", "")
 		size = 96
+	)
+
+	fmt.Println(name)
+
+	var (
 		x    = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(size) + `" height="` + strconv.Itoa(size) + `">
 <rect x="0" y="0" width="` + strconv.Itoa(size) + `" height="` + strconv.Itoa(size) + `" stroke="red" stroke-width="3px" fill="white"/>
-<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">` + text + `</text>
+<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">` + name + `</text>
 </svg>`
 	)
 
 	var (
-		imgBase = filepath.Join("/tmp", "icons", "material-icons", "renamed", text)
+		imgBase = filepath.Join("/tmp", "icons", "material-icons", "renamed", name)
 		imgPath = imgBase + ".svg"
 	)
 

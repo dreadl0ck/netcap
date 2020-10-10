@@ -17,6 +17,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder"
 	"log"
 	"regexp"
 	"strings"
@@ -26,7 +27,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	//"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 
 	//"github.com/dreadl0ck/netcap/decoder/stream"
@@ -372,7 +373,7 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
-var credLog *zap.Logger
+var credLog = zap.NewNop()
 
 var CredentialsDecoder = decoder.NewStreamDecoder(
 	types.Type_NC_Credentials,

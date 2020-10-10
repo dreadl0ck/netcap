@@ -25,7 +25,6 @@ import (
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/mail"
@@ -132,7 +131,7 @@ func validSMTPCommand(cmd string) bool {
 	}
 }
 
-func (h *smtpReader) New(conv *core.ConversationInfo) decoder.StreamDecoderInterface {
+func (h *smtpReader) New(conv *core.ConversationInfo) core.StreamDecoderInterface {
 	return &smtpReader{
 		conversation: conv,
 	}

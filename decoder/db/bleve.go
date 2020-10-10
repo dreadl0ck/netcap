@@ -13,7 +13,7 @@ var (
 	ExploitsIndex        bleve.Index
 
 	VulnDBName = "nvd.bleve"
-	dbLog      *zap.Logger
+	dbLog      = zap.NewNop()
 )
 
 func SetLogger(l *zap.Logger) {

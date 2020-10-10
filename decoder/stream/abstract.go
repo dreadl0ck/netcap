@@ -11,44 +11,49 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
-
-	"github.com/dreadl0ck/netcap/decoder/stream/http"
-	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
-	"github.com/dreadl0ck/netcap/decoder/stream/smtp"
-	"github.com/dreadl0ck/netcap/decoder/stream/ssh"
+	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
+	"github.com/dreadl0ck/netcap/decoder/stream/file"
+	"github.com/dreadl0ck/netcap/decoder/stream/mail"
+	"github.com/dreadl0ck/netcap/decoder/stream/service"
+	"github.com/dreadl0ck/netcap/decoder/stream/software"
+	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	netio "github.com/dreadl0ck/netcap/io"
 )
 
-// ErrInvalidStreamDecoder occurs when a decoder name is unknown during initialization.
-var ErrInvalidStreamDecoder = errors.New("invalid stream decoder")
+// ErrInvalidAbstractDecoder occurs when an abstract decoder name is unknown during initialization.
+var ErrInvalidAbstractDecoder = errors.New("invalid abstract decoder")
 
-// DefaultStreamDecoders contains stream decoders mapped to their protocols default port
-// int32 is used to avoid casting when looking up values
-var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
-	80:  http.HTTPDecoder,
-	110: pop3.POP3Decoder,
-	22:  ssh.SSHDecoder,
-	25:  smtp.SMTPDecoder,
-} // contains all available stream decoders
+// DefaultAbstractDecoders contains decoders for custom abstractions
+// that do not represent a specific network protocol.
+var DefaultAbstractDecoders = []core.DecoderAPI{
+	file.FileDecoder,
+	service.ServiceDecoder,
+	exploit.ExploitDecoder,
+	mail.MailDecoder,
+	software.SoftwareDecoder,
+	vulnerability.VulnerabilityDecoder,
+	credentials.CredentialsDecoder,
+} // contains all available abstract decoders
 
 // package level init.
 func init() {
 	// collect all names for stream decoders on startup
-	for _, d := range DefaultStreamDecoders {
+	for _, d := range DefaultAbstractDecoders {
 		decoderutils.AllDecoderNames[d.GetName()] = struct{}{}
 	}
 }
 
-// ApplyActionToStreamDecoders can be used to run custom code for all stream decoders.
-func ApplyActionToStreamDecoders(action func(api core.StreamDecoderAPI)) {
-	for _, d := range DefaultStreamDecoders {
+// ApplyActionToAbstractDecoders can be used to run custom code for all stream decoders.
+func ApplyActionToAbstractDecoders(action func(api core.DecoderAPI)) {
+	for _, d := range DefaultAbstractDecoders {
 		action(d)
 	}
 }
 
-// InitDecoders initializes all stream decoders.
-func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error) {
+// InitAbstractDecoders initializes all stream decoders.
+func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err error) {
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeDecoders, ",")
@@ -58,7 +63,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		inMap = make(map[string]bool)
 
 		// new selection
-		selection = make(map[int32]core.StreamDecoderAPI)
+		selection []core.DecoderAPI
 	)
 
 	// if there are includes and the first item is not an empty string
@@ -75,14 +80,14 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		}
 
 		// iterate over packet decoders and collect those that are named in the includeMap
-		for port, dec := range DefaultStreamDecoders {
+		for _, dec := range DefaultAbstractDecoders {
 			if _, ok := inMap[dec.GetName()]; ok {
-				selection[port] = dec
+				selection = append(selection, dec)
 			}
 		}
 
 		// update packet decoders to new selection
-		DefaultStreamDecoders = selection
+		DefaultAbstractDecoders = selection
 	}
 
 	// iterate over excluded decoders
@@ -93,10 +98,10 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 			}
 
 			// remove named decoder from defaultPacketDecoders
-			for port, dec := range DefaultStreamDecoders {
+			for i, dec := range DefaultAbstractDecoders {
 				if name == dec.GetName() {
 					// remove encoder
-					delete(DefaultStreamDecoders, port)
+					DefaultAbstractDecoders = append(DefaultAbstractDecoders[:i], DefaultAbstractDecoders[i+1:]...)
 
 					break
 				}
@@ -105,7 +110,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 	}
 
 	// initialize decoders
-	for _, d := range DefaultStreamDecoders {
+	for _, d := range DefaultAbstractDecoders {
 		w := netio.NewAuditRecordWriter(&netio.WriterConfig{
 			CSV:     c.CSV,
 			Proto:   c.Proto,
@@ -156,11 +161,15 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		decoders = append(decoders, d)
 	}
 
+	if isAbstractDecoderLoaded(credentials.CredentialsDecoderName) {
+		credentials.UseHarvesters = true
+	}
+
 	return decoders, nil
 }
 
-// isStreamDecoderLoaded checks if an abstract decoder is loaded.
-func isStreamDecoderLoaded(name string) bool {
+// isAbstractDecoderLoaded checks if an abstract decoder is loaded.
+func isAbstractDecoderLoaded(name string) bool {
 	for _, e := range DefaultStreamDecoders {
 		if e.GetName() == name {
 			return true

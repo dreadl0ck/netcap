@@ -14,6 +14,7 @@
 package decoder
 
 import (
+	"github.com/dreadl0ck/netcap/decoder/core"
 	"sync/atomic"
 
 	netio "github.com/dreadl0ck/netcap/io"
@@ -51,7 +52,7 @@ type (
 		canDecode func(client []byte, server []byte) bool
 
 		// factory for stream readers
-		factory StreamDecoderFactory
+		factory core.StreamDecoderFactory
 	}
 )
 
@@ -63,7 +64,7 @@ func NewStreamDecoder(
 	postinit func(*StreamDecoder) error,
 	canDecode func(client, server []byte) bool,
 	deinit func(*StreamDecoder) error,
-	factory StreamDecoderFactory,
+	factory core.StreamDecoderFactory,
 ) *StreamDecoder {
 	return &StreamDecoder{
 		Name:        name,
@@ -79,7 +80,7 @@ func NewStreamDecoder(
 // StreamDecoderAPI interface implementation
 
 // GetReaderFactory returns a new stream reader for the decoder type.
-func (sd *StreamDecoder) GetReaderFactory() StreamDecoderFactory {
+func (sd *StreamDecoder) GetReaderFactory() core.StreamDecoderFactory {
 	return sd.factory
 }
 
@@ -150,4 +151,3 @@ func (sd *StreamDecoder) NumRecords() int64 {
 func (sd *StreamDecoder) CanDecode(client []byte, server []byte) bool {
 	return sd.canDecode(client, server)
 }
-

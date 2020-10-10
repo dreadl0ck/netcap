@@ -40,7 +40,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var softwareLog *zap.Logger
+var softwareLog = zap.NewNop()
 
 var SoftwareDecoder = decoder.NewStreamDecoder(
 	types.Type_NC_Software,

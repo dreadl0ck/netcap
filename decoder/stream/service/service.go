@@ -114,9 +114,6 @@ var ServiceDecoder = decoder.NewStreamDecoder(
 
 		serviceLogSugared = serviceLog.Sugar()
 
-		// TODO: fix import cycle: move service store into dedicated package, so it can be accessed from the service and tcp package?
-		//tcp.CaptureTCPBanners = true
-
 		return initServiceProbes()
 	},
 	nil,

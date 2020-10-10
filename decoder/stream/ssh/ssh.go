@@ -24,7 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var sshLog *zap.Logger
+var sshLog = zap.NewNop()
 
 var SSHDecoder = decoder.NewStreamDecoder(
 	types.Type_NC_SSH,

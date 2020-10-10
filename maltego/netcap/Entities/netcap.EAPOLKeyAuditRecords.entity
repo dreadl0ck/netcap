@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.EAPOLKeyAuditRecords" displayName="EAPOLKeyAuditRecords" displayNamePlural="EAPOLKeyAuditRecords" description="An archive of EAPOLKey audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_indigo" largeIconResource="Netcap/insert_drive_file_indigo" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.EAPOLKeyAuditRecords" displayName="EAPOLKeyAuditRecords" displayNamePlural="EAPOLKeyAuditRecords" description="An archive of EAPOLKey audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_coral" largeIconResource="Netcap/insert_drive_file_coral" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.eapolkeyauditrecords" displayValue="properties.eapolkeyauditrecords">
   <Groups></Groups>
   <Fields>

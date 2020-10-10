@@ -21,11 +21,24 @@ import (
 	"time"
 
 	"github.com/mgutz/ansi"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/db"
+	"github.com/dreadl0ck/netcap/logger"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
+
+func init() {
+	dbLog, _, err := logger.InitZapLogger("../../tests", "db", false)
+	if err != nil {
+		panic(err)
+	}
+
+	db.SetLogger(dbLog)
+
+	serviceLog = zap.NewNop()
+}
 
 type regexTest struct {
 	name     string
@@ -177,7 +190,7 @@ func (b bannerTest) testClassifyBanner(t *testing.T) {
 	serv := NewService(time.Now().UnixNano(), 0, 0, "")
 	serv.IP = "127.0.0.1"
 	serv.Port = 21
-	ident := "127.0.0.1->127.0.0.1-4322->21"
+	ident := "127.0.0.1:4322->127.0.0.1:21"
 	serv.Flows = []string{ident}
 
 	MatchServiceProbes(serv, []byte(b.banner), ident)

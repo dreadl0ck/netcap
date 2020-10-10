@@ -23,7 +23,7 @@ import (
 const logFileName = "net.proxy.log"
 
 // logging instance.
-var proxyLog *zap.Logger
+var proxyLog = zap.NewNop()
 
 // configureLogger configures the logging instance.
 func configureLogger(debug bool, outputPath string) {

@@ -25,7 +25,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var mailLog *zap.Logger
+var mailLog = zap.NewNop()
 
 var MailDecoder = decoder.NewStreamDecoder(
 	types.Type_NC_Mail,
