@@ -43,11 +43,11 @@ import (
 var softwareLog = zap.NewNop()
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewAbstractDecoder(
 	types.Type_NC_Software,
 	"Software",
 	"A software product that was observed on the network",
-	func(d *decoder.StreamDecoder) error {
+	func(d *decoder.AbstractDecoder) error {
 		var err error
 		softwareLog, _, err = logger.InitZapLogger(
 			decoderconfig.Instance.Out,
@@ -113,8 +113,7 @@ var Decoder = decoder.NewStreamDecoder(
 
 		return nil
 	},
-	nil,
-	func(e *decoder.StreamDecoder) error {
+	func(e *decoder.AbstractDecoder) error {
 		// TODO: make collecting and dumping unique user agents, server names and header fields configurable
 		//httpStore.Lock()
 		//var rows [][]string
@@ -140,7 +139,6 @@ var Decoder = decoder.NewStreamDecoder(
 
 		return softwareLog.Sync()
 	},
-	nil,
 )
 
 // header is a HTTP header structure.

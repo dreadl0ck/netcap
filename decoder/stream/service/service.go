@@ -98,11 +98,11 @@ var (
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewAbstractDecoder(
 	types.Type_NC_Service,
 	"Service",
 	"A network service",
-	func(d *decoder.StreamDecoder) error {
+	func(d *decoder.AbstractDecoder) error {
 		var err error
 		serviceLog, _, err = logging.InitZapLogger(
 			decoderconfig.Instance.Out,
@@ -117,8 +117,7 @@ var Decoder = decoder.NewStreamDecoder(
 
 		return initServiceProbes()
 	},
-	nil,
-	func(e *decoder.StreamDecoder) error {
+	func(e *decoder.AbstractDecoder) error {
 		// flush writer
 		for _, item := range Store.Items {
 			item.Lock()
@@ -128,5 +127,4 @@ var Decoder = decoder.NewStreamDecoder(
 
 		return serviceLog.Sync()
 	},
-	nil,
 )

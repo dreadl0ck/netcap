@@ -377,11 +377,11 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 var credLog = zap.NewNop()
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewAbstractDecoder(
 	types.Type_NC_Credentials,
 	DecoderName,
 	"Credentials represent a user and password combination to authenticate to a service",
-	func(d *decoder.StreamDecoder) (err error) {
+	func(d *decoder.AbstractDecoder) (err error) {
 		credLog, _, err = logging.InitZapLogger(
 			decoderconfig.Instance.Out,
 			"credentials",
@@ -417,11 +417,9 @@ var Decoder = decoder.NewStreamDecoder(
 
 		return nil
 	},
-	nil,
-	func(sd *decoder.StreamDecoder) error {
+	func(sd *decoder.AbstractDecoder) error {
 		return credLog.Sync()
 	},
-	nil,
 )
 
 // WriteCredentials is a util that should be used to write credential audit to disk
