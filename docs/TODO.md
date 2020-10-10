@@ -1,5 +1,8 @@
 # TODOs
 
+- decoders: refactor signleton pattern to provide an initializer function
+- stream decoders: add zap logger to decoder structure?
+
 - refactor pkg structure?
     - packet.NewDecoder(...)
     - stream.NewDecoder(...)
@@ -8,6 +11,7 @@
     
 - more SMTP transforms
 - more DNS transforms / DNSSEC
+- add intel hyperscan regex support, see https://github.com/intel-go/nff-go/blob/master/examples/dpi/main/dpi.go 
 
 - add default port and transport protocol during stream decoder creation
 - register decoder during creation?
