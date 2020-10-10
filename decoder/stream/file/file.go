@@ -23,12 +23,10 @@ import (
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewAbstractDecoder(
 	types.Type_NC_File,
 	"File",
 	"A file that was transferred over the network",
-	nil,
-	nil,
 	nil,
 	nil,
 )
