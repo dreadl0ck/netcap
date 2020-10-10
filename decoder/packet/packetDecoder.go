@@ -92,11 +92,10 @@ type (
 	// PacketDecoderAPI describes an interface that all custom decoder need to implement
 	// this allows to supply a custom structure and maintain state for advanced protocol analysis.
 	PacketDecoderAPI interface {
+		core.DecoderAPI
 
 		// Decode parses a gopacket and returns an error
 		Decode(p gopacket.Packet) error
-
-		core.DecoderAPI
 	}
 )
 

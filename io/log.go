@@ -15,7 +15,7 @@ package io
 
 import "go.uber.org/zap"
 
-var ioLog *zap.Logger
+var ioLog = zap.NewNop()
 
 // SetLogger sets the logger for the resolvers package.
 func SetLogger(lg *zap.Logger) {

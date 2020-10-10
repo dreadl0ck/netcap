@@ -39,7 +39,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-var reassemblyLog *zap.Logger
+var reassemblyLog = zap.NewNop()
 
 func SetLogger(l *zap.Logger) {
 	reassemblyLog = l

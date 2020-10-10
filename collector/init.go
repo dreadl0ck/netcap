@@ -148,6 +148,9 @@ func (c *Collector) Init() (err error) {
 	c.streamDecoders, err = stream.InitDecoders(c.config.DecoderConfig)
 	handleDecoderInitError(err, "stream")
 
+	c.abstractDecoders, err = stream.InitAbstractDecoders(c.config.DecoderConfig)
+	handleDecoderInitError(err, "abstract")
+
 	c.log.Info("initialized packet decoders", zap.Int("total", len(c.streamDecoders)))
 
 	c.buildProgressString()

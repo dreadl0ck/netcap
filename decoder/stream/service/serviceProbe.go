@@ -69,12 +69,18 @@ var (
 	}
 )
 
+func init() {
+	decoderconfig.Instance = decoderconfig.DefaultConfig
+	serviceLog = zap.NewNop()
+	serviceLogSugared = serviceLog.Sugar()
+}
+
 const (
 	debugRegexClean = false
 )
 
 // serviceProbe is a regex based probe to fingerprint a network service by looking at its banner
-// the term banner refers to the first X bytes of data (usually 512) that have been sent by the server.
+// the term banner refers to the first X bytes of data that have been sent by the server.
 type serviceProbe struct {
 	RegEx           *regexp.Regexp
 	RegExDotNet     *regexp2.Regexp

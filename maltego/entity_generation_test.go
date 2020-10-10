@@ -23,8 +23,9 @@ import (
 
 	"github.com/mgutz/ansi"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 )
 
 // additional entities that are not actual NETCAP audit records
@@ -116,29 +117,27 @@ var maltegoEntities = []entityCoreInfo{
 func TestGenerateAllEntities(t *testing.T) {
 	genEntityArchive()
 
-	var count int
+	var (
+		count int
+		out = "entities"
+	)
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	decoder.ApplyActionToCustomDecoders(func(d packet.PacketDecoderAPI) {
-		genEntity("entities", d.GetName()+"AuditRecords", "insert_drive_file", "An archive of "+d.GetName()+" audit records", "", true, colors[count], nil, newStringField("path", "path to the audit records on disk"))
-		genEntity("entities", d.GetName(), d.GetName(), d.GetDescription(), "", false, "black", nil)
-		count++
-
-		if count >= len(colors) {
-			count = 0
-		}
+	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
+		createEntity(out, d.GetName(), d.GetDescription(), &count)
 	})
 
-	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
-		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		genEntity("entities", name+"AuditRecords", "insert_drive_file", "An archive of "+e.Layer.String()+" audit records", "", true, colors[count], nil, newStringField("path", "path to the audit records on disk"))
-		genEntity("entities", name, name, e.Description, "", false, "black", nil)
-		count++
+	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
+		createEntity(out, d.Layer.String(), d.Description, &count)
+	})
 
-		if count >= len(colors) {
-			count = 0
-		}
+	stream.ApplyActionToStreamDecoders(func(d core.StreamDecoderAPI) {
+		createEntity(out, d.GetName(), d.GetDescription(), &count)
+	})
+
+	stream.ApplyActionToAbstractDecoders(func(d core.DecoderAPI) {
+		createEntity(out, d.GetName(), d.GetDescription(), &count)
 	})
 
 	// generate additional entities after generating the others

@@ -24,7 +24,6 @@ import (
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
@@ -85,7 +84,7 @@ func validPop3ServerCommand(cmd string) bool {
 	}
 }
 
-func (h *pop3Reader) New(conv *core.ConversationInfo) decoder.StreamDecoderInterface {
+func (h *pop3Reader) New(conv *core.ConversationInfo) core.StreamDecoderInterface {
 	return &pop3Reader{
 		conversation: conv,
 	}

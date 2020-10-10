@@ -37,7 +37,7 @@ import (
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
@@ -60,7 +60,8 @@ type Collector struct {
 	assemblers               []*reassembly.Assembler
 	goPacketDecoders         map[gopacket.LayerType][]*packet.GoPacketDecoder
 	packetDecoders           []packet.PacketDecoderAPI
-	streamDecoders           []decoder.StreamDecoderAPI
+	streamDecoders           []core.StreamDecoderAPI
+	abstractDecoders         []core.DecoderAPI
 	progressString           string
 	next                     int
 	unkownPcapWriterAtomic   *atomicPcapGoWriter
@@ -383,6 +384,15 @@ func (c *Collector) stats() {
 		}
 
 		tui.Table(target, []string{"StreamDecoder", "NumRecords", "Share"}, rows)
+	}
+
+	if len(c.abstractDecoders) > 0 {
+		rows = [][]string{}
+		for _, d := range c.abstractDecoders {
+			rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
+		}
+
+		tui.Table(target, []string{"AbstractDecoder", "NumRecords", "Share"}, rows)
 	}
 
 	res := "\n-> total bytes of audit record data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"

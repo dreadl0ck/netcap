@@ -100,6 +100,15 @@ func (c *Collector) teardown() {
 		}
 	}
 
+	// flush all abstract decoders
+	for _, d := range c.abstractDecoders {
+		name, size := d.Destroy()
+		if size != 0 {
+			c.totalBytesWritten += size
+			c.files[name] = humanize.Bytes(uint64(size))
+		}
+	}
+
 	resolvers.SaveFingerprintDB()
 
 	c.log.Info("decoder teardown complete, closing logfiles")

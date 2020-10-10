@@ -24,8 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dreadl0ck/netcap/decoder"
+	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/maltego"
 )
@@ -232,61 +233,25 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 	var count int
 
-	// generate entities for audit records
+	// generate entities for packet decoders
 	// *AuditRecords entity and an entity for the actual audit record instance
-	decoder.ApplyActionToCustomDecoders(func(d packet.PacketDecoderAPI) {
-		genEntity(
-			netcapIdent,
-			d.GetName()+"AuditRecords",
-			"insert_drive_file",
-			"An archive of "+d.GetName()+" audit records",
-			"",
-			true,
-			colors[count],
-			&regexConversion{
-				regex: "^(.+(\\/|\\\\)(" + d.GetName() + ")\\.ncap(\\.gz)?)",
-				properties: []string{
-					"path",
-					"",
-					propsPrefix + strings.ToLower(d.GetName()+"AuditRecords"), // 3rd group contains the name
-				},
-			},
-			newStringField("path", "path to the audit records on disk"),
-		)
-		genEntity(netcapIdent, d.GetName(), d.GetName(), d.GetDescription(), "", false, "black", nil)
-
-		count++
-		if count >= len(colors) {
-			count = 0
-		}
+	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
+		createEntity(netcapIdent, d.GetName(), d.GetDescription(), &count)
 	})
 
-	packet.ApplyActionToGoPacketDecoders(func(e *packet.GoPacketDecoder) {
-		name := strings.ReplaceAll(e.Layer.String(), "/", "")
-		genEntity(
-			netcapIdent,
-			name+"AuditRecords",
-			"insert_drive_file",
-			"An archive of "+e.Layer.String()+" audit records",
-			"",
-			true,
-			colors[count],
-			&regexConversion{
-				regex: "^(.+(\\/|\\\\)(" + name + ")\\.ncap(\\.gz)?)",
-				properties: []string{
-					"path",
-					"",
-					propsPrefix + strings.ToLower(name+"AuditRecords"), // 3rd group contains the name
-				},
-			},
-			newStringField("path", "path to the audit records on disk"),
-		)
-		genEntity(netcapIdent, name, name, e.Description, "", false, "black", nil)
+	// generate entities for gopacket decoders
+	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
+		createEntity(netcapIdent, d.Layer.String(), d.Description, &count)
+	})
 
-		count++
-		if count >= len(colors) {
-			count = 0
-		}
+	// generate stream decoder entities
+	stream.ApplyActionToStreamDecoders(func(d core.StreamDecoderAPI) {
+		createEntity(netcapIdent, d.GetName(), d.GetDescription(), &count)
+	})
+
+	// generate stream decoder entities
+	stream.ApplyActionToAbstractDecoders(func(d core.DecoderAPI) {
+		createEntity(netcapIdent, d.GetName(), d.GetDescription(), &count)
 	})
 
 	// generate additional entities after generating the others
@@ -319,6 +284,34 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	copyFile("netcap.mtz", path)
 
 	fmt.Println("moved archive to", path)
+}
+
+func createEntity(outpath string, name string, description string, count *int) {
+	n := strings.ReplaceAll(name, "/", "")
+	genEntity(
+		outpath,
+		n+"AuditRecords",
+		"insert_drive_file",
+		"An archive of "+n+" audit records",
+		"",
+		true,
+		colors[*count],
+		&regexConversion{
+			regex: "^(.+(\\/|\\\\)(" + n + ")\\.ncap(\\.gz)?)",
+			properties: []string{
+				"path",
+				"",
+				propsPrefix + strings.ToLower(n+"AuditRecords"), // 3rd group contains the name
+			},
+		},
+		newStringField("path", "path to the audit records on disk"),
+	)
+	genEntity(outpath, n, n, description, "", false, "black", nil)
+
+	*count++
+	if *count >= len(colors) {
+		*count = 0
+	}
 }
 
 func genMachines() {

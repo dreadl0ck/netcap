@@ -28,7 +28,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/decoder"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
@@ -52,7 +51,7 @@ type sshReader struct {
 	software      []*types.Software
 }
 
-func (h *sshReader) New(conversation *core.ConversationInfo) decoder.StreamDecoderInterface {
+func (h *sshReader) New(conversation *core.ConversationInfo) core.StreamDecoderInterface {
 	return &sshReader{
 		conversation: conversation,
 	}

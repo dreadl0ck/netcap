@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.EAPAuditRecords" displayName="EAPAuditRecords" displayNamePlural="EAPAuditRecords" description="An archive of EAP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_blueviolet" largeIconResource="Netcap/insert_drive_file_blueviolet" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.EAPAuditRecords" displayName="EAPAuditRecords" displayNamePlural="EAPAuditRecords" description="An archive of EAP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_orangered" largeIconResource="Netcap/insert_drive_file_orangered" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.eapauditrecords" displayValue="properties.eapauditrecords">
   <Groups></Groups>
   <Fields>

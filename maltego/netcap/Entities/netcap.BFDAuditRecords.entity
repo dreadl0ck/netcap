@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.BFDAuditRecords" displayName="BFDAuditRecords" displayNamePlural="BFDAuditRecords" description="An archive of BFD audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_green" largeIconResource="Netcap/insert_drive_file_green" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.BFDAuditRecords" displayName="BFDAuditRecords" displayNamePlural="BFDAuditRecords" description="An archive of BFD audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_midnightblue" largeIconResource="Netcap/insert_drive_file_midnightblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.bfdauditrecords" displayValue="properties.bfdauditrecords">
   <Groups></Groups>
   <Fields>

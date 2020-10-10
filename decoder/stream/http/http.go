@@ -29,7 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var httpLog *zap.Logger
+var httpLog = zap.NewNop()
 
 var HTTPDecoder = decoder.NewStreamDecoder(
 	types.Type_NC_HTTP,
