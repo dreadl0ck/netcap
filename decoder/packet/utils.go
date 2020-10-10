@@ -18,7 +18,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"math"
 	"os"
 	"reflect"
@@ -26,42 +25,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blevesearch/bleve"
-	"github.com/evilsocket/islazy/tui"
-	"go.uber.org/zap"
-
 	"github.com/dreadl0ck/netcap"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/evilsocket/islazy/tui"
 )
 
 var (
 	typeMap      = make(map[string]int)
 	fieldNameMap = make(map[string]int)
 )
-
-// OpenBleve is a simple wrapper for the bleve open call
-// it's used to log any open operations.
-func openBleve(path string) (bleve.Index, error) {
-	decoderLog.Info("opening bleve db", zap.String("path", path))
-
-	return bleve.Open(path)
-}
-
-// CloseBleve is a simple wrapper for the bleve close call
-// it's used to log any close operations.
-func closeBleve(index io.Closer) {
-	if index == nil {
-		return
-	}
-
-	decoderLog.Info("closing bleve db", zap.String("index", fmt.Sprint(index)))
-
-	err := index.Close()
-	if err != nil {
-		fmt.Println(err)
-	}
-}
 
 // MarkdownOverview dumps a Markdown summary of all available decoders and their fields.
 func MarkdownOverview() {

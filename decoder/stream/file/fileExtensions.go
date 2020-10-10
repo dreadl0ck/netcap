@@ -17,6 +17,7 @@ import (
 	"strings"
 )
 
+// ExtensionForContentType returns the file extension for the given MIME type.
 func ExtensionForContentType(typ string) string {
 	parts := strings.Split(typ, ";")
 	if len(typ) > 1 {

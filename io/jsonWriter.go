@@ -33,21 +33,21 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// JSONWriter is a structure that supports writing JSON audit records to disk.
-type JSONWriter struct {
+// jsonWriter is a structure that supports writing JSON audit records to disk.
+type jsonWriter struct {
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
 	dWriter *delimited.Writer
-	jWriter *JSONProtoWriter
+	jWriter *jsonProtoWriter
 
 	file *os.File
 	mu   sync.Mutex
 	wc   *WriterConfig
 }
 
-// newJSONWriter initializes and configures a new JSONWriter instance.
-func newJSONWriter(wc *WriterConfig) *JSONWriter {
-	w := &JSONWriter{}
+// newJSONWriter initializes and configures a new jsonWriter instance.
+func newJSONWriter(wc *WriterConfig) *jsonWriter {
+	w := &jsonWriter{}
 	w.wc = wc
 
 	if wc.MemBufferSize <= 0 {
@@ -102,7 +102,7 @@ func newJSONWriter(wc *WriterConfig) *JSONWriter {
 }
 
 // WriteCSV writes a CSV record.
-func (w *JSONWriter) Write(msg proto.Message) error {
+func (w *jsonWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -112,7 +112,7 @@ func (w *JSONWriter) Write(msg proto.Message) error {
 }
 
 // WriteHeader writes a CSV header.
-func (w *JSONWriter) WriteHeader(t types.Type) error {
+func (w *jsonWriter) WriteHeader(t types.Type) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -122,7 +122,7 @@ func (w *JSONWriter) WriteHeader(t types.Type) error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *JSONWriter) Close(numRecords int64) (name string, size int64) {
+func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -160,21 +160,21 @@ func (w *nullWriter) Close(_ int64) (name string, size int64) {
 	return "", 0
 }
 
-// JSONProtoWriter implements writing audit records to disk in the JSON format.
-type JSONProtoWriter struct {
+// jsonProtoWriter implements writing audit records to disk in the JSON format.
+type jsonProtoWriter struct {
 	w io.Writer
 	sync.Mutex
 }
 
 // newJSONProtoWriter returns a new JSON writer instance.
-func newJSONProtoWriter(w io.Writer) *JSONProtoWriter {
-	return &JSONProtoWriter{
+func newJSONProtoWriter(w io.Writer) *jsonProtoWriter {
+	return &jsonProtoWriter{
 		w: w,
 	}
 }
 
 // writeHeader writes the CSV header to the underlying file.
-func (w *JSONProtoWriter) writeHeader(h *types.Header) (int, error) {
+func (w *jsonProtoWriter) writeHeader(h *types.Header) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 
@@ -192,7 +192,7 @@ func (w *JSONProtoWriter) writeHeader(h *types.Header) (int, error) {
 }
 
 // writeRecord writes a protocol buffer into the JSON writer.
-func (w *JSONProtoWriter) writeRecord(msg proto.Message) (int, error) {
+func (w *jsonProtoWriter) writeRecord(msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 

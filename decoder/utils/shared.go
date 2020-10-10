@@ -1,7 +1,10 @@
 package utils
 
 var (
+	// AllDecoderNames contains the decoder names at runtime.
 	AllDecoderNames = make(map[string]struct{})
+
+	// ErrorMap contains error during reassembly at runtime.
 	ErrorMap        *AtomicCounterMap
 )
 

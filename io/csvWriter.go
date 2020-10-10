@@ -33,11 +33,11 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// CSVWriter is a structure that supports writing CSV audit records to disk.
-type CSVWriter struct {
+// csvWriter is a structure that supports writing CSV audit records to disk.
+type csvWriter struct {
 	bWriter   *bufio.Writer
 	gWriter   *pgzip.Writer
-	csvWriter *CSVProtoWriter
+	csvWriter *csvProtoWriter
 
 	file *os.File
 	mu   sync.Mutex
@@ -45,8 +45,8 @@ type CSVWriter struct {
 }
 
 // newCSVWriter initializes and configures a new protoWriter instance.
-func newCSVWriter(wc *WriterConfig) *CSVWriter {
-	w := &CSVWriter{}
+func newCSVWriter(wc *WriterConfig) *csvWriter {
+	w := &csvWriter{}
 	w.wc = wc
 
 	if wc.MemBufferSize <= 0 {
@@ -101,7 +101,7 @@ func newCSVWriter(wc *WriterConfig) *CSVWriter {
 }
 
 // WriteCSV writes a CSV record.
-func (w *CSVWriter) Write(msg proto.Message) error {
+func (w *csvWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -111,7 +111,7 @@ func (w *CSVWriter) Write(msg proto.Message) error {
 }
 
 // WriteHeader writes a CSV header.
-func (w *CSVWriter) WriteHeader(t types.Type) error {
+func (w *csvWriter) WriteHeader(t types.Type) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -121,7 +121,7 @@ func (w *CSVWriter) WriteHeader(t types.Type) error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *CSVWriter) Close(numRecords int64) (name string, size int64) {
+func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -136,21 +136,21 @@ func (w *CSVWriter) Close(numRecords int64) (name string, size int64) {
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
 }
 
-// CSVProtoWriter implements writing audit records to disk in the CSV format.
-type CSVProtoWriter struct {
+// csvProtoWriter implements writing audit records to disk in the CSV format.
+type csvProtoWriter struct {
 	w io.Writer
 	sync.Mutex
 }
 
 // newCSVProtoWriter returns a new CSV writer instance.
-func newCSVProtoWriter(w io.Writer) *CSVProtoWriter {
-	return &CSVProtoWriter{
+func newCSVProtoWriter(w io.Writer) *csvProtoWriter {
+	return &csvProtoWriter{
 		w: w,
 	}
 }
 
 // writeHeader writes the CSV header to the underlying file.
-func (w *CSVProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, error) {
+func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 
@@ -168,7 +168,7 @@ func (w *CSVProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 }
 
 // writeRecord writes a protocol buffer into the CSV writer.
-func (w *CSVProtoWriter) writeRecord(msg proto.Message) (int, error) {
+func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 

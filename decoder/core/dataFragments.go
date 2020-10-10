@@ -21,6 +21,7 @@ import (
 // DataFragments implements sort.Interface to sort data fragments based on their timestamps.
 type DataFragments []dataFragment
 
+// Size returns the fragments total data size.
 func (d DataFragments) Size() int {
 	var s int
 	for _, dt := range d {
@@ -44,6 +45,7 @@ func (d DataFragments) reader() io.Reader {
 	return bytes.NewReader(d.bytes())
 }
 
+// First returns the first fragment.
 func (d DataFragments) First() []byte {
 	if len(d) > 0 {
 		return d[0].Raw()

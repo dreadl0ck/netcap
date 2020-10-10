@@ -14,26 +14,14 @@
 package packet
 
 import (
-	"os"
-
 	"go.uber.org/zap"
 )
 
 var (
-	decoderLog *zap.Logger
-
-	reassemblyLog *zap.Logger
-	// hold a reference to the file handle so we can dump summary data tables into it.
-	reassemblyLogFileHandle *os.File
+	decoderLog = zap.NewNop()
 )
 
 // SetDecoderLogger sets the general decoder logger for the decoder package.
 func SetDecoderLogger(lg *zap.Logger) {
 	decoderLog = lg
-}
-
-// setReassemblyLogger sets the tcp stream reassembly logger for the decoder package.
-func setReassemblyLogger(lg *zap.Logger, f *os.File) {
-	reassemblyLog = lg
-	reassemblyLogFileHandle = f
 }

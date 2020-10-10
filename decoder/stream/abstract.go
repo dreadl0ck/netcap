@@ -71,7 +71,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		for _, name := range in {
 			if name != "" { // check if proto exists
 				if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-					return nil, errors.Wrap(errInvalidStreamDecoder, name)
+					return nil, errors.Wrap(errInvalidAbstractDecoder, name)
 				}
 
 				// add to include map
@@ -94,7 +94,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 	for _, name := range ex {
 		if name != "" { // check if proto exists
 			if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-				return nil, errors.Wrap(errInvalidStreamDecoder, name)
+				return nil, errors.Wrap(errInvalidAbstractDecoder, name)
 			}
 
 			// remove named decoder from defaultPacketDecoders
@@ -170,7 +170,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 
 // isAbstractDecoderLoaded checks if an abstract decoder is loaded.
 func isAbstractDecoderLoaded(name string) bool {
-	for _, e := range DefaultStreamDecoders {
+	for _, e := range defaultAbstractDecoders {
 		if e.GetName() == name {
 			return true
 		}

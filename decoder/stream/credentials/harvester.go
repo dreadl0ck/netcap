@@ -23,6 +23,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 )
 
+// RunHarvesters will use the service probes to determine the service type based on the provided banner.
 func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPacket time.Time) {
 	// only use harvesters when credential audit record type is loaded
 	// useHarvesters is set after the custom decoder initialization

@@ -97,6 +97,7 @@ func newMailID() string {
 	return s
 }
 
+// Parse attempts to read a mail from the conversation.
 func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap.SugaredLogger, origin string) *types.Mail {
 	logger.Info(ansi.Yellow, "parseMail, from:", from, "to:", to, conv.Ident, "\n", string(buf), ansi.Reset)
 

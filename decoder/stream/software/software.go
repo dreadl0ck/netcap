@@ -172,12 +172,16 @@ type atomicSoftwareMap struct {
 }
 
 var (
+	// UserAgentCache contains parsed user agents at runtime.
 	UserAgentCache      = make(map[string]*userAgent)
 	regExpServerName    = regexp.MustCompile(`(.*?)(?:/(.*?))?(?:\s*?)(?:\((.*?)\))?$`)
 	regexpXPoweredBy    = regexp.MustCompile(`(.*?)(?:(?:\s|/)(.*?))?$`)
 	ja3Cache            = make(map[string]string)
 	jaCacheMutex        sync.Mutex
+
+	// RegexGenericVersion is a regular expression for anything that could be a product / version indicator.
 	RegexGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)(\d+)\.(\d+)\.(\d+)(.*?)(?:$)`)
+
 	// Used to store CMS related information, and to do the CMS lookup.
 	cmsDB = make(map[string]*cmsInfo)
 )
@@ -212,10 +216,13 @@ var (
 	}
 
 	parser, errInitUAParser = uaparser.New(filepath.Join(resolvers.DataBaseSource, "regexes.yaml"))
+
+	// UserAgentParserMutex ensures atomic access to the user agent parser.
 	UserAgentParserMutex    sync.Mutex
 
 	ja3db     ja3CombinationsDB
 	hasshDB   []sshHash
+	// HashDBMap contains HASSH digests mapped to software products at runtime.
 	HashDBMap map[string][]sshSoftware
 )
 

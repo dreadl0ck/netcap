@@ -1,21 +1,27 @@
 # TODOs
 
+- refactor pkg structure?
+    - packet.NewDecoder(...)
+    - stream.NewDecoder(...)
+    - decoder.InitStreamDecoders()
+    - decoder.InitPacketDecoders()
+    
+- more SMTP transforms
+- more DNS transforms / DNSSEC
+
+- add default port and transport protocol during stream decoder creation
 - register decoder during creation?
-- regenerate nmap database and automate
+- regenerate from latest nmap-services database and automate
 - port CIP, ENIP and ModbusTCP decoding to stream decoders, add to docs that decodeOpt datagrams must be set
 
-- make database source configurable
-- move to home folder on windows?
-- db update script
-- script installation, add setup check util command 
+- database source: set default for windows to home directory
+- dbs update script
+- script netcap installation, add setup check util command 
 
 last CC maxmind geolite2 from 27 Dec 2019 (can be distributed):
 
 - https://web.archive.org/web/20191227182209/http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
 - https://web.archive.org/web/20191227182527/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz
-
-- more SMTP transforms
-- more DNS transforms / DNSSEC
 
 - add UDP stream decoder support
 - flushing of UDP and TCP streams
