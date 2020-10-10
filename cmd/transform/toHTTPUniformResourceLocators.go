@@ -14,15 +14,13 @@
 package transform
 
 import (
+	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
-
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toHTTPUniformResourceLocators() {
@@ -60,25 +58,25 @@ func toHTTPUniformResourceLocators() {
 	)
 }
 
-func createURLTableHTML(h *types.HTTP, ipType, ip string) string {
-	out := []string{"<table style='width:100%'>"}
-
-	out = append(out, `<tr>
-    <th>Timestamp</th>
-    <th>`+ipType+`</th>
-	<th>StatusCode</th>
-	<th>StatusText</th>
-  </tr>`)
-
-	out = append(out, "<tr><td>"+utils.UnixTimeToUTC(h.Timestamp)+"</td><td>"+ip+"</td><td>"+strconv.Itoa(int(h.StatusCode))+"</td><td>"+http.StatusText(int(h.StatusCode))+"</td></tr>")
-
-	// colors
-	// out = append(out, "<tr><td style='color:red'>"+k+"</td><td>"+v+"</td></tr>")
-
-	// out = append(out, "</table>")
-
-	return strings.Join(out, "")
-}
+//func createURLTableHTML(h *types.HTTP, ipType, ip string) string {
+//	out := []string{"<table style='width:100%'>"}
+//
+//	out = append(out, `<tr>
+//    <th>Timestamp</th>
+//    <th>`+ipType+`</th>
+//	<th>StatusCode</th>
+//	<th>StatusText</th>
+//  </tr>`)
+//
+//	out = append(out, "<tr><td>"+utils.UnixTimeToUTC(h.Timestamp)+"</td><td>"+ip+"</td><td>"+strconv.Itoa(int(h.StatusCode))+"</td><td>"+http.StatusText(int(h.StatusCode))+"</td></tr>")
+//
+//	// colors
+//	// out = append(out, "<tr><td style='color:red'>"+k+"</td><td>"+v+"</td></tr>")
+//
+//	// out = append(out, "</table>")
+//
+//	return strings.Join(out, "")
+//}
 
 func stripQueryString(inputUrl string) string {
 	u, err := url.Parse(inputUrl)

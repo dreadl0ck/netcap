@@ -62,6 +62,15 @@ const (
 
 	// POP3 logging constants.
 	opPop3Save = "POP3-save"
+
+	pop3STAT = "STAT"
+	pop3LIST = "LIST"
+	pop3RETR = "RETR"
+	pop3QUIT = "QUIT"
+	pop3CAPA = "CAPA"
+	pop3AUTH = "AUTH"
+	pop3PASS = "PASS"
+	pop3APOP = "APOP"
 )
 
 type pop3Reader struct {
@@ -84,6 +93,7 @@ func validPop3ServerCommand(cmd string) bool {
 	}
 }
 
+// New will instantiate a new POP3 reader.
 func (h *pop3Reader) New(conv *core.ConversationInfo) core.StreamDecoderInterface {
 	return &pop3Reader{
 		conversation: conv,
@@ -273,11 +283,11 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 		switch state {
 		case stateAuthenticated:
 			switch r.Command {
-			case "STAT":
+			case pop3STAT:
 				h.resIndex++
 
 				continue
-			case "LIST", pop3UIDL:
+			case pop3LIST, pop3UIDL:
 				var n int
 				// ensure safe array access
 				if len(h.pop3Responses) < h.resIndex {
@@ -297,7 +307,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				h.resIndex += n
 
 				continue
-			case "RETR":
+			case pop3RETR:
 				var n int
 				// ensure safe array access
 				if len(h.pop3Responses) < h.resIndex {
@@ -323,7 +333,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				h.resIndex += n
 
 				continue
-			case "QUIT":
+			case pop3QUIT:
 				return
 			}
 		case stateNotAuthenticated:
@@ -341,7 +351,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				h.resIndex++
 
 				continue
-			case "CAPA":
+			case pop3CAPA:
 				var n int
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
@@ -357,7 +367,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				h.resIndex += n
 
 				continue
-			case "AUTH":
+			case pop3AUTH:
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
@@ -377,7 +387,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				h.resIndex++
 
 				continue
-			case "PASS":
+			case pop3PASS:
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
@@ -391,7 +401,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				h.resIndex++
 
 				continue
-			case "APOP": // example: APOP mrose c4c9334bac560ecc979e58001b3e22fb
+			case pop3APOP: // example: APOP mrose c4c9334bac560ecc979e58001b3e22fb
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
@@ -410,9 +420,9 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				h.resIndex++
 
 				continue
-			case "QUIT":
+			case pop3QUIT:
 				return
-			case "STAT":
+			case pop3STAT:
 				h.resIndex++
 
 				continue

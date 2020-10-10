@@ -35,30 +35,39 @@ type StreamData struct {
 	Trans              gopacket.Flow
 }
 
+// dataFragment interface implementation
+
+// Raw returns the raw byte slice that makes up the data fragment.
 func (s *StreamData) Raw() []byte {
 	return s.RawData
 }
 
+// Context returns the assembler context.
 func (s *StreamData) Context() reassembly.AssemblerContext {
 	return s.AssemblerContext
 }
 
+// Direction returns the direction of the flow.
 func (s *StreamData) Direction() reassembly.TCPFlowDirection {
 	return s.Dir
 }
 
+// SetDirection will update the flow direction.
 func (s *StreamData) SetDirection(d reassembly.TCPFlowDirection) {
 	s.Dir = d
 }
 
+// CaptureInfo returns the capture information from gopacket
 func (s *StreamData) CaptureInfo() gopacket.CaptureInfo {
 	return s.CaptureInformation
 }
 
+// Network returns the network layer
 func (s *StreamData) Network() gopacket.Flow {
 	return s.Net
 }
 
+// Transport returns the transport layer
 func (s *StreamData) Transport() gopacket.Flow {
 	return s.Trans
 }

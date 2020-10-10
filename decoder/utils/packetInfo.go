@@ -17,6 +17,7 @@ import (
 	"github.com/dreadl0ck/gopacket"
 )
 
+// PacketInfo contains packet meta information.
 type PacketInfo struct {
 	Packet    gopacket.Packet
 	Timestamp int64

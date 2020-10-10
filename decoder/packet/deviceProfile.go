@@ -26,6 +26,8 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// DeviceProfile describes the behavior of a hardware device.
+// This is a wrapper structure to allow safe atomic access.
 type DeviceProfile struct {
 	*types.DeviceProfile
 	sync.Mutex
@@ -62,24 +64,24 @@ var (
 )
 
 // getDeviceProfile fetches a known profile and updates it or returns a new one.
-func getDeviceProfile(macAddr string, i *decoderutils.PacketInfo) *DeviceProfile {
-	DeviceProfiles.Lock()
-	if p, ok := DeviceProfiles.Items[macAddr]; ok {
-		DeviceProfiles.Unlock()
-		applyDeviceProfileUpdate(p, i)
-		return p
-	}
-	DeviceProfiles.Unlock()
-
-	// create new profile
-	p := newDeviceProfile(i)
-
-	DeviceProfiles.Lock()
-	DeviceProfiles.Items[macAddr] = p
-	DeviceProfiles.Unlock()
-
-	return p
-}
+//func getDeviceProfile(macAddr string, i *decoderutils.PacketInfo) *DeviceProfile {
+//	DeviceProfiles.Lock()
+//	if p, ok := DeviceProfiles.Items[macAddr]; ok {
+//		DeviceProfiles.Unlock()
+//		applyDeviceProfileUpdate(p, i)
+//		return p
+//	}
+//	DeviceProfiles.Unlock()
+//
+//	// create new profile
+//	p := newDeviceProfile(i)
+//
+//	DeviceProfiles.Lock()
+//	DeviceProfiles.Items[macAddr] = p
+//	DeviceProfiles.Unlock()
+//
+//	return p
+//}
 
 // updateDeviceProfile can be used to update the profile for the passed identifiers.
 func updateDeviceProfile(i *decoderutils.PacketInfo) {

@@ -41,6 +41,7 @@ import (
 
 var reassemblyLog = zap.NewNop()
 
+// SetLogger configures the logger for this package.
 func SetLogger(l *zap.Logger) {
 	reassemblyLog = l
 }

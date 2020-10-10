@@ -53,8 +53,8 @@ func (a *atomicIPProfileMap) Size() int {
 	return len(a.Items)
 }
 
-// IPProfiles contains a map of IP specific behavior profiles at runtime.
-var IPProfiles = &atomicIPProfileMap{
+// ipProfiles contains a map of IP specific behavior profiles at runtime.
+var ipProfiles = &atomicIPProfileMap{
 	Items: make(map[string]*ipProfile),
 }
 
@@ -78,7 +78,7 @@ var ipProfileDecoder = newPacketDecoder(
 	},
 	func(e *packetDecoder) error {
 		// flush writer
-		for _, item := range IPProfiles.Items {
+		for _, item := range ipProfiles.Items {
 			item.Lock()
 			writeIPProfile(item.IPProfile)
 			item.Unlock()
@@ -94,9 +94,9 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 		return nil
 	}
 
-	IPProfiles.Lock()
-	if p, ok := IPProfiles.Items[ipAddr]; ok {
-		IPProfiles.Unlock()
+	ipProfiles.Lock()
+	if p, ok := ipProfiles.Items[ipAddr]; ok {
+		ipProfiles.Unlock()
 
 		p.Lock()
 
@@ -154,7 +154,7 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 
 		return p
 	}
-	IPProfiles.Unlock()
+	ipProfiles.Unlock()
 
 	var (
 		protos  = make(map[string]*types.Protocol)
@@ -218,9 +218,9 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 		},
 	}
 
-	IPProfiles.Lock()
-	IPProfiles.Items[ipAddr] = p
-	IPProfiles.Unlock()
+	ipProfiles.Lock()
+	ipProfiles.Items[ipAddr] = p
+	ipProfiles.Unlock()
 
 	return p
 }

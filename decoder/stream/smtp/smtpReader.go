@@ -131,6 +131,7 @@ func validSMTPCommand(cmd string) bool {
 	}
 }
 
+// New returns a SMTP reader instance.
 func (h *smtpReader) New(conv *core.ConversationInfo) core.StreamDecoderInterface {
 	return &smtpReader{
 		conversation: conv,

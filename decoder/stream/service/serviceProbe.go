@@ -164,6 +164,7 @@ func writeSoftwareFromBanner(serv *service, ident, probeIdent string) {
 	}, nil)
 }
 
+// MatchServiceProbes will check the service banner against the probes.
 func MatchServiceProbes(serv *service, banner []byte, ident string) {
 	var (
 		expectedCategory string

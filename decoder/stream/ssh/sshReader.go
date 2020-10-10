@@ -51,6 +51,7 @@ type sshReader struct {
 	software      []*types.Software
 }
 
+// New returns a new SSH reader.
 func (h *sshReader) New(conversation *core.ConversationInfo) core.StreamDecoderInterface {
 	return &sshReader{
 		conversation: conversation,
