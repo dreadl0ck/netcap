@@ -9,13 +9,18 @@ import (
 )
 
 var (
+	// VulnerabilitiesIndex is the handle to the bleve database for vulnerability information
 	VulnerabilitiesIndex bleve.Index
-	ExploitsIndex        bleve.Index
 
-	VulnDBName = "nvd.bleve"
-	dbLog      = zap.NewNop()
+	// ExploitsIndex is the handle to the bleve database for exploit information
+	ExploitsIndex bleve.Index
+
+	// VulnerabilityDBName is the name of the database directory on disk
+	VulnerabilityDBName = "nvd.bleve"
+	dbLog               = zap.NewNop()
 )
 
+// SetLogger will set the logger for this package.
 func SetLogger(l *zap.Logger) {
 	dbLog = l
 }

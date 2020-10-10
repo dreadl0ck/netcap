@@ -46,7 +46,7 @@ func (a *atomicServiceMap) Size() int {
 	return len(a.Items)
 }
 
-// ServiceStore holds all tcp service banners.
+// Store ServiceStore holds all tcp service banners.
 var Store = &atomicServiceMap{
 	Items: make(map[string]*service),
 }
@@ -97,6 +97,7 @@ var (
 	serviceLogSugared *zap.SugaredLogger
 )
 
+// Decoder for protocol analysis and writing audit records to disk.
 var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_Service,
 	"Service",
@@ -121,7 +122,7 @@ var Decoder = decoder.NewStreamDecoder(
 		// flush writer
 		for _, item := range Store.Items {
 			item.Lock()
-			e.Writer.Write(item.Service)
+			_ = e.Writer.Write(item.Service)
 			item.Unlock()
 		}
 

@@ -24,6 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// Decoder for protocol analysis and writing audit records to disk.
 var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_POP3,
 	servicePOP3,

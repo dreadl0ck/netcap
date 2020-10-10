@@ -21,6 +21,7 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 )
 
+// Instance contains the config at runtime.
 var Instance *Config
 
 // DefaultConfig is a sane example configuration for the decoder package.

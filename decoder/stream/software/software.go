@@ -42,6 +42,7 @@ import (
 
 var softwareLog = zap.NewNop()
 
+// Decoder for protocol analysis and writing audit records to disk.
 var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_Software,
 	"Software",
@@ -102,7 +103,7 @@ var Decoder = decoder.NewStreamDecoder(
 		softwareLog.Info("loaded CMS db", zap.Int("total", len(cmsDB)))
 
 		// Load vulnerabilities DB index
-		indexName := filepath.Join(resolvers.DataBaseSource, db.VulnDBName)
+		indexName := filepath.Join(resolvers.DataBaseSource, db.VulnerabilityDBName)
 		db.VulnerabilitiesIndex, err = db.OpenBleve(indexName)
 		if err != nil {
 			return err
@@ -131,7 +132,7 @@ var Decoder = decoder.NewStreamDecoder(
 		// flush writer
 		for _, item := range Store.Items {
 			item.Lock()
-			e.Writer.Write(item.Software)
+			_ = e.Writer.Write(item.Software)
 			item.Unlock()
 		}
 
@@ -207,7 +208,7 @@ func (a *atomicSoftwareMap) Size() int {
 }
 
 var (
-	// SoftwareStore hold all connections.
+	// Store SoftwareStore hold all connections.
 	Store = &atomicSoftwareMap{
 		Items: make(map[string]*AtomicSoftware),
 	}
@@ -890,10 +891,10 @@ func loadCmsDB() error {
 				CMSCookies[name] = struct{}{}
 
 				// compile the supplied regex
-				r, err := regexp.Compile(fmt.Sprint(re))
-				if err != nil {
+				r, errCompile := regexp.Compile(fmt.Sprint(re))
+				if errCompile != nil {
 					softwareLog.Info("failed to compile regex from CMS db COOKIE",
-						zap.Error(err),
+						zap.Error(errCompile),
 						zap.String("re", fmt.Sprint(re)),
 						zap.String("framework", framework),
 					)
