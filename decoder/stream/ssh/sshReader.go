@@ -60,7 +60,7 @@ func (h *sshReader) New(conversation *core.ConversationInfo) core.StreamDecoderI
 // Decode parses the stream according to the SSH protocol.
 func (h *sshReader) Decode() {
 	// prevent nil pointer access if decoder is not initialized
-	if SSHDecoder.Writer == nil {
+	if Decoder.Writer == nil {
 		return
 	}
 
@@ -91,21 +91,21 @@ func (h *sshReader) Decode() {
 	}
 
 	// add new audit records or update existing
-	software.SoftwareStore.Lock()
+	software.Store.Lock()
 	for _, s := range h.software {
-		if _, ok := software.SoftwareStore.Items[s.Product+"/"+s.Version]; ok {
+		if _, ok := software.Store.Items[s.Product+"/"+s.Version]; ok {
 			// TODO updateSoftwareAuditRecord(dp, p, i)
 		} else {
-			software.SoftwareStore.Items[s.Product+"/"+s.Version] = &software.AtomicSoftware{
-				s,
-				sync.Mutex{},
+			software.Store.Items[s.Product+"/"+s.Version] = &software.AtomicSoftware{
+				Software: s,
+				Mutex:    sync.Mutex{},
 			}
 			streamutils.Stats.Lock()
 			streamutils.Stats.NumSoftware++
 			streamutils.Stats.Unlock()
 		}
 	}
-	software.SoftwareStore.Unlock()
+	software.Store.Unlock()
 }
 
 func (h *sshReader) processSSHIdent(ident string, entity string) {
@@ -223,7 +223,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		hash, raw := computeHASSH(init)
 
 		if dir == reassembly.TCPDirClientToServer {
-			SSHDecoder.Writer.Write(&types.SSH{
+			Decoder.Writer.Write(&types.SSH{
 				Timestamp:  h.conversation.FirstClientPacket.UnixNano(),
 				HASSH:      hash,
 				Flow:       h.conversation.Ident,
@@ -236,7 +236,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 			sshLog.Info("found clientKexInit", zap.String("ident", h.conversation.Ident))
 		} else {
-			SSHDecoder.Writer.Write(&types.SSH{
+			Decoder.Writer.Write(&types.SSH{
 				Timestamp:  h.conversation.FirstServerPacket.UnixNano(),
 				HASSH:      hash,
 				Flow:       utils.ReverseFlowIdent(h.conversation.Ident),

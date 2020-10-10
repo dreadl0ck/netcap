@@ -26,7 +26,7 @@ import (
 
 var sshLog = zap.NewNop()
 
-var SSHDecoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_SSH,
 	serviceSSH,
 	"The Secure Shell Protocol allows controlling remote machines over an encrypted connection",

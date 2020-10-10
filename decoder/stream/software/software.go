@@ -42,7 +42,7 @@ import (
 
 var softwareLog = zap.NewNop()
 
-var SoftwareDecoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_Software,
 	"Software",
 	"A software product that was observed on the network",
@@ -129,7 +129,7 @@ var SoftwareDecoder = decoder.NewStreamDecoder(
 		//httpStore.Unlock()
 
 		// flush writer
-		for _, item := range SoftwareStore.Items {
+		for _, item := range Store.Items {
 			item.Lock()
 			e.Writer.Write(item.Software)
 			item.Unlock()
@@ -208,7 +208,7 @@ func (a *atomicSoftwareMap) Size() int {
 
 var (
 	// SoftwareStore hold all connections.
-	SoftwareStore = &atomicSoftwareMap{
+	Store = &atomicSoftwareMap{
 		Items: make(map[string]*AtomicSoftware),
 	}
 
@@ -440,7 +440,7 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 //	return s
 //}
 
-// TODO: pass in the device profile.
+// WhatSoftwareHTTP TODO: pass in the device profile.
 func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 	// HTTP User Agents
 	// TODO: check for userAgents retrieved by Ja3 lookup as well
@@ -747,7 +747,7 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 	var newSoftwareProducts []*types.Software
 
 	// add new audit records or update existing
-	SoftwareStore.Lock()
+	Store.Lock()
 	for _, s := range software {
 		if s == nil {
 			continue
@@ -767,13 +767,13 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 			s.Version = s.Version[:15] + "..."
 		}
 		s.Unlock()
-		if item, ok := SoftwareStore.Items[ident]; ok {
+		if item, ok := Store.Items[ident]; ok {
 			if update != nil {
 				update(item)
 			}
 		} else {
 			// fmt.Println(SoftwareStore.Items, s.Product, s.Version)
-			SoftwareStore.Items[ident] = s
+			Store.Items[ident] = s
 
 			// TODO: why track this here? the audit record writer will keep track of the number of records written
 			// streamutils.Stats.Lock()
@@ -783,7 +783,7 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 			newSoftwareProducts = append(newSoftwareProducts, s.Software)
 		}
 	}
-	SoftwareStore.Unlock()
+	Store.Unlock()
 
 	if len(newSoftwareProducts) > 0 {
 		// lookup known issues with identified software in the background
@@ -867,10 +867,10 @@ func loadCmsDB() error {
 				CMSHeaders[name] = struct{}{}
 
 				// compile the supplied regex
-				r, err := regexp.Compile(fmt.Sprint(re))
-				if err != nil {
+				r, errCompile := regexp.Compile(fmt.Sprint(re))
+				if errCompile != nil {
 					softwareLog.Info("failed to compile regex from CMS db HEADER",
-						zap.Error(err),
+						zap.Error(errCompile),
 						zap.String("re", fmt.Sprint(re)),
 						zap.String("framework", framework),
 					)

@@ -140,7 +140,7 @@ func (h *smtpReader) New(conv *core.ConversationInfo) core.StreamDecoderInterfac
 // Decode parses the stream according to the SMTP protocol.
 func (h *smtpReader) Decode() {
 	// prevent nil pointer access if decoder is not initialized
-	if SMTPDecoder.Writer == nil {
+	if Decoder.Writer == nil {
 		return
 	}
 
@@ -181,9 +181,9 @@ func (h *smtpReader) Decode() {
 	}
 
 	// write record to disk
-	atomic.AddInt64(&SMTPDecoder.NumRecordsWritten, 1)
+	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 
-	err := SMTPDecoder.Writer.Write(smtpMsg)
+	err := Decoder.Writer.Write(smtpMsg)
 	if err != nil {
 		decoderutils.ErrorMap.Inc(err.Error())
 	}

@@ -26,10 +26,10 @@ var errInvalidStreamDecoder = errors.New("invalid stream decoder")
 // DefaultStreamDecoders contains stream decoders mapped to their protocols default port
 // int32 is used to avoid casting when looking up values
 var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
-	80:  http.HTTPDecoder,
-	110: pop3.POP3Decoder,
-	22:  ssh.SSHDecoder,
-	25:  smtp.SMTPDecoder,
+	80:  http.Decoder,
+	110: pop3.Decoder,
+	22:  ssh.Decoder,
+	25:  smtp.Decoder,
 } // contains all available stream decoders
 
 // package level init.

@@ -24,7 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var POP3Decoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_POP3,
 	servicePOP3,
 	"The POP3 protocol is used to fetch emails from a mail server",

@@ -31,7 +31,7 @@ import (
 
 var httpLog = zap.NewNop()
 
-var HTTPDecoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_HTTP,
 	"HTTP",
 	"The Hypertext Transfer Protocol is powering the world wide web",

@@ -235,7 +235,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 	// generate entities for packet decoders
 	// *AuditRecords entity and an entity for the actual audit record instance
-	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
+	packet.ApplyActionToPacketDecoders(func(d packet.DecoderAPI) {
 		createEntity(netcapIdent, d.GetName(), d.GetDescription(), &count)
 	})
 
@@ -330,7 +330,7 @@ func genMachines() {
 	for _, f := range files {
 
 		// Machine Properties
-		propFile, err := os.Create(
+		propFile, errCompile := os.Create(
 			filepath.Join(
 				path,
 				netcapMachinePrefix+strings.Replace(
@@ -341,8 +341,8 @@ func genMachines() {
 				),
 			),
 		)
-		if err != nil {
-			log.Fatal(err)
+		if errCompile != nil {
+			log.Fatal(errCompile)
 		}
 
 		_, _ = propFile.WriteString(`#` + time.Now().Format(time.UnixDate) + `

@@ -44,7 +44,7 @@ const (
 	serviceFTP    = "FTP"
 	serviceHTTP   = "HTTP"
 
-	CredentialsDecoderName = "Credentials"
+	DecoderName = "Credentials"
 )
 
 // credentialHarvester is a function that takes the data of a bi-directional network stream over TCP
@@ -375,9 +375,9 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 
 var credLog = zap.NewNop()
 
-var CredentialsDecoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_Credentials,
-	CredentialsDecoderName,
+	DecoderName,
 	"Credentials represent a user and password combination to authenticate to a service",
 	func(d *decoder.StreamDecoder) (err error) {
 		credLog, _, err = logging.InitZapLogger(
@@ -391,9 +391,9 @@ var CredentialsDecoder = decoder.NewStreamDecoder(
 		}
 
 		if decoderconfig.Instance.CustomRegex != "" {
-			r, err := regexp.Compile(decoderconfig.Instance.CustomRegex)
-			if err != nil {
-				return err
+			r, errCompile := regexp.Compile(decoderconfig.Instance.CustomRegex)
+			if errCompile != nil {
+				return errCompile
 			}
 
 			tcpConnectionHarvesters = append(tcpConnectionHarvesters, func(data []byte, ident string, ts time.Time) *types.Credentials {
@@ -442,9 +442,9 @@ func WriteCredentials(creds *types.Credentials) {
 		creds.Inc()
 	}
 
-	atomic.AddInt64(&CredentialsDecoder.NumRecordsWritten, 1)
+	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 
-	err := CredentialsDecoder.Writer.Write(creds)
+	err := Decoder.Writer.Write(creds)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

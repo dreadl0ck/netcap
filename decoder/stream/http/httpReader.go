@@ -85,7 +85,7 @@ func (h *httpReader) New(conversation *core.ConversationInfo) core.StreamDecoder
 // Decode parses the stream according to the HTTP protocol.
 func (h *httpReader) Decode() {
 	// prevent nil pointer access if decoder is not initialized
-	if HTTPDecoder.Writer == nil {
+	if Decoder.Writer == nil {
 		return
 	}
 
@@ -110,7 +110,7 @@ func (h *httpReader) Decode() {
 
 		// now add request information
 		if res.response.Request != nil {
-			if credentials.CredentialsDecoder.Writer != nil {
+			if credentials.Decoder.Writer != nil {
 				h.searchForLoginParams(res.response.Request)
 				h.searchForBasicAuth(res.response.Request)
 			}
@@ -139,7 +139,7 @@ func (h *httpReader) Decode() {
 			ht := &types.HTTP{}
 			setRequest(ht, req)
 
-			if credentials.CredentialsDecoder.Writer != nil {
+			if credentials.Decoder.Writer != nil {
 				h.searchForLoginParams(req.request)
 				h.searchForBasicAuth(req.request)
 			}
@@ -218,8 +218,8 @@ func writeHTTP(h *types.HTTP, ident string) {
 	}
 
 	// write record to disk
-	atomic.AddInt64(&HTTPDecoder.NumRecordsWritten, 1)
-	err := HTTPDecoder.Writer.Write(h)
+	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+	err := Decoder.Writer.Write(h)
 	if err != nil {
 		decoderutils.ErrorMap.Inc(err.Error())
 	}

@@ -38,7 +38,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 		decoders  []*packet.GoPacketDecoder
 		dec       *packet.GoPacketDecoder
-		customDec packet.PacketDecoderAPI
+		customDec packet.DecoderAPI
 		ok        bool
 
 		netLayer       gopacket.NetworkLayer

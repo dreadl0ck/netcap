@@ -32,7 +32,7 @@ var (
 	smtpName              = []byte("SMTP")
 )
 
-var SMTPDecoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_SMTP,
 	serviceSMTP,
 	"The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission",

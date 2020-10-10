@@ -46,7 +46,7 @@ var (
 	// ErrInvalidDecoder occurs when a decoder name is unknown during initialization.
 	ErrInvalidDecoder = errors.New("invalid decoder")
 
-	defaultPacketDecoders = []PacketDecoderAPI{
+	defaultPacketDecoders = []DecoderAPI{
 		tlsClientHelloDecoder,
 		tlsServerHelloDecoder,
 		connDecoder,
@@ -91,7 +91,7 @@ type (
 
 	// PacketDecoderAPI describes an interface that all custom decoder need to implement
 	// this allows to supply a custom structure and maintain state for advanced protocol analysis.
-	PacketDecoderAPI interface {
+	DecoderAPI interface {
 		core.DecoderAPI
 
 		// Decode parses a gopacket and returns an error
@@ -124,7 +124,7 @@ func newPacketDecoder(t types.Type, name, description string, postinit func(*pac
 }
 
 // InitPacketDecoders initializes all packet decoders.
-func InitPacketDecoders(c *config.Config) (decoders []PacketDecoderAPI, err error) {
+func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeDecoders, ",")
@@ -134,7 +134,7 @@ func InitPacketDecoders(c *config.Config) (decoders []PacketDecoderAPI, err erro
 		inMap = make(map[string]bool)
 
 		// new selection
-		selection []PacketDecoderAPI
+		selection []DecoderAPI
 	)
 
 	// if there are includes and the first item is not an empty string

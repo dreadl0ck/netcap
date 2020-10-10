@@ -151,7 +151,8 @@ func LoadMails() map[string]*types.Mail {
 		die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_Mail {
+	if //goland:noinspection GoNilness
+	header.Type != types.Type_NC_Mail {
 		die("file does not contain Mail records", header.Type.String())
 	}
 
