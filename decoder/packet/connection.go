@@ -59,12 +59,12 @@ func (a *atomicConnMap) Size() int {
 }
 
 type connectionDecoder struct {
-	*PacketDecoder
+	*packetDecoder
 	Conns *atomicConnMap
 }
 
 var connDecoder = &connectionDecoder{
-	PacketDecoder: &PacketDecoder{
+	packetDecoder: &packetDecoder{
 		Type:        types.Type_NC_Connection,
 		Name:        "Connection",
 		Description: "A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",

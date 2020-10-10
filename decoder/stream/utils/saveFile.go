@@ -69,7 +69,7 @@ func SaveFile(conv *core.ConversationInfo, source, name string, err error, body 
 		fileName string
 
 		// detected content type
-		cType = TrimEncoding(http.DetectContentType(body))
+		cType = trimEncoding(http.DetectContentType(body))
 
 		// root path
 		root = path.Join(decoderconfig.Instance.Out, decoderconfig.Instance.FileStorage, cType)
@@ -149,7 +149,7 @@ func SaveFile(conv *core.ConversationInfo, source, name string, err error, body 
 		r             io.Reader
 		length        int
 		hash          string
-		cTypeDetected = TrimEncoding(http.DetectContentType(body))
+		cTypeDetected = trimEncoding(http.DetectContentType(body))
 	)
 
 	// now assign a new buffer
@@ -221,10 +221,10 @@ func SaveFile(conv *core.ConversationInfo, source, name string, err error, body 
 			length = len(body)
 
 			// update content type
-			cTypeDetected = TrimEncoding(http.DetectContentType(body))
+			cTypeDetected = trimEncoding(http.DetectContentType(body))
 
 			// make sure root path exists
-			CreateContentTypePathIfRequired(path.Join(decoderconfig.Instance.Out, decoderconfig.Instance.FileStorage, cTypeDetected))
+			createContentTypePathIfRequired(path.Join(decoderconfig.Instance.Out, decoderconfig.Instance.FileStorage, cTypeDetected))
 
 			// switch the file extension and the path for the updated content type
 			ext = filepath.Ext(target)

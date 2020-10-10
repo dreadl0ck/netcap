@@ -22,12 +22,12 @@ import (
 	netio "github.com/dreadl0ck/netcap/io"
 )
 
-// ErrInvalidAbstractDecoder occurs when an abstract decoder name is unknown during initialization.
-var ErrInvalidAbstractDecoder = errors.New("invalid abstract decoder")
+// errInvalidAbstractDecoder occurs when an abstract decoder name is unknown during initialization.
+var errInvalidAbstractDecoder = errors.New("invalid abstract decoder")
 
-// DefaultAbstractDecoders contains decoders for custom abstractions
+// defaultAbstractDecoders contains decoders for custom abstractions
 // that do not represent a specific network protocol.
-var DefaultAbstractDecoders = []core.DecoderAPI{
+var defaultAbstractDecoders = []core.DecoderAPI{
 	file.FileDecoder,
 	service.ServiceDecoder,
 	exploit.ExploitDecoder,
@@ -40,14 +40,14 @@ var DefaultAbstractDecoders = []core.DecoderAPI{
 // package level init.
 func init() {
 	// collect all names for stream decoders on startup
-	for _, d := range DefaultAbstractDecoders {
+	for _, d := range defaultAbstractDecoders {
 		decoderutils.AllDecoderNames[d.GetName()] = struct{}{}
 	}
 }
 
 // ApplyActionToAbstractDecoders can be used to run custom code for all stream decoders.
 func ApplyActionToAbstractDecoders(action func(api core.DecoderAPI)) {
-	for _, d := range DefaultAbstractDecoders {
+	for _, d := range defaultAbstractDecoders {
 		action(d)
 	}
 }
@@ -71,7 +71,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		for _, name := range in {
 			if name != "" { // check if proto exists
 				if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-					return nil, errors.Wrap(ErrInvalidStreamDecoder, name)
+					return nil, errors.Wrap(errInvalidStreamDecoder, name)
 				}
 
 				// add to include map
@@ -80,28 +80,28 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		}
 
 		// iterate over packet decoders and collect those that are named in the includeMap
-		for _, dec := range DefaultAbstractDecoders {
+		for _, dec := range defaultAbstractDecoders {
 			if _, ok := inMap[dec.GetName()]; ok {
 				selection = append(selection, dec)
 			}
 		}
 
 		// update packet decoders to new selection
-		DefaultAbstractDecoders = selection
+		defaultAbstractDecoders = selection
 	}
 
 	// iterate over excluded decoders
 	for _, name := range ex {
 		if name != "" { // check if proto exists
 			if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-				return nil, errors.Wrap(ErrInvalidStreamDecoder, name)
+				return nil, errors.Wrap(errInvalidStreamDecoder, name)
 			}
 
 			// remove named decoder from defaultPacketDecoders
-			for i, dec := range DefaultAbstractDecoders {
+			for i, dec := range defaultAbstractDecoders {
 				if name == dec.GetName() {
 					// remove encoder
-					DefaultAbstractDecoders = append(DefaultAbstractDecoders[:i], DefaultAbstractDecoders[i+1:]...)
+					defaultAbstractDecoders = append(defaultAbstractDecoders[:i], defaultAbstractDecoders[i+1:]...)
 
 					break
 				}
@@ -110,7 +110,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 	}
 
 	// initialize decoders
-	for _, d := range DefaultAbstractDecoders {
+	for _, d := range defaultAbstractDecoders {
 		w := netio.NewAuditRecordWriter(&netio.WriterConfig{
 			CSV:     c.CSV,
 			Proto:   c.Proto,

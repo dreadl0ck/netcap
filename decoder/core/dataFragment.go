@@ -19,8 +19,8 @@ import (
 	"github.com/dreadl0ck/netcap/reassembly"
 )
 
-// DataFragment describes functionality of encapsulation structures for network data fragments.
-type DataFragment interface {
+// dataFragment describes functionality of encapsulation structures for network data fragments.
+type dataFragment interface {
 	Raw() []byte
 	Context() reassembly.AssemblerContext
 	Direction() reassembly.TCPFlowDirection

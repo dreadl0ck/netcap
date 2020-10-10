@@ -28,21 +28,21 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// ChanWriter writes length delimited, serialized protobuf records into a channel.
-type ChanWriter struct {
+// chanWriter writes length delimited, serialized protobuf records into a channel.
+type chanWriter struct {
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
 	dWriter *delimited.Writer
-	cWriter *ChanProtoWriter
+	cWriter *chanProtoWriter
 
 	file *os.File
 	mu   sync.Mutex
 	wc   *WriterConfig
 }
 
-// NewChanWriter initializes and configures a new ChanWriter instance.
-func NewChanWriter(wc *WriterConfig) *ChanWriter {
-	w := &ChanWriter{}
+// newChanWriter initializes and configures a new chanWriter instance.
+func newChanWriter(wc *WriterConfig) *chanWriter {
+	w := &chanWriter{}
 	w.wc = wc
 
 	if wc.MemBufferSize <= 0 {
@@ -53,7 +53,7 @@ func NewChanWriter(wc *WriterConfig) *ChanWriter {
 		panic("buffering or compression cannot be activated when running using writeChan")
 	}
 
-	w.cWriter = NewChanProtoWriter(wc.ChanSize)
+	w.cWriter = newChanProtoWriter(wc.ChanSize)
 
 	// buffer data?
 	if wc.Buffer {
@@ -100,7 +100,7 @@ func NewChanWriter(wc *WriterConfig) *ChanWriter {
 }
 
 // WriteProto writes a protobuf message.
-func (w *ChanWriter) Write(msg proto.Message) error {
+func (w *chanWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -115,7 +115,7 @@ func (w *ChanWriter) Write(msg proto.Message) error {
 }
 
 // WriteHeader writes a netcap file header for protobuf encoded audit record files.
-func (w *ChanWriter) WriteHeader(t types.Type) error {
+func (w *chanWriter) WriteHeader(t types.Type) error {
 	data, err := proto.Marshal(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
 	if err != nil {
 		return err
@@ -127,7 +127,7 @@ func (w *ChanWriter) WriteHeader(t types.Type) error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *ChanWriter) Close(numRecords int64) (name string, size int64) {
+func (w *chanWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -143,34 +143,34 @@ func (w *ChanWriter) Close(numRecords int64) (name string, size int64) {
 }
 
 // GetChan returns a channel for receiving bytes.
-func (w *ChanWriter) GetChan() <-chan []byte {
+func (w *chanWriter) GetChan() <-chan []byte {
 	return w.cWriter.Chan()
 }
 
-// ChanProtoWriter writes into a []byte chan.
-type ChanProtoWriter struct {
+// chanProtoWriter writes into a []byte chan.
+type chanProtoWriter struct {
 	ch chan []byte
 }
 
-// NewChanProtoWriter returns a new channel proto writer instance.
-func NewChanProtoWriter(size int) *ChanProtoWriter {
-	return &ChanProtoWriter{make(chan []byte, size)}
+// newChanProtoWriter returns a new channel proto writer instance.
+func newChanProtoWriter(size int) *chanProtoWriter {
+	return &chanProtoWriter{make(chan []byte, size)}
 }
 
 // Chan returns the byte channel used to receive data.
-func (w *ChanProtoWriter) Chan() <-chan []byte {
+func (w *chanProtoWriter) Chan() <-chan []byte {
 	return w.ch
 }
 
 // WriteRecord writes a protocol buffer into the channel writer.
-func (w *ChanProtoWriter) Write(p []byte) (int, error) {
+func (w *chanProtoWriter) Write(p []byte) (int, error) {
 	w.ch <- p
 
 	return len(p), nil
 }
 
 // Close will close the channel writer.
-func (w *ChanProtoWriter) Close() error {
+func (w *chanProtoWriter) Close() error {
 	close(w.ch)
 
 	return nil

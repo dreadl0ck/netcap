@@ -24,7 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var tlsClientHelloDecoder = NewPacketDecoder(
+var tlsClientHelloDecoder = newPacketDecoder(
 	types.Type_NC_TLSClientHello,
 	"TLSClientHello",
 	"The client hello from a Transport Layer Security handshake",

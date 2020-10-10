@@ -58,7 +58,7 @@ func SaveConversation(proto string, conversation core.DataFragments, ident strin
 	}
 
 	var (
-		typ = GetServiceName(banner, transport)
+		typ = getServiceName(banner, transport)
 
 		// path for storing the data
 		root = filepath.Join(decoderconfig.Instance.Out, strings.ToLower(proto), typ)

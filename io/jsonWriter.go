@@ -45,8 +45,8 @@ type JSONWriter struct {
 	wc   *WriterConfig
 }
 
-// NewJSONWriter initializes and configures a new JSONWriter instance.
-func NewJSONWriter(wc *WriterConfig) *JSONWriter {
+// newJSONWriter initializes and configures a new JSONWriter instance.
+func newJSONWriter(wc *WriterConfig) *JSONWriter {
 	w := &JSONWriter{}
 	w.wc = wc
 
@@ -72,9 +72,9 @@ func NewJSONWriter(wc *WriterConfig) *JSONWriter {
 				panic(errGzipWriter)
 			}
 
-			w.jWriter = NewJSONProtoWriter(w.gWriter)
+			w.jWriter = newJSONProtoWriter(w.gWriter)
 		} else {
-			w.jWriter = NewJSONProtoWriter(w.bWriter)
+			w.jWriter = newJSONProtoWriter(w.bWriter)
 		}
 	} else {
 		if wc.Compress {
@@ -83,9 +83,9 @@ func NewJSONWriter(wc *WriterConfig) *JSONWriter {
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
-			w.jWriter = NewJSONProtoWriter(w.gWriter)
+			w.jWriter = newJSONProtoWriter(w.gWriter)
 		} else {
-			w.jWriter = NewJSONProtoWriter(w.file)
+			w.jWriter = newJSONProtoWriter(w.file)
 		}
 	}
 
@@ -106,7 +106,7 @@ func (w *JSONWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	_, err := w.jWriter.WriteRecord(msg)
+	_, err := w.jWriter.writeRecord(msg)
 
 	return err
 }
@@ -116,7 +116,7 @@ func (w *JSONWriter) WriteHeader(t types.Type) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	_, err := w.jWriter.WriteHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
+	_, err := w.jWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
 
 	return err
 }
@@ -137,26 +137,26 @@ func (w *JSONWriter) Close(numRecords int64) (name string, size int64) {
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
 }
 
-// NullWriter is a writer that writes nothing to disk.
-type NullWriter struct{}
+// nullWriter is a writer that writes nothing to disk.
+type nullWriter struct{}
 
-// NewNullWriter initializes and configures a new NullWriter instance.
-func NewNullWriter() *NullWriter {
-	return &NullWriter{}
+// newNullWriter initializes and configures a new nullWriter instance.
+func newNullWriter() *nullWriter {
+	return &nullWriter{}
 }
 
 // WriteCSV writes a CSV record.
-func (w *NullWriter) Write(_ proto.Message) error {
+func (w *nullWriter) Write(_ proto.Message) error {
 	return nil
 }
 
 // WriteHeader writes a CSV header.
-func (w *NullWriter) WriteHeader(_ types.Type) error {
+func (w *nullWriter) WriteHeader(_ types.Type) error {
 	return nil
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *NullWriter) Close(numRecords int64) (name string, size int64) {
+func (w *nullWriter) Close(numRecords int64) (name string, size int64) {
 	return "", 0
 }
 
@@ -166,15 +166,15 @@ type JSONProtoWriter struct {
 	sync.Mutex
 }
 
-// NewJSONProtoWriter returns a new JSON writer instance.
-func NewJSONProtoWriter(w io.Writer) *JSONProtoWriter {
+// newJSONProtoWriter returns a new JSON writer instance.
+func newJSONProtoWriter(w io.Writer) *JSONProtoWriter {
 	return &JSONProtoWriter{
 		w: w,
 	}
 }
 
-// WriteHeader writes the CSV header to the underlying file.
-func (w *JSONProtoWriter) WriteHeader(h *types.Header) (int, error) {
+// writeHeader writes the CSV header to the underlying file.
+func (w *JSONProtoWriter) writeHeader(h *types.Header) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 
@@ -191,8 +191,8 @@ func (w *JSONProtoWriter) WriteHeader(h *types.Header) (int, error) {
 	return w.w.Write([]byte("\n"))
 }
 
-// WriteRecord writes a protocol buffer into the JSON writer.
-func (w *JSONProtoWriter) WriteRecord(msg proto.Message) (int, error) {
+// writeRecord writes a protocol buffer into the JSON writer.
+func (w *JSONProtoWriter) writeRecord(msg proto.Message) (int, error) {
 	w.Lock()
 	defer w.Unlock()
 
