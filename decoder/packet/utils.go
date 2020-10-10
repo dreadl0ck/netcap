@@ -175,7 +175,7 @@ func (p pairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 func (p pairList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
 // ApplyActionToPacketDecoders can be used to run custom code for all packet decoders.
-func ApplyActionToPacketDecoders(action func(PacketDecoderAPI)) {
+func ApplyActionToPacketDecoders(action func(DecoderAPI)) {
 	for _, d := range defaultPacketDecoders {
 		action(d)
 	}

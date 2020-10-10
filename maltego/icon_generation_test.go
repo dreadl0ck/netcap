@@ -48,7 +48,7 @@ func TestGenerateAuditRecordIcons(t *testing.T) {
 	generateIcons()
 	generateAdditionalIcons()
 
-	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
+	packet.ApplyActionToPacketDecoders(func(d packet.DecoderAPI) {
 		generateAuditRecordIcon(d.GetName())
 	})
 
@@ -69,7 +69,7 @@ func TestGenerateAuditRecordIconsSVG(t *testing.T) {
 	generateIconsSVG()
 	generateAdditionalIconsSVG()
 
-	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
+	packet.ApplyActionToPacketDecoders(func(d packet.DecoderAPI) {
 		generateAuditRecordIconSVG(d.GetName())
 	})
 
@@ -407,14 +407,14 @@ func createXMLIconFile(path string) {
 func generateSizesSVG(newBase string, newPath string, color string) {
 	svgFile, err := os.Open(newPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
 	}
 	defer svgFile.Close()
 
 	s := new(materialIconSVG)
 	if err = xml.NewDecoder(svgFile).Decode(&s); err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to parse (%v)\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Unable to parse (%v)\n", err)
 		return
 	}
 
@@ -439,7 +439,7 @@ func generateSizesSVG(newBase string, newPath string, color string) {
 		var buf bytes.Buffer
 
 		if err = xml.NewEncoder(io.MultiWriter(f, &buf)).Encode(s); err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to encode (%v)\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Unable to encode (%v)\n", err)
 			return
 		}
 
@@ -533,7 +533,7 @@ func generateAuditRecordIconSVG(text string) {
 	fmt.Println(name)
 
 	var (
-		x    = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(size) + `" height="` + strconv.Itoa(size) + `">
+		x = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(size) + `" height="` + strconv.Itoa(size) + `">
 <rect x="0" y="0" width="` + strconv.Itoa(size) + `" height="` + strconv.Itoa(size) + `" stroke="red" stroke-width="3px" fill="white"/>
 <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">` + name + `</text>
 </svg>`

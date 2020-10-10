@@ -40,7 +40,7 @@ const (
 	protoUDP            = "UDP"
 )
 
-// save TCP / UDP conversations to disk
+// SaveConversation will save TCP / UDP conversations to disk
 // this also invokes the harvesters on the conversation banner
 func SaveConversation(proto string, conversation core.DataFragments, ident string, firstPacket time.Time, transport gopacket.Flow) error {
 	// prevent processing zero bytes
@@ -118,13 +118,13 @@ retry:
 		for _, d := range conversation {
 
 			if d.Direction() == reassembly.TCPDirClientToServer {
-				w.WriteString(ansi.Red)
-				w.Write(d.Raw())
-				w.WriteString(ansi.Reset)
+				_, _ = w.WriteString(ansi.Red)
+				_, _ = w.Write(d.Raw())
+				_, _ = w.WriteString(ansi.Reset)
 			} else {
-				w.WriteString(ansi.Blue)
-				w.Write(d.Raw())
-				w.WriteString(ansi.Reset)
+				_, _ = w.WriteString(ansi.Blue)
+				_, _ = w.Write(d.Raw())
+				_, _ = w.WriteString(ansi.Reset)
 			}
 
 			if decoderconfig.Instance.Debug {
@@ -133,7 +133,7 @@ retry:
 					ts = "\n[" + d.Context().GetCaptureInfo().Timestamp.String() + "]\n"
 				}
 
-				w.WriteString(ts)
+				_, _ = w.WriteString(ts)
 			}
 		}
 	} else { // UDP
@@ -141,17 +141,17 @@ retry:
 		for _, d := range conversation {
 			if d.Transport() == clientTransport {
 				// client
-				w.WriteString(ansi.Red)
-				w.Write(d.Raw())
-				w.WriteString(ansi.Reset)
+				_, _ = w.WriteString(ansi.Red)
+				_, _ = w.Write(d.Raw())
+				_, _ = w.WriteString(ansi.Reset)
 			} else {
 				// server
-				w.WriteString(ansi.Blue)
-				w.Write(d.Raw())
-				w.WriteString(ansi.Reset)
+				_, _ = w.WriteString(ansi.Blue)
+				_, _ = w.Write(d.Raw())
+				_, _ = w.WriteString(ansi.Reset)
 			}
 			if decoderconfig.Instance.Debug {
-				w.WriteString("\n[" + d.CaptureInfo().Timestamp.String() + "]\n")
+				_, _ = w.WriteString("\n[" + d.CaptureInfo().Timestamp.String() + "]\n")
 			}
 		}
 	}

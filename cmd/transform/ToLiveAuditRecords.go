@@ -58,7 +58,7 @@ func writeLiveAuditRecords(outDir string) {
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
+	packet.ApplyActionToPacketDecoders(func(d packet.DecoderAPI) {
 		allDecoders = append(allDecoders, d.GetName())
 	})
 

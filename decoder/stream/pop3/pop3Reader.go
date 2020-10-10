@@ -93,7 +93,7 @@ func (h *pop3Reader) New(conv *core.ConversationInfo) core.StreamDecoderInterfac
 // Decode parses the stream according to the POP3 protocol.
 func (h *pop3Reader) Decode() {
 	// prevent nil pointer access if decoder is not initialized
-	if POP3Decoder.Writer == nil {
+	if Decoder.Writer == nil {
 		return
 	}
 
@@ -143,9 +143,9 @@ func (h *pop3Reader) Decode() {
 	}
 
 	// write record to disk
-	atomic.AddInt64(&POP3Decoder.NumRecordsWritten, 1)
+	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 
-	err := POP3Decoder.Writer.Write(pop3Msg)
+	err := Decoder.Writer.Write(pop3Msg)
 	if err != nil {
 		utils.ErrorMap.Inc(err.Error())
 	}

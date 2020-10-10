@@ -22,7 +22,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var FileDecoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_File,
 	"File",
 	"A file that was transferred over the network",
@@ -32,15 +32,15 @@ var FileDecoder = decoder.NewStreamDecoder(
 	nil,
 )
 
-// writeDeviceProfile writes the profile.
+// WriteFile writeDeviceProfile writes the profile.
 func WriteFile(f *types.File) {
 	if decoderconfig.Instance.ExportMetrics {
 		f.Inc()
 	}
 
-	atomic.AddInt64(&FileDecoder.NumRecordsWritten, 1)
+	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 
-	err := FileDecoder.Writer.Write(f)
+	err := Decoder.Writer.Write(f)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

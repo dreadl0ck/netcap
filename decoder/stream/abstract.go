@@ -28,13 +28,13 @@ var errInvalidAbstractDecoder = errors.New("invalid abstract decoder")
 // defaultAbstractDecoders contains decoders for custom abstractions
 // that do not represent a specific network protocol.
 var defaultAbstractDecoders = []core.DecoderAPI{
-	file.FileDecoder,
-	service.ServiceDecoder,
-	exploit.ExploitDecoder,
-	mail.MailDecoder,
-	software.SoftwareDecoder,
-	vulnerability.VulnerabilityDecoder,
-	credentials.CredentialsDecoder,
+	file.Decoder,
+	service.Decoder,
+	exploit.Decoder,
+	mail.Decoder,
+	software.Decoder,
+	vulnerability.Decoder,
+	credentials.Decoder,
 } // contains all available abstract decoders
 
 // package level init.
@@ -161,7 +161,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		decoders = append(decoders, d)
 	}
 
-	if isAbstractDecoderLoaded(credentials.CredentialsDecoderName) {
+	if isAbstractDecoderLoaded(credentials.DecoderName) {
 		credentials.UseHarvesters = true
 	}
 

@@ -119,12 +119,12 @@ func TestGenerateAllEntities(t *testing.T) {
 
 	var (
 		count int
-		out = "entities"
+		out   = "entities"
 	)
 
 	// generate entities for audit records
 	// *AuditRecords entity and an entity for the actual audit record instance
-	packet.ApplyActionToPacketDecoders(func(d packet.PacketDecoderAPI) {
+	packet.ApplyActionToPacketDecoders(func(d packet.DecoderAPI) {
 		createEntity(out, d.GetName(), d.GetDescription(), &count)
 	})
 

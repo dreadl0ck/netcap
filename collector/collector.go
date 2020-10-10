@@ -59,7 +59,7 @@ type Collector struct {
 	start                    time.Time
 	assemblers               []*reassembly.Assembler
 	goPacketDecoders         map[gopacket.LayerType][]*packet.GoPacketDecoder
-	packetDecoders           []packet.PacketDecoderAPI
+	packetDecoders           []packet.DecoderAPI
 	streamDecoders           []core.StreamDecoderAPI
 	abstractDecoders         []core.DecoderAPI
 	progressString           string
@@ -510,7 +510,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 						// decoder.Flows.Size(), // TODO: fetch this info from stats?
 						// decoder.Connections.Size(), // TODO: fetch this info from stats?
 						packet.DeviceProfiles.Size(),
-						service.ServiceStore.Size(),
+						service.Store.Size(),
 						int(curr),
 						pps,
 					)

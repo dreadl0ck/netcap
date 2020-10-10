@@ -47,7 +47,7 @@ func (a *atomicServiceMap) Size() int {
 }
 
 // ServiceStore holds all tcp service banners.
-var ServiceStore = &atomicServiceMap{
+var Store = &atomicServiceMap{
 	Items: make(map[string]*service),
 }
 
@@ -97,7 +97,7 @@ var (
 	serviceLogSugared *zap.SugaredLogger
 )
 
-var ServiceDecoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_Service,
 	"Service",
 	"A network service",
@@ -119,7 +119,7 @@ var ServiceDecoder = decoder.NewStreamDecoder(
 	nil,
 	func(e *decoder.StreamDecoder) error {
 		// flush writer
-		for _, item := range ServiceStore.Items {
+		for _, item := range Store.Items {
 			item.Lock()
 			e.Writer.Write(item.Service)
 			item.Unlock()

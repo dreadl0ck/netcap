@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-func FileExtensionForContentType(typ string) string {
+func ExtensionForContentType(typ string) string {
 	parts := strings.Split(typ, ";")
 	if len(typ) > 1 {
 		typ = parts[0]

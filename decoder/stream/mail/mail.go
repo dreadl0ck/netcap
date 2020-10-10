@@ -27,7 +27,7 @@ import (
 
 var mailLog = zap.NewNop()
 
-var MailDecoder = decoder.NewStreamDecoder(
+var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_Mail,
 	"Mail",
 	"Email messages collected from the network traffic",
@@ -53,9 +53,9 @@ func WriteMail(d *types.Mail) {
 		d.Inc()
 	}
 
-	atomic.AddInt64(&MailDecoder.NumRecordsWritten, 1)
+	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 
-	err := MailDecoder.Writer.Write(d)
+	err := Decoder.Writer.Write(d)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}

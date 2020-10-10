@@ -45,7 +45,7 @@ func SetLogger(l *zap.Logger) {
 	reassemblyLog = l
 }
 
-// TODO: create a structure for passing all the args
+// SaveFile TODO: create a structure for passing all the args
 func SaveFile(conv *core.ConversationInfo, source, name string, err error, body []byte, encoding []string, host string, contentType string) error {
 	reassemblyLog.Info("smtpReader.saveFile",
 		zap.String("source", source),
@@ -75,7 +75,7 @@ func SaveFile(conv *core.ConversationInfo, source, name string, err error, body 
 		root = path.Join(decoderconfig.Instance.Out, decoderconfig.Instance.FileStorage, cType)
 
 		// file extension
-		ext = file.FileExtensionForContentType(cType)
+		ext = file.ExtensionForContentType(cType)
 
 		// file basename
 		base = filepath.Clean(name+"-"+path.Base(utils.CleanIdent(conv.Ident))) + ext
@@ -122,9 +122,9 @@ func SaveFile(conv *core.ConversationInfo, source, name string, err error, body 
 		}
 
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+file.FileExtensionForContentType(cType))
+			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+file.ExtensionForContentType(cType))
 		} else {
-			target = path.Join(root, filepath.Clean(name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+file.FileExtensionForContentType(cType))
+			target = path.Join(root, filepath.Clean(name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+file.ExtensionForContentType(cType))
 		}
 
 		n++
@@ -231,7 +231,7 @@ func SaveFile(conv *core.ConversationInfo, source, name string, err error, body 
 
 			// create new target: trim extension from old one and replace
 			// and replace the old content type in the path
-			newTarget := strings.Replace(strings.TrimSuffix(target, ext), cType, cTypeDetected, 1) + file.FileExtensionForContentType(cTypeDetected)
+			newTarget := strings.Replace(strings.TrimSuffix(target, ext), cType, cTypeDetected, 1) + file.ExtensionForContentType(cTypeDetected)
 
 			err = os.Rename(target, newTarget)
 			if err == nil {
