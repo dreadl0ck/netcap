@@ -92,7 +92,7 @@ func (c *Collector) initLogging() error {
 		return err
 	}
 
-	packet.SetDecoderLogger(lDecoder, decoderLogFile)
+	packet.SetDecoderLogger(lDecoder)
 
 	lDB, dbLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "db", c.config.DecoderConfig.Debug)
 	if err != nil {

@@ -223,7 +223,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		hash, raw := computeHASSH(init)
 
 		if dir == reassembly.TCPDirClientToServer {
-			Decoder.Writer.Write(&types.SSH{
+			_ = Decoder.Writer.Write(&types.SSH{
 				Timestamp:  h.conversation.FirstClientPacket.UnixNano(),
 				HASSH:      hash,
 				Flow:       h.conversation.Ident,
@@ -236,7 +236,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 			sshLog.Info("found clientKexInit", zap.String("ident", h.conversation.Ident))
 		} else {
-			Decoder.Writer.Write(&types.SSH{
+			_ = Decoder.Writer.Write(&types.SSH{
 				Timestamp:  h.conversation.FirstServerPacket.UnixNano(),
 				HASSH:      hash,
 				Flow:       utils.ReverseFlowIdent(h.conversation.Ident),

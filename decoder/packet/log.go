@@ -28,7 +28,7 @@ var (
 )
 
 // SetDecoderLogger sets the general decoder logger for the decoder package.
-func SetDecoderLogger(lg *zap.Logger, f *os.File) {
+func SetDecoderLogger(lg *zap.Logger) {
 	decoderLog = lg
 }
 

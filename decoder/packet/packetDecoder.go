@@ -89,7 +89,7 @@ type (
 		Type types.Type
 	}
 
-	// PacketDecoderAPI describes an interface that all custom decoder need to implement
+	// DecoderAPI PacketDecoderAPI describes an interface that all custom decoder need to implement
 	// this allows to supply a custom structure and maintain state for advanced protocol analysis.
 	DecoderAPI interface {
 		core.DecoderAPI

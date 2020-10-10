@@ -180,7 +180,7 @@ func (w *elasticWriter) WriteHeader(_ types.Type) error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *elasticWriter) Close(numRecords int64) (name string, size int64) {
+func (w *elasticWriter) Close(_ int64) (name string, size int64) {
 	err := w.sendBulk(0, 0)
 	if err != nil {
 		fmt.Println(err)

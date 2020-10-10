@@ -156,7 +156,7 @@ func (w *nullWriter) WriteHeader(_ types.Type) error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *nullWriter) Close(numRecords int64) (name string, size int64) {
+func (w *nullWriter) Close(_ int64) (name string, size int64) {
 	return "", 0
 }
 

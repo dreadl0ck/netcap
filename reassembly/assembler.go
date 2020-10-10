@@ -961,7 +961,7 @@ func (a *Assembler) flushCloseOlderThan(t time.Time) (flushed, closed int) {
 	return a.FlushWithOptions(FlushOptions{T: t, TC: t})
 }
 
-func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Time, tc time.Time) (bool, bool) {
+func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Time, _ time.Time) (bool, bool) {
 	if half.closed {
 		return false, false
 	}

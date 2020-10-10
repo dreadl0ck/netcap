@@ -31,6 +31,7 @@ import (
 
 var httpLog = zap.NewNop()
 
+// Decoder for protocol analysis and writing audit records to disk.
 var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_HTTP,
 	"HTTP",

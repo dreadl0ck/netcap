@@ -22,6 +22,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// Decoder for protocol analysis and writing audit records to disk.
 var Decoder = decoder.NewStreamDecoder(
 	types.Type_NC_File,
 	"File",
@@ -33,6 +34,7 @@ var Decoder = decoder.NewStreamDecoder(
 )
 
 // WriteFile writeDeviceProfile writes the profile.
+//WriteFile
 func WriteFile(f *types.File) {
 	if decoderconfig.Instance.ExportMetrics {
 		f.Inc()
