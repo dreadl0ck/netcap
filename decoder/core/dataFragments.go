@@ -19,7 +19,7 @@ import (
 )
 
 // DataFragments implements sort.Interface to sort data fragments based on their timestamps.
-type DataFragments []DataFragment
+type DataFragments []dataFragment
 
 func (d DataFragments) Size() int {
 	var s int

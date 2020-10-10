@@ -16,9 +16,9 @@ var (
 	contentTypeMapMu sync.Mutex
 )
 
-// CreateContentTypePathIfRequired will create the passed in filesystem path once
+// createContentTypePathIfRequired will create the passed in filesystem path once
 // it is safe for concurrent access and will block until the path has been created on disk.
-func CreateContentTypePathIfRequired(fsPath string) {
+func createContentTypePathIfRequired(fsPath string) {
 	contentTypeMapMu.Lock()
 	if _, ok := contentTypeMap[fsPath]; !ok { // the path has not been created yet
 		// add to map
@@ -38,8 +38,8 @@ func CreateContentTypePathIfRequired(fsPath string) {
 	contentTypeMapMu.Unlock()
 }
 
-// TrimEncoding removes encoding from a MIME type.
-func TrimEncoding(ctype string) string {
+// trimEncoding removes encoding from a MIME type.
+func trimEncoding(ctype string) string {
 	parts := strings.Split(ctype, ";")
 	if len(parts) > 1 {
 		return parts[0]

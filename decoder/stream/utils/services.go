@@ -11,7 +11,7 @@ import (
 
 const typeTCP = "tcp"
 
-func GetServiceName(data []byte, flow gopacket.Flow) string {
+func getServiceName(data []byte, flow gopacket.Flow) string {
 	var (
 		dstPort, _ = strconv.Atoi(flow.Dst().String())
 		s          = resolvers.LookupServiceByPort(dstPort, typeTCP)

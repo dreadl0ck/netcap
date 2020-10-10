@@ -38,19 +38,19 @@ type ChannelAuditRecordWriter interface {
 func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 	switch {
 	case wc.CSV:
-		return NewCSVWriter(wc)
+		return newCSVWriter(wc)
 	case wc.Chan:
-		return NewChanWriter(wc)
+		return newChanWriter(wc)
 	case wc.JSON:
-		return NewJSONWriter(wc)
+		return newJSONWriter(wc)
 	case wc.Null:
-		return NewNullWriter()
+		return newNullWriter()
 	case wc.Elastic:
-		return NewElasticWriter(wc)
+		return newElasticWriter(wc)
 
 	// proto is the default, so this option should be checked last to allow overwriting it
 	case wc.Proto:
-		return NewProtoWriter(wc)
+		return newProtoWriter(wc)
 	default:
 		spew.Dump(wc)
 		panic("invalid WriterConfig")

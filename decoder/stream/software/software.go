@@ -173,7 +173,7 @@ type atomicSoftwareMap struct {
 }
 
 var (
-	UserAgentCache      = make(map[string]*UserAgent)
+	UserAgentCache      = make(map[string]*userAgent)
 	regExpServerName    = regexp.MustCompile(`(.*?)(?:/(.*?))?(?:\s*?)(?:\((.*?)\))?$`)
 	regexpXPoweredBy    = regexp.MustCompile(`(.*?)(?:(?:\s|/)(.*?))?$`)
 	ja3Cache            = make(map[string]string)
@@ -220,8 +220,8 @@ var (
 	HashDBMap map[string][]sshSoftware
 )
 
-// UserAgent is a browser user agent.
-type UserAgent struct {
+// userAgent is a browser user agent.
+type userAgent struct {
 	Client  *uaparser.Client
 	Product string
 	Vendor  string
@@ -262,7 +262,7 @@ type sshHash struct {
 }
 
 // ParseUserAgent processes a raw user agent string and returned a structured instance.
-func ParseUserAgent(ua string) *UserAgent {
+func ParseUserAgent(ua string) *userAgent {
 	var (
 		uaClient                       = parser.Parse(ua)
 		full, product, vendor, version string
@@ -312,7 +312,7 @@ func ParseUserAgent(ua string) *UserAgent {
 		osName = ""
 	}
 
-	return &UserAgent{
+	return &userAgent{
 		Client:  uaClient,
 		Product: product,
 		Vendor:  vendor,

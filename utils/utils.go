@@ -269,8 +269,8 @@ func StringToTime(val string) time.Time {
 	return time.Time{}
 }
 
-// TimeToString converts a time.Time to seconds.micro string.
-func TimeToString(t time.Time) string {
+// timeToString converts a time.Time to seconds.micro string.
+func timeToString(t time.Time) string {
 	var b []byte
 	b = strconv.AppendInt(b, t.Unix(), 10)
 	b = append(b, byte(46)) // 46 dec == "." FULL_STOP

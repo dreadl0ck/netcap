@@ -24,7 +24,7 @@ import (
 var (
 	tins  = time.Now()
 	ti    = time.Unix(tins.Unix(), int64(tins.Nanosecond()/1000*1000))
-	tiStr = TimeToString(ti)
+	tiStr = timeToString(ti)
 )
 
 const dotRune = 46
@@ -61,8 +61,8 @@ func StringToTimeFieldsFunc(val string) time.Time {
 }
 
 func TestTimeToString(t *testing.T) {
-	if TimeToString(ti) != TimeToStringOld(ti) {
-		t.Fatal("not the same: TimeToString(ti) != TimeToStringOld(ti)", TimeToString(ti), " != ", TimeToStringOld(ti))
+	if timeToString(ti) != TimeToStringOld(ti) {
+		t.Fatal("not the same: TimeToString(ti) != TimeToStringOld(ti)", timeToString(ti), " != ", TimeToStringOld(ti))
 	}
 }
 
@@ -78,7 +78,7 @@ func BenchmarkTimeToString(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		TimeToString(ti)
+		timeToString(ti)
 	}
 }
 
@@ -100,7 +100,7 @@ func BenchmarkStringToTime(b *testing.B) {
 }
 
 func BenchmarkStringToTimeFieldsFunc(b *testing.B) {
-	tiString := TimeToString(ti)
+	tiString := timeToString(ti)
 
 	b.ReportAllocs()
 	b.ResetTimer()

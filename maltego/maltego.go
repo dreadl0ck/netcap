@@ -53,8 +53,8 @@ const (
 	// InputToOutput direction for maltego links
 	InputToOutput LinkDirection = "input-to-output"
 
-	// Bidirectional direction for maltego links
-	Bidirectional LinkDirection = "bidirectional"
+	// bidirectional direction for maltego links
+	bidirectional LinkDirection = "bidirectional"
 )
 
 func getThicknessInterval(val, min, max uint64) int {
@@ -135,8 +135,8 @@ type EntityObj struct {
 	AdditionalFields   [][]string
 }
 
-// NewEntityObj is the constructor for an EntityObj.
-func NewEntityObj(typ, value string, weight int) *EntityObj {
+// newEntityObj is the constructor for an EntityObj.
+func newEntityObj(typ, value string, weight int) *EntityObj {
 	return &EntityObj{entityType: typ, value: value, weight: weight}
 }
 
@@ -149,7 +149,7 @@ type Transform struct {
 
 // AddEntity adds an entity to the transform.
 func (tr *Transform) AddEntity(enType, enValue string) *EntityObj {
-	ent := NewEntityObj(enType, EscapeText(enValue), 100)
+	ent := newEntityObj(enType, EscapeText(enValue), 100)
 	tr.entities = append(tr.entities, ent)
 
 	return ent
@@ -157,7 +157,7 @@ func (tr *Transform) AddEntity(enType, enValue string) *EntityObj {
 
 // AddEntityWithPath adds an entity to the transform.
 func (tr *Transform) AddEntityWithPath(enType, enValue, path string) *EntityObj {
-	ent := NewEntityObj(enType, EscapeText(enValue), 100)
+	ent := newEntityObj(enType, EscapeText(enValue), 100)
 	ent.AddProperty("path", "Path", Strict, path)
 	tr.entities = append(tr.entities, ent)
 
@@ -269,8 +269,8 @@ func (m *EntityObj) setBookmark(bookmark string) {
 	m.AddProperty("bookmark#", "Bookmark", Loose, bookmark)
 }
 
-// SetNote sets a note on the entity.
-func (m *EntityObj) SetNote(note string) {
+// setNote sets a note on the entity.
+func (m *EntityObj) setNote(note string) {
 	m.AddProperty("notes#", "Notes", Loose, note)
 }
 

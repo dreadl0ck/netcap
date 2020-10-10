@@ -20,8 +20,8 @@ import (
 	netio "github.com/dreadl0ck/netcap/io"
 )
 
-// ErrInvalidStreamDecoder occurs when a decoder name is unknown during initialization.
-var ErrInvalidStreamDecoder = errors.New("invalid stream decoder")
+// errInvalidStreamDecoder occurs when a decoder name is unknown during initialization.
+var errInvalidStreamDecoder = errors.New("invalid stream decoder")
 
 // DefaultStreamDecoders contains stream decoders mapped to their protocols default port
 // int32 is used to avoid casting when looking up values
@@ -66,7 +66,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		for _, name := range in {
 			if name != "" { // check if proto exists
 				if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-					return nil, errors.Wrap(ErrInvalidStreamDecoder, name)
+					return nil, errors.Wrap(errInvalidStreamDecoder, name)
 				}
 
 				// add to include map
@@ -89,7 +89,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 	for _, name := range ex {
 		if name != "" { // check if proto exists
 			if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-				return nil, errors.Wrap(ErrInvalidStreamDecoder, name)
+				return nil, errors.Wrap(errInvalidStreamDecoder, name)
 			}
 
 			// remove named decoder from defaultPacketDecoders

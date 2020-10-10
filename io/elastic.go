@@ -39,11 +39,11 @@ import (
 const indexPrefix = "netcap-"
 
 var (
-	// ErrElasticFailed indicates sending data to elasticsearch has failed.
-	ErrElasticFailed = errors.New("failed to send data to elastic")
+	// errElasticFailed indicates sending data to elasticsearch has failed.
+	errElasticFailed = errors.New("failed to send data to elastic")
 
-	// ErrMissingAuditRecordInterface indicates the audit record is lacking methods to implement the types.AuditRecord interface.
-	ErrMissingAuditRecordInterface = errors.New("type does not implement the types.AuditRecord interface")
+	// errMissingAuditRecordInterface indicates the audit record is lacking methods to implement the types.AuditRecord interface.
+	errMissingAuditRecordInterface = errors.New("type does not implement the types.AuditRecord interface")
 )
 
 // ElasticConfig allows to overwrite elastic defaults.
@@ -67,8 +67,8 @@ type ElasticConfig struct {
 	BulkSize int
 }
 
-// ElasticWriter is a writer that writes into an elastic database.
-type ElasticWriter struct {
+// elasticWriter is a writer that writes into an elastic database.
+type elasticWriter struct {
 	client     *elasticsearch.Client
 	queue      []proto.Message
 	queueIndex int
@@ -85,8 +85,8 @@ type ElasticWriter struct {
  * Public
  */
 
-// NewElasticWriter initializes and configures a new ElasticWriter instance.
-func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
+// newElasticWriter initializes and configures a new elasticWriter instance.
+func newElasticWriter(wc *WriterConfig) *elasticWriter {
 	// init new client
 	c, err := elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: wc.ElasticAddrs,
@@ -97,7 +97,7 @@ func NewElasticWriter(wc *WriterConfig) *ElasticWriter {
 		log.Fatal(err)
 	}
 
-	return &ElasticWriter{
+	return &elasticWriter{
 		client:    c,
 		wc:        wc,
 		queue:     make([]proto.Message, wc.BulkSize),
@@ -160,7 +160,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 }
 
 // Write writes a record to elastic.
-func (w *ElasticWriter) Write(msg proto.Message) error {
+func (w *elasticWriter) Write(msg proto.Message) error {
 	w.Lock()
 	defer w.Unlock()
 
@@ -175,12 +175,12 @@ func (w *ElasticWriter) Write(msg proto.Message) error {
 }
 
 // WriteHeader writes a CSV header.
-func (w *ElasticWriter) WriteHeader(_ types.Type) error {
+func (w *elasticWriter) WriteHeader(_ types.Type) error {
 	return nil
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *ElasticWriter) Close(numRecords int64) (name string, size int64) {
+func (w *elasticWriter) Close(numRecords int64) (name string, size int64) {
 	err := w.sendBulk(0, 0)
 	if err != nil {
 		fmt.Println(err)
@@ -212,7 +212,7 @@ type bulkResponse struct {
 	} `json:"items"`
 }
 
-func (w *ElasticWriter) sendData() {
+func (w *elasticWriter) sendData() {
 	var (
 		unit = w.wc.BulkSize
 		err  error
@@ -371,7 +371,7 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 }
 
 // send a bulk of audit records and metadata to the elastic database daemon.
-func (w *ElasticWriter) sendBulk(start, limit int) error {
+func (w *elasticWriter) sendBulk(start, limit int) error {
 	w.processed = 0
 
 	for _, qmsg := range w.queue[start:] {
@@ -403,7 +403,7 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 				break
 			}
 		} else {
-			return fmt.Errorf("%s: %w", qmsg, ErrMissingAuditRecordInterface)
+			return fmt.Errorf("%s: %w", qmsg, errMissingAuditRecordInterface)
 		}
 	}
 
@@ -442,7 +442,7 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 			ioLog.Debug(w.buf.String())
 			w.buf.Reset()
 
-			return ErrElasticFailed
+			return errElasticFailed
 		}
 
 		// a successful response can still contain errors for some documents
@@ -454,7 +454,7 @@ func (w *ElasticWriter) sendBulk(start, limit int) error {
 			ioLog.Debug(w.buf.String())
 			w.buf.Reset()
 
-			return ErrElasticFailed
+			return errElasticFailed
 		}
 
 		var hadErrors bool

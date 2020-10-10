@@ -29,21 +29,21 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// ProtoWriter is a structure that supports writing protobuf audit records to disk.
-type ProtoWriter struct {
+// protoWriter is a structure that supports writing protobuf audit records to disk.
+type protoWriter struct {
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
 	dWriter *delimited.Writer
-	pWriter *DelimitedProtoWriter
+	pWriter *delimitedProtoWriter
 
 	file *os.File
 	mu   sync.Mutex
 	wc   *WriterConfig
 }
 
-// NewProtoWriter initializes and configures a new ProtoWriter instance.
-func NewProtoWriter(wc *WriterConfig) *ProtoWriter {
-	w := &ProtoWriter{}
+// newProtoWriter initializes and configures a new protoWriter instance.
+func newProtoWriter(wc *WriterConfig) *protoWriter {
+	w := &protoWriter{}
 	w.wc = wc
 
 	if wc.MemBufferSize <= 0 {
@@ -87,7 +87,7 @@ func NewProtoWriter(wc *WriterConfig) *ProtoWriter {
 		}
 	}
 
-	w.pWriter = NewDelimitedProtoWriter(w.dWriter)
+	w.pWriter = newDelimitedProtoWriter(w.dWriter)
 
 	if w.gWriter != nil {
 		// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
@@ -102,20 +102,20 @@ func NewProtoWriter(wc *WriterConfig) *ProtoWriter {
 }
 
 // WriteProto writes a protobuf message.
-func (w *ProtoWriter) Write(msg proto.Message) error {
+func (w *protoWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	return w.pWriter.PutProto(msg)
+	return w.pWriter.putProto(msg)
 }
 
 // WriteHeader writes a netcap file header for protobuf encoded audit record files.
-func (w *ProtoWriter) WriteHeader(t types.Type) error {
-	return w.pWriter.PutProto(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
+func (w *protoWriter) WriteHeader(t types.Type) error {
+	return w.pWriter.putProto(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *ProtoWriter) Close(numRecords int64) (name string, size int64) {
+func (w *protoWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 

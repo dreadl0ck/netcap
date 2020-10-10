@@ -32,8 +32,8 @@ func SetDecoderLogger(lg *zap.Logger, f *os.File) {
 	decoderLog = lg
 }
 
-// SetReassemblyLogger sets the tcp stream reassembly logger for the decoder package.
-func SetReassemblyLogger(lg *zap.Logger, f *os.File) {
+// setReassemblyLogger sets the tcp stream reassembly logger for the decoder package.
+func setReassemblyLogger(lg *zap.Logger, f *os.File) {
 	reassemblyLog = lg
 	reassemblyLogFileHandle = f
 }

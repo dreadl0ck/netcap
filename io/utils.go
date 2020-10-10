@@ -71,7 +71,7 @@ func PrintBuildInfo() {
 	FPrintBuildInfo(os.Stdout)
 }
 
-// FPrintBuildInfo PrintBuildInfo displays build information related to netcap to the specified io ProtoWriter.
+// FPrintBuildInfo PrintBuildInfo displays build information related to netcap to the specified io protoWriter.
 func FPrintBuildInfo(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "\n> Date of execution:", time.Now().UTC())
 	_, _ = fmt.Fprintln(w, "> NETCAP build commit:", netcap.Commit)

@@ -35,7 +35,7 @@ var (
 	// without contacting a nameserver.
 	LocalDNS = true
 
-	ipProfileDecoderInstance *PacketDecoder
+	ipProfileDecoderInstance *packetDecoder
 )
 
 // atomicIPProfileMap contains all connections and provides synchronized access.
@@ -64,11 +64,11 @@ type ipProfile struct {
 	sync.Mutex
 }
 
-var ipProfileDecoder = NewPacketDecoder(
+var ipProfileDecoder = newPacketDecoder(
 	types.Type_NC_IPProfile,
 	"IPProfile",
 	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
-	func(d *PacketDecoder) error {
+	func(d *packetDecoder) error {
 		ipProfileDecoderInstance = d
 
 		return nil
@@ -76,7 +76,7 @@ var ipProfileDecoder = NewPacketDecoder(
 	func(p gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *PacketDecoder) error {
+	func(e *packetDecoder) error {
 		// flush writer
 		for _, item := range IPProfiles.Items {
 			item.Lock()

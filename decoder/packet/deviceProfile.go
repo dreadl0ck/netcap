@@ -51,7 +51,7 @@ var (
 	DeviceProfiles = &atomicDeviceProfileMap{
 		Items: make(map[string]*DeviceProfile),
 	}
-	deviceProfileDecoderInstance *PacketDecoder
+	deviceProfileDecoderInstance *packetDecoder
 	deviceProfiles               int64
 
 	// flags for flushing intervals - no flushing for now.
@@ -61,8 +61,8 @@ var (
 	// profileTimeOut       time.Duration.
 )
 
-// GetDeviceProfile fetches a known profile and updates it or returns a new one.
-func GetDeviceProfile(macAddr string, i *decoderutils.PacketInfo) *DeviceProfile {
+// getDeviceProfile fetches a known profile and updates it or returns a new one.
+func getDeviceProfile(macAddr string, i *decoderutils.PacketInfo) *DeviceProfile {
 	DeviceProfiles.Lock()
 	if p, ok := DeviceProfiles.Items[macAddr]; ok {
 		DeviceProfiles.Unlock()
@@ -170,11 +170,11 @@ func applyDeviceProfileUpdate(p *DeviceProfile, i *decoderutils.PacketInfo) {
 	p.Unlock()
 }
 
-var deviceProfileDecoder = NewPacketDecoder(
+var deviceProfileDecoder = newPacketDecoder(
 	types.Type_NC_DeviceProfile,
 	"DeviceProfile",
 	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
-	func(d *PacketDecoder) error {
+	func(d *packetDecoder) error {
 		deviceProfileDecoderInstance = d
 
 		return nil
@@ -185,7 +185,7 @@ var deviceProfileDecoder = NewPacketDecoder(
 
 		return nil
 	},
-	func(e *PacketDecoder) error {
+	func(e *packetDecoder) error {
 		// flush writer
 		for _, item := range DeviceProfiles.Items {
 			item.Lock()
