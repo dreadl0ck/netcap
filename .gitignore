@@ -3,7 +3,6 @@ maltego/netcap
 maltego/transforms
 maltego/entities/
 zeus/data.yml
-tcp
 tests
 .idea
 types/python
@@ -28,7 +27,6 @@ priv.key
 pub.key
 dist/
 vulnDBs
-udp/
 FlameGraph
 Dockerfile
 bin/
