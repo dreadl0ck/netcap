@@ -115,15 +115,11 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 
 	if conn, ok := cd.Conns.Items[connID.String()]; ok {
 
-		// connID exists. update fields
-		calcDuration := false
-
 		conn.Lock()
 
 		// check if received packet from the same connection
 		// was captured BEFORE the connections first seen timestamp
 		if p.Metadata().Timestamp.Before(time.Unix(0, conn.TimestampFirst).UTC()) {
-			calcDuration = true
 
 			// rewrite timestamp
 			conn.TimestampFirst = p.Metadata().Timestamp.UnixNano()
@@ -155,17 +151,10 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 			// current packet is newer
 			// update last seen timestamp
 			conn.TimestampLast = p.Metadata().Timestamp.UnixNano()
-			calcDuration = true
 		} // else: do nothing, timestamp is still the oldest one
 
 		conn.NumPackets++
 		conn.TotalSize += int32(p.Metadata().Length)
-
-		// only calculate duration when timestamps have changed
-		// TODO: calculate duration once when stream is flushed for performance
-		if calcDuration {
-			conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
-		}
 
 		conn.Unlock()
 	} else { // create a new Connection
@@ -246,6 +235,10 @@ func (cd *connectionDecoder) DeInit() error {
 
 // writeConn writes the connection.
 func (cd *connectionDecoder) writeConn(conn *types.Connection) {
+
+	// calculate duration
+	conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
+
 	if conf.ExportMetrics {
 		conn.Inc()
 	}
