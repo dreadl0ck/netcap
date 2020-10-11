@@ -54,11 +54,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				return
 			}
 
-			// create a new gopacket
-			// base layer is by default Ethernet
-			// goPacket = gopacket.NewPacket(pkt.data, c.config.BaseLayer, c.config.DecodeOptions)
-			// goPacket.Metadata().CaptureInfo = pkt.ci
-
 			pkt.Metadata().Timestamp = pkt.Metadata().CaptureInfo.Timestamp
 			pkt.Metadata().Length = pkt.Metadata().CaptureInfo.Length
 			pkt.Metadata().CaptureLength = pkt.Metadata().CaptureInfo.CaptureLength
@@ -90,6 +85,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 			// iterate over all layers
 			for _, layer = range pkt.Layers() {
+
 				// increment counter for layer type
 				c.allProtosAtomic.Inc(layer.LayerType().String())
 
@@ -138,6 +134,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 						}
 					}
 				} else { // no netcap encoder implemented
+
 					// increment unknown layer type counter
 					c.unknownProtosAtomic.Inc(layer.LayerType().String())
 					if c.config.DecoderConfig.ExportMetrics {
@@ -196,13 +193,18 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 // spawn the configured number of workers.
 func (c *Collector) initWorkers() []chan gopacket.Packet {
+
+	// init worker slice
 	workers := make([]chan gopacket.Packet, c.config.Workers)
+
+	// create assemblers
 	for i := range workers {
 		a := reassembly.NewAssembler(tcp.GetStreamPool())
 		c.assemblers = append(c.assemblers, a)
 		workers[i] = c.worker(a)
 	}
 
+	// update num worker count
 	c.numWorkers = len(workers)
 
 	return workers
