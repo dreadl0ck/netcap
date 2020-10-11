@@ -2,6 +2,7 @@ package utils
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/dreadl0ck/gopacket"
 
@@ -9,21 +10,15 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-const typeTCP = "tcp"
+const (
+	unknown = "unknown"
+)
 
-func getServiceName(data []byte, flow gopacket.Flow) string {
+func getServiceName(data []byte, flow gopacket.Flow, proto string) string {
 	var (
 		dstPort, _ = strconv.Atoi(flow.Dst().String())
-		s          = resolvers.LookupServiceByPort(dstPort, typeTCP)
+		s          = resolvers.LookupServiceByPort(dstPort, strings.ToLower(proto))
 	)
-
-	if s != "" {
-		return s
-	}
-
-	// what about the source port?
-	srcPort, _ := strconv.Atoi(flow.Src().String())
-	s = resolvers.LookupServiceByPort(srcPort, typeTCP)
 
 	if s != "" {
 		return s
@@ -34,5 +29,5 @@ func getServiceName(data []byte, flow gopacket.Flow) string {
 		return "ascii"
 	}
 
-	return "unknown"
+	return unknown
 }

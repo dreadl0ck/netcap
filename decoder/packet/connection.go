@@ -163,6 +163,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		co.TimestampFirst = p.Metadata().Timestamp.UnixNano()
 		co.TimestampLast = p.Metadata().Timestamp.UnixNano()
 		co.TotalSize = int32(p.Metadata().Length)
+		co.NumPackets = 1
 
 		if ll := p.LinkLayer(); ll != nil {
 			co.LinkProto = ll.LayerType().String()
@@ -183,6 +184,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 			co.ApplicationProto = al.LayerType().String()
 			co.AppPayloadSize = int32(len(al.Payload()))
 		}
+
 		cd.Conns.Items[connID.String()] = &connection{
 			Connection: co,
 		}
