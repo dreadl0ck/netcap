@@ -146,6 +146,10 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 			}
 		}
 
+		if al := p.ApplicationLayer(); al != nil {
+			conn.AppPayloadSize += int32(len(al.Payload()))
+		}
+
 		// check if last timestamp was before the current packet
 		if conn.TimestampLast < p.Metadata().Timestamp.UnixNano() {
 			// current packet is newer
@@ -155,7 +159,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		} // else: do nothing, timestamp is still the oldest one
 
 		conn.NumPackets++
-		conn.TotalSize += int32(len(p.Data()))
+		conn.TotalSize += int32(p.Metadata().Length)
 
 		// only calculate duration when timestamps have changed
 		// TODO: calculate duration once when stream is flushed for performance
@@ -169,6 +173,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		co.UID = calcMd5(connID.String())
 		co.TimestampFirst = p.Metadata().Timestamp.UnixNano()
 		co.TimestampLast = p.Metadata().Timestamp.UnixNano()
+		co.TotalSize = int32(p.Metadata().Length)
 
 		if ll := p.LinkLayer(); ll != nil {
 			co.LinkProto = ll.LayerType().String()

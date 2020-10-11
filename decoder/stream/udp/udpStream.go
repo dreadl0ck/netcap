@@ -68,7 +68,6 @@ func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 	if s, ok := u.streams[packet.TransportLayer().TransportFlow().FastHash()]; ok {
 		u.Unlock()
 
-		// update existing
 		s.Lock()
 		s.data = append(s.data, &core.StreamData{
 			RawData:            udpLayer.LayerPayload(),

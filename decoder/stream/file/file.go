@@ -32,7 +32,6 @@ var Decoder = decoder.NewAbstractDecoder(
 )
 
 // WriteFile writeDeviceProfile writes the profile.
-//WriteFile
 func WriteFile(f *types.File) {
 	if decoderconfig.Instance.ExportMetrics {
 		f.Inc()
