@@ -55,9 +55,15 @@ func makeWindowsOpenCommand(args []string) (string, []string) { //nolint:gocriti
 	)
 }
 
-// gnome-terminal --working-directory=/path/to/dir
+// adjust the arguments for the linux command invocation
 func makeLinuxOpenTerminalCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
-	if commandName == "gnome-terminal" {
+
+	// gnome-terminal
+	// xfce4-terminal
+	// mate-terminal
+	// etc...
+	// add the --working-directory= flag to set the path
+	if strings.HasSuffix(commandName, "-terminal") {
 		args = []string{"--working-directory=" + strings.Join(args, "")}
 	}
 

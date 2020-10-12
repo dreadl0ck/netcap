@@ -60,6 +60,11 @@ func createOpenTerminalCommand(args []string) (string, []string) {
 		case platformLinux:
 			name, args = makeLinuxOpenTerminalCommand(defaultOpenTerminalCommandLinux, args)
 		}
+	} else {
+		switch runtime.GOOS {
+		case platformLinux:
+			name, args = makeLinuxOpenTerminalCommand(name, args)
+		}
 	}
 
 	log.Println("command for opening path:", name, args)
