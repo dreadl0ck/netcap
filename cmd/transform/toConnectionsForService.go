@@ -100,7 +100,7 @@ func addConnection(trx *maltego.Transform, conn *types.Connection, path string, 
 }
 
 func makeConversationHTML(service string, conn *types.Connection, path string) string {
-	if conn.TotalSize == 0 {
+	if conn.AppPayloadSize == 0 {
 		return "no data transferred"
 	}
 
