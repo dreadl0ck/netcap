@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"runtime"
@@ -211,7 +212,7 @@ func Dump(w *os.File, c DumpConfig) error {
 				_, _ = w.WriteString(header.Type.String())
 				_, _ = w.WriteString(ansi.Reset)
 				_, _ = w.WriteString(newline)
-				_, _ = w.WriteString(colorizeProto(proto.MarshalTextString(record), colorMap))
+				_, _ = w.WriteString(colorizeProto(proto.MarshalTextString(record), colorMap, &c))
 			} else { // structured without colors
 				_, _ = w.WriteString(header.Type.String())
 				_, _ = w.WriteString(newline)
@@ -265,7 +266,7 @@ var (
 	max       int
 )
 
-func colorizeProto(in string, colorMap map[string]string) string {
+func colorizeProto(in string, colorMap map[string]string, c *DumpConfig) string {
 	var (
 		b     strings.Builder
 		index int
@@ -328,7 +329,18 @@ func colorizeProto(in string, colorMap map[string]string) string {
 			// if !strings.Contains(line, "<") {
 			// 	b.WriteString(":")
 			// }
-			b.WriteString(strings.Join(parts[1:], ":"))
+
+			if parts[0] == "Timestamp" && c.UTC {
+				ts, err := strconv.Atoi(parts[1])
+				if err != nil {
+					log.Fatal("invalid value for timestamp:", parts)
+				}
+
+				b.WriteString(utils.UnixTimeToUTC(int64(ts)))
+			} else {
+				b.WriteString(strings.Join(parts[1:], ":"))
+			}
+
 			b.WriteString(newline)
 		} else {
 			b.WriteString(line)
