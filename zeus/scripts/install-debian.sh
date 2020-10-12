@@ -46,10 +46,14 @@ export LD_RUN_PATH="/usr/local/lib"
 sudo ldconfig /usr/local/lib/*
 sudo ldconfig /go/*
 
+# debug info
 env
-find / -iname ndpi_main.h
-find / -iname libprotoident.h
-find / -iname libtrace.h
+sudo find / -iname ndpi_main.h
+sudo find / -iname libprotoident.h
+sudo find / -iname libtrace.h
+
+# ensure the go compiler can output the binary to /usr/local/bin
+sudo chown -R "$USER" /usr/local/bin
 
 go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
 
