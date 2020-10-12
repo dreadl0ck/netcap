@@ -46,7 +46,6 @@ var maltegoBaseConfig = collector.Config{
 		MemBufferSize: defaults.BufferSize,
 		Compression:   true,
 		Proto:         true,
-		// IncludeDecoders:         strings.Join(auditRecords, ","),
 		ExcludeDecoders:                "",
 		Chan:                           false,
 		IncludePayloads:                false,
@@ -85,7 +84,7 @@ var maltegoBaseConfig = collector.Config{
 		IgnoreDecoderInitErrors:        true,
 	},
 	BaseLayer:     utils.GetBaseLayer("ethernet"),
-	DecodeOptions: utils.GetDecodeOptions("datagrams"),
+	DecodeOptions: utils.GetDecodeOptions("lazy"),
 	DPI:           false,
 	ResolverConfig: resolvers.Config{
 		ReverseDNS:    false,
