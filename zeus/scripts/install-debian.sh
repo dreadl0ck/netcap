@@ -9,27 +9,27 @@ sudo apt-get install -y apt-transport-https curl lsb-release wget autogen autoco
 
 wget https://github.com/wanduow/wandio/archive/4.2.2-1.tar.gz
 tar xfz 4.2.2-1.tar.gz
-cd wandio-4.2.2-1 && ./bootstrap.sh && ./configure && make && make install
+cd wandio-4.2.2-1 && ./bootstrap.sh && ./configure && make && sudo make install
 cd ..
 
 wget https://github.com/LibtraceTeam/libtrace/archive/4.0.11-1.tar.gz
 tar xfz 4.0.11-1.tar.gz
-cd libtrace-4.0.11-1 && ./bootstrap.sh && ./configure && make && make install
+cd libtrace-4.0.11-1 && ./bootstrap.sh && ./configure && make && sudo make install
 cd ..
 
 wget https://github.com/wanduow/libflowmanager/archive/3.0.0.tar.gz
 tar xfz 3.0.0.tar.gz
-cd libflowmanager-3.0.0 && ./bootstrap.sh && ./configure && make && make install
+cd libflowmanager-3.0.0 && ./bootstrap.sh && ./configure && make && sudo make install
 cd ..
 
 wget https://github.com/wanduow/libprotoident/archive/2.0.14-1.tar.gz
 tar xfz 2.0.14-1.tar.gz
-cd libprotoident-2.0.14-1 && ./bootstrap.sh && ./configure && make && make install
+cd libprotoident-2.0.14-1 && ./bootstrap.sh && ./configure && make && sudo make install
 cd ..
 
 wget https://github.com/ntop/nDPI/archive/3.2.tar.gz
 tar xfz 3.2.tar.gz
-cd nDPI-3.2 && ./autogen.sh && ./configure && make && make install
+cd nDPI-3.2 && ./autogen.sh && ./configure && make && sudo make install
 cd ..
 
 sudo apt install -y liblinear-dev
