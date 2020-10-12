@@ -331,11 +331,12 @@ func colorizeProto(in string, colorMap map[string]string, c *DumpConfig) string 
 			// }
 
 			if parts[0] == "Timestamp" && c.UTC {
-				ts, err := strconv.Atoi(parts[1])
+				ts, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 				if err != nil {
 					log.Fatal("invalid value for timestamp:", parts)
 				}
 
+				b.WriteString(" ")
 				b.WriteString(utils.UnixTimeToUTC(int64(ts)))
 			} else {
 				b.WriteString(strings.Join(parts[1:], ":"))
