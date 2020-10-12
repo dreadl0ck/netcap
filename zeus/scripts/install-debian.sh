@@ -43,8 +43,8 @@ export LDFLAGS="--verbose -v -L/usr/local/lib -llinear -ltrace -lndpi -lpcap -lm
 export LD_LIBRARY_PATH="/usr/local/lib:/usr/lib:/go"
 export LD_RUN_PATH="/usr/local/lib"
 
-ldconfig /usr/local/lib/*
-ldconfig /go/*
+sudo ldconfig /usr/local/lib/*
+sudo ldconfig /go/*
 
 env
 #find / -iname ndpi_main.h
