@@ -45,7 +45,7 @@ var (
 	flagBegin           = fs.String("begin", "(", "begin character for a structure in CSV output")
 	flagEnd             = fs.String("end", ")", "end character for a structure in CSV output")
 	flagStructSeparator = fs.String("struct-sep", "-", "separator character for a structure in CSV output")
-	flagUTC             = fs.Bool("utc", false, "print timestamps as UTC when using select csv")
+	flagUTC             = fs.Bool("utc", true, "print timestamps as UTC for CSV, table and colorized structured output")
 	flagInput           = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagVersion         = fs.Bool("version", false, "print netcap package version and exit")
 	flagJSON            = fs.Bool("json", false, "print as JSON")
