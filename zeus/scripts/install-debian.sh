@@ -2,10 +2,10 @@
 
 ## Clone and compile DPI dependencies from source
 
-apt update
-apt install -y libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev
-update-ca-certificates
-apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim autoconf automake libtool make g++ bison flex cmake binutils binutils-doc gcc-doc cmake-doc extra-cmake-modules
+sudo apt update
+sudo apt install -y libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev
+sudo update-ca-certificates
+sudo apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim autoconf automake libtool make g++ bison flex cmake binutils binutils-doc gcc-doc cmake-doc extra-cmake-modules
 
 wget https://github.com/wanduow/wandio/archive/4.2.2-1.tar.gz
 tar xfz 4.2.2-1.tar.gz
@@ -32,7 +32,7 @@ tar xfz 3.2.tar.gz
 cd nDPI-3.2 && ./autogen.sh && ./configure && make && make install
 cd ..
 
-apt install -y liblinear-dev
+sudo apt install -y liblinear-dev
 
 go mod download
 
