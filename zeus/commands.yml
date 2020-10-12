@@ -442,5 +442,5 @@ commands:
             ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/NETCAP\ Ubuntu\ 64-bit\ 20.04.1.vmwarevm/NETCAP\ Ubuntu\ 64-bit\ 20.04.1.vmx ~/Documents/Netcap_${VERSION}_Ubuntu.ova
             du -sh ~/Documents/Netcap_${VERSION}_Ubuntu.ova
 
-    install-ubuntu:
-        description: build script to compile on ubuntu linux
+    install-debian:
+        description: build script to compile DPI dependencies and netcap on debian linux
