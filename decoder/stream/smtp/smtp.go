@@ -15,6 +15,7 @@ package smtp
 
 import (
 	"bytes"
+	"github.com/dreadl0ck/netcap/decoder/core"
 	"strconv"
 
 	"go.uber.org/zap"
@@ -59,4 +60,5 @@ var Decoder = decoder.NewStreamDecoder(
 		return smtpLog.Sync()
 	},
 	&smtpReader{},
+	core.TCP,
 )

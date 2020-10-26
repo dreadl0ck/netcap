@@ -15,6 +15,7 @@ package pop3
 
 import (
 	"bytes"
+	"github.com/dreadl0ck/netcap/decoder/core"
 
 	"go.uber.org/zap"
 
@@ -48,6 +49,7 @@ var Decoder = decoder.NewStreamDecoder(
 		return pop3Log.Sync()
 	},
 	&pop3Reader{},
+	core.TCP,
 )
 
 var (

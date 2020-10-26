@@ -387,9 +387,11 @@ func (t *tcpConnection) decode() {
 
 	// make a good first guess based on the destination port of the connection
 	if sd, exists := stream.DefaultStreamDecoders[utils.DecodePort(t.server.Transport().Dst().Raw())]; exists {
-		if sd.GetReaderFactory() != nil && sd.CanDecode(cr, sr) {
-			t.decoder = sd.GetReaderFactory().New(conv)
-			found = true
+		if sd.Transport() == core.TCP || sd.Transport() == core.All {
+			if sd.GetReaderFactory() != nil && sd.CanDecode(cr, sr) {
+				t.decoder = sd.GetReaderFactory().New(conv)
+				found = true
+			}
 		}
 	}
 
@@ -397,9 +399,11 @@ func (t *tcpConnection) decode() {
 	// try all available decoders and use the first one that matches
 	if !found {
 		for _, sd := range stream.DefaultStreamDecoders {
-			if sd.GetReaderFactory() != nil && sd.CanDecode(cr, sr) {
-				t.decoder = sd.GetReaderFactory().New(conv)
-				break
+			if sd.Transport() == core.TCP || sd.Transport() == core.All {
+				if sd.GetReaderFactory() != nil && sd.CanDecode(cr, sr) {
+					t.decoder = sd.GetReaderFactory().New(conv)
+					break
+				}
 			}
 		}
 	}

@@ -53,6 +53,8 @@ type (
 
 		// factory for stream readers
 		factory core.StreamDecoderFactory
+
+		typ core.TransportProtocol
 	}
 )
 
@@ -65,6 +67,7 @@ func NewStreamDecoder(
 	canDecode func(client, server []byte) bool,
 	deinit func(*StreamDecoder) error,
 	factory core.StreamDecoderFactory,
+	typ core.TransportProtocol,
 ) *StreamDecoder {
 	return &StreamDecoder{
 		Name:        name,
@@ -74,6 +77,7 @@ func NewStreamDecoder(
 		Description: description,
 		canDecode:   canDecode,
 		factory:     factory,
+		typ:         typ,
 	}
 }
 
@@ -150,4 +154,8 @@ func (sd *StreamDecoder) NumRecords() int64 {
 // to determine whether the decoder can understand the protocol.
 func (sd *StreamDecoder) CanDecode(client []byte, server []byte) bool {
 	return sd.canDecode(client, server)
+}
+
+func (sd *StreamDecoder) Transport() core.TransportProtocol {
+	return sd.typ
 }

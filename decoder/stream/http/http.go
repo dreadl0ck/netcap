@@ -16,6 +16,7 @@ package http
 import (
 	"bytes"
 	"compress/gzip"
+	"github.com/dreadl0ck/netcap/decoder/core"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -52,6 +53,7 @@ var Decoder = decoder.NewStreamDecoder(
 		return httpLog.Sync()
 	},
 	&httpReader{},
+	core.All,
 )
 
 const keyUnknownParam = "unknown"

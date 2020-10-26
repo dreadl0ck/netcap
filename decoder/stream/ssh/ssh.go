@@ -15,6 +15,7 @@ package ssh
 
 import (
 	"bytes"
+	"github.com/dreadl0ck/netcap/decoder/core"
 
 	"go.uber.org/zap"
 
@@ -47,6 +48,7 @@ var Decoder = decoder.NewStreamDecoder(
 		return sshLog.Sync()
 	},
 	&sshReader{},
+	core.TCP,
 )
 
 var (
