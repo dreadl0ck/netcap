@@ -410,7 +410,7 @@ func generateSizesSVG(newBase string, newPath string, color string) {
 		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
 	}
-	defer func (){
+	defer func() {
 		errClose := svgFile.Close()
 		if errClose != nil {
 			fmt.Println(errClose)
@@ -553,7 +553,7 @@ func generateAuditRecordIconSVG(text string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func (){
+	defer func() {
 		errClose := file.Close()
 		if errClose != nil {
 			fmt.Println(errClose)

@@ -190,9 +190,11 @@ func (u *udpStream) decode() {
 
 	// make a good first guess based on the destination port of the connection
 	if sd, exists := stream.DefaultStreamDecoders[utils.DecodePort(u.data[0].Transport().Dst().Raw())]; exists {
-		if sd.GetReaderFactory() != nil && sd.CanDecode(cr, sr) {
-			u.decoder = sd.GetReaderFactory().New(conv)
-			found = true
+		if sd.Transport() == core.UDP || sd.Transport() == core.All {
+			if sd.GetReaderFactory() != nil && sd.CanDecode(cr, sr) {
+				u.decoder = sd.GetReaderFactory().New(conv)
+				found = true
+			}
 		}
 	}
 
@@ -200,9 +202,11 @@ func (u *udpStream) decode() {
 	// try all available decoders and use the first one that matches
 	if !found {
 		for _, sd := range stream.DefaultStreamDecoders {
-			if sd.GetReaderFactory() != nil && sd.CanDecode(cr, sr) {
-				u.decoder = sd.GetReaderFactory().New(conv)
-				break
+			if sd.Transport() == core.UDP || sd.Transport() == core.All {
+				if sd.GetReaderFactory() != nil && sd.CanDecode(cr, sr) {
+					u.decoder = sd.GetReaderFactory().New(conv)
+					break
+				}
 			}
 		}
 	}

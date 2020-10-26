@@ -5,7 +5,7 @@ var (
 	AllDecoderNames = make(map[string]struct{})
 
 	// ErrorMap contains error during reassembly at runtime.
-	ErrorMap        *AtomicCounterMap
+	ErrorMap *AtomicCounterMap
 )
 
 // SetErrorMap sets the map for tracking errors
