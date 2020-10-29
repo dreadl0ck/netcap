@@ -34,8 +34,6 @@ var (
 	// LocalDNS controls whether the DNS names shall be resolved locally
 	// without contacting a nameserver.
 	LocalDNS = true
-
-	ipProfileDecoderInstance *packetDecoder
 )
 
 // atomicIPProfileMap contains all connections and provides synchronized access.
@@ -69,18 +67,16 @@ var ipProfileDecoder = newPacketDecoder(
 	"IPProfile",
 	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
 	func(d *packetDecoder) error {
-		ipProfileDecoderInstance = d
-
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(e *packetDecoder) error {
+	func(d *packetDecoder) error {
 		// flush writer
 		for _, item := range ipProfiles.Items {
 			item.Lock()
-			writeIPProfile(item.IPProfile)
+			d.writeIPProfile(item.IPProfile)
 			item.Unlock()
 		}
 
@@ -347,14 +343,14 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 }
 
 // writeIPProfile writes the ip profile.
-func writeIPProfile(i *types.IPProfile) {
+func (d *packetDecoder) writeIPProfile(i *types.IPProfile) {
 	if conf.ExportMetrics {
 		i.Inc()
 	}
 
-	atomic.AddInt64(&ipProfileDecoderInstance.NumRecordsWritten, 1)
+	atomic.AddInt64(&d.NumRecordsWritten, 1)
 
-	err := ipProfileDecoderInstance.Writer.Write(i)
+	err := d.Writer.Write(i)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}
