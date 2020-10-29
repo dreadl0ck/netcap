@@ -53,7 +53,6 @@ var (
 	DeviceProfiles = &atomicDeviceProfileMap{
 		Items: make(map[string]*DeviceProfile),
 	}
-	deviceProfileDecoderInstance *packetDecoder
 	deviceProfiles               int64
 
 	// flags for flushing intervals - no flushing for now.
@@ -177,8 +176,6 @@ var deviceProfileDecoder = newPacketDecoder(
 	"DeviceProfile",
 	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
 	func(d *packetDecoder) error {
-		deviceProfileDecoderInstance = d
-
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
@@ -187,11 +184,11 @@ var deviceProfileDecoder = newPacketDecoder(
 
 		return nil
 	},
-	func(e *packetDecoder) error {
+	func(d *packetDecoder) error {
 		// flush writer
 		for _, item := range DeviceProfiles.Items {
 			item.Lock()
-			writeDeviceProfile(item.DeviceProfile)
+			d.writeDeviceProfile(item.DeviceProfile)
 			item.Unlock()
 		}
 
@@ -200,14 +197,14 @@ var deviceProfileDecoder = newPacketDecoder(
 )
 
 // writeDeviceProfile writes the profile.
-func writeDeviceProfile(d *types.DeviceProfile) {
+func (d *packetDecoder) writeDeviceProfile(dp *types.DeviceProfile) {
 	if conf.ExportMetrics {
-		d.Inc()
+		dp.Inc()
 	}
 
-	atomic.AddInt64(&deviceProfileDecoderInstance.NumRecordsWritten, 1)
+	atomic.AddInt64(&d.NumRecordsWritten, 1)
 
-	err := deviceProfileDecoderInstance.Writer.Write(d)
+	err := d.Writer.Write(dp)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}
