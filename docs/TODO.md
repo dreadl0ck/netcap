@@ -1,7 +1,11 @@
 # TODOs
 
-- decoders: refactor singleton pattern and provide an initializer function instead
+- connection flushing
+- flushing of UDP and TCP streams
+
+- decoders: refactor singleton pattern and provide an initializer function instead?
 - stream decoders: add zap logger to decoder structure?
+- register decoder during creation?
 
 - refactor pkg structure?
     - packet.NewDecoder(...)
@@ -9,14 +13,15 @@
     - decoder.InitStreamDecoders()
     - decoder.InitPacketDecoders()
     
+- integrate https://github.com/kitabisa/teler-resources
+
 - more SMTP transforms
 - more DNS transforms / DNSSEC
 - add intel hyperscan regex support, see https://github.com/intel-go/nff-go/blob/master/examples/dpi/main/dpi.go 
 
 - add default port and transport protocol during stream decoder creation
-- register decoder during creation?
 - regenerate from latest nmap-services database and automate
-- port CIP, ENIP and ModbusTCP decoding to stream decoders, add to docs that decodeOpt datagrams must be set
+- port CIP, ENIP and ModbusTCP decoding to stream decoders, add to docs that decodeOpt datagrams must be set for the packet based decoders to be called
 
 - database source: set default for windows to home directory
 - dbs update script
@@ -27,10 +32,6 @@ last CC maxmind geolite2 from 27 Dec 2019 (can be distributed):
 - https://web.archive.org/web/20191227182209/http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
 - https://web.archive.org/web/20191227182527/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz
 
-- add UDP stream decoder support
-- flushing of UDP and TCP streams
-
-- drag n drop does not trigger the regex conversion on macOS
 - two entities: different value for property - will be combined and the last value for the property will be used?
 - to files for content type: remove encodings after ; in graph view
 - content types: add ip to label name for content types seen for a specific host VS general
@@ -60,7 +61,6 @@ ubuntu move ida to path that maltego will find:
 - start capture process: spawn instance in current process to allow cancelling it via maltego UI
 - dump config in format from flag pkg and write into separate file
 
-- no need to split logic for pcap and pcapng collection anymore, since ZeroCopyReadPacketData is no longer used (comments: "logic is split for both types here")
 - move checkArgs() to utils pkg and use in other cli tools 
 
 - update docs: connection timeouts and flush intervals
