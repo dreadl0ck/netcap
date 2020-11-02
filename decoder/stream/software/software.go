@@ -15,7 +15,6 @@ package software
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -23,31 +22,27 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Jeffail/gabs/v2"
 	"github.com/ua-parser/uap-go/uaparser"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/db"
-	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
-	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/logger"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var softwareLog = zap.NewNop()
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewAbstractDecoder(
-	types.Type_NC_Software,
-	"Software",
-	"A software product that was observed on the network",
-	func(d *decoder.AbstractDecoder) error {
+var Decoder = &decoder.AbstractDecoder{
+	Type:        types.Type_NC_Software,
+	Name:        "Software",
+	Description: "A software product that was observed on the network",
+	PostInit: func(d *decoder.AbstractDecoder) error {
 		var err error
 		softwareLog, _, err = logger.InitZapLogger(
 			decoderconfig.Instance.Out,
@@ -113,7 +108,7 @@ var Decoder = decoder.NewAbstractDecoder(
 
 		return nil
 	},
-	func(e *decoder.AbstractDecoder) error {
+	DeInit: func(e *decoder.AbstractDecoder) error {
 		// TODO: make collecting and dumping unique user agents, server names and header fields configurable
 		//httpStore.Lock()
 		//var rows [][]string
@@ -139,7 +134,7 @@ var Decoder = decoder.NewAbstractDecoder(
 
 		return softwareLog.Sync()
 	},
-)
+}
 
 // header is a HTTP header structure.
 type header struct {
@@ -328,21 +323,6 @@ func ParseUserAgent(ua string) *userAgent {
 	}
 }
 
-// determine vendor name based on product name
-func determineVendor(product string) (vendor string) {
-	switch product {
-	case "Chrome", "Android":
-		vendor = "Google"
-	case "Firefox":
-		vendor = "Mozilla"
-	case "Internet Explorer", "IE":
-		vendor = "Microsoft"
-	case "Safari", "iOS", "macOS":
-		vendor = "Apple"
-	}
-	return vendor
-}
-
 // generic version harvester, scans the payload using a regular expression.
 func softwareHarvester(data []byte, flowIdent string, ts time.Time, service string, dpIdent string, protos []string) (s []*AtomicSoftware) {
 	matches := RegexGenericVersion.FindAll(data, -1)
@@ -372,6 +352,7 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 	return s
 }
 
+// TODO: cleanup
 // tries to determine the kind of software and version
 // based on the provided input data.
 //func whatSoftware(dp *packet.DeviceProfile, i *decoderutils.PacketInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (s []*AtomicSoftware) {
@@ -642,21 +623,6 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 	return s
 }
 
-func makeSoftware(ts int64, product, website, sourceName, sourceData, flowIdent string) *AtomicSoftware {
-	return &AtomicSoftware{
-		Software: &types.Software{
-			Timestamp:  ts,
-			Product:    product,
-			Notes:      "", // TODO: add info from implies field
-			Website:    website,
-			SourceName: sourceName,
-			SourceData: sourceData,
-			Service:    "HTTP",
-			Flows:      []string{flowIdent},
-		},
-	}
-}
-
 // TODO: deprecated - SSH and TLS fingerprinting should be done in the stream decoders from now on.
 // TODO: DPI is already invoked for each packet with the ipProfile decoders.
 // analyzeSoftware tries to identify software based on observations from the data
@@ -802,158 +768,35 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 	}
 }
 
-// newSoftware creates a new device specific profile.
-func newSoftware(i *decoderutils.PacketInfo) *AtomicSoftware {
-	return &AtomicSoftware{
-		Software: &types.Software{
-			Timestamp: i.Timestamp,
-		},
-	}
-}
-
-func updateSoftwareAuditRecord(dp *packet.DeviceProfile, s *AtomicSoftware, i *decoderutils.PacketInfo) {
-	dpIdent := dp.MacAddr
-	if dp.DeviceManufacturer != "" {
-		dpIdent += " <" + dp.DeviceManufacturer + ">"
-	}
-
-	s.Lock()
-	for _, pr := range s.DeviceProfiles {
-		if pr == dpIdent {
-			s.Unlock()
-			return
-		}
-	}
-	s.DeviceProfiles = append(s.DeviceProfiles, dpIdent)
-	tl := i.Packet.TransportLayer()
-	if tl != nil {
-		s.Flows = append(s.Flows, utils.CreateFlowIdent(i.SrcIP, tl.TransportFlow().Src().String(), i.DstIP, tl.TransportFlow().Dst().String()))
-	} else {
-		// no transport layer
-		s.Flows = append(s.Flows, i.SrcIP+"->"+i.DstIP)
-	}
-	s.Unlock()
-}
-
-// load JSON database for frontend frameworks from the file system
-func loadCmsDB() error {
-	// read CMS db JSON
-	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "cmsdb.json"))
-	if err != nil {
-		return err
-	}
-
-	// use gabs to parse JSON because some fields have varying types...
-	jsonParsed, err := gabs.ParseJSON(data)
-	if err != nil {
-		return err
-	}
-
-	// parse the contained regexes and add them to the cmsInfo datastructures
-	for framework := range jsonParsed.ChildrenMap() {
-
-		i := new(cmsInfo)
-
-		// fmt.Printf("key: %v, value: %v\n", framework, child.Data().(map[string]interface{}))
-
-		if s, ok := jsonParsed.Path(framework + ".icon").Data().(string); ok {
-			i.Icon = s
-		}
-		if s, ok := jsonParsed.Path(framework + ".cpe").Data().(string); ok {
-			i.Cpe = s
-		}
-
-		if s, ok := jsonParsed.Path(framework + ".headers").Data().(map[string]interface{}); ok {
-
-			i.Headers = make(map[string]*regexp.Regexp)
-
-			// process headers
-			for name, re := range s {
-				// add to map for lookups by name during runtime
-				CMSHeaders[name] = struct{}{}
-
-				// compile the supplied regex
-				r, errCompile := regexp.Compile(fmt.Sprint(re))
-				if errCompile != nil {
-					softwareLog.Info("failed to compile regex from CMS db HEADER",
-						zap.Error(errCompile),
-						zap.String("re", fmt.Sprint(re)),
-						zap.String("framework", framework),
-					)
-				} else {
-					i.Headers[name] = r
-				}
-			}
-		}
-
-		if s, ok := jsonParsed.Path(framework + ".cookies").Data().(map[string]interface{}); ok {
-
-			i.Cookies = make(map[string]*regexp.Regexp)
-
-			// process cookies
-			for name, re := range s {
-				// add to map for lookups by name during runtime
-				CMSCookies[name] = struct{}{}
-
-				// compile the supplied regex
-				r, errCompile := regexp.Compile(fmt.Sprint(re))
-				if errCompile != nil {
-					softwareLog.Info("failed to compile regex from CMS db COOKIE",
-						zap.Error(errCompile),
-						zap.String("re", fmt.Sprint(re)),
-						zap.String("framework", framework),
-					)
-				} else {
-					i.Cookies[name] = r
-				}
-			}
-		}
-
-		if s, ok := jsonParsed.Path(framework + ".js").Data().(map[string]interface{}); ok {
-			m := make(map[string]string)
-			for k, v := range s {
-				m[k] = fmt.Sprint(v)
-			}
-			i.Js = m
-		}
-
-		if s, ok := jsonParsed.Path(framework + ".meta").Data().(map[string]interface{}); ok {
-			m := make(map[string]string)
-			for k, v := range s {
-				m[k] = fmt.Sprint(v)
-			}
-			i.Meta = m
-		}
-
-		if s, ok := jsonParsed.Path(framework + ".website").Data().(string); ok {
-			i.Website = s
-		}
-
-		if s, ok := jsonParsed.Path(framework + ".implies").Data().(string); ok {
-			i.Implies = []string{s}
-		}
-		if s, ok := jsonParsed.Path(framework + ".implies").Data().([]string); ok {
-			i.Implies = s
-		}
-
-		if s, ok := jsonParsed.Path(framework + ".script").Data().(string); ok {
-			i.Script = []string{s}
-		}
-		if s, ok := jsonParsed.Path(framework + ".script").Data().([]string); ok {
-			i.Script = s
-		}
-
-		if s, ok := jsonParsed.Path(framework + ".html").Data().(string); ok {
-			i.HTML = []string{s}
-		}
-		if s, ok := jsonParsed.Path(framework + ".html").Data().([]string); ok {
-			i.HTML = s
-		}
-
-		// spew.Dump(i)
-
-		cmsDB[framework] = i
-	}
-
-	return nil
-}
+//// newSoftware creates a new device specific profile.
+//func newSoftware(i *decoderutils.PacketInfo) *AtomicSoftware {
+//	return &AtomicSoftware{
+//		Software: &types.Software{
+//			Timestamp: i.Timestamp,
+//		},
+//	}
+//}
+//
+//func updateSoftwareAuditRecord(dp *packet.DeviceProfile, s *AtomicSoftware, i *decoderutils.PacketInfo) {
+//	dpIdent := dp.MacAddr
+//	if dp.DeviceManufacturer != "" {
+//		dpIdent += " <" + dp.DeviceManufacturer + ">"
+//	}
+//
+//	s.Lock()
+//	for _, pr := range s.DeviceProfiles {
+//		if pr == dpIdent {
+//			s.Unlock()
+//			return
+//		}
+//	}
+//	s.DeviceProfiles = append(s.DeviceProfiles, dpIdent)
+//	tl := i.Packet.TransportLayer()
+//	if tl != nil {
+//		s.Flows = append(s.Flows, utils.CreateFlowIdent(i.SrcIP, tl.TransportFlow().Src().String(), i.DstIP, tl.TransportFlow().Dst().String()))
+//	} else {
+//		// no transport layer
+//		s.Flows = append(s.Flows, i.SrcIP+"->"+i.DstIP)
+//	}
+//	s.Unlock()
+//}

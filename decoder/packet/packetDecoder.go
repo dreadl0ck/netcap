@@ -46,13 +46,8 @@ var (
 	// ErrInvalidDecoder occurs when a decoder name is unknown during initialization.
 	ErrInvalidDecoder = errors.New("invalid decoder")
 
-	defaultPacketDecoders = []DecoderAPI{
-		tlsClientHelloDecoder,
-		tlsServerHelloDecoder,
-		connDecoder,
-		deviceProfileDecoder,
-		ipProfileDecoder,
-	} // contains all available custom decoders
+	// contains all available custom decoders at runtime
+	defaultPacketDecoders []DecoderAPI
 )
 
 type (
@@ -76,8 +71,8 @@ type (
 		Handler packetDecoderHandler
 
 		// init functions
-		postInit func(*packetDecoder) error
-		deInit   func(*packetDecoder) error
+		PostInit func(*packetDecoder) error
+		DeInit   func(*packetDecoder) error
 
 		// used to keep track of the number of generated audit records
 		NumRecordsWritten int64
@@ -89,7 +84,7 @@ type (
 		Type types.Type
 	}
 
-	// DecoderAPI PacketDecoderAPI describes an interface that all custom decoder need to implement
+	// DecoderAPI PacketDecoderAPI describes an interface that all custom decoders need to implement
 	// this allows to supply a custom structure and maintain state for advanced protocol analysis.
 	DecoderAPI interface {
 		core.DecoderAPI
@@ -113,14 +108,16 @@ func init() {
 
 // newPacketDecoder returns a new packetDecoder instance.
 func newPacketDecoder(t types.Type, name, description string, postinit func(*packetDecoder) error, handler packetDecoderHandler, deinit func(*packetDecoder) error) *packetDecoder {
-	return &packetDecoder{
+	d := &packetDecoder{
 		Name:        name,
 		Handler:     handler,
-		deInit:      deinit,
-		postInit:    postinit,
+		DeInit:      deinit,
+		PostInit:    postinit,
 		Type:        t,
 		Description: description,
 	}
+	defaultPacketDecoders = append(defaultPacketDecoders, d)
+	return d
 }
 
 // InitPacketDecoders initializes all packet decoders.
@@ -213,7 +210,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 		d.SetWriter(w)
 
 		// call postinit func if set
-		err = d.PostInit()
+		err = d.PostInitFunc()
 		if err != nil {
 			if c.IgnoreDecoderInitErrors {
 				fmt.Println(ansi.Red, err, ansi.Reset)
@@ -239,22 +236,22 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 
 // PacketDecoderAPI interface implementation
 
-// PostInit is called after the decoder has been initialized.
-func (pd *packetDecoder) PostInit() error {
-	if pd.postInit == nil {
+// PostInitFunc is called after the decoder has been initialized.
+func (pd *packetDecoder) PostInitFunc() error {
+	if pd.PostInit == nil {
 		return nil
 	}
 
-	return pd.postInit(pd)
+	return pd.PostInit(pd)
 }
 
-// DeInit is called prior to teardown.
-func (pd *packetDecoder) DeInit() error {
-	if pd.deInit == nil {
+// DeInitFunc is called prior to teardown.
+func (pd *packetDecoder) DeInitFunc() error {
+	if pd.DeInit == nil {
 		return nil
 	}
 
-	return pd.deInit(pd)
+	return pd.DeInit(pd)
 }
 
 // GetName returns the name of the decoder.
@@ -321,7 +318,7 @@ func (pd *packetDecoder) Decode(p gopacket.Packet) error {
 
 // Destroy closes and flushes all writers and calls deinit if set.
 func (pd *packetDecoder) Destroy() (name string, size int64) {
-	err := pd.DeInit()
+	err := pd.DeInitFunc()
 	if err != nil {
 		panic(err)
 	}

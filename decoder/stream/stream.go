@@ -2,6 +2,10 @@ package stream
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/stream/http"
+	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
+	"github.com/dreadl0ck/netcap/decoder/stream/smtp"
+	"github.com/dreadl0ck/netcap/decoder/stream/ssh"
 	"strings"
 	"time"
 
@@ -12,10 +16,6 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 
-	"github.com/dreadl0ck/netcap/decoder/stream/http"
-	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
-	"github.com/dreadl0ck/netcap/decoder/stream/smtp"
-	"github.com/dreadl0ck/netcap/decoder/stream/ssh"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	netio "github.com/dreadl0ck/netcap/io"
 )
@@ -137,7 +137,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		d.SetWriter(w)
 
 		// call postinit func if set
-		err = d.PostInit()
+		err = d.PostInitFunc()
 		if err != nil {
 			if c.IgnoreDecoderInitErrors {
 				fmt.Println(ansi.Red, err, ansi.Reset)

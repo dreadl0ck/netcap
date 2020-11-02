@@ -83,9 +83,9 @@ func Run() {
 		//fmt.Println(final, len(final), len(data))
 
 		var (
-			buf = gopacket.NewSerializeBuffer()
-			opts = gopacket.SerializeOptions{}
-			mac, _ = net.ParseMAC("00:00:5e:00:53:01")
+			buf          = gopacket.NewSerializeBuffer()
+			opts         = gopacket.SerializeOptions{}
+			mac, _       = net.ParseMAC("00:00:5e:00:53:01")
 			packetLayers = []gopacket.SerializableLayer{
 				&layers.Ethernet{
 					BaseLayer:    layers.BaseLayer{},
@@ -116,39 +116,39 @@ func Run() {
 
 		if *flagMkPacket == "udp" {
 			packetLayers = append(packetLayers, &layers.UDP{
-					BaseLayer: layers.BaseLayer{},
-					SrcPort:   52,
-					DstPort:   53,
-					Length:    uint16(len(data)),
-					Checksum:  0,
-				},
+				BaseLayer: layers.BaseLayer{},
+				SrcPort:   52,
+				DstPort:   53,
+				Length:    uint16(len(data)),
+				Checksum:  0,
+			},
 				gopacket.Payload(data),
 			)
 		}
 
 		if *flagMkPacket == "tcp" {
 			packetLayers = append(packetLayers, &layers.TCP{
-					BaseLayer:  layers.BaseLayer{},
-					SrcPort:    8000,
-					DstPort:    8001,
-					Seq:        0,
-					Ack:        0,
-					DataOffset: 0,
-					FIN:        false,
-					SYN:        false,
-					RST:        false,
-					PSH:        false,
-					ACK:        false,
-					URG:        false,
-					ECE:        false,
-					CWR:        false,
-					NS:         false,
-					Window:     0,
-					Checksum:   0,
-					Urgent:     0,
-					Options:    nil,
-					Padding:    nil,
-				},
+				BaseLayer:  layers.BaseLayer{},
+				SrcPort:    8000,
+				DstPort:    8001,
+				Seq:        0,
+				Ack:        0,
+				DataOffset: 0,
+				FIN:        false,
+				SYN:        false,
+				RST:        false,
+				PSH:        false,
+				ACK:        false,
+				URG:        false,
+				ECE:        false,
+				CWR:        false,
+				NS:         false,
+				Window:     0,
+				Checksum:   0,
+				Urgent:     0,
+				Options:    nil,
+				Padding:    nil,
+			},
 				gopacket.Payload(data),
 			)
 		}

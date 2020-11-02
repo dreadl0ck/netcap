@@ -36,8 +36,8 @@ type (
 		Icon string
 
 		// init functions
-		postInit func(decoder *StreamDecoder) error
-		deInit   func(decoder *StreamDecoder) error
+		PostInit func(decoder *StreamDecoder) error
+		DeInit   func(decoder *StreamDecoder) error
 
 		// used to keep track of the number of generated audit records
 		NumRecordsWritten int64
@@ -49,61 +49,38 @@ type (
 		Type types.Type
 
 		// canDecode checks whether the decoder can parse the protocol
-		canDecode func(client []byte, server []byte) bool
+		CanDecode func(client []byte, server []byte) bool
 
 		// factory for stream readers
-		factory core.StreamDecoderFactory
+		Factory core.StreamDecoderFactory
 
-		typ core.TransportProtocol
+		Typ core.TransportProtocol
 	}
 )
-
-// NewStreamDecoder returns a new PacketDecoder instance.
-func NewStreamDecoder(
-	t types.Type,
-	name string,
-	description string,
-	postinit func(*StreamDecoder) error,
-	canDecode func(client, server []byte) bool,
-	deinit func(*StreamDecoder) error,
-	factory core.StreamDecoderFactory,
-	typ core.TransportProtocol,
-) *StreamDecoder {
-	return &StreamDecoder{
-		Name:        name,
-		deInit:      deinit,
-		postInit:    postinit,
-		Type:        t,
-		Description: description,
-		canDecode:   canDecode,
-		factory:     factory,
-		typ:         typ,
-	}
-}
 
 // StreamDecoderAPI interface implementation
 
 // GetReaderFactory returns a new stream reader for the decoder type.
 func (sd *StreamDecoder) GetReaderFactory() core.StreamDecoderFactory {
-	return sd.factory
+	return sd.Factory
 }
 
-// PostInit is called after the decoder has been initialized.
-func (sd *StreamDecoder) PostInit() error {
-	if sd.postInit == nil {
+// PostInitFunc is called after the decoder has been initialized.
+func (sd *StreamDecoder) PostInitFunc() error {
+	if sd.PostInit == nil {
 		return nil
 	}
 
-	return sd.postInit(sd)
+	return sd.PostInit(sd)
 }
 
-// DeInit is called prior to teardown.
-func (sd *StreamDecoder) DeInit() error {
-	if sd.deInit == nil {
+// DeInitFunc is called prior to teardown.
+func (sd *StreamDecoder) DeInitFunc() error {
+	if sd.DeInit == nil {
 		return nil
 	}
 
-	return sd.deInit(sd)
+	return sd.DeInit(sd)
 }
 
 // GetName returns the name of the
@@ -128,7 +105,7 @@ func (sd *StreamDecoder) GetDescription() string {
 
 // Destroy closes and flushes all writers and calls deinit if set.
 func (sd *StreamDecoder) Destroy() (name string, size int64) {
-	err := sd.DeInit()
+	err := sd.DeInitFunc()
 	if err != nil {
 		panic(err)
 	}
@@ -150,12 +127,12 @@ func (sd *StreamDecoder) NumRecords() int64 {
 	return atomic.LoadInt64(&sd.NumRecordsWritten)
 }
 
-// CanDecode invokes the canDecode function of the underlying decoder
+// CanDecodeStream invokes the canDecode function of the underlying decoder
 // to determine whether the decoder can understand the protocol.
-func (sd *StreamDecoder) CanDecode(client []byte, server []byte) bool {
-	return sd.canDecode(client, server)
+func (sd *StreamDecoder) CanDecodeStream(client []byte, server []byte) bool {
+	return sd.CanDecode(client, server)
 }
 
 func (sd *StreamDecoder) Transport() core.TransportProtocol {
-	return sd.typ
+	return sd.Typ
 }

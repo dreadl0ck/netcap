@@ -53,7 +53,7 @@ var (
 	DeviceProfiles = &atomicDeviceProfileMap{
 		Items: make(map[string]*DeviceProfile),
 	}
-	deviceProfiles               int64
+	deviceProfiles int64
 
 	// flags for flushing intervals - no flushing for now.
 	// flagProfileFlushInterval = flag.Int("profile-flush-interval", 10000, "flush connections every X flows").

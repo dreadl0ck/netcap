@@ -3,6 +3,14 @@
 - connection flushing
 - flushing of UDP and TCP streams
 
+- decoders: make fields private?
+    
+    // used to keep track of the number of generated audit records
+    NumRecordsWritten int64
+
+    // Writer for audit records
+    Writer netio.AuditRecordWriter
+
 - decoders: refactor singleton pattern and provide an initializer function instead?
 - stream decoders: add zap logger to decoder structure?
 - register decoder during creation?

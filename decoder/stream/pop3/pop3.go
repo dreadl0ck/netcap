@@ -16,7 +16,6 @@ package pop3
 import (
 	"bytes"
 	"github.com/dreadl0ck/netcap/decoder/core"
-
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder"
@@ -26,11 +25,11 @@ import (
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewStreamDecoder(
-	types.Type_NC_POP3,
-	servicePOP3,
-	"The POP3 protocol is used to fetch emails from a mail server",
-	func(sd *decoder.StreamDecoder) (err error) {
+var Decoder = &decoder.StreamDecoder{
+	Type:        types.Type_NC_POP3,
+	Name:        servicePOP3,
+	Description: "The POP3 protocol is used to fetch emails from a mail server",
+	PostInit: func(sd *decoder.StreamDecoder) (err error) {
 		pop3Log, _, err = logging.InitZapLogger(
 			decoderconfig.Instance.Out,
 			"pop3",
@@ -42,15 +41,15 @@ var Decoder = decoder.NewStreamDecoder(
 		pop3LogSugared = pop3Log.Sugar()
 		return nil
 	},
-	func(client, server []byte) bool {
+	CanDecode: func(client, server []byte) bool {
 		return bytes.Contains(server, pop3Ident)
 	},
-	func(sd *decoder.StreamDecoder) error {
+	DeInit: func(sd *decoder.StreamDecoder) error {
 		return pop3Log.Sync()
 	},
-	&pop3Reader{},
-	core.TCP,
-)
+	Factory: &pop3Reader{},
+	Typ:     core.TCP,
+}
 
 var (
 	pop3Ident      = []byte("POP server ready")

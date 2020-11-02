@@ -2,6 +2,13 @@ package stream
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
+	"github.com/dreadl0ck/netcap/decoder/stream/file"
+	"github.com/dreadl0ck/netcap/decoder/stream/mail"
+	"github.com/dreadl0ck/netcap/decoder/stream/service"
+	"github.com/dreadl0ck/netcap/decoder/stream/software"
+	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"strings"
 	"time"
 
@@ -11,13 +18,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
-	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
-	"github.com/dreadl0ck/netcap/decoder/stream/file"
-	"github.com/dreadl0ck/netcap/decoder/stream/mail"
-	"github.com/dreadl0ck/netcap/decoder/stream/service"
-	"github.com/dreadl0ck/netcap/decoder/stream/software"
-	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
+	//"github.com/dreadl0ck/netcap/decoder/stream/credentials"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	netio "github.com/dreadl0ck/netcap/io"
 )
@@ -142,7 +143,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		d.SetWriter(w)
 
 		// call postinit func if set
-		err = d.PostInit()
+		err = d.PostInitFunc()
 		if err != nil {
 			if c.IgnoreDecoderInitErrors {
 				fmt.Println(ansi.Red, err, ansi.Reset)
@@ -161,20 +162,16 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		decoders = append(decoders, d)
 	}
 
-	if isAbstractDecoderLoaded(credentials.DecoderName) {
-		credentials.UseHarvesters = true
-	}
-
 	return decoders, nil
 }
 
 // isAbstractDecoderLoaded checks if an abstract decoder is loaded.
-func isAbstractDecoderLoaded(name string) bool {
-	for _, e := range defaultAbstractDecoders {
-		if e.GetName() == name {
-			return true
-		}
-	}
-
-	return false
-}
+//func isAbstractDecoderLoaded(name string) bool {
+//	for _, e := range defaultAbstractDecoders {
+//		if e.GetName() == name {
+//			return true
+//		}
+//	}
+//
+//	return false
+//}
