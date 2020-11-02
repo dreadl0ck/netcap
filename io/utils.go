@@ -148,16 +148,12 @@ func Dump(w *os.File, c DumpConfig) error {
 		c.Structured = false
 	}
 
-	if errFileHeader != nil {
-		return errFileHeader
-	}
-
 	types.Select(record, c.Selection)
 	types.UTC = c.UTC
 
 	if !c.Structured && !c.Table && !c.JSON {
 		if p, ok := record.(types.AuditRecord); ok {
-			_, _ = w.WriteString(strings.Join(p.CSVHeader(), c.Separator))
+			_, _ = w.WriteString(strings.Join(p.CSVHeader(), c.Separator) + "\n")
 		} else {
 			return fmt.Errorf("%w, invalid type: %#v", errMissingInterface, record)
 		}
