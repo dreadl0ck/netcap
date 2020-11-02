@@ -131,8 +131,12 @@ func Dump(w *os.File, c DumpConfig) error {
 		c.CSV = true
 	}
 
+	header, errFileHeader := r.ReadHeader()
+	if errFileHeader != nil {
+		return errFileHeader
+	}
+
 	var (
-		header, errFileHeader = r.ReadHeader()
 		record                = InitRecord(header.Type)
 		// rows for table print
 		rows     [][]string
