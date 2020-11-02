@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.LinkLayerDiscoveryAuditRecords" displayName="LinkLayerDiscoveryAuditRecords" displayNamePlural="LinkLayerDiscoveryAuditRecords" description="An archive of LinkLayerDiscovery audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_teal" largeIconResource="Netcap/insert_drive_file_teal" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.LinkLayerDiscoveryAuditRecords" displayName="LinkLayerDiscoveryAuditRecords" displayNamePlural="LinkLayerDiscoveryAuditRecords" description="An archive of LinkLayerDiscovery audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_sienna" largeIconResource="Netcap/insert_drive_file_sienna" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.linklayerdiscoveryauditrecords" displayValue="properties.linklayerdiscoveryauditrecords">
   <Groups></Groups>
   <Fields>

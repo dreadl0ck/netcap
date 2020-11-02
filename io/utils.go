@@ -137,7 +137,7 @@ func Dump(w *os.File, c DumpConfig) error {
 	}
 
 	var (
-		record                = InitRecord(header.Type)
+		record = InitRecord(header.Type)
 		// rows for table print
 		rows     [][]string
 		colorMap map[string]string

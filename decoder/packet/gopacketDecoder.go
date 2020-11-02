@@ -35,62 +35,7 @@ import (
 )
 
 // contains all available gopacket decoders.
-var defaultGoPacketDecoders = []*GoPacketDecoder{
-	tcpDecoder,
-	udpDecoder,
-	ipv4Decoder,
-	ipv6Decoder,
-	dhcpv4Decoder,
-	dhcpv6Decoder,
-	icmpv4Decoder,
-	icmpv6Decoder,
-	icmpv6EchoDecoder,
-	icmpv6NeighborSolicitationDecoder,
-	icmpv6RouterSolicitationDecoder,
-	dnsDecoder,
-	arpDecoder,
-	ethernetDecoder,
-	dot1QDecoder,
-	dot11Decoder,
-	ntpDecoder,
-	sipDecoder,
-	igmpDecoder,
-	llcDecoder,
-	ipv6HopByHopDecoder,
-	sctpDecoder,
-	snapDecoder,
-	linkLayerDiscoveryDecoder,
-	icmpv6NeighborAdvertisementDecoder,
-	icmpv6RouterAdvertisementDecoder,
-	ethernetCTPDecoder,
-	ethernetCTPReplyDecoder,
-	linkLayerDiscoveryInfoDecoder,
-	ipSecAHDecoder,
-	ipSecESPDecoder,
-	geneveDecoder,
-	ip6FragmentDecoder,
-	vxlanDecoder,
-	usbDecoder,
-	lcmDecoder,
-	mplsDecoder,
-	modbusDecoder,
-	ospfv2Decoder,
-	ospfv3Decoder,
-	bfdDecoder,
-	greDecoder,
-	fddiDecoder,
-	eapDecoder,
-	vrrpv2Decoder,
-	eapolDecoder,
-	eapolkeyDecoder,
-	ciscoDiscoveryDecoder,
-	ciscoDiscoveryInfoDecoder,
-	usbRequestBlockSetupDecoder,
-	nortelDiscoveryDecoder,
-	cipDecoder,
-	ethernetIPDecoder,
-	diameterDecoder,
-}
+var defaultGoPacketDecoders []*GoPacketDecoder
 
 type (
 	// goPacketDecoderHandler is the handler function for a layer encoder.
@@ -233,12 +178,14 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 
 // newGoPacketDecoder returns a new GoPacketDecoder instance.
 func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string, handler goPacketDecoderHandler) *GoPacketDecoder {
-	return &GoPacketDecoder{
+	d := &GoPacketDecoder{
 		Layer:       lt,
 		Handler:     handler,
 		Type:        nt,
 		Description: description,
 	}
+	defaultGoPacketDecoders = append(defaultGoPacketDecoders, d)
+	return d
 }
 
 // Decode is called for each layer

@@ -41,6 +41,7 @@ import (
 
 // Run parses the subcommand flags and handles the arguments.
 func Run() {
+
 	// parse commandline flags
 	fs.Usage = printUsage
 

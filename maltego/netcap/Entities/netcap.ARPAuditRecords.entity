@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.ARPAuditRecords" displayName="ARPAuditRecords" displayNamePlural="ARPAuditRecords" description="An archive of ARP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_lawngreen" largeIconResource="Netcap/insert_drive_file_lawngreen" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.ARPAuditRecords" displayName="ARPAuditRecords" displayNamePlural="ARPAuditRecords" description="An archive of ARP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_red" largeIconResource="Netcap/insert_drive_file_red" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.arpauditrecords" displayValue="properties.arpauditrecords">
   <Groups></Groups>
   <Fields>

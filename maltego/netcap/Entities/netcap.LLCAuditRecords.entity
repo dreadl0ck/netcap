@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.LLCAuditRecords" displayName="LLCAuditRecords" displayNamePlural="LLCAuditRecords" description="An archive of LLC audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_firebrick" largeIconResource="Netcap/insert_drive_file_firebrick" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.LLCAuditRecords" displayName="LLCAuditRecords" displayNamePlural="LLCAuditRecords" description="An archive of LLC audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_saddlebrown" largeIconResource="Netcap/insert_drive_file_saddlebrown" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.llcauditrecords" displayValue="properties.llcauditrecords">
   <Groups></Groups>
   <Fields>

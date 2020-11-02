@@ -16,7 +16,6 @@ package ssh
 import (
 	"bytes"
 	"github.com/dreadl0ck/netcap/decoder/core"
-
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder"
@@ -28,11 +27,11 @@ import (
 var sshLog = zap.NewNop()
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewStreamDecoder(
-	types.Type_NC_SSH,
-	serviceSSH,
-	"The Secure Shell Protocol allows controlling remote machines over an encrypted connection",
-	func(d *decoder.StreamDecoder) error {
+var Decoder = &decoder.StreamDecoder{
+	Type:        types.Type_NC_SSH,
+	Name:        serviceSSH,
+	Description: "The Secure Shell Protocol allows controlling remote machines over an encrypted connection",
+	PostInit: func(d *decoder.StreamDecoder) error {
 		var err error
 		sshLog, _, err = logging.InitZapLogger(
 			decoderconfig.Instance.Out,
@@ -41,15 +40,15 @@ var Decoder = decoder.NewStreamDecoder(
 		)
 		return err
 	},
-	func(client, server []byte) bool {
+	CanDecode: func(client, server []byte) bool {
 		return bytes.Contains(server, sshServiceName)
 	},
-	func(sd *decoder.StreamDecoder) error {
+	DeInit: func(sd *decoder.StreamDecoder) error {
 		return sshLog.Sync()
 	},
-	&sshReader{},
-	core.TCP,
-)
+	Factory: &sshReader{},
+	Typ:     core.TCP,
+}
 
 var (
 	serviceSSH     = "SSH"

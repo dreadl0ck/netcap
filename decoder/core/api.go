@@ -8,11 +8,11 @@ import (
 // DecoderAPI describes functionality of a decoder.
 type DecoderAPI interface {
 
-	// PostInit is called after the decoder has been initialized
-	PostInit() error
+	// PostInitFunc is called after the decoder has been initialized
+	PostInitFunc() error
 
-	// DeInit is called prior to teardown
-	DeInit() error
+	// DeInitFunc is called prior to teardown
+	DeInitFunc() error
 
 	// GetName returns the name of the decoder
 	GetName() string

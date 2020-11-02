@@ -13,8 +13,8 @@ const (
 type StreamDecoderAPI interface {
 	DecoderAPI
 
-	// CanDecode determines if this decoder can understand the protocol used
-	CanDecode(client []byte, server []byte) bool
+	// CanDecodeStream determines if this decoder can understand the protocol used
+	CanDecodeStream(client []byte, server []byte) bool
 
 	// GetReaderFactory returns a factory for processing streams of the current encoder
 	GetReaderFactory() StreamDecoderFactory

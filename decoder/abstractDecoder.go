@@ -35,8 +35,8 @@ type (
 		Icon string
 
 		// init functions
-		postInit func(decoder *AbstractDecoder) error
-		deInit   func(decoder *AbstractDecoder) error
+		PostInit func(decoder *AbstractDecoder) error
+		DeInit   func(decoder *AbstractDecoder) error
 
 		// used to keep track of the number of generated audit records
 		NumRecordsWritten int64
@@ -49,41 +49,24 @@ type (
 	}
 )
 
-// NewAbstractDecoder returns a new PacketDecoder instance.
-func NewAbstractDecoder(
-	t types.Type,
-	name string,
-	description string,
-	postinit func(*AbstractDecoder) error,
-	deinit func(*AbstractDecoder) error,
-) *AbstractDecoder {
-	return &AbstractDecoder{
-		Name:        name,
-		deInit:      deinit,
-		postInit:    postinit,
-		Type:        t,
-		Description: description,
-	}
-}
-
 // CoreDecoderAPI interface implementation
 
-// PostInit is called after the decoder has been initialized.
-func (sd *AbstractDecoder) PostInit() error {
-	if sd.postInit == nil {
+// PostInitFunc is called after the decoder has been initialized.
+func (sd *AbstractDecoder) PostInitFunc() error {
+	if sd.PostInit == nil {
 		return nil
 	}
 
-	return sd.postInit(sd)
+	return sd.PostInit(sd)
 }
 
-// DeInit is called prior to teardown.
-func (sd *AbstractDecoder) DeInit() error {
-	if sd.deInit == nil {
+// DeInitFunc is called prior to teardown.
+func (sd *AbstractDecoder) DeInitFunc() error {
+	if sd.DeInit == nil {
 		return nil
 	}
 
-	return sd.deInit(sd)
+	return sd.DeInit(sd)
 }
 
 // GetName returns the name of the
@@ -108,7 +91,7 @@ func (sd *AbstractDecoder) GetDescription() string {
 
 // Destroy closes and flushes all writers and calls deinit if set.
 func (sd *AbstractDecoder) Destroy() (name string, size int64) {
-	err := sd.DeInit()
+	err := sd.DeInitFunc()
 	if err != nil {
 		panic(err)
 	}

@@ -14,83 +14,12 @@
 package service
 
 import (
-	"strings"
-	"sync"
-
-	"go.uber.org/zap"
-
 	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	logging "github.com/dreadl0ck/netcap/logger"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"go.uber.org/zap"
 )
-
-type service struct {
-	*types.Service
-	sync.Mutex
-}
-
-// atomicDeviceProfileMap contains all connections and provides synchronized access.
-type atomicServiceMap struct {
-	// map server IP + Port to service
-	Items map[string]*service
-	sync.Mutex
-}
-
-// Size returns the number of elements in the Items map.
-func (a *atomicServiceMap) Size() int {
-	a.Lock()
-	defer a.Unlock()
-
-	return len(a.Items)
-}
-
-// Store ServiceStore holds all tcp service banners.
-var Store = &atomicServiceMap{
-	Items: make(map[string]*service),
-}
-
-// addInfo is util to append information to a string using a delimiter
-// information will be deduplicated.
-func addInfo(old string, new string) string {
-	if len(old) == 0 {
-		return new
-	} else if len(new) == 0 {
-		return old
-	} else {
-		// only append info that is not already present
-		if !strings.Contains(old, new) {
-			var b strings.Builder
-			b.WriteString(old)
-			b.WriteString(" | ")
-			b.WriteString(new)
-
-			return b.String()
-		}
-
-		return old
-	}
-}
-
-// NewService creates a new network service.
-func NewService(ts int64, numBytesServer, numBytesClient int, ip string) *service {
-	var host string
-	if resolvers.CurrentConfig.ReverseDNS {
-		host = strings.Join(resolvers.LookupDNSNames(ip), "; ")
-	} else if resolvers.CurrentConfig.LocalDNS {
-		host = resolvers.LookupDNSNameLocal(ip)
-	}
-
-	return &service{
-		Service: &types.Service{
-			Timestamp:   ts,
-			BytesServer: int32(numBytesServer),
-			BytesClient: int32(numBytesClient),
-			Hostname:    host,
-		},
-	}
-}
 
 var (
 	serviceLog        *zap.Logger
@@ -98,11 +27,11 @@ var (
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewAbstractDecoder(
-	types.Type_NC_Service,
-	"Service",
-	"A network service",
-	func(d *decoder.AbstractDecoder) error {
+var Decoder = &decoder.AbstractDecoder{
+	Type:        types.Type_NC_Service,
+	Name:        "Service",
+	Description: "A network service",
+	PostInit: func(d *decoder.AbstractDecoder) error {
 		var err error
 		serviceLog, _, err = logging.InitZapLogger(
 			decoderconfig.Instance.Out,
@@ -117,7 +46,7 @@ var Decoder = decoder.NewAbstractDecoder(
 
 		return initServiceProbes()
 	},
-	func(e *decoder.AbstractDecoder) error {
+	DeInit: func(e *decoder.AbstractDecoder) error {
 		// flush writer
 		for _, item := range Store.Items {
 			item.Lock()
@@ -127,4 +56,4 @@ var Decoder = decoder.NewAbstractDecoder(
 
 		return serviceLog.Sync()
 	},
-)
+}

@@ -23,13 +23,11 @@ import (
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewAbstractDecoder(
-	types.Type_NC_File,
-	"File",
-	"A file that was transferred over the network",
-	nil,
-	nil,
-)
+var Decoder = &decoder.AbstractDecoder{
+	Type:        types.Type_NC_File,
+	Name:        "File",
+	Description: "A file that was transferred over the network",
+}
 
 // WriteFile writeDeviceProfile writes the profile.
 func WriteFile(f *types.File) {

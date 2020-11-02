@@ -28,11 +28,11 @@ import (
 var mailLog = zap.NewNop()
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewAbstractDecoder(
-	types.Type_NC_Mail,
-	"Mail",
-	"Email messages collected from the network traffic",
-	func(d *decoder.AbstractDecoder) error {
+var Decoder = &decoder.AbstractDecoder{
+	Type:        types.Type_NC_Mail,
+	Name:        "Mail",
+	Description: "Email messages collected from the network traffic",
+	PostInit: func(d *decoder.AbstractDecoder) error {
 		var err error
 		mailLog, _, err = logging.InitZapLogger(
 			decoderconfig.Instance.Out,
@@ -41,10 +41,10 @@ var Decoder = decoder.NewAbstractDecoder(
 		)
 		return err
 	},
-	func(sd *decoder.AbstractDecoder) error {
+	DeInit: func(sd *decoder.AbstractDecoder) error {
 		return mailLog.Sync()
 	},
-)
+}
 
 // WriteMail writes an email audit record to disk.
 func WriteMail(d *types.Mail) {

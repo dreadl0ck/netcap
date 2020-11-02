@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SIPAuditRecords" displayName="SIPAuditRecords" displayNamePlural="SIPAuditRecords" description="An archive of SIP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_olive" largeIconResource="Netcap/insert_drive_file_olive" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SIPAuditRecords" displayName="SIPAuditRecords" displayNamePlural="SIPAuditRecords" description="An archive of SIP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_red" largeIconResource="Netcap/insert_drive_file_red" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.sipauditrecords" displayValue="properties.sipauditrecords">
   <Groups></Groups>
   <Fields>

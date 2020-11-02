@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DeviceProfileAuditRecords" displayName="DeviceProfileAuditRecords" displayNamePlural="DeviceProfileAuditRecords" description="An archive of DeviceProfile audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_crimson" largeIconResource="Netcap/insert_drive_file_crimson" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DeviceProfileAuditRecords" displayName="DeviceProfileAuditRecords" displayNamePlural="DeviceProfileAuditRecords" description="An archive of DeviceProfile audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_indianred" largeIconResource="Netcap/insert_drive_file_indianred" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.deviceprofileauditrecords" displayValue="properties.deviceprofileauditrecords">
   <Groups></Groups>
   <Fields>

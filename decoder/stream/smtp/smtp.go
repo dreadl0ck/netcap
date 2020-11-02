@@ -34,11 +34,11 @@ var (
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
-var Decoder = decoder.NewStreamDecoder(
-	types.Type_NC_SMTP,
-	serviceSMTP,
-	"The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission",
-	func(d *decoder.StreamDecoder) (err error) {
+var Decoder = &decoder.StreamDecoder{
+	Type:        types.Type_NC_SMTP,
+	Name:        serviceSMTP,
+	Description: "The Simple Mail Transfer Protocol is a communication protocol for electronic mail transmission",
+	PostInit: func(d *decoder.StreamDecoder) (err error) {
 		smtpLog, _, err = logging.InitZapLogger(
 			decoderconfig.Instance.Out,
 			"mail",
@@ -53,12 +53,12 @@ var Decoder = decoder.NewStreamDecoder(
 
 		return nil
 	},
-	func(client, server []byte) bool {
+	CanDecode: func(client, server []byte) bool {
 		return bytes.HasPrefix(server, smtpServiceReadyBytes) && bytes.Contains(server, smtpName)
 	},
-	func(sd *decoder.StreamDecoder) error {
+	DeInit: func(sd *decoder.StreamDecoder) error {
 		return smtpLog.Sync()
 	},
-	&smtpReader{},
-	core.TCP,
-)
+	Factory: &smtpReader{},
+	Typ:     core.TCP,
+}
