@@ -442,5 +442,12 @@ commands:
             ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/NETCAP\ Ubuntu\ 64-bit\ 20.04.1.vmwarevm/NETCAP\ Ubuntu\ 64-bit\ 20.04.1.vmx ~/Documents/Netcap_${VERSION}_Ubuntu.ova
             du -sh ~/Documents/Netcap_${VERSION}_Ubuntu.ova
 
+    export-kali-vm:
+        description: export the kali VM
+        exec: |
+            cd /Applications/VMware\ Fusion.app/Contents/Library/VMware\ OVF\ Tool/
+            ./ovftool --acceptAllEulas ~/Virtual\ Machines.localized/NETCAP\ Kali\ Linux.vmwarevm/NETCAP\ Kali\ Linux.vmx ~/Documents/Netcap_${VERSION}_Kali_Linux.ova
+            du -sh ~/Documents/Netcap_${VERSION}_Kali_Linux.ova
+
     install-debian:
         description: build script to compile DPI dependencies and netcap on debian linux
