@@ -1,5 +1,18 @@
 # TODOs
 
+- add lfs install notes for cloning the dbs repo:
+
+    Apt/deb: sudo apt-get install git-lfs
+    Yum/rpm: sudo yum install git-lfs
+    MacOS: brew install git-lfs
+    Windows: ???
+
+- implement database generation via: $ net util -generate-dbs and hook up a github action for it
+
+- generic IP / Host blacklist / whitelist
+- integrate teler resources
+- parallelize decoder init
+
 - connection flushing
 - flushing of UDP and TCP streams
 
@@ -34,11 +47,6 @@
 - database source: set default for windows to home directory
 - dbs update script
 - script netcap installation, add setup check util command 
-
-last CC maxmind geolite2 from 27 Dec 2019 (can be distributed):
-
-- https://web.archive.org/web/20191227182209/http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
-- https://web.archive.org/web/20191227182527/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz
 
 - two entities: different value for property - will be combined and the last value for the property will be used?
 - to files for content type: remove encodings after ; in graph view

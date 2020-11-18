@@ -18,8 +18,8 @@ const (
 	// CompletionDebug can be used to debug the commandline completions.
 	CompletionDebug = "NC_COMPLETION_DEBUG"
 
-	// DatabaseSource is the path on the filesystem that stores all netcap databases.
-	DatabaseSource = "NC_DATABASE_SOURCE"
+	// ConfigRoot is the path on the filesystem that stores all netcap configuration and databases.
+	ConfigRoot = "NC_CONFIG_ROOT"
 
 	// FingerbankAPIKey is the authorization token fingerbank.org.
 	FingerbankAPIKey = "FINGERPRINT_API_KEY"

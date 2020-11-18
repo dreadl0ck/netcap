@@ -364,7 +364,7 @@ func enumerate(in string) string {
 
 func initServiceProbes() error {
 	// load nmap service probes
-	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "nmap-service-probes"))
+	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "nmap-service-probes"))
 	if err != nil {
 		return err
 	}

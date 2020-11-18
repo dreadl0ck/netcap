@@ -29,7 +29,7 @@ var dnsWhitelist = make(map[string]struct{})
 func InitDNSWhitelist() {
 	var hosts int
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "domain-whitelist.csv"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseFolderPath, "domain-whitelist.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}

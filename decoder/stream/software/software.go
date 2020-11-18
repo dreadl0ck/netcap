@@ -58,7 +58,7 @@ var Decoder = &decoder.AbstractDecoder{
 		}
 
 		// Load the JSON database of JA3/JA3S combinations into memory
-		data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "ja_3_3s.json"))
+		data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "ja_3_3s.json"))
 		if err != nil {
 			return err
 		}
@@ -69,8 +69,8 @@ var Decoder = &decoder.AbstractDecoder{
 			return err
 		}
 
-		// Load the JSON database of HASSH signaures
-		data, err = ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "hasshdb.json"))
+		// Load the JSON database of HASSH signatures
+		data, err = ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "hasshdb.json"))
 		if err != nil {
 			return err
 		}
@@ -98,9 +98,11 @@ var Decoder = &decoder.AbstractDecoder{
 		softwareLog.Info("loaded CMS db", zap.Int("total", len(cmsDB)))
 
 		// Load vulnerabilities DB index
-		indexName := filepath.Join(resolvers.DataBaseSource, db.VulnerabilityDBName)
+		indexName := filepath.Join(resolvers.DataBaseFolderPath, db.VulnerabilityDBName)
 		db.VulnerabilitiesIndex, err = db.OpenBleve(indexName)
 		if err != nil {
+			// explicitly set to nil, otherwise it can't be determined whether the init succeeded later on
+			db.VulnerabilitiesIndex = nil
 			return err
 		}
 
@@ -210,7 +212,7 @@ var (
 		Items: make(map[string]*AtomicSoftware),
 	}
 
-	parser, errInitUAParser = uaparser.New(filepath.Join(resolvers.DataBaseSource, "regexes.yaml"))
+	parser, errInitUAParser = uaparser.New(filepath.Join(resolvers.DataBaseFolderPath, "regexes.yaml"))
 
 	// UserAgentParserMutex ensures atomic access to the user agent parser.
 	UserAgentParserMutex sync.Mutex
@@ -264,6 +266,11 @@ type sshHash struct {
 
 // ParseUserAgent processes a raw user agent string and returned a structured instance.
 func ParseUserAgent(ua string) *userAgent {
+
+	if parser == nil {
+		return nil
+	}
+
 	var (
 		uaClient                       = parser.Parse(ua)
 		full, product, vendor, version string
@@ -438,28 +445,32 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 		userInfo, ok := UserAgentCache[h.UserAgent]
 		if !ok {
 			userInfo = ParseUserAgent(h.UserAgent)
-			UserAgentCache[h.UserAgent] = userInfo
-			softwareLog.Debug("UserAgent:", zap.String("userInfo", userInfo.Full))
+			if userInfo != nil {
+				UserAgentCache[h.UserAgent] = userInfo
+				softwareLog.Debug("UserAgent:", zap.String("userInfo", userInfo.Full))
+			}
 		}
 
 		UserAgentParserMutex.Unlock()
 
-		if userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "" {
-			s = append(s, &AtomicSoftware{
-				Software: &types.Software{
-					Timestamp: h.Timestamp,
-					Product:   userInfo.Product,
-					Vendor:    userInfo.Vendor,
-					Version:   userInfo.Version,
-					// DeviceProfiles: []string{dpIdent},
-					SourceName: "UserAgent",
-					SourceData: h.UserAgent,
-					Service:    "HTTP",
-					Flows:      []string{flowIdent},
-					Notes:      userInfo.Full,
-					OS:         userInfo.OS,
-				},
-			})
+		if userInfo != nil {
+			if userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "" {
+				s = append(s, &AtomicSoftware{
+					Software: &types.Software{
+						Timestamp: h.Timestamp,
+						Product:   userInfo.Product,
+						Vendor:    userInfo.Vendor,
+						Version:   userInfo.Version,
+						// DeviceProfiles: []string{dpIdent},
+						SourceName: "UserAgent",
+						SourceData: h.UserAgent,
+						Service:    "HTTP",
+						Flows:      []string{flowIdent},
+						Notes:      userInfo.Full,
+						OS:         userInfo.OS,
+					},
+				})
+			}
 		}
 	}
 

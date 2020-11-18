@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION:  0.5.9
+    VERSION:  0.5.10
 
 # command data
 commands:
@@ -451,3 +451,25 @@ commands:
 
     install-debian:
         description: build script to compile DPI dependencies and netcap on debian linux
+
+    download-geolite:
+        description: download the last maxmind geolite version that has been distributed under the creative commons licencse
+        exec: |
+            mkdir -p dist/geolite
+            cd dist/geolite
+
+            if [ ! -f GeoLite2-City_20191224/GeoLite2-City.mmdb ]; then
+                echo "downloading GeoLite2-City.tar.gz"
+                wget -q https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
+                tar xzf GeoLite2-City.tar.gz
+            else
+                echo "GeoLite2-City_20191224/GeoLite2-City.mmdb already downloaded"
+            fi
+
+            if [ ! -f GeoLite2-ASN_20192124/GeoLite2-ASN.mmdb ]; then
+                echo "downloading GeoLite2-ASN.tar.gz"
+                wget -q https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz
+                tar xzf GeoLite2-ASN.tar.gz
+            else
+                echo "GeoLite2-ASN_20191224/GeoLite2-ASN.mmdb already downloaded"
+            fi

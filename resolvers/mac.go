@@ -53,7 +53,7 @@ var macDB = make(map[string]macSummary)
 func initMACResolver() {
 	var sums int
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "macaddress.io-db.json"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseFolderPath, "macaddress.io-db.json"))
 	if err != nil {
 		log.Println(err)
 		return

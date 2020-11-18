@@ -54,6 +54,16 @@ func Run() {
 		os.Exit(0)
 	}
 
+	if *flagCloneDBs {
+		cloneDBs()
+		return
+	}
+
+	if *flagGenerateDBs {
+		generateDBs()
+		return
+	}
+
 	// Simple util to construct a IPv4 pcapng packet, with a TCP / UDP layer and a given payload.
 	// Will add dummy values for the Ethernet and IPv4 layers.
 	// Useful to dissect a specific TCP / UDP payload in wireshark, to compare the results with other tools.
