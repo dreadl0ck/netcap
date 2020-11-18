@@ -30,7 +30,7 @@ var localDNSNamesDB = make(map[string]string)
 func InitLocalDNS() {
 	var hosts int
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "hosts"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseFolderPath, "hosts"))
 	if err != nil {
 		log.Println(err)
 

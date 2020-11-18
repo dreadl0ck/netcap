@@ -58,7 +58,7 @@ func LookupJa3(hash string) string {
 // initJa3Resolver loads the JSON mac DB into a map in memory.
 func initJa3Resolver() {
 	// read database dir
-	files, err := ioutil.ReadDir(DataBaseSource)
+	files, err := ioutil.ReadDir(DataBaseFolderPath)
 	if err != nil {
 		log.Println(err)
 
@@ -72,7 +72,7 @@ func initJa3Resolver() {
 		}
 
 		// read file contents into memory
-		data, errRead := ioutil.ReadFile(filepath.Join(DataBaseSource, f.Name()))
+		data, errRead := ioutil.ReadFile(filepath.Join(DataBaseFolderPath, f.Name()))
 		if errRead != nil {
 			log.Println(errRead)
 

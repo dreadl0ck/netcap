@@ -40,6 +40,8 @@ var (
 	flagInput          = fs.String("read", "", "read specified audit record file")
 	flagSeparator      = fs.String("sep", ",", "set separator string for csv output")
 	flagVersion        = fs.Bool("version", false, "print netcap package version and exit")
+	flagCloneDBs       = fs.Bool("clone-dbs", false, "clone netcap-dbs repository to the expected path and exit")
+	flagGenerateDBs    = fs.Bool("generate-dbs", false, "fetch and generate netcap-dbs and exit")
 	flagMemBufferSize  = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 	flagEnv            = fs.Bool("env", false, "print netcap environment variables and exit")
 	flagInterfaces     = fs.Bool("interfaces", false, "print netcap environment variables and exit")

@@ -73,7 +73,7 @@ func getServiceName(in string) string {
 // TODO: include service names for other transport protocols
 func InitServiceDB() {
 	var (
-		f, err    = os.Open(filepath.Join(DataBaseSource, "service-names-port-numbers.csv"))
+		f, err    = os.Open(filepath.Join(DataBaseFolderPath, "service-names-port-numbers.csv"))
 		csvReader = csv.NewReader(f)
 	)
 

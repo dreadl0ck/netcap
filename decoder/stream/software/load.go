@@ -26,7 +26,7 @@ import (
 // load JSON database for frontend frameworks from the file system
 func loadCmsDB() error {
 	// read CMS db JSON
-	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseSource, "cmsdb.json"))
+	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "cmsdb.json"))
 	if err != nil {
 		return err
 	}

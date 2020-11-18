@@ -26,16 +26,32 @@ var (
 	// CurrentConfig holds the current configuration.
 	CurrentConfig Config
 
-	// DataBaseSource holds the path to the NETCAP database folder
-	// usually /usr/local/etc/netcap/dbs.
-	DataBaseSource string
+	// ConfigRootPath points to the path for storing the netcap configuration and databases.
+	// usually: /usr/local/etc/netcap
+	ConfigRootPath string
+
+	// DataBaseFolderPath points to the 'dbs' folder for storing the netcap databases.
+	// usually: /usr/local/etc/netcap/dbs
+	DataBaseFolderPath string
+
+	// DataBaseBuildPath points to the build folder for db generation artifacts,
+	// that are not tracked in version control.
+	// usually: /usr/local/etc/netcap/build
+	DataBaseBuildPath string
+)
+
+const (
+	dataBaseFolderName = "dbs"
+	buildFolderName    = "build"
 )
 
 func init() {
-	DataBaseSource = os.Getenv(env.DatabaseSource)
-	if DataBaseSource == "" {
-		DataBaseSource = filepath.Join("/usr", "local", "etc", "netcap", "dbs")
+	ConfigRootPath = os.Getenv(env.ConfigRoot)
+	if ConfigRootPath == "" {
+		ConfigRootPath = filepath.Join("/usr", "local", "etc", "netcap")
 	}
+	DataBaseFolderPath = filepath.Join(ConfigRootPath, dataBaseFolderName)
+	DataBaseBuildPath = filepath.Join(ConfigRootPath, buildFolderName)
 }
 
 // Init can be used to initialize the resolvers package according to the provided configuration.
@@ -47,7 +63,7 @@ func Init(c Config, quietMode bool) {
 		disableReverseDNS = false
 	} else {
 		var hostsFound bool
-		_, err := os.Stat(filepath.Join(DataBaseSource, "hosts"))
+		_, err := os.Stat(filepath.Join(DataBaseFolderPath, "hosts"))
 		if err == nil {
 			hostsFound = true
 		}

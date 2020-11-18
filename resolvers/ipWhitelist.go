@@ -30,7 +30,7 @@ var ipWhitelist = make(map[string]struct{})
 func initIPWhitelist() {
 	var hosts int
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "ip-whitelist.csv"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseFolderPath, "ip-whitelist.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}

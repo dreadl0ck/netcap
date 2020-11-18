@@ -54,7 +54,7 @@ func SaveFingerprintDB() {
 		log.Fatal(err)
 	}
 
-	f, err := os.Create(filepath.Join(DataBaseSource, dhcpDBFile))
+	f, err := os.Create(filepath.Join(DataBaseFolderPath, dhcpDBFile))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -231,7 +231,7 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*dhcpResult,
 func InitDHCPFingerprintDB() {
 	dhcpDBinitialized = true
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, dhcpDBFile))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseFolderPath, dhcpDBFile))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -259,7 +259,7 @@ func initDHCPFingerprintDBCSV() {
 
 	var fingerprints int
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseSource, "dhcp-fingerprints.csv"))
+	data, err := ioutil.ReadFile(filepath.Join(DataBaseBuildPath, "dhcp-fingerprints.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}
