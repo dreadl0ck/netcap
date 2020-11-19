@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"go.uber.org/zap"
 
@@ -237,6 +238,8 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
 			}
 
+			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+
 			h.clientKexInit = &init
 
 			sshLog.Info("found clientKexInit", zap.String("ident", h.conversation.Ident))
@@ -252,6 +255,8 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
 			}
+
+			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 
 			h.serverKexInit = &init
 
