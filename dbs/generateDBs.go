@@ -68,7 +68,7 @@ var sources = []*datasource{
 	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveToDbs),
 	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveToDbs),
 	makeSource("", "nvd.bleve", downloadAndIndexNVD),
-	makeSource("https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv", "exploit-db.bleve", downloadAndIndexExploitDB),
+	makeSource("https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv", "", downloadAndIndexExploitDB),
 }
 
 /*
@@ -80,12 +80,12 @@ func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
 		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz", year), "", nil)
 		fetchResource(s, filepath.Join(base, "build", s.name))
 	}
-	IndexData("nvd", filepath.Join(base, "dbs"))
+	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"))
 	return nil
 }
 
 func downloadAndIndexExploitDB(_ string, _ *datasource, base string) error {
-	IndexData("exploit-db", filepath.Join(base, "dbs"))
+	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"))
 	return nil
 }
 

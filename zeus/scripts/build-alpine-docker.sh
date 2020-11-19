@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z "$NODPI" ]; then
+  NODPI=true
+fi
+
 echo "[INFO] building docker image"
 
 if $NODPI; then
