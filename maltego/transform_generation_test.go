@@ -16,6 +16,7 @@ package maltego_test
 import (
 	"encoding/xml"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -281,7 +282,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	packMaltegoArchive(netcapIdent)
 
 	path := filepath.Join(os.Getenv("HOME"), "netcap.mtz")
-	copyFile("netcap.mtz", path)
+	utils.CopyFile("netcap.mtz", path)
 
 	fmt.Println("moved archive to", path)
 }
@@ -356,7 +357,7 @@ enabled=true`)
 
 		// Machine
 
-		copyFile(
+		utils.CopyFile(
 			filepath.Join("machines", f.Name()),
 			filepath.Join(
 				path,
@@ -378,7 +379,7 @@ func TestGenerateAllTransforms(t *testing.T) {
 	genTransformSet("transforms")
 	packTransformArchive()
 
-	copyFile("transforms.mtz", filepath.Join(os.Getenv("HOME"), "transforms.mtz"))
+	utils.CopyFile("transforms.mtz", filepath.Join(os.Getenv("HOME"), "transforms.mtz"))
 }
 
 func TestToTransformDisplayName(t *testing.T) {

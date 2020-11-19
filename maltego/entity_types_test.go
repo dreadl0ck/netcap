@@ -277,46 +277,16 @@ func genEntity(outDir string, entName string, imgName string, description string
 
 	dstBase := filepath.Join(outDir, "Icons", ident, imgName)
 
-	copyFile(
+	utils.CopyFile(
 		filepath.Join("/tmp", "icons", dir, "renamed", imgName+".xml"),
 		filepath.Join(outDir, "Icons", ident, imgName+".xml"),
 	)
 
-	copyFile(base+"16"+ext, dstBase+ext)
-	copyFile(base+"24"+ext, dstBase+"24"+ext)
-	copyFile(base+"32"+ext, dstBase+"32"+ext)
-	copyFile(base+"48"+ext, dstBase+"48"+ext)
-	copyFile(base+"96"+ext, dstBase+"96"+ext)
-}
-
-// copyFile the source file contents to destination
-// file attributes wont be copied and an existing file will be overwritten.
-func copyFile(src, dst string) {
-	in, err := os.Open(src)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer func() {
-		if errClose := in.Close(); errClose != nil {
-			fmt.Println(errClose)
-		}
-	}()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = out.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
+	utils.CopyFile(base+"16"+ext, dstBase+ext)
+	utils.CopyFile(base+"24"+ext, dstBase+"24"+ext)
+	utils.CopyFile(base+"32"+ext, dstBase+"32"+ext)
+	utils.CopyFile(base+"48"+ext, dstBase+"48"+ext)
+	utils.CopyFile(base+"96"+ext, dstBase+"96"+ext)
 }
 
 // Directory structure:

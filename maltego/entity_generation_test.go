@@ -16,6 +16,7 @@ package maltego_test
 import (
 	"encoding/xml"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -148,7 +149,7 @@ func TestGenerateAllEntities(t *testing.T) {
 
 	packEntityArchive()
 
-	copyFile("entities.mtz", filepath.Join(os.Getenv("HOME"), "entities.mtz"))
+	utils.CopyFile("entities.mtz", filepath.Join(os.Getenv("HOME"), "entities.mtz"))
 }
 
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
