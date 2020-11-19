@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dustin/go-humanize"
+	"github.com/evilsocket/islazy/zip"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -63,8 +64,10 @@ var sources = []*datasource{
 	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/dhcp-fingerprints.json", "", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/cmsdb.json", "", moveToDbs),
 
-	makeSource("http://s3.amazonaws.com/alexa-static/top-1m.csv.zip", "domain-whitelist.csv", moveToDbs),
+	makeSource("http://s3.amazonaws.com/alexa-static/top-1m.csv.zip", "domain-whitelist.csv", unzipAndMoveToDbs),
 	makeSource("https://raw.githubusercontent.com/tobie/ua-parser/master/regexes.yaml", "", moveToDbs),
+
+	// TODO: manage custom netcap probes separately and merge
 	makeSource("https://svn.nmap.org/nmap/nmap-service-probes", "", moveToDbs),
 	makeSource("https://macaddress.io/database-download", "macaddress.io-db.json", moveToDbs),
 	makeSource("https://ja3er.com/getAllHashesJson", "ja3erDB.json", moveToDbs),
@@ -81,6 +84,24 @@ var sources = []*datasource{
 /*
  * Datasource Hooks
  */
+
+func unzipAndMoveToDbs(in string, d *datasource, base string) error {
+	filenames, err := zip.Unzip(in, filepath.Join(base, "build"))
+	if err != nil {
+		return err
+	}
+
+	if len(filenames) > 1 {
+		log.Fatal("archive contains more than one file, not sure what to do")
+	}
+
+	f := filenames[0]
+
+	return os.Rename(
+		filepath.Join(base, "build", filepath.Base(f)),
+		filepath.Join(base, "dbs", d.name),
+	)
+}
 
 func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
 	for _, year := range yearRange(2002, time.Now().Year()) {
