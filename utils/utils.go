@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -31,6 +32,36 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 )
+
+// CopyFile the source file contents to destination
+// file attributes wont be copied and an existing file will be overwritten.
+func CopyFile(src, dst string) {
+	in, err := os.Open(src)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if errClose := in.Close(); errClose != nil {
+			fmt.Println(errClose)
+		}
+	}()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = out.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 // Confirm displays a prompt message to the terminal and returns a bool indicating the user decision.
 func Confirm(s string) bool {
