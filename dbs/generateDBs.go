@@ -62,7 +62,7 @@ var sources = []*datasource{
 	makeSource("https://github.com/dreadl0ck/netcap-dbs/blob/main/dbs/ja_3_3s.json", "", moveToDbs),
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/0x4D31/hassh-utils/master/hasshdb", "hasshdb.txt", moveToDbs), // hasshdb.json
-	makeSource("https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json", "ja3fingerprint.json", moveToDbs),
+	makeSource("https://raw.githubusercontent.com/trisulnsm/trisul-scripts/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json", "", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/karottc/fingerbank/master/upstream/startup/fingerprints.csv", "", moveToDbs), // dhcp-fingerprints.json
 	makeSource("https://github.com/AliasIO/wappalyzer/blob/master/src/technologies.json", "", moveToDbs),                       // cmsdb.json
 	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveToDbs),

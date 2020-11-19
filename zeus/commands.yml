@@ -73,6 +73,9 @@ commands:
 #        dependencies:
 #            - clean
 
+    build-ubuntu-nodpi:
+        exec: NODPI=true ARGS="--build-arg TAGS=-tags=nodpi" VERSION=nodpi_v${VERSION} zeus/scripts/build-ubuntu-docker.sh
+
     ## Release
     ##
 
