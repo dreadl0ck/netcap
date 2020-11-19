@@ -14,6 +14,7 @@
 package utils
 
 import (
+	"bufio"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -30,6 +31,30 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 )
+
+// Confirm displays a prompt message to the terminal and returns a bool indicating the user decision.
+func Confirm(s string) bool {
+	r := bufio.NewReader(os.Stdin)
+
+	fmt.Printf("%s [Y/n]: ", s)
+
+	res, err := r.ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// empty input, e.g: "\n"
+	if len(res) < 2 {
+		return true
+	}
+
+	trimmed := strings.TrimSpace(res)
+	if len(trimmed) == 0 {
+		return true
+	}
+
+	return strings.ToLower(trimmed)[0] != 'n'
+}
 
 // noPluralsMap contains words for which to make an exception when pluralizing nouns.
 var noPluralsMap = map[string]struct{}{

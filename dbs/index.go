@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package util
+package dbs
 
 import (
 	"bufio"
@@ -116,7 +116,7 @@ func intermediatePatchVersions(from string, until string) []string {
 	return out
 }
 
-func indexData(in string) {
+func IndexData(in string, out string) {
 	var (
 		start     = time.Now()
 		indexPath string
@@ -126,7 +126,7 @@ func indexData(in string) {
 	switch in {
 	// nolint
 	case "mitre-cve":
-		indexPath = filepath.Join(resolvers.DataBaseFolderPath, "mitre-cve.bleve")
+		indexPath = filepath.Join(out, "mitre-cve.bleve")
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
@@ -204,7 +204,7 @@ func indexData(in string) {
 		fmt.Println("indexed mitre DB, num entries:", count)
 
 	case "exploit-db":
-		indexPath = filepath.Join(resolvers.DataBaseFolderPath, "exploit-db.bleve")
+		indexPath = filepath.Join(out, "exploit-db.bleve")
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
@@ -299,7 +299,7 @@ func indexData(in string) {
 		fmt.Println("indexed exploit DB, num entries:", count)
 
 	case "nvd":
-		indexPath = filepath.Join(resolvers.DataBaseFolderPath, "nvd.bleve")
+		indexPath = filepath.Join(out, "nvd.bleve")
 		fmt.Println("index path", indexPath)
 
 		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
@@ -316,27 +316,7 @@ func indexData(in string) {
 		}()
 
 		var (
-			years = []string{
-				"2002",
-				"2003",
-				"2004",
-				"2005",
-				"2006",
-				"2007",
-				"2008",
-				"2009",
-				"2010",
-				"2011",
-				"2012",
-				"2013",
-				"2014",
-				"2015",
-				"2016",
-				"2017",
-				"2018",
-				"2019",
-				"2020",
-			}
+			years = yearRange(2002, time.Now().Year())
 			total int
 		)
 
@@ -437,7 +417,7 @@ func indexData(in string) {
 
 		fmt.Println("loaded", total, "NVD CVEs in", time.Since(start))
 	default:
-		log.Fatal("Could not handle given file", *flagIndex)
+		log.Fatal("unknown keyword", in)
 	}
 
 	// retrieve size of the underlying boltdb
@@ -447,6 +427,17 @@ func indexData(in string) {
 	}
 
 	fmt.Println("done in", time.Since(start), "index size", humanize.Bytes(uint64(stat.Size())), "path", indexPath)
+}
+
+func yearRange(start int, end int) []string {
+	if start >= end {
+		log.Fatal("invalid range", start, "to", end)
+	}
+	var out []string
+	for i := start; i <= end; i++ {
+		out = append(out, strconv.Itoa(i))
+	}
+	return out
 }
 
 func makeBleveIndex(indexName string) bleve.Index {
