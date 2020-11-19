@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 // TODO: display expected size before retrieval and prompt for confirmation
@@ -54,10 +53,7 @@ func cloneDBs() {
 			fmt.Println("decompressing", f.Name())
 			_, err = zip.Unzip(
 				filepath.Join(resolvers.DataBaseFolderPath, f.Name()),
-				strings.TrimSuffix(
-					filepath.Join(resolvers.DataBaseFolderPath, f.Name()),
-					".zip",
-				),
+				resolvers.DataBaseFolderPath,
 			)
 			if err != nil {
 				log.Fatal("failed to unzip: ", f.Name(), " error: ", err)
