@@ -19,6 +19,7 @@ import (
 	logging "github.com/dreadl0ck/netcap/logger"
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
+	"sync/atomic"
 )
 
 var (
@@ -48,10 +49,16 @@ var Decoder = &decoder.AbstractDecoder{
 	},
 	DeInit: func(e *decoder.AbstractDecoder) error {
 		// flush writer
+		var err error
 		for _, item := range Store.Items {
 			item.Lock()
-			_ = e.Writer.Write(item.Service)
+			err = e.Writer.Write(item.Service)
+			if err != nil {
+				serviceLog.Error("failed to flush service audit record", zap.Error(err))
+			}
 			item.Unlock()
+
+			atomic.AddInt64(&e.NumRecordsWritten, 1)
 		}
 
 		return serviceLog.Sync()

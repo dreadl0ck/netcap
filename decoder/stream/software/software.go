@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ua-parser/uap-go/uaparser"
@@ -126,9 +127,15 @@ var Decoder = &decoder.AbstractDecoder{
 		//httpStore.Unlock()
 
 		// flush writer
+		var err error
 		for _, item := range Store.Items {
 			item.Lock()
-			_ = e.Writer.Write(item.Software)
+			err = e.Writer.Write(item.Software)
+			if err != nil {
+				softwareLog.Error("failed to flush software audit record", zap.Error(err))
+			}
+
+			atomic.AddInt64(&e.NumRecordsWritten, 1)
 			item.Unlock()
 		}
 
@@ -757,11 +764,6 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 		} else {
 			// fmt.Println(SoftwareStore.Items, s.Product, s.Version)
 			Store.Items[ident] = s
-
-			// TODO: why track this here? the audit record writer will keep track of the number of records written
-			// streamutils.Stats.Lock()
-			// streamutils.Stats.numSoftware++
-			// streamutils.Stats.Unlock()
 
 			newSoftwareProducts = append(newSoftwareProducts, s.Software)
 		}

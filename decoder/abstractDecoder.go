@@ -52,56 +52,56 @@ type (
 // CoreDecoderAPI interface implementation
 
 // PostInitFunc is called after the decoder has been initialized.
-func (sd *AbstractDecoder) PostInitFunc() error {
-	if sd.PostInit == nil {
+func (ad *AbstractDecoder) PostInitFunc() error {
+	if ad.PostInit == nil {
 		return nil
 	}
 
-	return sd.PostInit(sd)
+	return ad.PostInit(ad)
 }
 
 // DeInitFunc is called prior to teardown.
-func (sd *AbstractDecoder) DeInitFunc() error {
-	if sd.DeInit == nil {
+func (ad *AbstractDecoder) DeInitFunc() error {
+	if ad.DeInit == nil {
 		return nil
 	}
 
-	return sd.DeInit(sd)
+	return ad.DeInit(ad)
 }
 
 // GetName returns the name of the
-func (sd *AbstractDecoder) GetName() string {
-	return sd.Name
+func (ad *AbstractDecoder) GetName() string {
+	return ad.Name
 }
 
 // SetWriter sets the netcap writer to use for the
-func (sd *AbstractDecoder) SetWriter(w netio.AuditRecordWriter) {
-	sd.Writer = w
+func (ad *AbstractDecoder) SetWriter(w netio.AuditRecordWriter) {
+	ad.Writer = w
 }
 
 // GetType returns the netcap type of the
-func (sd *AbstractDecoder) GetType() types.Type {
-	return sd.Type
+func (ad *AbstractDecoder) GetType() types.Type {
+	return ad.Type
 }
 
 // GetDescription returns the description of the
-func (sd *AbstractDecoder) GetDescription() string {
-	return sd.Description
+func (ad *AbstractDecoder) GetDescription() string {
+	return ad.Description
 }
 
 // Destroy closes and flushes all writers and calls deinit if set.
-func (sd *AbstractDecoder) Destroy() (name string, size int64) {
-	err := sd.DeInitFunc()
+func (ad *AbstractDecoder) Destroy() (name string, size int64) {
+	err := ad.DeInitFunc()
 	if err != nil {
 		panic(err)
 	}
 
-	return sd.Writer.Close(sd.NumRecordsWritten)
+	return ad.Writer.Close(ad.NumRecordsWritten)
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the encoder.
-func (sd *AbstractDecoder) GetChan() <-chan []byte {
-	if cw, ok := sd.Writer.(netio.ChannelAuditRecordWriter); ok {
+func (ad *AbstractDecoder) GetChan() <-chan []byte {
+	if cw, ok := ad.Writer.(netio.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()
 	}
 
@@ -109,6 +109,6 @@ func (sd *AbstractDecoder) GetChan() <-chan []byte {
 }
 
 // NumRecords returns the number of written records.
-func (sd *AbstractDecoder) NumRecords() int64 {
-	return atomic.LoadInt64(&sd.NumRecordsWritten)
+func (ad *AbstractDecoder) NumRecords() int64 {
+	return atomic.LoadInt64(&ad.NumRecordsWritten)
 }
