@@ -53,18 +53,20 @@ func makeSource(url, name string, hook datasourceHook) *datasource {
  */
 
 var sources = []*datasource{
+	// TODO: finish generation
+	makeSource("https://raw.githubusercontent.com/0x4D31/hassh-utils/master/hasshdb", "hasshdb.txt", moveToDbs), // hasshdb.json
+	makeSource("https://raw.githubusercontent.com/karottc/fingerbank/master/upstream/startup/fingerprints.csv", "", moveToDbs), // dhcp-fingerprints.json
+	makeSource("https://raw.githubusercontent.com/AliasIO/wappalyzer/master/src/technologies.json", "", moveToDbs), // cmsdb.json
+
 	makeSource("http://s3.amazonaws.com/alexa-static/top-1m.csv.zip", "domain-whitelist.csv", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/tobie/ua-parser/master/regexes.yaml", "", moveToDbs),
 	makeSource("https://svn.nmap.org/nmap/nmap-service-probes", "", moveToDbs),
 	makeSource("https://macaddress.io/database-download", "macaddress.io-db.json", moveToDbs),
 	makeSource("https://ja3er.com/getAllHashesJson", "ja3erDB.json", moveToDbs),
 	makeSource("https://ja3er.com/getAllUasJson", "ja3UserAgents.json", moveToDbs),
-	makeSource("https://github.com/dreadl0ck/netcap-dbs/blob/main/dbs/ja_3_3s.json", "", moveToDbs),
+	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/ja_3_3s.json", "", moveToDbs),
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
-	makeSource("https://raw.githubusercontent.com/0x4D31/hassh-utils/master/hasshdb", "hasshdb.txt", moveToDbs), // hasshdb.json
 	makeSource("https://raw.githubusercontent.com/trisulnsm/trisul-scripts/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json", "", moveToDbs),
-	makeSource("https://raw.githubusercontent.com/karottc/fingerbank/master/upstream/startup/fingerprints.csv", "", moveToDbs), // dhcp-fingerprints.json
-	makeSource("https://github.com/AliasIO/wappalyzer/blob/master/src/technologies.json", "", moveToDbs),                       // cmsdb.json
 	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveToDbs),
 	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveToDbs),
 	makeSource("", "nvd.bleve", downloadAndIndexNVD),
