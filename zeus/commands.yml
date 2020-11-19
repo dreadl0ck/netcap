@@ -59,18 +59,19 @@ commands:
 
     ## Containers
     ##
+    # deprecated - use build-linux or build-linux-nodpi
 
-    build-alpine-docker:
-        description: build all framework binaries for linux inside an apline docker container
-        help: used to compile for linux on macOS because cross compilation is a pain with CGO
-        dependencies:
-            - clean
-    
-    build-ubuntu-docker:
-        description: build all framework binaries for linux inside an ubuntu docker container
-        help: used to compile for linux on macOS because cross compilation is a pain with CGO
-        dependencies:
-            - clean
+#    build-alpine-docker:
+#        description: build all framework binaries for linux inside an apline docker container
+#        help: used to compile for linux on macOS because cross compilation is a pain with CGO
+#        dependencies:
+#            - clean
+#
+#    build-ubuntu-docker:
+#        description: build all framework binaries for linux inside an ubuntu docker container
+#        help: used to compile for linux on macOS because cross compilation is a pain with CGO
+#        dependencies:
+#            - clean
 
     ## Release
     ##

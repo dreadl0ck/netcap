@@ -15,6 +15,7 @@ package dbs
 
 import (
 	"bufio"
+	"compress/gzip"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -34,7 +35,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	vuln "github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -116,7 +116,7 @@ func intermediatePatchVersions(from string, until string) []string {
 	return out
 }
 
-func IndexData(in string, out string) {
+func IndexData(in string, out string, buildPath string) {
 	var (
 		start     = time.Now()
 		indexPath string
@@ -136,7 +136,7 @@ func IndexData(in string, out string) {
 		}
 
 		// wget https://cve.mitre.org/data/downloads/allitems.csv
-		file, err := os.Open(filepath.Join(resolvers.DataBaseBuildPath, "mitre", "allitems.csv"))
+		file, err := os.Open(filepath.Join(buildPath, "mitre", "allitems.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -163,7 +163,7 @@ func IndexData(in string, out string) {
 		}
 
 		// reopen file handle
-		file, err = os.Open(filepath.Join(resolvers.DataBaseBuildPath, "exploitdb", "files_exploits.csv"))
+		file, err = os.Open(filepath.Join(buildPath, "exploitdb", "files_exploits.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -217,7 +217,7 @@ func IndexData(in string, out string) {
 		}
 
 		// wget https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv
-		file, err := os.Open(filepath.Join(resolvers.DataBaseBuildPath, "exploitdb", "files_exploits.csv"))
+		file, err := os.Open(filepath.Join(buildPath, "files_exploits.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -246,7 +246,7 @@ func IndexData(in string, out string) {
 		}
 
 		// reopen file handle
-		file, err = os.Open(filepath.Join(resolvers.DataBaseBuildPath, "exploitdb", "files_exploits.csv"))
+		file, err = os.Open(filepath.Join(buildPath, "files_exploits.csv"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -322,10 +322,21 @@ func IndexData(in string, out string) {
 
 		for _, year := range years {
 			fmt.Print("processing files for year ", year)
-			file := filepath.Join(resolvers.DataBaseBuildPath, "nvd", "nvdcve-1.1-"+year+".json")
-			data, err := ioutil.ReadFile(file)
+			file := filepath.Join(buildPath, "nvdcve-1.1-"+year+".json.gz")
+
+			f, err := os.Open(file)
 			if err != nil {
-				log.Fatal("Could not open file " + file)
+				log.Fatal(err)
+			}
+
+			r, err := gzip.NewReader(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+			
+			data, err := ioutil.ReadAll(r)
+			if err != nil {
+				log.Fatal("Could not read file " + file)
 			}
 
 			items := new(vuln.NVDVulnerabilityItems)

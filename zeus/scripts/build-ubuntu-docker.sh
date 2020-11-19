@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z "$NODPI" ]; then
+  NODPI=true
+fi
+
 if $NODPI; then
   echo "[INFO] copying the docker/ubuntu-nodpi/Dockerfile into the project root"
   cp docker/ubuntu-nodpi/Dockerfile Dockerfile
