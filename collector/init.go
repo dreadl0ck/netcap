@@ -1,9 +1,9 @@
 package collector
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -108,7 +108,7 @@ func (c *Collector) Init() (err error) {
 				msg = "Data from previous runs found in output path! Overwrite?"
 			}
 
-			if !confirm(msg) {
+			if !utils.Confirm(msg) {
 				return errAborted
 			}
 		}
@@ -176,30 +176,6 @@ func (c *Collector) Init() (err error) {
 	}
 
 	return nil
-}
-
-// displays a prompt message to the terminal and returns a bool indicating the user decision.
-func confirm(s string) bool {
-	r := bufio.NewReader(os.Stdin)
-
-	fmt.Printf("%s [Y/n]: ", s)
-
-	res, err := r.ReadString('\n')
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// empty input, e.g: "\n"
-	if len(res) < 2 {
-		return true
-	}
-
-	trimmed := strings.TrimSpace(res)
-	if len(trimmed) == 0 {
-		return true
-	}
-
-	return strings.ToLower(trimmed)[0] != 'n'
 }
 
 func handleDecoderInitError(err error, target string) {

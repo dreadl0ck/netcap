@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package util
+package dbs
 
 import (
 	"testing"
@@ -24,6 +24,17 @@ func TestIntermediatePatchVersions(t *testing.T) {
 	for i := 0; i < len(versions); i++ {
 		if versions[i] != generated[i] {
 			t.Fatal("expected ", versions[i], ", got", generated[i])
+		}
+	}
+}
+
+func TestYearRange(t *testing.T) {
+	y := yearRange(2017, 2020)
+	expected := []string{"2017", "2018", "2019", "2020"}
+
+	for i, elem := range expected {
+		if elem != y[i] {
+			t.Fatal(elem, " != ", y[i])
 		}
 	}
 }
