@@ -82,7 +82,10 @@ func initJa3Resolver() {
 		// decide which parser to use
 		switch f.Name() {
 		case "ja3UserAgents.json":
-			parseUserAgents(data, f)
+			// TODO: the user agent list grew to over half a million entries
+			// parsing them everytime on startup is no longer feasible
+			// populate a bleve db in advance instead...
+			//parseUserAgents(data, f)
 		case "ja3erDB.json":
 			parseSummariesArray(data, f)
 		default:
