@@ -69,7 +69,8 @@ func initMACResolver() {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			}
-			log.Fatal("failed to unmarshal record:", err)
+			log.Println("failed to unmarshal record:", err, string(line), "in macaddress.io-db.json")
+			continue
 		}
 
 		macDB[sum.OUI] = sum
