@@ -69,7 +69,7 @@ var sources = []*datasource{
 
 	// TODO: manage custom netcap probes separately and merge
 	makeSource("https://svn.nmap.org/nmap/nmap-service-probes", "", moveToDbs),
-	makeSource("https://macaddress.io/database-download", "macaddress.io-db.json", moveToDbs),
+	makeSource("https://macaddress.io/database/macaddress.io-db.json", "", moveToDbs),
 	makeSource("https://ja3er.com/getAllHashesJson", "ja3erDB.json", moveToDbs),
 	makeSource("https://ja3er.com/getAllUasJson", "ja3UserAgents.json", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/ja_3_3s.json", "", moveToDbs),
