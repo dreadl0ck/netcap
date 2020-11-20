@@ -123,7 +123,8 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return
 		}
-		log.Fatal("failed to unmarshal record:", err)
+		log.Println("failed to unmarshal record:", err, f.Name())
+		return
 	}
 
 	for _, sum := range userAgents {
@@ -161,7 +162,8 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return
 		}
-		log.Fatal("failed to unmarshal record:", err)
+		log.Println("failed to unmarshal record:", err, f.Name())
+		return
 	}
 
 	for _, sum := range summaries {
@@ -198,7 +200,8 @@ func parseSummaries(data []byte, f os.FileInfo) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			}
-			log.Fatal("failed to unmarshal record:", err)
+			log.Println("failed to unmarshal record:", err, f.Name())
+			continue
 		}
 
 		addToJa3DB(sum, &updated, &sums)
