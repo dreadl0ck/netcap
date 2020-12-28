@@ -16,6 +16,7 @@ package software
 import "github.com/dreadl0ck/netcap/types"
 
 // determine vendor name based on product name
+// TODO: add more associations
 func determineVendor(product string) (vendor string) {
 	switch product {
 	case "Chrome", "Android":
