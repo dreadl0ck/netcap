@@ -133,6 +133,7 @@ func (sd *StreamDecoder) CanDecodeStream(client []byte, server []byte) bool {
 	return sd.CanDecode(client, server)
 }
 
+// Transport returns the transport protocol (Layer 4 in the OSI model)
 func (sd *StreamDecoder) Transport() core.TransportProtocol {
 	return sd.Typ
 }

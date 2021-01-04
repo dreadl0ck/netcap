@@ -64,7 +64,7 @@ func DHCPV6Transform(count DHCPCountFunc, transform DHCPV6TransformationFunc, co
 	if errFileHeader != nil {
 		die("failed to read file header", errFileHeader.Error())
 	}
-	if header.Type != types.Type_NC_DHCPv6 {
+	if header != nil && header.Type != types.Type_NC_DHCPv6 {
 		die("file does not contain DHCPv6 records", header.Type.String())
 	}
 

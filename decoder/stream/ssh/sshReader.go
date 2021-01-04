@@ -224,7 +224,6 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		// spew.Dump("found SSH KexInit", h.parent.ident, init)
 		hash, raw := computeHASSH(init)
 
-		var err error
 		if dir == reassembly.TCPDirClientToServer {
 			err = Decoder.Writer.Write(&types.SSH{
 				Timestamp:  h.conversation.FirstClientPacket.UnixNano(),

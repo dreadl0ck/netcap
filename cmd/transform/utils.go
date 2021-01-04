@@ -82,10 +82,11 @@ func dieIfExecutable(loc string) {
 	if err != nil {
 		die(err.Error(), "failed to stat file")
 	}
-
-	// if content type is octet or the file has the executable bit set, abort
-	if cType == octetStream || isExecAny(stat.Mode()) {
-		die("detected executable file format", "aborting to prevent accidental execution")
+	if stat != nil {
+		// if content type is octet or the file has the executable bit set, abort
+		if cType == octetStream || isExecAny(stat.Mode()) {
+			die("detected executable file format", "aborting to prevent accidental execution")
+		}
 	}
 }
 

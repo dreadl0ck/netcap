@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 )
 
+// CloneDBs will clone the data bases initially from the public git repository
 // TODO: display expected size before retrieval and prompt for confirmation
 // TODO: add windows support
 func CloneDBs() {

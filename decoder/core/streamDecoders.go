@@ -13,6 +13,7 @@
 
 package core
 
+// TransportProtocol is a layer 4 protocol from the OSI model
 type TransportProtocol int
 
 const (

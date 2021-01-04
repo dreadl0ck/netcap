@@ -60,7 +60,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_File {
+	if header != nil && header.Type != types.Type_NC_File {
 		log.Fatal("file does not contain File records: " + header.Type.String())
 	}
 

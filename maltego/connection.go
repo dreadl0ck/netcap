@@ -199,7 +199,7 @@ func ConnectionTransform(count connCountFunc, transform connTransformationFunc) 
 		die(errFileHeader.Error(), "failed to read file header")
 	}
 
-	if header.Type != types.Type_NC_Connection {
+	if header != nil && header.Type != types.Type_NC_Connection {
 		die("file does not contain conn records", header.Type.String())
 	}
 

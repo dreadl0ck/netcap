@@ -62,7 +62,7 @@ func TLSServerHelloTransform(count TLSServerHelloCountFunc, transform TLSServerH
 		die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_TLSServerHello {
+	if header != nil && header.Type != types.Type_NC_TLSServerHello {
 		die("file does not contain TLSServerHello records", header.Type.String())
 	}
 

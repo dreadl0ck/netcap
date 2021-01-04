@@ -68,7 +68,7 @@ func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueT
 	if errFileHeader != nil {
 		die("failed to read file header", errFileHeader.Error())
 	}
-	if header.Type != types.Type_NC_ARP {
+	if header != nil && header.Type != types.Type_NC_ARP {
 		die("file does not contain ARP records", header.Type.String())
 	}
 
