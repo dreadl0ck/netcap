@@ -142,7 +142,7 @@ func TestClassifyBanners(t *testing.T) {
 	conf := config.DefaultConfig
 
 	// Load vulnerabilities DB index
-	indexName := filepath.Join(resolvers.DataBaseSource, "nvd.bleve")
+	indexName := filepath.Join(resolvers.DataBaseFolderPath, "nvd.bleve")
 	var err error
 	db.VulnerabilitiesIndex, err = db.OpenBleve(indexName)
 	if err != nil {
@@ -151,7 +151,7 @@ func TestClassifyBanners(t *testing.T) {
 
 	defer db.CloseBleve(db.VulnerabilitiesIndex)
 
-	indexName = filepath.Join(resolvers.DataBaseSource, "exploit-db.bleve")
+	indexName = filepath.Join(resolvers.DataBaseFolderPath, "exploit-db.bleve")
 	db.ExploitsIndex, err = db.OpenBleve(indexName)
 	if err != nil {
 		t.Fatal(err)

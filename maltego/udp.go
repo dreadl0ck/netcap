@@ -68,7 +68,7 @@ func UDPTransform(count UDPCountFunc, transform UDPTransformationFunc, continueT
 	if errFileHeader != nil {
 		die("failed to read file header", errFileHeader.Error())
 	}
-	if header.Type != types.Type_NC_UDP {
+	if header != nil && header.Type != types.Type_NC_UDP {
 		die("file does not contain UDP records", header.Type.String())
 	}
 

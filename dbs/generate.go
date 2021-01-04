@@ -162,6 +162,7 @@ var (
 	numBytesFetchedMu sync.Mutex
 )
 
+// GenerateDBs allows to fetch the databases from their initial sources and generate the preprocessed form that netcap uses
 func GenerateDBs() {
 
 	var (
@@ -257,6 +258,7 @@ func fetchResource(s *datasource, outFilePath string) {
 	}
 }
 
+// WebTechnologies models different web technologies
 // TODO: automate generation of cmsdb.json from the technologies.json file
 type WebTechnologies struct {
 	Schema     string `json:"$schema"`

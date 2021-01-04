@@ -68,7 +68,7 @@ func DNSTransform(count DNSCountFunc, transform DNSTransformationFunc, continueT
 	if errFileHeader != nil {
 		die("failed to read file header", errFileHeader.Error())
 	}
-	if header.Type != types.Type_NC_DNS {
+	if header != nil && header.Type != types.Type_NC_DNS {
 		die("file does not contain DNS records", header.Type.String())
 	}
 

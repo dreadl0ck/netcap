@@ -116,6 +116,7 @@ func intermediatePatchVersions(from string, until string) []string {
 	return out
 }
 
+// IndexData will index the data into a bleve database for full text search
 func IndexData(in string, out string, buildPath string) {
 	var (
 		start     = time.Now()

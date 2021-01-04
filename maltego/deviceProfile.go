@@ -109,7 +109,7 @@ func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfil
 		die(errFileHeader.Error(), "failed to open audit record file")
 	}
 
-	if header.Type != types.Type_NC_DeviceProfile {
+	if header != nil && header.Type != types.Type_NC_DeviceProfile {
 		die("file does not contain DeviceProfile records", header.Type.String())
 	}
 

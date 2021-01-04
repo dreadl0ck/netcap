@@ -61,7 +61,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 		die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_HTTP {
+	if header != nil && header.Type != types.Type_NC_HTTP {
 		die("file does not contain HTTP records", header.Type.String())
 	}
 
