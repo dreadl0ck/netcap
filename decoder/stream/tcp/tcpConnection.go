@@ -66,7 +66,6 @@ func NumSavedTCPConns() int64 {
 // and manage the stream lifecycle
 // this structure has an optimized field order to avoid excessive padding.
 type tcpConnection struct {
-
 	sync.Mutex
 	net, transport gopacket.Flow
 

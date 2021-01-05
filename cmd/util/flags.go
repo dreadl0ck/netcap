@@ -42,7 +42,7 @@ var (
 	flagVersion        = fs.Bool("version", false, "print netcap package version and exit")
 	flagCloneDBs       = fs.Bool("clone-dbs", false, "clone netcap-dbs repository to the expected path and exit")
 	flagGenerateDBs    = fs.Bool("generate-dbs", false, "fetch and generate netcap-dbs and exit")
-	flagUpdateDBs    = fs.Bool("update-dbs", false, "update the current databases to the latest version and exit")
+	flagUpdateDBs      = fs.Bool("update-dbs", false, "update the current databases to the latest version and exit")
 	flagMemBufferSize  = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 	flagEnv            = fs.Bool("env", false, "print netcap environment variables and exit")
 	flagInterfaces     = fs.Bool("interfaces", false, "print netcap environment variables and exit")

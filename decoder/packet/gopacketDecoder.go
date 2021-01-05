@@ -45,7 +45,7 @@ type (
 	// this structure has an optimized field order to avoid excessive padding.
 	GoPacketDecoder struct {
 		// used to keep track of the number of generated audit records
-		numRecords int64
+		numRecords  int64
 		Description string
 		Layer       gopacket.LayerType
 		Handler     goPacketDecoderHandler

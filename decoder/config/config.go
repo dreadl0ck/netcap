@@ -75,7 +75,6 @@ var DefaultConfig = &Config{
 // for the decoders
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
-
 	sync.Mutex
 
 	// Output path

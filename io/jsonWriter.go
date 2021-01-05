@@ -35,7 +35,7 @@ import (
 
 // jsonWriter is a structure that supports writing JSON audit records to disk.
 type jsonWriter struct {
-	mu   sync.Mutex
+	mu      sync.Mutex
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
 	dWriter *delimited.Writer

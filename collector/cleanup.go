@@ -30,6 +30,8 @@ import (
 func (c *Collector) cleanup(force bool) {
 	c.log.Info("cleanup started")
 
+	_, _ = c.netcapLogFile.WriteString(newMemStats().String())
+
 	c.statMutex.Lock()
 	c.shutdown = true
 	c.statMutex.Unlock()

@@ -31,7 +31,7 @@ import (
 
 // protoWriter is a structure that supports writing protobuf audit records to disk.
 type protoWriter struct {
-	mu   sync.Mutex
+	mu sync.Mutex
 
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer

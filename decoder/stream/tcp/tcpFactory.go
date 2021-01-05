@@ -55,7 +55,7 @@ type connectionFactory struct {
 	defragger     *ip4defrag.IPv4Defragmenter
 	StreamPool    *reassembly.StreamPool
 	wg            sync.WaitGroup
-	FSMOptions reassembly.TCPSimpleFSMOptions
+	FSMOptions    reassembly.TCPSimpleFSMOptions
 }
 
 // New handles a new stream received from the assembler

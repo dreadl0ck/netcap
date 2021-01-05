@@ -35,7 +35,7 @@ func UpdateDBs() {
 	}
 
 	var (
-		pathASN = filepath.Join(resolvers.DataBaseFolderPath, "GeoLite2-ASN.mmdb")
+		pathASN  = filepath.Join(resolvers.DataBaseFolderPath, "GeoLite2-ASN.mmdb")
 		pathCity = filepath.Join(resolvers.DataBaseFolderPath, "GeoLite2-City.mmdb")
 	)
 
@@ -52,7 +52,7 @@ func UpdateDBs() {
 	}
 
 	var (
-		asnHash = hex.EncodeToString(cryptoutils.MD5Data(asnDB))
+		asnHash  = hex.EncodeToString(cryptoutils.MD5Data(asnDB))
 		cityHash = hex.EncodeToString(cryptoutils.MD5Data(cityDB))
 	)
 
