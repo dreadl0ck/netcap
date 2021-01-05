@@ -242,8 +242,8 @@ func doSrcPortUpdate(p *ipProfile, srcPort int32, layerType string, dataLen uint
 			PortNumber: srcPort,
 			Protocol:   layerType,
 			Stats: &types.PortStats{
-				Bytes:      dataLen,
-				Packets:    1,
+				Bytes:   dataLen,
+				Packets: 1,
 			},
 		})
 	}
@@ -269,8 +269,8 @@ func doContactedPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLe
 			PortNumber: dstPort,
 			Protocol:   layerType,
 			Stats: &types.PortStats{
-				Bytes:      dataLen,
-				Packets:    1,
+				Bytes:   dataLen,
+				Packets: 1,
 			},
 		})
 	}
@@ -296,8 +296,8 @@ func doDstPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint
 			PortNumber: dstPort,
 			Protocol:   layerType,
 			Stats: &types.PortStats{
-				Bytes:      dataLen,
-				Packets:    1,
+				Bytes:   dataLen,
+				Packets: 1,
 			},
 		})
 	}
@@ -318,8 +318,8 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 				PortNumber: utils.DecodePort(tl.TransportFlow().Src().Raw()),
 				Protocol:   tl.LayerType().String(),
 				Stats: &types.PortStats{
-					Bytes:      dataLen,
-					Packets:    1,
+					Bytes:   dataLen,
+					Packets: 1,
 				},
 			})
 			// contacted port
@@ -327,8 +327,8 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 				PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
 				Protocol:   tl.LayerType().String(),
 				Stats: &types.PortStats{
-					Bytes:      dataLen,
-					Packets:    1,
+					Bytes:   dataLen,
+					Packets: 1,
 				},
 			})
 		} else {
@@ -337,8 +337,8 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 				PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
 				Protocol:   tl.LayerType().String(),
 				Stats: &types.PortStats{
-					Bytes:      dataLen,
-					Packets:    1,
+					Bytes:   dataLen,
+					Packets: 1,
 				},
 			})
 			// contacted port
@@ -346,8 +346,8 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 				PortNumber: utils.DecodePort(tl.TransportFlow().Src().Raw()),
 				Protocol:   tl.LayerType().String(),
 				Stats: &types.PortStats{
-					Bytes:      dataLen,
-					Packets:    1,
+					Bytes:   dataLen,
+					Packets: 1,
 				},
 			})
 		}

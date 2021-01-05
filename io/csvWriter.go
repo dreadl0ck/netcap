@@ -35,7 +35,7 @@ import (
 
 // csvWriter is a structure that supports writing CSV audit records to disk.
 type csvWriter struct {
-	mu   sync.Mutex
+	mu sync.Mutex
 
 	bWriter   *bufio.Writer
 	gWriter   *pgzip.Writer

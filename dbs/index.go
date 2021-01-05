@@ -334,7 +334,7 @@ func IndexData(in string, out string, buildPath string) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			
+
 			data, err := ioutil.ReadAll(r)
 			if err != nil {
 				log.Fatal("Could not read file " + file)

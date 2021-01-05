@@ -4,7 +4,6 @@ import "sync"
 
 // Stats contains statistics about the stream reassembly.
 var Stats struct {
-
 	sync.Mutex
 
 	IPdefrag            int64

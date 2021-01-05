@@ -36,7 +36,6 @@ type cookie struct {
 // httpMetaStore is a thread safe in-memory store for interesting HTTP artifacts.
 // TODO: currently not in use, make it configurable
 type httpMetaStore struct {
-
 	sync.Mutex
 
 	// mapped ip address to server names
