@@ -57,6 +57,11 @@ var errInvalidOutputDirectory = errors.New("expected a directory, but got a file
 type Collector struct {
 	mu                       sync.Mutex
 	statMutex                sync.Mutex
+	current                  int64
+	numWorkers               int
+	numPacketsLast           int64
+	totalBytesWritten        int64
+	numPackets               int64
 	workers                  []chan gopacket.Packet
 	start                    time.Time
 	assemblers               []*reassembly.Assembler
@@ -74,14 +79,9 @@ type Collector struct {
 	errorLogFile             *os.File
 	unknownProtosAtomic      *decoderutils.AtomicCounterMap
 	allProtosAtomic          *decoderutils.AtomicCounterMap
-	current                  int64
-	numWorkers               int
-	numPacketsLast           int64
-	totalBytesWritten        int64
 	files                    map[string]string
 	inputSize                int64
 	unkownPcapWriterBuffered *bufio.Writer
-	numPackets               int64
 	config                   *Config
 	errorMap                 *decoderutils.AtomicCounterMap
 	wg                       sync.WaitGroup
