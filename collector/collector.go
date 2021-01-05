@@ -58,10 +58,10 @@ type Collector struct {
 	mu                       sync.Mutex
 	statMutex                sync.Mutex
 	current                  int64
-	numWorkers               int
 	numPacketsLast           int64
 	totalBytesWritten        int64
 	numPackets               int64
+	numWorkers               int
 	workers                  []chan gopacket.Packet
 	start                    time.Time
 	assemblers               []*reassembly.Assembler

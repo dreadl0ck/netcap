@@ -30,7 +30,6 @@ var Stats struct {
 	Requests  int64
 	Responses int64
 	Count     int64
-	NumErrors uint
 	DataBytes int64
 	NumConns  int64
 	NumFlows  int64
@@ -44,4 +43,7 @@ var Stats struct {
 	NumClientStreamNotFound int64
 	NumRequests             int64
 	NumResponses            int64
+
+	// keep this one after all 64bit types to fix alignment problems on ARM
+	NumErrors uint
 }
