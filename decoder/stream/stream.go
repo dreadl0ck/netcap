@@ -140,7 +140,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		err = d.PostInitFunc()
 		if err != nil {
 			if c.IgnoreDecoderInitErrors {
-				fmt.Println(ansi.Red, err, ansi.Reset)
+				fmt.Println("error while initializing", d.GetName(), "stream decoder:", ansi.Red, err, ansi.Reset)
 			} else {
 				return nil, errors.Wrap(err, "postinit failed")
 			}
