@@ -35,12 +35,13 @@ import (
 
 // csvWriter is a structure that supports writing CSV audit records to disk.
 type csvWriter struct {
+	mu   sync.Mutex
+
 	bWriter   *bufio.Writer
 	gWriter   *pgzip.Writer
 	csvWriter *csvProtoWriter
 
 	file *os.File
-	mu   sync.Mutex
 	wc   *WriterConfig
 }
 
@@ -138,8 +139,8 @@ func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
 
 // csvProtoWriter implements writing audit records to disk in the CSV format.
 type csvProtoWriter struct {
-	w io.Writer
 	sync.Mutex
+	w io.Writer
 }
 
 // newCSVProtoWriter returns a new CSV writer instance.

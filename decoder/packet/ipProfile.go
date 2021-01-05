@@ -58,8 +58,8 @@ var ipProfiles = &atomicIPProfileMap{
 
 // wrapper for the types.IPProfile that can be locked.
 type ipProfile struct {
-	*types.IPProfile
 	sync.Mutex
+	*types.IPProfile
 }
 
 var ipProfileDecoder = newPacketDecoder(

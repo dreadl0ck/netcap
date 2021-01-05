@@ -37,6 +37,8 @@ type cookie struct {
 // TODO: currently not in use, make it configurable
 type httpMetaStore struct {
 
+	sync.Mutex
+
 	// mapped ip address to server names
 	ServerNames map[string]string
 
@@ -52,8 +54,6 @@ type httpMetaStore struct {
 	// mapped ips to known header and cookies of frontend frameworks
 	CMSHeaders map[string][]header
 	CMSCookies map[string][]cookie
-
-	sync.Mutex
 }
 
 // global store for selected http meta information

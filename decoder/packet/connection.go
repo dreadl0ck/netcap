@@ -40,14 +40,14 @@ func (c connectionID) String() string {
 }
 
 type connection struct {
-	*types.Connection
 	sync.Mutex
+	*types.Connection
 }
 
 // atomicConnMap contains all connections and provides synchronized access.
 type atomicConnMap struct {
-	Items map[string]*connection
 	sync.Mutex
+	Items map[string]*connection
 }
 
 // Size returns the number of elements in the Items map.

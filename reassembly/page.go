@@ -18,13 +18,13 @@ const pageBytes = 1900
 // a connection.
 // this structure has an optimized field order to avoid excessive padding.
 type page struct {
+	sync.Mutex
 	bytes []byte
 	seen  time.Time
 	ac    AssemblerContext
 	seq   Sequence
 	prev  *page
 	next  *page
-	sync.Mutex
 	buf   [pageBytes]byte
 	start bool
 	end   bool

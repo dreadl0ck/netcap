@@ -17,8 +17,8 @@ import "sync"
 
 // AtomicCounterMap maps strings to integers.
 type AtomicCounterMap struct {
-	Items map[string]int64
 	sync.Mutex
+	Items map[string]int64
 }
 
 // NewAtomicCounterMap returns a new AtomicCounterMap.

@@ -49,12 +49,12 @@ func GetStreamPool() *reassembly.StreamPool {
 // TCPConnectionFactory internal data structure to handle new network streams
 // and spawn the stream decoder routines for processing the data.
 type connectionFactory struct {
+	sync.Mutex
 	streamReaders []streamReader
 	numActive     int64
 	defragger     *ip4defrag.IPv4Defragmenter
 	StreamPool    *reassembly.StreamPool
 	wg            sync.WaitGroup
-	sync.Mutex
 	FSMOptions reassembly.TCPSimpleFSMOptions
 }
 

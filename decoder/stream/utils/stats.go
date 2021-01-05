@@ -4,6 +4,9 @@ import "sync"
 
 // Stats contains statistics about the stream reassembly.
 var Stats struct {
+
+	sync.Mutex
+
 	IPdefrag            int64
 	MissedBytes         int64
 	Pkt                 int64
@@ -41,6 +44,4 @@ var Stats struct {
 	NumClientStreamNotFound int64
 	NumRequests             int64
 	NumResponses            int64
-
-	sync.Mutex
 }

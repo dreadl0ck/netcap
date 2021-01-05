@@ -29,15 +29,15 @@ import (
 // DeviceProfile describes the behavior of a hardware device.
 // This is a wrapper structure to allow safe atomic access.
 type DeviceProfile struct {
-	*types.DeviceProfile
 	sync.Mutex
+	*types.DeviceProfile
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicDeviceProfileMap struct {
+	sync.Mutex
 	// SrcMAC to DeviceProfiles
 	Items map[string]*DeviceProfile
-	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map.
