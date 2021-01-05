@@ -15,6 +15,7 @@ package software
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -93,7 +94,7 @@ var Decoder = &decoder.AbstractDecoder{
 		// read CMS db JSON
 		err = loadCmsDB()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to load CMS database")
 		}
 
 		softwareLog.Info("loaded CMS db", zap.Int("total", len(cmsDB)))
@@ -104,7 +105,8 @@ var Decoder = &decoder.AbstractDecoder{
 		if err != nil {
 			// explicitly set to nil, otherwise it can't be determined whether the init succeeded later on
 			db.VulnerabilitiesIndex = nil
-			return err
+
+			return errors.Wrap(err, "failed to open vulnerability bleve index at: " + indexName)
 		}
 
 		softwareLog.Info("loaded Ja3/ja3S database", zap.Int("total_records", len(ja3db.Servers)))
