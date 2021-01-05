@@ -74,6 +74,6 @@ func addContactedPort(trx *maltego.Transform, portStr string, port *types.Port, 
 	ent.AddDisplayInformation(di, "Netcap Info")
 	ent.AddProperty("label", "Label", maltego.Strict, portStr+"\n"+serviceName)
 	ent.AddProperty("port", "Port", maltego.Strict, portStr)
-	ent.SetLinkLabel(strconv.FormatInt(int64(port.Packets), 10) + " pkts")
-	ent.SetLinkThickness(maltego.GetThickness(port.Packets, min, max))
+	ent.SetLinkLabel(strconv.FormatInt(int64(port.Stats.Packets), 10) + " pkts")
+	ent.SetLinkThickness(maltego.GetThickness(port.Stats.Packets, min, max))
 }
