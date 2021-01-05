@@ -69,6 +69,7 @@ type ElasticConfig struct {
 
 // elasticWriter is a writer that writes into an elastic database.
 type elasticWriter struct {
+	sync.Mutex
 	client     *elasticsearch.Client
 	queue      []proto.Message
 	queueIndex int
@@ -78,7 +79,6 @@ type elasticWriter struct {
 	processed  int
 
 	indexName string
-	sync.Mutex
 }
 
 /*

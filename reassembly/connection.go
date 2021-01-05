@@ -10,13 +10,12 @@ import (
 
 // Bi-directional TCP network connection.
 type connection struct {
+	mu sync.Mutex
 	key      *key // client->server
 	c2s, s2c halfconnection
 
 	ac        assemblerSimpleContext
 	firstFlow gopacket.Flow
-
-	mu sync.Mutex
 }
 
 func (c *connection) reset(k *key, s Stream, ts time.Time) {

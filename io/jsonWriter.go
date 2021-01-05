@@ -35,13 +35,13 @@ import (
 
 // jsonWriter is a structure that supports writing JSON audit records to disk.
 type jsonWriter struct {
+	mu   sync.Mutex
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
 	dWriter *delimited.Writer
 	jWriter *jsonProtoWriter
 
 	file *os.File
-	mu   sync.Mutex
 	wc   *WriterConfig
 }
 
@@ -162,8 +162,8 @@ func (w *nullWriter) Close(_ int64) (name string, size int64) {
 
 // jsonProtoWriter implements writing audit records to disk in the JSON format.
 type jsonProtoWriter struct {
-	w io.Writer
 	sync.Mutex
+	w io.Writer
 }
 
 // newJSONProtoWriter returns a new JSON writer instance.

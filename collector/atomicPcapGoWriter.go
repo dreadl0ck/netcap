@@ -24,10 +24,10 @@ import (
 // atomicPcapGoWriter is a synchronized PCAP writer
 // that counts the number of packets written.
 type atomicPcapGoWriter struct {
+	sync.Mutex
 	count int64
 	w     pcapgo.Writer
 	err   error
-	sync.Mutex
 }
 
 // writePacket writes a packet into the writer.

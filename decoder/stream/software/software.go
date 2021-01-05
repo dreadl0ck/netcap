@@ -164,15 +164,15 @@ const (
 
 // AtomicSoftware wraps a types.Software to provide atomic access.
 type AtomicSoftware struct {
-	*types.Software
 	sync.Mutex
+	*types.Software
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicSoftwareMap struct {
+	sync.Mutex
 	// mapped product + version to software
 	Items map[string]*AtomicSoftware
-	sync.Mutex
 }
 
 var (

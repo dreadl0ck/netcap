@@ -40,6 +40,7 @@ func SetLogger(l *zap.Logger) {
 // tcpStreamReader is an internal structure that is used to read TCP data streams
 // this structure has an optimized field order to avoid excessive padding.
 type tcpStreamReader struct {
+	sync.Mutex
 	serviceBanner      bytes.Buffer
 	data               core.DataFragments
 	ident              string
@@ -50,7 +51,6 @@ type tcpStreamReader struct {
 	hexdump            bool
 	isClient           bool
 	saved              bool
-	sync.Mutex
 }
 
 func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {

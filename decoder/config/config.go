@@ -76,6 +76,8 @@ var DefaultConfig = &Config{
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
 
+	sync.Mutex
+
 	// Output path
 	Out string
 
@@ -249,6 +251,4 @@ type Config struct {
 
 	// CompressionLevel is the compression level to use by default
 	CompressionLevel int
-
-	sync.Mutex
 }

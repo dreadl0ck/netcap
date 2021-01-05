@@ -55,6 +55,8 @@ var errInvalidOutputDirectory = errors.New("expected a directory, but got a file
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
+	mu                       sync.Mutex
+	statMutex                sync.Mutex
 	workers                  []chan gopacket.Packet
 	start                    time.Time
 	assemblers               []*reassembly.Assembler
@@ -83,8 +85,6 @@ type Collector struct {
 	config                   *Config
 	errorMap                 *decoderutils.AtomicCounterMap
 	wg                       sync.WaitGroup
-	mu                       sync.Mutex
-	statMutex                sync.Mutex
 	shutdown                 bool
 	isLive                   bool
 

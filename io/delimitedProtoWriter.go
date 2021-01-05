@@ -29,8 +29,8 @@ import (
 
 // delimitedProtoWriter writes length delimited protobuf messages synchronized.
 type delimitedProtoWriter struct {
-	w delimited.Writer
 	sync.Mutex
+	w delimited.Writer
 }
 
 // putProto writes a protocol buffer into the writer and returns an error.

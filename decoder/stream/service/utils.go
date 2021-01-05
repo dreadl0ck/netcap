@@ -21,15 +21,15 @@ import (
 )
 
 type service struct {
-	*types.Service
 	sync.Mutex
+	*types.Service
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicServiceMap struct {
+	sync.Mutex
 	// map server IP + Port to service
 	Items map[string]*service
-	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map.

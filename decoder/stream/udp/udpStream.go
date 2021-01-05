@@ -38,15 +38,15 @@ const typeUDP = "udp"
 
 // udpData represents a udp data stream.
 type udpStream struct {
+	sync.Mutex
 	data    core.DataFragments
 	decoder core.StreamDecoderInterface
-	sync.Mutex
 }
 
 // udpStreamPool holds a pool of UDP streams.
 type udpStreamPool struct {
-	streams map[uint64]*udpStream
 	sync.Mutex
+	streams map[uint64]*udpStream
 }
 
 func newUDPStreamPool() *udpStreamPool {

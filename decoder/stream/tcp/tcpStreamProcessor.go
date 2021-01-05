@@ -82,6 +82,7 @@ func flushTCPStreams(numTotal int) {
 // internal data structure to parallelize processing of tcp streams
 // when the core engine is stopped and the remaining open connections are processed.
 type tcpStreamProcessor struct {
+	sync.Mutex
 	workers          []chan streamReader
 	numWorkers       int
 	next             int
@@ -89,7 +90,6 @@ type tcpStreamProcessor struct {
 	numDone          int
 	numTotal         int
 	streamBufferSize int
-	sync.Mutex
 }
 
 // to process the streams in parallel

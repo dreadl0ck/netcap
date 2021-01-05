@@ -83,6 +83,7 @@ func FlushUDPStreams() {
 // internal data structure to parallelize processing of tcp streams
 // when the core engine is stopped and the remaining open connections are processed.
 type udpStreamProcessor struct {
+	sync.Mutex
 	workers          []chan *udpStream
 	numWorkers       int
 	next             int
@@ -90,7 +91,6 @@ type udpStreamProcessor struct {
 	numDone          int
 	numTotal         int
 	streamBufferSize int
-	sync.Mutex
 }
 
 // to process the streams in parallel

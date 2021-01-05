@@ -104,6 +104,7 @@ type assemblerOptions struct {
 // traffic spikes can result in large memory usage which isn't garbage
 // collected when typical traffic levels return.
 type Assembler struct {
+	sync.Mutex
 	assemblerOptions
 	ret      []byteContainer
 	pc       *pageCache
@@ -111,7 +112,6 @@ type Assembler struct {
 	cacheLP  livePacket
 	cacheSG  reassemblyObject
 	start    bool
-	sync.Mutex
 }
 
 // NewAssembler creates a new assembler.  Pass in the StreamPool

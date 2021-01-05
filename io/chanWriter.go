@@ -30,13 +30,14 @@ import (
 
 // chanWriter writes length delimited, serialized protobuf records into a channel.
 type chanWriter struct {
+	mu   sync.Mutex
+
 	bWriter *bufio.Writer
 	gWriter *pgzip.Writer
 	dWriter *delimited.Writer
 	cWriter *chanProtoWriter
 
 	file *os.File
-	mu   sync.Mutex
 	wc   *WriterConfig
 }
 
