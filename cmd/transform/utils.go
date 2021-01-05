@@ -178,7 +178,7 @@ func createPortsTableHTML(ports []*types.Port) string {
 	sort.Sort(portSlice(ports))
 
 	for _, p := range ports {
-		out = append(out, "<tr><td>"+strconv.Itoa(int(p.PortNumber))+"</td><td>"+strconv.FormatUint(p.Packets, 10)+"</td><td>"+strconv.FormatUint(p.Bytes, 10)+"</td><td>"+p.Protocol+"</td></tr>")
+		out = append(out, "<tr><td>"+strconv.Itoa(int(p.PortNumber))+"</td><td>"+strconv.FormatUint(p.Stats.Packets, 10)+"</td><td>"+strconv.FormatUint(p.Stats.Bytes, 10)+"</td><td>"+p.Protocol+"</td></tr>")
 	}
 
 	out = append(out, "</table>")
@@ -199,7 +199,7 @@ func (d portSlice) Less(i, j int) bool {
 	data1 := d[i]
 	data2 := d[j]
 
-	return data1.Bytes < data2.Bytes
+	return data1.Stats.Bytes < data2.Stats.Bytes
 }
 
 // Swap will flip both values.

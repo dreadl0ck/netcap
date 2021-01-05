@@ -228,8 +228,8 @@ func doSrcPortUpdate(p *ipProfile, srcPort int32, layerType string, dataLen uint
 	for _, port := range p.SrcPorts {
 		if port.PortNumber == srcPort && port.Protocol == layerType {
 
-			atomic.AddUint64(&port.Bytes, dataLen)
-			atomic.AddUint64(&port.Packets, 1)
+			atomic.AddUint64(&port.Stats.Bytes, dataLen)
+			atomic.AddUint64(&port.Stats.Packets, 1)
 
 			found = true
 
@@ -240,9 +240,11 @@ func doSrcPortUpdate(p *ipProfile, srcPort int32, layerType string, dataLen uint
 	if !found {
 		p.SrcPorts = append(p.SrcPorts, &types.Port{
 			PortNumber: srcPort,
-			Bytes:      dataLen,
-			Packets:    1,
 			Protocol:   layerType,
+			Stats: &types.PortStats{
+				Bytes:      dataLen,
+				Packets:    1,
+			},
 		})
 	}
 }
@@ -253,8 +255,8 @@ func doContactedPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLe
 	for _, port := range p.ContactedPorts {
 		if port.PortNumber == dstPort && port.Protocol == layerType {
 
-			atomic.AddUint64(&port.Bytes, dataLen)
-			atomic.AddUint64(&port.Packets, 1)
+			atomic.AddUint64(&port.Stats.Bytes, dataLen)
+			atomic.AddUint64(&port.Stats.Packets, 1)
 
 			found = true
 
@@ -265,9 +267,11 @@ func doContactedPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLe
 	if !found {
 		p.ContactedPorts = append(p.ContactedPorts, &types.Port{
 			PortNumber: dstPort,
-			Bytes:      dataLen,
-			Packets:    1,
 			Protocol:   layerType,
+			Stats: &types.PortStats{
+				Bytes:      dataLen,
+				Packets:    1,
+			},
 		})
 	}
 }
@@ -278,8 +282,8 @@ func doDstPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint
 	// destination port
 	for _, port := range p.DstPorts {
 		if port.PortNumber == dstPort && port.Protocol == layerType {
-			atomic.AddUint64(&port.Bytes, dataLen)
-			atomic.AddUint64(&port.Packets, 1)
+			atomic.AddUint64(&port.Stats.Bytes, dataLen)
+			atomic.AddUint64(&port.Stats.Packets, 1)
 
 			found = true
 
@@ -290,9 +294,11 @@ func doDstPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint
 	if !found {
 		p.DstPorts = append(p.DstPorts, &types.Port{
 			PortNumber: dstPort,
-			Bytes:      dataLen,
-			Packets:    1,
 			Protocol:   layerType,
+			Stats: &types.PortStats{
+				Bytes:      dataLen,
+				Packets:    1,
+			},
 		})
 	}
 }
@@ -310,31 +316,39 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 			// source port
 			srcPorts = append(srcPorts, &types.Port{
 				PortNumber: utils.DecodePort(tl.TransportFlow().Src().Raw()),
-				Bytes:      dataLen,
-				Packets:    1,
 				Protocol:   tl.LayerType().String(),
+				Stats: &types.PortStats{
+					Bytes:      dataLen,
+					Packets:    1,
+				},
 			})
 			// contacted port
 			contactedPorts = append(contactedPorts, &types.Port{
 				PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
-				Bytes:      dataLen,
-				Packets:    1,
 				Protocol:   tl.LayerType().String(),
+				Stats: &types.PortStats{
+					Bytes:      dataLen,
+					Packets:    1,
+				},
 			})
 		} else {
 			// destination port
 			dstPorts = append(dstPorts, &types.Port{
 				PortNumber: utils.DecodePort(tl.TransportFlow().Dst().Raw()),
-				Bytes:      dataLen,
-				Packets:    1,
 				Protocol:   tl.LayerType().String(),
+				Stats: &types.PortStats{
+					Bytes:      dataLen,
+					Packets:    1,
+				},
 			})
 			// contacted port
 			contactedPorts = append(contactedPorts, &types.Port{
 				PortNumber: utils.DecodePort(tl.TransportFlow().Src().Raw()),
-				Bytes:      dataLen,
-				Packets:    1,
 				Protocol:   tl.LayerType().String(),
+				Stats: &types.PortStats{
+					Bytes:      dataLen,
+					Packets:    1,
+				},
 			})
 		}
 	}
