@@ -146,7 +146,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		err = d.PostInitFunc()
 		if err != nil {
 			if c.IgnoreDecoderInitErrors {
-				fmt.Println(ansi.Red, err, ansi.Reset)
+				fmt.Println("error while initializing", d.GetName(), "abstract decoder:", ansi.Red, err, ansi.Reset)
 			} else {
 				return nil, errors.Wrap(err, "postinit failed")
 			}
