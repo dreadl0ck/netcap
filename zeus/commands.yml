@@ -42,6 +42,17 @@ commands:
             echo "setting capabilities for attaching to a network interface (requires root)..."
             sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
 
+    install-linux-nodpi:
+        description: install netcap and netlabel on linux without DPI support
+        help: |
+            Compiles and moves the netcap binary to /usr/local/bin.
+            Additionally, the cap_net_raw and cap_net_admin capabilities are set,
+            to allow the NETCAP process to attach to a network interface.
+        exec: |
+            go build -tags nodpi -ldflags "-s -w" -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
+            echo "setting capabilities for attaching to a network interface (requires root)..."
+            sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
+
     install-nodpi:
         description: install netcap and netlabel to $PATH
         buildNumber: true
