@@ -58,6 +58,9 @@ type (
 	// this structure has an optimized field order to avoid excessive padding.
 	packetDecoder struct {
 
+		// used to keep track of the number of generated audit records
+		NumRecordsWritten int64
+
 		// Name of the decoder
 		Name string
 
@@ -73,9 +76,6 @@ type (
 		// init functions
 		PostInit func(*packetDecoder) error
 		DeInit   func(*packetDecoder) error
-
-		// used to keep track of the number of generated audit records
-		NumRecordsWritten int64
 
 		// Writer for audit records
 		Writer io.AuditRecordWriter
