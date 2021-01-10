@@ -56,7 +56,6 @@ var (
 	flagBaseLayer     = fs.String("base", "ethernet", "select base layer")
 	flagDecodeOptions = fs.String("opts", "lazy", "select decoding options")
 	flagPayload       = fs.Bool("payload", false, "capture payload for supported layers")
-	flagVersion       = fs.Bool("version", false, "print netcap package version and exit")
 	flagContext       = fs.Bool("context", true, "add packet flow context to selected audit records")
 
 	flagMemBufferSize  = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")

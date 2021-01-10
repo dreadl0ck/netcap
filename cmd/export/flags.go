@@ -49,7 +49,6 @@ var (
 	flagFileStorage          = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
 	flagCalcEntropy          = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
 	flagSnapLen              = fs.Int("snaplen", defaults.SnapLen, "configure snaplen for live capture from interface")
-	flagVersion              = fs.Bool("version", false, "print netcap package version and exit")
 	flagBaseLayer            = fs.String("base", "ethernet", "select base layer")
 	flagDecodeOptions        = fs.String("opts", "lazy", "select decoding options")
 	flagPayload              = fs.Bool("payload", false, "capture payload for supported layers")

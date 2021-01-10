@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.POP3AuditRecords" displayName="POP3AuditRecords" displayNamePlural="POP3AuditRecords" description="An archive of POP3 audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_magenta" largeIconResource="Netcap/insert_drive_file_magenta" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.POP3AuditRecords" displayName="POP3AuditRecords" displayNamePlural="POP3AuditRecords" description="An archive of POP3 audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_blueviolet" largeIconResource="Netcap/insert_drive_file_blueviolet" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.pop3auditrecords" displayValue="properties.pop3auditrecords">
   <Groups></Groups>
   <Fields>

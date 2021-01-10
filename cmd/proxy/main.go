@@ -23,7 +23,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"
 )
 
@@ -43,12 +42,6 @@ func Run() {
 	if *flagGenerateConfig {
 		io.GenerateConfig(fs, "proxy")
 		return
-	}
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
 	}
 
 	io.PrintBuildInfo()

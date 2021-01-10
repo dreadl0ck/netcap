@@ -27,7 +27,6 @@ import (
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
@@ -51,12 +50,6 @@ func Run() {
 		io.GenerateConfig(fs, "agent")
 
 		return
-	}
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
 	}
 
 	io.PrintBuildInfo()

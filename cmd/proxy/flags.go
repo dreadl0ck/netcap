@@ -47,6 +47,5 @@ var (
 	flagTrace               = fs.Bool("trace", true, "trace HTTP requests to retrieve additional information")
 	flagDump                = fs.Bool("dump", false, "dumps audit record as JSON to stdout")
 	flagDumpFormatted       = fs.Bool("format", true, "format when dumping JSON")
-	flagVersion             = fs.Bool("version", false, "print netcap package version and exit")
 	flagMemBufferSize       = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 )

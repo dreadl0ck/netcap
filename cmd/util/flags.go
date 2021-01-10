@@ -39,7 +39,6 @@ var (
 	flagToUTC          = fs.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
 	flagInput          = fs.String("read", "", "read specified audit record file")
 	flagSeparator      = fs.String("sep", ",", "set separator string for csv output")
-	flagVersion        = fs.Bool("version", false, "print netcap package version and exit")
 	flagCloneDBs       = fs.Bool("clone-dbs", false, "clone netcap-dbs repository to the expected path and exit")
 	flagGenerateDBs    = fs.Bool("generate-dbs", false, "fetch and generate netcap-dbs and exit")
 	flagUpdateDBs      = fs.Bool("update-dbs", false, "update the current databases to the latest version and exit")

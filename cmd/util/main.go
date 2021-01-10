@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -42,12 +41,6 @@ func Run() {
 		io.GenerateConfig(fs, "util")
 
 		return
-	}
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
 	}
 
 	if *flagCloneDBs {

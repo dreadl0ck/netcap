@@ -184,7 +184,8 @@ func ShowDecoders(verbose bool) {
 		}
 
 		fmt.Println(name + " Audit Records (", len(d), "/", newFields, ")")
-		fmt.Println(sum, "\n")
+		fmt.Println(sum)
+		fmt.Println() // newline
 
 		totalFields += newFields
 		totalAuditRecords += newAuditRecords

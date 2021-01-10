@@ -24,7 +24,6 @@ import (
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -45,12 +44,6 @@ func Run() {
 		io.GenerateConfig(fs, "dump")
 
 		return
-	}
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
 	}
 
 	// abort if there is no input or no live capture
