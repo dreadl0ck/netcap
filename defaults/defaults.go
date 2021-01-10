@@ -99,4 +99,6 @@ const (
 
 	// ElasticLimitTotalFields is the maximum number of fields allowed per batch of audit records.
 	ElasticLimitTotalFields = 1000000
+
+	NetcapTypePrefix = "NC_"
 )

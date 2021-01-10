@@ -56,6 +56,34 @@ type (
 	}
 )
 
+func (dec *GoPacketDecoder) PostInitFunc() error {
+	return nil
+}
+
+func (dec *GoPacketDecoder) DeInitFunc() error {
+	return nil
+}
+
+func (dec *GoPacketDecoder) GetName() string {
+	return dec.Type.String()
+}
+
+func (dec *GoPacketDecoder) SetWriter(writer io.AuditRecordWriter) {
+	dec.writer = writer
+}
+
+func (dec *GoPacketDecoder) GetType() types.Type {
+	return dec.Type
+}
+
+func (dec *GoPacketDecoder) GetDescription() string {
+	return dec.Description
+}
+
+func (dec *GoPacketDecoder) NumRecords() int64 {
+	return dec.numRecords
+}
+
 // InitGoPacketDecoders initializes all gopacket decoders.
 func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
