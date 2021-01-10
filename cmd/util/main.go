@@ -16,6 +16,7 @@ package util
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/dbs"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"log"
 	"os"
@@ -92,7 +93,7 @@ func Run() {
 		}
 
 		for _, line := range strings.Split(string(out), "\n") {
-			if strings.HasPrefix(line, "NC_") {
+			if strings.HasPrefix(line, defaults.NetcapTypePrefix) {
 				fmt.Println(line)
 			}
 		}

@@ -264,7 +264,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 				fmt.Println("decoded batch", b.MessageType, "from client", b.ClientID)
 
 				var (
-					protocol = strings.TrimPrefix(b.MessageType.String(), "NC_")
+					protocol = strings.TrimPrefix(b.MessageType.String(), defaults.NetcapTypePrefix)
 					path     = filepath.Join(b.ClientID, protocol+defaults.FileExtensionCompressed)
 				)
 

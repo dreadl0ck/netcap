@@ -26,9 +26,9 @@ import (
 // errInvalidAbstractDecoder occurs when an abstract decoder name is unknown during initialization.
 var errInvalidAbstractDecoder = errors.New("invalid abstract decoder")
 
-// defaultAbstractDecoders contains decoders for custom abstractions
+// DefaultAbstractDecoders contains decoders for custom abstractions
 // that do not represent a specific network protocol.
-var defaultAbstractDecoders = []core.DecoderAPI{
+var DefaultAbstractDecoders = []core.DecoderAPI{
 	file.Decoder,
 	service.Decoder,
 	exploit.Decoder,
@@ -41,14 +41,14 @@ var defaultAbstractDecoders = []core.DecoderAPI{
 // package level init.
 func init() {
 	// collect all names for stream decoders on startup
-	for _, d := range defaultAbstractDecoders {
+	for _, d := range DefaultAbstractDecoders {
 		decoderutils.AllDecoderNames[d.GetName()] = struct{}{}
 	}
 }
 
 // ApplyActionToAbstractDecoders can be used to run custom code for all stream decoders.
 func ApplyActionToAbstractDecoders(action func(api core.DecoderAPI)) {
-	for _, d := range defaultAbstractDecoders {
+	for _, d := range DefaultAbstractDecoders {
 		action(d)
 	}
 }
@@ -81,14 +81,14 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		}
 
 		// iterate over packet decoders and collect those that are named in the includeMap
-		for _, dec := range defaultAbstractDecoders {
+		for _, dec := range DefaultAbstractDecoders {
 			if _, ok := inMap[dec.GetName()]; ok {
 				selection = append(selection, dec)
 			}
 		}
 
 		// update packet decoders to new selection
-		defaultAbstractDecoders = selection
+		DefaultAbstractDecoders = selection
 	}
 
 	// iterate over excluded decoders
@@ -99,10 +99,10 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 			}
 
 			// remove named decoder from defaultPacketDecoders
-			for i, dec := range defaultAbstractDecoders {
+			for i, dec := range DefaultAbstractDecoders {
 				if name == dec.GetName() {
 					// remove encoder
-					defaultAbstractDecoders = append(defaultAbstractDecoders[:i], defaultAbstractDecoders[i+1:]...)
+					DefaultAbstractDecoders = append(DefaultAbstractDecoders[:i], DefaultAbstractDecoders[i+1:]...)
 
 					break
 				}
@@ -111,7 +111,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 	}
 
 	// initialize decoders
-	for _, d := range defaultAbstractDecoders {
+	for _, d := range DefaultAbstractDecoders {
 		w := netio.NewAuditRecordWriter(&netio.WriterConfig{
 			CSV:     c.CSV,
 			Proto:   c.Proto,

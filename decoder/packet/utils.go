@@ -18,6 +18,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/core"
+	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/defaults"
 	"math"
 	"os"
 	"reflect"
@@ -113,7 +116,7 @@ func countFields(t types.Type) int {
 		}
 	}
 
-	typeMap["types."+strings.TrimPrefix(t.String(), "NC_")] = recordFields
+	typeMap["types."+strings.TrimPrefix(t.String(), defaults.NetcapTypePrefix)] = recordFields
 
 	return recordFields
 }
@@ -163,29 +166,62 @@ func ApplyActionToGoPacketDecoders(action func(*GoPacketDecoder)) {
 
 // ShowDecoders will dump all decoders to stdout.
 func ShowDecoders(verbose bool) {
+
+	fmt.Println("Format: Decoder Type ( Decoders / Number of Fields )")
+	fmt.Println()
+
 	var totalFields, totalAuditRecords int
+	printDecoderStats := func (name string, d []core.DecoderAPI) {
 
-	fmt.Println("Custom Audit Records: Total", len(defaultPacketDecoders), "Format: DecoderName ( Number of Fields )")
+		var newFields, newAuditRecords int
+		var sum string
 
-	for _, d := range defaultPacketDecoders {
-		totalAuditRecords++
-		f := countFields(d.GetType())
-		totalFields += f
-		fmt.Println(pad("+ "+d.GetType().String()+" ( "+strconv.Itoa(f)+" )", 35), d.GetDescription())
+		for _, de := range d {
+			newAuditRecords++
+			f := countFields(de.GetType())
+			newFields += f
+			sum += pad("+ "+strings.TrimPrefix(de.GetType().String(), defaults.NetcapTypePrefix) +" ( "+strconv.Itoa(f)+" )", 35) + " " + de.GetDescription() + "\n"
+		}
+
+		fmt.Println(name + " Audit Records (", len(d), "/", newFields, ")")
+		fmt.Println(sum, "\n")
+
+		totalFields += newFields
+		totalAuditRecords += newAuditRecords
 	}
 
-	fmt.Println("> custom decoder fields: ", totalFields)
-	fmt.Println("> custom decoder audit records:", totalAuditRecords)
+	printDecoderStats("Packet", func()[]core.DecoderAPI{
+		var res []core.DecoderAPI
 
-	fmt.Println("\nLayer Audit Records: Total", len(defaultGoPacketDecoders), "Format: DecoderName ( Number of Fields )")
+		for _, s := range defaultPacketDecoders {
+			res = append(res, s)
+		}
 
-	for _, e := range defaultGoPacketDecoders {
-		totalAuditRecords++
+		return res
+	}())
 
-		f := countFields(e.Type)
-		totalFields += f
-		fmt.Println(pad("+ "+e.Layer.String()+" ( "+strconv.Itoa(f)+" )", 35), e.Description)
-	}
+	printDecoderStats("GoPacket", func()[]core.DecoderAPI{
+		var res []core.DecoderAPI
+
+		for _, s := range defaultGoPacketDecoders {
+			res = append(res, s)
+		}
+
+		return res
+	}())
+
+	printDecoderStats("Stream", func()[]core.DecoderAPI{
+		var res []core.DecoderAPI
+
+		for _, s := range stream.DefaultStreamDecoders {
+			res = append(res, s)
+		}
+
+		return res
+	}())
+	printDecoderStats("Abstract", stream.DefaultAbstractDecoders)
+
+	// Dump Info
 
 	if verbose {
 		var rows [][]string
