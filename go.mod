@@ -28,15 +28,15 @@ require (
 	github.com/glycerine/go-unsnap-stream v0.0.0-20190901134440-81cf024a9e0a // indirect
 	github.com/go-errors/errors v1.1.1
 	github.com/go-git/go-git/v5 v5.1.0
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
-	github.com/golang/geo v0.0.0-20200730024412-e86565bf3f35 // indirect
+	github.com/golang/geo v0.0.0-20210108004804-a63082ebfb66 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.1 // indirect
-	github.com/google/pprof v0.0.0-20201218002935-b9804c9f04c2 // indirect
+	github.com/google/pprof v0.0.0-20210106224343-284c741746fe // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
 	github.com/imdario/mergo v0.3.10 // indirect
-	github.com/klauspost/compress v1.11.4 // indirect
+	github.com/klauspost/compress v1.11.6 // indirect
 	github.com/klauspost/pgzip v1.2.5
 	github.com/mcnijman/go-emailaddress v1.1.0
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
@@ -58,7 +58,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
-	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
+	golang.org/x/sys v0.0.0-20210110051926-789bb1bd4061 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
