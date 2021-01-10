@@ -107,7 +107,7 @@ var serviceBanners = []bannerTest{
 		banner:  "220 (vsFTPd 3.0.3)\n200 Always in UTF8 mode.\n331 Please specify the password.\n230 Login successful.\n200 PORT command successful. Consider using PASV.\n150 Here comes the directory listing.\n226 Directory send OK.\n221 Goodbye.\n",
 		product: "vsFTPd",
 		version: "3.0.3",
-		//reg: "^220\\s\\((.*)\\s(.*)\\)",
+		reg: "^220\\s\\((.*)\\s(.*)\\)",
 	},
 	// SSH
 	{
@@ -115,13 +115,13 @@ var serviceBanners = []bannerTest{
 		product: "OpenSSH",
 		version: "7.6p1",
 		os:      "Ubuntu-4ubuntu0.3",
-		//reg: "^SSH-(.*)-(.*)_(.*)\\s(.*)",
+		reg: "^SSH-(.*)-(.*)_(.*)\\s(.*)",
 	},
 	// POP3
 	{
 		banner:  "+OK POP server ready H migmx027 0M8Bvu-1XYRm80CF0-00vllf\\r\\n+OK Capability list follows\\r\\n",
 		product: "POP3 server",
-		//reg: "^\\+OK POP server ready",
+		reg: "^\\+OK POP server ready",
 	},
 	// TODO: fix test
 	// Postgresql

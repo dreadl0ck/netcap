@@ -51,12 +51,6 @@ func Run() {
 		return
 	}
 
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
-	}
-
 	if *flagListInterfaces {
 		utils.ListAllNetworkInterfaces()
 

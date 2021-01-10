@@ -31,7 +31,6 @@ import (
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -58,12 +57,6 @@ func Run() {
 		netio.GenerateConfig(fs, "collect")
 
 		return
-	}
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
 	}
 
 	netio.PrintBuildInfo()

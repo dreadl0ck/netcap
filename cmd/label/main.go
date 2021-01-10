@@ -14,11 +14,9 @@
 package label
 
 import (
-	"fmt"
 	"log"
 	"os"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/label"
 )
@@ -36,12 +34,6 @@ func Run() {
 		io.GenerateConfig(fs, "label")
 
 		return
-	}
-
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
 	}
 
 	io.PrintBuildInfo()

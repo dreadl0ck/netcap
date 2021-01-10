@@ -61,12 +61,6 @@ func Run() {
 		return
 	}
 
-	// print version and exit
-	if *flagVersion {
-		fmt.Println(netcap.Version)
-		os.Exit(0)
-	}
-
 	// print a markdown overview of all available decoders and fields
 	if *flagPrintProtocolOverview {
 		packet.MarkdownOverview()

@@ -62,7 +62,6 @@ var (
 	flagSnapLen       = fs.Int("snaplen", defaults.SnapLen, "configure snaplen for live capture from interface")
 
 	flagTime    = fs.Bool("time", false, "print processing time even in quiet mode")
-	flagVersion = fs.Bool("version", false, "print netcap package version and exit")
 
 	flagBaseLayer     = fs.String("base", "ethernet", "select base layer")
 	flagDecodeOptions = fs.String("opts", "lazy", "select decoding options")
