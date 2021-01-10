@@ -1,5 +1,8 @@
 # TODOs
 
+- add option to enrich the audit records with db information as a post processing step
+- retry failed db fetch operations?
+- add compilation timestamp to logs for debugging
 - add lfs install notes for cloning the dbs repo:
 
     Apt/deb: sudo apt-get install git-lfs

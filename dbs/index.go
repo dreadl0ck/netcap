@@ -117,7 +117,7 @@ func intermediatePatchVersions(from string, until string) []string {
 }
 
 // IndexData will index the data into a bleve database for full text search
-func IndexData(in string, out string, buildPath string) {
+func IndexData(in string, out string, buildPath string, nvdIndexStart int) {
 	var (
 		start     = time.Now()
 		indexPath string
@@ -317,7 +317,7 @@ func IndexData(in string, out string, buildPath string) {
 		}()
 
 		var (
-			years = yearRange(2002, time.Now().Year())
+			years = yearRange(nvdIndexStart, time.Now().Year())
 			total int
 		)
 
