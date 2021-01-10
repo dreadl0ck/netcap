@@ -23,7 +23,7 @@ func TestIntermediatePatchVersions(t *testing.T) {
 
 	for i := 0; i < len(versions); i++ {
 		if versions[i] != generated[i] {
-			t.Fatal("expected ", versions[i], ", got", generated[i])
+			t.Fatal("expected ", versions[i], ", got ", generated[i])
 		}
 	}
 }

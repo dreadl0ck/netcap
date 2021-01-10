@@ -49,6 +49,9 @@ func makeSource(url, name string, hook datasourceHook) *datasource {
 	}
 }
 
+// NVD database starts at year 2002
+var nvdStartYear = 2002
+
 /*
  * Sources
  */
@@ -104,16 +107,16 @@ func unzipAndMoveToDbs(in string, d *datasource, base string) error {
 }
 
 func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
-	for _, year := range yearRange(2002, time.Now().Year()) {
+	for _, year := range yearRange(nvdStartYear, time.Now().Year()) {
 		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz", year), "", nil)
 		fetchResource(s, filepath.Join(base, "build", s.name))
 	}
-	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"))
+	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear)
 	return nil
 }
 
 func downloadAndIndexExploitDB(_ string, _ *datasource, base string) error {
-	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"))
+	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"), 0)
 	return nil
 }
 
@@ -163,7 +166,7 @@ var (
 )
 
 // GenerateDBs allows to fetch the databases from their initial sources and generate the preprocessed form that netcap uses
-func GenerateDBs() {
+func GenerateDBs(nvdIndexStartYear int) {
 
 	var (
 		base  = "netcap-dbs-generated"
@@ -173,6 +176,10 @@ func GenerateDBs() {
 		start = time.Now()
 		total int
 	)
+
+	if nvdIndexStartYear != 0 {
+		nvdStartYear = nvdIndexStartYear
+	}
 
 	for _, s := range sources {
 		total++

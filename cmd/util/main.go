@@ -55,7 +55,7 @@ func Run() {
 	}
 
 	if *flagGenerateDBs {
-		dbs.GenerateDBs()
+		dbs.GenerateDBs(*flagNVDIndexStart)
 		return
 	}
 
@@ -107,6 +107,6 @@ func Run() {
 	}
 
 	if *flagIndex != "" {
-		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath)
+		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, *flagNVDIndexStart)
 	}
 }
