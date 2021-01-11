@@ -376,7 +376,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				if reply.Command == pop3OK {
 					state = stateAuthenticated
 
-					if len(h.pop3Requests) >= h.reqIndex {
+					if len(h.pop3Requests) > h.reqIndex {
 						r = h.pop3Requests[h.reqIndex]
 						if r != nil {
 							token = r.Command
