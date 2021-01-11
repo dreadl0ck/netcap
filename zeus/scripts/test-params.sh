@@ -236,12 +236,12 @@ ${NETCAP_BIN} capture -read "$f" \
 # Exclude all custom decoders
 ${NETCAP_BIN} capture -read "$f" \
 	-out "${OUT}/${file}-numcores-workers-no-customdecoders.net" \
-	-exclude TLSClientHello,TLSServerHello,HTTP,Flow,Connection,DeviceProfile,IPProfile,File,POP3,Software,Service,Credentials,SSH,Vulnerability,Exploit,Mail
+	-exclude TLSClientHello,TLSServerHello,HTTP,Connection,DeviceProfile,IPProfile,File,POP3,Software,Service,Credentials,SSH,Vulnerability,Exploit,Mail
 
 # Include only custom decoders
 ${NETCAP_BIN} capture -read "$f" \
 	-out "${OUT}/${file}-numcores-workers-only-customdecoders.net" \
-	-include TLSClientHello,TLSServerHello,HTTP,Flow,Connection,DeviceProfile,IPProfile,File,POP3,Software,Service,Credentials,SSH,Vulnerability,Exploit,Mail
+	-include TLSClientHello,TLSServerHello,HTTP,Connection,DeviceProfile,IPProfile,File,POP3,Software,Service,Credentials,SSH,Vulnerability,Exploit,Mail
 
 ## 5.) Resolvers
 #      Different correlation configs
