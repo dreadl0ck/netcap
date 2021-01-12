@@ -1,5 +1,6 @@
 # TODOs
 
+- Connection: preserve how many bytes each party sent and who initated the connection
 - add custom netcap additions to service probes, manage in separate file
 - add option to enrich the audit records with db information as a post processing step
 - retry failed db fetch operations?
