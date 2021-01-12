@@ -48,7 +48,7 @@ func InitZapLogger(outpath, name string, debug bool) (*zap.Logger, *os.File, err
 		}
 	}
 
-	// Join the outputs, encoders, and level-handling functions into
+	// Join the outputs, decoders, and level-handling functions into
 	// zapcore.Cores, then tee the cores together.
 	core := zapcore.NewTee(
 		//zapcore.NewCore(

@@ -38,8 +38,8 @@ var (
 	flagPrivKey        = fs.String("privkey", "", "path to the hex encoded server private key")
 	flagAddr           = fs.String("addr", "127.0.0.1:1335", "specify an address and port to listen for incoming traffic")
 
-	files              = make(map[string]*auditRecordHandle)
-	flagMemBufferSize  = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
+	files             = make(map[string]*auditRecordHandle)
+	flagMemBufferSize = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 
 	// not configurable at the moment
 	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")

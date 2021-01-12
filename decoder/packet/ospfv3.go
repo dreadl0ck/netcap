@@ -76,7 +76,7 @@ var ospfv3Decoder = newGoPacketDecoder(
 					})
 				}
 			case layers.LSUpdate:
-				lSU = encoderLSUpdate(v)
+				lSU = decoderLSUpdate(v)
 			case []layers.LSAheader:
 				for _, r := range v {
 					lSAs = append(lSAs, &types.LSAheader{
@@ -114,7 +114,7 @@ var ospfv3Decoder = newGoPacketDecoder(
 	},
 )
 
-func encoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
+func decoderLSUpdate(v layers.LSUpdate) *types.LSUpdate {
 	lsas := make([]*types.LSA, len(v.LSAs))
 
 	for i, l := range v.LSAs {

@@ -168,7 +168,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 			// remove named decoder from defaultPacketDecoders
 			for i, e := range defaultPacketDecoders {
 				if name == e.GetName() {
-					// remove encoder
+					// remove decoder
 					defaultPacketDecoders = append(defaultPacketDecoders[:i], defaultPacketDecoders[i+1:]...)
 
 					break
@@ -275,10 +275,10 @@ func (pd *packetDecoder) GetDescription() string {
 }
 
 // Decode is called for each layer
-// this calls the handler function of the encoder
+// this calls the handler function of the decoder
 // and writes the serialized protobuf into the data pipe.
 func (pd *packetDecoder) Decode(p gopacket.Packet) error {
-	// call the Handler function of the encoder
+	// call the Handler function of the decoder
 	record := pd.Handler(p)
 	if record != nil {
 
@@ -326,7 +326,7 @@ func (pd *packetDecoder) Destroy() (name string, size int64) {
 	return pd.Writer.Close(pd.NumRecordsWritten)
 }
 
-// GetChan returns a channel to receive serialized protobuf data from the encoder.
+// GetChan returns a channel to receive serialized protobuf data from the decoder.
 func (pd *packetDecoder) GetChan() <-chan []byte {
 	if cw, ok := pd.Writer.(io.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()

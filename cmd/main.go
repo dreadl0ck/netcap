@@ -91,11 +91,11 @@ func main() {
 	flag.Usage = help
 	flag.Parse()
 
-/*	if *flagVersion {
+	if *flagVersion {
 		fmt.Println(netcap.Version)
 		os.Exit(0)
 	}
-*/
+
 	if *flagPrevious != "" {
 		printCompletions(*flagPrevious, *flagCurrent, *flagFull)
 

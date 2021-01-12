@@ -99,7 +99,7 @@ func (ad *AbstractDecoder) Destroy() (name string, size int64) {
 	return ad.Writer.Close(ad.NumRecordsWritten)
 }
 
-// GetChan returns a channel to receive serialized protobuf data from the encoder.
+// GetChan returns a channel to receive serialized protobuf data from the decoder.
 func (ad *AbstractDecoder) GetChan() <-chan []byte {
 	if cw, ok := ad.Writer.(netio.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()

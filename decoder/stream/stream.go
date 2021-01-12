@@ -95,7 +95,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 			// remove named decoder from defaultPacketDecoders
 			for port, dec := range DefaultStreamDecoders {
 				if name == dec.GetName() {
-					// remove encoder
+					// remove decoder
 					delete(DefaultStreamDecoders, port)
 
 					break

@@ -101,7 +101,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 			// remove named decoder from defaultPacketDecoders
 			for i, dec := range DefaultAbstractDecoders {
 				if name == dec.GetName() {
-					// remove encoder
+					// remove decoder
 					DefaultAbstractDecoders = append(DefaultAbstractDecoders[:i], DefaultAbstractDecoders[i+1:]...)
 
 					break

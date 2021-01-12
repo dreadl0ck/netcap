@@ -156,7 +156,7 @@ func (c *Collector) Init() (err error) {
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))
 
-	// set pointer of collectors atomic counter map in encoder pkg
+	// set pointer of collectors atomic counter map in decoder pkg
 	decoderutils.SetErrorMap(c.errorMap)
 
 	// create pcap files for packets
@@ -187,7 +187,7 @@ func handleDecoderInitError(err error, target string) {
 }
 
 func invalidDecoder(name string) {
-	fmt.Println("invalid encoder: " + ansi.Red + name + ansi.Reset)
+	fmt.Println("invalid decoder: " + ansi.Red + name + ansi.Reset)
 	packet.ShowDecoders(false)
 	os.Exit(1)
 }
