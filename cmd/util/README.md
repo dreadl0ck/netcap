@@ -5,7 +5,7 @@
 ## Description
 
 The tool can be used to check the validity of generated audit records,
-as well as converting netcap timestamps to human readable format.
+as well as converting netcap timestamps to human-readable format.
 
 Read more about this tool in the documentation: https://docs.netcap.io
 

@@ -129,7 +129,7 @@ func (c *Collector) stopWorkers() {
 }
 
 // handleSignals catches signals and runs the cleanup
-// SIGQUIT is not catched, to allow debugging by producing a stack and goroutine trace.
+// SIGQUIT is not caught, to allow debugging by producing a stack and goroutine trace.
 func (c *Collector) handleSignals() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)

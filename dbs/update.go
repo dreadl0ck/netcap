@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 )
 
+// UpdateDBs will update the databases on disk by pulling from the public github repository
 func UpdateDBs() {
 
 	// check if database root path exists already

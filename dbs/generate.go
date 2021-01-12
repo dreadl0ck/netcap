@@ -131,7 +131,12 @@ func untarAndMoveToDbs(in string, d *datasource, base string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func () {
+		errClose := f.Close()
+		if errClose != nil {
+			log.Fatal(errClose)
+		}
+	}()
 
 	name, err := unpackTarball(f, filepath.Join(base, "build"))
 	fmt.Println("unpacked", name)

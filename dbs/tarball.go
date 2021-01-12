@@ -59,11 +59,16 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 		// if not a directory, write file content
 		if !fi.IsDir() {
 
-			f, err := os.Open(file)
-			if err != nil {
-				return err
+			f, errOpen := os.Open(file)
+			if errOpen != nil {
+				return errOpen
 			}
-			defer f.Close()
+			defer func() {
+				errClose := f.Close()
+				if errClose != nil {
+					log.Fatal(errClose)
+				}
+			}()
 
 			fmt.Println("adding", f.Name())
 			if _, err = io.Copy(tarWriter, f); err != nil {
