@@ -49,7 +49,7 @@ var ospfv2Decoder = newGoPacketDecoder(
 					})
 				}
 			case layers.LSUpdate:
-				update = encoderLSUpdate(v)
+				update = decoderLSUpdate(v)
 			case []layers.LSReq:
 				for _, r := range v {
 					lreqs = append(lreqs, &types.LSReq{

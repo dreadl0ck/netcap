@@ -113,7 +113,7 @@ func (sd *StreamDecoder) Destroy() (name string, size int64) {
 	return sd.Writer.Close(sd.NumRecordsWritten)
 }
 
-// GetChan returns a channel to receive serialized protobuf data from the encoder.
+// GetChan returns a channel to receive serialized protobuf data from the decoder.
 func (sd *StreamDecoder) GetChan() <-chan []byte {
 	if cw, ok := sd.Writer.(netio.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()

@@ -44,7 +44,7 @@ var (
 	flagCollectLabels         = fs.Bool("collect", false, "append classifications from alert with duplicate timestamps to the generated label")
 	flagDisableLayerMapping   = fs.Bool("disable-layers", false, "do not map layer types by timestamp")
 	flagSuricataConfigPath    = fs.String("suricata-config", "/usr/local/etc/suricata/suricata.yaml", "set the path to the suricata config file")
-	flagCustom  = fs.String("custom", "", "use custom mappings at path")
+	flagCustom                = fs.String("custom", "", "use custom mappings at path")
 
 	// this wont work currently, because the Select() func will stop if there are fields that are not present on an audit record
 	// as labeling iterates over all available records, there will always be a record that does not have all selected fields

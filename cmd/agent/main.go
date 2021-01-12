@@ -164,7 +164,7 @@ func Run() {
 
 	fmt.Println("\n["+userName+"-"+id+"] got", len(chans), "channels")
 
-	// iterate over encoder channels
+	// iterate over decoder channels
 	for _, bi := range chans { // create a copy of loop variable
 		info := collector.BatchInfo{
 			Type: bi.Type,

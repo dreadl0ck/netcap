@@ -171,7 +171,7 @@ func ShowDecoders(verbose bool) {
 	fmt.Println()
 
 	var totalFields, totalAuditRecords int
-	printDecoderStats := func (name string, d []core.DecoderAPI) {
+	printDecoderStats := func(name string, d []core.DecoderAPI) {
 
 		var newFields, newAuditRecords int
 		var sum string
@@ -180,10 +180,10 @@ func ShowDecoders(verbose bool) {
 			newAuditRecords++
 			f := countFields(de.GetType())
 			newFields += f
-			sum += pad("+ "+strings.TrimPrefix(de.GetType().String(), defaults.NetcapTypePrefix) +" ( "+strconv.Itoa(f)+" )", 35) + " " + de.GetDescription() + "\n"
+			sum += pad("+ "+strings.TrimPrefix(de.GetType().String(), defaults.NetcapTypePrefix)+" ( "+strconv.Itoa(f)+" )", 35) + " " + de.GetDescription() + "\n"
 		}
 
-		fmt.Println(name + " Audit Records (", len(d), "/", newFields, ")")
+		fmt.Println(name+" Audit Records (", len(d), "/", newFields, ")")
 		fmt.Println(sum)
 		fmt.Println() // newline
 
@@ -191,7 +191,7 @@ func ShowDecoders(verbose bool) {
 		totalAuditRecords += newAuditRecords
 	}
 
-	printDecoderStats("Packet", func()[]core.DecoderAPI{
+	printDecoderStats("Packet", func() []core.DecoderAPI {
 		var res []core.DecoderAPI
 
 		for _, s := range defaultPacketDecoders {
@@ -201,7 +201,7 @@ func ShowDecoders(verbose bool) {
 		return res
 	}())
 
-	printDecoderStats("GoPacket", func()[]core.DecoderAPI{
+	printDecoderStats("GoPacket", func() []core.DecoderAPI {
 		var res []core.DecoderAPI
 
 		for _, s := range defaultGoPacketDecoders {
@@ -211,7 +211,7 @@ func ShowDecoders(verbose bool) {
 		return res
 	}())
 
-	printDecoderStats("Stream", func()[]core.DecoderAPI{
+	printDecoderStats("Stream", func() []core.DecoderAPI {
 		var res []core.DecoderAPI
 
 		for _, s := range stream.DefaultStreamDecoders {

@@ -115,7 +115,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					goto done
 				}
 
-				// pick decoders from the encoderMap by looking up the layer type
+				// pick decoders from the decoderMap by looking up the layer type
 				if decoders, ok = c.goPacketDecoders[layer.LayerType()]; ok {
 					for _, dec = range decoders {
 						t := time.Now()
@@ -133,7 +133,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 							goto done
 						}
 					}
-				} else { // no netcap encoder implemented
+				} else { // no netcap decoder implemented
 
 					// increment unknown layer type counter
 					c.unknownProtosAtomic.Inc(layer.LayerType().String())

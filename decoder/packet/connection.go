@@ -64,11 +64,14 @@ type connectionDecoder struct {
 }
 
 var connDecoder = &connectionDecoder{
-	packetDecoder: &packetDecoder{
-		Type:        types.Type_NC_Connection,
-		Name:        "Connection",
-		Description: "A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
-	},
+	packetDecoder: newPacketDecoder(
+		types.Type_NC_Connection,
+		"Connection",
+		"A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
+		nil,
+		nil,
+		nil,
+	),
 	Conns: &atomicConnMap{
 		Items: make(map[string]*connection),
 	},

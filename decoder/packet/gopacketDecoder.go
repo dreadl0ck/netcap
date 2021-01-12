@@ -38,7 +38,7 @@ import (
 var defaultGoPacketDecoders []*GoPacketDecoder
 
 type (
-	// goPacketDecoderHandler is the handler function for a layer encoder.
+	// goPacketDecoderHandler is the handler function for a layer decoder.
 	goPacketDecoderHandler = func(layer gopacket.Layer, timestamp int64) proto.Message
 
 	// GoPacketDecoder represents an decoder for the gopacket.Layer type
@@ -134,7 +134,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 			// remove named decoder from defaultGoPacketDecoders
 			for i, e := range defaultGoPacketDecoders {
 				if name == e.Layer.String() {
-					// remove encoder
+					// remove decoder
 					defaultGoPacketDecoders = append(defaultGoPacketDecoders[:i], defaultGoPacketDecoders[i+1:]...)
 					break
 				}
@@ -203,7 +203,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 	return decoders, nil
 }
 
-// newGoPacketDecoder returns a new GoPacketDecoder instance.
+// newGoPacketDecoder returns a new GoPacketDecoder instance and registers it.
 func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string, handler goPacketDecoderHandler) *GoPacketDecoder {
 	d := &GoPacketDecoder{
 		Layer:       lt,
@@ -216,7 +216,7 @@ func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string
 }
 
 // Decode is called for each layer
-// this calls the handler function of the encoder
+// this calls the handler function of the decoder
 // and writes the serialized protobuf into the data pipe.
 func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
 	record := dec.Handler(l, p.Metadata().Timestamp.UnixNano())
@@ -264,7 +264,7 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 	return nil
 }
 
-// GetChan returns a channel to receive serialized protobuf data from the encoder.
+// GetChan returns a channel to receive serialized protobuf data from the decoder.
 func (cd *GoPacketDecoder) GetChan() <-chan []byte {
 	if cw, ok := cd.writer.(io.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()

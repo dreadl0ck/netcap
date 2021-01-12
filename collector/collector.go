@@ -241,7 +241,7 @@ func (c *Collector) handlePacket(p gopacket.Packet) {
 		return
 	}
 
-	// send the packetInfo to the encoder routine
+	// send the packetInfo to the decoder routine
 	c.workers[c.next] <- p
 
 	// increment or reset next
@@ -257,7 +257,7 @@ func (c *Collector) handlePacket(p gopacket.Packet) {
 // they are passed to several worker goroutines in round robin style.
 func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
 	select {
-	// send the packetInfo to the encoder routine
+	// send the packetInfo to the decoder routine
 	case c.workers[c.next] <- p:
 	case <-time.After(3 * time.Second):
 		pkt := gopacket.NewPacket(p.Data(), c.config.BaseLayer, gopacket.Default)

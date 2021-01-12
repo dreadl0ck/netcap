@@ -61,7 +61,7 @@ var (
 	flagPromiscMode   = fs.Bool("promisc", true, "toggle promiscuous mode for live capture")
 	flagSnapLen       = fs.Int("snaplen", defaults.SnapLen, "configure snaplen for live capture from interface")
 
-	flagTime    = fs.Bool("time", false, "print processing time even in quiet mode")
+	flagTime = fs.Bool("time", false, "print processing time even in quiet mode")
 
 	flagBaseLayer     = fs.String("base", "ethernet", "select base layer")
 	flagDecodeOptions = fs.String("opts", "lazy", "select decoding options")
