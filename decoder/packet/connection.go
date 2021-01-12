@@ -58,47 +58,32 @@ func (a *atomicConnMap) Size() int {
 	return len(a.Items)
 }
 
-type connectionDecoder struct {
-	*packetDecoder
-	Conns *atomicConnMap
+var conns = &atomicConnMap{
+	Items: make(map[string]*connection),
 }
 
-var connDecoder = &connectionDecoder{
-	packetDecoder: newPacketDecoder(
-		types.Type_NC_Connection,
-		"Connection",
-		"A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
-		nil,
-		nil,
-		nil,
-	),
-	Conns: &atomicConnMap{
-		Items: make(map[string]*connection),
+var connectionDecoder = newPacketDecoder(
+	types.Type_NC_Connection,
+	"Connection",
+	"A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
+	nil,
+	func(p gopacket.Packet) proto.Message {
+		return handlePacket(p)
 	},
-}
+	func(decoder *packetDecoder) error {
+		conns.Lock()
+		for _, f := range conns.Items {
+			f.Lock()
+			decoder.writeConn(f.Connection)
+			f.Unlock()
+		}
+		conns.Unlock()
 
-// PostInit is called after the decoder has been initialized.
-func (cd *connectionDecoder) PostInit() error {
-	// simply overwrite the handler with our custom one
-	// this way the CustomEncoders default Decode() implementation will be used
-	// (it takes care of applying config options and tracking stats)
-	// but with our custom logic to handle the actual packet
-	cd.Handler = cd.handlePacket
+		return nil
+	},
+)
 
-	return nil
-}
-
-// Destroy closes and flushes all writers and calls deinit if set.
-func (cd *connectionDecoder) Destroy() (name string, size int64) {
-	err := cd.DeInit()
-	if err != nil {
-		panic(err)
-	}
-
-	return cd.Writer.Close(cd.NumRecordsWritten)
-}
-
-func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
+func handlePacket(p gopacket.Packet) proto.Message {
 	// assemble connectionID
 	connID := connectionID{}
 	if ll := p.LinkLayer(); ll != nil {
@@ -114,9 +99,9 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 	}
 
 	// lookup flow
-	cd.Conns.Lock()
+	conns.Lock()
 
-	if conn, ok := cd.Conns.Items[connID.String()]; ok {
+	if conn, ok := conns.Items[connID.String()]; ok {
 
 		conn.Lock()
 
@@ -188,7 +173,7 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 			co.AppPayloadSize = int32(len(al.Payload()))
 		}
 
-		cd.Conns.Items[connID.String()] = &connection{
+		conns.Items[connID.String()] = &connection{
 			Connection: co,
 		}
 
@@ -200,46 +185,36 @@ func (cd *connectionDecoder) handlePacket(p gopacket.Packet) proto.Message {
 		//	cd.flushConns(p)
 		//}
 	}
-	cd.Conns.Unlock()
+	conns.Unlock()
 
 	return nil
 }
 
-func (cd *connectionDecoder) flushConns(p gopacket.Packet) {
+/*func flushConns(p gopacket.Packet) {
 	var selectConns []*types.Connection
 
-	for id, entry := range cd.Conns.Items {
+	for id, entry := range conns.Items {
+
 		// flush entries whose last timestamp is connTimeOut older than current packet
 		if p.Metadata().Timestamp.Sub(time.Unix(0, entry.TimestampLast)) > conf.ConnTimeOut {
+
 			selectConns = append(selectConns, entry.Connection)
+
 			// cleanup
-			delete(cd.Conns.Items, id)
+			delete(conns.Items, id)
 		}
 	}
 
 	// flush selection in background
 	go func() {
 		for _, selectedConn := range selectConns {
-			cd.writeConn(selectedConn)
+			writeConn(selectedConn)
 		}
 	}()
-}
-
-// DeInit is called prior to teardown.
-func (cd *connectionDecoder) DeInit() error {
-	cd.Conns.Lock()
-	for _, f := range cd.Conns.Items {
-		f.Lock()
-		cd.writeConn(f.Connection)
-		f.Unlock()
-	}
-	cd.Conns.Unlock()
-
-	return nil
-}
+}*/
 
 // writeConn writes the connection.
-func (cd *connectionDecoder) writeConn(conn *types.Connection) {
+func (d *packetDecoder) writeConn(conn *types.Connection) {
 
 	// calculate duration
 	conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
@@ -248,9 +223,9 @@ func (cd *connectionDecoder) writeConn(conn *types.Connection) {
 		conn.Inc()
 	}
 
-	atomic.AddInt64(&cd.NumRecordsWritten, 1)
+	atomic.AddInt64(&d.NumRecordsWritten, 1)
 
-	err := cd.Writer.Write(conn)
+	err := d.Writer.Write(conn)
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}
