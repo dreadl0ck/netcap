@@ -132,14 +132,24 @@ func makePacket() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func (){
+		errDefer := f.Close()
+		if errDefer != nil {
+			log.Fatal(errDefer)
+		}
+	}()
 
 	// create pcapng writer
 	r, err := pcapgo.NewNgWriter(f, layers.LinkTypeEthernet)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer r.Flush()
+	defer func (){
+		errDefer := r.Flush()
+		if errDefer != nil {
+			log.Fatal(errDefer)
+		}
+	}()
 
 	// write packet to disk
 	err = r.WritePacket(gopacket.CaptureInfo{

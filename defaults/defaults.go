@@ -100,5 +100,6 @@ const (
 	// ElasticLimitTotalFields is the maximum number of fields allowed per batch of audit records.
 	ElasticLimitTotalFields = 1000000
 
+	// NetcapTypePrefix holds the prefix for the protobuf types
 	NetcapTypePrefix = "NC_"
 )

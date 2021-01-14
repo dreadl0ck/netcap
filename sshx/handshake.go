@@ -204,7 +204,7 @@ func (t *handshakeTransport) readLoop() {
 		t.incoming <- p
 	}
 
-	// Stop writers too.
+	// stop writers too.
 	t.recordWriteError(t.readError)
 
 	// Unblock the writer should it wait for this.

@@ -111,7 +111,7 @@ func writeLiveAuditRecords(outDir string) {
 
 		// add notes for specific audit records here
 		switch name {
-		//case "DeviceProfile":
+		//case "deviceProfile":
 		//	di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 		//	ent.AddDisplayInformation(di, "Netcap Info")
 		//

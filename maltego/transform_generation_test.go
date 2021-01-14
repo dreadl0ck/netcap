@@ -136,7 +136,7 @@ var transforms = []transformCoreInfo{
 
 	{"ToNetworkInterfaces", "netcap.Computer", "Show all available network interfaces"},
 	{"LookupDHCPFingerprint", "netcap.DHCPClient", "Resolve the clients DHCP fingerprint via the fingerbank API"},
-	{"StopCaptureProcess", "netcap.Interface", "Stop the NETCAP capture process"},
+	{"StopCaptureProcess", "netcap.Interface", "stop the NETCAP capture process"},
 
 	{"ToServices", "netcap.ServiceType", "Show detected network services for the given service type"},
 	{"ToServiceTypes", "netcap.ServiceAuditRecords", "Show detected network service types"},

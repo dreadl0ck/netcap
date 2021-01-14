@@ -89,7 +89,7 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 		c.handleRawPacketData(data, &ci)
 	}
 
-	// stop progress reporting
+	// Stop progress reporting
 	stopProgress <- struct{}{}
 
 	// run cleanup on channel exit
