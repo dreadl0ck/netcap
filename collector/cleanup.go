@@ -36,7 +36,7 @@ func (c *Collector) cleanup(force bool) {
 	c.shutdown = true
 	c.statMutex.Unlock()
 
-	// stop all workers.
+	// Stop all workers.
 	// this will block until all workers are stopped
 	// all packets left in the packet queues will be processed
 	c.stopWorkers()

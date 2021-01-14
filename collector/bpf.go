@@ -79,7 +79,7 @@ func (c *Collector) CollectBPF(path, bpf string) error {
 		c.handleRawPacketData(data, &ci)
 	}
 
-	// stop progress reporting
+	// Stop progress reporting
 	stopProgress <- struct{}{}
 
 	// run cleanup on channel exit

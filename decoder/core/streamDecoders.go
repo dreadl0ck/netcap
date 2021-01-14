@@ -17,8 +17,11 @@ package core
 type TransportProtocol int
 
 const (
+	// TCP protocol
 	TCP TransportProtocol = iota
+	// UDP protocol
 	UDP
+	// All will invoke decoder for all transport protocols
 	All
 )
 

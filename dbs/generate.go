@@ -270,9 +270,9 @@ func fetchResource(s *datasource, outFilePath string) {
 	}
 }
 
-// WebTechnologies models different web technologies
+// webTechnologies models different web technologies
 // TODO: automate generation of cmsdb.json from the technologies.json file
-type WebTechnologies struct {
+type webTechnologies struct {
 	Schema     string `json:"$schema"`
 	Categories struct {
 		Num1 struct {

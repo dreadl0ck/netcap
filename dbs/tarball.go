@@ -122,12 +122,12 @@ func unpackTarball(source io.Reader, destination string) (string, error) {
 	// uncompress each element in the tarball
 	for {
 		// get next element
-		hdr, err := tarReader.Next()
-		if err == io.EOF {
+		hdr, errNext := tarReader.Next()
+		if errNext == io.EOF {
 			return name, nil
 		}
-		if err != nil {
-			return name, err
+		if errNext != nil {
+			return name, errNext
 		}
 
 		target := destination
@@ -160,9 +160,9 @@ func unpackTarball(source io.Reader, destination string) (string, error) {
 			}
 		// if it's a file create it (with same permission)
 		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(hdr.Mode))
-			if err != nil {
-				return name, err
+			f, errOpen := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(hdr.Mode))
+			if errOpen != nil {
+				return name, errOpen
 			}
 
 			// copy over the contents

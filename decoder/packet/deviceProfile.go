@@ -26,9 +26,9 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// DeviceProfile describes the behavior of a hardware device.
+// deviceProfile describes the behavior of a hardware device.
 // This is a wrapper structure to allow safe atomic access.
-type DeviceProfile struct {
+type deviceProfile struct {
 	sync.Mutex
 	*types.DeviceProfile
 }
@@ -36,8 +36,8 @@ type DeviceProfile struct {
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
 type atomicDeviceProfileMap struct {
 	sync.Mutex
-	// SrcMAC to DeviceProfiles
-	Items map[string]*DeviceProfile
+	// SrcMAC to deviceProfiles
+	Items map[string]*deviceProfile
 }
 
 // Size returns the number of elements in the Items map.
@@ -51,7 +51,7 @@ func (a *atomicDeviceProfileMap) Size() int {
 var (
 	// DeviceProfiles hold all connections.
 	DeviceProfiles = &atomicDeviceProfileMap{
-		Items: make(map[string]*DeviceProfile),
+		Items: make(map[string]*deviceProfile),
 	}
 	deviceProfiles int64
 
@@ -63,7 +63,7 @@ var (
 )
 
 // getDeviceProfile fetches a known profile and updates it or returns a new one.
-//func getDeviceProfile(macAddr string, i *decoderutils.PacketInfo) *DeviceProfile {
+//func getDeviceProfile(macAddr string, i *decoderutils.PacketInfo) *deviceProfile {
 //	DeviceProfiles.Lock()
 //	if p, ok := DeviceProfiles.Items[macAddr]; ok {
 //		DeviceProfiles.Unlock()
@@ -96,7 +96,7 @@ func updateDeviceProfile(i *decoderutils.PacketInfo) {
 }
 
 // newDeviceProfile creates a new device specific profile.
-func newDeviceProfile(i *decoderutils.PacketInfo) *DeviceProfile {
+func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 	var contacts []string
 	if ip := getIPProfile(i.DstIP, i, false); ip != nil {
 		contacts = append(contacts, ip.IPProfile.Addr)
@@ -107,7 +107,7 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *DeviceProfile {
 		devices = append(devices, ip.IPProfile.Addr)
 	}
 
-	return &DeviceProfile{
+	return &deviceProfile{
 		DeviceProfile: &types.DeviceProfile{
 			MacAddr:            i.SrcMAC,
 			DeviceManufacturer: resolvers.LookupManufacturer(i.SrcMAC),
@@ -120,7 +120,7 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *DeviceProfile {
 	}
 }
 
-func applyDeviceProfileUpdate(p *DeviceProfile, i *decoderutils.PacketInfo) {
+func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 	p.Lock()
 
 	// deviceIPs
@@ -173,8 +173,8 @@ func applyDeviceProfileUpdate(p *DeviceProfile, i *decoderutils.PacketInfo) {
 
 var deviceProfileDecoder = newPacketDecoder(
 	types.Type_NC_DeviceProfile,
-	"DeviceProfile",
-	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
+	"deviceProfile",
+	"A deviceProfile contains information about a single hardware device seen on the network and it's behavior",
 	func(d *packetDecoder) error {
 		return nil
 	},
