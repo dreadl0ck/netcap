@@ -90,15 +90,22 @@ func (c *Collector) Init() (err error) {
 
 	// check for files from previous run in the output directory
 	// and ask the user if they can be overwritten
-	files, _ := filepath.Glob(filepath.Join(c.config.DecoderConfig.Out, "*.ncap.gz"))
-	filesBare, _ := filepath.Glob(filepath.Join(c.config.DecoderConfig.Out, "*.ncap"))
+	var (
+		// create paths
+		files, _     = filepath.Glob(filepath.Join(c.config.DecoderConfig.Out, "*.ncap.gz"))
+		filesBare, _ = filepath.Glob(filepath.Join(c.config.DecoderConfig.Out, "*.ncap"))
+		udpPath      = filepath.Join(c.config.DecoderConfig.Out, "udp")
+		tcpPath      = filepath.Join(c.config.DecoderConfig.Out, "tcp")
 
+		// make stat syscall
+		_, errStreams = os.Stat(udpPath)
+		_, errConns   = os.Stat(tcpPath)
+	)
+
+	// collect files
 	files = append(files, filesBare...)
 
-	udpPath := filepath.Join(c.config.DecoderConfig.Out, "udp")
-	tcpPath := filepath.Join(c.config.DecoderConfig.Out, "tcp")
-	_, errStreams := os.Stat(udpPath)
-	_, errConns := os.Stat(tcpPath)
+	// check
 	if len(files) > 0 || errStreams == nil || errConns == nil {
 
 		// only prompt if quiet mode is not active AND prompting for human interaction is not disabled

@@ -30,7 +30,7 @@ var fieldsVRRPv2 = []string{
 	"AuthType",     // int32
 	"AdverInt",     // int32
 	"Checksum",     // int32
-	"IPAddresses",   // []string
+	"IPAddresses",  // []string
 	"SrcIP",
 	"DstIP",
 }

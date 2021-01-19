@@ -132,7 +132,7 @@ func makePacket() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func (){
+	defer func() {
 		errDefer := f.Close()
 		if errDefer != nil {
 			log.Fatal(errDefer)
@@ -144,7 +144,7 @@ func makePacket() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func (){
+	defer func() {
 		errDefer := r.Flush()
 		if errDefer != nil {
 			log.Fatal(errDefer)
