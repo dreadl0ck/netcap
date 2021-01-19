@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package sshx
+package ssh
 
 import (
 	"bytes"
@@ -231,6 +231,32 @@ type ChannelOpenFailureMsg struct {
 	Reason   RejectionReason
 	Message  string
 	Language string
+}
+
+// RejectionReason is an enumeration used when rejecting channel creation
+// requests. See RFC 4254, section 5.1.
+type RejectionReason uint32
+
+const (
+	Prohibited RejectionReason = iota + 1
+	ConnectionFailed
+	UnknownChannelType
+	ResourceShortage
+)
+
+// String converts the rejection reason to human readable form.
+func (r RejectionReason) String() string {
+	switch r {
+	case Prohibited:
+		return "administratively prohibited"
+	case ConnectionFailed:
+		return "connect failed"
+	case UnknownChannelType:
+		return "unknown channel type"
+	case ResourceShortage:
+		return "resource shortage"
+	}
+	return fmt.Sprintf("unknown reason %d", int(r))
 }
 
 const msgChannelRequest = 98

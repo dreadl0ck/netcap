@@ -33,7 +33,6 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/sshx"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -47,8 +46,8 @@ type sshReader struct {
 
 	clientIdent   string
 	serverIdent   string
-	clientKexInit *sshx.KexInitMsg
-	serverKexInit *sshx.KexInitMsg
+	clientKexInit *KexInitMsg
+	serverKexInit *KexInitMsg
 	software      []*types.Software
 }
 
@@ -214,9 +213,9 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		// fmt.Println("padding", padding, "length", length)
 		// fmt.Println(hex.Dump(data[i:i+length-padding-1]))
 
-		var init sshx.KexInitMsg
+		var init KexInitMsg
 
-		err = sshx.Unmarshal(data[i:i+length-padding-1], &init)
+		err = Unmarshal(data[i:i+length-padding-1], &init)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -335,7 +334,7 @@ func parseSSHIdent(ident string) *sshVersionInfo {
 
 // HASSH SSH Fingerprint
 // TODO: move this functionality into standalone package.
-func computeHASSH(init sshx.KexInitMsg) (hash string, raw string) {
+func computeHASSH(init KexInitMsg) (hash string, raw string) {
 	var b strings.Builder
 
 	b.WriteString(strings.Join(init.KexAlgos, ","))

@@ -396,7 +396,9 @@ commands:
         exec: gosec ./...
 
     test:
-        exec: go clean -testcache && go test ./...
+        exec: |
+            go clean -testcache && go test ./... -coverprofile cover.out
+            go tool cover -html=cover.out
 
     test-race:
         exec: GORACE="history_size=7" go test -race ./...
