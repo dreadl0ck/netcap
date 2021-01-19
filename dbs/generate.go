@@ -131,7 +131,7 @@ func untarAndMoveToDbs(in string, d *datasource, base string) error {
 	if err != nil {
 		return err
 	}
-	defer func () {
+	defer func() {
 		errClose := f.Close()
 		if errClose != nil {
 			log.Fatal(errClose)

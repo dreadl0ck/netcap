@@ -12,8 +12,6 @@
     MacOS: brew install git-lfs
     Windows: ???
 
-- implement database generation via: $ net util -generate-dbs and hook up a github action for it
-
 - generic IP / Host blacklist / whitelist
 - integrate teler resources
 - parallelize decoder init
