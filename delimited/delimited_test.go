@@ -25,8 +25,8 @@ import (
 const testData = "\x00\x01N\x02ET\x03CAP"
 
 /*
-	WRITER
-*/
+ *	WRITER
+ */
 
 func TestCorruptedWriter(t *testing.T) {
 	var (
@@ -65,8 +65,8 @@ func TestGoodWriter(t *testing.T) {
 }
 
 /*
-	READER
-*/
+ *	READER
+ */
 
 func TestCorruptedReader(t *testing.T) {
 	const corrupt = "\x05NETC" // n = 5, only 4 bytes of data
@@ -109,8 +109,8 @@ func TestGoodReader(t *testing.T) {
 }
 
 /*
-	ROUND TRIP
-*/
+ *	ROUND TRIP
+ */
 
 func TestRoundTrip(t *testing.T) {
 	const input = "Some of what a fool thinks often remains."
@@ -155,8 +155,8 @@ func TestRoundTrip(t *testing.T) {
 }
 
 /*
-	UTILS
-*/
+ *	UTILS
+ */
 
 type errWriter struct {
 	nc  int

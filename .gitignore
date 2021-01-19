@@ -31,3 +31,4 @@ vulnDBs
 FlameGraph
 Dockerfile
 bin/
+cover.out

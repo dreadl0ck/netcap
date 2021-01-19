@@ -1,4 +1,4 @@
-<MaltegoTransform name="netcap.StopCaptureProcess" displayName="Stop Capture Process [NETCAP]" abstract="false" template="false" visibility="public" description="Stop the NETCAP capture process" author="Philipp Mieden" requireDisplayInfo="false">
+<MaltegoTransform name="netcap.StopCaptureProcess" displayName="Stop Capture Process [NETCAP]" abstract="false" template="false" visibility="public" description="stop the NETCAP capture process" author="Philipp Mieden" requireDisplayInfo="false">
  <TransformAdapter>com.paterva.maltego.transform.protocol.v2api.LocalTransformAdapterV2</TransformAdapter>
  <Properties>
   <Fields>
