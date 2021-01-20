@@ -35,6 +35,7 @@ func stopCaptureProcess() {
 		fmt.Println(trx.ReturnOutput())
 		return
 	}
+	defer resp.Body.Close()
 
 	if err == nil {
 		if resp.StatusCode != http.StatusOK {
