@@ -196,11 +196,17 @@ func GenerateDBs(nvdIndexStartYear int) {
 	fmt.Println("waiting for downloads to complete...")
 	wg.Wait()
 
+	// shell out to print a directory tree
 	out, err := exec.Command("tree", base).CombinedOutput()
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(string(out))
+
+	// save the total size into a file named "size"
+	// will be used to ask the user for confirmation
+	// prior to cloning the repo via the netcap toolchain
+	saveTotalDatabaseSize(base)
 
 	fmt.Println("fetched", total, "sources ("+humanize.Bytes(numBytesFetched)+")", "in", time.Since(start))
 }
@@ -209,6 +215,7 @@ func processSource(s *datasource, base string, wg *sync.WaitGroup) {
 
 	outFilePath := filepath.Join(base, "build", s.name)
 
+	// TODO: retry if failed? error might be transient
 	// fetch via HTTP GET from single remote source if provided
 	// if multiple sources need to be fetched, the logic can be implemented in the hook
 	fetchResource(s, outFilePath)
@@ -245,6 +252,7 @@ func fetchResource(s *datasource, outFilePath string) {
 		if err != nil {
 			log.Fatal("failed to read body data from", s, " error: ", err)
 		}
+		defer resp.Body.Close()
 
 		numBytesFetchedMu.Lock()
 		numBytesFetched += uint64(len(data))
