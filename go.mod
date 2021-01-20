@@ -33,32 +33,35 @@ require (
 	github.com/golang/geo v0.0.0-20210108004804-a63082ebfb66 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.1 // indirect
-	github.com/google/pprof v0.0.0-20210106224343-284c741746fe // indirect
+	github.com/google/pprof v0.0.0-20210120012041-1f0ca0a18a6c // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
 	github.com/imdario/mergo v0.3.10 // indirect
-	github.com/klauspost/compress v1.11.6 // indirect
+	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/klauspost/pgzip v1.2.5
+	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/mcnijman/go-emailaddress v1.1.0
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/namsral/flag v1.7.4-pre
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	github.com/nyaruka/phonenumbers v1.0.60
+	github.com/nyaruka/phonenumbers v1.0.61
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/oschwald/maxminddb-golang v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/procfs v0.3.0 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/tinylib/msgp v1.1.5 // indirect
-	github.com/ua-parser/uap-go v0.0.0-20200325213135-e1c09f13e2fe
+	github.com/ua-parser/uap-go v0.0.0-20210117174150-af9d555c8f12
 	github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23
 	github.com/willf/bitset v1.1.11 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
-	golang.org/x/sys v0.0.0-20210110051926-789bb1bd4061 // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
