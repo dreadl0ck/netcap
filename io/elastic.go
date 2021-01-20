@@ -149,9 +149,11 @@ func CreateElasticIndex(wc *WriterConfig) {
 			if resp != nil {
 				data, _ := ioutil.ReadAll(resp.Body)
 				fmt.Println(string(data))
+				_ = resp.Body.Close()
 			}
 		} else {
 			fmt.Println("index pattern ", index+"* created:", resp.Status)
+			_ = resp.Body.Close()
 		}
 	}
 
