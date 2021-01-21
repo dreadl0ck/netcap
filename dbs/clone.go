@@ -21,25 +21,57 @@ import (
 	"github.com/evilsocket/islazy/zip"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 )
 
 // CloneDBs will clone the data bases initially from the public git repository
-// TODO: display expected size before retrieval and prompt for confirmation
 // TODO: add windows support
-func CloneDBs() {
+func CloneDBs(force bool) {
 
-	// TODO: add force flag to allow automation
-	if !utils.Confirm(`Please ensure the git LTS extension is installed on your system.
+	if !force {
+
+		// check if git lfs is installed
+		err := exec.Command("git", "lfs env").Run()
+		if err != nil {
+			// inform user
+			if !utils.Confirm(`Please ensure the git LTS extension is installed on your system.
 
 Apt/deb: sudo apt-get install git-lfs
 Yum/rpm: sudo yum install git-lfs
 MacOS: brew install git-lfs
 
 Proceed?`) {
-		return
+				fmt.Println("aborted.")
+				return
+			}
+		}
+
+		// fetch expected size from github repo
+		resp, err := http.Get("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/size")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer resp.Body.Close()
+
+		// read http body
+		size, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// check status
+		if resp.StatusCode != http.StatusOK {
+			log.Fatal("got an unexpected status from github while trying to fetch expected database size: ", resp.Status)
+		}
+
+		// display the expected db size to the user and ask for confirmation
+		if !utils.Confirm("This will fetch " + string(size) + " of data. Proceed?") {
+			fmt.Println("aborted.")
+			return
+		}
 	}
 
 	// check if database root path exists already
@@ -75,6 +107,7 @@ Proceed?`) {
 		log.Fatal("failed to read dir: ", resolvers.DataBaseFolderPath, err)
 	}
 
+	// decompress zip archives
 	for _, f := range files {
 		if filepath.Ext(f.Name()) == ".zip" {
 			fmt.Println("decompressing", f.Name())

@@ -44,7 +44,7 @@ func Run() {
 	}
 
 	if *flagCloneDBs {
-		dbs.CloneDBs()
+		dbs.CloneDBs(*flagForce)
 		return
 	}
 
@@ -101,6 +101,6 @@ func Run() {
 	}
 
 	if *flagIndex != "" {
-		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, *flagNVDIndexStart)
+		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, *flagNVDIndexStart, *flagForce)
 	}
 }
