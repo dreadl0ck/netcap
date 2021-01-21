@@ -111,12 +111,12 @@ func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
 		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz", year), "", nil)
 		fetchResource(s, filepath.Join(base, "build", s.name))
 	}
-	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear, true)
+	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear, false)
 	return nil
 }
 
 func downloadAndIndexExploitDB(_ string, _ *datasource, base string) error {
-	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"), 0, true)
+	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"), 0, false)
 	return nil
 }
 

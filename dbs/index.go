@@ -117,7 +117,7 @@ func intermediatePatchVersions(from string, until string) []string {
 }
 
 // IndexData will index the data into a bleve database for full text search
-func IndexData(in string, out string, buildPath string, nvdIndexStart int, quiet bool) {
+func IndexData(in string, out string, buildPath string, nvdIndexStart int, verbose bool) {
 	var (
 		start     = time.Now()
 		indexPath string
@@ -191,7 +191,7 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, quiet
 			}
 			count++
 
-			if !quiet {
+			if verbose {
 				utils.ClearLine()
 				fmt.Print("processing: ", count, " / ", total)
 			}
@@ -281,7 +281,7 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, quiet
 			}
 			count++
 
-			if !quiet {
+			if verbose {
 				utils.ClearLine()
 				fmt.Print("processing: ", count, " / ", total)
 			}
@@ -328,7 +328,11 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, quiet
 		)
 
 		for _, year := range years {
-			fmt.Print("processing NVD items for year ", year)
+			if verbose {
+				fmt.Print("processing NVD items for year ", year)
+			} else {
+				fmt.Println("processing NVD items for year ", year)
+			}
 			file := filepath.Join(buildPath, "nvdcve-1.1-"+year+".json.gz")
 
 			f, err := os.Open(file)
@@ -358,7 +362,7 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, quiet
 
 			for i, v := range items.CVEItems {
 
-				if !quiet {
+				if !verbose {
 					utils.ClearLine()
 					fmt.Print("processing files for year ", year, ": ", i, " / ", length)
 				}
@@ -431,8 +435,12 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, quiet
 					}
 				}
 			}
-			fmt.Println("indexed NVD items for year", year)
-			fmt.Println()
+			if verbose {
+				// enforce a line break
+				fmt.Println()
+			} else {
+				fmt.Println("finished indexing NVD items for year", year)
+			}
 		}
 
 		fmt.Println("loaded", total, "NVD CVEs in", time.Since(start))
