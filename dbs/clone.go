@@ -34,7 +34,7 @@ func CloneDBs(force bool) {
 	if !force {
 
 		// check if git lfs is installed
-		err := exec.Command("git", "lfs env").Run()
+		err := exec.Command("git", "lfs", "env").Run()
 		if err != nil {
 			// inform user
 			if !utils.Confirm(`Please ensure the git LTS extension is installed on your system.
