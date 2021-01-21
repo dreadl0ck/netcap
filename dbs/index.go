@@ -362,7 +362,7 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, verbo
 
 			for i, v := range items.CVEItems {
 
-				if !verbose {
+				if verbose {
 					utils.ClearLine()
 					fmt.Print("processing files for year ", year, ": ", i, " / ", length)
 				}
