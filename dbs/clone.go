@@ -76,7 +76,9 @@ Proceed?`) {
 
 	// check if database root path exists already
 	if _, err := os.Stat(resolvers.ConfigRootPath); err == nil {
-		log.Fatal("database root path: ", resolvers.ConfigRootPath, " exists already")
+		//log.Fatal("database root path: ", resolvers.ConfigRootPath, " exists already")
+		UpdateDBs()
+		return
 	}
 
 	// it does not - create it

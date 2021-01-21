@@ -64,6 +64,11 @@ func UpdateDBs() {
 		utils.CopyFile(pathCity, "/tmp")
 	}
 
+	err = os.Chdir(resolvers.ConfigRootPath)
+	if err != nil {
+		log.Fatal("could not move into database directory: ", err)
+	}
+
 	cmd := exec.Command("git", "pull")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
