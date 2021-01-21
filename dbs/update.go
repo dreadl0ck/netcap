@@ -69,6 +69,15 @@ func UpdateDBs() {
 		log.Fatal("could not move into database directory: ", err)
 	}
 
+	out, err := exec.Command("git", "fetch", "origin").CombinedOutput()
+	if err != nil {
+		log.Fatal("failed to run git fetch: ", err)
+	}
+	if len(out) == 0 {
+		fmt.Println("Already up to date.")
+		return
+	}
+
 	cmd := exec.Command("git", "pull")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
