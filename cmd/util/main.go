@@ -101,6 +101,6 @@ func Run() {
 	}
 
 	if *flagIndex != "" {
-		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, *flagNVDIndexStart, *flagForce)
+		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, *flagNVDIndexStart, *flagVerbose)
 	}
 }
