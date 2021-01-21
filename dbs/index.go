@@ -117,7 +117,7 @@ func intermediatePatchVersions(from string, until string) []string {
 }
 
 // IndexData will index the data into a bleve database for full text search
-func IndexData(in string, out string, buildPath string, nvdIndexStart int) {
+func IndexData(in string, out string, buildPath string, nvdIndexStart int, quiet bool) {
 	var (
 		start     = time.Now()
 		indexPath string
@@ -190,12 +190,17 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int) {
 				continue
 			}
 			count++
-			utils.ClearLine()
-			fmt.Print("processing: ", count, " / ", total)
+
+			if !quiet {
+				utils.ClearLine()
+				fmt.Print("processing: ", count, " / ", total)
+			}
+
 			e := exploit{
 				ID:          rec[0],
 				Description: rec[2],
 			}
+
 			err = index.Index(e.ID, e)
 			if err != nil {
 				fmt.Println(err, r)
@@ -276,9 +281,10 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int) {
 			}
 			count++
 
-			utils.ClearLine()
-
-			fmt.Print("processing: ", count, " / ", total)
+			if !quiet {
+				utils.ClearLine()
+				fmt.Print("processing: ", count, " / ", total)
+			}
 
 			e := exploit{
 				ID:          rec[0],
@@ -322,7 +328,7 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int) {
 		)
 
 		for _, year := range years {
-			fmt.Print("processing files for year ", year)
+			fmt.Print("processing NVD items for year ", year)
 			file := filepath.Join(buildPath, "nvdcve-1.1-"+year+".json.gz")
 
 			f, err := os.Open(file)
@@ -352,8 +358,10 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int) {
 
 			for i, v := range items.CVEItems {
 
-				utils.ClearLine()
-				fmt.Print("processing files for year ", year, ": ", i, " / ", length)
+				if !quiet {
+					utils.ClearLine()
+					fmt.Print("processing files for year ", year, ": ", i, " / ", length)
+				}
 
 				for _, entry := range v.Cve.Description.DescriptionData {
 					if entry.Lang == "en" {
@@ -423,7 +431,7 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int) {
 					}
 				}
 			}
-
+			fmt.Println("indexed NVD items for year", year)
 			fmt.Println()
 		}
 

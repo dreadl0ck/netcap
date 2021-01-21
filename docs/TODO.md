@@ -1,20 +1,19 @@
 # TODOs
 
-- Connection: preserve how many bytes each party sent and who initated the connection
-- add custom netcap additions to service probes, manage in separate file
-- add option to enrich the audit records with db information as a post processing step
-- retry failed db fetch operations?
-- add compilation timestamp to logs for debugging
-- add lfs install notes for cloning the dbs repo:
+- git lfs container?
+- add cronjob on server for periodic rebuilt (container?)
 
-    Apt/deb: sudo apt-get install git-lfs
-    Yum/rpm: sudo yum install git-lfs
-    MacOS: brew install git-lfs
-    Windows: ???
+- Connection: preserve how many bytes each party sent and who initated the connection
+- Connection: use communityIDs
+
+- add option to enrich the audit records with db information as a post processing step
+  
+- add custom netcap additions to service probes, manage in separate file
+- add compilation timestamp to logs for debugging
+- parallelize decoder init
 
 - generic IP / Host blacklist / whitelist
 - integrate teler resources
-- parallelize decoder init
 
 - connection flushing
 - flushing of UDP and TCP streams

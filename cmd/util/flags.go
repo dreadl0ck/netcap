@@ -48,4 +48,5 @@ var (
 	flagIndex          = fs.String("index", "", "index data for full text search")
 	flagMkPacket       = fs.String("mkpacket", "", "create a TCP or UDP packet with piped input from stdin")
 	flagNVDIndexStart  = fs.Int("nvd-start-year", 2002, "year to start indexing the nvd dbs from")
+	flagForce          = fs.Bool("force", false, "disable prompts for user interaction")
 )

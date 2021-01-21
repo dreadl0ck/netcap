@@ -111,12 +111,12 @@ func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
 		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz", year), "", nil)
 		fetchResource(s, filepath.Join(base, "build", s.name))
 	}
-	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear)
+	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear, true)
 	return nil
 }
 
 func downloadAndIndexExploitDB(_ string, _ *datasource, base string) error {
-	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"), 0)
+	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"), 0, true)
 	return nil
 }
 
@@ -215,7 +215,6 @@ func processSource(s *datasource, base string, wg *sync.WaitGroup) {
 
 	outFilePath := filepath.Join(base, "build", s.name)
 
-	// TODO: retry if failed? error might be transient
 	// fetch via HTTP GET from single remote source if provided
 	// if multiple sources need to be fetched, the logic can be implemented in the hook
 	fetchResource(s, outFilePath)
@@ -231,14 +230,27 @@ func processSource(s *datasource, base string, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
+// fetchResource will attempt to download a resource
+// TODO: return error instead of fataling on errors, a single failed component should not make the entire process fail.
 func fetchResource(s *datasource, outFilePath string) {
 	if s.url != "" {
 
 		fmt.Println("fetching", s.name, "from", s.url)
 
+		var (
+			numRetries int
+			maxRetries = 2
+		)
+
+	retry:
 		// execute GET request
 		resp, err := http.Get(s.url)
 		if err != nil {
+			numRetries++
+			if numRetries <= maxRetries {
+				fmt.Println("failed to retrieve data from", s, "will try again (", numRetries, "/", maxRetries, ")")
+				goto retry
+			}
 			log.Fatal("failed to retrieve data from", s)
 		}
 

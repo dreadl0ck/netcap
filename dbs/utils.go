@@ -14,6 +14,7 @@
 package dbs
 
 import (
+	"fmt"
 	"github.com/dustin/go-humanize"
 	"log"
 	"os"
@@ -39,6 +40,7 @@ func saveTotalDatabaseSize(path string) {
 		log.Fatal(err)
 	}
 
+	fmt.Println("saving total db size to:", filepath.Join(path, "size"))
 	f, err := os.Create(filepath.Join(path, "size"))
 	if err != nil {
 		log.Fatal(err)
