@@ -18,13 +18,11 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/zip"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 // CloneDBs will clone the data bases initially from the public git repository
@@ -76,7 +74,7 @@ Proceed?`) {
 
 	// check if database root path exists already
 	if _, err := os.Stat(resolvers.ConfigRootPath); err == nil {
-		//log.Fatal("database root path: ", resolvers.ConfigRootPath, " exists already")
+		log.Println("clone: database directory exists. checking for updates instead...")
 		UpdateDBs()
 		return
 	}
@@ -84,43 +82,46 @@ Proceed?`) {
 	// it does not - create it
 	_ = os.MkdirAll(resolvers.ConfigRootPath, defaults.DirectoryPermission)
 
+	// Skip smudge during cloning, we will fetch LFS resources in a second step.
+	// This is a workaround due a bug described here: https://github.com/git-lfs/git-lfs/issues/911
+	// It happens during cloning an LFS repository in an alpine container exclusively, cloning on macOS and debian worked flawlessly.
+	// Downloading the LFS in a second step is apparently also faster.
+	err := exec.Command("git", "lfs", "install", "--skip-smudge").Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// clone repo
 	// go-git does not yet support LFS... we need to shell out
-	//_, err := git.PlainClone(resolvers.ConfigRootPath, false, &git.CloneOptions{
-	//	URL:      "https://github.com/dreadl0ck/netcap-dbs.git",
-	//	Progress: os.Stdout,
-	//})
-	//if err != nil && !errors.Is(err, git.ErrRepositoryAlreadyExists) {
-	//	log.Fatal("failed to clone netcap-dbs repository:", err)
-	//}
 	cmd := exec.Command("git", "clone", "https://github.com/dreadl0ck/netcap-dbs.git", resolvers.ConfigRootPath)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		log.Fatal("failed to clone netcap-dbs repo: ", err)
 	}
 
 	fmt.Println("cloned netcap-dbs repository to", resolvers.ConfigRootPath)
 
-	// decompress bleve stores
-	files, err := ioutil.ReadDir(resolvers.DataBaseFolderPath)
+	// move into ConfigRootPath
+	err = os.Chdir(resolvers.ConfigRootPath)
 	if err != nil {
-		log.Fatal("failed to read dir: ", resolvers.DataBaseFolderPath, err)
+		log.Fatal(err)
 	}
 
-	// decompress zip archives
-	for _, f := range files {
-		if filepath.Ext(f.Name()) == ".zip" {
-			fmt.Println("decompressing", f.Name())
-			_, err = zip.Unzip(
-				filepath.Join(resolvers.DataBaseFolderPath, f.Name()),
-				resolvers.DataBaseFolderPath,
-			)
-			if err != nil {
-				log.Fatal("failed to unzip: ", f.Name(), " error: ", err)
-			}
-		}
+	// Fetch all the binary files in the new clone
+	cmd = exec.Command("git", "lfs", "pull")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Reinstate smudge
+	err = exec.Command("git", "lfs", "install", "--force").Run()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	fmt.Println("done! Downloaded databases to", resolvers.ConfigRootPath)
