@@ -1,0 +1,136 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        bgcolor="#e6ecfa";
+label="stream";
+labelloc="t";
+labeljust="c";
+fontsize="18";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" [ fillcolor="lightblue" label="InitDecoders" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" [ label="InitAbstractDecoders" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/stream.init#1" [ label="init#1" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/stream.init" [ label="init" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/stream.init#2" [ label="init#2" penwidth="0.5" fillcolor="lightblue" ]
+        
+        subgraph "cluster_github.com/dreadl0ck/netcap/collector" {
+        fontsize="16";
+fillcolor="lightyellow";
+rank="sink";
+label="collector";
+penwidth="0.8";
+style="filled";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/collector";
+tooltip="package: github.com/dreadl0ck/netcap/collector";
+        
+        "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [ fillcolor="moccasin" label="(*Collector).Init" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder" {
+        fontsize="16";
+fontname="Tahoma bold";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+label="decoder";
+URL="/?f=github.com/dreadl0ck/netcap/decoder";
+tooltip="package: github.com/dreadl0ck/netcap/decoder";
+        
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ penwidth="1.5" fillcolor="moccasin" label="(*StreamDecoder).GetName" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetType" [ fillcolor="moccasin" label="(*StreamDecoder).GetType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).SetWriter" [ label="(*StreamDecoder).SetWriter" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).PostInitFunc" [ fillcolor="moccasin" label="(*StreamDecoder).PostInitFunc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ fillcolor="moccasin" label="(*AbstractDecoder).GetName" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetType" [ fillcolor="moccasin" label="(*AbstractDecoder).GetType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).SetWriter" [ penwidth="1.5" fillcolor="moccasin" label="(*AbstractDecoder).SetWriter" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" [ label="(*AbstractDecoder).PostInitFunc" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/io" {
+        style="filled";
+fillcolor="lightyellow";
+label="io";
+URL="/?f=github.com/dreadl0ck/netcap/io";
+tooltip="package: github.com/dreadl0ck/netcap/io";
+penwidth="0.8";
+fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/io.NewAuditRecordWriter" [ fillcolor="moccasin" label="NewAuditRecordWriter" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.protoWriter).WriteHeader" [ fillcolor="moccasin" label="(*protoWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.csvWriter).WriteHeader" [ fillcolor="moccasin" label="(*csvWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.elasticWriter).WriteHeader" [ fillcolor="moccasin" label="(*elasticWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.nullWriter).WriteHeader" [ fillcolor="moccasin" label="(*nullWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.jsonWriter).WriteHeader" [ label="(*jsonWriter).WriteHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/io.chanWriter).WriteHeader" [ penwidth="1.5" fillcolor="moccasin" label="(*chanWriter).WriteHeader" ]
+        
+    }
+
+        subgraph "cluster_github.com/pkg/errors" {
+        tooltip="package: github.com/pkg/errors";
+penwidth="0.8";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+fontsize="16";
+style="filled";
+label="errors";
+URL="/?f=github.com/pkg/errors";
+        
+        "github.com/pkg/errors.Wrap" [ fillcolor="moccasin" label="Wrap" penwidth="1.5" ]
+        "github.com/pkg/errors.New" [ fillcolor="moccasin" label="New" penwidth="1.5" ]
+        
+    }
+
+    }
+
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "github.com/dreadl0ck/netcap/io.NewAuditRecordWriter" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).SetWriter" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).PostInitFunc" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "github.com/dreadl0ck/netcap/io.NewAuditRecordWriter" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).SetWriter" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.init#1" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.init" -> "github.com/pkg/errors.New" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.init" -> "github.com/dreadl0ck/netcap/decoder/stream.init#1" [  ]
+    "github.com/dreadl0ck/netcap/decoder/stream.init#2" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.init" -> "github.com/dreadl0ck/netcap/decoder/stream.init#2" [  ]
+}

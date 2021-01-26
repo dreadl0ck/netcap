@@ -1,0 +1,145 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        bgcolor="#e6ecfa";
+label="dpi";
+labelloc="t";
+labeljust="c";
+fontsize="18";
+        
+        "github.com/dreadl0ck/netcap/dpi.IsEnabled" [ fillcolor="lightblue" label="IsEnabled" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dpi.Destroy" [ fillcolor="lightblue" label="Destroy" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dpi.GetProtocols" [ fillcolor="lightblue" label="GetProtocols" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dpi.NewProto" [ fillcolor="lightblue" label="NewProto" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dpi.getCategoryString" [ fillcolor="lightblue" label="getCategoryString" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dpi.Init" [ fillcolor="lightblue" label="Init" penwidth="1.5" ]
+        
+        subgraph "cluster_github.com/dreadl0ck/go-dpi" {
+        label="godpi";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/go-dpi";
+tooltip="package: github.com/dreadl0ck/go-dpi";
+        
+        "github.com/dreadl0ck/go-dpi.Destroy" [ penwidth="1.5" fillcolor="moccasin" label="Destroy" ]
+        "github.com/dreadl0ck/go-dpi.GetPacketFlow" [ label="GetPacketFlow" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/go-dpi.ClassifyFlowAllModules" [ fillcolor="moccasin" label="ClassifyFlowAllModules" penwidth="1.5" ]
+        "github.com/dreadl0ck/go-dpi.SetModules" [ fillcolor="moccasin" label="SetModules" penwidth="1.5" ]
+        "github.com/dreadl0ck/go-dpi.Initialize" [ fillcolor="moccasin" label="Initialize" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/go-dpi/modules/classifiers" {
+        rank="sink";
+label="classifiers";
+URL="/?f=github.com/dreadl0ck/go-dpi/modules/classifiers";
+tooltip="package: github.com/dreadl0ck/go-dpi/modules/classifiers";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/go-dpi/modules/classifiers.NewClassifierModule" [ fillcolor="moccasin" label="NewClassifierModule" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/go-dpi/modules/wrappers" {
+        rank="sink";
+label="wrappers";
+URL="/?f=github.com/dreadl0ck/go-dpi/modules/wrappers";
+tooltip="package: github.com/dreadl0ck/go-dpi/modules/wrappers";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+penwidth="0.8";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/go-dpi/modules/wrappers.NewNDPIWrapper" [ fillcolor="moccasin" label="NewNDPIWrapper" penwidth="1.5" ]
+        "github.com/dreadl0ck/go-dpi/modules/wrappers.NewLPIWrapper" [ label="NewLPIWrapper" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/go-dpi/modules/wrappers.NewWrapperModule" [ fillcolor="moccasin" label="NewWrapperModule" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/go-dpi/modules/wrappers.WrapperModule).ConfigureModule" [ fillcolor="moccasin" label="(*WrapperModule).ConfigureModule" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/collector" {
+        fontsize="16";
+URL="/?f=github.com/dreadl0ck/netcap/collector";
+tooltip="package: github.com/dreadl0ck/netcap/collector";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="collector";
+        
+        "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [ fillcolor="moccasin" label="(*Collector).Init" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/packet" {
+        URL="/?f=github.com/dreadl0ck/netcap/decoder/packet";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+rank="sink";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="packet";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/packet";
+        
+        "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" [ fillcolor="moccasin" label="getIPProfile" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/tcp" {
+        style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/tcp";
+fontsize="16";
+rank="sink";
+label="tcp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/tcp";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" [ fillcolor="moccasin" label="CleanupReassembly" penwidth="1.5" ]
+        
+    }
+
+    }
+
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" -> "github.com/dreadl0ck/netcap/dpi.IsEnabled" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.Destroy" -> "github.com/dreadl0ck/go-dpi.Destroy" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" -> "github.com/dreadl0ck/netcap/dpi.Destroy" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.GetProtocols" -> "github.com/dreadl0ck/go-dpi.GetPacketFlow" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.GetProtocols" -> "github.com/dreadl0ck/go-dpi.ClassifyFlowAllModules" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/dpi.GetProtocols" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.NewProto" -> "github.com/dreadl0ck/netcap/dpi.getCategoryString" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/dpi.NewProto" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.Init" -> "github.com/dreadl0ck/go-dpi/modules/wrappers.NewNDPIWrapper" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.Init" -> "github.com/dreadl0ck/go-dpi/modules/wrappers.NewLPIWrapper" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.Init" -> "github.com/dreadl0ck/go-dpi/modules/classifiers.NewClassifierModule" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.Init" -> "github.com/dreadl0ck/go-dpi/modules/wrappers.NewWrapperModule" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.Init" -> "(*github.com/dreadl0ck/go-dpi/modules/wrappers.WrapperModule).ConfigureModule" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.Init" -> "github.com/dreadl0ck/go-dpi.SetModules" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dpi.Init" -> "github.com/dreadl0ck/go-dpi.Initialize" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/dpi.Init" [ color="saddlebrown" ]
+}

@@ -1,0 +1,361 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        bgcolor="#e6ecfa";
+label="reassembly";
+labelloc="t";
+labeljust="c";
+fontsize="18";
+        
+        "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ fillcolor="lightblue" label="(*assemblerSimpleContext).GetCaptureInfo" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).DumpString" [ fillcolor="lightblue" label="(*StreamPool).DumpString" penwidth="1.5" ]
+        "(github.com/dreadl0ck/netcap/reassembly.TCPFlowDirection).String" [ fillcolor="lightblue" label="(TCPFlowDirection).String" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAllProgress" [ fillcolor="lightblue" label="(*Assembler).FlushAllProgress" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).connections" [ fillcolor="lightblue" label="(*StreamPool).connections" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).closeHalfConnection" [ fillcolor="lightblue" label="(*Assembler).closeHalfConnection" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.pageCache).replace" [ fillcolor="lightblue" label="(*pageCache).replace" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).remove" [ fillcolor="lightblue" label="(*StreamPool).remove" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).skipFlush" [ label="(*Assembler).skipFlush" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addNextFromConn" [ fillcolor="lightblue" label="(*Assembler).addNextFromConn" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" [ fillcolor="lightblue" label="(*Assembler).buildSG" penwidth="0.5" ]
+        "(github.com/dreadl0ck/netcap/reassembly.Sequence).difference" [ fillcolor="lightblue" label="(Sequence).difference" penwidth="0.5" ]
+        "(github.com/dreadl0ck/netcap/reassembly.Sequence).add" [ penwidth="0.5" fillcolor="lightblue" label="(Sequence).add" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addPending" [ fillcolor="lightblue" label="(*Assembler).addPending" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).release" [ fillcolor="lightblue" label="(*page).release" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addContiguous" [ fillcolor="lightblue" label="(*Assembler).addContiguous" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).setStatsToSG" [ fillcolor="lightblue" label="(*Assembler).setStatsToSG" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" [ penwidth="0.5" fillcolor="lightblue" label="(*Assembler).dump" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).getSeq" [ fillcolor="lightblue" label="(*page).getSeq" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).captureInfo" [ fillcolor="lightblue" label="(*livePacket).captureInfo" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).captureInfo" [ fillcolor="lightblue" label="(*page).captureInfo" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).getBytes" [ fillcolor="lightblue" label="(*livePacket).getBytes" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).getBytes" [ fillcolor="lightblue" label="(*page).getBytes" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).getSeq" [ penwidth="0.5" fillcolor="lightblue" label="(*livePacket).getSeq" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).length" [ fillcolor="lightblue" label="(*livePacket).length" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).length" [ fillcolor="lightblue" label="(*page).length" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).isEnd" [ fillcolor="lightblue" label="(*livePacket).isEnd" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).isEnd" [ fillcolor="lightblue" label="(*page).isEnd" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" [ fillcolor="lightblue" label="(*Assembler).sendToConnection" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" [ fillcolor="lightblue" label="(*Assembler).cleanSG" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).Dump" [ fillcolor="lightblue" label="(*Assembler).Dump" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).release" [ fillcolor="lightblue" label="(*livePacket).release" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).convertToPages" [ fillcolor="lightblue" label="(*livePacket).convertToPages" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.pageCache).next" [ fillcolor="lightblue" label="(*pageCache).next" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.pageCache).grow" [ fillcolor="lightblue" label="(*pageCache).grow" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.pageCache).tryShrink" [ fillcolor="lightblue" label="(*pageCache).tryShrink" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/reassembly.min" [ fillcolor="lightblue" label="min" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).convertToPages" [ fillcolor="lightblue" label="(*page).convertToPages" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Stats" [ fillcolor="lightblue" label="(*reassemblyObject).Stats" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).isPacket" [ fillcolor="lightblue" label="(*livePacket).isPacket" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).isPacket" [ fillcolor="lightblue" label="(*page).isPacket" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Lengths" [ fillcolor="lightblue" label="(*reassemblyObject).Lengths" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Info" [ fillcolor="lightblue" label="(*reassemblyObject).Info" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).isStart" [ fillcolor="lightblue" label="(*livePacket).isStart" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).isStart" [ fillcolor="lightblue" label="(*page).isStart" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Fetch" [ fillcolor="lightblue" label="(*reassemblyObject).Fetch" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.livePacket).assemblerContext" [ fillcolor="lightblue" label="(*livePacket).assemblerContext" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.page).assemblerContext" [ fillcolor="lightblue" label="(*page).assemblerContext" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAll" [ fillcolor="lightblue" label="(*Assembler).FlushAll" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/reassembly.newPageCache" [ fillcolor="lightblue" label="newPageCache" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/reassembly.NewAssembler" [ fillcolor="lightblue" label="NewAssembler" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" [ fillcolor="lightblue" label="(*Assembler).AssembleWithContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.key).reverse" [ label="(*key).reverse" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).getHalf" [ fillcolor="lightblue" label="(*StreamPool).getHalf" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).getConnection" [ fillcolor="lightblue" label="(*StreamPool).getConnection" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).newConnection" [ fillcolor="lightblue" label="(*StreamPool).newConnection" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).grow" [ fillcolor="lightblue" label="(*StreamPool).grow" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.connection).reset" [ fillcolor="lightblue" label="(*connection).reset" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/reassembly.NewTCPSimpleFSM" [ fillcolor="lightblue" label="NewTCPSimpleFSM" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/reassembly.NewTCPOptionCheck" [ fillcolor="lightblue" label="NewTCPOptionCheck" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).checkOverlap" [ label="(*Assembler).checkOverlap" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).handleBytes" [ label="(*Assembler).handleBytes" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).overlapExisting" [ fillcolor="lightblue" label="(*Assembler).overlapExisting" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.TCPSimpleFSM).CheckState" [ label="(*TCPSimpleFSM).CheckState" penwidth="1.5" fillcolor="lightblue" ]
+        "(github.com/dreadl0ck/netcap/reassembly.TCPFlowDirection).reverse" [ fillcolor="lightblue" label="(TCPFlowDirection).reverse" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.TCPSimpleFSM).String" [ fillcolor="lightblue" label="(*TCPSimpleFSM).String" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.TCPOptionCheck).Accept" [ fillcolor="lightblue" label="(*TCPOptionCheck).Accept" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.TCPOptionCheck).getOptions" [ label="(*TCPOptionCheck).getOptions" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushWithOptions" [ fillcolor="lightblue" label="(*Assembler).FlushWithOptions" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).flushClose" [ fillcolor="lightblue" label="(*Assembler).flushClose" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/reassembly.NewStreamPool" [ fillcolor="lightblue" label="NewStreamPool" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).assemble" [ penwidth="0.5" fillcolor="lightblue" label="(*Assembler).assemble" ]
+        "(*github.com/dreadl0ck/netcap/reassembly.Assembler).flushCloseOlderThan" [ fillcolor="lightblue" label="(*Assembler).flushCloseOlderThan" penwidth="0.5" ]
+        
+        subgraph "cluster_github.com/cheggaaa/pb/v3" {
+        fontsize="16";
+fillcolor="lightyellow";
+tooltip="package: github.com/cheggaaa/pb/v3";
+label="pb";
+URL="/?f=github.com/cheggaaa/pb/v3";
+penwidth="0.8";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "github.com/cheggaaa/pb/v3.StartNew" [ fillcolor="moccasin" label="StartNew" penwidth="1.5" ]
+        "(*github.com/cheggaaa/pb/v3.ProgressBar).Finish" [ fillcolor="moccasin" label="(*ProgressBar).Finish" penwidth="1.5" ]
+        "(*github.com/cheggaaa/pb/v3.ProgressBar).Increment" [ fillcolor="moccasin" label="(*ProgressBar).Increment" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/gopacket" {
+        penwidth="0.8";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+fontsize="16";
+style="filled";
+label="gopacket";
+URL="/?f=github.com/dreadl0ck/gopacket";
+tooltip="package: github.com/dreadl0ck/gopacket";
+        
+        "(github.com/dreadl0ck/gopacket.Flow).Reverse" [ penwidth="1.5" fillcolor="moccasin" label="(Flow).Reverse" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/gopacket/layers" {
+        fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="layers";
+URL="/?f=github.com/dreadl0ck/gopacket/layers";
+tooltip="package: github.com/dreadl0ck/gopacket/layers";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+rank="sink";
+        
+        "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ fillcolor="moccasin" label="(*TCP).TransportFlow" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/collector" {
+        penwidth="0.8";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/collector";
+tooltip="package: github.com/dreadl0ck/netcap/collector";
+fontsize="16";
+fillcolor="lightyellow";
+label="collector";
+        
+        "(*github.com/dreadl0ck/netcap/collector.Collector).initWorkers" [ fillcolor="moccasin" label="(*Collector).initWorkers" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/core" {
+        fillcolor="lightyellow";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="core";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/core";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/core";
+        
+        "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Less" [ penwidth="1.5" fillcolor="moccasin" label="(DataFragments).Less" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/tcp" {
+        fillcolor="lightyellow";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="tcp";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/tcp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/tcp";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" [ fillcolor="moccasin" label="CleanupReassembly" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpStreamProcessor).streamWorker$1" [ fillcolor="moccasin" label="(*tcpStreamProcessor).streamWorker$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).reorder" [ penwidth="0.5" fillcolor="moccasin" label="(*tcpConnection).reorder" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassemblyComplete" [ fillcolor="moccasin" label="(*tcpConnection).ReassemblyComplete" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.context).GetCaptureInfo" [ fillcolor="moccasin" label="(*context).GetCaptureInfo" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).updateStats" [ fillcolor="moccasin" label="(*tcpConnection).updateStats" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassembledSG" [ fillcolor="moccasin" label="(*tcpConnection).ReassembledSG" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).feedData" [ fillcolor="moccasin" label="(*tcpConnection).feedData" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.connectionFactory).New" [ fillcolor="moccasin" label="(*connectionFactory).New" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).Accept" [ fillcolor="moccasin" label="(*tcpConnection).Accept" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.ReassemblePacket" [ fillcolor="moccasin" label="ReassemblePacket" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.newStreamFactory" [ fillcolor="moccasin" label="newStreamFactory" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/utils" {
+        penwidth="0.8";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="utils";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/utils";
+fontsize="16";
+style="filled";
+rank="sink";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/utils";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" [ fillcolor="moccasin" label="SaveConversation" penwidth="1.5" ]
+        
+    }
+
+    }
+
+    "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Less" -> "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).DumpString" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" -> "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpStreamProcessor).streamWorker$1" -> "(github.com/dreadl0ck/netcap/reassembly.TCPFlowDirection).String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAllProgress" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).connections" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAllProgress" -> "github.com/cheggaaa/pb/v3.StartNew" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAllProgress" -> "(*github.com/cheggaaa/pb/v3.ProgressBar).Finish" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAllProgress" -> "(*github.com/cheggaaa/pb/v3.ProgressBar).Increment" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).closeHalfConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.pageCache).replace" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).closeHalfConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).remove" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).reorder" -> "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassemblyComplete" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).reorder" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassemblyComplete" -> "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassemblyComplete" -> "(github.com/dreadl0ck/netcap/reassembly.TCPFlowDirection).String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).closeHalfConnection" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassemblyComplete" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).skipFlush" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).closeHalfConnection" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).skipFlush" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addNextFromConn" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).difference" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).add" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addPending" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).add" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.page).release" -> "(*github.com/dreadl0ck/netcap/reassembly.pageCache).replace" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addPending" -> "(*github.com/dreadl0ck/netcap/reassembly.page).release" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addPending" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addContiguous" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).difference" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addContiguous" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).add" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addContiguous" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).setStatsToSG" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" -> "(*github.com/dreadl0ck/netcap/reassembly.page).getSeq" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.livePacket).captureInfo" -> "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.livePacket).captureInfo" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.context).GetCaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).captureInfo" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.page).captureInfo" -> "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.page).captureInfo" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.context).GetCaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" -> "(*github.com/dreadl0ck/netcap/reassembly.page).captureInfo" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).getBytes" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" -> "(*github.com/dreadl0ck/netcap/reassembly.page).getBytes" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).getSeq" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.page).getSeq" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.page).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).isEnd" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" -> "(*github.com/dreadl0ck/netcap/reassembly.page).isEnd" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).buildSG" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).Dump" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" -> "(*github.com/dreadl0ck/netcap/reassembly.page).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).release" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" -> "(*github.com/dreadl0ck/netcap/reassembly.page).release" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.livePacket).convertToPages" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).captureInfo" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.pageCache).next" -> "(*github.com/dreadl0ck/netcap/reassembly.pageCache).grow" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.pageCache).next" -> "(*github.com/dreadl0ck/netcap/reassembly.pageCache).tryShrink" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.livePacket).convertToPages" -> "(*github.com/dreadl0ck/netcap/reassembly.pageCache).next" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.livePacket).convertToPages" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).add" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.livePacket).convertToPages" -> "github.com/dreadl0ck/netcap/reassembly.min" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.livePacket).convertToPages" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).isEnd" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).convertToPages" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.page).convertToPages" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).add" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" -> "(*github.com/dreadl0ck/netcap/reassembly.page).convertToPages" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).cleanSG" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).closeHalfConnection" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.page).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Stats" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).isPacket" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Stats" -> "(*github.com/dreadl0ck/netcap/reassembly.page).isPacket" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).updateStats" -> "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Stats" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassembledSG" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).updateStats" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).feedData" -> "(github.com/dreadl0ck/netcap/reassembly.TCPFlowDirection).String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassembledSG" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).feedData" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Lengths" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Lengths" -> "(*github.com/dreadl0ck/netcap/reassembly.page).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassembledSG" -> "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Lengths" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Info" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).isStart" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Info" -> "(*github.com/dreadl0ck/netcap/reassembly.page).isStart" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Info" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).isEnd" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Info" -> "(*github.com/dreadl0ck/netcap/reassembly.page).isEnd" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassembledSG" -> "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Info" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Fetch" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Fetch" -> "(*github.com/dreadl0ck/netcap/reassembly.page).length" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Fetch" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).getBytes" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Fetch" -> "(*github.com/dreadl0ck/netcap/reassembly.page).getBytes" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassembledSG" -> "(*github.com/dreadl0ck/netcap/reassembly.reassemblyObject).Fetch" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).ReassembledSG" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).assemblerContext" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.page).assemblerContext" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).skipFlush" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAllProgress" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).skipFlush" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAllProgress" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).closeHalfConnection" [  ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAllProgress" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAll" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).connections" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAll" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).skipFlush" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAll" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).closeHalfConnection" [  ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushAll" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/reassembly.newPageCache" -> "(*github.com/dreadl0ck/netcap/reassembly.pageCache).grow" [  ]
+    "github.com/dreadl0ck/netcap/reassembly.NewAssembler" -> "github.com/dreadl0ck/netcap/reassembly.newPageCache" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initWorkers" -> "github.com/dreadl0ck/netcap/reassembly.NewAssembler" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.key).reverse" -> "(github.com/dreadl0ck/gopacket.Flow).Reverse" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).getHalf" -> "(*github.com/dreadl0ck/netcap/reassembly.key).reverse" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).getConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).getHalf" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).newConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).grow" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).newConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.connection).reset" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).getConnection" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).newConnection" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.connectionFactory).New" -> "github.com/dreadl0ck/netcap/reassembly.NewTCPSimpleFSM" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.connectionFactory).New" -> "github.com/dreadl0ck/netcap/reassembly.NewTCPOptionCheck" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.connectionFactory).New" -> "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).getConnection" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.connectionFactory).New" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).getConnection" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).difference" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).add" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).checkOverlap" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).add" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).checkOverlap" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).checkOverlap" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).difference" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).checkOverlap" -> "(*github.com/dreadl0ck/netcap/reassembly.page).isPacket" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).checkOverlap" -> "(*github.com/dreadl0ck/netcap/reassembly.page).release" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).checkOverlap" -> "(*github.com/dreadl0ck/netcap/reassembly.livePacket).convertToPages" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).handleBytes" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).checkOverlap" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).overlapExisting" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).difference" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).handleBytes" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).overlapExisting" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).handleBytes" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).dump" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).handleBytes" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).addNextFromConn" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).handleBytes" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).sendToConnection" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.context).GetCaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.TCPSimpleFSM).CheckState" -> "(github.com/dreadl0ck/netcap/reassembly.TCPFlowDirection).reverse" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).Accept" -> "(*github.com/dreadl0ck/netcap/reassembly.TCPSimpleFSM).CheckState" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).Accept" -> "(*github.com/dreadl0ck/netcap/reassembly.TCPSimpleFSM).String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.TCPOptionCheck).Accept" -> "(*github.com/dreadl0ck/netcap/reassembly.TCPOptionCheck).getOptions" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.TCPOptionCheck).Accept" -> "(github.com/dreadl0ck/netcap/reassembly.TCPFlowDirection).reverse" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.TCPOptionCheck).Accept" -> "(github.com/dreadl0ck/netcap/reassembly.Sequence).difference" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).Accept" -> "(*github.com/dreadl0ck/netcap/reassembly.TCPOptionCheck).Accept" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).Accept" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.ReassemblePacket" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushWithOptions" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).connections" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).flushClose" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).skipFlush" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushWithOptions" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).flushClose" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushWithOptions" -> "(*github.com/dreadl0ck/netcap/reassembly.StreamPool).remove" [  ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.ReassemblePacket" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushWithOptions" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.newStreamFactory" -> "github.com/dreadl0ck/netcap/reassembly.NewStreamPool" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).assemble" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).AssembleWithContext" [  ]
+    "(*github.com/dreadl0ck/netcap/reassembly.Assembler).flushCloseOlderThan" -> "(*github.com/dreadl0ck/netcap/reassembly.Assembler).FlushWithOptions" [  ]
+}

@@ -1,0 +1,221 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        labeljust="c";
+fontsize="18";
+bgcolor="#e6ecfa";
+label="main";
+labelloc="t";
+        
+        "github.com/dreadl0ck/netcap/cmd.printFileForExt" [ label="printFileForExt" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/cmd.debug" [ fillcolor="lightblue" label="debug" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd.help" [ fillcolor="lightblue" label="help" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd.handleConfigFlag" [ penwidth="0.5" fillcolor="lightblue" label="handleConfigFlag" ]
+        "github.com/dreadl0ck/netcap/cmd.printCompletions" [ fillcolor="lightblue" label="printCompletions" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd.printFlags" [ label="printFlags" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/cmd.getSubCmd" [ penwidth="0.5" fillcolor="lightblue" label="getSubCmd" ]
+        "github.com/dreadl0ck/netcap/cmd.printFlagsFiltered" [ fillcolor="lightblue" label="printFlagsFiltered" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd.main" [ fillcolor="lightblue" label="main" penwidth="0.5" ]
+        
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/agent" {
+        style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/agent";
+fontsize="16";
+label="agent";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/agent";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/netcap/cmd/agent.Flags" [ fillcolor="moccasin" label="Flags" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/cmd/agent.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/capture" {
+        style="filled";
+rank="sink";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/capture";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/capture";
+penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="capture";
+        
+        "github.com/dreadl0ck/netcap/cmd/capture.Flags" [ fillcolor="moccasin" label="Flags" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/cmd/capture.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/collect" {
+        fontname="Tahoma bold";
+rank="sink";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/collect";
+fillcolor="lightyellow";
+label="collect";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/collect";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+        
+        "github.com/dreadl0ck/netcap/cmd/collect.Flags" [ fillcolor="moccasin" label="Flags" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/cmd/collect.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/dump" {
+        fontsize="16";
+style="filled";
+rank="sink";
+label="dump";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/dump";
+penwidth="0.8";
+fontname="Tahoma bold";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/dump";
+fillcolor="lightyellow";
+        
+        "github.com/dreadl0ck/netcap/cmd/dump.Flags" [ fillcolor="moccasin" label="Flags" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/cmd/dump.Run" [ penwidth="1.5" fillcolor="moccasin" label="Run" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/export" {
+        penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/export";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/export";
+fontsize="16";
+label="export";
+        
+        "github.com/dreadl0ck/netcap/cmd/export.Flags" [ label="Flags" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/export.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/label" {
+        style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/label";
+penwidth="0.8";
+fontsize="16";
+rank="sink";
+label="label";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/label";
+        
+        "github.com/dreadl0ck/netcap/cmd/label.Flags" [ label="Flags" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/label.Run" [ label="Run" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/proxy" {
+        penwidth="0.8";
+fontsize="16";
+rank="sink";
+label="proxy";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/proxy";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/proxy";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/cmd/proxy.Flags" [ fillcolor="moccasin" label="Flags" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/cmd/proxy.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/transform" {
+        rank="sink";
+label="transform";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/transform";
+penwidth="0.8";
+style="filled";
+fontname="Tahoma bold";
+fontsize="16";
+fillcolor="lightyellow";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/transform";
+        
+        "github.com/dreadl0ck/netcap/cmd/transform.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/util" {
+        URL="/?f=github.com/dreadl0ck/netcap/cmd/util";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/util";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="util";
+fontsize="16";
+        
+        "github.com/dreadl0ck/netcap/cmd/util.Flags" [ fillcolor="moccasin" label="Flags" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/cmd/util.Run" [ label="Run" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/io" {
+        rank="sink";
+label="io";
+style="filled";
+fontname="Tahoma bold";
+fillcolor="lightyellow";
+URL="/?f=github.com/dreadl0ck/netcap/io";
+tooltip="package: github.com/dreadl0ck/netcap/io";
+penwidth="0.8";
+fontsize="16";
+        
+        "github.com/dreadl0ck/netcap/io.PrintLogo" [ fillcolor="moccasin" label="PrintLogo" penwidth="1.5" ]
+        
+    }
+
+    }
+
+    "github.com/dreadl0ck/netcap/cmd.printFileForExt" -> "github.com/dreadl0ck/netcap/cmd.debug" [  ]
+    "github.com/dreadl0ck/netcap/cmd.help" -> "github.com/dreadl0ck/netcap/io.PrintLogo" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.handleConfigFlag" -> "github.com/dreadl0ck/netcap/cmd.printFileForExt" [  ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd.debug" [  ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd/capture.Flags" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd.printFlags" [  ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd/util.Flags" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd/proxy.Flags" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd/label.Flags" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd/export.Flags" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd/dump.Flags" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd/collect.Flags" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd/agent.Flags" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd.getSubCmd" [  ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd.printFileForExt" [  ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd.handleConfigFlag" [  ]
+    "github.com/dreadl0ck/netcap/cmd.printCompletions" -> "github.com/dreadl0ck/netcap/cmd.printFlagsFiltered" [  ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd.printCompletions" [  ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd.help" [  ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/capture.Run" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/util.Run" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/proxy.Run" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/label.Run" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/export.Run" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/dump.Run" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/collect.Run" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/transform.Run" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd.main" -> "github.com/dreadl0ck/netcap/cmd/agent.Run" [ color="saddlebrown" ]
+}
