@@ -93,7 +93,7 @@ Proceed?`) {
 
 	// clone repo
 	// go-git does not yet support LFS... we need to shell out
-	cmd := exec.Command("git", "clone", "https://github.com/dreadl0ck/netcap-dbs.git", resolvers.ConfigRootPath)
+	cmd := exec.Command("git", "clone", "git@github.com:dreadl0ck/netcap.git", resolvers.ConfigRootPath)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
