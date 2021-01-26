@@ -1,0 +1,1477 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        bgcolor="#e6ecfa";
+label="collector";
+labelloc="t";
+labeljust="c";
+fontsize="18";
+        
+        "github.com/dreadl0ck/netcap/collector.init" [ fillcolor="lightblue" label="init" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.init#1" [ fillcolor="lightblue" label="init#1" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" [ fillcolor="lightblue" label="(*Collector).serveCleanupHTTPEndpoint$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [ fillcolor="lightblue" label="(*Collector).printlnStdOut" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" [ label="(*Collector).teardown" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).closePcapFiles" [ fillcolor="lightblue" label="(*Collector).closePcapFiles" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).closeErrorLogFile" [ fillcolor="lightblue" label="(*Collector).closeErrorLogFile" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).getErrorSummary" [ label="(*Collector).getErrorSummary" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).stats" [ fillcolor="lightblue" label="(*Collector).stats" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.share" [ label="share" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).printErrors" [ fillcolor="lightblue" label="(*Collector).printErrors" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1$1" [ fillcolor="lightblue" label="(*Collector).serveCleanupHTTPEndpoint$1$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [ label="(*Collector).cleanup" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/collector.newMemStats" [ fillcolor="lightblue" label="newMemStats" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.memStats).String" [ label="(*memStats).String" penwidth="1.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).stopWorkers" [ fillcolor="lightblue" label="(*Collector).stopWorkers" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup$1" [ fillcolor="lightblue" label="(*Collector).cleanup$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup$1$1" [ fillcolor="lightblue" label="(*Collector).cleanup$1$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1$2" [ fillcolor="lightblue" label="(*Collector).serveCleanupHTTPEndpoint$1$2" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).GetNumPackets" [ label="(*Collector).GetNumPackets" penwidth="1.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" [ fillcolor="lightblue" label="(*Collector).CollectBPF" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [ fillcolor="lightblue" label="(*Collector).Init" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1" [ fillcolor="lightblue" label="(*Collector).handleSignals$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1$1" [ fillcolor="lightblue" label="(*Collector).handleSignals$1$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals" [ fillcolor="lightblue" label="(*Collector).handleSignals" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint" [ fillcolor="lightblue" label="(*Collector).serveCleanupHTTPEndpoint" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" [ fillcolor="lightblue" label="(*Collector).initLogging" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).initWorkers" [ label="(*Collector).initWorkers" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" [ fillcolor="lightblue" label="(*Collector).worker$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.atomicPcapGoWriter).writePacket" [ fillcolor="lightblue" label="(*atomicPcapGoWriter).writePacket" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToUnknownPcap" [ fillcolor="lightblue" label="(*Collector).writePacketToUnknownPcap" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).logPacketError" [ fillcolor="lightblue" label="(*Collector).logPacketError" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToErrorsPcap" [ label="(*Collector).writePacketToErrorsPcap" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).worker" [ fillcolor="lightblue" label="(*Collector).worker" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).printStdOut" [ fillcolor="lightblue" label="(*Collector).printStdOut" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.invalidDecoder" [ fillcolor="lightblue" label="invalidDecoder" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" [ fillcolor="lightblue" label="handleDecoderInitError" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).buildProgressString" [ fillcolor="lightblue" label="(*Collector).buildProgressString" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).createUnknownPcap" [ fillcolor="lightblue" label="(*Collector).createUnknownPcap" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.newAtomicPcapGoWriter" [ fillcolor="lightblue" label="newAtomicPcapGoWriter" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).createErrorsPcap" [ fillcolor="lightblue" label="(*Collector).createErrorsPcap" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).freeOSMemory" [ fillcolor="lightblue" label="(*Collector).freeOSMemory" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" [ fillcolor="lightblue" label="(*Collector).printProgressInterval$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).clearLine" [ penwidth="0.5" fillcolor="lightblue" label="(*Collector).clearLine" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval" [ label="(*Collector).printProgressInterval" penwidth="0.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).handleRawPacketData" [ penwidth="0.5" fillcolor="lightblue" label="(*Collector).handleRawPacketData" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacket" [ label="(*Collector).handlePacket" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/collector.New" [ penwidth="1.5" fillcolor="lightblue" label="New" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" [ penwidth="1.5" fillcolor="lightblue" label="(*Collector).CollectLive" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).handleLinkType" [ fillcolor="lightblue" label="(*Collector).handleLinkType" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.IsPcap$1" [ fillcolor="lightblue" label="IsPcap$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/collector.IsPcap" [ fillcolor="lightblue" label="IsPcap" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" [ fillcolor="lightblue" label="(*Collector).CollectPcap" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/collector.OpenPCAP" [ fillcolor="lightblue" label="OpenPCAP" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/collector.countPackets" [ fillcolor="lightblue" label="countPackets" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.countPackets$1" [ fillcolor="lightblue" label="countPackets$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap$1" [ fillcolor="lightblue" label="(*Collector).CollectPcap$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" [ penwidth="1.5" fillcolor="lightblue" label="(*Collector).CollectPcapNG" ]
+        "github.com/dreadl0ck/netcap/collector.openPcapNG" [ fillcolor="lightblue" label="openPcapNG" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.countPacketsNG" [ fillcolor="lightblue" label="countPacketsNG" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/collector.countPacketsNG$1" [ fillcolor="lightblue" label="countPacketsNG$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG$1" [ style="dotted,filled" fillcolor="lightblue" label="(*Collector).CollectPcapNG$1" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).PrintConfiguration" [ fillcolor="lightblue" label="(*Collector).PrintConfiguration" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).Stop" [ fillcolor="lightblue" label="(*Collector).Stop" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).forceStop" [ fillcolor="lightblue" label="(*Collector).forceStop" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressLive" [ fillcolor="lightblue" label="(*Collector).printProgressLive" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" [ fillcolor="lightblue" label="(*Collector).InitBatching" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching$1" [ fillcolor="lightblue" label="(*Collector).InitBatching$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" [ fillcolor="lightblue" label="(*Collector).handlePacketTimeout" penwidth="0.5" ]
+        
+        subgraph "cluster_github.com/blevesearch/bleve" {
+        fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+tooltip="package: github.com/blevesearch/bleve";
+penwidth="0.8";
+rank="sink";
+label="bleve";
+URL="/?f=github.com/blevesearch/bleve";
+style="filled";
+        
+        "(github.com/blevesearch/bleve.Error).Error" [ fillcolor="moccasin" label="(Error).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/davecgh/go-spew/spew" {
+        fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/davecgh/go-spew/spew";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+label="spew";
+tooltip="package: github.com/davecgh/go-spew/spew";
+        
+        "github.com/davecgh/go-spew/spew.Dump" [ fillcolor="moccasin" label="Dump" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dlclark/regexp2/syntax" {
+        style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="syntax";
+URL="/?f=github.com/dlclark/regexp2/syntax";
+penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+tooltip="package: github.com/dlclark/regexp2/syntax";
+        
+        "(*github.com/dlclark/regexp2/syntax.Error).Error" [ penwidth="1.5" fillcolor="moccasin" label="(*Error).Error" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/gopacket" {
+        fillcolor="lightyellow";
+tooltip="package: github.com/dreadl0ck/gopacket";
+URL="/?f=github.com/dreadl0ck/gopacket";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="gopacket";
+        
+        "(github.com/dreadl0ck/gopacket.Flow).Src" [ penwidth="1.5" fillcolor="moccasin" label="(Flow).Src" ]
+        "(github.com/dreadl0ck/gopacket.Endpoint).String" [ fillcolor="moccasin" label="(Endpoint).String" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Flow).Dst" [ fillcolor="moccasin" label="(Flow).Dst" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Endpoint).Raw" [ fillcolor="moccasin" label="(Endpoint).Raw" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.LayerType).String" [ fillcolor="moccasin" label="(LayerType).String" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.packet).Data" [ fillcolor="moccasin" label="(*packet).Data" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ fillcolor="moccasin" label="(*packet).Metadata" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).Dump" [ fillcolor="moccasin" label="(*lazyPacket).Dump" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).Dump" [ fillcolor="moccasin" label="(*eagerPacket).Dump" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).NetworkLayer" [ fillcolor="moccasin" label="(*eagerPacket).NetworkLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).NetworkLayer" [ fillcolor="moccasin" label="(*lazyPacket).NetworkLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ fillcolor="moccasin" label="(*eagerPacket).TransportLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ penwidth="1.5" fillcolor="moccasin" label="(*lazyPacket).TransportLayer" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).Layers" [ fillcolor="moccasin" label="(*eagerPacket).Layers" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).Layers" [ fillcolor="moccasin" label="(*lazyPacket).Layers" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.Fragment).LayerType" [ fillcolor="moccasin" label="(*Fragment).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.DecodeFailure).LayerType" [ fillcolor="moccasin" label="(*DecodeFailure).LayerType" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Payload).LayerType" [ fillcolor="moccasin" label="(Payload).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).ErrorLayer" [ fillcolor="moccasin" label="(*eagerPacket).ErrorLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).ErrorLayer" [ fillcolor="moccasin" label="(*lazyPacket).ErrorLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.DecodeFailure).Error" [ fillcolor="moccasin" label="(*DecodeFailure).Error" penwidth="1.5" ]
+        "github.com/dreadl0ck/gopacket.NewPacket" [ fillcolor="moccasin" label="NewPacket" penwidth="1.5" ]
+        "github.com/dreadl0ck/gopacket.NewPacketSource" [ fillcolor="moccasin" label="NewPacketSource" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.PacketSource).Packets" [ penwidth="1.5" fillcolor="moccasin" label="(*PacketSource).Packets" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/gopacket/layers" {
+        label="layers";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+style="filled";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/gopacket/layers";
+tooltip="package: github.com/dreadl0ck/gopacket/layers";
+penwidth="0.8";
+fontsize="16";
+        
+        "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForPPPoECode).Error" [ penwidth="1.5" fillcolor="moccasin" label="(*errorDecoderForPPPoECode).Error" ]
+        "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForLinkType).Error" [ fillcolor="moccasin" label="(*errorDecoderForLinkType).Error" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForIPProtocol).Error" [ penwidth="1.5" fillcolor="moccasin" label="(*errorDecoderForIPProtocol).Error" ]
+        "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForProtocolFamily).Error" [ fillcolor="moccasin" label="(*errorDecoderForProtocolFamily).Error" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForPPPType).Error" [ fillcolor="moccasin" label="(*errorDecoderForPPPType).Error" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv4).NetworkFlow" [ fillcolor="moccasin" label="(*IPv4).NetworkFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv6).NetworkFlow" [ fillcolor="moccasin" label="(*IPv6).NetworkFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ fillcolor="moccasin" label="(*UDPLite).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ fillcolor="moccasin" label="(*UDP).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ fillcolor="moccasin" label="(*TCP).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ fillcolor="moccasin" label="(*RUDP).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ label="(*SCTP).TransportFlow" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.MLDv1MulticastListenerReportMessage).LayerType" [ fillcolor="moccasin" label="(*MLDv1MulticastListenerReportMessage).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFAck).LayerType" [ fillcolor="moccasin" label="(*Dot11DataCFAck).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.LinkLayerDiscovery).LayerType" [ fillcolor="moccasin" label="(*LinkLayerDiscovery).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPSack).LayerType" [ fillcolor="moccasin" label="(*SCTPSack).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.GRE).LayerType" [ label="(*GRE).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFAckPollNoData).LayerType" [ fillcolor="moccasin" label="(*Dot11DataCFAckPollNoData).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RadioTap).LayerType" [ fillcolor="moccasin" label="(*RadioTap).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFAckPoll).LayerType" [ fillcolor="moccasin" label="(*Dot11DataCFAckPoll).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtBeacon).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*Dot11MgmtBeacon).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPError).LayerType" [ fillcolor="moccasin" label="(*SCTPError).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtAuthentication).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtAuthentication).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtAssociationResp).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtAssociationResp).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv6HopByHop).LayerType" [ fillcolor="moccasin" label="(*IPv6HopByHop).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ICMPv4).LayerType" [ label="(*ICMPv4).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.USBControl).LayerType" [ fillcolor="moccasin" label="(*USBControl).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11Data).LayerType" [ fillcolor="moccasin" label="(*Dot11Data).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SFlowDatagram).LayerType" [ fillcolor="moccasin" label="(*SFlowDatagram).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EAP).LayerType" [ label="(*EAP).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.UDPLite).LayerType" [ fillcolor="moccasin" label="(*UDPLite).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPCookieEcho).LayerType" [ fillcolor="moccasin" label="(*SCTPCookieEcho).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtActionNoAck).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtActionNoAck).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv4).LayerType" [ fillcolor="moccasin" label="(*IPv4).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.UDP).LayerType" [ fillcolor="moccasin" label="(*UDP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtMeasurementPilot).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtMeasurementPilot).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtDeauthentication).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtDeauthentication).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ICMPv6RouterSolicitation).LayerType" [ fillcolor="moccasin" label="(*ICMPv6RouterSolicitation).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlAck).LayerType" [ label="(*Dot11CtrlAck).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EthernetCTP).LayerType" [ fillcolor="moccasin" label="(*EthernetCTP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv6Fragment).LayerType" [ fillcolor="moccasin" label="(*IPv6Fragment).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ENIP).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*ENIP).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSDataCFAckPoll).LayerType" [ fillcolor="moccasin" label="(*Dot11DataQOSDataCFAckPoll).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlCFEndAck).LayerType" [ fillcolor="moccasin" label="(*Dot11CtrlCFEndAck).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ASF).LayerType" [ fillcolor="moccasin" label="(*ASF).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.NTP).LayerType" [ fillcolor="moccasin" label="(*NTP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.MLDv2MulticastListenerReportMessage).LayerType" [ fillcolor="moccasin" label="(*MLDv2MulticastListenerReportMessage).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSData).LayerType" [ fillcolor="moccasin" label="(*Dot11DataQOSData).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EthernetCTPReply).LayerType" [ fillcolor="moccasin" label="(*EthernetCTPReply).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.PFLog).LayerType" [ fillcolor="moccasin" label="(*PFLog).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.LinkLayerDiscoveryInfo).LayerType" [ fillcolor="moccasin" label="(*LinkLayerDiscoveryInfo).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IGMPv1or2).LayerType" [ fillcolor="moccasin" label="(*IGMPv1or2).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RADIUS).LayerType" [ fillcolor="moccasin" label="(*RADIUS).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.TCP).LayerType" [ fillcolor="moccasin" label="(*TCP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.OSPFv3).LayerType" [ fillcolor="moccasin" label="(*OSPFv3).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtReassociationReq).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtReassociationReq).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Diameter).LayerType" [ fillcolor="moccasin" label="(*Diameter).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtATIM).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*Dot11MgmtATIM).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SIP).LayerType" [ fillcolor="moccasin" label="(*SIP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.PPPoE).LayerType" [ label="(*PPPoE).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFAckNoData).LayerType" [ fillcolor="moccasin" label="(*Dot11DataCFAckNoData).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtAssociationReq).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*Dot11MgmtAssociationReq).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlPowersavePoll).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*Dot11CtrlPowersavePoll).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtDisassociation).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtDisassociation).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.MPLS).LayerType" [ label="(*MPLS).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSCFAckPollNoData).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*Dot11DataQOSCFAckPollNoData).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.MLDv1MulticastListenerDoneMessage).LayerType" [ label="(*MLDv1MulticastListenerDoneMessage).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SNAP).LayerType" [ fillcolor="moccasin" label="(*SNAP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSCFPollNoData).LayerType" [ label="(*Dot11DataQOSCFPollNoData).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFPoll).LayerType" [ fillcolor="moccasin" label="(*Dot11DataCFPoll).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.MLDv2MulticastListenerQueryMessage).LayerType" [ fillcolor="moccasin" label="(*MLDv2MulticastListenerQueryMessage).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ICMPv6Echo).LayerType" [ fillcolor="moccasin" label="(*ICMPv6Echo).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.MLDv1MulticastListenerQueryMessage).LayerType" [ fillcolor="moccasin" label="(*MLDv1MulticastListenerQueryMessage).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Modbus).LayerType" [ fillcolor="moccasin" label="(*Modbus).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPHeartbeat).LayerType" [ fillcolor="moccasin" label="(*SCTPHeartbeat).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Loopback).LayerType" [ fillcolor="moccasin" label="(*Loopback).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11WEP).LayerType" [ fillcolor="moccasin" label="(*Dot11WEP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtArubaWLAN).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtArubaWLAN).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.USB).LayerType" [ fillcolor="moccasin" label="(*USB).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtProbeResp).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtProbeResp).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ICMPv6Redirect).LayerType" [ fillcolor="moccasin" label="(*ICMPv6Redirect).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.VRRPv2).LayerType" [ fillcolor="moccasin" label="(*VRRPv2).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EAPOL).LayerType" [ fillcolor="moccasin" label="(*EAPOL).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.NortelDiscovery).LayerType" [ label="(*NortelDiscovery).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.STP).LayerType" [ fillcolor="moccasin" label="(*STP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.USBInterrupt).LayerType" [ fillcolor="moccasin" label="(*USBInterrupt).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlBlockAckReq).LayerType" [ fillcolor="moccasin" label="(*Dot11CtrlBlockAckReq).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFPollNoData).LayerType" [ fillcolor="moccasin" label="(*Dot11DataCFPollNoData).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ERSPANII).LayerType" [ fillcolor="moccasin" label="(*ERSPANII).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EthernetCTPForwardData).LayerType" [ fillcolor="moccasin" label="(*EthernetCTPForwardData).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPShutdown).LayerType" [ label="(*SCTPShutdown).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.DHCPv6).LayerType" [ fillcolor="moccasin" label="(*DHCPv6).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11InformationElement).LayerType" [ label="(*Dot11InformationElement).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPSecESP).LayerType" [ fillcolor="moccasin" label="(*IPSecESP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtReassociationResp).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*Dot11MgmtReassociationResp).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.USBRequestBlockSetup).LayerType" [ fillcolor="moccasin" label="(*USBRequestBlockSetup).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtAction).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtAction).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv6Routing).LayerType" [ fillcolor="moccasin" label="(*IPv6Routing).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.GTPv1U).LayerType" [ fillcolor="moccasin" label="(*GTPv1U).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EtherIP).LayerType" [ label="(*EtherIP).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ICMPv6RouterAdvertisement).LayerType" [ fillcolor="moccasin" label="(*ICMPv6RouterAdvertisement).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlCFEnd).LayerType" [ label="(*Dot11CtrlCFEnd).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlCTS).LayerType" [ fillcolor="moccasin" label="(*Dot11CtrlCTS).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtProbeReq).LayerType" [ fillcolor="moccasin" label="(*Dot11MgmtProbeReq).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11).LayerType" [ fillcolor="moccasin" label="(*Dot11).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ICMPv6).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*ICMPv6).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot1Q).LayerType" [ fillcolor="moccasin" label="(*Dot1Q).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ICMPv6NeighborSolicitation).LayerType" [ fillcolor="moccasin" label="(*ICMPv6NeighborSolicitation).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.DNS).LayerType" [ fillcolor="moccasin" label="(*DNS).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RUDP).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*RUDP).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv6Destination).LayerType" [ fillcolor="moccasin" label="(*IPv6Destination).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ASFPresencePong).LayerType" [ label="(*ASFPresencePong).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPEmptyLayer).LayerType" [ fillcolor="moccasin" label="(*SCTPEmptyLayer).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPInit).LayerType" [ fillcolor="moccasin" label="(*SCTPInit).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11Ctrl).LayerType" [ fillcolor="moccasin" label="(*Dot11Ctrl).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ARP).LayerType" [ fillcolor="moccasin" label="(*ARP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.CiscoDiscoveryInfo).LayerType" [ label="(*CiscoDiscoveryInfo).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPShutdownAck).LayerType" [ fillcolor="moccasin" label="(*SCTPShutdownAck).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTPData).LayerType" [ fillcolor="moccasin" label="(*SCTPData).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.BFD).LayerType" [ fillcolor="moccasin" label="(*BFD).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlBlockAck).LayerType" [ label="(*Dot11CtrlBlockAck).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.LinuxSLL).LayerType" [ fillcolor="moccasin" label="(*LinuxSLL).LayerType" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket/layers.LCM).LayerType" [ fillcolor="moccasin" label="(LCM).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.DHCPv4).LayerType" [ fillcolor="moccasin" label="(*DHCPv4).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.ICMPv6NeighborAdvertisement).LayerType" [ fillcolor="moccasin" label="(*ICMPv6NeighborAdvertisement).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSNull).LayerType" [ fillcolor="moccasin" label="(*Dot11DataQOSNull).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.CiscoDiscovery).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*CiscoDiscovery).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataNull).LayerType" [ fillcolor="moccasin" label="(*Dot11DataNull).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSDataCFAck).LayerType" [ fillcolor="moccasin" label="(*Dot11DataQOSDataCFAck).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.PrismHeader).LayerType" [ fillcolor="moccasin" label="(*PrismHeader).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RMCP).LayerType" [ fillcolor="moccasin" label="(*RMCP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTP).LayerType" [ label="(*SCTP).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Ethernet).LayerType" [ fillcolor="moccasin" label="(*Ethernet).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.CIP).LayerType" [ fillcolor="moccasin" label="(*CIP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.VXLAN).LayerType" [ fillcolor="moccasin" label="(*VXLAN).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSDataCFPoll).LayerType" [ fillcolor="moccasin" label="(*Dot11DataQOSDataCFPoll).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.FDDI).LayerType" [ fillcolor="moccasin" label="(*FDDI).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IGMP).LayerType" [ label="(*IGMP).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlRTS).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*Dot11CtrlRTS).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.USBBulk).LayerType" [ fillcolor="moccasin" label="(*USBBulk).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.OSPFv2).LayerType" [ fillcolor="moccasin" label="(*OSPFv2).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EAPOLKey).LayerType" [ fillcolor="moccasin" label="(*EAPOLKey).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.PPP).LayerType" [ fillcolor="moccasin" label="(*PPP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.LLC).LayerType" [ label="(*LLC).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPSecAH).LayerType" [ label="(*IPSecAH).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv6).LayerType" [ penwidth="1.5" fillcolor="moccasin" label="(*IPv6).LayerType" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Geneve).LayerType" [ fillcolor="moccasin" label="(*Geneve).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForFDDIFrameControl).Error" [ fillcolor="moccasin" label="(*errorDecoderForFDDIFrameControl).Error" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket/layers.DHCPv4Error).Error" [ fillcolor="moccasin" label="(DHCPv4Error).Error" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForEthernetType).Error" [ fillcolor="moccasin" label="(*errorDecoderForEthernetType).Error" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForSCTPChunkType).Error" [ fillcolor="moccasin" label="(*errorDecoderForSCTPChunkType).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/gopacket/pcap" {
+        fontsize="16";
+rank="sink";
+label="pcap";
+URL="/?f=github.com/dreadl0ck/gopacket/pcap";
+tooltip="package: github.com/dreadl0ck/gopacket/pcap";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/gopacket/pcap.OpenOffline" [ fillcolor="moccasin" label="OpenOffline" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/pcap.Handle).Close" [ penwidth="1.5" fillcolor="moccasin" label="(*Handle).Close" ]
+        "(*github.com/dreadl0ck/gopacket/pcap.Handle).SetBPFFilter" [ fillcolor="moccasin" label="(*Handle).SetBPFFilter" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket/pcap.NextError).Error" [ fillcolor="moccasin" label="(NextError).Error" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket/pcap.activateError).Error" [ fillcolor="moccasin" label="(activateError).Error" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/pcap.Handle).ReadPacketData" [ penwidth="1.5" fillcolor="moccasin" label="(*Handle).ReadPacketData" ]
+        "github.com/dreadl0ck/gopacket/pcap.OpenLive" [ fillcolor="moccasin" label="OpenLive" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/pcap.Handle).LinkType" [ fillcolor="moccasin" label="(*Handle).LinkType" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/gopacket/pcapgo" {
+        penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/gopacket/pcapgo";
+tooltip="package: github.com/dreadl0ck/gopacket/pcapgo";
+fontsize="16";
+rank="sink";
+label="pcapgo";
+        
+        "(*github.com/dreadl0ck/gopacket/pcapgo.Writer).WritePacket" [ fillcolor="moccasin" label="(*Writer).WritePacket" penwidth="1.5" ]
+        "github.com/dreadl0ck/gopacket/pcapgo.NewWriter" [ label="NewWriter" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/pcapgo.Writer).WriteFileHeader" [ fillcolor="moccasin" label="(*Writer).WriteFileHeader" penwidth="1.5" ]
+        "github.com/dreadl0ck/gopacket/pcapgo.NewReader" [ fillcolor="moccasin" label="NewReader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/pcapgo.Reader).ZeroCopyReadPacketData" [ fillcolor="moccasin" label="(*Reader).ZeroCopyReadPacketData" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/pcapgo.Reader).LinkType" [ fillcolor="moccasin" label="(*Reader).LinkType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/pcapgo.Reader).ReadPacketData" [ fillcolor="moccasin" label="(*Reader).ReadPacketData" penwidth="1.5" ]
+        "github.com/dreadl0ck/gopacket/pcapgo.NewNgReader" [ fillcolor="moccasin" label="NewNgReader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/pcapgo.NgReader).ZeroCopyReadPacketData" [ penwidth="1.5" fillcolor="moccasin" label="(*NgReader).ZeroCopyReadPacketData" ]
+        "(*github.com/dreadl0ck/gopacket/pcapgo.NgReader).LinkType" [ fillcolor="moccasin" label="(*NgReader).LinkType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/pcapgo.NgReader).ReadPacketData" [ fillcolor="moccasin" label="(*NgReader).ReadPacketData" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/agent" {
+        tooltip="package: github.com/dreadl0ck/netcap/cmd/agent";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="agent";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/agent";
+penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+        
+        "github.com/dreadl0ck/netcap/cmd/agent.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/capture" {
+        fontsize="16";
+style="filled";
+label="capture";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/capture";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/capture";
+penwidth="0.8";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/cmd/capture.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/export" {
+        fillcolor="lightyellow";
+rank="sink";
+label="export";
+fontsize="16";
+style="filled";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/export";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/export";
+penwidth="0.8";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/cmd/export.Run" [ label="Run" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/transform" {
+        fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+label="transform";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/transform";
+penwidth="0.8";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/transform";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecordsUsingDPI" [ penwidth="0.5" fillcolor="moccasin" label="toAuditRecordsUsingDPI" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecords" [ fillcolor="moccasin" label="toAuditRecords" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder" {
+        rank="sink";
+label="decoder";
+penwidth="0.8";
+fontname="Tahoma bold";
+fillcolor="lightyellow";
+URL="/?f=github.com/dreadl0ck/netcap/decoder";
+tooltip="package: github.com/dreadl0ck/netcap/decoder";
+fontsize="16";
+style="filled";
+        
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ penwidth="1.5" fillcolor="moccasin" label="(*StreamDecoder).GetName" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).NumRecords" [ fillcolor="moccasin" label="(*StreamDecoder).NumRecords" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ fillcolor="moccasin" label="(*AbstractDecoder).GetName" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).NumRecords" [ label="(*AbstractDecoder).NumRecords" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" [ penwidth="1.5" fillcolor="moccasin" label="(*StreamDecoder).Destroy" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" [ fillcolor="moccasin" label="(*AbstractDecoder).Destroy" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/db" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="db";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/db";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/db";
+        
+        "github.com/dreadl0ck/netcap/decoder/db.SetLogger" [ label="SetLogger" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/packet" {
+        rank="sink";
+label="packet";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/packet";
+fontsize="16";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/packet";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" [ fillcolor="moccasin" label="(*GoPacketDecoder).Destroy" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ penwidth="1.5" fillcolor="moccasin" label="(*packetDecoder).GetName" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).NumRecords" [ fillcolor="moccasin" label="(*packetDecoder).NumRecords" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" [ fillcolor="moccasin" label="(*packetDecoder).Destroy" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.SetConfig" [ fillcolor="moccasin" label="SetConfig" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.SetDecoderLogger" [ fillcolor="moccasin" label="SetDecoderLogger" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" [ fillcolor="moccasin" label="(*GoPacketDecoder).Decode" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" [ fillcolor="moccasin" label="(*packetDecoder).Decode" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" [ fillcolor="moccasin" label="InitGoPacketDecoders" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" [ fillcolor="moccasin" label="ShowDecoders" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" [ fillcolor="moccasin" label="InitPacketDecoders" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.atomicDeviceProfileMap).Size" [ fillcolor="moccasin" label="(*atomicDeviceProfileMap).Size" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetChan" [ fillcolor="moccasin" label="(*GoPacketDecoder).GetChan" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetType" [ fillcolor="moccasin" label="(*packetDecoder).GetType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetChan" [ penwidth="1.5" fillcolor="moccasin" label="(*packetDecoder).GetChan" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream" {
+        fontsize="16";
+style="filled";
+label="stream";
+penwidth="0.8";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream";
+fillcolor="lightyellow";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" [ penwidth="1.5" fillcolor="moccasin" label="InitDecoders" ]
+        "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" [ fillcolor="moccasin" label="InitAbstractDecoders" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/service" {
+        penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/service";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="service";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/service";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/stream/service.atomicServiceMap).Size" [ fillcolor="moccasin" label="(*atomicServiceMap).Size" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/tcp" {
+        fillcolor="lightyellow";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/tcp";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="tcp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/tcp";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.NumSavedTCPConns" [ fillcolor="moccasin" label="NumSavedTCPConns" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" [ fillcolor="moccasin" label="CleanupReassembly" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.SetLogger" [ fillcolor="moccasin" label="SetLogger" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.GetStreamPool" [ penwidth="1.5" fillcolor="moccasin" label="GetStreamPool" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.ReassemblePacket" [ fillcolor="moccasin" label="ReassemblePacket" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/udp" {
+        label="udp";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/udp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/udp";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+penwidth="0.8";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/udp.NumSavedUDPConns" [ fillcolor="moccasin" label="NumSavedUDPConns" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/utils" {
+        penwidth="0.8";
+fontsize="16";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/utils";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="utils";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/utils";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.SetLogger" [ fillcolor="moccasin" label="SetLogger" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/utils" {
+        tooltip="package: github.com/dreadl0ck/netcap/decoder/utils";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+label="utils";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/utils";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/utils.AtomicCounterMap).Inc" [ fillcolor="moccasin" label="(*AtomicCounterMap).Inc" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/utils.SetErrorMap" [ fillcolor="moccasin" label="SetErrorMap" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/utils.NewAtomicCounterMap" [ fillcolor="moccasin" label="NewAtomicCounterMap" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/dpi" {
+        fillcolor="lightyellow";
+label="dpi";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/dpi";
+tooltip="package: github.com/dreadl0ck/netcap/dpi";
+        
+        "github.com/dreadl0ck/netcap/dpi.Init" [ fillcolor="moccasin" label="Init" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/io" {
+        penwidth="0.8";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/io";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+label="io";
+tooltip="package: github.com/dreadl0ck/netcap/io";
+        
+        "github.com/dreadl0ck/netcap/io.SetLogger" [ fillcolor="moccasin" label="SetLogger" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/io.FPrintLogo" [ fillcolor="moccasin" label="FPrintLogo" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/io.FPrintBuildInfo" [ fillcolor="moccasin" label="FPrintBuildInfo" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/logger" {
+        rank="sink";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="logger";
+URL="/?f=github.com/dreadl0ck/netcap/logger";
+tooltip="package: github.com/dreadl0ck/netcap/logger";
+        
+        "github.com/dreadl0ck/netcap/logger.InitDebugLogger" [ fillcolor="moccasin" label="InitDebugLogger" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/logger.InitZapLogger" [ label="InitZapLogger" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/metrics" {
+        label="metrics";
+URL="/?f=github.com/dreadl0ck/netcap/metrics";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+tooltip="package: github.com/dreadl0ck/netcap/metrics";
+penwidth="0.8";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/metrics.ServeMetricsAt$1$1" [ fillcolor="moccasin" label="ServeMetricsAt$1$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/reassembly" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/reassembly";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="reassembly";
+tooltip="package: github.com/dreadl0ck/netcap/reassembly";
+        
+        "github.com/dreadl0ck/netcap/reassembly.NewAssembler" [ fillcolor="moccasin" label="NewAssembler" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/resolvers" {
+        fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+label="resolvers";
+URL="/?f=github.com/dreadl0ck/netcap/resolvers";
+tooltip="package: github.com/dreadl0ck/netcap/resolvers";
+penwidth="0.8";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB" [ label="SaveFingerprintDB" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ fillcolor="moccasin" label="SetLogger" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.Init" [ fillcolor="moccasin" label="Init" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/utils" {
+        fillcolor="lightyellow";
+rank="sink";
+label="utils";
+URL="/?f=github.com/dreadl0ck/netcap/utils";
+tooltip="package: github.com/dreadl0ck/netcap/utils";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/netcap/utils.GetBaseLayer" [ label="GetBaseLayer" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/utils.GetDecodeOptions" [ fillcolor="moccasin" label="GetDecodeOptions" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.DecodePort" [ fillcolor="moccasin" label="DecodePort" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.Confirm" [ fillcolor="moccasin" label="Confirm" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.Progress" [ fillcolor="moccasin" label="Progress" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dustin/go-humanize" {
+        fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+tooltip="package: github.com/dustin/go-humanize";
+penwidth="0.8";
+style="filled";
+label="humanize";
+URL="/?f=github.com/dustin/go-humanize";
+        
+        "github.com/dustin/go-humanize.Bytes" [ fillcolor="moccasin" label="Bytes" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/evilsocket/islazy/tui" {
+        penwidth="0.8";
+URL="/?f=github.com/evilsocket/islazy/tui";
+tooltip="package: github.com/evilsocket/islazy/tui";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="tui";
+        
+        "github.com/evilsocket/islazy/tui.Table" [ fillcolor="moccasin" label="Table" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/go-errors/errors" {
+        tooltip="package: github.com/go-errors/errors";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/go-errors/errors";
+penwidth="0.8";
+fontsize="16";
+label="errors";
+        
+        "(*github.com/go-errors/errors.Error).Error" [ fillcolor="moccasin" label="(*Error).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/gogo/protobuf/proto" {
+        fillcolor="lightyellow";
+rank="sink";
+URL="/?f=github.com/gogo/protobuf/proto";
+tooltip="package: github.com/gogo/protobuf/proto";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+label="proto";
+        
+        "(*github.com/gogo/protobuf/proto.RequiredNotSetError).Error" [ fillcolor="moccasin" label="(*RequiredNotSetError).Error" penwidth="1.5" ]
+        "(*github.com/gogo/protobuf/proto.invalidUTF8Error).Error" [ fillcolor="moccasin" label="(*invalidUTF8Error).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/golang/protobuf/proto" {
+        fillcolor="lightyellow";
+URL="/?f=github.com/golang/protobuf/proto";
+tooltip="package: github.com/golang/protobuf/proto";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="proto";
+        
+        "(*github.com/golang/protobuf/proto.RequiredNotSetError).Error" [ penwidth="1.5" fillcolor="moccasin" label="(*RequiredNotSetError).Error" ]
+        
+    }
+
+        subgraph "cluster_github.com/klauspost/compress/flate" {
+        fontname="Tahoma bold";
+rank="sink";
+label="flate";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+URL="/?f=github.com/klauspost/compress/flate";
+tooltip="package: github.com/klauspost/compress/flate";
+penwidth="0.8";
+        
+        "(github.com/klauspost/compress/flate.CorruptInputError).Error" [ fillcolor="moccasin" label="(CorruptInputError).Error" penwidth="1.5" ]
+        "(github.com/klauspost/compress/flate.InternalError).Error" [ penwidth="1.5" fillcolor="moccasin" label="(InternalError).Error" ]
+        
+    }
+
+        subgraph "cluster_github.com/oschwald/maxminddb-golang" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+URL="/?f=github.com/oschwald/maxminddb-golang";
+tooltip="package: github.com/oschwald/maxminddb-golang";
+fontname="Tahoma bold";
+rank="sink";
+label="maxminddb";
+        
+        "(github.com/oschwald/maxminddb-golang.InvalidDatabaseError).Error" [ fillcolor="moccasin" label="(InvalidDatabaseError).Error" penwidth="1.5" ]
+        "(github.com/oschwald/maxminddb-golang.UnmarshalTypeError).Error" [ fillcolor="moccasin" label="(UnmarshalTypeError).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/pkg/errors" {
+        style="filled";
+fontname="Tahoma bold";
+rank="sink";
+tooltip="package: github.com/pkg/errors";
+penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+label="errors";
+URL="/?f=github.com/pkg/errors";
+        
+        "github.com/pkg/errors.Wrap" [ fillcolor="moccasin" label="Wrap" penwidth="1.5" ]
+        "(*github.com/pkg/errors.fundamental).Error" [ fillcolor="moccasin" label="(*fundamental).Error" penwidth="1.5" ]
+        "(*github.com/pkg/errors.withMessage).Error" [ penwidth="1.5" fillcolor="moccasin" label="(*withMessage).Error" ]
+        "github.com/pkg/errors.Is" [ fillcolor="moccasin" label="Is" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/prometheus/client_golang/prometheus" {
+        fontsize="16";
+rank="sink";
+URL="/?f=github.com/prometheus/client_golang/prometheus";
+tooltip="package: github.com/prometheus/client_golang/prometheus";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="prometheus";
+        
+        "github.com/prometheus/client_golang/prometheus.NewCounterVec" [ fillcolor="moccasin" label="NewCounterVec" penwidth="1.5" ]
+        "github.com/prometheus/client_golang/prometheus.NewGaugeVec" [ label="NewGaugeVec" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/prometheus/client_golang/prometheus.MustRegister" [ fillcolor="moccasin" label="MustRegister" penwidth="1.5" ]
+        "(*github.com/prometheus/client_golang/prometheus.GaugeVec).WithLabelValues" [ fillcolor="moccasin" label="(*GaugeVec).WithLabelValues" penwidth="1.5" ]
+        "(*github.com/prometheus/client_golang/prometheus.CounterVec).WithLabelValues" [ label="(*CounterVec).WithLabelValues" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/prometheus/client_golang/prometheus.gauge).Set" [ fillcolor="moccasin" label="(*gauge).Set" penwidth="1.5" ]
+        "(*github.com/prometheus/client_golang/prometheus.counter).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*counter).Inc" ]
+        "(*github.com/prometheus/client_golang/prometheus.gauge).Inc" [ fillcolor="moccasin" label="(*gauge).Inc" penwidth="1.5" ]
+        "(github.com/prometheus/client_golang/prometheus.AlreadyRegisteredError).Error" [ fillcolor="moccasin" label="(AlreadyRegisteredError).Error" penwidth="1.5" ]
+        "(github.com/prometheus/client_golang/prometheus.MultiError).Error" [ label="(MultiError).Error" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/prometheus/client_golang/prometheus.Register" [ fillcolor="moccasin" label="Register" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/prometheus/client_golang/prometheus/promhttp" {
+        fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="promhttp";
+URL="/?f=github.com/prometheus/client_golang/prometheus/promhttp";
+tooltip="package: github.com/prometheus/client_golang/prometheus/promhttp";
+fontsize="16";
+style="filled";
+penwidth="0.8";
+        
+        "(*github.com/prometheus/client_golang/prometheus/promhttp.responseWriterDelegator).Write" [ fillcolor="moccasin" label="(*responseWriterDelegator).Write" penwidth="1.5" ]
+        "(*github.com/prometheus/client_golang/prometheus/promhttp.responseWriterDelegator).WriteHeader" [ fillcolor="moccasin" label="(*responseWriterDelegator).WriteHeader" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_go.etcd.io/bbolt" {
+        style="filled";
+URL="/?f=go.etcd.io/bbolt";
+penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="bbolt";
+tooltip="package: go.etcd.io/bbolt";
+        
+        "(go.etcd.io/bbolt.panicked).Error" [ fillcolor="moccasin" label="(panicked).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_go.uber.org/multierr" {
+        rank="sink";
+tooltip="package: go.uber.org/multierr";
+penwidth="0.8";
+style="filled";
+fontname="Tahoma bold";
+URL="/?f=go.uber.org/multierr";
+fontsize="16";
+fillcolor="lightyellow";
+label="multierr";
+        
+        "(*go.uber.org/multierr.multiError).Error" [ fillcolor="moccasin" label="(*multiError).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_go.uber.org/zap" {
+        label="zap";
+tooltip="package: go.uber.org/zap";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+URL="/?f=go.uber.org/zap";
+fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "go.uber.org/zap.String" [ penwidth="1.5" fillcolor="moccasin" label="String" ]
+        "(*go.uber.org/zap.Logger).Info" [ fillcolor="moccasin" label="(*Logger).Info" penwidth="1.5" ]
+        "(*go.uber.org/zap.Logger).Sync" [ penwidth="1.5" fillcolor="moccasin" label="(*Logger).Sync" ]
+        "go.uber.org/zap.Error" [ fillcolor="moccasin" label="Error" penwidth="1.5" ]
+        "(*go.uber.org/zap.Logger).Error" [ fillcolor="moccasin" label="(*Logger).Error" penwidth="1.5" ]
+        "go.uber.org/zap.Duration" [ fillcolor="moccasin" label="Duration" penwidth="1.5" ]
+        "go.uber.org/zap.Int" [ fillcolor="moccasin" label="Int" penwidth="1.5" ]
+        "(*go.uber.org/zap.errSinkNotFound).Error" [ fillcolor="moccasin" label="(*errSinkNotFound).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_google.golang.org/protobuf/internal/errors" {
+        fontsize="16";
+label="errors";
+URL="/?f=google.golang.org/protobuf/internal/errors";
+tooltip="package: google.golang.org/protobuf/internal/errors";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "(*google.golang.org/protobuf/internal/errors.prefixError).Error" [ label="(*prefixError).Error" penwidth="1.5" fillcolor="moccasin" ]
+        "(*google.golang.org/protobuf/internal/errors.wrapError).Error" [ label="(*wrapError).Error" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_google.golang.org/protobuf/internal/impl" {
+        fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+tooltip="package: google.golang.org/protobuf/internal/impl";
+penwidth="0.8";
+style="filled";
+label="impl";
+URL="/?f=google.golang.org/protobuf/internal/impl";
+        
+        "(google.golang.org/protobuf/internal/impl.errInvalidUTF8).Error" [ fillcolor="moccasin" label="(errInvalidUTF8).Error" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_gopkg.in/yaml.v2" {
+        fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+tooltip="package: gopkg.in/yaml.v2";
+penwidth="0.8";
+fontname="Tahoma bold";
+rank="sink";
+label="yaml";
+URL="/?f=gopkg.in/yaml.v2";
+        
+        "(*gopkg.in/yaml.v2.TypeError).Error" [ fillcolor="moccasin" label="(*TypeError).Error" penwidth="1.5" ]
+        
+    }
+
+    }
+
+    "github.com/dreadl0ck/netcap/collector.init" -> "github.com/dreadl0ck/netcap/utils.GetBaseLayer" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.init" -> "github.com/dreadl0ck/netcap/utils.GetDecodeOptions" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.init" -> "github.com/prometheus/client_golang/prometheus.NewCounterVec" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.init" -> "github.com/prometheus/client_golang/prometheus.NewGaugeVec" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.init#1" -> "github.com/prometheus/client_golang/prometheus.MustRegister" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.init" -> "github.com/dreadl0ck/netcap/collector.init#1" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "go.uber.org/zap.String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "github.com/dustin/go-humanize.Bytes" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*go.uber.org/zap.Logger).Sync" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).closePcapFiles" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/collector.Collector).closePcapFiles" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).closeErrorLogFile" -> "(*github.com/dreadl0ck/netcap/collector.Collector).getErrorSummary" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).closeErrorLogFile" -> "go.uber.org/zap.Error" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).closeErrorLogFile" -> "(*go.uber.org/zap.Logger).Error" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/collector.Collector).closeErrorLogFile" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "github.com/evilsocket/islazy/tui.Table" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "github.com/dreadl0ck/netcap/collector.share" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "github.com/dustin/go-humanize.Bytes" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "github.com/dreadl0ck/netcap/decoder/stream/tcp.NumSavedTCPConns" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "github.com/dreadl0ck/netcap/decoder/stream/udp.NumSavedUDPConns" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).NumRecords" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).NumRecords" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).NumRecords" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/collector.Collector).stats" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printErrors" -> "(*github.com/dreadl0ck/netcap/collector.Collector).getErrorSummary" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printErrors" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1$1" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.newMemStats" -> "github.com/dustin/go-humanize.Bytes" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" -> "github.com/dreadl0ck/netcap/collector.newMemStats" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" -> "(*github.com/dreadl0ck/netcap/collector.memStats).String" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" -> "(*github.com/dreadl0ck/netcap/collector.Collector).stopWorkers" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup$1$1" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup$1" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" -> "go.uber.org/zap.Duration" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" -> "github.com/dreadl0ck/netcap/decoder/stream/tcp.CleanupReassembly" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" -> "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1$2" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "(*github.com/prometheus/client_golang/prometheus/promhttp.responseWriterDelegator).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint$1" -> "(*github.com/prometheus/client_golang/prometheus/promhttp.responseWriterDelegator).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/metrics.ServeMetricsAt$1$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).GetNumPackets" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "github.com/dreadl0ck/gopacket/pcap.OpenOffline" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).Close" [ arrowhead="normalnoneodiamond" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).SetBPFFilter" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/packet.SetConfig" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1" -> "go.uber.org/zap.String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1$1" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals$1" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals" -> "(*github.com/dreadl0ck/netcap/collector.Collector).serveCleanupHTTPEndpoint" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleSignals" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/logger.InitDebugLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/logger.InitZapLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/io.SetLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/decoder/packet.SetDecoderLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/decoder/db.SetLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/decoder/stream/utils.SetLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/decoder/stream/tcp.SetLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initWorkers" -> "github.com/dreadl0ck/netcap/decoder/stream/tcp.GetStreamPool" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initWorkers" -> "github.com/dreadl0ck/netcap/reassembly.NewAssembler" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "github.com/dreadl0ck/netcap/decoder/stream/tcp.ReassemblePacket" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/prometheus/client_golang/prometheus.GaugeVec).WithLabelValues" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/dreadl0ck/gopacket.Flow).Src" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/dreadl0ck/gopacket.Endpoint).String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/dreadl0ck/gopacket.Flow).Dst" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/dreadl0ck/gopacket.Endpoint).Raw" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/dreadl0ck/gopacket.LayerType).String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/decoder/utils.AtomicCounterMap).Inc" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/prometheus/client_golang/prometheus.CounterVec).WithLabelValues" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.atomicPcapGoWriter).writePacket" -> "(*github.com/dreadl0ck/gopacket/pcapgo.Writer).WritePacket" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToUnknownPcap" -> "(*github.com/dreadl0ck/netcap/collector.atomicPcapGoWriter).writePacket" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToUnknownPcap" -> "(*github.com/dreadl0ck/gopacket.packet).Data" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToUnknownPcap" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToUnknownPcap" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).logPacketError" -> "(*github.com/dreadl0ck/netcap/decoder/utils.AtomicCounterMap).Inc" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToErrorsPcap" -> "(*github.com/dreadl0ck/netcap/collector.atomicPcapGoWriter).writePacket" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToErrorsPcap" -> "(*github.com/dreadl0ck/gopacket.packet).Data" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToErrorsPcap" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).logPacketError" -> "(*github.com/dreadl0ck/netcap/collector.Collector).writePacketToErrorsPcap" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).logPacketError" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).Dump" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).logPacketError" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).logPacketError" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).Dump" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).logPacketError" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForPPPoECode).Error" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForLinkType).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForIPProtocol).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForProtocolFamily).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForPPPType).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/prometheus/client_golang/prometheus.gauge).Set" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).Layers" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).Layers" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPv4).NetworkFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6).NetworkFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.MLDv1MulticastListenerReportMessage).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFAck).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.LinkLayerDiscovery).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPSack).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.GRE).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.Fragment).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFAckPollNoData).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.RadioTap).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFAckPoll).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.DecodeFailure).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtBeacon).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPError).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtAuthentication).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtAssociationResp).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6HopByHop).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ICMPv4).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.USBControl).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11Data).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SFlowDatagram).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.EAP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPCookieEcho).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtActionNoAck).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPv4).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtMeasurementPilot).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtDeauthentication).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ICMPv6RouterSolicitation).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlAck).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.EthernetCTP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6Fragment).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ENIP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSDataCFAckPoll).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlCFEndAck).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ASF).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.NTP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.MLDv2MulticastListenerReportMessage).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSData).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.EthernetCTPReply).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.PFLog).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.LinkLayerDiscoveryInfo).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IGMPv1or2).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.RADIUS).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.OSPFv3).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtReassociationReq).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Diameter).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtATIM).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SIP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.PPPoE).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFAckNoData).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtAssociationReq).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlPowersavePoll).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtDisassociation).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.MPLS).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSCFAckPollNoData).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.MLDv1MulticastListenerDoneMessage).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SNAP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSCFPollNoData).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFPoll).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.MLDv2MulticastListenerQueryMessage).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ICMPv6Echo).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.MLDv1MulticastListenerQueryMessage).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Modbus).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPHeartbeat).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/dreadl0ck/gopacket.Payload).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Loopback).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11WEP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtArubaWLAN).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.USB).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtProbeResp).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ICMPv6Redirect).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.VRRPv2).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.EAPOL).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.NortelDiscovery).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.STP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.USBInterrupt).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlBlockAckReq).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataCFPollNoData).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ERSPANII).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.EthernetCTPForwardData).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPShutdown).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.DHCPv6).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11InformationElement).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPSecESP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtReassociationResp).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.USBRequestBlockSetup).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtAction).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6Routing).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.GTPv1U).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.EtherIP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ICMPv6RouterAdvertisement).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlCFEnd).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlCTS).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11MgmtProbeReq).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ICMPv6).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot1Q).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ICMPv6NeighborSolicitation).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.DNS).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6Destination).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ASFPresencePong).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPEmptyLayer).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPInit).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11Ctrl).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ARP).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.CiscoDiscoveryInfo).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPShutdownAck).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTPData).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.BFD).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlBlockAck).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.LinuxSLL).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/dreadl0ck/gopacket/layers.LCM).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.DHCPv4).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.ICMPv6NeighborAdvertisement).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSNull).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.CiscoDiscovery).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataNull).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSDataCFAck).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.PrismHeader).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.RMCP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Ethernet).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.CIP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.VXLAN).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11DataQOSDataCFPoll).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.FDDI).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IGMP).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Dot11CtrlRTS).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.USBBulk).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.OSPFv2).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.EAPOLKey).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.PPP).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.LLC).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPSecAH).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6).LayerType" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.Geneve).LayerType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/prometheus/client_golang/prometheus.counter).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/prometheus/client_golang/prometheus.gauge).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(google.golang.org/protobuf/internal/impl.errInvalidUTF8).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/prometheus/client_golang/prometheus.AlreadyRegisteredError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/go-errors/errors.Error).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/gogo/protobuf/proto.RequiredNotSetError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*google.golang.org/protobuf/internal/errors.prefixError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/golang/protobuf/proto.RequiredNotSetError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/gogo/protobuf/proto.invalidUTF8Error).Error" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/klauspost/compress/flate.CorruptInputError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*gopkg.in/yaml.v2.TypeError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*go.uber.org/multierr.multiError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/prometheus/client_golang/prometheus.MultiError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/klauspost/compress/flate.InternalError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).ErrorLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).ErrorLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket.DecodeFailure).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForFDDIFrameControl).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(github.com/dreadl0ck/gopacket/layers.DHCPv4Error).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForEthernetType).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForSCTPChunkType).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker" -> "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initWorkers" -> "(*github.com/dreadl0ck/netcap/collector.Collector).worker" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).initWorkers" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/dpi.Init" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/resolvers.Init" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/utils.Confirm" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.invalidDecoder" -> "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "github.com/dreadl0ck/netcap/collector.invalidDecoder" [  ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*go.uber.org/zap.errSinkNotFound).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(google.golang.org/protobuf/internal/impl.errInvalidUTF8).Error" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForFDDIFrameControl).Error" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/dreadl0ck/gopacket/layers.DHCPv4Error).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/prometheus/client_golang/prometheus.AlreadyRegisteredError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/pkg/errors.fundamental).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForEthernetType).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/go-errors/errors.Error).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/gogo/protobuf/proto.RequiredNotSetError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*google.golang.org/protobuf/internal/errors.prefixError).Error" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/golang/protobuf/proto.RequiredNotSetError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/dreadl0ck/gopacket/pcap.NextError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForSCTPChunkType).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/gogo/protobuf/proto.invalidUTF8Error).Error" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForPPPType).Error" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/pkg/errors.withMessage).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/klauspost/compress/flate.CorruptInputError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/blevesearch/bleve.Error).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForProtocolFamily).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/oschwald/maxminddb-golang.InvalidDatabaseError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForIPProtocol).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForLinkType).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dreadl0ck/gopacket/layers.errorDecoderForPPPoECode).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(go.etcd.io/bbolt.panicked).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/oschwald/maxminddb-golang.UnmarshalTypeError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/dreadl0ck/gopacket/pcap.activateError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*github.com/dlclark/regexp2/syntax.Error).Error" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*gopkg.in/yaml.v2.TypeError).Error" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*go.uber.org/multierr.multiError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/prometheus/client_golang/prometheus.MultiError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(github.com/klauspost/compress/flate.InternalError).Error" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" -> "(*google.golang.org/protobuf/internal/errors.wrapError).Error" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/collector.handleDecoderInitError" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).buildProgressString" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/utils.SetErrorMap" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).createUnknownPcap" -> "github.com/dreadl0ck/gopacket/pcapgo.NewWriter" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).createUnknownPcap" -> "github.com/dreadl0ck/netcap/collector.newAtomicPcapGoWriter" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).createUnknownPcap" -> "(*github.com/dreadl0ck/gopacket/pcapgo.Writer).WriteFileHeader" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).createUnknownPcap" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/prometheus/client_golang/prometheus.Register" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/davecgh/go-spew/spew.Dump" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).createErrorsPcap" -> "github.com/dreadl0ck/gopacket/pcapgo.NewWriter" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).createErrorsPcap" -> "github.com/dreadl0ck/netcap/collector.newAtomicPcapGoWriter" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).createErrorsPcap" -> "(*github.com/dreadl0ck/gopacket/pcapgo.Writer).WriteFileHeader" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).createErrorsPcap" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "(*github.com/dreadl0ck/netcap/collector.Collector).freeOSMemory" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" -> "(*github.com/prometheus/client_golang/prometheus.GaugeVec).WithLabelValues" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).clearLine" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" -> "github.com/dreadl0ck/netcap/utils.Progress" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.atomicDeviceProfileMap).Size" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" -> "(*github.com/dreadl0ck/netcap/decoder/stream/service.atomicServiceMap).Size" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" -> "(*github.com/prometheus/client_golang/prometheus.gauge).Set" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).ReadPacketData" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleRawPacketData" -> "github.com/dreadl0ck/gopacket.NewPacket" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleRawPacketData" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacket" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleRawPacketData" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleRawPacketData" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.New" -> "github.com/dreadl0ck/netcap/decoder/utils.NewAtomicCounterMap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "github.com/dreadl0ck/netcap/collector.New" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "github.com/dreadl0ck/gopacket/pcap.OpenLive" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).Close" [ arrowhead="normalnoneodiamond" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).SetBPFFilter" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).LinkType" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handleLinkType" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleLinkType" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).ReadPacketData" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleRawPacketData" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.IsPcap$1" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.IsPcap" -> "github.com/dreadl0ck/netcap/collector.IsPcap$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/collector.IsPcap" -> "github.com/dreadl0ck/gopacket/pcapgo.NewReader" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "github.com/dreadl0ck/netcap/collector.IsPcap" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).clearLine" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "github.com/dustin/go-humanize.Bytes" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printStdOut" [  ]
+    "github.com/dreadl0ck/netcap/collector.OpenPCAP" -> "github.com/dreadl0ck/gopacket/pcapgo.NewReader" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.countPackets" -> "github.com/dreadl0ck/netcap/collector.OpenPCAP" [  ]
+    "github.com/dreadl0ck/netcap/collector.countPackets$1" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.countPackets" -> "github.com/dreadl0ck/netcap/collector.countPackets$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/collector.countPackets" -> "(*github.com/dreadl0ck/gopacket/pcapgo.Reader).ZeroCopyReadPacketData" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.countPackets" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "github.com/dreadl0ck/netcap/collector.countPackets" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "github.com/dreadl0ck/netcap/collector.OpenPCAP" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap$1" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap$1" [ arrowhead="normalnoneodiamond" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/gopacket/pcapgo.Reader).LinkType" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleLinkType" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/gopacket/pcapgo.Reader).ReadPacketData" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleRawPacketData" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [  ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).clearLine" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "github.com/dustin/go-humanize.Bytes" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printlnStdOut" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printStdOut" [  ]
+    "github.com/dreadl0ck/netcap/collector.openPcapNG" -> "github.com/dreadl0ck/gopacket/pcapgo.NewNgReader" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.countPacketsNG" -> "github.com/dreadl0ck/netcap/collector.openPcapNG" [  ]
+    "github.com/dreadl0ck/netcap/collector.countPacketsNG$1" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.countPacketsNG" -> "github.com/dreadl0ck/netcap/collector.countPacketsNG$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/collector.countPacketsNG" -> "(*github.com/dreadl0ck/gopacket/pcapgo.NgReader).ZeroCopyReadPacketData" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.countPacketsNG" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.countPacketsNG" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "github.com/dreadl0ck/netcap/collector.countPacketsNG" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "github.com/dreadl0ck/netcap/collector.openPcapNG" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG$1" -> "github.com/pkg/errors.Is" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG$1" [ arrowhead="normalnoneodiamond" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/gopacket/pcapgo.NgReader).LinkType" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleLinkType" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/gopacket/pcapgo.NgReader).ReadPacketData" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handleRawPacketData" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [  ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "github.com/dreadl0ck/netcap/collector.New" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).PrintConfiguration" -> "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).PrintConfiguration" -> "github.com/dreadl0ck/netcap/io.FPrintLogo" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).PrintConfiguration" -> "github.com/dreadl0ck/netcap/io.FPrintBuildInfo" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).PrintConfiguration" -> "github.com/evilsocket/islazy/tui.Table" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).PrintConfiguration" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectLive" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectBPF" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "github.com/dreadl0ck/netcap/collector.IsPcap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Stop" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [  ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecordsUsingDPI" -> "github.com/dreadl0ck/netcap/collector.New" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecordsUsingDPI" -> "(*github.com/dreadl0ck/netcap/collector.Collector).PrintConfiguration" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecordsUsingDPI" -> "github.com/dreadl0ck/netcap/collector.IsPcap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecordsUsingDPI" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecordsUsingDPI" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).forceStop" -> "(*github.com/dreadl0ck/netcap/collector.Collector).cleanup" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressLive" -> "(*github.com/dreadl0ck/netcap/collector.Collector).clearLine" [  ]
+    "github.com/dreadl0ck/netcap/cmd/agent.Run" -> "github.com/dreadl0ck/netcap/collector.New" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "github.com/dreadl0ck/gopacket/pcap.OpenLive" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).SetBPFFilter" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/gopacket/pcap.Handle).LinkType" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "github.com/dreadl0ck/gopacket.NewPacketSource" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching$1" -> "(*github.com/dreadl0ck/gopacket.PacketSource).Packets" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressLive" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching$1" -> "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacket" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching$1" [ arrowhead="normalnoneodot" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetChan" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetChan" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/agent.Run" -> "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecords" -> "github.com/dreadl0ck/netcap/collector.New" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecords" -> "(*github.com/dreadl0ck/netcap/collector.Collector).PrintConfiguration" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecords" -> "github.com/dreadl0ck/netcap/collector.IsPcap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecords" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toAuditRecords" -> "(*github.com/dreadl0ck/netcap/collector.Collector).CollectPcapNG" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "github.com/dreadl0ck/gopacket.NewPacket" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket/layers.IPv4).NetworkFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6).NetworkFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).handlePacketTimeout" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+}

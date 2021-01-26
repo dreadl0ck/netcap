@@ -1,0 +1,488 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        fontsize="18";
+bgcolor="#e6ecfa";
+label="utils";
+labelloc="t";
+labeljust="c";
+        
+        "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ fillcolor="lightblue" label="UnixTimeToUTC" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.IsASCII" [ penwidth="1.5" fillcolor="lightblue" label="IsASCII" ]
+        "github.com/dreadl0ck/netcap/utils.CleanIdent" [ fillcolor="lightblue" label="CleanIdent" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.DecodePort" [ fillcolor="lightblue" label="DecodePort" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.ClearLine" [ fillcolor="lightblue" label="ClearLine" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.ReverseFlowIdent" [ fillcolor="lightblue" label="ReverseFlowIdent" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.CreateFlowIdent" [ fillcolor="lightblue" label="CreateFlowIdent" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.CreateFlowIdentFromLayerFlows" [ penwidth="1.5" fillcolor="lightblue" label="CreateFlowIdentFromLayerFlows" ]
+        "github.com/dreadl0ck/netcap/utils.Confirm" [ fillcolor="lightblue" label="Confirm" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.CopyFile" [ fillcolor="lightblue" label="CopyFile" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.CopyFile$1" [ fillcolor="lightblue" label="CopyFile$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/utils.ClearScreen" [ label="ClearScreen" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/utils.Pad" [ penwidth="1.5" fillcolor="lightblue" label="Pad" ]
+        "github.com/dreadl0ck/netcap/utils.Pluralize" [ fillcolor="lightblue" label="Pluralize" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.Progress" [ fillcolor="lightblue" label="Progress" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ fillcolor="lightblue" label="TrimFileExtension" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.ParseFlowIdent" [ fillcolor="lightblue" label="ParseFlowIdent" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.GetBaseLayer" [ fillcolor="lightblue" label="GetBaseLayer" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.GetDecodeOptions" [ fillcolor="lightblue" label="GetDecodeOptions" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.ListAllNetworkInterfaces" [ fillcolor="lightblue" label="ListAllNetworkInterfaces" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.TimeToUTC" [ penwidth="1.5" fillcolor="lightblue" label="TimeToUTC" ]
+        
+        subgraph "cluster_github.com/dreadl0ck/gopacket" {
+        fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/gopacket";
+tooltip="package: github.com/dreadl0ck/gopacket";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+rank="sink";
+label="gopacket";
+        
+        "(github.com/dreadl0ck/gopacket.Flow).Src" [ fillcolor="moccasin" label="(Flow).Src" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Endpoint).String" [ label="(Endpoint).String" penwidth="1.5" fillcolor="moccasin" ]
+        "(github.com/dreadl0ck/gopacket.Flow).Dst" [ fillcolor="moccasin" label="(Flow).Dst" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/agent" {
+        fontsize="16";
+fillcolor="lightyellow";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/agent";
+penwidth="0.8";
+fontname="Tahoma bold";
+label="agent";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/agent";
+style="filled";
+        
+        "github.com/dreadl0ck/netcap/cmd/agent.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/capture" {
+        fontsize="16";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/capture";
+rank="sink";
+label="capture";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/capture";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/cmd/capture.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/dump" {
+        URL="/?f=github.com/dreadl0ck/netcap/cmd/dump";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/dump";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+label="dump";
+penwidth="0.8";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/cmd/dump.Run" [ penwidth="1.5" fillcolor="moccasin" label="Run" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/export" {
+        fontname="Tahoma bold";
+rank="sink";
+label="export";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/export";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/export";
+style="filled";
+fillcolor="lightyellow";
+penwidth="0.8";
+fontsize="16";
+        
+        "github.com/dreadl0ck/netcap/cmd/export.Run" [ label="Run" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/transform" {
+        URL="/?f=github.com/dreadl0ck/netcap/cmd/transform";
+style="filled";
+label="transform";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/transform";
+penwidth="0.8";
+fontsize="16";
+        
+        "github.com/dreadl0ck/netcap/cmd/transform.toMails$1" [ fillcolor="moccasin" label="toMails$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toHTTPHeaders$1" [ fillcolor="moccasin" label="toHTTPHeaders$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toHTTPCookies$1" [ style="dotted,filled" fillcolor="moccasin" label="toHTTPCookies$1" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toHTTPUniformResourceLocators$1" [ fillcolor="moccasin" label="toHTTPUniformResourceLocators$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addSourcePort" [ fillcolor="moccasin" label="addSourcePort" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addConn" [ fillcolor="moccasin" label="addConn" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.makeConversationHTML" [ fillcolor="moccasin" label="makeConversationHTML" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords" [ fillcolor="moccasin" label="writeLiveAuditRecords" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toSoftwareVulnerabilities$1" [ fillcolor="moccasin" label="toSoftwareVulnerabilities$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addApplication" [ label="addApplication" penwidth="0.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addContactedPort" [ label="addContactedPort" penwidth="0.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addDestinationPort" [ fillcolor="moccasin" label="addDestinationPort" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toCredentialsByService$1" [ style="dotted,filled" fillcolor="moccasin" label="toCredentialsByService$1" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toLoginInformation$1" [ fillcolor="moccasin" label="toLoginInformation$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toJA3SHashes$1" [ fillcolor="moccasin" label="toJA3SHashes$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toEmails$1" [ fillcolor="moccasin" label="toEmails$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toDestinationIPs$1" [ fillcolor="moccasin" label="toDestinationIPs$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toIPProfilesForSoftware$1" [ style="dotted,filled" fillcolor="moccasin" label="toIPProfilesForSoftware$1" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toHostsForService$1" [ fillcolor="moccasin" label="toHostsForService$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toServices$1" [ fillcolor="moccasin" label="toServices$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toDHCPClients$1" [ label="toDHCPClients$1" style="dotted,filled" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.init" [ fillcolor="moccasin" label="init" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.writeAuditRecords" [ fillcolor="moccasin" label="writeAuditRecords" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toFiles$1" [ label="toFiles$1" style="dotted,filled" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toFilesForContentType$1" [ fillcolor="moccasin" label="toFilesForContentType$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toMD5HashesForFileName$1" [ label="toMD5HashesForFileName$1" style="dotted,filled" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toMD5HashesForImage$1" [ fillcolor="moccasin" label="toMD5HashesForImage$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toSoftwareExploits$1" [ fillcolor="moccasin" label="toSoftwareExploits$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.lookupDHCPFingerprint" [ fillcolor="moccasin" label="lookupDHCPFingerprint" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toSSHClients$1" [ fillcolor="moccasin" label="toSSHClients$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toSSHServers$1" [ fillcolor="moccasin" label="toSSHServers$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toSoftwareProducts$1" [ fillcolor="moccasin" label="toSoftwareProducts$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toJA3Hashes$1" [ fillcolor="moccasin" label="toJA3Hashes$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.makeFlowsBPF" [ fillcolor="moccasin" label="makeFlowsBPF" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/util" {
+        rank="sink";
+label="util";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/util";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/util";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+penwidth="0.8";
+fillcolor="lightyellow";
+        
+        "github.com/dreadl0ck/netcap/cmd/util.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/collector" {
+        rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/collector";
+fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+tooltip="package: github.com/dreadl0ck/netcap/collector";
+penwidth="0.8";
+style="filled";
+label="collector";
+        
+        "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" [ fillcolor="moccasin" label="(*Collector).worker$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [ label="(*Collector).Init" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" [ fillcolor="moccasin" label="(*Collector).printProgressInterval$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/collector.init" [ fillcolor="moccasin" label="init" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/dbs" {
+        fontsize="16";
+rank="sink";
+label="dbs";
+URL="/?f=github.com/dreadl0ck/netcap/dbs";
+tooltip="package: github.com/dreadl0ck/netcap/dbs";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/dbs.CloneDBs" [ fillcolor="moccasin" label="CloneDBs" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dbs.UpdateDBs" [ fillcolor="moccasin" label="UpdateDBs" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dbs.IndexData" [ fillcolor="moccasin" label="IndexData" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/packet" {
+        fontsize="16";
+fontname="Tahoma bold";
+label="packet";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/packet";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/packet";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/decoder/packet.initPorts" [ label="initPorts" penwidth="0.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" [ label="getIPProfile" penwidth="0.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/ssh" {
+        style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/ssh";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/ssh";
+penwidth="0.8";
+fontsize="16";
+label="ssh";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/stream/ssh.sshReader).searchKexInit" [ fillcolor="moccasin" label="(*sshReader).searchKexInit" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/tcp" {
+        fontsize="16";
+label="tcp";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/tcp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/tcp";
+penwidth="0.8";
+style="filled";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.saveTCPServiceBanner" [ fillcolor="moccasin" label="saveTCPServiceBanner" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpStreamProcessor).streamWorker$1" [ fillcolor="moccasin" label="(*tcpStreamProcessor).streamWorker$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).decode" [ fillcolor="moccasin" label="(*tcpConnection).decode" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).reorder" [ fillcolor="moccasin" label="(*tcpConnection).reorder" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.printProgress" [ fillcolor="moccasin" label="printProgress" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.connectionFactory).New" [ fillcolor="moccasin" label="(*connectionFactory).New" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/udp" {
+        fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="udp";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/udp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/udp";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+rank="sink";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStreamProcessor).streamWorker$1" [ fillcolor="moccasin" label="(*udpStreamProcessor).streamWorker$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" [ fillcolor="moccasin" label="(*udpStream).decode" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/udp.saveUDPServiceBanner" [ label="saveUDPServiceBanner" penwidth="0.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/utils" {
+        style="filled";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/utils";
+rank="sink";
+label="utils";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/utils";
+penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.getServiceName" [ label="getServiceName" penwidth="0.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" [ fillcolor="moccasin" label="SaveConversation" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveFile" [ fillcolor="moccasin" label="SaveFile" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/io" {
+        penwidth="0.8";
+fontsize="16";
+label="io";
+URL="/?f=github.com/dreadl0ck/netcap/io";
+tooltip="package: github.com/dreadl0ck/netcap/io";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/io.PrintLogo" [ fillcolor="moccasin" label="PrintLogo" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.csvProtoWriter).writeHeader" [ fillcolor="moccasin" label="(*csvProtoWriter).writeHeader" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/io.colorizeProto" [ fillcolor="moccasin" label="colorizeProto" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/label" {
+        style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="label";
+URL="/?f=github.com/dreadl0ck/netcap/label";
+tooltip="package: github.com/dreadl0ck/netcap/label";
+fontsize="16";
+fillcolor="lightyellow";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/netcap/label.finish" [ penwidth="0.5" fillcolor="moccasin" label="finish" ]
+        "github.com/dreadl0ck/netcap/label.labelIPv4" [ fillcolor="moccasin" label="labelIPv4" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/label.customMap" [ fillcolor="moccasin" label="customMap" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/label.CustomLabels" [ fillcolor="moccasin" label="CustomLabels" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/label.labelUDP" [ fillcolor="moccasin" label="labelUDP" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/label.labelTCP" [ fillcolor="moccasin" label="labelTCP" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/label.labelIPv6" [ penwidth="0.5" fillcolor="moccasin" label="labelIPv6" ]
+        "github.com/dreadl0ck/netcap/label.labelConnections" [ penwidth="0.5" fillcolor="moccasin" label="labelConnections" ]
+        "github.com/dreadl0ck/netcap/label.labelHTTP" [ fillcolor="moccasin" label="labelHTTP" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/label.labelTLS" [ fillcolor="moccasin" label="labelTLS" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/label.labelLayer" [ fillcolor="moccasin" label="labelLayer" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/label.Suricata" [ label="Suricata" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/types" {
+        fontsize="16";
+tooltip="package: github.com/dreadl0ck/netcap/types";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="types";
+URL="/?f=github.com/dreadl0ck/netcap/types";
+        
+        "github.com/dreadl0ck/netcap/types.formatTimestamp" [ penwidth="0.5" fillcolor="moccasin" label="formatTimestamp" ]
+        
+    }
+
+        subgraph "cluster_github.com/evilsocket/islazy/tui" {
+        tooltip="package: github.com/evilsocket/islazy/tui";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+penwidth="0.8";
+label="tui";
+URL="/?f=github.com/evilsocket/islazy/tui";
+        
+        "github.com/evilsocket/islazy/tui.Table" [ label="Table" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+    }
+
+    "github.com/dreadl0ck/netcap/cmd/transform.toMails$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toHTTPHeaders$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toHTTPCookies$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toHTTPUniformResourceLocators$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/types.formatTimestamp" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.getServiceName" -> "github.com/dreadl0ck/netcap/utils.IsASCII" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" -> "github.com/dreadl0ck/netcap/utils.CleanIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.saveTCPServiceBanner" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpStreamProcessor).streamWorker$1" -> "github.com/dreadl0ck/netcap/utils.ClearLine" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).decode" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/utils.ReverseFlowIdent" -> "github.com/dreadl0ck/netcap/utils.CreateFlowIdent" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/ssh.sshReader).searchKexInit" -> "github.com/dreadl0ck/netcap/utils.ReverseFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveFile" -> "github.com/dreadl0ck/netcap/utils.CleanIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/utils.CreateFlowIdentFromLayerFlows" -> "(github.com/dreadl0ck/gopacket.Flow).Src" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/utils.CreateFlowIdentFromLayerFlows" -> "(github.com/dreadl0ck/gopacket.Endpoint).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/utils.CreateFlowIdentFromLayerFlows" -> "(github.com/dreadl0ck/gopacket.Flow).Dst" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStreamProcessor).streamWorker$1" -> "github.com/dreadl0ck/netcap/utils.CreateFlowIdentFromLayerFlows" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "github.com/dreadl0ck/netcap/utils.CreateFlowIdentFromLayerFlows" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/udp.saveUDPServiceBanner" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStreamProcessor).streamWorker$1" -> "github.com/dreadl0ck/netcap/utils.ClearLine" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).reorder" -> "github.com/dreadl0ck/netcap/utils.ReverseFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.printProgress" -> "github.com/dreadl0ck/netcap/utils.ClearLine" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.CloneDBs" -> "github.com/dreadl0ck/netcap/utils.Confirm" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/utils.CopyFile" -> "github.com/dreadl0ck/netcap/utils.CopyFile$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/dbs.UpdateDBs" -> "github.com/dreadl0ck/netcap/utils.CopyFile" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/io.PrintLogo" -> "github.com/dreadl0ck/netcap/utils.ClearScreen" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/io.csvProtoWriter).writeHeader" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addSourcePort" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.finish" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addConn" -> "github.com/dreadl0ck/netcap/utils.CreateFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.makeConversationHTML" -> "github.com/dreadl0ck/netcap/utils.CreateFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.makeConversationHTML" -> "github.com/dreadl0ck/netcap/utils.CleanIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords" -> "github.com/dreadl0ck/netcap/utils.Pluralize" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toSoftwareVulnerabilities$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addApplication" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addContactedPort" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addDestinationPort" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toCredentialsByService$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toLoginInformation$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.connectionFactory).New" -> "github.com/dreadl0ck/netcap/utils.CreateFlowIdentFromLayerFlows" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/utils.Confirm" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" -> "github.com/dreadl0ck/netcap/utils.Progress" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toJA3SHashes$1" -> "github.com/dreadl0ck/netcap/utils.CreateFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toEmails$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toDestinationIPs$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelIPv4" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelIPv4" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIPProfilesForSoftware$1" -> "github.com/dreadl0ck/netcap/utils.ParseFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toHostsForService$1" -> "github.com/dreadl0ck/netcap/utils.ParseFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toHostsForService$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toServices$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toDHCPClients$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toDHCPClients$1" -> "github.com/dreadl0ck/netcap/utils.IsASCII" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.init" -> "github.com/dreadl0ck/netcap/utils.GetBaseLayer" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.init" -> "github.com/dreadl0ck/netcap/utils.GetDecodeOptions" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.init" -> "github.com/dreadl0ck/netcap/utils.GetBaseLayer" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.init" -> "github.com/dreadl0ck/netcap/utils.GetDecodeOptions" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/utils.ListAllNetworkInterfaces" -> "github.com/evilsocket/islazy/tui.Table" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "github.com/dreadl0ck/netcap/utils.ListAllNetworkInterfaces" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "github.com/dreadl0ck/netcap/utils.GetBaseLayer" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "github.com/dreadl0ck/netcap/utils.GetDecodeOptions" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dreadl0ck/netcap/utils.ClearLine" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/util.Run" -> "github.com/dreadl0ck/netcap/utils.TimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/util.Run" -> "github.com/dreadl0ck/netcap/utils.ListAllNetworkInterfaces" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.customMap" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.customMap" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.CustomLabels" -> "github.com/dreadl0ck/netcap/utils.ClearScreen" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelUDP" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelUDP" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelTCP" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelTCP" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelIPv6" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelIPv6" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelConnections" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelConnections" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelHTTP" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelHTTP" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelTLS" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelTLS" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelLayer" -> "github.com/dreadl0ck/netcap/utils.TrimFileExtension" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.labelLayer" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/label.Suricata" -> "github.com/dreadl0ck/netcap/utils.ClearScreen" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "github.com/dreadl0ck/netcap/utils.ListAllNetworkInterfaces" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "github.com/dreadl0ck/netcap/utils.GetBaseLayer" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/export.Run" -> "github.com/dreadl0ck/netcap/utils.GetDecodeOptions" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/dump.Run" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/io.colorizeProto" -> "github.com/dreadl0ck/netcap/utils.Pad" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/io.colorizeProto" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.writeAuditRecords" -> "github.com/dreadl0ck/netcap/utils.Pluralize" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toFiles$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toFilesForContentType$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toMD5HashesForFileName$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toMD5HashesForImage$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toSoftwareExploits$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.lookupDHCPFingerprint" -> "github.com/dreadl0ck/netcap/utils.IsASCII" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.lookupDHCPFingerprint" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toSSHClients$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toSSHServers$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toSoftwareProducts$1" -> "github.com/dreadl0ck/netcap/utils.UnixTimeToUTC" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toJA3Hashes$1" -> "github.com/dreadl0ck/netcap/utils.CreateFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.makeFlowsBPF" -> "github.com/dreadl0ck/netcap/utils.ParseFlowIdent" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/agent.Run" -> "github.com/dreadl0ck/netcap/utils.ListAllNetworkInterfaces" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/agent.Run" -> "github.com/dreadl0ck/netcap/utils.GetBaseLayer" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/agent.Run" -> "github.com/dreadl0ck/netcap/utils.GetDecodeOptions" [ color="saddlebrown" ]
+}

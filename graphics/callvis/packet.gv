@@ -1,0 +1,1309 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        bgcolor="#e6ecfa";
+label="packet";
+labelloc="t";
+labeljust="c";
+fontsize="18";
+        
+        "github.com/dreadl0ck/netcap/decoder/packet.init" [ label="init" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.newGoPacketDecoder" [ fillcolor="lightblue" label="newGoPacketDecoder" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.newPacketDecoder" [ fillcolor="lightblue" label="newPacketDecoder" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init#1" [ penwidth="0.5" fillcolor="lightblue" label="init#1" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init#2" [ fillcolor="lightblue" label="init#2" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ label="(*packetDecoder).GetName" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" [ fillcolor="lightblue" label="MarkdownOverview" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.pad" [ fillcolor="lightblue" label="pad" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetType" [ fillcolor="lightblue" label="(*packetDecoder).GetType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" [ label="(*GoPacketDecoder).Destroy" penwidth="1.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).NumRecords" [ fillcolor="lightblue" label="(*packetDecoder).NumRecords" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" [ fillcolor="lightblue" label="(*packetDecoder).writeConn" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$47" [ fillcolor="lightblue" label="init$47" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).DeInitFunc" [ fillcolor="lightblue" label="(*packetDecoder).DeInitFunc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" [ fillcolor="lightblue" label="(*packetDecoder).writeDeviceProfile" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$50" [ fillcolor="lightblue" label="init$50" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" [ label="(*packetDecoder).writeIPProfile" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$53" [ fillcolor="lightblue" label="init$53" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" [ fillcolor="lightblue" label="(*packetDecoder).Destroy" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" [ label="ShowDecoders" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$2" [ label="ShowDecoders$2" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.countFields" [ fillcolor="lightblue" label="countFields" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" [ fillcolor="lightblue" label="ShowDecoders$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetType" [ label="(*GoPacketDecoder).GetType" penwidth="1.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetDescription" [ fillcolor="lightblue" label="(*packetDecoder).GetDescription" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetDescription" [ penwidth="1.5" fillcolor="lightblue" label="(*GoPacketDecoder).GetDescription" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$3" [ fillcolor="lightblue" label="ShowDecoders$3" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$4" [ style="dotted,filled" fillcolor="lightblue" label="ShowDecoders$4" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.rankByWordCount" [ penwidth="0.5" fillcolor="lightblue" label="rankByWordCount" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToPacketDecoders" [ penwidth="1.5" fillcolor="lightblue" label="ApplyActionToPacketDecoders" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToGoPacketDecoders" [ fillcolor="lightblue" label="ApplyActionToGoPacketDecoders" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.SetDecoderLogger" [ fillcolor="lightblue" label="SetDecoderLogger" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.SetConfig" [ label="SetConfig" penwidth="1.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode$1" [ label="(*GoPacketDecoder).Decode$1" style="dotted,filled" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" [ fillcolor="lightblue" label="(*GoPacketDecoder).Decode" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$1" [ label="init$1" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$2" [ fillcolor="lightblue" label="init$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$3" [ fillcolor="lightblue" label="init$3" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$4" [ fillcolor="lightblue" label="init$4" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$5" [ fillcolor="lightblue" label="init$5" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$6" [ fillcolor="lightblue" label="init$6" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$7" [ fillcolor="lightblue" label="init$7" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$8" [ style="dotted,filled" fillcolor="lightblue" label="init$8" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$8$1" [ style="dotted,filled" fillcolor="lightblue" label="init$8$1" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$9" [ fillcolor="lightblue" label="init$9" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$10" [ label="init$10" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$11" [ fillcolor="lightblue" label="init$11" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$12" [ fillcolor="lightblue" label="init$12" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$13" [ fillcolor="lightblue" label="init$13" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$14" [ fillcolor="lightblue" label="init$14" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$15" [ fillcolor="lightblue" label="init$15" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$16" [ fillcolor="lightblue" label="init$16" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$17" [ label="init$17" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$18" [ fillcolor="lightblue" label="init$18" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$19" [ style="dotted,filled" fillcolor="lightblue" label="init$19" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$20" [ fillcolor="lightblue" label="init$20" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$21" [ fillcolor="lightblue" label="init$21" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$22" [ style="dotted,filled" fillcolor="lightblue" label="init$22" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$23" [ fillcolor="lightblue" label="init$23" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$24" [ fillcolor="lightblue" label="init$24" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$25" [ fillcolor="lightblue" label="init$25" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$26" [ fillcolor="lightblue" label="init$26" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$27" [ fillcolor="lightblue" label="init$27" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$28" [ fillcolor="lightblue" label="init$28" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$29" [ fillcolor="lightblue" label="init$29" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$30" [ fillcolor="lightblue" label="init$30" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$31" [ fillcolor="lightblue" label="init$31" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$32" [ fillcolor="lightblue" label="init$32" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$33" [ label="init$33" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$34" [ label="init$34" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$35" [ style="dotted,filled" fillcolor="lightblue" label="init$35" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$36" [ fillcolor="lightblue" label="init$36" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$37" [ fillcolor="lightblue" label="init$37" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$38" [ fillcolor="lightblue" label="init$38" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$39" [ label="init$39" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.decoderLSUpdate" [ penwidth="0.5" fillcolor="lightblue" label="decoderLSUpdate" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$40" [ fillcolor="lightblue" label="init$40" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$41" [ label="init$41" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$42" [ fillcolor="lightblue" label="init$42" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.entropy" [ label="entropy" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$43" [ fillcolor="lightblue" label="init$43" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$44" [ fillcolor="lightblue" label="init$44" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$45" [ label="init$45" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$54" [ label="init$54" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$55" [ fillcolor="lightblue" label="init$55" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$56" [ fillcolor="lightblue" label="init$56" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$57" [ style="dotted,filled" fillcolor="lightblue" label="init$57" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$60" [ fillcolor="lightblue" label="init$60" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$61" [ label="init$61" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$62" [ label="init$62" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$63" [ fillcolor="lightblue" label="init$63" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$64" [ fillcolor="lightblue" label="init$64" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode$1" [ label="(*packetDecoder).Decode$1" style="dotted,filled" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" [ fillcolor="lightblue" label="(*packetDecoder).Decode" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" [ fillcolor="lightblue" label="handlePacket" penwidth="0.5" ]
+        "(github.com/dreadl0ck/netcap/decoder/packet.connectionID).String" [ label="(connectionID).String" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.calcMd5" [ fillcolor="lightblue" label="calcMd5" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$46" [ fillcolor="lightblue" label="init$46" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$49" [ fillcolor="lightblue" label="init$49" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" [ fillcolor="lightblue" label="getIPProfile" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.initPorts" [ fillcolor="lightblue" label="initPorts" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.doSrcPortUpdate" [ fillcolor="lightblue" label="doSrcPortUpdate" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.doContactedPortUpdate" [ fillcolor="lightblue" label="doContactedPortUpdate" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.doDstPortUpdate" [ fillcolor="lightblue" label="doDstPortUpdate" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.applyDeviceProfileUpdate" [ fillcolor="lightblue" label="applyDeviceProfileUpdate" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.updateDeviceProfile" [ fillcolor="lightblue" label="updateDeviceProfile" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.newDeviceProfile" [ fillcolor="lightblue" label="newDeviceProfile" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$52" [ fillcolor="lightblue" label="init$52" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$58" [ fillcolor="lightblue" label="init$58" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$59" [ fillcolor="lightblue" label="init$59" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" [ fillcolor="lightblue" label="InitGoPacketDecoders" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" [ label="InitPacketDecoders" penwidth="1.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).SetWriter" [ fillcolor="lightblue" label="(*packetDecoder).SetWriter" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).PostInitFunc" [ fillcolor="lightblue" label="(*packetDecoder).PostInitFunc" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$48" [ fillcolor="lightblue" label="init$48" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.init$51" [ style="dotted,filled" fillcolor="lightblue" label="init$51" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.atomicDeviceProfileMap).Size" [ fillcolor="lightblue" label="(*atomicDeviceProfileMap).Size" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetChan" [ fillcolor="lightblue" label="(*GoPacketDecoder).GetChan" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetChan" [ penwidth="1.5" fillcolor="lightblue" label="(*packetDecoder).GetChan" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetName" [ fillcolor="lightblue" label="(*GoPacketDecoder).GetName" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).write$1" [ fillcolor="lightblue" label="(*packetDecoder).write$1" style="dotted,filled" ]
+        "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).write" [ fillcolor="lightblue" label="(*packetDecoder).write" penwidth="0.5" ]
+        
+        subgraph "cluster_github.com/davecgh/go-spew/spew" {
+        penwidth="0.8";
+style="filled";
+label="spew";
+fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/davecgh/go-spew/spew";
+tooltip="package: github.com/davecgh/go-spew/spew";
+        
+        "github.com/davecgh/go-spew/spew.Dump" [ label="Dump" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/gopacket" {
+        tooltip="package: github.com/dreadl0ck/gopacket";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+label="gopacket";
+fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/gopacket";
+        
+        "(github.com/dreadl0ck/gopacket.LayerType).String" [ fillcolor="moccasin" label="(LayerType).String" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ label="(*packet).Metadata" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket.DecodeFailure).LayerPayload" [ fillcolor="moccasin" label="(*DecodeFailure).LayerPayload" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Payload).LayerPayload" [ fillcolor="moccasin" label="(Payload).LayerPayload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.Fragment).LayerPayload" [ fillcolor="moccasin" label="(*Fragment).LayerPayload" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Flow).FastHash" [ fillcolor="moccasin" label="(Flow).FastHash" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Flow).Src" [ label="(Flow).Src" penwidth="1.5" fillcolor="moccasin" ]
+        "(github.com/dreadl0ck/gopacket.Endpoint).String" [ fillcolor="moccasin" label="(Endpoint).String" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Flow).Dst" [ label="(Flow).Dst" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).LinkLayer" [ label="(*lazyPacket).LinkLayer" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).LinkLayer" [ fillcolor="moccasin" label="(*eagerPacket).LinkLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).NetworkLayer" [ label="(*lazyPacket).NetworkLayer" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).NetworkLayer" [ fillcolor="moccasin" label="(*eagerPacket).NetworkLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ penwidth="1.5" fillcolor="moccasin" label="(*lazyPacket).TransportLayer" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ fillcolor="moccasin" label="(*eagerPacket).TransportLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.Fragment).Payload" [ fillcolor="moccasin" label="(*Fragment).Payload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.lazyPacket).ApplicationLayer" [ fillcolor="moccasin" label="(*lazyPacket).ApplicationLayer" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.eagerPacket).ApplicationLayer" [ penwidth="1.5" fillcolor="moccasin" label="(*eagerPacket).ApplicationLayer" ]
+        "(github.com/dreadl0ck/gopacket.Payload).Payload" [ fillcolor="moccasin" label="(Payload).Payload" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Payload).LayerType" [ fillcolor="moccasin" label="(Payload).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.Fragment).LayerType" [ fillcolor="moccasin" label="(*Fragment).LayerType" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket.Endpoint).Raw" [ fillcolor="moccasin" label="(Endpoint).Raw" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket.packet).Data" [ fillcolor="moccasin" label="(*packet).Data" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/gopacket/layers" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/gopacket/layers";
+tooltip="package: github.com/dreadl0ck/gopacket/layers";
+fillcolor="lightyellow";
+rank="sink";
+label="layers";
+        
+        "(github.com/dreadl0ck/gopacket/layers.LCM).LayerPayload" [ fillcolor="moccasin" label="(LCM).LayerPayload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.BaseLayer).LayerPayload" [ label="(*BaseLayer).LayerPayload" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Ethernet).LinkFlow" [ fillcolor="moccasin" label="(*Ethernet).LinkFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.FDDI).LinkFlow" [ fillcolor="moccasin" label="(*FDDI).LinkFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.PPP).LinkFlow" [ label="(*PPP).LinkFlow" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.LinuxSLL).LinkFlow" [ fillcolor="moccasin" label="(*LinuxSLL).LinkFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv6).NetworkFlow" [ fillcolor="moccasin" label="(*IPv6).NetworkFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv4).NetworkFlow" [ fillcolor="moccasin" label="(*IPv4).NetworkFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ fillcolor="moccasin" label="(*RUDP).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ fillcolor="moccasin" label="(*TCP).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ fillcolor="moccasin" label="(*UDPLite).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ fillcolor="moccasin" label="(*SCTP).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ fillcolor="moccasin" label="(*UDP).TransportFlow" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EthernetCTPReply).Payload" [ fillcolor="moccasin" label="(*EthernetCTPReply).Payload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.DNS).Payload" [ fillcolor="moccasin" label="(*DNS).Payload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SIP).Payload" [ penwidth="1.5" fillcolor="moccasin" label="(*SIP).Payload" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Diameter).Payload" [ penwidth="1.5" fillcolor="moccasin" label="(*Diameter).Payload" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SFlowDatagram).Payload" [ fillcolor="moccasin" label="(*SFlowDatagram).Payload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RMCP).Payload" [ fillcolor="moccasin" label="(*RMCP).Payload" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket/layers.LCM).Payload" [ penwidth="1.5" fillcolor="moccasin" label="(LCM).Payload" ]
+        "(*github.com/dreadl0ck/gopacket/layers.NTP).Payload" [ fillcolor="moccasin" label="(*NTP).Payload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.BFD).Payload" [ fillcolor="moccasin" label="(*BFD).Payload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RADIUS).Payload" [ fillcolor="moccasin" label="(*RADIUS).Payload" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Ethernet).LayerType" [ fillcolor="moccasin" label="(*Ethernet).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.FDDI).LayerType" [ label="(*FDDI).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.PPP).LayerType" [ fillcolor="moccasin" label="(*PPP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.LinuxSLL).LayerType" [ fillcolor="moccasin" label="(*LinuxSLL).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv6).LayerType" [ fillcolor="moccasin" label="(*IPv6).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.IPv4).LayerType" [ label="(*IPv4).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RUDP).LayerType" [ label="(*RUDP).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.TCP).LayerType" [ fillcolor="moccasin" label="(*TCP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.UDPLite).LayerType" [ label="(*UDPLite).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SCTP).LayerType" [ fillcolor="moccasin" label="(*SCTP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.UDP).LayerType" [ fillcolor="moccasin" label="(*UDP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SFlowDatagram).LayerType" [ fillcolor="moccasin" label="(*SFlowDatagram).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RMCP).LayerType" [ fillcolor="moccasin" label="(*RMCP).LayerType" penwidth="1.5" ]
+        "(github.com/dreadl0ck/gopacket/layers.LCM).LayerType" [ label="(LCM).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.NTP).LayerType" [ fillcolor="moccasin" label="(*NTP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.BFD).LayerType" [ label="(*BFD).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.RADIUS).LayerType" [ fillcolor="moccasin" label="(*RADIUS).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.Diameter).LayerType" [ label="(*Diameter).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.SIP).LayerType" [ fillcolor="moccasin" label="(*SIP).LayerType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/gopacket/layers.DNS).LayerType" [ label="(*DNS).LayerType" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/gopacket/layers.EthernetCTPReply).LayerType" [ fillcolor="moccasin" label="(*EthernetCTPReply).LayerType" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/ja3" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+URL="/?f=github.com/dreadl0ck/ja3";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="ja3";
+tooltip="package: github.com/dreadl0ck/ja3";
+        
+        "github.com/dreadl0ck/ja3.DigestHexPacket" [ fillcolor="moccasin" label="DigestHexPacket" penwidth="1.5" ]
+        "github.com/dreadl0ck/ja3.DigestHexPacketJa3s" [ fillcolor="moccasin" label="DigestHexPacketJa3s" penwidth="1.5" ]
+        "github.com/dreadl0ck/ja3.DigestHex" [ fillcolor="moccasin" label="DigestHex" penwidth="1.5" ]
+        "github.com/dreadl0ck/ja3.DigestHexJa3s" [ fillcolor="moccasin" label="DigestHexJa3s" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/agent" {
+        style="filled";
+label="agent";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/agent";
+penwidth="0.8";
+fontsize="16";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/agent";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/cmd/agent.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/capture" {
+        fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="capture";
+penwidth="0.8";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/capture";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/capture";
+        
+        "github.com/dreadl0ck/netcap/cmd/capture.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices$1" [ fillcolor="moccasin" label="generateElasticIndices$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices" [ label="generateElasticIndices" penwidth="0.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices$2" [ fillcolor="moccasin" label="generateElasticIndices$2" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/transform" {
+        style="filled";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/transform";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/transform";
+penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+label="transform";
+        
+        "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords$1" [ fillcolor="moccasin" label="writeLiveAuditRecords$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords$2" [ fillcolor="moccasin" label="writeLiveAuditRecords$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords" [ fillcolor="moccasin" label="writeLiveAuditRecords" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/collector" {
+        tooltip="package: github.com/dreadl0ck/netcap/collector";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="collector";
+URL="/?f=github.com/dreadl0ck/netcap/collector";
+        
+        "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" [ fillcolor="moccasin" label="(*Collector).teardown" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).stats" [ fillcolor="moccasin" label="(*Collector).stats" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" [ fillcolor="moccasin" label="(*Collector).initLogging" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [ fillcolor="moccasin" label="(*Collector).Init" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" [ fillcolor="moccasin" label="(*Collector).worker$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/collector.invalidDecoder" [ label="invalidDecoder" penwidth="0.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" [ label="(*Collector).printProgressInterval$1" style="dotted,filled" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" [ label="(*Collector).InitBatching" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder" {
+        fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+penwidth="0.8";
+style="filled";
+rank="sink";
+label="decoder";
+URL="/?f=github.com/dreadl0ck/netcap/decoder";
+tooltip="package: github.com/dreadl0ck/netcap/decoder";
+        
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetType" [ fillcolor="moccasin" label="(*AbstractDecoder).GetType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetType" [ fillcolor="moccasin" label="(*StreamDecoder).GetType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetDescription" [ penwidth="1.5" fillcolor="moccasin" label="(*AbstractDecoder).GetDescription" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetDescription" [ fillcolor="moccasin" label="(*StreamDecoder).GetDescription" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/utils" {
+        fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/utils";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/utils";
+penwidth="0.8";
+style="filled";
+label="utils";
+        
+        "github.com/dreadl0ck/netcap/decoder/utils.NewPacketInfo" [ fillcolor="moccasin" label="NewPacketInfo" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/dpi" {
+        penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/dpi";
+style="filled";
+rank="sink";
+label="dpi";
+tooltip="package: github.com/dreadl0ck/netcap/dpi";
+        
+        "github.com/dreadl0ck/netcap/dpi.GetProtocols" [ fillcolor="moccasin" label="GetProtocols" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dpi.NewProto" [ penwidth="1.5" fillcolor="moccasin" label="NewProto" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/io" {
+        fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/io";
+label="io";
+tooltip="package: github.com/dreadl0ck/netcap/io";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/io.InitRecord" [ penwidth="1.5" fillcolor="moccasin" label="InitRecord" ]
+        "(*github.com/dreadl0ck/netcap/io.protoWriter).Close" [ fillcolor="moccasin" label="(*protoWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.csvWriter).Close" [ fillcolor="moccasin" label="(*csvWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.jsonWriter).Close" [ fillcolor="moccasin" label="(*jsonWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.nullWriter).Close" [ fillcolor="moccasin" label="(*nullWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.elasticWriter).Close" [ fillcolor="moccasin" label="(*elasticWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.chanWriter).Close" [ fillcolor="moccasin" label="(*chanWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.protoWriter).Write" [ fillcolor="moccasin" label="(*protoWriter).Write" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.csvWriter).Write" [ fillcolor="moccasin" label="(*csvWriter).Write" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.jsonWriter).Write" [ fillcolor="moccasin" label="(*jsonWriter).Write" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.nullWriter).Write" [ penwidth="1.5" fillcolor="moccasin" label="(*nullWriter).Write" ]
+        "(*github.com/dreadl0ck/netcap/io.elasticWriter).Write" [ fillcolor="moccasin" label="(*elasticWriter).Write" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.chanWriter).Write" [ fillcolor="moccasin" label="(*chanWriter).Write" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/io.NewAuditRecordWriter" [ fillcolor="moccasin" label="NewAuditRecordWriter" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.protoWriter).WriteHeader" [ fillcolor="moccasin" label="(*protoWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.csvWriter).WriteHeader" [ fillcolor="moccasin" label="(*csvWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.jsonWriter).WriteHeader" [ fillcolor="moccasin" label="(*jsonWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.nullWriter).WriteHeader" [ fillcolor="moccasin" label="(*nullWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.elasticWriter).WriteHeader" [ fillcolor="moccasin" label="(*elasticWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.chanWriter).WriteHeader" [ fillcolor="moccasin" label="(*chanWriter).WriteHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.chanWriter).GetChan" [ fillcolor="moccasin" label="(*chanWriter).GetChan" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/resolvers" {
+        fontname="Tahoma bold";
+label="resolvers";
+tooltip="package: github.com/dreadl0ck/netcap/resolvers";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/resolvers";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" [ penwidth="1.5" fillcolor="moccasin" label="LookupGeolocation" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupJa3" [ fillcolor="moccasin" label="LookupJa3" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ fillcolor="moccasin" label="LookupDNSNameLocal" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupDNSNames" [ fillcolor="moccasin" label="LookupDNSNames" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupManufacturer" [ fillcolor="moccasin" label="LookupManufacturer" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/types" {
+        URL="/?f=github.com/dreadl0ck/netcap/types";
+tooltip="package: github.com/dreadl0ck/netcap/types";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+style="filled";
+rank="sink";
+label="types";
+penwidth="0.8";
+fontsize="16";
+        
+        "(*github.com/dreadl0ck/netcap/types.CiscoDiscovery).CSVHeader" [ fillcolor="moccasin" label="(*CiscoDiscovery).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DeviceProfile).CSVHeader" [ label="(*DeviceProfile).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.CIP).CSVHeader" [ fillcolor="moccasin" label="(*CIP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Modbus).CSVHeader" [ fillcolor="moccasin" label="(*Modbus).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Exploit).CSVHeader" [ fillcolor="moccasin" label="(*Exploit).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.NortelDiscovery).CSVHeader" [ fillcolor="moccasin" label="(*NortelDiscovery).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IGMP).CSVHeader" [ label="(*IGMP).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6).CSVHeader" [ fillcolor="moccasin" label="(*ICMPv6).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPProfile).CSVHeader" [ fillcolor="moccasin" label="(*IPProfile).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.BFD).CSVHeader" [ fillcolor="moccasin" label="(*BFD).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Diameter).CSVHeader" [ label="(*Diameter).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.Geneve).CSVHeader" [ fillcolor="moccasin" label="(*Geneve).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.SMTP).CSVHeader" [ penwidth="1.5" fillcolor="moccasin" label="(*SMTP).CSVHeader" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6Fragment).CSVHeader" [ label="(*IPv6Fragment).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6HopByHop).CSVHeader" [ fillcolor="moccasin" label="(*IPv6HopByHop).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6Echo).CSVHeader" [ label="(*ICMPv6Echo).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborSolicitation).CSVHeader" [ fillcolor="moccasin" label="(*ICMPv6NeighborSolicitation).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.SSH).CSVHeader" [ fillcolor="moccasin" label="(*SSH).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Credentials).CSVHeader" [ penwidth="1.5" fillcolor="moccasin" label="(*Credentials).CSVHeader" ]
+        "(*github.com/dreadl0ck/netcap/types.Vulnerability).CSVHeader" [ fillcolor="moccasin" label="(*Vulnerability).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Dot1Q).CSVHeader" [ fillcolor="moccasin" label="(*Dot1Q).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.SCTP).CSVHeader" [ fillcolor="moccasin" label="(*SCTP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ARP).CSVHeader" [ fillcolor="moccasin" label="(*ARP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EAPOL).CSVHeader" [ penwidth="1.5" fillcolor="moccasin" label="(*EAPOL).CSVHeader" ]
+        "(*github.com/dreadl0ck/netcap/types.Mail).CSVHeader" [ penwidth="1.5" fillcolor="moccasin" label="(*Mail).CSVHeader" ]
+        "(*github.com/dreadl0ck/netcap/types.GRE).CSVHeader" [ fillcolor="moccasin" label="(*GRE).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.OSPFv3).CSVHeader" [ label="(*OSPFv3).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.IPSecESP).CSVHeader" [ fillcolor="moccasin" label="(*IPSecESP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EAP).CSVHeader" [ fillcolor="moccasin" label="(*EAP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.MPLS).CSVHeader" [ fillcolor="moccasin" label="(*MPLS).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.VRRPv2).CSVHeader" [ fillcolor="moccasin" label="(*VRRPv2).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.OSPFv2).CSVHeader" [ fillcolor="moccasin" label="(*OSPFv2).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.USBRequestBlockSetup).CSVHeader" [ fillcolor="moccasin" label="(*USBRequestBlockSetup).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.CiscoDiscoveryInfo).CSVHeader" [ fillcolor="moccasin" label="(*CiscoDiscoveryInfo).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.UDP).CSVHeader" [ fillcolor="moccasin" label="(*UDP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.SIP).CSVHeader" [ fillcolor="moccasin" label="(*SIP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DHCPv6).CSVHeader" [ fillcolor="moccasin" label="(*DHCPv6).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DNS).CSVHeader" [ fillcolor="moccasin" label="(*DNS).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.FDDI).CSVHeader" [ fillcolor="moccasin" label="(*FDDI).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv4).CSVHeader" [ fillcolor="moccasin" label="(*ICMPv4).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ENIP).CSVHeader" [ label="(*ENIP).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6RouterSolicitation).CSVHeader" [ fillcolor="moccasin" label="(*ICMPv6RouterSolicitation).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6).CSVHeader" [ fillcolor="moccasin" label="(*IPv6).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EAPOLKey).CSVHeader" [ penwidth="1.5" fillcolor="moccasin" label="(*EAPOLKey).CSVHeader" ]
+        "(*github.com/dreadl0ck/netcap/types.VXLAN).CSVHeader" [ fillcolor="moccasin" label="(*VXLAN).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscoveryInfo).CSVHeader" [ fillcolor="moccasin" label="(*LinkLayerDiscoveryInfo).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPSecAH).CSVHeader" [ label="(*IPSecAH).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.EthernetCTPReply).CSVHeader" [ fillcolor="moccasin" label="(*EthernetCTPReply).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EthernetCTP).CSVHeader" [ fillcolor="moccasin" label="(*EthernetCTP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.TCP).CSVHeader" [ fillcolor="moccasin" label="(*TCP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.USB).CSVHeader" [ fillcolor="moccasin" label="(*USB).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.TLSServerHello).CSVHeader" [ fillcolor="moccasin" label="(*TLSServerHello).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.TLSClientHello).CSVHeader" [ fillcolor="moccasin" label="(*TLSClientHello).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.File).CSVHeader" [ fillcolor="moccasin" label="(*File).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Service).CSVHeader" [ label="(*Service).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6RouterAdvertisement).CSVHeader" [ fillcolor="moccasin" label="(*ICMPv6RouterAdvertisement).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborAdvertisement).CSVHeader" [ penwidth="1.5" fillcolor="moccasin" label="(*ICMPv6NeighborAdvertisement).CSVHeader" ]
+        "(*github.com/dreadl0ck/netcap/types.NTP).CSVHeader" [ fillcolor="moccasin" label="(*NTP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.SNAP).CSVHeader" [ label="(*SNAP).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv4).CSVHeader" [ fillcolor="moccasin" label="(*IPv4).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Dot11).CSVHeader" [ fillcolor="moccasin" label="(*Dot11).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Connection).CSVHeader" [ fillcolor="moccasin" label="(*Connection).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.POP3).CSVHeader" [ fillcolor="moccasin" label="(*POP3).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Software).CSVHeader" [ label="(*Software).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.DHCPv4).CSVHeader" [ label="(*DHCPv4).CSVHeader" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.HTTP).CSVHeader" [ fillcolor="moccasin" label="(*HTTP).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LCM).CSVHeader" [ fillcolor="moccasin" label="(*LCM).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscovery).CSVHeader" [ penwidth="1.5" fillcolor="moccasin" label="(*LinkLayerDiscovery).CSVHeader" ]
+        "(*github.com/dreadl0ck/netcap/types.Ethernet).CSVHeader" [ fillcolor="moccasin" label="(*Ethernet).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LLC).CSVHeader" [ fillcolor="moccasin" label="(*LLC).CSVHeader" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Connection).Inc" [ fillcolor="moccasin" label="(*Connection).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DeviceProfile).Inc" [ label="(*DeviceProfile).Inc" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.IPProfile).Inc" [ fillcolor="moccasin" label="(*IPProfile).Inc" penwidth="1.5" ]
+        "(github.com/dreadl0ck/netcap/types.Type).String" [ label="(Type).String" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.LLC).Inc" [ fillcolor="moccasin" label="(*LLC).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.CiscoDiscovery).SetPacketContext" [ label="(*CiscoDiscovery).SetPacketContext" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.CIP).SetPacketContext" [ fillcolor="moccasin" label="(*CIP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Modbus).SetPacketContext" [ fillcolor="moccasin" label="(*Modbus).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.NortelDiscovery).SetPacketContext" [ fillcolor="moccasin" label="(*NortelDiscovery).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IGMP).SetPacketContext" [ fillcolor="moccasin" label="(*IGMP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6).SetPacketContext" [ fillcolor="moccasin" label="(*ICMPv6).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.BFD).SetPacketContext" [ fillcolor="moccasin" label="(*BFD).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Diameter).SetPacketContext" [ penwidth="1.5" fillcolor="moccasin" label="(*Diameter).SetPacketContext" ]
+        "(*github.com/dreadl0ck/netcap/types.Geneve).SetPacketContext" [ fillcolor="moccasin" label="(*Geneve).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6Fragment).SetPacketContext" [ fillcolor="moccasin" label="(*IPv6Fragment).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6HopByHop).SetPacketContext" [ fillcolor="moccasin" label="(*IPv6HopByHop).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6Echo).SetPacketContext" [ fillcolor="moccasin" label="(*ICMPv6Echo).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborSolicitation).SetPacketContext" [ fillcolor="moccasin" label="(*ICMPv6NeighborSolicitation).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Dot1Q).SetPacketContext" [ fillcolor="moccasin" label="(*Dot1Q).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.SCTP).SetPacketContext" [ fillcolor="moccasin" label="(*SCTP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ARP).SetPacketContext" [ fillcolor="moccasin" label="(*ARP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EAPOL).SetPacketContext" [ penwidth="1.5" fillcolor="moccasin" label="(*EAPOL).SetPacketContext" ]
+        "(*github.com/dreadl0ck/netcap/types.GRE).SetPacketContext" [ fillcolor="moccasin" label="(*GRE).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.OSPFv3).SetPacketContext" [ fillcolor="moccasin" label="(*OSPFv3).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPSecESP).SetPacketContext" [ fillcolor="moccasin" label="(*IPSecESP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EAP).SetPacketContext" [ fillcolor="moccasin" label="(*EAP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.MPLS).SetPacketContext" [ fillcolor="moccasin" label="(*MPLS).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.VRRPv2).SetPacketContext" [ fillcolor="moccasin" label="(*VRRPv2).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.OSPFv2).SetPacketContext" [ fillcolor="moccasin" label="(*OSPFv2).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.USBRequestBlockSetup).SetPacketContext" [ label="(*USBRequestBlockSetup).SetPacketContext" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.CiscoDiscoveryInfo).SetPacketContext" [ fillcolor="moccasin" label="(*CiscoDiscoveryInfo).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.UDP).SetPacketContext" [ fillcolor="moccasin" label="(*UDP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.SIP).SetPacketContext" [ fillcolor="moccasin" label="(*SIP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DHCPv6).SetPacketContext" [ fillcolor="moccasin" label="(*DHCPv6).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DNS).SetPacketContext" [ penwidth="1.5" fillcolor="moccasin" label="(*DNS).SetPacketContext" ]
+        "(*github.com/dreadl0ck/netcap/types.FDDI).SetPacketContext" [ fillcolor="moccasin" label="(*FDDI).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv4).SetPacketContext" [ label="(*ICMPv4).SetPacketContext" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.ENIP).SetPacketContext" [ fillcolor="moccasin" label="(*ENIP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6).SetPacketContext" [ fillcolor="moccasin" label="(*IPv6).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EAPOLKey).SetPacketContext" [ fillcolor="moccasin" label="(*EAPOLKey).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.VXLAN).SetPacketContext" [ fillcolor="moccasin" label="(*VXLAN).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscoveryInfo).SetPacketContext" [ fillcolor="moccasin" label="(*LinkLayerDiscoveryInfo).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPSecAH).SetPacketContext" [ fillcolor="moccasin" label="(*IPSecAH).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EthernetCTPReply).SetPacketContext" [ fillcolor="moccasin" label="(*EthernetCTPReply).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EthernetCTP).SetPacketContext" [ fillcolor="moccasin" label="(*EthernetCTP).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.TCP).SetPacketContext" [ penwidth="1.5" fillcolor="moccasin" label="(*TCP).SetPacketContext" ]
+        "(*github.com/dreadl0ck/netcap/types.USB).SetPacketContext" [ fillcolor="moccasin" label="(*USB).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6RouterAdvertisement).SetPacketContext" [ penwidth="1.5" fillcolor="moccasin" label="(*ICMPv6RouterAdvertisement).SetPacketContext" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborAdvertisement).SetPacketContext" [ fillcolor="moccasin" label="(*ICMPv6NeighborAdvertisement).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.NTP).SetPacketContext" [ penwidth="1.5" fillcolor="moccasin" label="(*NTP).SetPacketContext" ]
+        "(*github.com/dreadl0ck/netcap/types.SNAP).SetPacketContext" [ penwidth="1.5" fillcolor="moccasin" label="(*SNAP).SetPacketContext" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv4).SetPacketContext" [ fillcolor="moccasin" label="(*IPv4).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Dot11).SetPacketContext" [ fillcolor="moccasin" label="(*Dot11).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DHCPv4).SetPacketContext" [ label="(*DHCPv4).SetPacketContext" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.LCM).SetPacketContext" [ fillcolor="moccasin" label="(*LCM).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscovery).SetPacketContext" [ fillcolor="moccasin" label="(*LinkLayerDiscovery).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Ethernet).SetPacketContext" [ fillcolor="moccasin" label="(*Ethernet).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LLC).SetPacketContext" [ fillcolor="moccasin" label="(*LLC).SetPacketContext" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.CiscoDiscovery).Inc" [ fillcolor="moccasin" label="(*CiscoDiscovery).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.CIP).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*CIP).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.Modbus).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*Modbus).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.NortelDiscovery).Inc" [ fillcolor="moccasin" label="(*NortelDiscovery).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IGMP).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*IGMP).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6).Inc" [ fillcolor="moccasin" label="(*ICMPv6).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.BFD).Inc" [ fillcolor="moccasin" label="(*BFD).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Diameter).Inc" [ fillcolor="moccasin" label="(*Diameter).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Geneve).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*Geneve).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6Fragment).Inc" [ fillcolor="moccasin" label="(*IPv6Fragment).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6HopByHop).Inc" [ fillcolor="moccasin" label="(*IPv6HopByHop).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6Echo).Inc" [ label="(*ICMPv6Echo).Inc" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborSolicitation).Inc" [ fillcolor="moccasin" label="(*ICMPv6NeighborSolicitation).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Dot1Q).Inc" [ label="(*Dot1Q).Inc" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.SCTP).Inc" [ fillcolor="moccasin" label="(*SCTP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ARP).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*ARP).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.EAPOL).Inc" [ fillcolor="moccasin" label="(*EAPOL).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.GRE).Inc" [ fillcolor="moccasin" label="(*GRE).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.OSPFv3).Inc" [ fillcolor="moccasin" label="(*OSPFv3).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPSecESP).Inc" [ fillcolor="moccasin" label="(*IPSecESP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EAP).Inc" [ fillcolor="moccasin" label="(*EAP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.MPLS).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*MPLS).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.VRRPv2).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*VRRPv2).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.OSPFv2).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*OSPFv2).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.USBRequestBlockSetup).Inc" [ fillcolor="moccasin" label="(*USBRequestBlockSetup).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.CiscoDiscoveryInfo).Inc" [ fillcolor="moccasin" label="(*CiscoDiscoveryInfo).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.UDP).Inc" [ fillcolor="moccasin" label="(*UDP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.SIP).Inc" [ fillcolor="moccasin" label="(*SIP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DHCPv6).Inc" [ label="(*DHCPv6).Inc" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/types.DNS).Inc" [ fillcolor="moccasin" label="(*DNS).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.FDDI).Inc" [ fillcolor="moccasin" label="(*FDDI).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv4).Inc" [ fillcolor="moccasin" label="(*ICMPv4).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ENIP).Inc" [ fillcolor="moccasin" label="(*ENIP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv6).Inc" [ fillcolor="moccasin" label="(*IPv6).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EAPOLKey).Inc" [ fillcolor="moccasin" label="(*EAPOLKey).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.VXLAN).Inc" [ fillcolor="moccasin" label="(*VXLAN).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscoveryInfo).Inc" [ fillcolor="moccasin" label="(*LinkLayerDiscoveryInfo).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPSecAH).Inc" [ fillcolor="moccasin" label="(*IPSecAH).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EthernetCTPReply).Inc" [ fillcolor="moccasin" label="(*EthernetCTPReply).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.EthernetCTP).Inc" [ fillcolor="moccasin" label="(*EthernetCTP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.TCP).Inc" [ fillcolor="moccasin" label="(*TCP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.USB).Inc" [ fillcolor="moccasin" label="(*USB).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6RouterAdvertisement).Inc" [ fillcolor="moccasin" label="(*ICMPv6RouterAdvertisement).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborAdvertisement).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*ICMPv6NeighborAdvertisement).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.NTP).Inc" [ penwidth="1.5" fillcolor="moccasin" label="(*NTP).Inc" ]
+        "(*github.com/dreadl0ck/netcap/types.SNAP).Inc" [ fillcolor="moccasin" label="(*SNAP).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.IPv4).Inc" [ fillcolor="moccasin" label="(*IPv4).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Dot11).Inc" [ fillcolor="moccasin" label="(*Dot11).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.DHCPv4).Inc" [ fillcolor="moccasin" label="(*DHCPv4).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LCM).Inc" [ fillcolor="moccasin" label="(*LCM).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscovery).Inc" [ fillcolor="moccasin" label="(*LinkLayerDiscovery).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.Ethernet).Inc" [ fillcolor="moccasin" label="(*Ethernet).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.TLSServerHello).Inc" [ fillcolor="moccasin" label="(*TLSServerHello).Inc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/types.TLSClientHello).Inc" [ fillcolor="moccasin" label="(*TLSClientHello).Inc" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/utils" {
+        fillcolor="lightyellow";
+rank="sink";
+label="utils";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/utils";
+tooltip="package: github.com/dreadl0ck/netcap/utils";
+        
+        "github.com/dreadl0ck/netcap/utils.DecodePort" [ penwidth="1.5" fillcolor="moccasin" label="DecodePort" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/tlsx" {
+        fillcolor="lightyellow";
+style="filled";
+fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+label="tlsx";
+URL="/?f=github.com/dreadl0ck/tlsx";
+tooltip="package: github.com/dreadl0ck/tlsx";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/tlsx.GetClientHelloBasic" [ fillcolor="moccasin" label="GetClientHelloBasic" penwidth="1.5" ]
+        "github.com/dreadl0ck/tlsx.GetClientHello" [ fillcolor="moccasin" label="GetClientHello" penwidth="1.5" ]
+        "github.com/dreadl0ck/tlsx.GetServerHello" [ fillcolor="moccasin" label="GetServerHello" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/evilsocket/islazy/tui" {
+        tooltip="package: github.com/evilsocket/islazy/tui";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="tui";
+URL="/?f=github.com/evilsocket/islazy/tui";
+penwidth="0.8";
+fillcolor="lightyellow";
+        
+        "github.com/evilsocket/islazy/tui.Table" [ penwidth="1.5" fillcolor="moccasin" label="Table" ]
+        
+    }
+
+        subgraph "cluster_github.com/pkg/errors" {
+        label="errors";
+URL="/?f=github.com/pkg/errors";
+tooltip="package: github.com/pkg/errors";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+penwidth="0.8";
+        
+        "github.com/pkg/errors.New" [ label="New" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/pkg/errors.Wrap" [ fillcolor="moccasin" label="Wrap" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_go.uber.org/zap" {
+        tooltip="package: go.uber.org/zap";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+label="zap";
+fontsize="16";
+fontname="Tahoma bold";
+URL="/?f=go.uber.org/zap";
+        
+        "go.uber.org/zap.NewNop" [ fillcolor="moccasin" label="NewNop" penwidth="1.5" ]
+        "go.uber.org/zap.Int" [ fillcolor="moccasin" label="Int" penwidth="1.5" ]
+        "(*go.uber.org/zap.Logger).Info" [ fillcolor="moccasin" label="(*Logger).Info" penwidth="1.5" ]
+        
+    }
+
+    }
+
+    "github.com/dreadl0ck/netcap/decoder/packet.init" -> "github.com/dreadl0ck/netcap/decoder/packet.newGoPacketDecoder" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init" -> "go.uber.org/zap.NewNop" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init" -> "github.com/pkg/errors.New" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init" -> "github.com/dreadl0ck/netcap/decoder/packet.newPacketDecoder" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init#1" -> "(github.com/dreadl0ck/gopacket.LayerType).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init" -> "github.com/dreadl0ck/netcap/decoder/packet.init#1" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init#2" -> "(github.com/dreadl0ck/gopacket.LayerType).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init#2" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init" -> "github.com/dreadl0ck/netcap/decoder/packet.init#2" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "github.com/dreadl0ck/netcap/io.InitRecord" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(github.com/dreadl0ck/gopacket.LayerType).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "github.com/dreadl0ck/netcap/decoder/packet.pad" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.CiscoDiscovery).CSVHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.DeviceProfile).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.CIP).CSVHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Modbus).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Exploit).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.NortelDiscovery).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.IGMP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.IPProfile).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.BFD).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Diameter).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Geneve).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.SMTP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.IPv6Fragment).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.IPv6HopByHop).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6Echo).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborSolicitation).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.SSH).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Credentials).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Vulnerability).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Dot1Q).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.SCTP).CSVHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ARP).CSVHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.EAPOL).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Mail).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.GRE).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.OSPFv3).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.IPSecESP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.EAP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.MPLS).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.VRRPv2).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.OSPFv2).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.USBRequestBlockSetup).CSVHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.CiscoDiscoveryInfo).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.UDP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.SIP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.DHCPv6).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.DNS).CSVHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.FDDI).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ICMPv4).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ENIP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6RouterSolicitation).CSVHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.IPv6).CSVHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.EAPOLKey).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.VXLAN).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscoveryInfo).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.IPSecAH).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.EthernetCTPReply).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.EthernetCTP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.TCP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.USB).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.TLSServerHello).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.TLSClientHello).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.File).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Service).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6RouterAdvertisement).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborAdvertisement).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.NTP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.SNAP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.IPv4).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Dot11).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Connection).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.POP3).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Software).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.DHCPv4).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.HTTP).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.LCM).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscovery).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.Ethernet).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/types.LLC).CSVHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetType" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "github.com/dreadl0ck/netcap/decoder/packet.MarkdownOverview" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Close" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Close" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Destroy" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).NumRecords" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" -> "(*github.com/dreadl0ck/netcap/types.Connection).Inc" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Write" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$47" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeConn" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/packet.init$47" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" -> "(*github.com/dreadl0ck/netcap/types.DeviceProfile).Inc" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Write" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$50" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeDeviceProfile" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/packet.init$50" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" -> "(*github.com/dreadl0ck/netcap/types.IPProfile).Inc" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Write" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$53" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).writeIPProfile" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/packet.init$53" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).DeInitFunc" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Destroy" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" -> "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$2" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.countFields" -> "github.com/dreadl0ck/netcap/io.InitRecord" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.countFields" -> "(github.com/dreadl0ck/netcap/types.Type).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "github.com/dreadl0ck/netcap/decoder/packet.countFields" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(github.com/dreadl0ck/netcap/types.Type).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "github.com/dreadl0ck/netcap/decoder/packet.pad" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetType" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetType" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetType" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetDescription" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetDescription" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetDescription" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetDescription" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" -> "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" -> "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$3" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" -> "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$4" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" -> "github.com/dreadl0ck/netcap/decoder/packet.rankByWordCount" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" -> "github.com/evilsocket/islazy/tui.Table" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.Run" -> "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToPacketDecoders" -> "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices$1" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToPacketDecoders" -> "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords$1" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices" -> "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToPacketDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToGoPacketDecoders" -> "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices$2" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToGoPacketDecoders" -> "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords$2" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/capture.generateElasticIndices" -> "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToGoPacketDecoders" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/decoder/packet.SetDecoderLogger" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/packet.SetConfig" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode$1" -> "github.com/davecgh/go-spew/spew.Dump" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode$1" [ arrowhead="normalnoneodiamond" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.LLC).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$1" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$2" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$3" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$4" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$5" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$6" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$7" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$8" -> "github.com/dreadl0ck/netcap/decoder/packet.init$8$1" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$8" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$9" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$10" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$11" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$12" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$13" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$14" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$15" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$16" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$17" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$18" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$19" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$20" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$21" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$22" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$23" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$24" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$25" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$26" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$27" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$28" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$29" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$30" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$31" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$32" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$33" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$34" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$35" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$36" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$37" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$38" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$39" -> "github.com/dreadl0ck/netcap/decoder/packet.decoderLSUpdate" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$39" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$40" -> "github.com/dreadl0ck/netcap/decoder/packet.decoderLSUpdate" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$40" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$41" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$42" -> "github.com/dreadl0ck/netcap/decoder/packet.entropy" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$42" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$43" -> "github.com/dreadl0ck/netcap/decoder/packet.entropy" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$43" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$44" -> "github.com/dreadl0ck/netcap/decoder/packet.entropy" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$44" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$45" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$54" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$55" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$56" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$57" -> "github.com/dreadl0ck/netcap/decoder/packet.entropy" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$57" -> "(*github.com/dreadl0ck/gopacket.DecodeFailure).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$57" -> "(github.com/dreadl0ck/gopacket.Payload).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$57" -> "(*github.com/dreadl0ck/gopacket.Fragment).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$57" -> "(github.com/dreadl0ck/gopacket/layers.LCM).LayerPayload" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$57" -> "(*github.com/dreadl0ck/gopacket/layers.BaseLayer).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$57" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$60" -> "github.com/dreadl0ck/netcap/decoder/packet.entropy" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$60" -> "(*github.com/dreadl0ck/gopacket.DecodeFailure).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$60" -> "(github.com/dreadl0ck/gopacket.Payload).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$60" -> "(*github.com/dreadl0ck/gopacket.Fragment).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$60" -> "(github.com/dreadl0ck/gopacket/layers.LCM).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$60" -> "(*github.com/dreadl0ck/gopacket/layers.BaseLayer).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$60" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$61" -> "(*github.com/dreadl0ck/gopacket.DecodeFailure).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$61" -> "(github.com/dreadl0ck/gopacket.Payload).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$61" -> "(*github.com/dreadl0ck/gopacket.Fragment).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$61" -> "(github.com/dreadl0ck/gopacket/layers.LCM).LayerPayload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$61" -> "(*github.com/dreadl0ck/gopacket/layers.BaseLayer).LayerPayload" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$61" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$62" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$63" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$64" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Write" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.CiscoDiscovery).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.CIP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Modbus).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.NortelDiscovery).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IGMP).SetPacketContext" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.BFD).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Diameter).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Geneve).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPv6Fragment).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPv6HopByHop).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6Echo).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborSolicitation).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Dot1Q).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.SCTP).SetPacketContext" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ARP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EAPOL).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.GRE).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.OSPFv3).SetPacketContext" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPSecESP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EAP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.MPLS).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.VRRPv2).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.OSPFv2).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.USBRequestBlockSetup).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.CiscoDiscoveryInfo).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.UDP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.SIP).SetPacketContext" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.DHCPv6).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.DNS).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.FDDI).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv4).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ENIP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPv6).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EAPOLKey).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.VXLAN).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscoveryInfo).SetPacketContext" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPSecAH).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EthernetCTPReply).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EthernetCTP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.TCP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.USB).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6RouterAdvertisement).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborAdvertisement).SetPacketContext" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.NTP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.SNAP).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPv4).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Dot11).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.DHCPv4).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.LCM).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscovery).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Ethernet).SetPacketContext" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.LLC).SetPacketContext" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.CiscoDiscovery).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.CIP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Modbus).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.NortelDiscovery).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IGMP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.BFD).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Diameter).Inc" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Geneve).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPv6Fragment).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPv6HopByHop).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6Echo).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborSolicitation).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Dot1Q).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.SCTP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ARP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EAPOL).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.GRE).Inc" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.OSPFv3).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPSecESP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EAP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.MPLS).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.VRRPv2).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.OSPFv2).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.USBRequestBlockSetup).Inc" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.CiscoDiscoveryInfo).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.UDP).Inc" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.SIP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.DHCPv6).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.DNS).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.FDDI).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv4).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ENIP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPv6).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EAPOLKey).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.VXLAN).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscoveryInfo).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPSecAH).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EthernetCTPReply).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.EthernetCTP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.TCP).Inc" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.USB).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6RouterAdvertisement).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.ICMPv6NeighborAdvertisement).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.NTP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.SNAP).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.IPv4).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Dot11).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.DHCPv4).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.LCM).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.LinkLayerDiscovery).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.Ethernet).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).Decode" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode$1" -> "github.com/davecgh/go-spew/spew.Dump" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket.Flow).FastHash" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/netcap/decoder/packet.connectionID).String" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "github.com/dreadl0ck/netcap/decoder/packet.calcMd5" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket.Flow).Src" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket.Endpoint).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket.Flow).Dst" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket.LayerType).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).LinkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).LinkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.Ethernet).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.FDDI).LinkFlow" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.PPP).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.LinuxSLL).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).NetworkLayer" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6).NetworkFlow" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.IPv4).NetworkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.EthernetCTPReply).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.Fragment).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.DNS).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.SIP).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.Diameter).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).ApplicationLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).ApplicationLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.SFlowDatagram).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.RMCP).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket/layers.LCM).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.NTP).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket.Payload).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.BFD).Payload" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.RADIUS).Payload" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.Ethernet).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.FDDI).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.PPP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.LinuxSLL).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.IPv4).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.SFlowDatagram).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.RMCP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket/layers.LCM).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.NTP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(github.com/dreadl0ck/gopacket.Payload).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.BFD).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.RADIUS).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.Diameter).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.SIP).LayerType" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.DNS).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket.Fragment).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" -> "(*github.com/dreadl0ck/gopacket/layers.EthernetCTPReply).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$46" -> "github.com/dreadl0ck/netcap/decoder/packet.handlePacket" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$46" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$49" -> "github.com/dreadl0ck/netcap/decoder/utils.NewPacketInfo" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(github.com/dreadl0ck/gopacket.Flow).Src" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(github.com/dreadl0ck/gopacket.Endpoint).Raw" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(github.com/dreadl0ck/gopacket.LayerType).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(github.com/dreadl0ck/gopacket.Flow).Dst" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket.packet).Data" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.initPorts" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/decoder/packet.initPorts" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/ja3.DigestHexPacket" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/tlsx.GetClientHelloBasic" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(github.com/dreadl0ck/gopacket.Flow).Src" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(github.com/dreadl0ck/gopacket.Endpoint).Raw" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/utils.DecodePort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(github.com/dreadl0ck/gopacket.LayerType).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/decoder/packet.doSrcPortUpdate" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(github.com/dreadl0ck/gopacket.Flow).Dst" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/decoder/packet.doContactedPortUpdate" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/decoder/packet.doDstPortUpdate" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/ja3.DigestHexPacketJa3s" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/dpi.GetProtocols" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupJa3" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/dpi.NewProto" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNames" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket.packet).Data" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).LayerType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.applyDeviceProfileUpdate" -> "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.applyDeviceProfileUpdate" -> "(*github.com/dreadl0ck/gopacket.packet).Data" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.updateDeviceProfile" -> "github.com/dreadl0ck/netcap/decoder/packet.applyDeviceProfileUpdate" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.newDeviceProfile" -> "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.newDeviceProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupManufacturer" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.newDeviceProfile" -> "(*github.com/dreadl0ck/gopacket.packet).Data" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.updateDeviceProfile" -> "github.com/dreadl0ck/netcap/decoder/packet.newDeviceProfile" [  ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$49" -> "github.com/dreadl0ck/netcap/decoder/packet.updateDeviceProfile" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$49" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$52" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "github.com/dreadl0ck/tlsx.GetClientHello" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(github.com/dreadl0ck/gopacket.Flow).Src" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(github.com/dreadl0ck/gopacket.Endpoint).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(github.com/dreadl0ck/gopacket.Flow).Dst" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(github.com/dreadl0ck/gopacket.Endpoint).Raw" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "github.com/dreadl0ck/ja3.DigestHex" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).LinkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).LinkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.Ethernet).LinkFlow" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.FDDI).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.PPP).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.LinuxSLL).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6).NetworkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.IPv4).NetworkFlow" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$58" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$58" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "github.com/dreadl0ck/tlsx.GetServerHello" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(github.com/dreadl0ck/gopacket.Flow).Src" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(github.com/dreadl0ck/gopacket.Endpoint).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(github.com/dreadl0ck/gopacket.Flow).Dst" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(github.com/dreadl0ck/gopacket.Endpoint).Raw" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "github.com/dreadl0ck/ja3.DigestHexJa3s" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).LinkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).LinkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.Ethernet).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.FDDI).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.PPP).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.LinuxSLL).LinkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).NetworkLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.IPv6).NetworkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.IPv4).NetworkFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket.lazyPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket.eagerPacket).TransportLayer" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.RUDP).TransportFlow" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.TCP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.UDPLite).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.SCTP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket/layers.UDP).TransportFlow" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.init$59" -> "(*github.com/dreadl0ck/gopacket.packet).Metadata" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "github.com/dreadl0ck/netcap/decoder/packet.init$59" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Write" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.TLSServerHello).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" -> "(*github.com/dreadl0ck/netcap/types.TLSClientHello).Inc" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).Decode" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).worker$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(github.com/dreadl0ck/gopacket.LayerType).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "github.com/dreadl0ck/netcap/io.NewAuditRecordWriter" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(github.com/dreadl0ck/netcap/types.Type).String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/packet.InitGoPacketDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/collector.invalidDecoder" -> "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "github.com/pkg/errors.Wrap" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "github.com/dreadl0ck/netcap/io.NewAuditRecordWriter" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetName" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetType" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).SetWriter" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/packet.init$48" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/packet.init$51" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).PostInitFunc" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).WriteHeader" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).WriteHeader" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/decoder/packet.InitPacketDecoders" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).printProgressInterval$1" -> "(*github.com/dreadl0ck/netcap/decoder/packet.atomicDeviceProfileMap).Size" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords" -> "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToPacketDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.writeLiveAuditRecords" -> "github.com/dreadl0ck/netcap/decoder/packet.ApplyActionToGoPacketDecoders" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/agent.Run" -> "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetChan" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).GetChan" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetChan" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetChan" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).GetChan" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).InitBatching" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).GetChan" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.GoPacketDecoder).GetName" -> "(github.com/dreadl0ck/netcap/types.Type).String" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).write$1" -> "github.com/davecgh/go-spew/spew.Dump" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).write" -> "(*github.com/dreadl0ck/netcap/decoder/packet.packetDecoder).write$1" [ arrowhead="normalnoneodiamond" ]
+}

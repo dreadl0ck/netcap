@@ -1,4 +1,4 @@
-package main
+package split
 
 import (
 	"errors"
@@ -17,7 +17,7 @@ import (
 
 var flagInput = flag.String("read", "", "input pcap file")
 
-func main() {
+func Run() {
 	// stat input file
 	stat, err := os.Stat(*flagInput)
 	if err != nil {

@@ -1,0 +1,372 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        bgcolor="#e6ecfa";
+label="decoder";
+labelloc="t";
+labeljust="c";
+fontsize="18";
+        
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Transport" [ fillcolor="lightblue" label="(*StreamDecoder).Transport" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetReaderFactory" [ label="(*StreamDecoder).GetReaderFactory" penwidth="1.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).CanDecodeStream" [ fillcolor="lightblue" label="(*StreamDecoder).CanDecodeStream" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ fillcolor="lightblue" label="(*StreamDecoder).GetName" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).NumRecords" [ fillcolor="lightblue" label="(*StreamDecoder).NumRecords" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ fillcolor="lightblue" label="(*AbstractDecoder).GetName" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).NumRecords" [ penwidth="1.5" fillcolor="lightblue" label="(*AbstractDecoder).NumRecords" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).DeInitFunc" [ fillcolor="lightblue" label="(*StreamDecoder).DeInitFunc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" [ penwidth="1.5" fillcolor="lightblue" label="(*StreamDecoder).Destroy" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).DeInitFunc" [ fillcolor="lightblue" label="(*AbstractDecoder).DeInitFunc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" [ fillcolor="lightblue" label="(*AbstractDecoder).Destroy" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetType" [ fillcolor="lightblue" label="(*StreamDecoder).GetType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetType" [ fillcolor="lightblue" label="(*AbstractDecoder).GetType" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetDescription" [ fillcolor="lightblue" label="(*StreamDecoder).GetDescription" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetDescription" [ fillcolor="lightblue" label="(*AbstractDecoder).GetDescription" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).SetWriter" [ fillcolor="lightblue" label="(*StreamDecoder).SetWriter" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).PostInitFunc" [ fillcolor="lightblue" label="(*StreamDecoder).PostInitFunc" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).SetWriter" [ fillcolor="lightblue" label="(*AbstractDecoder).SetWriter" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" [ label="(*AbstractDecoder).PostInitFunc" penwidth="1.5" fillcolor="lightblue" ]
+        
+        subgraph "cluster_github.com/dreadl0ck/netcap/collector" {
+        penwidth="0.8";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+fontsize="16";
+fillcolor="lightyellow";
+label="collector";
+URL="/?f=github.com/dreadl0ck/netcap/collector";
+tooltip="package: github.com/dreadl0ck/netcap/collector";
+        
+        "(*github.com/dreadl0ck/netcap/collector.Collector).stats" [ fillcolor="moccasin" label="(*Collector).stats" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" [ fillcolor="moccasin" label="(*Collector).teardown" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/packet" {
+        style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="packet";
+fontsize="16";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/packet";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/packet";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" [ fillcolor="moccasin" label="ShowDecoders$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="stream";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream.init#1" [ fillcolor="moccasin" label="init#1" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream.init#2" [ fillcolor="moccasin" label="init#2" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" [ fillcolor="moccasin" label="InitDecoders" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" [ fillcolor="moccasin" label="InitAbstractDecoders" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/credentials" {
+        style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/credentials";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/credentials";
+penwidth="0.8";
+fontsize="16";
+rank="sink";
+label="credentials";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/credentials.init$2" [ fillcolor="moccasin" label="init$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/credentials.init$1" [ label="init$1" style="dotted,filled" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/exploit" {
+        style="filled";
+fillcolor="lightyellow";
+rank="sink";
+penwidth="0.8";
+fontname="Tahoma bold";
+label="exploit";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/exploit";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/exploit";
+fontsize="16";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/exploit.init$2" [ label="init$2" style="dotted,filled" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/exploit.init$1" [ fillcolor="moccasin" label="init$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/http" {
+        style="filled";
+fillcolor="lightyellow";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/http";
+penwidth="0.8";
+fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+label="http";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/http";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/http.init$2" [ label="init$2" style="dotted,filled" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/http.init$3" [ style="dotted,filled" fillcolor="moccasin" label="init$3" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/http.init$1" [ fillcolor="moccasin" label="init$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/mail" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/mail";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="mail";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/mail";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/mail.init$2" [ fillcolor="moccasin" label="init$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/mail.init$1" [ fillcolor="moccasin" label="init$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/pop3" {
+        penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+fontsize="16";
+label="pop3";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/pop3";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/pop3";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/pop3.init$2" [ fillcolor="moccasin" label="init$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/pop3.init$3" [ fillcolor="moccasin" label="init$3" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/pop3.init$1" [ fillcolor="moccasin" label="init$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/service" {
+        tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/service";
+fontsize="16";
+rank="sink";
+label="service";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/service";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/service.init$2" [ fillcolor="moccasin" label="init$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/service.init$1" [ fillcolor="moccasin" label="init$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/smtp" {
+        label="smtp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/smtp";
+penwidth="0.8";
+fontsize="16";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/smtp";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/smtp.init$2" [ label="init$2" style="dotted,filled" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/smtp.init$3" [ fillcolor="moccasin" label="init$3" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/smtp.init$1" [ fillcolor="moccasin" label="init$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/software" {
+        fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/software";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/software";
+fontsize="16";
+style="filled";
+label="software";
+penwidth="0.8";
+fillcolor="lightyellow";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/software.init$2" [ fillcolor="moccasin" label="init$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/software.init$1" [ label="init$1" style="dotted,filled" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/ssh" {
+        style="filled";
+fillcolor="lightyellow";
+label="ssh";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/ssh";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/ssh";
+penwidth="0.8";
+fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/ssh.init$2" [ fillcolor="moccasin" label="init$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/ssh.init$3" [ fillcolor="moccasin" label="init$3" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/ssh.init$1" [ fillcolor="moccasin" label="init$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/tcp" {
+        fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/tcp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/tcp";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+label="tcp";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).decode" [ label="(*tcpConnection).decode" penwidth="0.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/udp" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+rank="sink";
+label="udp";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/udp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/udp";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" [ fillcolor="moccasin" label="(*udpStream).decode" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/vulnerability" {
+        fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/vulnerability";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/vulnerability";
+penwidth="0.8";
+rank="sink";
+label="vulnerability";
+fillcolor="lightyellow";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/vulnerability.init$2" [ style="dotted,filled" fillcolor="moccasin" label="init$2" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/vulnerability.init$1" [ label="init$1" style="dotted,filled" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/io" {
+        penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+URL="/?f=github.com/dreadl0ck/netcap/io";
+fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+label="io";
+tooltip="package: github.com/dreadl0ck/netcap/io";
+        
+        "(*github.com/dreadl0ck/netcap/io.protoWriter).Close" [ label="(*protoWriter).Close" penwidth="1.5" fillcolor="moccasin" ]
+        "(*github.com/dreadl0ck/netcap/io.elasticWriter).Close" [ fillcolor="moccasin" label="(*elasticWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.nullWriter).Close" [ fillcolor="moccasin" label="(*nullWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.chanWriter).Close" [ fillcolor="moccasin" label="(*chanWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.csvWriter).Close" [ fillcolor="moccasin" label="(*csvWriter).Close" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/io.jsonWriter).Close" [ penwidth="1.5" fillcolor="moccasin" label="(*jsonWriter).Close" ]
+        
+    }
+
+    }
+
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).decode" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Transport" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).decode" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetReaderFactory" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).CanDecodeStream" -> "github.com/dreadl0ck/netcap/decoder/stream/http.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).CanDecodeStream" -> "github.com/dreadl0ck/netcap/decoder/stream/pop3.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).CanDecodeStream" -> "github.com/dreadl0ck/netcap/decoder/stream/smtp.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).CanDecodeStream" -> "github.com/dreadl0ck/netcap/decoder/stream/ssh.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).decode" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).CanDecodeStream" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).NumRecords" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).stats" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).NumRecords" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/http.init$3" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/pop3.init$3" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/smtp.init$3" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/ssh.init$3" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).DeInitFunc" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Close" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Close" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Destroy" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/service.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/vulnerability.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/software.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/credentials.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/exploit.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).DeInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/mail.init$2" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).DeInitFunc" [  ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.protoWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.elasticWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.nullWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.chanWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.csvWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" -> "(*github.com/dreadl0ck/netcap/io.jsonWriter).Close" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).Destroy" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).Transport" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetReaderFactory" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).CanDecodeStream" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.init#1" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.init#2" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetType" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetDescription" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.ShowDecoders$1" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetDescription" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetName" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).SetWriter" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/http.init$1" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/pop3.init$1" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/smtp.init$1" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/ssh.init$1" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.StreamDecoder).PostInitFunc" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetName" [ color="saddlebrown" style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).GetType" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).SetWriter" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/service.init$1" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/vulnerability.init$1" [ color="saddlebrown" style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/software.init$1" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/credentials.init$1" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/exploit.init$1" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" -> "github.com/dreadl0ck/netcap/decoder/stream/mail.init$1" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream.InitAbstractDecoders" -> "(*github.com/dreadl0ck/netcap/decoder.AbstractDecoder).PostInitFunc" [ style="dashed" color="saddlebrown" ]
+}

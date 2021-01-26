@@ -1,0 +1,148 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        bgcolor="#e6ecfa";
+label="core";
+labelloc="t";
+labeljust="c";
+fontsize="18";
+        
+        "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Less" [ penwidth="1.5" fillcolor="lightblue" label="(DataFragments).Less" ]
+        "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Context" [ penwidth="1.5" fillcolor="lightblue" label="(*StreamData).Context" ]
+        "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).SetDirection" [ fillcolor="lightblue" label="(*StreamData).SetDirection" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ fillcolor="lightblue" label="(*StreamData).Raw" penwidth="1.5" ]
+        "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Size" [ fillcolor="lightblue" label="(DataFragments).Size" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Transport" [ fillcolor="lightblue" label="(*StreamData).Transport" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Direction" [ label="(*StreamData).Direction" penwidth="1.5" fillcolor="lightblue" ]
+        "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).CaptureInfo" [ fillcolor="lightblue" label="(*StreamData).CaptureInfo" penwidth="1.5" ]
+        "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).First" [ fillcolor="lightblue" label="(DataFragments).First" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Network" [ fillcolor="lightblue" label="(*StreamData).Network" penwidth="1.5" ]
+        "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).reader" [ label="(DataFragments).reader" penwidth="0.5" fillcolor="lightblue" ]
+        "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).bytes" [ penwidth="0.5" fillcolor="lightblue" label="(DataFragments).bytes" ]
+        
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/ssh" {
+        style="filled";
+fontname="Tahoma bold";
+rank="sink";
+label="ssh";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/ssh";
+penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/ssh";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/stream/ssh.sshReader).Decode" [ label="(*sshReader).Decode" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/tcp" {
+        penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/tcp";
+fontsize="16";
+fontname="Tahoma bold";
+label="tcp";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/tcp";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.context).GetCaptureInfo" [ fillcolor="moccasin" label="(*context).GetCaptureInfo" penwidth="1.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).reorder" [ fillcolor="moccasin" label="(*tcpConnection).reorder" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).decode" [ fillcolor="moccasin" label="(*tcpConnection).decode" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpStreamReader).ServiceBanner" [ label="(*tcpStreamReader).ServiceBanner" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/udp" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+label="udp";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/udp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/udp";
+        
+        "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" [ fillcolor="moccasin" label="(*udpStream).decode" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStreamProcessor).streamWorker$1" [ fillcolor="moccasin" label="(*udpStreamProcessor).streamWorker$1" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/utils" {
+        fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+label="utils";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/utils";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/utils";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.createBannerFromConversation" [ label="createBannerFromConversation" penwidth="0.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" [ label="SaveConversation" penwidth="1.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.DecodeConversation" [ fillcolor="moccasin" label="DecodeConversation" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/reassembly" {
+        fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/reassembly";
+penwidth="0.8";
+fontname="Tahoma bold";
+label="reassembly";
+tooltip="package: github.com/dreadl0ck/netcap/reassembly";
+        
+        "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ fillcolor="moccasin" label="(*assemblerSimpleContext).GetCaptureInfo" penwidth="1.5" ]
+        
+    }
+
+    }
+
+    "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Less" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Context" [ style="dashed" ]
+    "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Less" -> "(*github.com/dreadl0ck/netcap/reassembly.assemblerSimpleContext).GetCaptureInfo" [ color="saddlebrown" style="dashed" ]
+    "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Less" -> "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.context).GetCaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).reorder" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).SetDirection" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.createBannerFromConversation" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" color="saddlebrown" ]
+    "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Size" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" -> "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).Size" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Transport" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Direction" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Context" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.SaveConversation" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).CaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).First" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpConnection).decode" -> "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).First" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.DecodeConversation" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Direction" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.DecodeConversation" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/ssh.sshReader).Decode" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Direction" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/ssh.sshReader).Decode" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/tcp.tcpStreamReader).ServiceBanner" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Transport" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).CaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Network" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStream).decode" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).SetDirection" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStreamProcessor).streamWorker$1" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Transport" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStreamProcessor).streamWorker$1" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Network" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStreamProcessor).streamWorker$1" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).CaptureInfo" [ style="dashed" color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/decoder/stream/udp.udpStreamProcessor).streamWorker$1" -> "(*github.com/dreadl0ck/netcap/decoder/core.StreamData).Raw" [ style="dashed" color="saddlebrown" ]
+    "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).reader" -> "(github.com/dreadl0ck/netcap/decoder/core.DataFragments).bytes" [  ]
+}

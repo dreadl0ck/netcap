@@ -1,0 +1,379 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        fontsize="18";
+bgcolor="#e6ecfa";
+label="resolvers";
+labelloc="t";
+labeljust="c";
+        
+        "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ fillcolor="lightblue" label="LookupServiceByPort" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupDNSNames" [ penwidth="1.5" fillcolor="lightblue" label="LookupDNSNames" ]
+        "github.com/dreadl0ck/netcap/resolvers.IsPrivateIP" [ fillcolor="lightblue" label="IsPrivateIP" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ fillcolor="lightblue" label="LookupDNSNameLocal" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" [ fillcolor="lightblue" label="LookupGeolocation" penwidth="1.5" ]
+        "(github.com/dreadl0ck/netcap/resolvers.geoRecord).repr" [ fillcolor="lightblue" label="(geoRecord).repr" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupJa3" [ fillcolor="lightblue" label="LookupJa3" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupManufacturer" [ fillcolor="lightblue" label="LookupManufacturer" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.IsWhitelistedDomain" [ penwidth="1.5" fillcolor="lightblue" label="IsWhitelistedDomain" ]
+        "github.com/dreadl0ck/netcap/resolvers.getHost" [ fillcolor="lightblue" label="getHost" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB$1" [ label="SaveFingerprintDB$1" style="dotted,filled" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB" [ label="SaveFingerprintDB" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ penwidth="1.5" fillcolor="lightblue" label="SetLogger" ]
+        "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ label="InitServiceDB" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/resolvers.InitServiceDB$1" [ fillcolor="lightblue" label="InitServiceDB$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/resolvers.getServiceName" [ fillcolor="lightblue" label="getServiceName" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.init" [ fillcolor="lightblue" label="init" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.init#1" [ fillcolor="lightblue" label="init#1" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.init#2" [ label="init#2" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/resolvers.InitDHCPFingerprintAPIKey" [ fillcolor="lightblue" label="InitDHCPFingerprintAPIKey" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.InitDHCPFingerprintDB" [ fillcolor="lightblue" label="InitDHCPFingerprintDB" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupDHCPFingerprint$1" [ fillcolor="lightblue" label="LookupDHCPFingerprint$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/resolvers.LookupDHCPFingerprint" [ label="LookupDHCPFingerprint" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/resolvers.InitLocalDNS" [ penwidth="1.5" fillcolor="lightblue" label="InitLocalDNS" ]
+        "github.com/dreadl0ck/netcap/resolvers.Init" [ penwidth="1.5" fillcolor="lightblue" label="Init" ]
+        "github.com/dreadl0ck/netcap/resolvers.initMACResolver" [ fillcolor="lightblue" label="initMACResolver" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.initJa3Resolver" [ fillcolor="lightblue" label="initJa3Resolver" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.parseSummariesArray" [ label="parseSummariesArray" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/resolvers.addToJa3DB" [ label="addToJa3DB" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/resolvers.parseSummaries" [ fillcolor="lightblue" label="parseSummaries" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.initCityReader" [ label="initCityReader" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/resolvers.initGeolocationDB" [ fillcolor="lightblue" label="initGeolocationDB" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.initAsnReader" [ fillcolor="lightblue" label="initAsnReader" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/resolvers.InitDNSWhitelist" [ label="InitDNSWhitelist" penwidth="1.5" fillcolor="lightblue" ]
+        
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/transform" {
+        rank="sink";
+label="transform";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/transform";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/transform";
+        
+        "github.com/dreadl0ck/netcap/cmd/transform.toDestinationIPs$1" [ fillcolor="moccasin" label="toDestinationIPs$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toSourceIPs$1" [ fillcolor="moccasin" label="toSourceIPs$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addContactedPort" [ fillcolor="moccasin" label="addContactedPort" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addDestinationPort" [ fillcolor="moccasin" label="addDestinationPort" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addIPProfile" [ label="addIPProfile" penwidth="0.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addSourcePort" [ fillcolor="moccasin" label="addSourcePort" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForService" [ fillcolor="moccasin" label="toConnectionsForService" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toIncomingConnsFiltered$2" [ label="toIncomingConnsFiltered$2" style="dotted,filled" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.addConnection" [ fillcolor="moccasin" label="addConnection" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toOutgoingConnsFiltered$2" [ fillcolor="moccasin" label="toOutgoingConnsFiltered$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toIANAServices$2" [ label="toIANAServices$2" style="dotted,filled" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForService$2" [ fillcolor="moccasin" label="toConnectionsForService$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toHTTPHostsFiltered$2" [ fillcolor="moccasin" label="toHTTPHostsFiltered$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.lookupDHCPFingerprint" [ fillcolor="moccasin" label="lookupDHCPFingerprint" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForPort" [ fillcolor="moccasin" label="toConnectionsForPort" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toContactedPorts" [ fillcolor="moccasin" label="toContactedPorts" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toHTTPHostsFiltered" [ fillcolor="moccasin" label="toHTTPHostsFiltered" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toDestinationPorts" [ fillcolor="moccasin" label="toDestinationPorts" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toIncomingConnsFiltered" [ label="toIncomingConnsFiltered" penwidth="0.5" fillcolor="moccasin" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toSourcePorts" [ fillcolor="moccasin" label="toSourcePorts" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toOutgoingConnsFiltered" [ fillcolor="moccasin" label="toOutgoingConnsFiltered" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toIANAServices" [ fillcolor="moccasin" label="toIANAServices" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForHost" [ fillcolor="moccasin" label="toConnectionsForHost" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/collector" {
+        fontsize="16";
+fontname="Tahoma bold";
+label="collector";
+URL="/?f=github.com/dreadl0ck/netcap/collector";
+penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+tooltip="package: github.com/dreadl0ck/netcap/collector";
+        
+        "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" [ fillcolor="moccasin" label="(*Collector).teardown" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" [ fillcolor="moccasin" label="(*Collector).initLogging" penwidth="0.5" ]
+        "(*github.com/dreadl0ck/netcap/collector.Collector).Init" [ fillcolor="moccasin" label="(*Collector).Init" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/packet" {
+        fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/packet";
+rank="sink";
+label="packet";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/packet";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+        
+        "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" [ fillcolor="moccasin" label="getIPProfile" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/decoder/packet.newDeviceProfile" [ fillcolor="moccasin" label="newDeviceProfile" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/service" {
+        fontname="Tahoma bold";
+label="service";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/service";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/service";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/service.NewService" [ fillcolor="moccasin" label="NewService" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/tcp" {
+        fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+style="filled";
+fontsize="16";
+label="tcp";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/tcp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/tcp";
+penwidth="0.8";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/tcp.saveTCPServiceBanner" [ fillcolor="moccasin" label="saveTCPServiceBanner" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/udp" {
+        fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+rank="sink";
+label="udp";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/udp";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/udp";
+penwidth="0.8";
+fontname="Tahoma bold";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/udp.saveUDPServiceBanner" [ fillcolor="moccasin" label="saveUDPServiceBanner" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/decoder/stream/utils" {
+        penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+tooltip="package: github.com/dreadl0ck/netcap/decoder/stream/utils";
+fontname="Tahoma bold";
+rank="sink";
+label="utils";
+URL="/?f=github.com/dreadl0ck/netcap/decoder/stream/utils";
+        
+        "github.com/dreadl0ck/netcap/decoder/stream/utils.getServiceName" [ fillcolor="moccasin" label="getServiceName" penwidth="0.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/maltego" {
+        style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+label="maltego";
+URL="/?f=github.com/dreadl0ck/netcap/maltego";
+tooltip="package: github.com/dreadl0ck/netcap/maltego";
+penwidth="0.8";
+fontsize="16";
+rank="sink";
+        
+        "github.com/dreadl0ck/netcap/maltego.init$2" [ style="dotted,filled" fillcolor="moccasin" label="init$2" ]
+        "github.com/dreadl0ck/netcap/maltego.init$5" [ fillcolor="moccasin" label="init$5" style="dotted,filled" ]
+        
+    }
+
+        subgraph "cluster_github.com/oschwald/maxminddb-golang" {
+        style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/oschwald/maxminddb-golang";
+tooltip="package: github.com/oschwald/maxminddb-golang";
+penwidth="0.8";
+fontsize="16";
+rank="sink";
+label="maxminddb";
+        
+        "(*github.com/oschwald/maxminddb-golang.Reader).Lookup" [ fillcolor="moccasin" label="(*Reader).Lookup" penwidth="1.5" ]
+        "github.com/oschwald/maxminddb-golang.Open" [ fillcolor="moccasin" label="Open" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/sirupsen/logrus" {
+        penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+label="logrus";
+tooltip="package: github.com/sirupsen/logrus";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/sirupsen/logrus";
+        
+        "(*github.com/sirupsen/logrus.Logger).WithField" [ fillcolor="moccasin" label="(*Logger).WithField" penwidth="1.5" ]
+        "(*github.com/sirupsen/logrus.Entry).Error" [ penwidth="1.5" fillcolor="moccasin" label="(*Entry).Error" ]
+        "(*github.com/sirupsen/logrus.Logger).WithError" [ fillcolor="moccasin" label="(*Logger).WithError" penwidth="1.5" ]
+        "github.com/sirupsen/logrus.New" [ fillcolor="moccasin" label="New" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_go.uber.org/zap" {
+        penwidth="0.8";
+style="filled";
+fontname="Tahoma bold";
+rank="sink";
+fontsize="16";
+fillcolor="lightyellow";
+label="zap";
+URL="/?f=go.uber.org/zap";
+tooltip="package: go.uber.org/zap";
+        
+        "go.uber.org/zap.Error" [ penwidth="1.5" fillcolor="moccasin" label="Error" ]
+        "(*go.uber.org/zap.Logger).Error" [ fillcolor="moccasin" label="(*Logger).Error" penwidth="1.5" ]
+        "go.uber.org/zap.Int" [ fillcolor="moccasin" label="Int" penwidth="1.5" ]
+        "(*go.uber.org/zap.Logger).Info" [ fillcolor="moccasin" label="(*Logger).Info" penwidth="1.5" ]
+        "go.uber.org/zap.Strings" [ fillcolor="moccasin" label="Strings" penwidth="1.5" ]
+        "(*go.uber.org/zap.Logger).Debug" [ fillcolor="moccasin" label="(*Logger).Debug" penwidth="1.5" ]
+        "go.uber.org/zap.NewNop" [ fillcolor="moccasin" label="NewNop" penwidth="1.5" ]
+        "go.uber.org/zap.String" [ fillcolor="moccasin" label="String" penwidth="1.5" ]
+        
+    }
+
+    }
+
+    "github.com/dreadl0ck/netcap/decoder/stream/utils.getServiceName" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupDNSNames" -> "github.com/dreadl0ck/netcap/resolvers.IsPrivateIP" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupDNSNames" -> "go.uber.org/zap.Error" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupDNSNames" -> "(*go.uber.org/zap.Logger).Error" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/service.NewService" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNames" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/service.NewService" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/tcp.saveTCPServiceBanner" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" -> "(*github.com/sirupsen/logrus.Logger).WithField" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" -> "(*github.com/sirupsen/logrus.Entry).Error" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" -> "(github.com/dreadl0ck/netcap/resolvers.geoRecord).repr" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" -> "(*github.com/oschwald/maxminddb-golang.Reader).Lookup" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" -> "(*github.com/sirupsen/logrus.Logger).WithError" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupGeolocation" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupJa3" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.getIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNames" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/packet.newDeviceProfile" -> "github.com/dreadl0ck/netcap/resolvers.LookupManufacturer" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toDestinationIPs$1" -> "github.com/dreadl0ck/netcap/resolvers.IsPrivateIP" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toSourceIPs$1" -> "github.com/dreadl0ck/netcap/resolvers.IsPrivateIP" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/maltego.init$2" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.IsWhitelistedDomain" -> "github.com/dreadl0ck/netcap/resolvers.getHost" [  ]
+    "github.com/dreadl0ck/netcap/maltego.init$2" -> "github.com/dreadl0ck/netcap/resolvers.IsWhitelistedDomain" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB$1" -> "go.uber.org/zap.Error" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB$1" -> "(*go.uber.org/zap.Logger).Error" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB" -> "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).teardown" -> "github.com/dreadl0ck/netcap/resolvers.SaveFingerprintDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/decoder/stream/udp.saveUDPServiceBanner" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addContactedPort" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addDestinationPort" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addIPProfile" -> "github.com/dreadl0ck/netcap/resolvers.IsPrivateIP" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addSourcePort" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForService" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" -> "github.com/dreadl0ck/netcap/resolvers.getServiceName" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" -> "go.uber.org/zap.Strings" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" -> "(*go.uber.org/zap.Logger).Debug" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForService" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/maltego.init$5" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/maltego.init$5" -> "github.com/dreadl0ck/netcap/resolvers.IsWhitelistedDomain" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIncomingConnsFiltered$2" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIncomingConnsFiltered$2" -> "github.com/dreadl0ck/netcap/resolvers.IsWhitelistedDomain" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.addConnection" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toOutgoingConnsFiltered$2" -> "github.com/dreadl0ck/netcap/resolvers.LookupDNSNameLocal" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toOutgoingConnsFiltered$2" -> "github.com/dreadl0ck/netcap/resolvers.IsWhitelistedDomain" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIANAServices$2" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForService$2" -> "github.com/dreadl0ck/netcap/resolvers.LookupServiceByPort" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toHTTPHostsFiltered$2" -> "github.com/dreadl0ck/netcap/resolvers.IsWhitelistedDomain" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.init" -> "github.com/sirupsen/logrus.New" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.init" -> "go.uber.org/zap.NewNop" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.init" -> "github.com/dreadl0ck/netcap/resolvers.init#1" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.init" -> "github.com/dreadl0ck/netcap/resolvers.init#2" [  ]
+    "github.com/dreadl0ck/netcap/cmd/transform.lookupDHCPFingerprint" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.lookupDHCPFingerprint" -> "github.com/dreadl0ck/netcap/resolvers.InitDHCPFingerprintAPIKey" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitDHCPFingerprintDB" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitDHCPFingerprintDB" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.lookupDHCPFingerprint" -> "github.com/dreadl0ck/netcap/resolvers.InitDHCPFingerprintDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupDHCPFingerprint$1" -> "go.uber.org/zap.Error" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupDHCPFingerprint$1" -> "(*go.uber.org/zap.Logger).Error" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.LookupDHCPFingerprint" -> "github.com/dreadl0ck/netcap/resolvers.LookupDHCPFingerprint$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.lookupDHCPFingerprint" -> "github.com/dreadl0ck/netcap/resolvers.LookupDHCPFingerprint" [ color="saddlebrown" ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).initLogging" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitLocalDNS" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitLocalDNS" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.Init" -> "github.com/dreadl0ck/netcap/resolvers.InitLocalDNS" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.initMACResolver" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.initMACResolver" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.Init" -> "github.com/dreadl0ck/netcap/resolvers.initMACResolver" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.initJa3Resolver" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.initJa3Resolver" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.parseSummariesArray" -> "github.com/dreadl0ck/netcap/resolvers.addToJa3DB" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.parseSummariesArray" -> "go.uber.org/zap.String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.parseSummariesArray" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.parseSummariesArray" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.initJa3Resolver" -> "github.com/dreadl0ck/netcap/resolvers.parseSummariesArray" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.parseSummaries" -> "github.com/dreadl0ck/netcap/resolvers.addToJa3DB" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.parseSummaries" -> "go.uber.org/zap.String" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.parseSummaries" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.parseSummaries" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.initJa3Resolver" -> "github.com/dreadl0ck/netcap/resolvers.parseSummaries" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.Init" -> "github.com/dreadl0ck/netcap/resolvers.initJa3Resolver" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.Init" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.initCityReader" -> "github.com/oschwald/maxminddb-golang.Open" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.initGeolocationDB" -> "github.com/dreadl0ck/netcap/resolvers.initCityReader" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.initGeolocationDB" -> "(*github.com/sirupsen/logrus.Logger).WithError" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.initGeolocationDB" -> "(*github.com/sirupsen/logrus.Entry).Error" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.initAsnReader" -> "github.com/oschwald/maxminddb-golang.Open" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.initGeolocationDB" -> "github.com/dreadl0ck/netcap/resolvers.initAsnReader" [  ]
+    "github.com/dreadl0ck/netcap/resolvers.Init" -> "github.com/dreadl0ck/netcap/resolvers.initGeolocationDB" [  ]
+    "(*github.com/dreadl0ck/netcap/collector.Collector).Init" -> "github.com/dreadl0ck/netcap/resolvers.Init" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForPort" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForPort" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toContactedPorts" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toContactedPorts" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toHTTPHostsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitDNSWhitelist" -> "go.uber.org/zap.Int" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/resolvers.InitDNSWhitelist" -> "(*go.uber.org/zap.Logger).Info" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toHTTPHostsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.InitDNSWhitelist" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toDestinationPorts" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toDestinationPorts" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIncomingConnsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIncomingConnsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.InitLocalDNS" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIncomingConnsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.InitDNSWhitelist" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIncomingConnsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toSourcePorts" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toSourcePorts" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toOutgoingConnsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toOutgoingConnsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.InitLocalDNS" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toOutgoingConnsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.InitDNSWhitelist" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toOutgoingConnsFiltered" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIANAServices" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toIANAServices" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForHost" -> "github.com/dreadl0ck/netcap/resolvers.SetLogger" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/transform.toConnectionsForHost" -> "github.com/dreadl0ck/netcap/resolvers.InitServiceDB" [ color="saddlebrown" ]
+}

@@ -1,0 +1,189 @@
+digraph gocallvis {
+    label="github.com/dreadl0ck/netcap/cmd";
+    labeljust="l";
+    fontname="Arial";
+    fontsize="14";
+    rankdir="LR";
+    bgcolor="lightgray";
+    style="solid";
+    penwidth="0.5";
+    pad="0.0";
+    nodesep="0.35";
+
+    node [shape="ellipse" style="filled" fillcolor="honeydew" fontname="Verdana" penwidth="1.0" margin="0.05,0.0"];
+    edge [minlen="2"]
+
+    subgraph "cluster_focus" {
+        bgcolor="#e6ecfa";
+label="dbs";
+labelloc="t";
+labeljust="c";
+fontsize="18";
+        
+        "github.com/dreadl0ck/netcap/dbs.CloneDBs" [ label="CloneDBs" penwidth="1.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/dbs.UpdateDBs" [ fillcolor="lightblue" label="UpdateDBs" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dbs.processSource" [ fillcolor="lightblue" label="processSource" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.fetchResource" [ fillcolor="lightblue" label="fetchResource" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.moveToDbs" [ fillcolor="lightblue" label="moveToDbs" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.unzipAndMoveToDbs" [ fillcolor="lightblue" label="unzipAndMoveToDbs" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.untarAndMoveToDbs" [ fillcolor="lightblue" label="untarAndMoveToDbs" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.untarAndMoveToDbs$1" [ fillcolor="lightblue" label="untarAndMoveToDbs$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/dbs.unpackTarball" [ fillcolor="lightblue" label="unpackTarball" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.isValidRelativePath" [ fillcolor="lightblue" label="isValidRelativePath" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.downloadAndIndexNVD" [ fillcolor="lightblue" label="downloadAndIndexNVD" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.yearRange" [ fillcolor="lightblue" label="yearRange" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.makeSource" [ fillcolor="lightblue" label="makeSource" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.IndexData" [ fillcolor="lightblue" label="IndexData" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dbs.makeBleveIndex" [ fillcolor="lightblue" label="makeBleveIndex" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.IndexData$1" [ fillcolor="lightblue" label="IndexData$1" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/dbs.IndexData$2" [ fillcolor="lightblue" label="IndexData$2" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/dbs.IndexData$3" [ fillcolor="lightblue" label="IndexData$3" style="dotted,filled" ]
+        "github.com/dreadl0ck/netcap/dbs.intermediatePatchVersions" [ label="intermediatePatchVersions" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/dbs.downloadAndIndexExploitDB" [ fillcolor="lightblue" label="downloadAndIndexExploitDB" penwidth="0.5" ]
+        "github.com/dreadl0ck/netcap/dbs.GenerateDBs" [ fillcolor="lightblue" label="GenerateDBs" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/dbs.saveTotalDatabaseSize" [ penwidth="0.5" fillcolor="lightblue" label="saveTotalDatabaseSize" ]
+        "github.com/dreadl0ck/netcap/dbs.calculateDirectorySize" [ label="calculateDirectorySize" penwidth="0.5" fillcolor="lightblue" ]
+        "github.com/dreadl0ck/netcap/dbs.init" [ fillcolor="lightblue" label="init" penwidth="0.5" ]
+        
+        subgraph "cluster_github.com/blevesearch/bleve" {
+        penwidth="0.8";
+style="filled";
+fillcolor="lightyellow";
+URL="/?f=github.com/blevesearch/bleve";
+fontsize="16";
+fontname="Tahoma bold";
+rank="sink";
+label="bleve";
+tooltip="package: github.com/blevesearch/bleve";
+        
+        "github.com/blevesearch/bleve.Open" [ fillcolor="moccasin" label="Open" penwidth="1.5" ]
+        "github.com/blevesearch/bleve.NewIndexMapping" [ penwidth="1.5" fillcolor="moccasin" label="NewIndexMapping" ]
+        "github.com/blevesearch/bleve.New" [ fillcolor="moccasin" label="New" penwidth="1.5" ]
+        "(*github.com/blevesearch/bleve.indexImpl).Close" [ penwidth="1.5" fillcolor="moccasin" label="(*indexImpl).Close" ]
+        "(*github.com/blevesearch/bleve.indexImpl).Index" [ penwidth="1.5" fillcolor="moccasin" label="(*indexImpl).Index" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/cryptoutils" {
+        penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/cryptoutils";
+tooltip="package: github.com/dreadl0ck/cryptoutils";
+style="filled";
+label="cryptoutils";
+        
+        "github.com/dreadl0ck/cryptoutils.MD5Data" [ fillcolor="moccasin" label="MD5Data" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/cmd/util" {
+        rank="sink";
+fontsize="16";
+style="filled";
+fontname="Tahoma bold";
+URL="/?f=github.com/dreadl0ck/netcap/cmd/util";
+tooltip="package: github.com/dreadl0ck/netcap/cmd/util";
+penwidth="0.8";
+fillcolor="lightyellow";
+label="util";
+        
+        "github.com/dreadl0ck/netcap/cmd/util.Run" [ fillcolor="moccasin" label="Run" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/dreadl0ck/netcap/utils" {
+        fillcolor="lightyellow";
+rank="sink";
+URL="/?f=github.com/dreadl0ck/netcap/utils";
+fontname="Tahoma bold";
+label="utils";
+tooltip="package: github.com/dreadl0ck/netcap/utils";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+        
+        "github.com/dreadl0ck/netcap/utils.Confirm" [ fillcolor="moccasin" label="Confirm" penwidth="1.5" ]
+        "github.com/dreadl0ck/netcap/utils.CopyFile" [ penwidth="1.5" fillcolor="moccasin" label="CopyFile" ]
+        "github.com/dreadl0ck/netcap/utils.ClearLine" [ penwidth="1.5" fillcolor="moccasin" label="ClearLine" ]
+        
+    }
+
+        subgraph "cluster_github.com/dustin/go-humanize" {
+        rank="sink";
+label="humanize";
+URL="/?f=github.com/dustin/go-humanize";
+penwidth="0.8";
+fontsize="16";
+style="filled";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+tooltip="package: github.com/dustin/go-humanize";
+        
+        "github.com/dustin/go-humanize.Bytes" [ fillcolor="moccasin" label="Bytes" penwidth="1.5" ]
+        
+    }
+
+        subgraph "cluster_github.com/evilsocket/islazy/zip" {
+        penwidth="0.8";
+fontsize="16";
+fillcolor="lightyellow";
+fontname="Tahoma bold";
+URL="/?f=github.com/evilsocket/islazy/zip";
+tooltip="package: github.com/evilsocket/islazy/zip";
+style="filled";
+rank="sink";
+label="zip";
+        
+        "github.com/evilsocket/islazy/zip.Unzip" [ label="Unzip" penwidth="1.5" fillcolor="moccasin" ]
+        
+    }
+
+    }
+
+    "github.com/dreadl0ck/netcap/dbs.CloneDBs" -> "github.com/dreadl0ck/netcap/utils.Confirm" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.UpdateDBs" -> "github.com/dreadl0ck/cryptoutils.MD5Data" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.UpdateDBs" -> "github.com/dreadl0ck/netcap/utils.CopyFile" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.UpdateDBs" -> "github.com/evilsocket/islazy/zip.Unzip" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.CloneDBs" -> "github.com/dreadl0ck/netcap/dbs.UpdateDBs" [  ]
+    "github.com/dreadl0ck/netcap/cmd/util.Run" -> "github.com/dreadl0ck/netcap/dbs.CloneDBs" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.processSource" -> "github.com/dreadl0ck/netcap/dbs.fetchResource" [  ]
+    "github.com/dreadl0ck/netcap/dbs.processSource" -> "github.com/dreadl0ck/netcap/dbs.moveToDbs" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/dbs.unzipAndMoveToDbs" -> "github.com/evilsocket/islazy/zip.Unzip" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.processSource" -> "github.com/dreadl0ck/netcap/dbs.unzipAndMoveToDbs" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/dbs.untarAndMoveToDbs" -> "github.com/dreadl0ck/netcap/dbs.untarAndMoveToDbs$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/dbs.unpackTarball" -> "github.com/dreadl0ck/netcap/dbs.isValidRelativePath" [  ]
+    "github.com/dreadl0ck/netcap/dbs.untarAndMoveToDbs" -> "github.com/dreadl0ck/netcap/dbs.unpackTarball" [  ]
+    "github.com/dreadl0ck/netcap/dbs.processSource" -> "github.com/dreadl0ck/netcap/dbs.untarAndMoveToDbs" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/dbs.downloadAndIndexNVD" -> "github.com/dreadl0ck/netcap/dbs.yearRange" [  ]
+    "github.com/dreadl0ck/netcap/dbs.downloadAndIndexNVD" -> "github.com/dreadl0ck/netcap/dbs.makeSource" [  ]
+    "github.com/dreadl0ck/netcap/dbs.downloadAndIndexNVD" -> "github.com/dreadl0ck/netcap/dbs.fetchResource" [  ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/blevesearch/bleve.Open" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.makeBleveIndex" -> "github.com/blevesearch/bleve.NewIndexMapping" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.makeBleveIndex" -> "github.com/blevesearch/bleve.New" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dreadl0ck/netcap/dbs.makeBleveIndex" [  ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dreadl0ck/netcap/dbs.IndexData$1" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dreadl0ck/netcap/utils.ClearLine" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dreadl0ck/netcap/dbs.IndexData$2" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData$3" -> "(*github.com/blevesearch/bleve.indexImpl).Close" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dreadl0ck/netcap/dbs.IndexData$3" [ arrowhead="normalnoneodiamond" ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dreadl0ck/netcap/dbs.yearRange" [  ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dreadl0ck/netcap/dbs.intermediatePatchVersions" [  ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "github.com/dustin/go-humanize.Bytes" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.IndexData" -> "(*github.com/blevesearch/bleve.indexImpl).Index" [ style="dashed" color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.downloadAndIndexNVD" -> "github.com/dreadl0ck/netcap/dbs.IndexData" [  ]
+    "github.com/dreadl0ck/netcap/dbs.processSource" -> "github.com/dreadl0ck/netcap/dbs.downloadAndIndexNVD" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/dbs.downloadAndIndexExploitDB" -> "github.com/dreadl0ck/netcap/dbs.IndexData" [  ]
+    "github.com/dreadl0ck/netcap/dbs.processSource" -> "github.com/dreadl0ck/netcap/dbs.downloadAndIndexExploitDB" [ style="dashed" ]
+    "github.com/dreadl0ck/netcap/dbs.GenerateDBs" -> "github.com/dreadl0ck/netcap/dbs.processSource" [ arrowhead="normalnoneodot" ]
+    "github.com/dreadl0ck/netcap/dbs.saveTotalDatabaseSize" -> "github.com/dreadl0ck/netcap/dbs.calculateDirectorySize" [  ]
+    "github.com/dreadl0ck/netcap/dbs.saveTotalDatabaseSize" -> "github.com/dustin/go-humanize.Bytes" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.GenerateDBs" -> "github.com/dreadl0ck/netcap/dbs.saveTotalDatabaseSize" [  ]
+    "github.com/dreadl0ck/netcap/dbs.GenerateDBs" -> "github.com/dustin/go-humanize.Bytes" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/util.Run" -> "github.com/dreadl0ck/netcap/dbs.GenerateDBs" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/util.Run" -> "github.com/dreadl0ck/netcap/dbs.UpdateDBs" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/cmd/util.Run" -> "github.com/dreadl0ck/netcap/dbs.IndexData" [ color="saddlebrown" ]
+    "github.com/dreadl0ck/netcap/dbs.init" -> "github.com/dreadl0ck/netcap/dbs.makeSource" [  ]
+}
