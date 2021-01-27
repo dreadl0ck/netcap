@@ -74,26 +74,43 @@ Proceed?`) {
 
 	// check if database root path exists already
 	if _, err := os.Stat(resolvers.ConfigRootPath); err == nil {
-		log.Println("clone: database directory exists. checking for updates instead...")
-		UpdateDBs()
-		return
+
+		// read directory
+		files, errFiles := ioutil.ReadDir(resolvers.ConfigRootPath)
+		if errFiles != nil {
+			log.Fatal("failed to read directory: ", errFiles)
+		}
+
+		// there must be files present to assume that it can be updated
+		if len(files) > 0 {
+			fmt.Println("clone: database directory exists. checking for updates instead...")
+			UpdateDBs()
+			return
+		}
 	}
 
 	// it does not - create it
 	_ = os.MkdirAll(resolvers.ConfigRootPath, defaults.DirectoryPermission)
 
+	// move into ConfigRootPath
+	err := os.Chdir(resolvers.ConfigRootPath)
+	if err != nil {
+		log.Fatal("failed to move into config root path: ", err)
+	}
+
 	// Skip smudge during cloning, we will fetch LFS resources in a second step.
 	// This is a workaround due a bug described here: https://github.com/git-lfs/git-lfs/issues/911
 	// It happens during cloning an LFS repository in an alpine container exclusively, cloning on macOS and debian worked flawlessly.
 	// Downloading the LFS in a second step is apparently also faster.
-	err := exec.Command("git", "lfs", "install", "--skip-smudge").Run()
+	out, err := exec.Command("git", "lfs", "install", "--skip-smudge").CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(string(out))
+		log.Fatal("failed to disable lfs smudge: ", err)
 	}
 
 	// clone repo
 	// go-git does not yet support LFS... we need to shell out
-	cmd := exec.Command("git", "clone", "git@github.com:dreadl0ck/netcap.git", resolvers.ConfigRootPath)
+	cmd := exec.Command("git", "clone", "https://github.com/dreadl0ck/netcap-dbs.git", resolvers.ConfigRootPath)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
@@ -103,25 +120,19 @@ Proceed?`) {
 
 	fmt.Println("cloned netcap-dbs repository to", resolvers.ConfigRootPath)
 
-	// move into ConfigRootPath
-	err = os.Chdir(resolvers.ConfigRootPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	// Fetch all the binary files in the new clone
 	cmd = exec.Command("git", "lfs", "pull")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to pull files from git lfs: ", err)
 	}
 
 	// Reinstate smudge
 	err = exec.Command("git", "lfs", "install", "--force").Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to reinstate smudge: ", err)
 	}
 
 	fmt.Println("done! Downloaded databases to", resolvers.ConfigRootPath)
