@@ -15,9 +15,6 @@ package dbs
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dustin/go-humanize"
-	"github.com/evilsocket/islazy/zip"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -26,6 +23,10 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dustin/go-humanize"
+	"github.com/evilsocket/islazy/zip"
 )
 
 // A simple hook function that provides the option to modify the fetched data

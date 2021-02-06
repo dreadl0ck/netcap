@@ -17,12 +17,13 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/defaults"
 )
 
 /*

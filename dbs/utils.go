@@ -15,10 +15,11 @@ package dbs
 
 import (
 	"fmt"
-	"github.com/dustin/go-humanize"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/dustin/go-humanize"
 )
 
 func calculateDirectorySize(path string) (size int64, err error) {

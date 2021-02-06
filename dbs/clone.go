@@ -15,14 +15,15 @@ package dbs
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // CloneDBs will clone the data bases initially from the public git repository
