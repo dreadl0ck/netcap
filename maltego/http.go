@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -34,23 +35,23 @@ type HTTPCountFunc = func(http *types.HTTP, min, max *uint64)
 
 // HTTPTransformationFunc is a transformation over HTTP audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type HTTPTransformationFunc = func(lt LocalTransform, trx *Transform, http *types.HTTP, min, max uint64, path string, ip string)
+type HTTPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ip string)
 
 // HTTPTransform applies a maltego transformation over HTTP audit records.
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
 	var (
-		lt               = ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[1:])
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://"))
 		httpAuditRecords = filepath.Join(dir, "HTTP.ncap.gz")
-		trx              = Transform{}
+		trx              = maltego.Transform{}
 	)
 
 	f, path := openFile(httpAuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -58,11 +59,11 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header != nil && header.Type != types.Type_NC_HTTP {
-		die("file does not contain HTTP records", header.Type.String())
+		maltego.Die("file does not contain HTTP records", header.Type.String())
 	}
 
 	var (
@@ -89,7 +90,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(http, &min, &max)
@@ -123,7 +124,7 @@ func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, contin
 	}
 
 	if !continueTransform {
-		trx.AddUIMessage("completed!", UIMessageInform)
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 	}
 }

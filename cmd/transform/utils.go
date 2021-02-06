@@ -26,8 +26,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -40,7 +40,7 @@ func dieIfExecutable(loc string) {
 	log.Println("file extension", ext)
 
 	if ext == ".exe" || ext == ".bin" {
-		die("detected known executable file extension", "aborting to prevent accidental execution")
+		maltego.Die("detected known executable file extension", "aborting to prevent accidental execution")
 	}
 
 	// if there is no extension, use content type detection to determine if its an executable
@@ -48,7 +48,7 @@ func dieIfExecutable(loc string) {
 
 	f, err := os.OpenFile(loc, os.O_RDONLY, defaults.DirectoryPermission)
 	if err != nil {
-		die(err.Error(), "failed to open path")
+		maltego.Die(err.Error(), "failed to open path")
 	}
 
 	defer func() {
@@ -63,13 +63,13 @@ func dieIfExecutable(loc string) {
 	_, err = io.ReadFull(f, buf)
 	if err != nil && !errors.Is(err, io.EOF) {
 		if !errors.Is(err, io.ErrUnexpectedEOF) {
-			die(err.Error(), "failed to read file banner")
+			maltego.Die(err.Error(), "failed to read file banner")
 		}
 		// unexpected EOF: we got less than 512 bytes of data
 		// read the entire thing and update the buffer
 		buf, err = ioutil.ReadAll(f)
 		if err != nil {
-			die(err.Error(), "failed to read file")
+			maltego.Die(err.Error(), "failed to read file")
 		}
 	}
 
@@ -80,24 +80,24 @@ func dieIfExecutable(loc string) {
 	// get file stats to determine if executable bit is set
 	stat, err := os.Stat(loc)
 	if err != nil {
-		die(err.Error(), "failed to stat file")
+		maltego.Die(err.Error(), "failed to stat file")
 	}
 	if stat != nil {
 		// if content type is octet or the file has the executable bit set, abort
 		if cType == octetStream || isExecAny(stat.Mode()) {
-			die("detected executable file format", "aborting to prevent accidental execution")
+			maltego.Die("detected executable file format", "aborting to prevent accidental execution")
 		}
 	}
 }
 
-func die(err string, msg string) {
-	trx := maltego.Transform{}
-	// add error message for the user
-	trx.AddUIMessage(maltego.EscapeText(msg+": "+err), maltego.UIMessageFatal)
-	fmt.Println(trx.ReturnOutput())
-	log.Println(msg, err)
-	os.Exit(0) // don't signal an error for the transform invocation
-}
+//func Die(err string, msg string) {
+//	trx := &maltego.Transform{}
+//	// add error message for the user
+//	trx.AddUIMessage(maltego.EscapeText(msg+": "+err), maltego.UIMessageFatal)
+//	fmt.Println(trx.ReturnOutput())
+//	log.Println(msg, err)
+//	os.Exit(0) // don't signal an error for the transform invocation
+//}
 
 func createJa3TableHTML(m map[string]string) string {
 	out := []string{"<table style='width:100%'>"}
@@ -231,4 +231,19 @@ func (d sniSlice) Less(i, j int) bool {
 // Swap will flip both values.
 func (d sniSlice) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
+}
+
+// addEntityWithPath adds an entity to the transform.
+func addEntityWithPath(tr *maltego.Transform, enType, value, path string) *maltego.Entity {
+
+	// ensure response message is initialized
+	if tr.ResponseMessage == nil {
+		tr.ResponseMessage = &maltego.ResponseMessage{}
+	}
+
+	ent := maltego.NewEntity(enType, maltego.EscapeText(value), "100")
+	ent.AddProperty("path", "Path", maltego.Strict, path)
+	tr.ResponseMessage.Entities.Items = append(tr.ResponseMessage.Entities.Items, ent)
+
+	return ent
 }

@@ -14,23 +14,24 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toDestinationIPs() {
-	profiles := maltego.LoadIPProfiles()
+	profiles := netmaltego.LoadIPProfiles()
 
-	maltego.DeviceProfileTransform(
-		maltego.CountPacketsContactIPs,
+	netmaltego.DeviceProfileTransform(
+		netmaltego.CountPacketsContactIPs,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string) {
 			if profile.MacAddr != mac {
 				return
@@ -39,7 +40,7 @@ func toDestinationIPs() {
 				if p, ok := profiles[ip]; ok {
 
 					var (
-						ent      *maltego.EntityObj
+						ent      *maltego.Entity
 						dnsNames = strings.Join(p.DNSNames, "\n")
 						val      = p.Addr
 					)
@@ -51,9 +52,9 @@ func toDestinationIPs() {
 					}
 
 					if resolvers.IsPrivateIP(net.ParseIP(p.Addr)) {
-						ent = trx.AddEntityWithPath("netcap.InternalDestinationIP", val, path)
+						ent = addEntityWithPath(trx, "netcap.InternalDestinationIP", val, path)
 					} else {
-						ent = trx.AddEntityWithPath("netcap.ExternalDestinationIP", val, path)
+						ent = addEntityWithPath(trx, "netcap.ExternalDestinationIP", val, path)
 					}
 
 					ent.AddProperty("geolocation", "Geolocation", maltego.Strict, p.Geolocation)
@@ -61,7 +62,7 @@ func toDestinationIPs() {
 					ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(profile.Timestamp))
 
 					ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
-					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, p.Addr)
+					ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, p.Addr)
 
 					ent.AddProperty("numPackets", "Num Packets", maltego.Strict, strconv.FormatInt(profile.NumPackets, 10))
 

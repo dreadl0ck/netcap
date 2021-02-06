@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Flow" displayName="Flow" displayNamePlural="Flows" description="A undirectional network flow" category="Netcap" smallIconResource="Netcap/arrow_right_alt_black" largeIconResource="Netcap/arrow_right_alt_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Flow" displayName="Flow" displayNamePlural="Flows" description="A undirectional network flow" category="Netcap" smallIconResource="netcap/arrow_right_alt_black" largeIconResource="netcap/arrow_right_alt_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.flow" displayValue="properties.flow">
   <Groups></Groups>
   <Fields>

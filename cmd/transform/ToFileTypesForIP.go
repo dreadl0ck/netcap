@@ -14,14 +14,15 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toFileTypesForIP() {
-	maltego.FilesTransform(
+	netmaltego.FilesTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, path string, ipaddr string) {
 			if file.SrcIP == ipaddr || file.DstIP == ipaddr {
@@ -31,8 +32,8 @@ func toFileTypesForIP() {
 					typ = parts[0]
 				}
 
-				ent := trx.AddEntityWithPath("netcap.ContentType", typ, path)
-				ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
+				ent := addEntityWithPath(trx, "netcap.ContentType", typ, path)
+				ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 			}
 		},

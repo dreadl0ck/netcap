@@ -21,8 +21,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/env"
-	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func openFileInDisassembler() {
@@ -38,7 +38,7 @@ func openFileInDisassembler() {
 	// create command & run
 	out, err := exec.Command(openCmd, args...).CombinedOutput()
 	if err != nil {
-		die(err.Error(), "open file failed:\n"+string(out))
+		maltego.Die(err.Error(), "open file failed:\n"+string(out))
 	}
 
 	log.Println(string(out))

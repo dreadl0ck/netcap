@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -34,24 +35,24 @@ type TLSClientHelloCountFunc func()
 
 // TLSClientHelloTransformationFunc is a transformation over TLSClientHello audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type TLSClientHelloTransformationFunc = func(lt LocalTransform, trx *Transform, hello *types.TLSClientHello, min, max uint64, path string, ip string)
+type TLSClientHelloTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, hello *types.TLSClientHello, min, max uint64, path string, ip string)
 
 // TLSClientHelloTransform applies a maltego transformation over TLSClientHello audit records.
 func TLSClientHelloTransform(count TLSClientHelloCountFunc, transform TLSClientHelloTransformationFunc) {
 	var (
-		lt               = ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[2:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		pop3AuditRecords = filepath.Join(dir, "TLSClientHello.ncap.gz")
-		trx              = Transform{}
+		trx              = maltego.Transform{}
 	)
 
 	f, path := openFile(pop3AuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -59,11 +60,11 @@ func TLSClientHelloTransform(count TLSClientHelloCountFunc, transform TLSClientH
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_TLSClientHello {
-		die("file does not contain TLSClientHello records", header.Type.String())
+		maltego.Die("file does not contain TLSClientHello records", header.Type.String())
 	}
 
 	var (
@@ -89,7 +90,7 @@ func TLSClientHelloTransform(count TLSClientHelloCountFunc, transform TLSClientH
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count()
@@ -122,6 +123,6 @@ func TLSClientHelloTransform(count TLSClientHelloCountFunc, transform TLSClientH
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

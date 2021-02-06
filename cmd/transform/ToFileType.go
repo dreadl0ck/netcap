@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func toFileType() {
@@ -31,9 +31,9 @@ func toFileType() {
 
 	out, err := exec.Command("file", "-b", path).CombinedOutput()
 	if err != nil {
-		die(err.Error(), string(out))
+		maltego.Die(err.Error(), string(out))
 	}
 
-	trx.AddEntityWithPath("netcap.FileType", string(out), path)
+	addEntityWithPath(trx, "netcap.FileType", string(out), path)
 	fmt.Println(trx.ReturnOutput())
 }

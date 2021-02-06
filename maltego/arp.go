@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/dreadl0ck/maltego"
+
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -34,15 +36,15 @@ type ARPCountFunc func()
 
 // ARPTransformationFunc is a transformation over ARP audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type ARPTransformationFunc = func(lt LocalTransform, trx *Transform, arp *types.ARP, min, max uint64, path string, ip string)
+type ARPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, arp *types.ARP, min, max uint64, path string, ip string)
 
 // ARPTransform applies a maltego transformation over ARP audit records.
 func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueTransform bool) {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[1:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
-		trx    = Transform{}
+		trx    = maltego.Transform{}
 	)
 
 	if !strings.HasPrefix(filepath.Base(path), "ARP.ncap") {
@@ -58,7 +60,7 @@ func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueT
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -66,10 +68,10 @@ func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueT
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 	if header != nil && header.Type != types.Type_NC_ARP {
-		die("file does not contain ARP records", header.Type.String())
+		maltego.Die("file does not contain ARP records", header.Type.String())
 	}
 
 	var (
@@ -94,7 +96,7 @@ func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueT
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count()
@@ -128,7 +130,7 @@ func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueT
 	}
 
 	if !continueTransform {
-		trx.AddUIMessage("completed!", UIMessageInform)
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 	}
 }

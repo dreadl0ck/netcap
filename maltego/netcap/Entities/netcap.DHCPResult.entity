@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.DHCPResult" displayName="DHCPResult" displayNamePlural="DHCPResults" description="A DHCP fingerprint result" category="Netcap" smallIconResource="Netcap/fingerprint_black" largeIconResource="Netcap/fingerprint_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.DHCPResult" displayName="DHCPResult" displayNamePlural="DHCPResults" description="A DHCP fingerprint result" category="Netcap" smallIconResource="netcap/fingerprint_black" largeIconResource="netcap/fingerprint_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.dhcpresult" displayValue="properties.dhcpresult">
   <Groups></Groups>
   <Fields>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.HTTPParameter" displayName="HTTPParameter" displayNamePlural="HTTPParameter" description="" category="Netcap" smallIconResource="Netcap/live_help_black" largeIconResource="Netcap/live_help_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.HTTPParameter" displayName="HTTPParameter" displayNamePlural="HTTPParameter" description="" category="Netcap" smallIconResource="netcap/live_help_black" largeIconResource="netcap/live_help_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <BaseEntities>
   <Entities>A HTTP request parameter name</Entities>
  </BaseEntities>

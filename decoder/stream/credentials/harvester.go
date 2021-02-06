@@ -16,11 +16,12 @@ package credentials
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/netcap/types"
 	"regexp"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dreadl0ck/gopacket"
 

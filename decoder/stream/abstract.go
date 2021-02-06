@@ -2,6 +2,9 @@ package stream
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
@@ -9,8 +12,6 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
-	"strings"
-	"time"
 
 	"github.com/mgutz/ansi"
 	"github.com/pkg/errors"
@@ -18,6 +19,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
+
 	//"github.com/dreadl0ck/netcap/decoder/stream/credentials"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	netio "github.com/dreadl0ck/netcap/io"

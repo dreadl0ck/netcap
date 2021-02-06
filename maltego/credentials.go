@@ -23,13 +23,14 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 // credentialsTransformationFunc is a transformation over Credentials profiles for a selected Credentials.
-type credentialsTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Credentials, min, max uint64, path string, mac string, ip string)
+type credentialsTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Credentials, min, max uint64, path string, mac string, ip string)
 
 // deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 type credentialsCountFunc = func(credentials *types.Credentials, mac string, min, max *uint64)
@@ -37,11 +38,11 @@ type credentialsCountFunc = func(credentials *types.Credentials, mac string, min
 // CredentialsTransform applies a maltego transformation over Credentials profiles seen for a target Credentials.
 func CredentialsTransform(count credentialsCountFunc, transform credentialsTransformationFunc) {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[1:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
-		trx    = Transform{}
+		trx    = maltego.Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
@@ -50,7 +51,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -58,11 +59,11 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_Credentials {
-		die("file does not contain Credentials records", header.Type.String())
+		maltego.Die("file does not contain Credentials records", header.Type.String())
 	}
 
 	var (
@@ -88,7 +89,7 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(credentials, mac, &min, &max)
@@ -121,6 +122,6 @@ func CredentialsTransform(count credentialsCountFunc, transform credentialsTrans
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

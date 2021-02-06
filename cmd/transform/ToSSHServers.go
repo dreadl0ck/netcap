@@ -14,13 +14,14 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toSSHServers() {
-	maltego.SSHTransform(
+	netmaltego.SSHTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ssh *types.SSH, min, max uint64, path string, mac string, ipaddr string) {
 			if !ssh.IsClient {
@@ -29,7 +30,7 @@ func toSSHServers() {
 					val += "\n" + ssh.Ident
 				}
 
-				ent := trx.AddEntityWithPath("netcap.SSHServer", val, path)
+				ent := addEntityWithPath(trx, "netcap.SSHServer", val, path)
 				ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(ssh.Timestamp))
 				ent.AddProperty("ident", "Ident", maltego.Strict, ssh.Ident)
 				ent.AddProperty("algorithms", "Algorithms", maltego.Strict, ssh.Algorithms)

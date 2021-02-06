@@ -16,24 +16,23 @@ package maltego_test
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
-	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/dreadl0ck/netcap/utils"
+
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 )
 
 // additional transforms
-var transforms = []transformCoreInfo{
+var transforms = []maltego.TransformCoreInfo{
 	{"ToApplicationCategories", "netcap.IPAddr", "Retrieve categories of classified applications"},
 	{"ToApplications", "netcap.IPAddr", "Show all applications used by the selected host"},
 	{"ToApplicationsForCategory", "netcap.ApplicationCategory", "Retrieve applications seen for a given category"},
@@ -178,59 +177,9 @@ var transforms = []transformCoreInfo{
 	{"OpenFileInDisassembler", "netcap.File", "Open binary file in disassembler for analysis"},
 }
 
-func genFullConfigArchive() {
-	// clean
-	_ = os.RemoveAll(netcapIdent)
-
-	// create directories
-	_ = os.MkdirAll("netcap/Servers", 0o700)
-	_ = os.MkdirAll("netcap/TransformRepositories/Local", 0o700)
-
-	// create directories
-	_ = os.MkdirAll("netcap/Entities", 0o700)
-	_ = os.MkdirAll("netcap/EntityCategories", 0o700)
-	_ = os.MkdirAll("netcap/Icons", 0o700)
-
-	fVersion, err := os.Create("netcap/version.properties")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer func() {
-		if errClose := fVersion.Close(); errClose != nil {
-			fmt.Println(errClose)
-		}
-	}()
-
-	fCategory, err := os.Create("netcap/EntityCategories/netcap.category")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer func() {
-		if errClose := fCategory.Close(); errClose != nil {
-			fmt.Println(errClose)
-		}
-	}()
-
-	// Sat Jun 13 21:48:54 CEST 2020
-	_, _ = fVersion.WriteString(`#
-#` + time.Now().Format(time.UnixDate) + `
-maltego.client.version=4.2.12
-maltego.client.subtitle=
-maltego.pandora.version=1.4.2
-maltego.client.name=Maltego Classic Eval
-maltego.mtz.version=1.0
-maltego.graph.version=1.2`)
-
-	_, _ = fCategory.WriteString("<EntityCategory name=\"Netcap\"/>")
-
-	fmt.Println("bootstrapped netcap configuration archive for Maltego")
-}
-
 // generate all transforms and pack as archive
 func TestGenerateFullMaltegoConfiguration(t *testing.T) {
-	genFullConfigArchive()
+	maltego.GenFullConfigArchive(netcapIdent)
 
 	var count int
 
@@ -259,27 +208,28 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
 		if e.Name == "PCAP" {
-			genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", &regexConversion{
-				regex: "^(.+(\\/|\\\\)(.*)\\.pcap(ng)?)",
-				properties: []string{
+			maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", &maltego.RegexConversion{
+				Regex: "^(.+(\\/|\\\\)(.*)\\.pcap(ng)?)",
+				Properties: []string{
 					"path", // 1st group matches full path
 					"",
 					"properties.pcap", // 3rd group contains the pcap filename
 				},
 			}, e.Fields...)
 		} else {
-			genEntity(netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", nil, e.Fields...)
+			maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", nil, e.Fields...)
 		}
 	}
 
 	for _, tr := range transforms {
-		genTransform(netcapIdent, tr.ID, tr.Description, tr.InputEntity)
+		maltego.GenTransform(author, netcapPrefix, netcapIdent, tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath)
 	}
 
-	genServerListing(netcapIdent)
-	genTransformSet(netcapIdent)
-	genMachines()
-	packMaltegoArchive(netcapIdent)
+	maltego.GenServerListing(netcapPrefix, netcapIdent, transforms)
+	maltego.GenTransformSet("NETCAP", "Transformations on NETCAP audit records", netcapPrefix, netcapIdent, transforms)
+
+	maltego.GenMachines(netcapIdent, netcapMachinePrefix)
+	maltego.PackMaltegoArchive(netcapIdent)
 
 	path := filepath.Join(os.Getenv("HOME"), "netcap.mtz")
 	utils.CopyFile("netcap.mtz", path)
@@ -289,7 +239,12 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 func createEntity(outpath string, name string, description string, count *int) {
 	n := strings.ReplaceAll(name, "/", "")
-	genEntity(
+	maltego.GenEntity(
+		ident,
+		identArchive,
+		netcapIdent,
+		netcapPrefix,
+		propsPrefix,
 		outpath,
 		n+"AuditRecords",
 		"insert_drive_file",
@@ -297,17 +252,17 @@ func createEntity(outpath string, name string, description string, count *int) {
 		"",
 		true,
 		colors[*count],
-		&regexConversion{
-			regex: "^(.+(\\/|\\\\)(" + n + ")\\.ncap(\\.gz)?)",
-			properties: []string{
+		&maltego.RegexConversion{
+			Regex: "^(.+(\\/|\\\\)(" + n + ")\\.ncap(\\.gz)?)",
+			Properties: []string{
 				"path",
 				"",
 				propsPrefix + strings.ToLower(n+"AuditRecords"), // 3rd group contains the name
 			},
 		},
-		newStringField("path", "path to the audit records on disk"),
+		maltego.NewStringField("path", "path to the audit records on disk"),
 	)
-	genEntity(outpath, n, n, description, "", false, "black", nil)
+	maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, outpath, n, n, description, "", false, "black", nil)
 
 	*count++
 	if *count >= len(colors) {
@@ -315,187 +270,19 @@ func createEntity(outpath string, name string, description string, count *int) {
 	}
 }
 
-func genMachines() {
-	path := filepath.Join(netcapIdent, "Machines")
-
-	err := os.Mkdir(path, defaults.DirectoryPermission)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	files, err := ioutil.ReadDir("machines")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, f := range files {
-
-		// Machine Properties
-		propFile, errCompile := os.Create(
-			filepath.Join(
-				path,
-				netcapMachinePrefix+strings.Replace(
-					filepath.Base(f.Name()),
-					".machine",
-					".properties",
-					1,
-				),
-			),
-		)
-		if errCompile != nil {
-			log.Fatal(errCompile)
-		}
-
-		_, _ = propFile.WriteString(`#` + time.Now().Format(time.UnixDate) + `
-favorite=true
-enabled=true`)
-
-		err = propFile.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Machine
-
-		utils.CopyFile(
-			filepath.Join("machines", f.Name()),
-			filepath.Join(
-				path,
-				netcapMachinePrefix+filepath.Base(f.Name()),
-			),
-		)
-	}
-}
-
 // generate all transforms and pack as archive
 func TestGenerateAllTransforms(t *testing.T) {
-	genTransformArchive()
+	maltego.GenTransformArchive()
 
 	for _, tr := range transforms {
-		genTransform("transforms", tr.ID, tr.Description, tr.InputEntity)
+		maltego.GenTransform(author, netcapPrefix, "transforms", tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath)
 	}
 
-	genServerListing("transforms")
-	genTransformSet("transforms")
-	packTransformArchive()
+	maltego.GenServerListing(netcapPrefix, "transforms", transforms)
+	maltego.GenTransformSet("NETCAP", "Transformations on NETCAP audit records", netcapPrefix, "transforms", transforms)
+	maltego.PackTransformArchive()
 
 	utils.CopyFile("transforms.mtz", filepath.Join(os.Getenv("HOME"), "transforms.mtz"))
-}
-
-func TestToTransformDisplayName(t *testing.T) {
-	res := toTransformDisplayName("ToTCPServices")
-	if res != "To TCP Services [NETCAP]" {
-		t.Fatal("unexpected result", res)
-	}
-
-	res = toTransformDisplayName("ToDHCP")
-	if res != "To DHCP [NETCAP]" {
-		t.Fatal("unexpected result", res)
-	}
-
-	res = toTransformDisplayName("ToServerNameIndicators")
-	if res != "To Server Name Indicators [NETCAP]" {
-		t.Fatal("unexpected result", res)
-	}
-
-	res = toTransformDisplayName("ToURLsForHost")
-	if res != "To URLs For Host [NETCAP]" {
-		t.Fatal("unexpected result", res)
-	}
-
-	res = toTransformDisplayName("ToSourceIPs")
-	if res != "To Source IPs [NETCAP]" {
-		t.Fatal("unexpected result", res)
-	}
-}
-
-func genServerListing(outDir string) {
-	srv := server{
-		Name:        "Local",
-		Enabled:     true,
-		Description: "Local transforms hosted on this machine",
-		URL:         "http://localhost",
-		LastSync:    time.Now().Format("2006-01-02 15:04:05.000 MST"), // example: 2020-06-23 20:47:24.433 CEST"
-		Protocol: struct {
-			Text    string `xml:",chardata"`
-			Version string `xml:"version,attr"`
-		}{
-			Version: "0.0",
-		},
-		Authentication: struct {
-			Text string `xml:",chardata"`
-			Type string `xml:"type,attr"`
-		}{
-			Type: "none",
-		},
-		Seeds: "",
-	}
-
-	for _, t := range transforms {
-		srv.Transforms.Transform = append(srv.Transforms.Transform, struct {
-			Text string `xml:",chardata"`
-			Name string `xml:"name,attr"`
-		}{
-			Name: netcapPrefix + t.ID,
-		})
-	}
-
-	data, err := xml.MarshalIndent(srv, "", " ")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	f, err := os.Create(filepath.Join(outDir, "Servers", "Local.tas"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = f.Write(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = f.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func genTransformSet(outDir string) {
-	tSet := transformSet{
-		Name:        "NETCAP",
-		Description: "Transformations on NETCAP audit records",
-	}
-
-	for _, t := range transforms {
-		tSet.Transforms.Transform = append(tSet.Transforms.Transform, struct {
-			Text string `xml:",chardata"`
-			Name string `xml:"name,attr"`
-		}{
-			Name: netcapPrefix + t.ID,
-		})
-	}
-
-	data, err := xml.MarshalIndent(tSet, "", " ")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_ = os.MkdirAll(filepath.Join(outDir, "TransformSets"), 0o700)
-	f, err := os.Create(filepath.Join(outDir, "TransformSets", "netcap.set"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = f.Write(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = f.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
 func TestGenerateTransformServerListing(t *testing.T) {
@@ -511,7 +298,7 @@ func TestGenerateTransformServerListing(t *testing.T) {
  <Seeds></Seeds>
 </MaltegoServer>`
 
-	srv := server{
+	srv := maltego.Server{
 		Name:        "Local",
 		Enabled:     true,
 		Description: "Local transforms hosted on this machine",
@@ -568,19 +355,19 @@ func TestGenerateTransformSettings(t *testing.T) {
  </Properties>
 </TransformSettings>`
 
-	tr := transformSettings{
+	tr := maltego.TransformSettings{
 		Enabled:            true,
 		DisclaimerAccepted: false,
 		ShowHelp:           true,
 		RunWithAll:         true,
 		Favorite:           false,
-		Property: transformSettingProperties{
-			Items: []transformSettingProperty{
+		Property: maltego.TransformSettingProperties{
+			Items: []maltego.TransformSettingProperty{
 				{
 					Name:  "transform.local.command",
 					Type:  "string",
 					Popup: false,
-					Text:  maltego.ExecutablePath,
+					Text:  netmaltego.ExecutablePath,
 				},
 				{
 					Name:  "transform.local.parameters",
@@ -643,7 +430,9 @@ func TestGenerateTransform(t *testing.T) {
  <StealthLevel>0</StealthLevel>
 </MaltegoTransform>`
 
-	tr := newTransform(
+	tr := maltego.NewTransform(
+		author,
+		netcapPrefix,
 		"ToAuditRecords",
 		"Transform PCAP file into audit records",
 		"netcap.PCAP")

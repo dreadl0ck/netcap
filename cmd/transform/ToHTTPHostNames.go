@@ -14,26 +14,27 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toHTTPHostnames() {
 	hostStats := make(map[string]int)
 
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.Host != "" {
-				ent := trx.AddEntityWithPath("netcap.Host", http.Host, path)
+				ent := addEntityWithPath(trx, "netcap.Host", http.Host, path)
 
 				hostStats[http.Host]++
 				ent.SetLinkLabel(strconv.Itoa(hostStats[http.Host]))
 				// ent.SetLinkThickness(maltego.GetThickness(ip.NumPackets))
 
-				ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, http.DstIP)
+				ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, http.DstIP)
 			}
 		},
 		false,

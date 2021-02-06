@@ -14,19 +14,21 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/dreadl0ck/maltego"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toHTTPUniformResourceLocators() {
 	urlStats := make(map[string]int)
 
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, h *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if h.SrcIP == ipaddr || h.DstIP == ipaddr {
@@ -37,12 +39,12 @@ func toHTTPUniformResourceLocators() {
 				bareURL := stripQueryString(h.URL)
 				log.Println(bareURL)
 
-				ent := trx.AddEntityWithPath("netcap.URL", bareURL, path)
+				ent := addEntityWithPath(trx, "netcap.URL", bareURL, path)
 
 				// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
 				ent.AddProperty("properties.url", "URL", maltego.Strict, bareURL)
 				ent.AddProperty("host", "Host", maltego.Strict, h.Host)
-				ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
+				ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 				urlStats[bareURL]++
 				ent.SetLinkLabel(strconv.Itoa(urlStats[bareURL]) + "\n" + h.Method)

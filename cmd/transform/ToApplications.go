@@ -14,16 +14,17 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"strconv"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toApplications() {
-	maltego.IPProfileTransform(
+	netmaltego.IPProfileTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.Addr == ipaddr {
@@ -37,7 +38,7 @@ func toApplications() {
 }
 
 func addApplication(app string, info *types.Protocol, trx *maltego.Transform, path string, profile *types.IPProfile) {
-	ent := trx.AddEntityWithPath("netcap.Application", app, path)
+	ent := addEntityWithPath(trx, "netcap.Application", app, path)
 
 	di := "<h3>Application</h3><p>Timestamp first seen: " + utils.UnixTimeToUTC(profile.TimestampFirst) + "</p>"
 	ent.AddDisplayInformation(di, "Netcap Info")

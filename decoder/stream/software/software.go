@@ -15,7 +15,6 @@ package software
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -23,6 +22,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/ua-parser/uap-go/uaparser"
 	"go.uber.org/zap"

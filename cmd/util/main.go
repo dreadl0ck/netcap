@@ -15,13 +15,14 @@ package util
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/dbs"
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/dbs"
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/resolvers"
 
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/utils"

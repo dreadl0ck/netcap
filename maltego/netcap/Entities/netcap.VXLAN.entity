@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.VXLAN" displayName="VXLAN" displayNamePlural="VXLAN" description="Virtual Extensible LAN is a network virtualization technology that attempts to address the scalability problems associated with large cloud computing deployments" category="Netcap" smallIconResource="Netcap/VXLAN_black" largeIconResource="Netcap/VXLAN_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.VXLAN" displayName="VXLAN" displayNamePlural="VXLAN" description="Virtual Extensible LAN is a network virtualization technology that attempts to address the scalability problems associated with large cloud computing deployments" category="Netcap" smallIconResource="netcap/VXLAN_black" largeIconResource="netcap/VXLAN_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.vxlan" displayValue="properties.vxlan">
   <Groups></Groups>
   <Fields>

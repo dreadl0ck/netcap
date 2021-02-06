@@ -14,21 +14,22 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toHTTPParameters() {
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP == ipaddr || http.DstIP == ipaddr {
 				log.Println(ipaddr, http.Parameters)
 				for key := range http.Parameters {
-					ent := trx.AddEntityWithPath("netcap.HTTPParameter", key, path)
-					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
+					ent := addEntityWithPath(trx, "netcap.HTTPParameter", key, path)
+					ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 					ent.AddProperty("host", "Host", maltego.Strict, http.Host)
 
 					ent.SetLinkLabel(http.Method)

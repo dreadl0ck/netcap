@@ -23,7 +23,7 @@ import (
 
 	"github.com/mcnijman/go-emailaddress"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func toEmailsFromFile() {
@@ -62,7 +62,7 @@ func toEmailsFromFile() {
 	log.Println("results", results)
 
 	for _, r := range results {
-		trx.AddEntityWithPath("netcap.Email", r.String(), path)
+		addEntityWithPath(trx, "netcap.Email", r.String(), path)
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

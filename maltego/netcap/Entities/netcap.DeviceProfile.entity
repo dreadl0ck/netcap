@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.deviceProfile" displayName="deviceProfile" displayNamePlural="deviceProfiles" description="A deviceProfile contains information about a single hardware device seen on the network and it&#39;s behavior" category="Netcap" smallIconResource="Netcap/deviceProfile_black" largeIconResource="Netcap/deviceProfile_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.deviceProfile" displayName="deviceProfile" displayNamePlural="deviceProfiles" description="A deviceProfile contains information about a single hardware device seen on the network and it&#39;s behavior" category="Netcap" smallIconResource="netcap/deviceProfile_black" largeIconResource="netcap/deviceProfile_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.deviceprofile" displayValue="properties.deviceprofile">
   <Groups></Groups>
   <Fields>

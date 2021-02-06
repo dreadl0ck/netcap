@@ -15,9 +15,10 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -27,7 +28,7 @@ func toIPV6TrafficClasses() {
 		pathName string
 	)
 
-	maltego.IPv6Transform(
+	netmaltego.IPv6Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ip *types.IPv6, min, max uint64, path string, mac string, ipaddr string) {
 			if pathName == "" {
@@ -38,9 +39,9 @@ func toIPV6TrafficClasses() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for val, numHits := range classes {
-		ent := trx.AddEntityWithPath("netcap.IPv6TrafficClass", strconv.Itoa(int(val)), pathName)
+		ent := addEntityWithPath(trx, "netcap.IPv6TrafficClass", strconv.Itoa(int(val)), pathName)
 		ent.AddProperty("value", "Value", maltego.Strict, strconv.Itoa(int(val)))
 		ent.SetLinkLabel(strconv.Itoa(numHits))
 	}

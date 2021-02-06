@@ -15,25 +15,26 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"html"
 	"strconv"
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toServices() {
 	var typ string
-	maltego.ServiceTransform(
+	netmaltego.ServiceTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, service *types.Service, min, max uint64, path string, mac string, ipaddr string) {
 			if typ == "" {
 				typ = lt.Values["properties.servicetype"]
 				if typ == "" {
-					die("properties.servicetype not set", fmt.Sprint(lt.Values))
+					maltego.Die("properties.servicetype not set", fmt.Sprint(lt.Values))
 				}
 			}
 
@@ -52,7 +53,7 @@ func toServices() {
 					val += "\n" + service.Hostname
 				}
 
-				ent := trx.AddEntityWithPath("netcap.Service", val, path)
+				ent := addEntityWithPath(trx, "netcap.Service", val, path)
 				ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(service.Timestamp))
 				ent.AddProperty("product", "Product", maltego.Strict, service.Product)
 				ent.AddProperty("version", "Version", maltego.Strict, service.Version)

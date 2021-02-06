@@ -16,9 +16,10 @@ package credentials
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/dreadl0ck/netcap/types"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // harvester for the HTTP protocol.

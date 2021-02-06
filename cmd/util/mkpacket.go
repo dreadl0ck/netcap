@@ -16,15 +16,16 @@ package util
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/dreadl0ck/gopacket/pcapgo"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/gopacket"
+	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/dreadl0ck/gopacket/pcapgo"
 )
 
 func makePacket() {

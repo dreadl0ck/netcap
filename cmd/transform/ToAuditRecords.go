@@ -22,11 +22,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -103,12 +103,12 @@ func toAuditRecords() {
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[1:])
 		inputFile = strings.TrimPrefix(lt.Values["path"], "file://")
-		trx       = maltego.Transform{}
+		trx       = &maltego.Transform{}
 	)
 
 	// check if input PCAP path is set
 	if inputFile == "" {
-		die("input file path property not set", "")
+		maltego.Die("input file path property not set", "")
 	}
 
 	io.FPrintBuildInfo(os.Stderr)
@@ -120,7 +120,7 @@ func toAuditRecords() {
 
 	err := os.MkdirAll(outDir, defaults.DirectoryPermission)
 	if err != nil {
-		die(err.Error(), "failed to create output directory")
+		maltego.Die(err.Error(), "failed to create output directory")
 	}
 
 	maltegoBaseConfig.DecoderConfig.Out = outDir
@@ -133,26 +133,26 @@ func toAuditRecords() {
 	// if not, use native pcapgo version
 	isPcap, err := collector.IsPcap(inputFile)
 	if err != nil {
-		die(err.Error(), "failed to open input file")
+		maltego.Die(err.Error(), "failed to open input file")
 	}
 
 	if isPcap {
 		if err = c.CollectPcap(inputFile); err != nil {
-			die(err.Error(), "failed to collect audit records from pcap file")
+			maltego.Die(err.Error(), "failed to collect audit records from pcap file")
 		}
 	} else {
 		if err = c.CollectPcapNG(inputFile); err != nil {
-			die(err.Error(), "failed to collect audit records from pcapng file")
+			maltego.Die(err.Error(), "failed to collect audit records from pcapng file")
 		}
 	}
 
 	writeAuditRecords(trx, outDir)
 }
 
-func writeAuditRecords(trx maltego.Transform, outDir string) {
+func writeAuditRecords(trx *maltego.Transform, outDir string) {
 	files, err := ioutil.ReadDir(outDir)
 	if err != nil {
-		die(err.Error(), "failed to read directory")
+		maltego.Die(err.Error(), "failed to read directory")
 	}
 
 	for _, f := range files {
@@ -174,10 +174,10 @@ func writeAuditRecords(trx maltego.Transform, outDir string) {
 		// to avoid opening the file again
 		numRecords, errCount := io.Count(path)
 		if errCount != nil {
-			log.Fatal("failed to count audit records:", err)
+			log.Fatal("failed to count audit records:", errCount)
 		}
 
-		ent := trx.AddEntityWithPath("netcap."+name+"AuditRecords", utils.Pluralize(name), path)
+		ent := addEntityWithPath(trx, "netcap."+name+"AuditRecords", utils.Pluralize(name), path)
 
 		ent.AddProperty("description", "Description", maltego.Strict, name+defaults.FileExtensionCompressed)
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))

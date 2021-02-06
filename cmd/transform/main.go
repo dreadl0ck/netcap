@@ -22,7 +22,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 // Run parses the subcommand flags and handles the arguments.
@@ -164,7 +164,7 @@ func Run() {
 		}
 	}
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	trx.AddUIMessage("Unknown transform: "+os.Args[2], maltego.UIMessageFatal)
 	fmt.Println(trx.ReturnOutput())
 }

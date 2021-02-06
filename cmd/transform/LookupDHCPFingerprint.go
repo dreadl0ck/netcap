@@ -21,7 +21,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -46,7 +47,7 @@ func lookupDHCPFingerprint() {
 	// read HTTP audit records and create a map of ips to useragents
 	userAgentStore := make(map[string][]string)
 
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if uas, ok := userAgentStore[http.SrcIP]; ok {
@@ -78,7 +79,7 @@ func lookupDHCPFingerprint() {
 		messageToFingerprint *types.DHCPv4
 	)
 
-	maltego.DHCPV4Transform(
+	netmaltego.DHCPV4Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, path string, ipaddr string) {
 			if dhcp.Operation == 2 {
@@ -151,7 +152,7 @@ func lookupDHCPFingerprint() {
 		// log.Println("got result", res.DeviceName, "for", messageToFingerprint.ClientHWAddr)
 
 		val := strings.ReplaceAll(res.DeviceName, "/", "\n") + "\n" + ip
-		ent := mtrx.AddEntityWithPath("netcap.DHCPResult", val, path)
+		ent := addEntityWithPath(mtrx, "netcap.DHCPResult", val, path)
 
 		ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(messageToFingerprint.Timestamp))
 		ent.AddProperty("clientIP", "ClientIP", maltego.Strict, messageToFingerprint.ClientIP)

@@ -21,8 +21,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func reloadAuditRecordsFromDisk() {
@@ -44,7 +44,7 @@ func reloadAuditRecordsFromDisk() {
 
 	// check if input PCAP path is set
 	if inputFile == "" {
-		die("input file path property not set", "")
+		maltego.Die("input file path property not set", "")
 	}
 
 	log.Println("inputFile:", inputFile)

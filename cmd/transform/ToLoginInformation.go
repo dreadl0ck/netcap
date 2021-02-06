@@ -14,13 +14,14 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toLoginInformation() {
-	maltego.CredentialsTransform(
+	netmaltego.CredentialsTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, cred *types.Credentials, min, max uint64, path string, mac string, ipaddr string) {
 			val := cred.User + "\n" + cred.Password + "\n" + cred.Service
@@ -28,7 +29,7 @@ func toLoginInformation() {
 				val += "\n" + cred.Notes
 			}
 
-			ent := trx.AddEntityWithPath("netcap.Credentials", val, path)
+			ent := addEntityWithPath(trx, "netcap.Credentials", val, path)
 			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(cred.Timestamp))
 			ent.AddProperty("service", "Service", maltego.Strict, cred.Service)
 			ent.AddProperty("flow", "Flow", maltego.Strict, cred.Flow)

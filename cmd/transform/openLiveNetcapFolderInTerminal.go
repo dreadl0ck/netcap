@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func openLiveNetcapFolderInTerminal() {
@@ -36,7 +36,7 @@ func openLiveNetcapFolderInTerminal() {
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {
-		die(err.Error(), string(out))
+		maltego.Die(err.Error(), string(out))
 	}
 	log.Println(string(out))
 

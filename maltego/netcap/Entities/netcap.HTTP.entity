@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.HTTP" displayName="HTTP" displayNamePlural="HTTP" description="The Hypertext Transfer Protocol is powering the world wide web" category="Netcap" smallIconResource="Netcap/HTTP_black" largeIconResource="Netcap/HTTP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.HTTP" displayName="HTTP" displayNamePlural="HTTP" description="The Hypertext Transfer Protocol is powering the world wide web" category="Netcap" smallIconResource="netcap/HTTP_black" largeIconResource="netcap/HTTP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.http" displayValue="properties.http">
   <Groups></Groups>
   <Fields>

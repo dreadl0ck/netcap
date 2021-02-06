@@ -14,13 +14,14 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -43,8 +44,8 @@ func toOutgoingConnsFiltered() {
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
-	maltego.ConnectionTransform(
-		maltego.CountOutgoingConnBytesFiltered,
+	netmaltego.ConnectionTransform(
+		netmaltego.CountOutgoingConnBytesFiltered,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ipaddr string, top12 *[]int) {
 			if conn.SrcIP == ipaddr {
 				name := resolvers.LookupDNSNameLocal(conn.DstIP)

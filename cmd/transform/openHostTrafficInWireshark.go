@@ -15,13 +15,14 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func openHostTrafficInWireshark() {
@@ -39,7 +40,7 @@ func openHostTrafficInWireshark() {
 
 		out, err := exec.Command(findExecutable(tcpdump), args...).CombinedOutput()
 		if err != nil {
-			die(err.Error(), "open file failed:\n"+string(out))
+			maltego.Die(err.Error(), "open file failed:\n"+string(out))
 		}
 
 		log.Println(string(out))
@@ -49,7 +50,7 @@ func openHostTrafficInWireshark() {
 
 	out, err := exec.Command(findExecutable(wireshark), outFile).CombinedOutput()
 	if err != nil {
-		die(err.Error(), "open file failed:\n"+string(out))
+		maltego.Die(err.Error(), "open file failed:\n"+string(out))
 	}
 
 	log.Println(string(out))
@@ -64,7 +65,7 @@ func makeHostBPF(lt maltego.LocalTransform) string {
 	var b strings.Builder
 
 	b.WriteString("host ")
-	b.WriteString(lt.Values[maltego.PropertyIpAddr])
+	b.WriteString(lt.Values[netmaltego.PropertyIpAddr])
 
 	return b.String()
 }

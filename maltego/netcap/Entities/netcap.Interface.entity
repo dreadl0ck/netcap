@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Interface" displayName="Interface" displayNamePlural="Interfaces" description="A network interface" category="Netcap" smallIconResource="Netcap/router_black" largeIconResource="Netcap/router_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Interface" displayName="Interface" displayNamePlural="Interfaces" description="A network interface" category="Netcap" smallIconResource="netcap/router_black" largeIconResource="netcap/router_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.interface" displayValue="properties.interface">
   <Groups></Groups>
   <Fields>

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.FDDI" displayName="FDDI" displayNamePlural="FDDI" description="Fiber Distributed Data Interface (FDDI) is a standard for data transmission in a local area network" category="Netcap" smallIconResource="Netcap/FDDI_black" largeIconResource="Netcap/FDDI_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.FDDI" displayName="FDDI" displayNamePlural="FDDI" description="Fiber Distributed Data Interface (FDDI) is a standard for data transmission in a local area network" category="Netcap" smallIconResource="netcap/FDDI_black" largeIconResource="netcap/FDDI_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.fddi" displayValue="properties.fddi">
   <Groups></Groups>
   <Fields>

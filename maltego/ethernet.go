@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -34,15 +35,15 @@ type EthernetCountFunc func()
 
 // EthernetTransformationFunc is a transformation over Ethernet audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type EthernetTransformationFunc = func(lt LocalTransform, trx *Transform, ethernet *types.Ethernet, min, max uint64, path string, ip string)
+type EthernetTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ethernet *types.Ethernet, min, max uint64, path string, ip string)
 
 // EthernetTransform applies a maltego transformation over Ethernet audit records.
 func EthernetTransform(count EthernetCountFunc, transform EthernetTransformationFunc, continueTransform bool) {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[1:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
-		trx    = Transform{}
+		trx    = maltego.Transform{}
 	)
 
 	if !strings.HasPrefix(filepath.Base(path), "Ethernet.ncap") {
@@ -58,7 +59,7 @@ func EthernetTransform(count EthernetCountFunc, transform EthernetTransformation
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -66,10 +67,10 @@ func EthernetTransform(count EthernetCountFunc, transform EthernetTransformation
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 	if header != nil && header.Type != types.Type_NC_Ethernet {
-		die("file does not contain Ethernet records", header.Type.String())
+		maltego.Die("file does not contain Ethernet records", header.Type.String())
 	}
 
 	var (
@@ -94,7 +95,7 @@ func EthernetTransform(count EthernetCountFunc, transform EthernetTransformation
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count()
@@ -128,7 +129,7 @@ func EthernetTransform(count EthernetCountFunc, transform EthernetTransformation
 	}
 
 	if !continueTransform {
-		trx.AddUIMessage("completed!", UIMessageInform)
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 	}
 }

@@ -14,12 +14,12 @@
 package maltego
 
 import (
-	"bytes"
-	"encoding/xml"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/dreadl0ck/maltego"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
@@ -39,27 +39,6 @@ const (
 	PropertyIpAddrLabel = "IPAddress"
 )
 
-// EscapeText ensures that the input text is safe to embed within XML.
-func EscapeText(text string) string {
-	var buf bytes.Buffer
-
-	err := xml.EscapeText(&buf, []byte(text))
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	return buf.String()
-}
-
-func die(err string, msg string) {
-	trx := Transform{}
-	// add error message for the user
-	trx.AddUIMessage(msg+": "+err, UIMessageFatal)
-	fmt.Println(trx.ReturnOutput())
-	log.Println(msg, err)
-	os.Exit(0) // don't signal an error for the transform invocation
-}
-
 func openFile(path string) (*os.File, string) {
 	log.Println("open path:", path)
 	f, err := os.Open(path)
@@ -70,8 +49,8 @@ func openFile(path string) (*os.File, string) {
 		f, err = os.Open(strings.TrimSuffix(path, ".gz"))
 		if err != nil {
 			log.Println("failed to open path", err)
-			trx := Transform{}
-			trx.AddUIMessage("failed to open path: "+err.Error(), UIMessageInform)
+			trx := &maltego.Transform{}
+			trx.AddUIMessage("failed to open path: "+err.Error(), maltego.UIMessageInform)
 			fmt.Println(trx.ReturnOutput())
 			os.Exit(0) // don't signal an error for the transform invocation
 		}
@@ -89,7 +68,7 @@ func openNetcapArchive(path string) *netio.Reader {
 
 		r, err = netio.Open(path, defaults.BufferSize)
 		if err != nil {
-			die(err.Error(), "failed to open file")
+			maltego.Die(err.Error(), "failed to open file")
 		}
 	}
 

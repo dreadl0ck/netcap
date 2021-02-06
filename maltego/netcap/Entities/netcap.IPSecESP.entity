@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.IPSecESP" displayName="IPSecESP" displayNamePlural="IPSecESP" description="IPSec Encapsulating Security Payload (ESP)" category="Netcap" smallIconResource="Netcap/IPSecESP_black" largeIconResource="Netcap/IPSecESP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.IPSecESP" displayName="IPSecESP" displayNamePlural="IPSecESP" description="IPSec Encapsulating Security Payload (ESP)" category="Netcap" smallIconResource="netcap/IPSecESP_black" largeIconResource="netcap/IPSecESP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ipsecesp" displayValue="properties.ipsecesp">
   <Groups></Groups>
   <Fields>

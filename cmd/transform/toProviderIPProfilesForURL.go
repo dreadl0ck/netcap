@@ -14,30 +14,31 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toProviderIPProfilesForURL() {
 	var (
-		p    = maltego.LoadIPProfiles()
+		p    = netmaltego.LoadIPProfiles()
 		ips  = make(map[string]struct{})
 		url  string
 		host string
 	)
 
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if url == "" {
 				url = lt.Values["properties.url"]
 				host = lt.Values["host"]
 				if url == "" || host == "" {
-					die("properties.url or host is not set", "")
+					maltego.Die("properties.url or host is not set", "")
 				}
-				log.Println("got URL", url, "and host", host, maltego.PropertyIpAddr, ipaddr)
+				log.Println("got URL", url, "and host", host, netmaltego.PropertyIpAddr, ipaddr)
 			}
 
 			if http.Host == host {

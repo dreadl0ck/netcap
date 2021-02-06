@@ -14,7 +14,8 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -23,14 +24,14 @@ func toHeaderValues() {
 		headerName string
 		host       string
 	)
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if host == "" {
 				headerName = lt.Values["properties.httpheader"]
 				host = lt.Values["host"]
 				if host == "" {
-					die("host not set", "")
+					maltego.Die("host not set", "")
 				}
 			}
 			if http.Host == host || http.SrcIP == ipaddr {
@@ -47,7 +48,7 @@ func toHeaderValues() {
 }
 
 func addHeaderValue(trx *maltego.Transform, headerValue string, path string, host string, headerName string) {
-	ent := trx.AddEntityWithPath("netcap.HTTPHeaderValue", headerValue, path)
+	ent := addEntityWithPath(trx, "netcap.HTTPHeaderValue", headerValue, path)
 	ent.AddProperty("host", "Host", maltego.Strict, host)
 	ent.AddProperty("headername", "HeaderName", maltego.Strict, headerName)
 }

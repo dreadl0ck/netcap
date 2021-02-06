@@ -19,7 +19,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func toNetworkInterfaces() {
@@ -28,7 +28,7 @@ func toNetworkInterfaces() {
 	// get interfaces
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		die(err.Error(), "failed to get network interfaces")
+		maltego.Die(err.Error(), "failed to get network interfaces")
 	}
 
 	for _, nic := range interfaces {

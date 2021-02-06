@@ -22,7 +22,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 var regexDomain = regexp.MustCompile(`(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,10}`)
@@ -64,7 +64,7 @@ func toDomainsFromFile() {
 	log.Println("results", results)
 
 	for _, r := range results {
-		trx.AddEntityWithPath("netcap.Domain", r, path)
+		addEntityWithPath(trx, "netcap.Domain", r, path)
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

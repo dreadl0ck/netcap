@@ -14,17 +14,18 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toHTTPUserAgents() {
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP == ipaddr || http.DstIP == ipaddr {
 				if http.UserAgent != "" {
-					trx.AddEntityWithPath("netcap.UserAgent", http.UserAgent, path)
+					addEntityWithPath(trx, "netcap.UserAgent", http.UserAgent, path)
 				}
 			}
 		},

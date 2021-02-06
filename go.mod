@@ -16,6 +16,7 @@ require (
 	github.com/dreadl0ck/go-dpi v0.0.0-20200912122706-f830a777c45f
 	github.com/dreadl0ck/gopacket v1.1.16-0.20201228223815-140074f06498
 	github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket.0.20200917082239-a29743a537b2
+	github.com/dreadl0ck/maltego v0.0.0-00010101000000-000000000000
 	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
 	github.com/dsoprea/go-exif/v2 v2.0.0-20201216222538-db167117f483
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect

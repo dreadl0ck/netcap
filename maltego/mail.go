@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -35,24 +36,24 @@ type MailCountFunc func()
 
 // MailTransformationFunc is a transformation over Mail audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type MailTransformationFunc = func(lt LocalTransform, trx *Transform, mail *types.Mail, min, max uint64, path string, ip string)
+type MailTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, mail *types.Mail, min, max uint64, path string, ip string)
 
 // MailTransform applies a maltego transformation over Mail audit records.
 func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 	var (
-		lt               = ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		mailAuditRecords = filepath.Join(dir, "Mail.ncap.gz")
-		trx              = Transform{}
+		trx              = maltego.Transform{}
 	)
 
 	f, path := openFile(mailAuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -60,11 +61,11 @@ func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_Mail {
-		die("file does not contain Mail records", header.Type.String())
+		maltego.Die("file does not contain Mail records", header.Type.String())
 	}
 
 	var (
@@ -90,7 +91,7 @@ func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count()
@@ -123,14 +124,14 @@ func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }
 
 // LoadMails will load the email audit records into memory and return them.
 func LoadMails() map[string]*types.Mail {
 	var (
-		lt    = ParseLocalArguments(os.Args[1:])
+		lt    = maltego.ParseLocalArguments(os.Args[1:])
 		path  = filepath.Join(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), "Mail.ncap.gz")
 		mails = make(map[string]*types.Mail)
 	)
@@ -140,7 +141,7 @@ func LoadMails() map[string]*types.Mail {
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -148,12 +149,12 @@ func LoadMails() map[string]*types.Mail {
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if //goland:noinspection GoNilness
 	header.Type != types.Type_NC_Mail {
-		die("file does not contain Mail records", header.Type.String())
+		maltego.Die("file does not contain Mail records", header.Type.String())
 	}
 
 	var (

@@ -15,10 +15,11 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -28,7 +29,7 @@ func toTCPFlagCombinations() {
 		pathName string
 	)
 
-	maltego.TCPTransform(
+	netmaltego.TCPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, tcp *types.TCP, min, max uint64, path string, ipaddr string) {
 			if pathName == "" {
@@ -39,9 +40,9 @@ func toTCPFlagCombinations() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for flags, numHits := range idents {
-		ent := trx.AddEntityWithPath("netcap.TCPFlag", flags, pathName)
+		ent := addEntityWithPath(trx, "netcap.TCPFlag", flags, pathName)
 		ent.SetLinkLabel(strconv.Itoa(numHits))
 	}
 

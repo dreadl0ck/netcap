@@ -14,8 +14,9 @@
 package logger_test
 
 import (
-	"github.com/dreadl0ck/netcap/logger"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/logger"
 )
 
 func TestInitZapLogger(t *testing.T) {

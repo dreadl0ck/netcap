@@ -16,6 +16,7 @@ package transform
 import (
 	"bytes"
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"io"
 	"log"
 	"os"
@@ -25,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func startCaptureProcess() {
@@ -40,11 +41,11 @@ func startCaptureProcess() {
 		if snaplen != "" {
 			n, err := strconv.Atoi(snaplen)
 			if err != nil {
-				die(err.Error(), "invalid snaplen provided")
+				maltego.Die(err.Error(), "invalid snaplen provided")
 			}
 
 			if n <= 0 {
-				die("invalid snaplen", "snaplen must not be <= 0")
+				maltego.Die("invalid snaplen", "snaplen must not be <= 0")
 			}
 
 			snapL = n
@@ -61,13 +62,13 @@ func startCaptureProcess() {
 	if runtime.GOOS == platformWindows {
 		out, err := exec.Command("getmac", "/fo", "csv", "/v").CombinedOutput()
 		if err != nil {
-			die(err.Error(), "failed to execute getmac to the transport name identifier")
+			maltego.Die(err.Error(), "failed to execute getmac to the transport name identifier")
 		}
 		for _, line := range strings.Split(string(out), "\n") {
 			if strings.Contains(line, iface) {
 				elements := strings.Split(line, ",")
 				if len(elements) != 4 {
-					die("unexpected length", strconv.Itoa(len(elements)))
+					maltego.Die("unexpected length", strconv.Itoa(len(elements)))
 				}
 				iface = strings.TrimSpace(strings.Replace(elements[3], "\\Device\\Tcpip_", "\\Device\\NPF_", 1))
 				// remove string literals from start and end of string
@@ -122,29 +123,29 @@ func startCaptureProcess() {
 	var buf bytes.Buffer
 
 	// TODO: invoke on the shell VS start within this process?
-	cmd := exec.Command(maltego.ExecutablePath, args...)
+	cmd := exec.Command(netmaltego.ExecutablePath, args...)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &buf)
 	cmd.Stdout = os.Stderr
 
 	err := cmd.Start()
 	if err != nil {
-		die(err.Error(), "failed to start capture process")
+		maltego.Die(err.Error(), "failed to start capture process")
 	}
 
 	log.Println("> PID", cmd.Process.Pid)
 
 	defer func() {
 		if errPanic := recover(); err != nil {
-			die(errPanic.(error).Error(), "process panic")
+			maltego.Die(errPanic.(error).Error(), "process panic")
 		}
 	}()
 
 	err = cmd.Wait()
 	if err != nil {
-		die(err.Error(), "error while waiting for capture process:\n"+buf.String())
+		maltego.Die(err.Error(), "error while waiting for capture process:\n"+buf.String())
 	}
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	trx.AddUIMessage("completed", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 
@@ -153,11 +154,11 @@ func startCaptureProcess() {
 
 func getPathLiveCaptureOutDir(iface string) string {
 	if iface == "" {
-		die("empty interface string received", "getPathLiveCaptureOutDir")
+		maltego.Die("empty interface string received", "getPathLiveCaptureOutDir")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		die(err.Error(), "failed to get user homedir")
+		maltego.Die(err.Error(), "failed to get user homedir")
 	}
 	return filepath.Join(home, iface+".net")
 }

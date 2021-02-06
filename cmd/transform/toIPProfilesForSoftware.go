@@ -14,7 +14,8 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -24,10 +25,10 @@ func toIPProfilesForSoftware() {
 		product string
 		version string
 		vendor  string
-		p       = maltego.LoadIPProfiles()
+		p       = netmaltego.LoadIPProfiles()
 		ips     = make(map[string]struct{})
 	)
-	maltego.SoftwareTransform(
+	netmaltego.SoftwareTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, soft *types.Software, min, max uint64, path string, mac string, ipaddr string) {
 			if product == "" && vendor == "" {
@@ -35,7 +36,7 @@ func toIPProfilesForSoftware() {
 				version = lt.Values["version"]
 				vendor = lt.Values["vendor"]
 				if product == "" && vendor == "" && version == "" {
-					die("product, vendor and version are not set in properties!", "")
+					maltego.Die("product, vendor and version are not set in properties!", "")
 				}
 			}
 

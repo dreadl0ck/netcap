@@ -28,7 +28,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -54,7 +55,7 @@ func toConnectionsForService() {
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
-	maltego.ConnectionTransform(nil, func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ip string, sizes *[]int) {
+	netmaltego.ConnectionTransform(nil, func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ip string, sizes *[]int) {
 		if serviceType == "" {
 			// set the serviceType we are searching for once
 			serviceType = lt.Value
@@ -73,7 +74,7 @@ func toConnectionsForService() {
 }
 
 func addConn(trx *maltego.Transform, conn *types.Connection, path string, min, max uint64, direction maltego.LinkDirection, service string) {
-	ent := trx.AddEntityWithPath("netcap.Connection", utils.CreateFlowIdent(conn.SrcIP, conn.SrcPort, conn.DstIP, conn.DstPort), path)
+	ent := addEntityWithPath(trx, "netcap.Connection", utils.CreateFlowIdent(conn.SrcIP, conn.SrcPort, conn.DstIP, conn.DstPort), path)
 
 	ent.SetLinkDirection(direction)
 	ent.SetLinkLabel(strconv.FormatInt(int64(conn.NumPackets), 10) + " pkts\n" + humanize.Bytes(uint64(conn.TotalSize)))

@@ -17,17 +17,18 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"unicode/utf8"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toDHCP() {
 	results := map[string]int{}
 
-	maltego.DHCPV4Transform(
+	netmaltego.DHCPV4Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, path string, ipaddr string) {
 			if dhcp.ClientIP == ipaddr {
@@ -58,7 +59,7 @@ func toDHCP() {
 							typ = "Domain Name"
 						}
 
-						trx.AddEntityWithPath("netcap.Device", typ+": "+buf.String(), path)
+						addEntityWithPath(trx, "netcap.Device", typ+": "+buf.String(), path)
 					}
 				}
 			}

@@ -24,7 +24,7 @@ import (
 
 	"github.com/dsoprea/go-exif/v2"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func toExifDataForImage() {
@@ -68,7 +68,7 @@ func toExifDataForImage() {
 	}
 	for _, entry := range entries {
 		log.Printf("IFD-PATH=[%s] ID=(0x%04x) NAME=[%s] COUNT=(%d) TYPE=[%s] VALUE=[%s]\n", entry.IfdPath, entry.TagId, entry.TagName, entry.UnitCount, entry.TagTypeName, entry.Formatted)
-		trx.AddEntityWithPath("netcap.ExifEntry", entry.TagName+" ("+entry.TagTypeName+") = "+entry.Formatted, path)
+		addEntityWithPath(trx, "netcap.ExifEntry", entry.TagName+" ("+entry.TagTypeName+") = "+entry.Formatted, path)
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

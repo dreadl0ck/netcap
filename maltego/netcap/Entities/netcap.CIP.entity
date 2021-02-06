@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.CIP" displayName="CIP" displayNamePlural="CIP" description="The Common Industrial Protocol (CIP) is an industrial protocol for industrial automation applications" category="Netcap" smallIconResource="Netcap/CIP_black" largeIconResource="Netcap/CIP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.CIP" displayName="CIP" displayNamePlural="CIP" description="The Common Industrial Protocol (CIP) is an industrial protocol for industrial automation applications" category="Netcap" smallIconResource="netcap/CIP_black" largeIconResource="netcap/CIP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.cip" displayValue="properties.cip">
   <Groups></Groups>
   <Fields>

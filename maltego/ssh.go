@@ -23,6 +23,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -30,7 +31,7 @@ import (
 
 // SSHTransformationFunc is a transformation over SSH sshs for a selected SSH.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type SSHTransformationFunc = func(lt LocalTransform, trx *Transform, ssh *types.SSH, min, max uint64, sshsFile string, mac string, ip string)
+type SSHTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ssh *types.SSH, min, max uint64, sshsFile string, mac string, ip string)
 
 // SSHCountFunc deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
@@ -39,12 +40,12 @@ type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
 // SSHTransform applies a maltego transformation over SSH sshs seen for a target SSH.
 func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[1:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 
-		trx = Transform{}
+		trx = maltego.Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
@@ -53,7 +54,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -61,11 +62,11 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_SSH {
-		die("file does not contain SSH records", header.Type.String())
+		maltego.Die("file does not contain SSH records", header.Type.String())
 	}
 
 	var (
@@ -92,7 +93,7 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(ssh, mac, &min, &max)
@@ -125,6 +126,6 @@ func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

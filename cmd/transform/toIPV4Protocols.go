@@ -15,11 +15,12 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
 	"github.com/dreadl0ck/gopacket/layers"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -29,7 +30,7 @@ func toIPV4Protocols() {
 		pathName string
 	)
 
-	maltego.IPv4Transform(
+	netmaltego.IPv4Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ip *types.IPv4, min, max uint64, path string, mac string, ipaddr string) {
 			if pathName == "" {
@@ -40,9 +41,9 @@ func toIPV4Protocols() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for val, numHits := range ipProtos {
-		ent := trx.AddEntityWithPath("netcap.IPProtocol", layers.IPProtocol(uint8(val)).String(), pathName)
+		ent := addEntityWithPath(trx, "netcap.IPProtocol", layers.IPProtocol(uint8(val)).String(), pathName)
 		ent.AddProperty("value", "Value", maltego.Strict, strconv.Itoa(int(val)))
 		ent.SetLinkLabel(strconv.Itoa(numHits))
 	}

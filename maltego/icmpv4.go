@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -34,24 +35,24 @@ type ICMPv4CountFunc func()
 
 // ICMPv4TransformationFunc is a transformation over ICMPv4 audit records.
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type ICMPv4TransformationFunc = func(lt LocalTransform, trx *Transform, icmp *types.ICMPv4, min, max uint64, path string, ip string)
+type ICMPv4TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, icmp *types.ICMPv4, min, max uint64, path string, ip string)
 
 // ICMPv4Transform applies a maltego transformation over ICMPv4 audit records.
 func ICMPv4Transform(count ICMPv4CountFunc, transform ICMPv4TransformationFunc) {
 	var (
-		lt               = ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		icmpAuditRecords = filepath.Join(dir, "ICMPv4.ncap.gz")
-		trx              = Transform{}
+		trx              = maltego.Transform{}
 	)
 
 	f, path := openFile(icmpAuditRecords)
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -59,11 +60,11 @@ func ICMPv4Transform(count ICMPv4CountFunc, transform ICMPv4TransformationFunc) 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_ICMPv4 {
-		die("file does not contain ICMPv4 records", header.Type.String())
+		maltego.Die("file does not contain ICMPv4 records", header.Type.String())
 	}
 
 	var (
@@ -89,7 +90,7 @@ func ICMPv4Transform(count ICMPv4CountFunc, transform ICMPv4TransformationFunc) 
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count()
@@ -122,6 +123,6 @@ func ICMPv4Transform(count ICMPv4CountFunc, transform ICMPv4TransformationFunc) 
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

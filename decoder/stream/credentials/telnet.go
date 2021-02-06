@@ -14,8 +14,9 @@
 package credentials
 
 import (
-	"github.com/dreadl0ck/netcap/types"
 	"time"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // harvester for telnet traffic.
