@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Software" displayName="Software" displayNamePlural="Software" description="A software product" category="Netcap" smallIconResource="Netcap/apps_black" largeIconResource="Netcap/apps_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Software" displayName="Software" displayNamePlural="Software" description="A software product" category="Netcap" smallIconResource="netcap/apps_black" largeIconResource="netcap/apps_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.software" displayValue="properties.software">
   <Groups></Groups>
   <Fields>

@@ -25,10 +25,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -68,7 +68,7 @@ func writeLiveAuditRecords(outDir string) {
 	})
 
 	// generate maltego transform
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for _, name := range allDecoders {
 		path := filepath.Join(outDir, name+defaults.FileExtension)
 
@@ -105,7 +105,7 @@ func writeLiveAuditRecords(outDir string) {
 			continue
 		}
 
-		ent := trx.AddEntityWithPath("netcap."+name+"AuditRecords", utils.Pluralize(name), path)
+		ent := addEntityWithPath(trx, "netcap."+name+"AuditRecords", utils.Pluralize(name), path)
 		ent.AddProperty("description", "Description", maltego.Loose, name+defaults.FileExtension)
 		ent.SetLinkLabel(strconv.Itoa(int(numRecords)))
 

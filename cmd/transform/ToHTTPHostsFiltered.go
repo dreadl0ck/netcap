@@ -14,13 +14,14 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -41,7 +42,7 @@ func toHTTPHostsFiltered() {
 	resolvers.InitDNSWhitelist()
 	os.Stdout = stdOut
 
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP != ipaddr {
@@ -49,8 +50,8 @@ func toHTTPHostsFiltered() {
 			}
 			if http.Host != "" {
 				if !resolvers.IsWhitelistedDomain(http.Host) {
-					ent := trx.AddEntityWithPath("netcap.Host", http.Host, path)
-					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
+					ent := addEntityWithPath(trx, "netcap.Host", http.Host, path)
+					ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 				}
 			}

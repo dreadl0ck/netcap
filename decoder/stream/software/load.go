@@ -15,12 +15,13 @@ package software
 
 import (
 	"fmt"
-	"github.com/Jeffail/gabs/v2"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
+
+	"github.com/Jeffail/gabs/v2"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"go.uber.org/zap"
 )
 
 // load JSON database for frontend frameworks from the file system

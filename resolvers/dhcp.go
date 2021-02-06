@@ -200,6 +200,7 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*dhcpResult,
 
 	// check status
 	if resp.StatusCode != http.StatusOK {
+		fmt.Println(string(data))
 		return nil, fmt.Errorf("unexpected status code from fingerbank API: %s %w", resp.Status, errFingerbankQueryFailed)
 	}
 

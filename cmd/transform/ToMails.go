@@ -17,17 +17,18 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toMails() {
-	mails := maltego.LoadMails()
+	mails := netmaltego.LoadMails()
 
-	maltego.POP3Transform(
+	netmaltego.POP3Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, path string, ipaddr string) {
 			if pop3.ClientIP == ipaddr {
@@ -40,7 +41,7 @@ func toMails() {
 							fmt.Println(err)
 						}
 
-						ent := trx.AddEntityWithPath("netcap.Email", buf.String(), path)
+						ent := addEntityWithPath(trx, "netcap.Email", buf.String(), path)
 
 						var attachments string
 						for _, p := range m.Body {

@@ -22,8 +22,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/maltego"
 )
 
 var (
@@ -82,7 +82,7 @@ func findExecutable(name string) string {
 			p := filepath.Join("/usr", "local", "bin", name)
 			path, err = exec.LookPath(p)
 			if err != nil {
-				die(err.Error(), "executable not found: "+p)
+				maltego.Die(err.Error(), "executable not found: "+p)
 			}
 		}
 	}
@@ -105,7 +105,7 @@ func openConnectionInWireshark() {
 
 		out, err := exec.Command(findExecutable(tcpdump), args...).CombinedOutput()
 		if err != nil {
-			die(err.Error(), "open file failed:\n"+string(out))
+			maltego.Die(err.Error(), "open file failed:\n"+string(out))
 		}
 
 		log.Println(string(out))
@@ -115,7 +115,7 @@ func openConnectionInWireshark() {
 
 	out, err := exec.Command(findExecutable(wireshark), outFile).CombinedOutput()
 	if err != nil {
-		die(err.Error(), "open file failed:\n"+string(out))
+		maltego.Die(err.Error(), "open file failed:\n"+string(out))
 	}
 
 	log.Println(string(out))

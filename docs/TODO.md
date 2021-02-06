@@ -1,9 +1,18 @@
 # TODOs
 
-- git lfs container?
-- add cronjob on server for periodic rebuilt (container?)
+run git lfs prune after every update
 
-- Connection: preserve how many bytes each party sent and who initated the connection
+- set all link types
+- add PPP audit records
+
+- https://github.com/fyne-io/fyne
+- https://github.com/blushft/go-diagrams
+- https://github.com/thomasp11/tcp-reassembly
+- https://github.com/0x4D31/quick 
+- https://github.com/TylerBrock/colorjson
+- https://bytefield-svg.deepsymmetry.org/bytefield-svg/1.5.0/intro.html
+
+- Connection: preserve how many bytes each party sent and who initiated the connection
 - Connection: use communityIDs
 
 - add option to enrich the audit records with db information as a post processing step
@@ -253,7 +262,7 @@ entities:
 
 - reduce init function usage and document the remainders
 - reassembly: reduce allocs for ordered stream to 0 again
-- add a die(msg string) function and use instead of panic(err), for centralized teardown and cleanup 
+- add a maltego.Die(msg string) function and use instead of panic(err), for centralized teardown and cleanup 
 - https://github.com/glycerine/offheap
 
 - add comments similar to wireshark info field to records

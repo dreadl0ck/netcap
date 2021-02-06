@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.USBAuditRecords" displayName="USBAuditRecords" displayNamePlural="USBAuditRecords" description="An archive of USB audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_gold" largeIconResource="Netcap/insert_drive_file_gold" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.USBAuditRecords" displayName="USBAuditRecords" displayNamePlural="USBAuditRecords" description="An archive of USB audit records" category="Netcap Archives" smallIconResource="netcap/insert_drive_file_gold" largeIconResource="netcap/insert_drive_file_gold" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.usbauditrecords" displayValue="properties.usbauditrecords">
   <Groups></Groups>
   <Fields>

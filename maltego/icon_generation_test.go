@@ -263,7 +263,7 @@ func generateAdditionalIcons() {
 	for _, f := range files {
 		// only process files included in the subset
 		if imgType, ok := subset[f.Name()]; ok {
-			fmt.Println(f.Name())
+			//fmt.Println(f.Name())
 
 			var (
 				oldPath = filepath.Join(pngIconPath, "png", "black", filepath.Base(f.Name()), imgType+"-4x.png")
@@ -466,7 +466,7 @@ func generateAuditRecordIcon(text string) {
 		size = 96.0
 	)
 
-	fmt.Println(name)
+	//fmt.Println(name)
 
 	im, err := gg.LoadPNG("/tmp/icons/material-icons-png/renamed/check_box_outline_blank.png")
 	if err != nil {

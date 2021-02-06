@@ -15,11 +15,12 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
 	"github.com/dreadl0ck/gopacket/layers"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -30,7 +31,7 @@ func toDNSResponseCodes() {
 		pathName string
 	)
 
-	maltego.DNSTransform(
+	netmaltego.DNSTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, d *types.DNS, min, max uint64, path string, ipaddr string) {
 			if pathName == "" {
@@ -41,9 +42,9 @@ func toDNSResponseCodes() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for code, num := range codes {
-		ent := trx.AddEntityWithPath("netcap.DNSResponseCode", layers.DNSResponseCode(code).String(), pathName)
+		ent := addEntityWithPath(trx, "netcap.DNSResponseCode", layers.DNSResponseCode(code).String(), pathName)
 		ent.AddProperty("code", "Code", maltego.Strict, strconv.Itoa(int(code)))
 		ent.SetLinkLabel(strconv.Itoa(int(num)))
 		// TODO: num pkts / set thickness

@@ -24,13 +24,14 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 // softwareTransformationFunc is a transformation over Software profiles for a selected Software.
-type softwareTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Software, min, max uint64, path string, mac string, ip string)
+type softwareTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Software, min, max uint64, path string, mac string, ip string)
 
 // deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 type softwareCountFunc = func(software *types.Software, mac string, min, max *uint64)
@@ -38,12 +39,12 @@ type softwareCountFunc = func(software *types.Software, mac string, min, max *ui
 // SoftwareTransform applies a maltego transformation over Software profiles seen for a target Software.
 func SoftwareTransform(count softwareCountFunc, transform softwareTransformationFunc) {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[1:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 
-		trx = Transform{}
+		trx = maltego.Transform{}
 	)
 
 	if !strings.HasPrefix(filepath.Base(path), "Software.ncap") {
@@ -56,7 +57,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -64,10 +65,10 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 	if header.Type != types.Type_NC_Software {
-		die("file does not contain Software records", header.Type.String())
+		maltego.Die("file does not contain Software records", header.Type.String())
 	}
 
 	var (
@@ -93,7 +94,7 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(software, mac, &min, &max)
@@ -126,6 +127,6 @@ func SoftwareTransform(count softwareCountFunc, transform softwareTransformation
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

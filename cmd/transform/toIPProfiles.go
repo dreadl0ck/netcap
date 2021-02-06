@@ -14,19 +14,20 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toIPProfiles() {
-	maltego.IPProfileTransform(maltego.CountIPPackets, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string) {
+	netmaltego.IPProfileTransform(netmaltego.CountIPPackets, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string) {
 		addIPProfile(trx, profile, path, min, max)
 	})
 }
@@ -34,16 +35,16 @@ func toIPProfiles() {
 func addIPProfile(trx *maltego.Transform, profile *types.IPProfile, path string, min, max uint64) {
 	ident := profile.Addr + "\n" + profile.Geolocation
 
-	var ent *maltego.EntityObj
+	var ent *maltego.Entity
 	if resolvers.IsPrivateIP(net.ParseIP(profile.Addr)) {
-		ent = trx.AddEntityWithPath("netcap.InternalIPProfile", ident, path)
+		ent = addEntityWithPath(trx, "netcap.InternalIPProfile", ident, path)
 	} else {
-		ent = trx.AddEntityWithPath("netcap.ExternalIPProfile", ident, path)
+		ent = addEntityWithPath(trx, "netcap.ExternalIPProfile", ident, path)
 	}
 
 	ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
 	ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
-	ent.AddProperty(maltego.PropertyIpAddr, "IPAddr", maltego.Strict, profile.Addr)
+	ent.AddProperty(netmaltego.PropertyIpAddr, "IPAddr", maltego.Strict, profile.Addr)
 	ent.AddDisplayInformation(strings.Join(profile.Applications, "<br>"), "Applications")
 	ent.AddDisplayInformation(strings.Join(profile.DNSNames, "<br>"), "DNS Names")
 	ent.AddDisplayInformation(createJa3TableHTML(profile.Ja3), "JA3")

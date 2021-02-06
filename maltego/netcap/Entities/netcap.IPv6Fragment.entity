@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.IPv6Fragment" displayName="IPv6Fragment" displayNamePlural="IPv6Fragments" description="IPv6 fragmented packet" category="Netcap" smallIconResource="Netcap/IPv6Fragment_black" largeIconResource="Netcap/IPv6Fragment_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.IPv6Fragment" displayName="IPv6Fragment" displayNamePlural="IPv6Fragments" description="IPv6 fragmented packet" category="Netcap" smallIconResource="netcap/IPv6Fragment_black" largeIconResource="netcap/IPv6Fragment_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ipv6fragment" displayValue="properties.ipv6fragment">
   <Groups></Groups>
   <Fields>

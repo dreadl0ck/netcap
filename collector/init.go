@@ -3,13 +3,14 @@ package collector
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket/pcap"

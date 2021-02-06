@@ -2,12 +2,13 @@ package stream
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
 	"github.com/dreadl0ck/netcap/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/decoder/stream/ssh"
-	"strings"
-	"time"
 
 	"github.com/mgutz/ansi"
 	"github.com/pkg/errors"

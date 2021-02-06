@@ -14,10 +14,11 @@
 package service
 
 import (
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/types"
 	"strings"
 	"sync"
+
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 type service struct {

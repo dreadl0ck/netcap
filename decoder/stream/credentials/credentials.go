@@ -14,11 +14,12 @@
 package credentials
 
 import (
-	"github.com/dreadl0ck/netcap/decoder"
 	"log"
 	"regexp"
 	"sync/atomic"
 	"time"
+
+	"github.com/dreadl0ck/netcap/decoder"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	logging "github.com/dreadl0ck/netcap/logger"

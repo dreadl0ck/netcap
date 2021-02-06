@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func openDeviceTrafficInWireshark() {
@@ -39,7 +39,7 @@ func openDeviceTrafficInWireshark() {
 
 		out, err := exec.Command(findExecutable(tcpdump), args...).CombinedOutput()
 		if err != nil {
-			die(err.Error(), "open file failed:\n"+string(out))
+			maltego.Die(err.Error(), "open file failed:\n"+string(out))
 		}
 
 		log.Println(string(out))
@@ -49,7 +49,7 @@ func openDeviceTrafficInWireshark() {
 
 	out, err := exec.Command(findExecutable(wireshark), outFile).CombinedOutput()
 	if err != nil {
-		die(err.Error(), "open file failed:\n"+string(out))
+		maltego.Die(err.Error(), "open file failed:\n"+string(out))
 	}
 
 	log.Println(string(out))

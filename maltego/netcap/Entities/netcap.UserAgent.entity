@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.UserAgent" displayName="UserAgent" displayNamePlural="UserAgents" description="A HTTP User Agent" category="Netcap" smallIconResource="Netcap/supervisor_account_black" largeIconResource="Netcap/supervisor_account_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.UserAgent" displayName="UserAgent" displayNamePlural="UserAgents" description="A HTTP User Agent" category="Netcap" smallIconResource="netcap/supervisor_account_black" largeIconResource="netcap/supervisor_account_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.useragent" displayValue="properties.useragent">
   <Groups></Groups>
   <Fields>

@@ -15,11 +15,12 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
 	"github.com/dreadl0ck/gopacket/layers"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -29,7 +30,7 @@ func toDHCPV6Options() {
 		pathName string
 	)
 
-	maltego.DHCPV6Transform(
+	netmaltego.DHCPV6Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, d *types.DHCPv6, min, max uint64, path string, mac string) {
 			if pathName == "" {
@@ -42,9 +43,9 @@ func toDHCPV6Options() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for val, numHits := range opts {
-		ent := trx.AddEntityWithPath("netcap.DHCPv6Option", layers.DHCPv6Opt(uint16(val)).String(), pathName)
+		ent := addEntityWithPath(trx, "netcap.DHCPv6Option", layers.DHCPv6Opt(uint16(val)).String(), pathName)
 		ent.AddProperty("value", "Value", maltego.Strict, strconv.Itoa(int(val)))
 		ent.SetLinkLabel(strconv.Itoa(numHits))
 	}

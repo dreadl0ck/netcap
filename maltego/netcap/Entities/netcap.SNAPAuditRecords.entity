@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SNAPAuditRecords" displayName="SNAPAuditRecords" displayNamePlural="SNAPAuditRecords" description="An archive of SNAP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_slateblue" largeIconResource="Netcap/insert_drive_file_slateblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SNAPAuditRecords" displayName="SNAPAuditRecords" displayNamePlural="SNAPAuditRecords" description="An archive of SNAP audit records" category="Netcap Archives" smallIconResource="netcap/insert_drive_file_slateblue" largeIconResource="netcap/insert_drive_file_slateblue" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.snapauditrecords" displayValue="properties.snapauditrecords">
   <Groups></Groups>
   <Fields>

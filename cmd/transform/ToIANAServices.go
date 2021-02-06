@@ -14,6 +14,7 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"strconv"
@@ -23,7 +24,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -44,8 +45,8 @@ func toIANAServices() {
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
-	maltego.ConnectionTransform(
-		maltego.CountOutgoingConnBytesFiltered,
+	netmaltego.ConnectionTransform(
+		netmaltego.CountOutgoingConnBytesFiltered,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ipaddr string, top12 *[]int) {
 			i, err := strconv.Atoi(conn.DstPort)
 			if err != nil {
@@ -54,7 +55,7 @@ func toIANAServices() {
 
 			service := resolvers.LookupServiceByPort(i, strings.ToLower(conn.TransportProto))
 			if service != "" {
-				ent := trx.AddEntityWithPath("netcap.Service", service, path)
+				ent := addEntityWithPath(trx, "netcap.Service", service, path)
 				ent.SetLinkLabel(humanize.Bytes(uint64(conn.TotalSize)))
 				ent.SetLinkThickness(maltego.GetThickness(uint64(conn.TotalSize), min, max))
 				ent.AddProperty("ip", "IP", maltego.Strict, conn.DstIP)

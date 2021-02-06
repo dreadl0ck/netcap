@@ -15,6 +15,7 @@ package pop3
 
 import (
 	"bytes"
+
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"go.uber.org/zap"
 

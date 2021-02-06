@@ -14,15 +14,16 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toSoftwareVulnerabilities() {
-	maltego.VulnerabilityTransform(
+	netmaltego.VulnerabilityTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, vuln *types.Vulnerability, min, max uint64, path string, mac string, ipaddr string) {
 			val := vuln.ID
@@ -39,7 +40,7 @@ func toSoftwareVulnerabilities() {
 				val += "\n" + product
 			}
 
-			ent := trx.AddEntityWithPath("netcap.Vulnerability", val, path)
+			ent := addEntityWithPath(trx, "netcap.Vulnerability", val, path)
 			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(vuln.Timestamp))
 			ent.AddProperty("id", "ID", maltego.Strict, vuln.ID)
 			ent.AddProperty("notes", "Notes", maltego.Strict, vuln.Notes)

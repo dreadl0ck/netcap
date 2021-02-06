@@ -15,19 +15,20 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toHosts() {
 	var (
-		profiles = maltego.LoadIPProfiles()
+		profiles = netmaltego.LoadIPProfiles()
 		hosts    = make(map[string]struct{})
 		pathName string
 	)
 
-	maltego.POP3Transform(
+	netmaltego.POP3Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, path string, ipaddr string) {
 			hosts[pop3.ServerIP] = struct{}{}
@@ -39,10 +40,10 @@ func toHosts() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for ip := range hosts {
 		if p, ok := profiles[ip]; ok {
-			addIPProfile(&trx, p, pathName, 0, 0)
+			addIPProfile(trx, p, pathName, 0, 0)
 		}
 	}
 

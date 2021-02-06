@@ -15,9 +15,10 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -28,7 +29,7 @@ func toSMTPCommandTypes() {
 		pathName string
 	)
 
-	maltego.SMTPTransform(
+	netmaltego.SMTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, s *types.SMTP, min, max uint64, path string, ipaddr string) {
 			if pathName == "" {
@@ -41,9 +42,9 @@ func toSMTPCommandTypes() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for command, num := range commands {
-		ent := trx.AddEntityWithPath("netcap.SMTPCommandType", command, pathName)
+		ent := addEntityWithPath(trx, "netcap.SMTPCommandType", command, pathName)
 		ent.AddProperty("command", "Command", maltego.Strict, command)
 		ent.SetLinkLabel(strconv.Itoa(int(num)))
 		// TODO: num pkts / set thickness

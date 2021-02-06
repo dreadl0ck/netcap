@@ -17,15 +17,16 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toEmails() {
-	maltego.MailTransform(
+	netmaltego.MailTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, m *types.Mail, min, max uint64, path string, ipaddr string) {
 			var buf bytes.Buffer
@@ -34,7 +35,7 @@ func toEmails() {
 				fmt.Println(err)
 			}
 
-			ent := trx.AddEntityWithPath("netcap.Email", buf.String(), path)
+			ent := addEntityWithPath(trx, "netcap.Email", buf.String(), path)
 
 			var attachments string
 			for _, p := range m.Body {

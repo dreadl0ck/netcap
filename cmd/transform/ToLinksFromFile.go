@@ -23,7 +23,7 @@ import (
 
 	"mvdan.cc/xurls/v2"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func toLinksFromFile() {
@@ -64,7 +64,7 @@ func toLinksFromFile() {
 	log.Println("results", results)
 
 	for _, r := range results {
-		ent := trx.AddEntityWithPath("netcap.URL", r, path)
+		ent := addEntityWithPath(trx, "netcap.URL", r, path)
 
 		// since netcap.URL is inheriting from maltego.URL, in order to set the URL field correctly, we need to prefix the id with properties.
 		ent.AddProperty("properties.url", "URL", maltego.Strict, r)

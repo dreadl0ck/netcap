@@ -15,8 +15,9 @@ package collector
 
 import (
 	"encoding/json"
-	"github.com/dustin/go-humanize"
 	"runtime"
+
+	"github.com/dustin/go-humanize"
 )
 
 // memStats saves selected memory stats from the go runtime in human readable format

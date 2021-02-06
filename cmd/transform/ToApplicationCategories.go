@@ -14,20 +14,21 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toApplicationCategories() {
-	maltego.IPProfileTransform(
+	netmaltego.IPProfileTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
 			if ipaddr == "" {
-				ipaddr = lt.Values[maltego.PropertyIpAddr]
+				ipaddr = lt.Values[netmaltego.PropertyIpAddr]
 				if ipaddr == "" {
-					die("ipaddr property not set", "")
+					maltego.Die("ipaddr property not set", "")
 				}
 			}
 			toCategory(profile, mac, path, trx)
@@ -41,7 +42,7 @@ func toCategory(p *types.IPProfile, mac, path string, trx *maltego.Transform) {
 			continue
 		}
 
-		ent := trx.AddEntityWithPath("netcap.ApplicationCategory", proto.Category, path)
+		ent := addEntityWithPath(trx, "netcap.ApplicationCategory", proto.Category, path)
 		ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
 		ent.SetLinkLabel(strconv.FormatInt(int64(proto.Packets), 10) + " pkts")
 	}

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SNAP" displayName="SNAP" displayNamePlural="SNAP" description="The Subnetwork Access Protocol (SNAP) is a mechanism for multiplexing, on networks using IEEE 802.2 LLC" category="Netcap" smallIconResource="Netcap/SNAP_black" largeIconResource="Netcap/SNAP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SNAP" displayName="SNAP" displayNamePlural="SNAP" description="The Subnetwork Access Protocol (SNAP) is a mechanism for multiplexing, on networks using IEEE 802.2 LLC" category="Netcap" smallIconResource="netcap/SNAP_black" largeIconResource="netcap/SNAP_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.snap" displayValue="properties.snap">
   <Groups></Groups>
   <Fields>

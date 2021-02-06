@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.EAPOLKey" displayName="EAPOLKey" displayNamePlural="EAPOLKeies" description="Extensible Authentication Protocol is an authentication framework frequently used in network and internet connections" category="Netcap" smallIconResource="Netcap/EAPOLKey_black" largeIconResource="Netcap/EAPOLKey_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.EAPOLKey" displayName="EAPOLKey" displayNamePlural="EAPOLKeies" description="Extensible Authentication Protocol is an authentication framework frequently used in network and internet connections" category="Netcap" smallIconResource="netcap/EAPOLKey_black" largeIconResource="netcap/EAPOLKey_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.eapolkey" displayValue="properties.eapolkey">
   <Groups></Groups>
   <Fields>

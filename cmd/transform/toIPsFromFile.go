@@ -15,6 +15,7 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -22,7 +23,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 var (
@@ -71,13 +72,13 @@ func toIPsFromFile() {
 	log.Println("results", ipv4Results, ipv6Results)
 
 	for _, r := range ipv4Results {
-		ent := trx.AddEntityWithPath("netcap.IPAddr", r, path)
-		ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, r)
+		ent := addEntityWithPath(trx, "netcap.IPAddr", r, path)
+		ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, r)
 	}
 
 	for _, r := range ipv6Results {
-		ent := trx.AddEntityWithPath("netcap.IPAddr", r, path)
-		ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, r)
+		ent := addEntityWithPath(trx, "netcap.IPAddr", r, path)
+		ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, r)
 	}
 
 	trx.AddUIMessage("completed!", maltego.UIMessageInform)

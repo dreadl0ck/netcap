@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SSH" displayName="SSH" displayNamePlural="SSH" description="The Secure Shell Protocol allows controlling remote machines over an encrypted connection" category="Netcap" smallIconResource="Netcap/SSH_black" largeIconResource="Netcap/SSH_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SSH" displayName="SSH" displayNamePlural="SSH" description="The Secure Shell Protocol allows controlling remote machines over an encrypted connection" category="Netcap" smallIconResource="netcap/SSH_black" largeIconResource="netcap/SSH_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.ssh" displayValue="properties.ssh">
   <Groups></Groups>
   <Fields>

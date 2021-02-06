@@ -15,10 +15,11 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -29,7 +30,7 @@ func toDNSFlagCombinations() {
 		pathName string
 	)
 
-	maltego.DNSTransform(
+	netmaltego.DNSTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, d *types.DNS, min, max uint64, path string, ipaddr string) {
 			if pathName == "" {
@@ -40,9 +41,9 @@ func toDNSFlagCombinations() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for flagCombination, num := range flags {
-		ent := trx.AddEntityWithPath("netcap.DNSFlagCombination", flagCombination, pathName)
+		ent := addEntityWithPath(trx, "netcap.DNSFlagCombination", flagCombination, pathName)
 		ent.AddProperty("flags", "Flags", maltego.Strict, flagCombination)
 		ent.SetLinkLabel(strconv.Itoa(int(num)))
 		// TODO: num pkts / set thickness

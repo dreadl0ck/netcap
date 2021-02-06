@@ -22,9 +22,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/env"
-	"github.com/dreadl0ck/netcap/maltego"
 )
 
 func createOpenCommand(args []string) (string, []string) {
@@ -91,7 +91,7 @@ func openContentTypeFolder() {
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {
-		die(err.Error(), string(out))
+		maltego.Die(err.Error(), string(out))
 	}
 
 	log.Println(string(out))

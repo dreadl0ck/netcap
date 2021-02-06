@@ -24,13 +24,14 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 // serviceTransformationFunc is a transformation over Service profiles for a selected Service.
-type serviceTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.Service, min, max uint64, path string, mac string, ip string)
+type serviceTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Service, min, max uint64, path string, mac string, ip string)
 
 // deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 type serviceCountFunc = func(service *types.Service, mac string, min, max *uint64)
@@ -38,12 +39,12 @@ type serviceCountFunc = func(service *types.Service, mac string, min, max *uint6
 // ServiceTransform applies a maltego transformation over Service profiles seen for a target Service.
 func ServiceTransform(count serviceCountFunc, transform serviceTransformationFunc, continueTransform bool) {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[1:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
 
-		trx = Transform{}
+		trx = maltego.Transform{}
 	)
 
 	if !strings.HasPrefix(filepath.Base(path), "Service.ncap") {
@@ -56,7 +57,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 
 	f, err := os.Open(path)
 	if err != nil {
-		trx.AddUIMessage("path property not set!", UIMessageFatal)
+		trx.AddUIMessage("path property not set!", maltego.UIMessageFatal)
 		fmt.Println(trx.ReturnOutput())
 		log.Println("input file path property not set")
 		return
@@ -64,7 +65,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -72,10 +73,10 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 	if header.Type != types.Type_NC_Service {
-		die("file does not contain Service records", header.Type.String())
+		maltego.Die("file does not contain Service records", header.Type.String())
 	}
 
 	var (
@@ -100,7 +101,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(service, mac, &min, &max)
@@ -114,7 +115,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 
 	r, err = netio.Open(path, defaults.BufferSize)
 	if err != nil {
-		die(err.Error(), "failed to open file")
+		maltego.Die(err.Error(), "failed to open file")
 	}
 
 	// read netcap header - ignore err as it has been checked before
@@ -137,7 +138,7 @@ func ServiceTransform(count serviceCountFunc, transform serviceTransformationFun
 	}
 
 	if !continueTransform {
-		trx.AddUIMessage("completed!", UIMessageInform)
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 	}
 }

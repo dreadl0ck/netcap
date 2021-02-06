@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.FileType" displayName="FileType" displayNamePlural="FileTypes" description="The type of file based on its contents" category="Netcap" smallIconResource="Netcap/insert_chart_black" largeIconResource="Netcap/insert_chart_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.FileType" displayName="FileType" displayNamePlural="FileTypes" description="The type of file based on its contents" category="Netcap" smallIconResource="netcap/insert_chart_black" largeIconResource="netcap/insert_chart_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.filetype" displayValue="properties.filetype">
   <Groups></Groups>
   <Fields>

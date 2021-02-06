@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func openLiveNetcapFolder() {
@@ -34,7 +34,7 @@ func openLiveNetcapFolder() {
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {
-		die(err.Error(), "failed to open netcap folder:\n"+string(out))
+		maltego.Die(err.Error(), "failed to open netcap folder:\n"+string(out))
 	}
 	log.Println(string(out))
 

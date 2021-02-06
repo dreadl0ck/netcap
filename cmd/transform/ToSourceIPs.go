@@ -14,22 +14,23 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toSourceIPs() {
-	profiles := maltego.LoadIPProfiles()
+	profiles := netmaltego.LoadIPProfiles()
 
-	maltego.DeviceProfileTransform(
-		maltego.CountPacketsDeviceIPs,
+	netmaltego.DeviceProfileTransform(
+		netmaltego.CountPacketsDeviceIPs,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string) {
 			if profile.MacAddr != mac {
 				return
@@ -38,7 +39,7 @@ func toSourceIPs() {
 				if p, ok := profiles[ip]; ok {
 
 					var (
-						ent      *maltego.EntityObj
+						ent      *maltego.Entity
 						dnsNames = strings.Join(p.DNSNames, "\n")
 						val      = p.Addr
 					)
@@ -49,16 +50,16 @@ func toSourceIPs() {
 						val += "\n" + dnsNames
 					}
 					if resolvers.IsPrivateIP(net.ParseIP(p.Addr)) {
-						ent = trx.AddEntityWithPath("netcap.InternalSourceIP", val, path)
+						ent = addEntityWithPath(trx, "netcap.InternalSourceIP", val, path)
 					} else {
-						ent = trx.AddEntityWithPath("netcap.ExternalSourceIP", val, path)
+						ent = addEntityWithPath(trx, "netcap.ExternalSourceIP", val, path)
 					}
 
 					ent.AddProperty("geolocation", "Geolocation", maltego.Strict, p.Geolocation)
 					ent.AddProperty("dnsNames", "DNS Names", maltego.Strict, dnsNames)
 
 					ent.AddProperty("mac", "MacAddress", maltego.Strict, mac)
-					ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, p.Addr)
+					ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, p.Addr)
 
 					ent.AddProperty("numPackets", "Num Packets", maltego.Strict, strconv.FormatInt(p.NumPackets, 10))
 

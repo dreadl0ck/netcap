@@ -14,13 +14,14 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toHTTPCookies() {
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.SrcIP == ipaddr || http.DstIP == ipaddr {
@@ -37,8 +38,8 @@ func toHTTPCookies() {
 }
 
 func addCookie(trx *maltego.Transform, c *types.HTTPCookie, timestamp string, ipaddr string, path string, method string, host string) {
-	ent := trx.AddEntityWithPath("netcap.HTTPCookie", c.Name, path)
-	ent.AddProperty(maltego.PropertyIpAddr, maltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
+	ent := addEntityWithPath(trx, "netcap.HTTPCookie", c.Name, path)
+	ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 	ent.AddProperty("host", "Host", maltego.Strict, host)
 	ent.AddProperty("timestamp", "Timestamp", maltego.Strict, timestamp)
 	ent.SetLinkLabel(method)

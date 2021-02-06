@@ -14,14 +14,15 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toGeolocation() {
-	maltego.IPProfileTransform(
+	netmaltego.IPProfileTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.Addr != ipaddr {
@@ -36,7 +37,7 @@ func toGeolocation() {
 }
 
 func addGeolocation(trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string) {
-	ent := trx.AddEntityWithPath("netcap.Location", profile.Geolocation, path)
+	ent := addEntityWithPath(trx, "netcap.Location", profile.Geolocation, path)
 	ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts")
 	ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
 }

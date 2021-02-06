@@ -15,9 +15,10 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -25,7 +26,7 @@ import (
 func toDHCPClients() {
 	results := map[string]int{}
 
-	maltego.DHCPV4Transform(
+	netmaltego.DHCPV4Transform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, path string, ipaddr string) {
 			// DHCP operations fall into four phases: server discovery, IP lease offer, IP lease request, and IP lease acknowledgement.
@@ -45,7 +46,7 @@ func toDHCPClients() {
 
 			// log.Println("ident", ident, dhcp.Fingerprint)
 
-			ent := trx.AddEntityWithPath("netcap.DHCPClient", ident, path)
+			ent := addEntityWithPath(trx, "netcap.DHCPClient", ident, path)
 
 			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(dhcp.Timestamp))
 			ent.AddProperty("clientIP", "ClientIP", maltego.Strict, dhcp.ClientIP)

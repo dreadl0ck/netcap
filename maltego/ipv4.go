@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -33,16 +34,16 @@ type ipCountFunc = func(ip string, min, max *uint64)
 
 // IPv4TransformationFunc is a transformation over IPv4 audit records
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPv4TransformationFunc = func(lt LocalTransform, trx *Transform, ipv4 *types.IPv4, min, max uint64, path string, mac string, ip string)
+type IPv4TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ipv4 *types.IPv4, min, max uint64, path string, mac string, ip string)
 
 // IPv4Transform applies a maltego transformation over IP profiles
 func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continueTransform bool) {
 	var (
-		lt     = ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[1:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
-		trx    = Transform{}
+		trx    = maltego.Transform{}
 	)
 
 	if !strings.HasPrefix(filepath.Base(path), "IPv4.ncap") {
@@ -55,7 +56,7 @@ func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continue
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die(errUnexpectedFileType, f.Name())
+		maltego.Die(errUnexpectedFileType, f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -63,11 +64,11 @@ func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continue
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header.Type != types.Type_NC_IPv4 {
-		die("file does not contain DeviceProfile records", header.Type.String())
+		maltego.Die("file does not contain DeviceProfile records", header.Type.String())
 	}
 
 	var (
@@ -94,7 +95,7 @@ func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continue
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(mac, &min, &max)
@@ -108,7 +109,7 @@ func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continue
 
 	r, err = netio.Open(path, defaults.BufferSize)
 	if err != nil {
-		die(err.Error(), "failed to open file")
+		maltego.Die(err.Error(), "failed to open file")
 	}
 
 	// read netcap header - ignore err as it has been checked before
@@ -131,7 +132,7 @@ func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continue
 	}
 
 	if !continueTransform {
-		trx.AddUIMessage("completed!", UIMessageInform)
+		trx.AddUIMessage("completed!", maltego.UIMessageInform)
 		fmt.Println(trx.ReturnOutput())
 	}
 }

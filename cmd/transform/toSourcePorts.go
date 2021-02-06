@@ -15,6 +15,7 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
 	"strconv"
@@ -22,7 +23,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -44,7 +45,7 @@ func toSourcePorts() {
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
-	maltego.IPProfileTransform(
+	netmaltego.IPProfileTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.Addr != ipaddr {
@@ -70,7 +71,7 @@ func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min
 		di          = utils.UnixTimeToUTC(ip.TimestampFirst) + " " + ip.Addr + "<br>"
 	)
 
-	ent := trx.AddEntityWithPath("netcap.SourcePort", portStr+"\n"+serviceName, path)
+	ent := addEntityWithPath(trx, "netcap.SourcePort", portStr+"\n"+serviceName, path)
 	ent.AddDisplayInformation(di, "Netcap Info")
 	ent.AddProperty("label", "Label", maltego.Strict, portStr+"\n"+serviceName)
 	ent.AddProperty("port", "Port", maltego.Strict, portStr)

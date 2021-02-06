@@ -15,19 +15,20 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toNTPHosts() {
 	var (
-		profiles = maltego.LoadIPProfiles()
+		profiles = netmaltego.LoadIPProfiles()
 		hosts    = make(map[string]struct{})
 		pathName string
 	)
 
-	maltego.NTPTransform(
+	netmaltego.NTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ntp *types.NTP, min, max uint64, path string, ipaddr string) {
 			if pathName == "" {
@@ -39,10 +40,10 @@ func toNTPHosts() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for ip := range hosts {
 		if p, ok := profiles[ip]; ok {
-			addIPProfile(&trx, p, pathName, 0, 0)
+			addIPProfile(trx, p, pathName, 0, 0)
 		}
 	}
 

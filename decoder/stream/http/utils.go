@@ -16,11 +16,12 @@ package http
 import (
 	"bytes"
 	"compress/gzip"
-	"github.com/dreadl0ck/netcap/types"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 /*

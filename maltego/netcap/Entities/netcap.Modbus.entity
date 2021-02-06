@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Modbus" displayName="Modbus" displayNamePlural="Modbus" description="Modbus is a data communications protocol originally published by Modicon in 1979 for use with its programmable logic controllers" category="Netcap" smallIconResource="Netcap/Modbus_black" largeIconResource="Netcap/Modbus_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Modbus" displayName="Modbus" displayNamePlural="Modbus" description="Modbus is a data communications protocol originally published by Modicon in 1979 for use with its programmable logic controllers" category="Netcap" smallIconResource="netcap/Modbus_black" largeIconResource="netcap/Modbus_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.modbus" displayValue="properties.modbus">
   <Groups></Groups>
   <Fields>

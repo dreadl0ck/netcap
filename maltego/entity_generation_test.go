@@ -16,11 +16,13 @@ package maltego_test
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/dreadl0ck/maltego"
+	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/mgutz/ansi"
 
@@ -30,11 +32,11 @@ import (
 )
 
 // additional entities that are not actual NETCAP audit records
-var maltegoEntities = []entityCoreInfo{
+var maltegoEntities = []maltego.EntityCoreInfo{
 	{"ContentType", "category", "A MIME type describes different multi-media formats", "", nil},
 	{"Email", "mail_outline", "An email message", "maltego.Email", nil},
-	{"Interface", "router", "A network interface", "", []propertyField{newRequiredStringField("properties.interface", "Name of the network interface"), newStringField("snaplen", "snap length for ethernet frames in bytes, default: 1514"), newStringField("bpf", "berkeley packet filter to apply")}},
-	{"PCAP", "sd_storage", "A packet capture dump file", "", []propertyField{newRequiredStringField("path", "Absolute path to the PCAP file")}},
+	{"Interface", "router", "A network interface", "", []maltego.PropertyField{maltego.NewRequiredStringField("properties.interface", "Name of the network interface"), maltego.NewStringField("snaplen", "snap length for ethernet frames in bytes, default: 1514"), maltego.NewStringField("bpf", "berkeley packet filter to apply")}},
+	{"PCAP", "sd_storage", "A packet capture dump file", "", []maltego.PropertyField{maltego.NewRequiredStringField("path", "Absolute path to the PCAP file")}},
 	{"Device", "devices", "A device seen on the network", "", nil},
 	{"FileType", "insert_chart", "The type of file based on its contents", "", nil},
 	{"IPAddr", "router", "An internet protocol (IP) network address", "maltego.IPv4Address", nil},
@@ -100,23 +102,23 @@ var maltegoEntities = []entityCoreInfo{
 	{"ApplicationCategory", "design_services", "An application category discovered via DPI", "", nil},
 
 	// overwrites
-	{"Credentials", "security", "Credentials for accessing services that require user authentication", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"File", "text_snippet", "A file", "maltego.File", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"Software", "apps", "A software product", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"Service", "miscellaneous_services", "A software product", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"InternalIPProfile", "contact_page_outline", "A behavior profile for an internal IP address", "netcap.IPAddr", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"ExternalIPProfile", "contact_page", "A behavior profile for an external IP address", "netcap.IPAddr", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"Vulnerability", "bug_report", "A software exploit", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"Exploit", "coronavirus", "A software vulnerability", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"Flow", "arrow_right_alt", "A undirectional network flow", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"Connection", "compare_arrows", "A bidirectional network connection", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"TLSClientHello", "call_made", "A TLS Client", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
-	{"TLSServerHello", "call_received", "A TLS Server", "", []propertyField{newStringField("path", "path to the audit records on disk")}},
+	{"Credentials", "security", "Credentials for accessing services that require user authentication", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"File", "text_snippet", "A file", "maltego.File", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"Software", "apps", "A software product", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"Service", "miscellaneous_services", "A software product", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"InternalIPProfile", "contact_page_outline", "A behavior profile for an internal IP address", "netcap.IPAddr", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"ExternalIPProfile", "contact_page", "A behavior profile for an external IP address", "netcap.IPAddr", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"Vulnerability", "bug_report", "A software exploit", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"Exploit", "coronavirus", "A software vulnerability", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"Flow", "arrow_right_alt", "A undirectional network flow", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"Connection", "compare_arrows", "A bidirectional network connection", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"TLSClientHello", "call_made", "A TLS Client", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"TLSServerHello", "call_received", "A TLS Server", "", []maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
 }
 
 // generate all entities and pack as archive
 func TestGenerateAllEntities(t *testing.T) {
-	genEntityArchive()
+	maltego.GenEntityArchive(ident)
 
 	var (
 		count int
@@ -144,30 +146,30 @@ func TestGenerateAllEntities(t *testing.T) {
 	// generate additional entities after generating the others
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
-		genEntity("entities", e.Name, e.Icon, e.Description, e.Parent, false, "black", nil, e.Fields...)
+		maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, "entities", e.Name, e.Icon, e.Description, e.Parent, false, "black", nil, e.Fields...)
 	}
 
-	packEntityArchive()
+	maltego.PackEntityArchive()
 
 	utils.CopyFile("entities.mtz", filepath.Join(os.Getenv("HOME"), "entities.mtz"))
 }
 
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
-	genEntityArchive()
-	genEntity("entities", "Vulnerability", "Vulnerability", "A software vulnerability", "", false, "black", nil)
-	packEntityArchive()
+	maltego.GenEntityArchive(ident)
+	maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, "entities", "Vulnerability", "Vulnerability", "A software vulnerability", "", false, "black", nil)
+	maltego.PackEntityArchive()
 }
 
 func TestGenerateAndPackPCAPEntity(t *testing.T) {
-	genEntityArchive()
-	genEntity("entities", "PCAP", "sd_storage", "Packet capture file", "", false, "black", nil, newStringField("path", "path to the audit records on disk"))
-	packEntityArchive()
+	maltego.GenEntityArchive(ident)
+	maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, "entities", "PCAP", "sd_storage", "Packet capture file", "", false, "black", nil, maltego.NewStringField("path", "path to the audit records on disk"))
+	maltego.PackEntityArchive()
 }
 
 func TestGenerateAndPackAuditRecordEntity(t *testing.T) {
-	genEntityArchive()
-	genEntity("entities", "IPv4", "IPv4", "IPv4 Audit Records", "", false, "black", nil, newStringField("path", "path to the audit records on disk"))
-	packEntityArchive()
+	maltego.GenEntityArchive(ident)
+	maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, "entities", "IPv4", "IPv4", "IPv4 Audit Records", "", false, "black", nil, maltego.NewStringField("path", "path to the audit records on disk"))
+	maltego.PackEntityArchive()
 }
 
 func TestGeneratePCAPXMLEntity(t *testing.T) {
@@ -192,13 +194,13 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
  </Converter>
 </MaltegoEntity>`
 
-	e := newEntity("PCAP", "General/SharkAttack", "Packet capture file", "", false, &regexConversion{
-		regex: "^(.+\\/([^\\/]+)[A-Za-z]*\\.pcap)",
-		properties: []string{
+	e := maltego.NewMaltegoEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, "PCAP", "General/SharkAttack", "Packet capture file", "", false, &maltego.RegexConversion{
+		Regex: "^(.+\\/([^\\/]+)[A-Za-z]*\\.pcap)",
+		Properties: []string{
 			"path",
 			"properties.pcap",
 		},
-	}, newStringField("path", "path to the audit records on disk"))
+	}, maltego.NewStringField("path", "path to the audit records on disk"))
 
 	data, err := xml.MarshalIndent(e, "", " ")
 	if err != nil {
@@ -209,11 +211,11 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
 }
 
 func compareGeneratedXML(data []byte, expected string, t *testing.T) {
-	fmt.Println("-------------------RESULT--------------------------")
-	fmt.Println(string(data))
-	fmt.Println("------------------------------------------------")
 
 	if string(data) != expected {
+		fmt.Println("-------------------RESULT--------------------------")
+		fmt.Println(string(data))
+		fmt.Println("------------------------------------------------")
 
 		fmt.Println("-------------------EXPECTED--------------------------")
 		fmt.Println(expected)
@@ -251,7 +253,7 @@ func TestGenerateDHCPClientXMLEntity(t *testing.T) {
   </Fields>
  </Properties>
 </MaltegoEntity>`
-	e := XMLEntity{
+	e := maltego.MaltegoEntity{
 		ID:                "netcap.DHCPClient",
 		DisplayName:       "DHCPClient",
 		DisplayNamePlural: "DHCPClients",
@@ -262,14 +264,11 @@ func TestGenerateDHCPClientXMLEntity(t *testing.T) {
 		AllowedRoot:       true,
 		ConversionOrder:   "2147483647",
 		Visible:           true,
-		Properties: entityProperties{
-			XMLName:      xml.Name{},
-			Text:         "",
+		Properties: maltego.EntityProperties{
 			Value:        "properties.dhcpclient",
 			DisplayValue: "properties.dhcpclient",
-			Fields: fields{
-				Text: "",
-				Items: []propertyField{
+			Fields: maltego.Fields{
+				Items: []maltego.PropertyField{
 					{
 						Name:        "properties.dhcpclient",
 						Type:        "string",

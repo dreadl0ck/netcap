@@ -15,11 +15,12 @@ package transform
 
 import (
 	"fmt"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
 	"github.com/dreadl0ck/gopacket/layers"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -29,7 +30,7 @@ func toEthernetTypes() {
 		pathName   string
 	)
 
-	maltego.EthernetTransform(
+	netmaltego.EthernetTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, eth *types.Ethernet, min, max uint64, path string, ipaddr string) {
 			if pathName == "" {
@@ -40,9 +41,9 @@ func toEthernetTypes() {
 		true,
 	)
 
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	for typ, numHits := range etherTypes {
-		ent := trx.AddEntityWithPath("netcap.EthernetType", layers.EthernetType(uint16(typ)).String(), pathName)
+		ent := addEntityWithPath(trx, "netcap.EthernetType", layers.EthernetType(uint16(typ)).String(), pathName)
 		ent.AddProperty("type", "Type", maltego.Strict, strconv.Itoa(int(typ)))
 		ent.SetLinkLabel(strconv.Itoa(numHits))
 	}

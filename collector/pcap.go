@@ -193,6 +193,9 @@ func (c *Collector) CollectPcap(path string) error {
 func (c *Collector) handleLinkType(lt layers.LinkType) {
 	c.printlnStdOut("detected link type:", lt)
 
+	// TODO: why does this not work?
+	//c.config.BaseLayer = lt.LayerType()
+
 	switch lt {
 	case layers.LinkTypeEthernet:
 		c.config.BaseLayer = layers.LayerTypeEthernet
@@ -210,6 +213,8 @@ func (c *Collector) handleLinkType(lt layers.LinkType) {
 		c.config.BaseLayer = layers.LayerTypeDot11
 	case layers.LinkTypeIEEE80211Radio:
 		c.config.BaseLayer = layers.LayerTypeRadioTap
+	case layers.LinkTypePPP:
+		c.config.BaseLayer = layers.LayerTypePPP
 	default:
 		log.Fatal("unhandled link type: ", lt)
 	}

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.NortelDiscovery" displayName="NortelDiscovery" displayNamePlural="NortelDiscoveries" description="The Nortel Discovery Protocol (NDP) is a Data Link Layer (OSI Layer 2) network protocol for discovery of Nortel networking devices and certain products from Avaya and Ciena" category="Netcap" smallIconResource="Netcap/NortelDiscovery_black" largeIconResource="Netcap/NortelDiscovery_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.NortelDiscovery" displayName="NortelDiscovery" displayNamePlural="NortelDiscoveries" description="The Nortel Discovery Protocol (NDP) is a Data Link Layer (OSI Layer 2) network protocol for discovery of Nortel networking devices and certain products from Avaya and Ciena" category="Netcap" smallIconResource="netcap/NortelDiscovery_black" largeIconResource="netcap/NortelDiscovery_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.norteldiscovery" displayValue="properties.norteldiscovery">
   <Groups></Groups>
   <Fields>

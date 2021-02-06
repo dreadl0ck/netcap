@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SMTPAuditRecords" displayName="SMTPAuditRecords" displayNamePlural="SMTPAuditRecords" description="An archive of SMTP audit records" category="Netcap Archives" smallIconResource="Netcap/insert_drive_file_indigo" largeIconResource="Netcap/insert_drive_file_indigo" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SMTPAuditRecords" displayName="SMTPAuditRecords" displayNamePlural="SMTPAuditRecords" description="An archive of SMTP audit records" category="Netcap Archives" smallIconResource="netcap/insert_drive_file_blueviolet" largeIconResource="netcap/insert_drive_file_blueviolet" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.smtpauditrecords" displayValue="properties.smtpauditrecords">
   <Groups></Groups>
   <Fields>

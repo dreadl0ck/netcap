@@ -15,9 +15,10 @@ package credentials
 
 import (
 	"encoding/base64"
+	"time"
+
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
-	"time"
 )
 
 // harvester for the IMAP protocol.

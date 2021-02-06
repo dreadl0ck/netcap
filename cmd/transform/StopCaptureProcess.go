@@ -21,11 +21,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func stopCaptureProcess() {
-	trx := maltego.Transform{}
+	trx := &maltego.Transform{}
 	log.Println("sending cleanup request")
 
 	http.DefaultClient.Timeout = 0
@@ -47,7 +47,7 @@ func stopCaptureProcess() {
 
 	defer func() {
 		if errPanic := recover(); err != nil {
-			die(errPanic.(error).Error(), "process panic")
+			maltego.Die(errPanic.(error).Error(), "process panic")
 		}
 	}()
 

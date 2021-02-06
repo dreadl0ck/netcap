@@ -24,7 +24,7 @@ import (
 
 	"github.com/nyaruka/phonenumbers"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 )
 
 func toPhoneNumbersFromFile() {
@@ -69,7 +69,7 @@ func toPhoneNumbersFromFile() {
 		p, errParsePhone := phonenumbers.Parse(r, "US")
 		if errParsePhone == nil {
 			if phonenumbers.IsValidNumber(p) {
-				ent := trx.AddEntityWithPath("netcap.PhoneNumber", r, path)
+				ent := addEntityWithPath(trx, "netcap.PhoneNumber", r, path)
 				ent.AddProperty("properties.phonenumber", "Phone Number", maltego.Strict, r)
 			}
 		}

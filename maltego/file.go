@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -32,15 +33,15 @@ import (
 type filesCountFunc func()
 
 // filesTransformationFunc is a transformation over File audit records.
-type filesTransformationFunc = func(lt LocalTransform, trx *Transform, file *types.File, min, max uint64, path string, ip string)
+type filesTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, path string, ip string)
 
 // FilesTransform applies a maltego transformation over File audit records.
 func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 	var (
-		lt               = ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values[PropertyIpAddr]
-		trx              = Transform{}
+		trx              = maltego.Transform{}
 		dir              = filepath.Dir(path)
 		fileAuditRecords = filepath.Join(dir, "File.ncap.gz")
 	)
@@ -49,7 +50,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die("input file must be an audit record file, but got", f.Name())
+		maltego.Die("input file must be an audit record file, but got", f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -57,7 +58,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die("failed to read file header", errFileHeader.Error())
+		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
 	if header != nil && header.Type != types.Type_NC_File {
@@ -87,7 +88,7 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count()
@@ -120,6 +121,6 @@ func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

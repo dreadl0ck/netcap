@@ -23,6 +23,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dreadl0ck/maltego"
+
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -166,18 +168,18 @@ var countOutgoingconnPackets = func(conn *types.Connection, ipaddr string, min, 
 }
 
 // connTransformationFunc is a transformation over conn audit records.
-type connTransformationFunc = func(lt LocalTransform, trx *Transform, conn *types.Connection, min, max uint64, path string, mac string, ip string, sizes *[]int)
+type connTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ip string, sizes *[]int)
 
 // ConnectionTransform applies a maltego transformation over types.Connection audit records.
 func ConnectionTransform(count connCountFunc, transform connTransformationFunc) {
 	var (
-		lt               = ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[1:])
 		path             = lt.Values["path"]
 		mac              = lt.Values["mac"]
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
 		connAuditRecords = filepath.Join(dir, "Connection.ncap.gz")
-		trx              = Transform{}
+		trx              = maltego.Transform{}
 	)
 
 	netio.FPrintBuildInfo(os.Stderr)
@@ -188,7 +190,7 @@ func ConnectionTransform(count connCountFunc, transform connTransformationFunc) 
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die("input file must be an audit record file, but got", f.Name())
+		maltego.Die("input file must be an audit record file, but got", f.Name())
 	}
 
 	r := openNetcapArchive(path)
@@ -196,11 +198,11 @@ func ConnectionTransform(count connCountFunc, transform connTransformationFunc) 
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die(errFileHeader.Error(), "failed to read file header")
+		maltego.Die(errFileHeader.Error(), "failed to read file header")
 	}
 
 	if header != nil && header.Type != types.Type_NC_Connection {
-		die("file does not contain conn records", header.Type.String())
+		maltego.Die("file does not contain conn records", header.Type.String())
 	}
 
 	var (
@@ -228,7 +230,7 @@ func ConnectionTransform(count connCountFunc, transform connTransformationFunc) 
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(conn, ipaddr, &min, &max, &sizes)
@@ -270,6 +272,6 @@ func ConnectionTransform(count connCountFunc, transform connTransformationFunc) 
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

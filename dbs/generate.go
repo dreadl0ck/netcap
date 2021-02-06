@@ -210,6 +210,8 @@ func GenerateDBs(nvdIndexStartYear int) {
 	saveTotalDatabaseSize(base)
 
 	fmt.Println("fetched", total, "sources ("+humanize.Bytes(numBytesFetched)+")", "in", time.Since(start))
+
+	gitLfsPrune()
 }
 
 func processSource(s *datasource, base string, wg *sync.WaitGroup) {

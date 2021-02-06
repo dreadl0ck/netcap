@@ -14,12 +14,13 @@
 package service
 
 import (
+	"sync/atomic"
+
 	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	logging "github.com/dreadl0ck/netcap/logger"
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
-	"sync/atomic"
 )
 
 var (

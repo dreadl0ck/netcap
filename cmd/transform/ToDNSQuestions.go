@@ -14,16 +14,17 @@
 package transform
 
 import (
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toDNSQuestions() {
 	results := make(map[string]int)
 
-	maltego.DNSTransform(
+	netmaltego.DNSTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, d *types.DNS, min, max uint64, path string, ipaddr string) {
 			for _, q := range d.Questions {
@@ -35,7 +36,7 @@ func toDNSQuestions() {
 					}
 					results[q.Name]++
 
-					ent := trx.AddEntityWithPath("netcap.DNSName", q.Name, path)
+					ent := addEntityWithPath(trx, "netcap.DNSName", q.Name, path)
 					ent.AddProperty("srcIP", "SourceIP", maltego.Strict, d.SrcIP)
 					ent.SetLinkLabel(strconv.Itoa(results[q.Name]))
 				}

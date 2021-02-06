@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -76,15 +77,15 @@ func countIP(ips map[string]*types.IPProfile, ip string, min, max *uint64) {
 type deviceProfileCountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
 
 // deviceProfileTransformationFunc is transform over DeviceProfiles.
-type deviceProfileTransformationFunc = func(lt LocalTransform, trx *Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string)
+type deviceProfileTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string)
 
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records.
 func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfileTransformationFunc) {
 	var (
-		lt   = ParseLocalArguments(os.Args[1:])
+		lt   = maltego.ParseLocalArguments(os.Args[1:])
 		path = lt.Values["path"]
 		mac  = lt.Values["mac"]
-		trx  = Transform{}
+		trx  = maltego.Transform{}
 	)
 
 	if !strings.HasPrefix(filepath.Base(path), "DeviceProfile.ncap") {
@@ -97,7 +98,7 @@ func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfil
 
 	// check if its an audit record file
 	if !strings.HasSuffix(f.Name(), defaults.FileExtensionCompressed) && !strings.HasSuffix(f.Name(), defaults.FileExtension) {
-		die("input file must be an audit record file, but got", f.Name())
+		maltego.Die("input file must be an audit record file, but got", f.Name())
 	}
 
 	log.Println("open reader", path)
@@ -106,11 +107,11 @@ func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfil
 	// read netcap header
 	header, errFileHeader := r.ReadHeader()
 	if errFileHeader != nil {
-		die(errFileHeader.Error(), "failed to open audit record file")
+		maltego.Die(errFileHeader.Error(), "failed to open audit record file")
 	}
 
 	if header != nil && header.Type != types.Type_NC_DeviceProfile {
-		die("file does not contain DeviceProfile records", header.Type.String())
+		maltego.Die("file does not contain DeviceProfile records", header.Type.String())
 	}
 
 	var (
@@ -138,7 +139,7 @@ func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfil
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else if err != nil {
-				die(err.Error(), errUnexpectedReadFailure)
+				maltego.Die(err.Error(), errUnexpectedReadFailure)
 			}
 
 			count(profile, mac, &min, &max, profiles)
@@ -151,7 +152,7 @@ func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfil
 
 		r, err = netio.Open(path, defaults.BufferSize)
 		if err != nil {
-			die(err.Error(), "failed to open file")
+			maltego.Die(err.Error(), "failed to open file")
 		}
 
 		// read off netcap header - ignore err as it has been checked before
@@ -174,6 +175,6 @@ func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfil
 		log.Println("failed to close audit record file: ", err)
 	}
 
-	trx.AddUIMessage("completed!", UIMessageInform)
+	trx.AddUIMessage("completed!", maltego.UIMessageInform)
 	fmt.Println(trx.ReturnOutput())
 }

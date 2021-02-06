@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.Connection" displayName="Connection" displayNamePlural="Connections" description="A bidirectional network connection" category="Netcap" smallIconResource="Netcap/compare_arrows_black" largeIconResource="Netcap/compare_arrows_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.Connection" displayName="Connection" displayNamePlural="Connections" description="A bidirectional network connection" category="Netcap" smallIconResource="netcap/compare_arrows_black" largeIconResource="netcap/compare_arrows_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.connection" displayValue="properties.connection">
   <Groups></Groups>
   <Fields>

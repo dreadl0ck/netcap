@@ -14,7 +14,8 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/netcap/maltego"
+	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -24,14 +25,14 @@ func toCookieValues() {
 		host       string
 	)
 
-	maltego.HTTPTransform(
+	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if host == "" {
 				cookieName = lt.Values["properties.httpcookie"]
 				host = lt.Values["host"]
 				if host == "" {
-					die("host not set", "")
+					maltego.Die("host not set", "")
 				}
 			}
 			if http.Host == host {
@@ -53,5 +54,5 @@ func toCookieValues() {
 
 // TODO: set timestamp as property.
 func addCookieValue(trx *maltego.Transform, c *types.HTTPCookie, path string) {
-	trx.AddEntityWithPath("netcap.HTTPCookieValue", c.Value, path)
+	addEntityWithPath(trx, "netcap.HTTPCookieValue", c.Value, path)
 }

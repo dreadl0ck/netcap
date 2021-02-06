@@ -396,17 +396,25 @@ commands:
         exec: gosec ./...
 
     test:
+        dependencies:
+            - make-icons
         exec: |
             go clean -testcache && go test ./... -coverprofile cover.out
             go tool cover -html=cover.out
 
     test-race:
+        dependencies:
+            - make-icons
         exec: GORACE="history_size=7" go test -race ./...
 
     test-verbose:
+        dependencies:
+            - make-icons
         exec: go test -v ./...
 
     bench:
+        dependencies:
+            - make-icons
         exec: go test -v -bench=. ./...
 
     test-params:

@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.SSHServer" displayName="SSHServer" displayNamePlural="SSHServer" description="A Secure Shell Protocol Server" category="Netcap" smallIconResource="Netcap/call_received_black" largeIconResource="Netcap/call_received_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.SSHServer" displayName="SSHServer" displayNamePlural="SSHServer" description="A Secure Shell Protocol Server" category="Netcap" smallIconResource="netcap/call_received_black" largeIconResource="netcap/call_received_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.sshserver" displayValue="properties.sshserver">
   <Groups></Groups>
   <Fields>

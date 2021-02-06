@@ -14,8 +14,9 @@
 package decoder
 
 import (
-	"github.com/dreadl0ck/netcap/decoder/core"
 	"sync/atomic"
+
+	"github.com/dreadl0ck/netcap/decoder/core"
 
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
