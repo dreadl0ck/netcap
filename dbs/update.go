@@ -16,15 +16,15 @@ package dbs
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/dreadl0ck/cryptoutils"
-	"github.com/dreadl0ck/netcap/resolvers"
-	"github.com/dreadl0ck/netcap/utils"
-	"github.com/evilsocket/islazy/zip"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/dreadl0ck/cryptoutils"
+	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // UpdateDBs will update the databases on disk by pulling from the public github repository
@@ -96,23 +96,13 @@ func UpdateDBs() {
 		utils.CopyFile(filepath.Join("/tmp", filepath.Base(pathCity)), pathCity)
 	}
 
-	// decompress bleve stores
-	files, err := ioutil.ReadDir(resolvers.DataBaseFolderPath)
+	fmt.Println("pruning git lfs cache")
+	cmd = exec.Command("git", "lfs", "prune")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	err = cmd.Run()
 	if err != nil {
-		log.Fatal("failed to read dir: ", resolvers.DataBaseFolderPath, err)
-	}
-
-	for _, f := range files {
-		if filepath.Ext(f.Name()) == ".zip" {
-			fmt.Println("decompressing", f.Name())
-			_, err = zip.Unzip(
-				filepath.Join(resolvers.DataBaseFolderPath, f.Name()),
-				resolvers.DataBaseFolderPath,
-			)
-			if err != nil {
-				log.Fatal("failed to unzip: ", f.Name(), " error: ", err)
-			}
-		}
+		log.Fatal("failed to run git lfs prune: ", err)
 	}
 
 	fmt.Println("done! Updated databases to", resolvers.ConfigRootPath)
