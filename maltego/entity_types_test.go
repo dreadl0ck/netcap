@@ -13,6 +13,8 @@
 
 package maltego_test
 
+import "strings"
+
 const (
 	author              = "Philipp Mieden"
 	ident               = "Netcap"
@@ -21,4 +23,8 @@ const (
 	propsPrefix         = "properties."
 	netcapIdent         = "netcap"
 	netcapMachinePrefix = "netcap_"
+)
+
+var (
+	org                 = strings.ToTitle(ident)
 )
