@@ -32,7 +32,7 @@ import (
 )
 
 // additional transforms
-var transforms = []maltego.TransformCoreInfo{
+var transforms = []*maltego.TransformCoreInfo{
 	{"ToApplicationCategories", "netcap.IPAddr", "Retrieve categories of classified applications"},
 	{"ToApplications", "netcap.IPAddr", "Show all applications used by the selected host"},
 	{"ToApplicationsForCategory", "netcap.ApplicationCategory", "Retrieve applications seen for a given category"},
@@ -179,7 +179,7 @@ var transforms = []maltego.TransformCoreInfo{
 
 // generate all transforms and pack as archive
 func TestGenerateFullMaltegoConfiguration(t *testing.T) {
-	maltego.GenFullConfigArchive(netcapIdent)
+	maltego.GenMaltegoArchive(netcapIdent, ident)
 
 	var count int
 
@@ -208,7 +208,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
 		if e.Name == "PCAP" {
-			maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", &maltego.RegexConversion{
+			maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, "black", &maltego.RegexConversion{
 				Regex: "^(.+(\\/|\\\\)(.*)\\.pcap(ng)?)",
 				Properties: []string{
 					"path", // 1st group matches full path
@@ -217,12 +217,13 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 				},
 			}, e.Fields...)
 		} else {
-			maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, false, "black", nil, e.Fields...)
+			maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, "black", nil, e.Fields...)
 		}
 	}
 
 	for _, tr := range transforms {
-		maltego.GenTransform(author, netcapPrefix, netcapIdent, tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath)
+		args := []string{"transform ", strings.ToLower(string(tr.ID[0])) + tr.ID[1:]}
+		maltego.GenTransform(org, author, netcapPrefix, netcapIdent, tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath, args, false) // TODO: make debug mode configurable
 	}
 
 	maltego.GenServerListing(netcapPrefix, netcapIdent, transforms)
@@ -240,7 +241,6 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 func createEntity(outpath string, name string, description string, count *int) {
 	n := strings.ReplaceAll(name, "/", "")
 	maltego.GenEntity(
-		ident,
 		identArchive,
 		netcapIdent,
 		netcapPrefix,
@@ -250,7 +250,6 @@ func createEntity(outpath string, name string, description string, count *int) {
 		"insert_drive_file",
 		"An archive of "+n+" audit records",
 		"",
-		true,
 		colors[*count],
 		&maltego.RegexConversion{
 			Regex: "^(.+(\\/|\\\\)(" + n + ")\\.ncap(\\.gz)?)",
@@ -262,7 +261,7 @@ func createEntity(outpath string, name string, description string, count *int) {
 		},
 		maltego.NewStringField("path", "path to the audit records on disk"),
 	)
-	maltego.GenEntity(ident, identArchive, netcapIdent, netcapPrefix, propsPrefix, outpath, n, n, description, "", false, "black", nil)
+	maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, outpath, n, n, description, "", "black", nil)
 
 	*count++
 	if *count >= len(colors) {
@@ -275,7 +274,8 @@ func TestGenerateAllTransforms(t *testing.T) {
 	maltego.GenTransformArchive()
 
 	for _, tr := range transforms {
-		maltego.GenTransform(author, netcapPrefix, "transforms", tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath)
+		args := []string{"transform ", strings.ToLower(string(tr.ID[0])) + tr.ID[1:]}
+		maltego.GenTransform(org, author, netcapPrefix, "transforms", tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath, args, true)
 	}
 
 	maltego.GenServerListing(netcapPrefix, "transforms", transforms)
@@ -430,12 +430,16 @@ func TestGenerateTransform(t *testing.T) {
  <StealthLevel>0</StealthLevel>
 </MaltegoTransform>`
 
+	id := "ToAuditRecords"
+
 	tr := maltego.NewTransform(
+		org,
 		author,
 		netcapPrefix,
-		"ToAuditRecords",
+		id,
 		"Transform PCAP file into audit records",
-		"netcap.PCAP")
+		"netcap.PCAP",
+		)
 
 	data, err := xml.MarshalIndent(&tr, "", " ")
 	if err != nil {

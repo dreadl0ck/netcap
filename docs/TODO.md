@@ -1,7 +1,5 @@
 # TODOs
 
-run git lfs prune after every update
-
 - set all link types
 - add PPP audit records
 
