@@ -173,8 +173,8 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 
 var deviceProfileDecoder = newPacketDecoder(
 	types.Type_NC_DeviceProfile,
-	"deviceProfile",
-	"A deviceProfile contains information about a single hardware device seen on the network and it's behavior",
+	"DeviceProfile",
+	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
 	func(d *packetDecoder) error {
 		return nil
 	},

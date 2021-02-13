@@ -238,37 +238,6 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	fmt.Println("moved archive to", path)
 }
 
-func createEntity(outpath string, name string, description string, count *int) {
-	n := strings.ReplaceAll(name, "/", "")
-	maltego.GenEntity(
-		identArchive,
-		netcapIdent,
-		netcapPrefix,
-		propsPrefix,
-		outpath,
-		n+"AuditRecords",
-		"insert_drive_file",
-		"An archive of "+n+" audit records",
-		"",
-		colors[*count],
-		&maltego.RegexConversion{
-			Regex: "^(.+(\\/|\\\\)(" + n + ")\\.ncap(\\.gz)?)",
-			Properties: []string{
-				"path",
-				"",
-				propsPrefix + strings.ToLower(n+"AuditRecords"), // 3rd group contains the name
-			},
-		},
-		maltego.NewStringField("path", "path to the audit records on disk"),
-	)
-	maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, outpath, n, n, description, "", "black", nil)
-
-	*count++
-	if *count >= len(colors) {
-		*count = 0
-	}
-}
-
 // generate all transforms and pack as archive
 func TestGenerateAllTransforms(t *testing.T) {
 	maltego.GenTransformArchive()
