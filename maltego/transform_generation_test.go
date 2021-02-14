@@ -208,7 +208,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
 		if e.Name == "PCAP" {
-			maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, "black", &maltego.RegexConversion{
+			maltego.GenEntity(svgIconPath, ident, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, "black", &maltego.RegexConversion{
 				Regex: "^(.+(\\/|\\\\)(.*)\\.pcap(ng)?)",
 				Properties: []string{
 					"path", // 1st group matches full path
@@ -217,7 +217,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 				},
 			}, e.Fields...)
 		} else {
-			maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, "black", nil, e.Fields...)
+			maltego.GenEntity(svgIconPath, ident, netcapIdent, netcapPrefix, propsPrefix, netcapIdent, e.Name, e.Icon, e.Description, e.Parent, "black", nil, e.Fields...)
 		}
 	}
 
@@ -408,7 +408,7 @@ func TestGenerateTransform(t *testing.T) {
 		id,
 		"Transform PCAP file into audit records",
 		"netcap.PCAP",
-		)
+	)
 
 	data, err := xml.MarshalIndent(&tr, "", " ")
 	if err != nil {

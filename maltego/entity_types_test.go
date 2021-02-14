@@ -26,5 +26,5 @@ const (
 )
 
 var (
-	org                 = strings.ToTitle(ident)
+	org = strings.ToTitle(ident)
 )
