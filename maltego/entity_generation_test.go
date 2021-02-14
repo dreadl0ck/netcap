@@ -146,7 +146,7 @@ func TestGenerateAllEntities(t *testing.T) {
 	// generate additional entities after generating the others
 	// this allows to overwrite entities for which we want a custom icon for example
 	for _, e := range maltegoEntities {
-		maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, "entities", e.Name, e.Icon, e.Description, e.Parent, "black", nil, e.Fields...)
+		maltego.GenEntity(svgIconPath, ident, netcapIdent, netcapPrefix, propsPrefix, "entities", e.Name, e.Icon, e.Description, e.Parent, "black", nil, e.Fields...)
 	}
 
 	maltego.PackEntityArchive()
@@ -156,19 +156,19 @@ func TestGenerateAllEntities(t *testing.T) {
 
 func TestGenerateAndPackVulnerabilityEntity(t *testing.T) {
 	maltego.GenEntityArchive(ident)
-	maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, "entities", "Vulnerability", "Vulnerability", "A software vulnerability", "", "black", nil)
+	maltego.GenEntity(svgIconPath, ident, netcapIdent, netcapPrefix, propsPrefix, "entities", "Vulnerability", "Vulnerability", "A software vulnerability", "", "black", nil)
 	maltego.PackEntityArchive()
 }
 
 func TestGenerateAndPackPCAPEntity(t *testing.T) {
 	maltego.GenEntityArchive(ident)
-	maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, "entities", "PCAP", "sd_storage", "Packet capture file", "", "black", nil, maltego.NewStringField("path", "path to the audit records on disk"))
+	maltego.GenEntity(svgIconPath, ident, netcapIdent, netcapPrefix, propsPrefix, "entities", "PCAP", "sd_storage", "Packet capture file", "", "black", nil, maltego.NewStringField("path", "path to the audit records on disk"))
 	maltego.PackEntityArchive()
 }
 
 func TestGenerateAndPackAuditRecordEntity(t *testing.T) {
 	maltego.GenEntityArchive(ident)
-	maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, "entities", "IPv4", "IPv4", "IPv4 Audit Records", "", "black", nil, maltego.NewStringField("path", "path to the audit records on disk"))
+	maltego.GenEntity(svgIconPath, ident, netcapIdent, netcapPrefix, propsPrefix, "entities", "IPv4", "IPv4", "IPv4 Audit Records", "", "black", nil, maltego.NewStringField("path", "path to the audit records on disk"))
 	maltego.PackEntityArchive()
 }
 
@@ -295,6 +295,7 @@ func TestGenerateDHCPClientXMLEntity(t *testing.T) {
 func createEntity(outpath string, name string, description string, count *int) {
 	n := strings.ReplaceAll(name, "/", "")
 	maltego.GenEntity(
+		svgIconPath,
 		identArchive,
 		netcapIdent,
 		netcapPrefix,
@@ -315,7 +316,7 @@ func createEntity(outpath string, name string, description string, count *int) {
 		},
 		maltego.NewStringField("path", "path to the audit records on disk"),
 	)
-	maltego.GenEntity(ident, netcapIdent, netcapPrefix, propsPrefix, outpath, n, n, description, "", "black", nil)
+	maltego.GenEntity(svgIconPath, ident, netcapIdent, netcapPrefix, propsPrefix, outpath, n, n, description, "", "black", nil)
 
 	*count++
 	if *count >= len(colors) {

@@ -24,6 +24,10 @@ import (
 	icongen "github.com/dreadl0ck/material-icon-gen"
 )
 
+const (
+	svgIconPath = "/tmp/icons/material-icons"
+)
+
 // image name to type
 var subset = map[string]string{
 	"cloud_upload":   "outline",
@@ -91,6 +95,8 @@ func TestGenerateAuditRecordIconsSVG(t *testing.T) {
 
 	// generate all icons
 	icongen.GenerateIconsSVG(
+		svgIconPath,
+		icongen.DefaultSvgURL,
 		maltegoSizes,
 		coloredIcons,
 		func(newBase string, color string) {
@@ -100,6 +106,7 @@ func TestGenerateAuditRecordIconsSVG(t *testing.T) {
 
 	// generate a subset of the icons in a different variation
 	icongen.GenerateAdditionalIconsSVG(
+		svgIconPath,
 		maltegoSizes,
 		subset,
 		func(newBase string, color string) {
@@ -109,26 +116,25 @@ func TestGenerateAuditRecordIconsSVG(t *testing.T) {
 
 	// generate icons for packet decoders
 	packet.ApplyActionToPacketDecoders(func(d packet.DecoderAPI) {
-		imgBase := icongen.GenerateIconSVG(d.GetName(), maltegoSizes)
+		imgBase := icongen.GenerateIconSVG(svgIconPath, d.GetName(), maltegoSizes)
 		maltego.CreateXMLIconFile(imgBase + "_black")
 	})
 
 	// generate icons for go packet decoders
 	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
-		imgBase := icongen.GenerateIconSVG(d.Layer.String(), maltegoSizes)
+		imgBase := icongen.GenerateIconSVG(svgIconPath, d.Layer.String(), maltegoSizes)
 		maltego.CreateXMLIconFile(imgBase + "_black")
 	})
 
 	// generate icons for stream decoders
 	stream.ApplyActionToStreamDecoders(func(d core.StreamDecoderAPI) {
-		imgBase := icongen.GenerateIconSVG(d.GetName(), maltegoSizes)
+		imgBase := icongen.GenerateIconSVG(svgIconPath, d.GetName(), maltegoSizes)
 		maltego.CreateXMLIconFile(imgBase + "_black")
 	})
 
 	// generate icons for abstract decoders
 	stream.ApplyActionToAbstractDecoders(func(d core.DecoderAPI) {
-		imgBase := icongen.GenerateIconSVG(d.GetName(), maltegoSizes)
+		imgBase := icongen.GenerateIconSVG(svgIconPath, d.GetName(), maltegoSizes)
 		maltego.CreateXMLIconFile(imgBase + "_black")
 	})
 }
-
