@@ -20,6 +20,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -342,3 +343,13 @@ func timeToString(t time.Time) string {
 // 		return iTime.date.Before(jTime.date)
 // 	})
 // }
+
+// StripQueryString returns an URL without parameters
+func StripQueryString(inputUrl string) string {
+	u, err := url.Parse(inputUrl)
+	if err != nil {
+		panic(err)
+	}
+	u.RawQuery = ""
+	return u.String()
+}

@@ -39,7 +39,7 @@ type softwareCountFunc = func(software *types.Software, mac string, min, max *ui
 // SoftwareTransform applies a maltego transformation over Software profiles seen for a target Software.
 func SoftwareTransform(count softwareCountFunc, transform softwareTransformationFunc) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]

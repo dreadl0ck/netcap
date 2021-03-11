@@ -17,13 +17,13 @@ require (
 	github.com/dreadl0ck/go-dpi v0.0.0-20200912122706-f830a777c45f
 	github.com/dreadl0ck/gopacket v1.1.16-0.20201228223815-140074f06498
 	github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket.0.20200917082239-a29743a537b2
-	github.com/dreadl0ck/maltego v0.0.2-0.20210214144100-7b39d25e10c7
+	github.com/dreadl0ck/maltego v0.0.2-0.20210218074038-4be575646360
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
 	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
 	github.com/dsoprea/go-exif/v2 v2.0.0-20210131231135-d154f10435cc
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/elastic/go-elasticsearch/v7 v7.10.0
+	github.com/elastic/go-elasticsearch/v7 v7.11.0
 	github.com/evilsocket/islazy v1.10.6
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/felixge/fgprof v0.9.1
@@ -37,6 +37,7 @@ require (
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/klauspost/pgzip v1.2.5
+	github.com/magefile/mage v1.11.0 // indirect
 	github.com/mcnijman/go-emailaddress v1.1.0
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/namsral/flag v1.7.4-pre
@@ -44,9 +45,10 @@ require (
 	github.com/oschwald/maxminddb-golang v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/common v0.17.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/sirupsen/logrus v1.7.0
+	github.com/sirupsen/logrus v1.8.0
 	github.com/tinylib/msgp v1.1.5 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20210121150957-347a3497cc39
 	github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23
@@ -54,12 +56,15 @@ require (
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
-	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
+	golang.org/x/net v0.0.0-20210220033124-5f55cee0dc0d
+	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43 // indirect
+	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	mvdan.cc/xurls/v2 v2.2.0
 )
+
+replace github.com/dreadl0ck/maltego => /Users/alien/go/src/github.com/dreadl0ck/maltego

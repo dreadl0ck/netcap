@@ -40,7 +40,7 @@ type TLSServerHelloTransformationFunc = func(lt maltego.LocalTransform, trx *mal
 // TLSServerHelloTransform applies a maltego transformation over TLSServerHello audit records.
 func TLSServerHelloTransform(count TLSServerHelloCountFunc, transform TLSServerHelloTransformationFunc) {
 	var (
-		lt               = maltego.ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[3:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)

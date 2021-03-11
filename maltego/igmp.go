@@ -40,7 +40,7 @@ type IGMPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Trans
 // IGMPTransform applies a maltego transformation over IGMP audit records.
 func IGMPTransform(count IGMPCountFunc, transform IGMPTransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = maltego.Transform{}

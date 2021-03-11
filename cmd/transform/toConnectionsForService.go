@@ -59,6 +59,7 @@ func toConnectionsForService() {
 		if serviceType == "" {
 			// set the serviceType we are searching for once
 			serviceType = lt.Value
+			log.Println("serviceType", lt.Value)
 		}
 
 		i, err := strconv.Atoi(conn.DstPort)
@@ -67,6 +68,7 @@ func toConnectionsForService() {
 		}
 
 		service := resolvers.LookupServiceByPort(i, strings.ToLower(conn.TransportProto))
+		log.Println("conn service", service)
 		if service == serviceType {
 			addConn(trx, conn, path, min, max, maltego.InputToOutput, service)
 		}

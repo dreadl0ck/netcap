@@ -41,7 +41,7 @@ type MailTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Trans
 // MailTransform applies a maltego transformation over Mail audit records.
 func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 	var (
-		lt               = maltego.ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[3:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
@@ -131,7 +131,7 @@ func MailTransform(count MailCountFunc, transform MailTransformationFunc) {
 // LoadMails will load the email audit records into memory and return them.
 func LoadMails() map[string]*types.Mail {
 	var (
-		lt    = maltego.ParseLocalArguments(os.Args[1:])
+		lt    = maltego.ParseLocalArguments(os.Args[3:])
 		path  = filepath.Join(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), "Mail.ncap.gz")
 		mails = make(map[string]*types.Mail)
 	)

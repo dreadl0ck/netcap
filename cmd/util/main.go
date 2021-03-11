@@ -40,7 +40,6 @@ func Run() {
 
 	if *flagGenerateConfig {
 		io.GenerateConfig(fs, "util")
-
 		return
 	}
 
@@ -59,6 +58,11 @@ func Run() {
 		return
 	}
 
+	if *flagDownloadGeolite {
+		dbs.DownloadGeoLite()
+		return
+	}
+
 	// Simple util to construct a IPv4 pcapng packet, with a TCP / UDP layer and a given payload.
 	// Will add dummy values for the Ethernet and IPv4 layers.
 	// Useful to dissect a specific TCP / UDP payload in wireshark, to compare the results with other tools.
@@ -70,13 +74,12 @@ func Run() {
 	// util to convert netcap timestamp to UTC time
 	if *flagToUTC != "" {
 		fmt.Println(utils.TimeToUTC(*flagToUTC))
-		os.Exit(1)
+		return
 	}
 
 	// util to check if fields count matches for all generated rows
 	if *flagCheckFields {
 		checkFields()
-
 		return
 	}
 
@@ -97,11 +100,13 @@ func Run() {
 
 	if *flagInterfaces {
 		utils.ListAllNetworkInterfaces()
-
 		return
 	}
 
 	if *flagIndex != "" {
 		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, *flagNVDIndexStart, *flagVerbose)
+		return
 	}
+
+	printHeader()
 }

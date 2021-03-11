@@ -101,7 +101,7 @@ var maltegoBaseConfig = collector.Config{
 
 func toAuditRecords() {
 	var (
-		lt        = maltego.ParseLocalArguments(os.Args[1:])
+		lt        = maltego.ParseLocalArguments(os.Args[3:])
 		inputFile = strings.TrimPrefix(lt.Values["path"], "file://")
 		trx       = &maltego.Transform{}
 	)

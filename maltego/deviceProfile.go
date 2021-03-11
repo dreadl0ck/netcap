@@ -82,7 +82,7 @@ type deviceProfileTransformationFunc = func(lt maltego.LocalTransform, trx *malt
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records.
 func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfileTransformationFunc) {
 	var (
-		lt   = maltego.ParseLocalArguments(os.Args[1:])
+		lt   = maltego.ParseLocalArguments(os.Args[3:])
 		path = lt.Values["path"]
 		mac  = lt.Values["mac"]
 		trx  = maltego.Transform{}

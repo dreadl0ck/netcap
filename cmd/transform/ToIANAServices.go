@@ -58,8 +58,8 @@ func toIANAServices() {
 				ent := addEntityWithPath(trx, "netcap.Service", service, path)
 				ent.SetLinkLabel(humanize.Bytes(uint64(conn.TotalSize)))
 				ent.SetLinkThickness(maltego.GetThickness(uint64(conn.TotalSize), min, max))
-				ent.AddProperty("ip", "IP", maltego.Strict, conn.DstIP)
-				ent.AddProperty("port", "Port", maltego.Strict, conn.DstPort)
+				ent.AddProperty("ip", "IP", maltego.Loose, conn.DstIP)
+				ent.AddProperty("port", "Port", maltego.Loose, conn.DstPort)
 			}
 		},
 	)

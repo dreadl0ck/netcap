@@ -15,6 +15,7 @@ package dbs
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -41,7 +42,7 @@ type datasource struct {
 func makeSource(url, name string, hook datasourceHook) *datasource {
 	// if no name provided: use base
 	if name == "" {
-		name = filepath.Base(url)
+		name = filepath.Base(utils.StripQueryString(url))
 	}
 	return &datasource{
 		url:  url,
@@ -79,8 +80,8 @@ var sources = []*datasource{
 	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/ja_3_3s.json", "", moveToDbs),
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/trisulnsm/trisul-scripts/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json", "", moveToDbs),
-	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveToDbs),
-	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveToDbs),
+	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
+	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 	makeSource("", "nvd.bleve", downloadAndIndexNVD),
 	makeSource("https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv", "", downloadAndIndexExploitDB),
 }
@@ -125,9 +126,8 @@ func moveToDbs(in string, d *datasource, base string) error {
 	return os.Rename(in, filepath.Join(base, "dbs", d.name))
 }
 
-// unpack compressed tarballs and move certain files to the dbs directory
-// currently only used to extract *.mmdb files
-func untarAndMoveToDbs(in string, d *datasource, base string) error {
+// unpack compressed tarballs and move geolite db files to the build/dbs directory
+func untarAndMoveGeoliteToBuildDbs(in string, d *datasource, base string) error {
 	f, err := os.Open(in)
 	if err != nil {
 		return err
@@ -153,6 +153,43 @@ func untarAndMoveToDbs(in string, d *datasource, base string) error {
 		err = os.Rename(
 			filepath.Join(base, "build", name, filepath.Base(file)),
 			filepath.Join(base, "dbs", filepath.Base(file)),
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return err
+}
+
+// unpack compressed tarballs and move geolite db files to the dbs directory
+func untarAndMoveGeoliteToDbs(in string, d *datasource, base string) error {
+	f, err := os.Open(in)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			log.Fatal(errClose)
+		}
+	}()
+
+	name, err := unpackTarball(f, base)
+	fmt.Println("unpacked", name)
+
+	// extract *.mmdb files
+	files, err := filepath.Glob(filepath.Join(base, name, "*.mmdb"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		out := filepath.Join(base, "dbs", filepath.Base(file))
+		fmt.Println("extracting file", filepath.Base(file), "to", out)
+		err = os.Rename(
+			filepath.Join(base, name, filepath.Base(file)),
+			out,
 		)
 		if err != nil {
 			log.Fatal(err)
@@ -238,7 +275,7 @@ func processSource(s *datasource, base string, wg *sync.WaitGroup) {
 func fetchResource(s *datasource, outFilePath string) {
 	if s.url != "" {
 
-		fmt.Println("fetching", s.name, "from", s.url)
+		fmt.Println("fetching", s.name, "from", utils.StripQueryString(s.url))
 
 		var (
 			numRetries int

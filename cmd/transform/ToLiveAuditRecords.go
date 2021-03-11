@@ -45,7 +45,7 @@ func toLiveAuditRecords() {
 	io.SetLogger(ioLog)
 
 	var (
-		lt   = maltego.ParseLocalArguments(os.Args[1:])
+		lt   = maltego.ParseLocalArguments(os.Args[3:])
 		path = getPathLiveCaptureOutDir(lt.Value)
 	)
 

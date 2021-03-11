@@ -39,7 +39,7 @@ type IPv6TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Trans
 // IPv6Transform applies a maltego transformation over IP profiles
 func IPv6Transform(count ipv6CountFunc, transform IPv6TransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]

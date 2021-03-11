@@ -40,7 +40,7 @@ type DNSTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transf
 // DNSTransform applies a maltego transformation over DNS audit records.
 func DNSTransform(count DNSCountFunc, transform DNSTransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = maltego.Transform{}

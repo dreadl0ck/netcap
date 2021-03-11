@@ -40,7 +40,7 @@ type POP3TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Trans
 // POP3Transform applies a maltego transformation over POP3 audit records.
 func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc, continueTransform bool) {
 	var (
-		lt               = maltego.ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[3:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)
