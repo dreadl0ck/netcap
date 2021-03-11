@@ -391,7 +391,11 @@ func checkArgs() {
 			expectArg = false
 		} else {
 			args := os.Args[2:]
-			log.Fatal("two consecutive args detected, typo? ", ansi.Red, args[i-1:], ansi.Reset)
+			index := i-1
+			if i == 0 {
+				index = 0
+			}
+			log.Fatal("two consecutive args detected, typo? ", ansi.Red, args[index:], ansi.Reset)
 		}
 	}
 }

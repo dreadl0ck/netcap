@@ -37,7 +37,7 @@ type IPv6HopByHopTransformationFunc = func(lt maltego.LocalTransform, trx *malte
 // IPv6HopByHopTransform applies a maltego transformation over IP profiles
 func IPv6HopByHopTransform(count ipv6CountFunc, transform IPv6HopByHopTransformationFunc) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]

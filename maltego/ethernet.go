@@ -40,7 +40,7 @@ type EthernetTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.T
 // EthernetTransform applies a maltego transformation over Ethernet audit records.
 func EthernetTransform(count EthernetCountFunc, transform EthernetTransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = maltego.Transform{}

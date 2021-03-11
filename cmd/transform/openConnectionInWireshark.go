@@ -92,7 +92,7 @@ func findExecutable(name string) string {
 
 func openConnectionInWireshark() {
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args[1:])
+		lt              = maltego.ParseLocalArguments(os.Args[3:])
 		trx             = &maltego.Transform{}
 		bpf             = makeConnectionBPF(lt)
 		in              = strings.TrimSuffix(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), ".net")

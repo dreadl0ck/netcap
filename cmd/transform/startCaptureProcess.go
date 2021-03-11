@@ -31,7 +31,7 @@ import (
 
 func startCaptureProcess() {
 	var (
-		lt    = maltego.ParseLocalArguments(os.Args[1:])
+		lt    = maltego.ParseLocalArguments(os.Args[3:])
 		snapL int
 	)
 	log.Println("capture on interface:", lt.Value)

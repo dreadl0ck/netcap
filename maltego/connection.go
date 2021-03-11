@@ -173,7 +173,7 @@ type connTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Trans
 // ConnectionTransform applies a maltego transformation over types.Connection audit records.
 func ConnectionTransform(count connCountFunc, transform connTransformationFunc) {
 	var (
-		lt               = maltego.ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[3:])
 		path             = lt.Values["path"]
 		mac              = lt.Values["mac"]
 		ipaddr           = lt.Values[PropertyIpAddr]

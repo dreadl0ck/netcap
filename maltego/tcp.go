@@ -40,7 +40,7 @@ type TCPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transf
 // TCPTransform applies a maltego transformation over TCP audit records.
 func TCPTransform(count TCPCountFunc, transform TCPTransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = maltego.Transform{}

@@ -38,7 +38,7 @@ type credentialsCountFunc = func(credentials *types.Credentials, mac string, min
 // CredentialsTransform applies a maltego transformation over Credentials profiles seen for a target Credentials.
 func CredentialsTransform(count credentialsCountFunc, transform credentialsTransformationFunc) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]

@@ -40,7 +40,7 @@ type UDPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transf
 // UDPTransform applies a maltego transformation over UDP audit records.
 func UDPTransform(count UDPCountFunc, transform UDPTransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = maltego.Transform{}

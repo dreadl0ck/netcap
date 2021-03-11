@@ -40,7 +40,7 @@ type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
 // SSHTransform applies a maltego transformation over SSH sshs seen for a target SSH.
 func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]

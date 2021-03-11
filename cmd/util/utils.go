@@ -33,6 +33,9 @@ func printHeader() {
 	fmt.Println("	$ net util -read TCP.ncap.gz -check")
 	fmt.Println("	$ net util -read TCP.ncap.gz -check -sep '/'")
 	fmt.Println("	$ net util -ts2utc 1505839354.197231")
+	fmt.Println("	$ net util -download-geolite")
+	fmt.Println("	$ net util -update-dbs")
+	fmt.Println("	$ net util -clone-dbs")
 	fmt.Println()
 }
 

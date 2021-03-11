@@ -40,7 +40,7 @@ type HTTPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Trans
 // HTTPTransform applies a maltego transformation over HTTP audit records.
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {
 	var (
-		lt               = maltego.ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[3:])
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://"))
 		httpAuditRecords = filepath.Join(dir, "HTTP.ncap.gz")

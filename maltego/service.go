@@ -39,7 +39,7 @@ type serviceCountFunc = func(service *types.Service, mac string, min, max *uint6
 // ServiceTransform applies a maltego transformation over Service profiles seen for a target Service.
 func ServiceTransform(count serviceCountFunc, transform serviceTransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]

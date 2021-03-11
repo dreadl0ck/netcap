@@ -26,7 +26,7 @@ import (
 
 func openTrafficForPortInWireshark() {
 	var (
-		lt              = maltego.ParseLocalArguments(os.Args[1:])
+		lt              = maltego.ParseLocalArguments(os.Args[3:])
 		trx             = &maltego.Transform{}
 		in              = strings.TrimSuffix(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), ".net")
 		bpf             = makePortBPF(lt)

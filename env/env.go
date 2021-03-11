@@ -35,4 +35,7 @@ const (
 
 	// MaltegoOpenDisassemblerCommand can be used to overwrite the default disassembler program for your platform
 	MaltegoOpenDisassemblerCommand = "NETCAP_MALTEGO_OPEN_DISASM_CMD"
+
+	// GeoLiteAPIKey to download the geolite databases
+	GeoLiteAPIKey = "NETCAP_GEOLITE_API_KEY"
 )

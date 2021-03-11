@@ -17,7 +17,6 @@ import (
 	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/dreadl0ck/maltego"
@@ -36,7 +35,7 @@ func toHTTPUniformResourceLocators() {
 					return
 				}
 
-				bareURL := stripQueryString(h.URL)
+				bareURL := utils.StripQueryString(h.URL)
 				log.Println(bareURL)
 
 				ent := addEntityWithPath(trx, "netcap.URL", bareURL, path)
@@ -79,12 +78,3 @@ func toHTTPUniformResourceLocators() {
 //
 //	return strings.Join(out, "")
 //}
-
-func stripQueryString(inputUrl string) string {
-	u, err := url.Parse(inputUrl)
-	if err != nil {
-		panic(err)
-	}
-	u.RawQuery = ""
-	return u.String()
-}

@@ -36,7 +36,7 @@ type DHCPV6TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Tra
 // DHCPV6Transform applies a maltego transformation over DHCP audit records.
 func DHCPV6Transform(count DHCPCountFunc, transform DHCPV6TransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = maltego.Transform{}

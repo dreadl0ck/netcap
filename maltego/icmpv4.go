@@ -40,7 +40,7 @@ type ICMPv4TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Tra
 // ICMPv4Transform applies a maltego transformation over ICMPv4 audit records.
 func ICMPv4Transform(count ICMPv4CountFunc, transform ICMPv4TransformationFunc) {
 	var (
-		lt               = maltego.ParseLocalArguments(os.Args[1:])
+		lt               = maltego.ParseLocalArguments(os.Args[3:])
 		path             = lt.Values["path"]
 		ipaddr           = lt.Values[PropertyIpAddr]
 		dir              = filepath.Dir(path)

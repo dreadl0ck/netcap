@@ -40,7 +40,7 @@ type NTPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transf
 // NTPTransform applies a maltego transformation over NTP audit records.
 func NTPTransform(count NTPCountFunc, transform NTPTransformationFunc, continueTransform bool) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		ipaddr = lt.Values[PropertyIpAddr]
 		trx    = maltego.Transform{}

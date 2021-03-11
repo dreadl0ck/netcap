@@ -24,7 +24,7 @@ import (
 
 func openLiveNetcapFolderInTerminal() {
 	var (
-		lt                    = maltego.ParseLocalArguments(os.Args[1:])
+		lt                    = maltego.ParseLocalArguments(os.Args[3:])
 		trx                   = &maltego.Transform{}
 		openCommandName, args = createOpenTerminalCommand(
 			[]string{getPathLiveCaptureOutDir(lt.Value)},

@@ -54,7 +54,7 @@ type IPProfileTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.
 // IPProfileTransform applies a maltego transformation over IP profiles
 func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformationFunc) {
 	var (
-		lt     = maltego.ParseLocalArguments(os.Args[1:])
+		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
 		mac    = lt.Values["mac"]
 		ipaddr = lt.Values[PropertyIpAddr]
@@ -154,7 +154,7 @@ func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformat
 // LoadIPProfiles will load the ipProfiles into memory and return them.
 func LoadIPProfiles() map[string]*types.IPProfile {
 	var (
-		lt       = maltego.ParseLocalArguments(os.Args[1:])
+		lt       = maltego.ParseLocalArguments(os.Args[3:])
 		path     = filepath.Join(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), "IPProfile.ncap.gz")
 		profiles = make(map[string]*types.IPProfile)
 		err      error
