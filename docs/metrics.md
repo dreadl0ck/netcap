@@ -125,9 +125,9 @@ $ net export .
 
 ## TCP Dashboard Preview
 
-![Grafana Dashboard TCP](.gitbook/assets/screenshot-2019-05-04-at-23.39.41%20%281%29.png)
+![Grafana Dashboard TCP](https://github.com/dreadl0ck/netcap/tree/767852a00d76fcf7c921a4f3830ae6cec0162481/docs/.gitbook/assets/screenshot-2019-05-04-at-23.39.41%20%281%29.png)
 
 ## HTTP Dashboard Preview
 
-![Grafana Dashboard HTTP](.gitbook/assets/screenshot-2019-05-04-at-23.40.05%20%281%29.png)
+![Grafana Dashboard HTTP](https://github.com/dreadl0ck/netcap/tree/767852a00d76fcf7c921a4f3830ae6cec0162481/docs/.gitbook/assets/screenshot-2019-05-04-at-23.40.05%20%281%29.png)
 
