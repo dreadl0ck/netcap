@@ -14,7 +14,7 @@ To make use of multi-core processors, processing of packets should happen in an 
 
 > Note: by default the number of workers is set to the numbers of cores of your machine!  You can use the **-workers** flag to overwrite this value.
 
-![NETCAP worker](.gitbook/assets/netcap-worker%20%281%29.svg)
+![NETCAP worker](https://github.com/dreadl0ck/netcap/tree/767852a00d76fcf7c921a4f3830ae6cec0162481/docs/.gitbook/assets/netcap-worker%20%281%29.svg)
 
 ## Buffering
 
