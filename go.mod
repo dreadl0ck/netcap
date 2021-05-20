@@ -67,4 +67,4 @@ require (
 	mvdan.cc/xurls/v2 v2.2.0
 )
 
-replace github.com/dreadl0ck/maltego => /Users/alien/go/src/github.com/dreadl0ck/maltego
+//replace github.com/dreadl0ck/maltego => ../maltego
