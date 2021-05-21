@@ -98,6 +98,11 @@ func makeLinuxOpenTerminalCommand(commandName string, args []string) (string, []
 		args = []string{"--working-directory=" + strings.Join(args, "")}
 	}
 
+	// qterminal is used in Kali Linux, use workdir flag
+	if commandName == "qterminal" {
+		args = []string{"--workdir=" + strings.Join(args, "")}
+	}
+
 	return commandName, args
 }
 
