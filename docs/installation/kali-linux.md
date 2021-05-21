@@ -6,11 +6,13 @@ description: Installing NETCAP on Kali
 
 ## Prepare Kali Image
 
+Covers basic setup of Kali Linux, you can skip this if you have a configured installation in front of you.
+
 Grab a fresh Kali image from: [https://www.kali.org/downloads/](https://www.kali.org/downloads/)
 
 After logging in with the default user **kali** and password **kali**, open a terminal prompt.
 
-Set language for your keyboard \(add to ~/.zshrc to persist\):
+Set language for your keyboard \(add to ~/.zshrc to persist\), I've chosen the German layout here:
 
 ```text
 $ setxkbmap de
@@ -21,6 +23,33 @@ Update to latest version of Kali:
 ```text
 $ apt update
 $ apt upgrade -y
+```
+
+In case you are using a VMWare machine, ensure to update **open-vm-tools-desktop** and **fuse**, so that the shared clipboard and mounting volumes works:
+
+```text
+$ sudo apt update
+$ sudo apt install -y --reinstall open-vm-tools-desktop fuse
+$ sudo reboot -f
+```
+
+Configure any volumes you want to mount and use the script provided by the kali authors to mount it:
+
+```text
+$ cat <<EOF | sudo tee /usr/local/sbin/mount-shared-folders
+#!/bin/sh
+vmware-hgfsclient | while read folder; do
+  vmwpath="/mnt/hgfs/\${folder}"
+  echo "[i] Mounting \${folder}   (\${vmwpath})"
+  sudo mkdir -p "\${vmwpath}"
+  sudo umount -f "\${vmwpath}" 2>/dev/null
+  sudo vmhgfs-fuse -o allow_other -o auto_unmount ".host:/\${folder}" "\${vmwpath}"
+done
+sleep 2s
+EOF
+$ sudo chmod +x /usr/local/sbin/mount-shared-folders
+$ sudo mount-shared-folders
+[i] Mounting PCAPs   (/mnt/hgfs/PCAPs)
 ```
 
 ## Install NETCAP
@@ -82,15 +111,13 @@ We need the libpcap development headers:
 $ sudo apt install libpcap-dev
 ```
 
-now its time to fetch the NETCAP source code
+now its time to fetch the NETCAP source code and use the build scripts to compile.
 
 ```text
 $ mkdir -p /home/kali/go/src/github.com/dreadl0ck
 $ cd /home/kali/go/src/github.com/dreadl0ck
 $ git clone https://github.com/dreadl0ck/netcap
 ```
-
-and use the build scripts to compile.
 
 You have two options again: Build with bindings for DPI or compile without.
 
@@ -212,11 +239,81 @@ Otherwise, just download the latest version from github.com: [https://github.com
 
 ![Successful import](../.gitbook/assets/screenshot-2021-05-21-at-15.41.18.png)
 
+### Configuring the file type matcher preference
 
+In order for Maltego to sucessfully detect the type of files you copy and paste into it, we need to disable using the generic **maltego.Phrase** matcher, because it will always match first. Select **Manage Entities**, search for the Phrase entity, edit it by clicking on the three little dots and deselect the shown checkbox in the **Advanced Settings**:
+
+![Search Phrase entity](../.gitbook/assets/screenshot-2021-05-21-at-16.48.25.png)
+
+![Disable use of regex converter for Phrase entity](../.gitbook/assets/screenshot-2021-05-21-at-16.48.17.png)
+
+Make sure the changes are saved by hitting **OK**. Now you should be able to copy and paste files into Maltego as described below.
+
+#### Importing PCAP or audit record files via Copy and Paste
+
+Drag and Drop of entities does not seem possible for Maltego on Kali yet \(it works on macOS\), so the most convenient way to load a PCAP file into Maltego is by selecting the file in the file explorer, hit Ctrl-C or CMD-C \(VMWare on macOS\) to copy the path to the clipboard, and then paste that path directly into a Maltego graph.
+
+The NETCAP configuration registered regular expressions to handle files that end on pcap or pcapng, so these should be detected as a **netcap.PCAP** entity automatically. The same should work as well for .ncap and .ncap.gz audit record files.
+
+If sucessful, the imported entity should look like this:
+
+![PCAP imported into Maltego](../.gitbook/assets/image%20%283%29.png)
+
+#### Importing PCAP files into Maltego manually
+
+Alternatively to importing files by copy and paste, you can add new entity of type netcap.PCAP to the graph manually, then double click it and set the mandatory field containing the path of the PCAP file on disk.
+
+![Windows &amp;gt; Entity Palette &amp;gt; Search: PCAP &amp;gt; Drag and Drop entity into graph](../.gitbook/assets/screenshot-2021-05-21-at-17.10.11.png)
+
+Double click the file, switch to the Properties Tab and set a name and file path:
+
+![Populate netcap.PCAP entity information manually](../.gitbook/assets/image%20%288%29.png)
+
+Either way, after importing the file executing a right click should show you the following NETCAP transforms:
+
+![Transforms available on netcap.PCAP](../.gitbook/assets/image.png)
+
+Running the **To Audit Records \[NETCAP\]** transform will start NETCAP to process the pcap file!
+
+Afterwards, you should see audit records in Maltego:
+
+![Audit records in Maltego](../.gitbook/assets/image%20%282%29.png)
+
+### Installing IDA
+
+For the '**Open File in Disassembler**' transform to open extracted binary files in the IDA dissassembler to work, we need to install IDA, or move your existing installation to the expected place on the filesystem.
+
+To install, grab a download link from: [https://hex-rays.com/ida-free/\#download](https://hex-rays.com/ida-free/#download)
+
+At the time of this writing it is: [https://out7.hex-rays.com/files/idafree76\_linux.run](https://out7.hex-rays.com/files/idafree76_linux.run)
+
+```text
+$ wget https://out7.hex-rays.com/files/idafree76_linux.run
+$ chmod +x idafree76_linux.run
+$ ./idafree76_linux.run
+[click Next in graphical installer]
+```
+
+Next, add **/usr/local/bin/ida** to your PATH in **~/.zshrc**:
+
+```text
+export PATH="/usr/local/bin/ida:$PATH"
+```
+
+Move the downloaded files there and source the **~/.zshrc**:
+
+```text
+$ sudo mv /usr/local/bin/idafree-7.6 /usr/local/bin/ida  
+$ source ~/.zshrc
+
+# confirm that you can open ida
+$ ida64
+[launches gui]
+```
 
 ### Utils
 
-Optional, but very useful to inspect data generated by netcap on the commandline are:
+Optional, but very useful to inspect data generated by netcap on the commandline are **tree** and **batcat**, you can install them with:
 
 ```text
 $ sudo snap install batcat
@@ -231,7 +328,7 @@ Enter a directory with netcap audit records where the capture tool was executed 
 $ batcat tcp/world-wide-web-http/*
 ```
 
-![Batcat: like cat, just with wings](../.gitbook/assets/image%20%281%29.png)
+![Batcat: like cat, just with wings](../.gitbook/assets/image%20%286%29.png)
 
 > Tip: use batcat -A to view binary connection data in the terminal
 
@@ -241,7 +338,7 @@ Lets examine the tree command output to understand what files and directories ar
 $ tree -h .
 ```
 
-![Tree of NETCAP output](../.gitbook/assets/image%20%282%29.png)
+![Tree of NETCAP output](../.gitbook/assets/image%20%287%29.png)
 
 You can see there are two different file types on the top level:
 
@@ -253,7 +350,7 @@ Log files from different components of NETCAP, for diagnostic purposes. The main
 
 NETCAP audit records compressed with gzip. In order to read them, you need to use the **net dump** sub command, e.g:
 
-![Reading NETCAP audit records](../.gitbook/assets/image.png)
+![Reading NETCAP audit records](../.gitbook/assets/image%20%281%29.png)
 
 The following directories can be generated, depending on the configuration:
 
@@ -268,6 +365,12 @@ Extracted **TCP** connection data, structured based on the service names obtaine
 * udp \(generated when **-conns** flag is set, enabled by default\)
 
 Extracted **UDP** connection data, structured based on the service names obtained by looking up the used port numbers in the IANA database. Colorized with ANSI escape sequences, red is client, blue is server.
+
+Also **codium** is a nice IDE and text editor to inspect source code:
+
+```text
+$ sudo snap install codium
+```
 
 
 
