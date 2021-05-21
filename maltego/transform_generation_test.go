@@ -31,7 +31,10 @@ import (
 	netmaltego "github.com/dreadl0ck/netcap/maltego"
 )
 
-const transformDebug = true
+const (
+	transformDebug = false
+	transformWorkingDir = "/usr/local"
+)
 
 // additional transforms
 var transforms = []*maltego.TransformCoreInfo{
@@ -225,7 +228,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 
 	for _, tr := range transforms {
 		args := []string{"transform ", strings.ToLower(string(tr.ID[0])) + tr.ID[1:]}
-		maltego.GenTransform(org, author, netcapPrefix, netcapIdent, tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath, args, transformDebug)
+		maltego.GenTransform(transformWorkingDir, org, author, netcapPrefix, netcapIdent, tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath, args, transformDebug)
 	}
 
 	maltego.GenServerListing(netcapPrefix, netcapIdent, transforms)
@@ -246,7 +249,7 @@ func TestGenerateAllTransforms(t *testing.T) {
 
 	for _, tr := range transforms {
 		args := []string{"transform ", strings.ToLower(string(tr.ID[0])) + tr.ID[1:]}
-		maltego.GenTransform(org, author, netcapPrefix, "transforms", tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath, args, transformDebug)
+		maltego.GenTransform(transformWorkingDir, org, author, netcapPrefix, "transforms", tr.ID, tr.Description, tr.InputEntity, netmaltego.ExecutablePath, args, transformDebug)
 	}
 
 	maltego.GenServerListing(netcapPrefix, "transforms", transforms)

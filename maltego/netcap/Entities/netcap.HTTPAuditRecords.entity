@@ -1,4 +1,4 @@
-<MaltegoEntity id="netcap.HTTPAuditRecords" displayName="HTTPAuditRecords" displayNamePlural="HTTPAuditRecords" description="An archive of HTTP audit records" category="Netcap Archives" smallIconResource="netcap/insert_drive_file_blueviolet" largeIconResource="netcap/insert_drive_file_blueviolet" allowedRoot="true" conversionOrder="2147483647" visible="true">
+<MaltegoEntity id="netcap.HTTPAuditRecords" displayName="HTTPAuditRecords" displayNamePlural="HTTPAuditRecords" description="An archive of HTTP audit records" category="Netcap Archives" smallIconResource="netcap/insert_drive_file_tomato" largeIconResource="netcap/insert_drive_file_tomato" allowedRoot="true" conversionOrder="2147483647" visible="true">
  <Properties value="properties.httpauditrecords" displayValue="properties.httpauditrecords">
   <Groups></Groups>
   <Fields>
