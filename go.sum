@@ -125,6 +125,8 @@ github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket.0.20200917082239-a29743a537b2
 github.com/dreadl0ck/maltego v0.0.2-0.20210214142236-84e60c758329/go.mod h1:o52fHyONnsaEkTHIv/CCCfrZqeUBPC/oPYEyi2lvtAs=
 github.com/dreadl0ck/maltego v0.0.2-0.20210218074038-4be575646360 h1:G6Xfblgh3oWHngtHhep7A346HlPv+ksbDXmftw09+DA=
 github.com/dreadl0ck/maltego v0.0.2-0.20210218074038-4be575646360/go.mod h1:NQT8NKjOTN1p6EYzZj0BFydAY1t7FiYQXoBOem1gyIQ=
+github.com/dreadl0ck/maltego v0.0.2 h1:B0DnLwC+8boYx+K2ogwMu6nAT5HAGsAoyvEszeKGnpg=
+github.com/dreadl0ck/maltego v0.0.2/go.mod h1:NQT8NKjOTN1p6EYzZj0BFydAY1t7FiYQXoBOem1gyIQ=
 github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986 h1:uWUu0wpsuIFk25bbsyJpe5Usvl7zbNx1IggBtai/99c=
 github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986/go.mod h1:R6pfCdk8nyalbLwBA0++fwlT0ORPmyDoQCjUYC9A1SQ=
 github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket h1:FOqjFi//FT2SslC28SqsqkiSYzXIqcrjqYOOufSA6TU=
