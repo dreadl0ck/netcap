@@ -88,16 +88,17 @@ Proceed?`) {
 			UpdateDBs()
 			return
 		}
-	}
+	} else {
 
-	// it does not - create it
-	err := os.MkdirAll(resolvers.ConfigRootPath, defaults.DirectoryPermission)
-	if err != nil {
-		log.Println("failed to create config root path: ", err)
+		// it does not - create it
+		errMkdir := os.MkdirAll(resolvers.ConfigRootPath, defaults.DirectoryPermission)
+		if errMkdir != nil {
+			log.Println("failed to create config root path: ", errMkdir)
+		}
 	}
 
 	// move into ConfigRootPath
-	err = os.Chdir(resolvers.ConfigRootPath)
+	err := os.Chdir(resolvers.ConfigRootPath)
 	if err != nil {
 		log.Fatal("failed to move into config root path: ", err)
 	}
