@@ -15,13 +15,13 @@ package dbs
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/defaults"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -91,10 +91,13 @@ Proceed?`) {
 	}
 
 	// it does not - create it
-	_ = os.MkdirAll(resolvers.ConfigRootPath, defaults.DirectoryPermission)
+	err := os.MkdirAll(resolvers.ConfigRootPath, defaults.DirectoryPermission)
+	if err != nil {
+		log.Println("failed to create config root path: ", err)
+	}
 
 	// move into ConfigRootPath
-	err := os.Chdir(resolvers.ConfigRootPath)
+	err = os.Chdir(resolvers.ConfigRootPath)
 	if err != nil {
 		log.Fatal("failed to move into config root path: ", err)
 	}
