@@ -56,7 +56,7 @@ For windows, things work a little bit different.
 
 First, download & install the latest version of **WinPcap**:
 
-{% embed url="https://www.winpcap.org/install/" %}
+{% embed url="https://www.winpcap.org/install/" caption="" %}
 
 Next, open a CMD prompt and run:
 
@@ -72,7 +72,7 @@ Note down the Identifier for your adapter of interest \(here: **Ethernet0**\), i
 \Device\Tcpip_{B1B1E59F-FA8F-4A7B-B28C-7A26F6E00F5A}
 ```
 
-To capture traffic on the interface, 
+To capture traffic on the interface,
 
 you must prefix the interface **ID \({B1B1E59F-FA8F-4A7B-B28C-7A26F6E00F5A}\)** with **\Device\NPF\_**
 
@@ -85,7 +85,7 @@ net.exe capture -iface \Device\NPF_{B1B1E59F-FA8F-4A7B-B28C-7A26F6E00F5A}
 {% hint style="info" %}
 Info: When you stop the packet capture on windows with ctrl-C you will see several errors of the format:
 
-`failed to remove file remove XXXXX.ncap.gz: The process cannot access the file because it is being used by another process.` 
+`failed to remove file remove XXXXX.ncap.gz: The process cannot access the file because it is being used by another process.`
 
 This happens because NETCAP creates and opens files for all supported audit records types on startup, and closes them when packet capture is finished or interrupted. Since it often happens that not all supported protocols appeared in the data stream, NETCAP opens the audit record files after closing again, to check if they are empty \(=only contain the NETCAP header\), and if so, removes the empty audit record files.
 

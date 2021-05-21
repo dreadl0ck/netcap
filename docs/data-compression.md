@@ -8,7 +8,7 @@ To reduce the amount of disk space used for storing the audit records, netcap co
 
 For this purpose Netcap currently uses the following gzip implementation:
 
-{% embed url="https://github.com/klauspost/pgzip" %}
+{% embed url="https://github.com/klauspost/pgzip" caption="" %}
 
 This implementation will split the data into blocks that are compressed in parallel, which can be useful for compressing big amounts of data. The output is a standard gzip file.
 
