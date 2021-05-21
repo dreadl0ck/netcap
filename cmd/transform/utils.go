@@ -241,7 +241,7 @@ func addEntityWithPath(tr *maltego.Transform, enType, value, path string) *malte
 		tr.ResponseMessage = &maltego.ResponseMessage{}
 	}
 
-	ent := maltego.NewEntity(enType, maltego.EscapeText(value), "100")
+	ent := maltego.NewEntity(enType, strings.ReplaceAll(maltego.EscapeText(value), "&gt;", ">"), "100")
 	ent.AddProperty("path", "Path", maltego.Strict, path)
 	tr.ResponseMessage.Entities.Items = append(tr.ResponseMessage.Entities.Items, ent)
 
