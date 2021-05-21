@@ -183,7 +183,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 			CSV:     c.CSV,
 			Proto:   c.Proto,
 			JSON:    c.JSON,
-			Name:    strings.Title(d.GetName()),
+			Name:    d.GetName(),
 			Type:    d.GetType(),
 			Null:    c.Null,
 			Elastic: c.Elastic,
@@ -256,7 +256,7 @@ func (pd *Decoder) DeInitFunc() error {
 
 // GetName returns the name of the decoder.
 func (pd *Decoder) GetName() string {
-	return pd.Name
+	return strings.Title(pd.Name)
 }
 
 // SetWriter sets the netcap writer to use for the decoder.
