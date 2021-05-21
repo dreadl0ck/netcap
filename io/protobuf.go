@@ -15,6 +15,7 @@ package io
 
 import (
 	"bufio"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"path/filepath"
@@ -56,6 +57,7 @@ func newProtoWriter(wc *WriterConfig) *protoWriter {
 	} else {
 		w.file = createFile(filepath.Join(wc.Out, wc.Name), defaults.FileExtension)
 	}
+	ioLog.Info("create protoWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)))
 
 	// buffer data?
 	if wc.Buffer {

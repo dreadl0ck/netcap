@@ -183,7 +183,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 			CSV:     c.CSV,
 			Proto:   c.Proto,
 			JSON:    c.JSON,
-			Name:    strings.ToTitle(d.GetName()),
+			Name:    strings.Title(d.GetName()),
 			Type:    d.GetType(),
 			Null:    c.Null,
 			Elastic: c.Elastic,
