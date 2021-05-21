@@ -109,7 +109,7 @@ func init() {
 // newPacketDecoder returns a new Decoder instance.
 func newPacketDecoder(t types.Type, name, description string, postinit func(*Decoder) error, handler packetDecoderHandler, deinit func(*Decoder) error) *Decoder {
 	d := &Decoder{
-		Name:        strings.ToTitle(name),
+		Name:        strings.Title(name),
 		Handler:     handler,
 		DeInit:      deinit,
 		PostInit:    postinit,
