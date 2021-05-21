@@ -8,7 +8,7 @@ description: Identify client and server that are using encrypted connections
 
 Watch a quick demo of creating and exploring the **TLSClientHello** audit records on the command-line
 
-{% embed url="https://asciinema.org/a/KfhJRM3P4b0GsMtVCtelzWMbK" %}
+{% embed url="https://asciinema.org/a/KfhJRM3P4b0GsMtVCtelzWMbK" caption="" %}
 
 ## JA3
 

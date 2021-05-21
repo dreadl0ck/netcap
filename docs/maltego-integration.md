@@ -8,7 +8,7 @@ description: Graphical link analysis to the rescue!
 
 **Maltego** is an open source intelligence \(OSINT\) and graphical link analysis tool for gathering and connecting information for investigative tasks.
 
-{% embed url="https://www.maltego.com" %}
+{% embed url="https://www.maltego.com" caption="" %}
 
 It allows to transform data using external knowledge and visualize the results in a graph topology.
 
@@ -42,7 +42,7 @@ Next, download install the maltego transformations and enities for netcap:
 
 Currently there are **20 entities** and **42 transformations** implemented. You can download them here:
 
-{% file src=".gitbook/assets/netcap-maltego-config-v0.5.mtz \(2\).zip" %}
+{% file src=".gitbook/assets/netcap-maltego-config-v0.5.mtz \(2\) \(1\).zip" %}
 
 Import them into Maltego in the "**Import / Export Config**" tab under "**Import Config**".
 
@@ -104,7 +104,7 @@ Extraction of a POP3 authentication token:
 
 ## Gallery
 
-When working with larger amount of nodes, the organic topology can be useful: 
+When working with larger amount of nodes, the organic topology can be useful:
 
 ![Graph during an investigation \(organic topology\)](.gitbook/assets/screenshot-2020-03-25-at-01.22.54.png)
 

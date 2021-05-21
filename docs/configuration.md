@@ -84,5 +84,3 @@ The environment variable **NC\_DATABASE\_SOURCE** can be used to overwrite the d
 
 {% page-ref page="resolvers.md" %}
 
-
-

@@ -32,9 +32,9 @@ Go has included support for versioned modules as proposed [here](https://golang.
 
 You can read about Go modules here:
 
-{% embed url="https://github.com/golang/go/wiki/Modules" %}
+{% embed url="https://github.com/golang/go/wiki/Modules" caption="" %}
 
-{% embed url="https://blog.golang.org/using-go-modules" %}
+{% embed url="https://blog.golang.org/using-go-modules" caption="" %}
 
 ## Development Build
 
