@@ -17,7 +17,7 @@ require (
 	github.com/dreadl0ck/go-dpi v0.0.0-20200912122706-f830a777c45f
 	github.com/dreadl0ck/gopacket v1.1.16-0.20201228223815-140074f06498
 	github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket.0.20200917082239-a29743a537b2
-	github.com/dreadl0ck/maltego v0.0.2-0.20210218074038-4be575646360
+	github.com/dreadl0ck/maltego v0.0.2
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
 	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
 	github.com/dsoprea/go-exif/v2 v2.0.0-20210131231135-d154f10435cc
