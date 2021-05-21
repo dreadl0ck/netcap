@@ -20,11 +20,11 @@ To make use of multi-core processors, processing of packets should happen in an 
 
 Each worker receives its data from an input channel. This channel can be buffered, by default the buffer size is 100, also because this configuration has shown the best results on the development machine. When the buffer size is set to zero, the operation of writing a packet into the channel blocks, until the goroutine behind it is ready for consumption. That means, the goroutine must finish the currently processed packet, until a new packet can be accepted. By configuring the buffer size for all routines to a specific number of packets, distributing packets among workers can continue even if a worker is not finished yet when new data arrives. New packets will be queued in the channel buffer, and writing in the channels will only block if the buffer is full.
 
-![NETCAP buffered workers](.gitbook/assets/buffered-workers.svg)
+![NETCAP buffered workers](.gitbook/assets/Buffered-Workers.svg)
 
 ## Data Pipe
 
 The Netcap data pipe describes the way from a network packet that has been processed in a worker routine, to a serialized, delimited and compressed record into a file on disk.
 
-![](.gitbook/assets/netcap-pipe.svg)
+![](.gitbook/assets/Netcap-PIpe.svg)
 

@@ -105,5 +105,5 @@ For properly exploring files for each host I recommend using the Maltego Integra
 
 {% page-ref page="maltego-integration.md" %}
 
-![](.gitbook/assets/files.png)
+![](.gitbook/assets/screenshot-2020-03-24-at-23.52.23.png)
 

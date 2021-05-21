@@ -129,5 +129,5 @@ $ net export .
 
 ## HTTP Dashboard Preview
 
-![Grafana Dashboard HTTP](.gitbook/assets/screenshot-2019-05-04-at-23.40.05%20%281%29.png)
+![Grafana Dashboard HTTP](.gitbook/assets/screenshot-2019-05-04-at-23.40.05%20%281%29%20%281%29.png)
 

@@ -100,27 +100,27 @@ Use Deep Packet Inspection to list all identified application categories:
 
 Extraction of a POP3 authentication token:
 
-![](.gitbook/assets/mailtoken.mov.gif)
+![](.gitbook/assets/mailtoken.mov%20%281%29.gif)
 
 ## Gallery
 
 When working with larger amount of nodes, the organic topology can be useful: 
 
-![Graph during an investigation \(organic topology\)](.gitbook/assets/screenshot-2020-03-25-at-01.22.54.png)
+![Graph during an investigation \(organic topology\)](.gitbook/assets/screenshot-2020-03-25-at-01.22.54%20%281%29.png)
 
 Example of interaction with a PHP webshell:
 
-![PHP webshell interaction](.gitbook/assets/screenshot-2020-03-25-at-15.00.45-1.png)
+![PHP webshell interaction](.gitbook/assets/screenshot-2020-03-25-at-15.00.45%20%281%29.png)
 
 Example of an exploit abusing a HTTP parameter command injection vulnerability:
 
-![HTTP parameter command injection](.gitbook/assets/screenshot-2020-03-25-at-15.00.55.png)
+![HTTP parameter command injection](.gitbook/assets/screenshot-2020-03-25-at-15.00.55%20%281%29.png)
 
 Graph during an investigation where the attacker has been identified and further information is gathered:
 
 ![Dataset investigation](.gitbook/assets/screenshot-2020-03-25-at-00.20.06.png)
 
-![Dataset investigation](.gitbook/assets/screenshot-2020-03-24-at-23.52.23.png)
+![Dataset investigation](.gitbook/assets/screenshot-2020-03-24-at-23.52.23%20%281%29.png)
 
 ![Flow Graph](.gitbook/assets/screenshot-2020-03-25-at-20.19.15.png)
 
