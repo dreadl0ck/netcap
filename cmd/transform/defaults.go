@@ -68,6 +68,12 @@ func init() {
 
 // adds arguments for different programs to the passed in arguments.
 func makeLinuxOpenCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
+
+	// ensure that links are always opened with gio on linux
+	if strings.HasPrefix(args[0], "https://") || strings.HasPrefix(args[0], "http://"){
+		commandName = "gio"
+	}
+
 	if commandName == "gio" {
 		args = append([]string{"open"}, args...)
 	}
