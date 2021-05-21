@@ -175,6 +175,30 @@ $ sudo net
 [same output]
 ```
 
+### Tab completion
+
+Run the following to install the tab completion on your system and enable it for the current shell:
+
+```text
+# step into the cloned repository
+$ cd /home/kali/go/src/github.com/dreadl0ck/netcap
+
+$ sudo mkdir -p /usr/local/etc/bash_completion.d
+$ autoload -U +X compinit && compinit
+$ autoload -U +X bashcompinit && bashcompinit
+$ sudo cp cmd/net /usr/local/etc/bash_completion.d/net
+$ sudo chown -R kali /usr/local/etc/bash_completion.d
+$ . /usr/local/etc/bash_completion.d/net
+```
+
+To persist it, append the following **at the end** of your **~/.zshrc** and **/root/.zshrc** files:
+
+```text
+autoload -U +X compinit && compinit
+autoload -U +X bashcompinit && bashcompinit
+. /usr/local/etc/bash_completion.d/net
+```
+
 ### Databases
 
 To fetch the netcap databases for data enrichment, first install the git large file storage extension:
@@ -278,6 +302,13 @@ Running the **To Audit Records \[NETCAP\]** transform will start NETCAP to proce
 Afterwards, you should see audit records in Maltego:
 
 ![Audit records in Maltego](../.gitbook/assets/image%20%282%29.png)
+
+Clone the exploitdb repository, so the transforms for opening them work:
+
+```text
+$ cd /usr/local/etc/netcap
+$ git clone https://github.com/offensive-security/exploitdb.git
+```
 
 ### Installing IDA
 
