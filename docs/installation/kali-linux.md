@@ -6,7 +6,7 @@ description: Installing NETCAP on Kali
 
 ## Prepare Kali Image
 
-Covers basic setup of Kali Linux, you can skip this if you have a configured installation in front of you.
+This part covers basic setup of Kali Linux, you can skip this if you already have a configured installation.
 
 Grab a fresh Kali image from: [https://www.kali.org/downloads/](https://www.kali.org/downloads/)
 
