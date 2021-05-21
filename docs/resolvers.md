@@ -37,7 +37,7 @@ By default, all resolvers are disabled. You need to use the **-reverse-dns**, **
 
 You can download a bundled version of all databases except for the MaxMind GeoLite, here:
 
-{% file src=".gitbook/assets/resolver-dbs \(1\).zip" %}
+{% file src=".gitbook/assets/resolver-dbs \(1\) \(2\).zip" %}
 
 ## DNS
 
@@ -59,11 +59,11 @@ And provide it to netcaps resolver via a **hosts** file in the database director
 
 To filter known legitimate domains away, the alexa top 1 million can be used for example.
 
-{% embed url="https://aws.amazon.com/alexa-top-sites/" %}
+{% embed url="https://aws.amazon.com/alexa-top-sites/" caption="" %}
 
 You can download the CSV file here:
 
-{% embed url="http://s3.amazonaws.com/alexa-static/top-1m.csv.zip" %}
+{% embed url="http://s3.amazonaws.com/alexa-static/top-1m.csv.zip" caption="" %}
 
 Rename it to **domain-whitelist.csv** and move it into the database path:
 

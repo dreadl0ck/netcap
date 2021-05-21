@@ -12,7 +12,7 @@ How are devices related to each other, how does communication flow?
 
 Identifying devices within a network is a good starting point for any investigation and helps to understand complex situations and relations quickly. The **DeviceProfile** custom decoder implements exactly this, and is enabled from v0.5 on by default.
 
-> Note: DeviceProfile currently get written when processing all traffic is done - that means when using live capture, the profiles will be available when processing stopped. Future versions will implement a flushing mechanism similar  to the one for Flows / Connections.
+> Note: DeviceProfile currently get written when processing all traffic is done - that means when using live capture, the profiles will be available when processing stopped. Future versions will implement a flushing mechanism similar to the one for Flows / Connections.
 
 DeviceProfiles rely heavily on local resolvers to be set up and configured. You can use the **DeviceProfile** audit records without resolvers, but you will get less information. Read more about the resolvers here:
 
@@ -66,5 +66,5 @@ This is the information associated with a single ip address. Note how in additio
 
 Additionally, the results from Deep Packet Inspection for all flows seen from or towards this IP are added as well, in addition to the Server Name Indicators seen and flow statistics for each seen port number from this address.
 
-To enhance encrypted telemetry, Ja3 fingerprints seen for this host are mapped to lookup results from the  Ja3 database.
+To enhance encrypted telemetry, Ja3 fingerprints seen for this host are mapped to lookup results from the Ja3 database.
 

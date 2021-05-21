@@ -26,7 +26,7 @@ message Modbus {
     bytes  Payload       = 6;
     bool   Exception     = 7;
     int32  FunctionCode  = 8;
-    
+
     PacketContext Context = 9;
 }
 ```

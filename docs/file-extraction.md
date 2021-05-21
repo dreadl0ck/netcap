@@ -56,11 +56,11 @@ After capturing, lets inspect the directory contents:
 $ tree files
 files
 ├── application
-│   └── x-gzip
-│       └── unknown-193.24.227.12->216.66.80.30-80->60075.gz
+│   └── x-gzip
+│       └── unknown-193.24.227.12->216.66.80.30-80->60075.gz
 ├── image
-│   └── x-icon
-│       └── favicon.ico-193.24.227.12->216.66.80.30-80->60076.ico
+│   └── x-icon
+│       └── favicon.ico-193.24.227.12->216.66.80.30-80->60076.ico
 └── text
     └── html
         ├── unknown-193.24.227.12->216.66.80.30-80->55031.html
