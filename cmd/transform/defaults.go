@@ -51,7 +51,16 @@ func init() {
 			return
 		}
 		if strings.Contains(string(out), "kali") {
-			defaultOpenCommandLinux = "xdg-open"
+
+			// prefer codium over xdg-open
+			if path := findExecutable("codium"); path != "" {
+				defaultOpenCommandLinux = path
+			} else {
+				// default to use xdg-open
+				defaultOpenCommandLinux = "xdg-open"
+			}
+
+			// kali uses qterminal
 			defaultOpenTerminalCommandLinux = "qterminal"
 		}
 	}

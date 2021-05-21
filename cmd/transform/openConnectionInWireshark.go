@@ -75,8 +75,14 @@ func makeOutFilePath(in, bpf string, lt maltego.LocalTransform, flows bool, bpfS
 }
 
 func findExecutable(name string) string {
+
+	var paths []string
+
 	path, err := exec.LookPath(name)
 	if err != nil {
+
+		paths = append(paths, "$PATH")
+
 		// on linux and macOS: search the binary in /usr/local/bin
 		if runtime.GOOS == platformDarwin || runtime.GOOS == platformLinux {
 
@@ -88,7 +94,15 @@ func findExecutable(name string) string {
 			p := filepath.Join("/usr", "local", "bin", name)
 			path, err = exec.LookPath(p)
 			if err != nil {
-				maltego.Die(err.Error(), "executable not found: "+p + "\n$PATH = " + os.Getenv("PATH"))
+
+				paths = append(paths, p)
+				p = filepath.Join("/snap", "bin", name)
+
+				path, err = exec.LookPath(p)
+				if err != nil {
+					paths = append(paths, p)
+					maltego.Die("executable not found", "paths tried:\n" + strings.Join(paths, "\n") + "\n$PATH = "+os.Getenv("PATH"))
+				}
 			}
 		}
 	}
