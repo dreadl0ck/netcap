@@ -54,9 +54,9 @@ type (
 	// packetDecoderHandler takes a gopacket.Packet and returns a proto.Message.
 	packetDecoderHandler = func(p gopacket.Packet) proto.Message
 
-	// packetDecoder implements custom logic to decode data from a gopacket.Packet
+	// Decoder implements custom logic to decode data from a gopacket.Packet
 	// this structure has an optimized field order to avoid excessive padding.
-	packetDecoder struct {
+	Decoder struct {
 
 		// used to keep track of the number of generated audit records
 		NumRecordsWritten int64
@@ -74,8 +74,8 @@ type (
 		Handler packetDecoderHandler
 
 		// init functions
-		PostInit func(*packetDecoder) error
-		DeInit   func(*packetDecoder) error
+		PostInit func(*Decoder) error
+		DeInit   func(*Decoder) error
 
 		// Writer for audit records
 		Writer io.AuditRecordWriter
@@ -106,10 +106,10 @@ func init() {
 	}
 }
 
-// newPacketDecoder returns a new packetDecoder instance.
-func newPacketDecoder(t types.Type, name, description string, postinit func(*packetDecoder) error, handler packetDecoderHandler, deinit func(*packetDecoder) error) *packetDecoder {
-	d := &packetDecoder{
-		Name:        name,
+// newPacketDecoder returns a new Decoder instance.
+func newPacketDecoder(t types.Type, name, description string, postinit func(*Decoder) error, handler packetDecoderHandler, deinit func(*Decoder) error) *Decoder {
+	d := &Decoder{
+		Name:        strings.ToTitle(name),
 		Handler:     handler,
 		DeInit:      deinit,
 		PostInit:    postinit,
@@ -183,7 +183,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 			CSV:     c.CSV,
 			Proto:   c.Proto,
 			JSON:    c.JSON,
-			Name:    d.GetName(),
+			Name:    strings.ToTitle(d.GetName()),
 			Type:    d.GetType(),
 			Null:    c.Null,
 			Elastic: c.Elastic,
@@ -237,7 +237,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 // PacketDecoderAPI interface implementation
 
 // PostInitFunc is called after the decoder has been initialized.
-func (pd *packetDecoder) PostInitFunc() error {
+func (pd *Decoder) PostInitFunc() error {
 	if pd.PostInit == nil {
 		return nil
 	}
@@ -246,7 +246,7 @@ func (pd *packetDecoder) PostInitFunc() error {
 }
 
 // DeInitFunc is called prior to teardown.
-func (pd *packetDecoder) DeInitFunc() error {
+func (pd *Decoder) DeInitFunc() error {
 	if pd.DeInit == nil {
 		return nil
 	}
@@ -255,29 +255,29 @@ func (pd *packetDecoder) DeInitFunc() error {
 }
 
 // GetName returns the name of the decoder.
-func (pd *packetDecoder) GetName() string {
+func (pd *Decoder) GetName() string {
 	return pd.Name
 }
 
 // SetWriter sets the netcap writer to use for the decoder.
-func (pd *packetDecoder) SetWriter(w io.AuditRecordWriter) {
+func (pd *Decoder) SetWriter(w io.AuditRecordWriter) {
 	pd.Writer = w
 }
 
 // GetType returns the netcap type of the decoder.
-func (pd *packetDecoder) GetType() types.Type {
+func (pd *Decoder) GetType() types.Type {
 	return pd.Type
 }
 
 // GetDescription returns the description of the decoder.
-func (pd *packetDecoder) GetDescription() string {
+func (pd *Decoder) GetDescription() string {
 	return pd.Description
 }
 
 // Decode is called for each layer
 // this calls the handler function of the decoder
 // and writes the serialized protobuf into the data pipe.
-func (pd *packetDecoder) Decode(p gopacket.Packet) error {
+func (pd *Decoder) Decode(p gopacket.Packet) error {
 	// call the Handler function of the decoder
 	record := pd.Handler(p)
 	if record != nil {
@@ -317,7 +317,7 @@ func (pd *packetDecoder) Decode(p gopacket.Packet) error {
 }
 
 // Destroy closes and flushes all writers and calls deinit if set.
-func (pd *packetDecoder) Destroy() (name string, size int64) {
+func (pd *Decoder) Destroy() (name string, size int64) {
 	err := pd.DeInitFunc()
 	if err != nil {
 		panic(err)
@@ -327,7 +327,7 @@ func (pd *packetDecoder) Destroy() (name string, size int64) {
 }
 
 // GetChan returns a channel to receive serialized protobuf data from the decoder.
-func (pd *packetDecoder) GetChan() <-chan []byte {
+func (pd *Decoder) GetChan() <-chan []byte {
 	if cw, ok := pd.Writer.(io.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()
 	}
@@ -336,12 +336,12 @@ func (pd *packetDecoder) GetChan() <-chan []byte {
 }
 
 // NumRecords returns the number of written records.
-func (pd *packetDecoder) NumRecords() int64 {
+func (pd *Decoder) NumRecords() int64 {
 	return atomic.LoadInt64(&pd.NumRecordsWritten)
 }
 
 // writeDeviceProfile writes the profile.
-func (pd *packetDecoder) write(r types.AuditRecord) {
+func (pd *Decoder) write(r types.AuditRecord) {
 	if conf.ExportMetrics {
 
 		if conf.Debug {

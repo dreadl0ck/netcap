@@ -175,7 +175,7 @@ var deviceProfileDecoder = newPacketDecoder(
 	types.Type_NC_DeviceProfile,
 	"DeviceProfile",
 	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
-	func(d *packetDecoder) error {
+	func(d *Decoder) error {
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
@@ -184,7 +184,7 @@ var deviceProfileDecoder = newPacketDecoder(
 
 		return nil
 	},
-	func(d *packetDecoder) error {
+	func(d *Decoder) error {
 		// flush writer
 		for _, item := range DeviceProfiles.Items {
 			item.Lock()
@@ -197,7 +197,7 @@ var deviceProfileDecoder = newPacketDecoder(
 )
 
 // writeDeviceProfile writes the profile.
-func (d *packetDecoder) writeDeviceProfile(dp *types.DeviceProfile) {
+func (d *Decoder) writeDeviceProfile(dp *types.DeviceProfile) {
 	if conf.ExportMetrics {
 		dp.Inc()
 	}

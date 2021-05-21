@@ -66,13 +66,13 @@ var ipProfileDecoder = newPacketDecoder(
 	types.Type_NC_IPProfile,
 	"IPProfile",
 	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
-	func(d *packetDecoder) error {
+	func(d *Decoder) error {
 		return nil
 	},
 	func(p gopacket.Packet) proto.Message {
 		return nil
 	},
-	func(d *packetDecoder) error {
+	func(d *Decoder) error {
 		// flush writer
 		for _, item := range ipProfiles.Items {
 			item.Lock()
@@ -357,7 +357,7 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 }
 
 // writeIPProfile writes the ip profile.
-func (d *packetDecoder) writeIPProfile(i *types.IPProfile) {
+func (d *Decoder) writeIPProfile(i *types.IPProfile) {
 	if conf.ExportMetrics {
 		i.Inc()
 	}

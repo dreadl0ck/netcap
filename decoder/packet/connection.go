@@ -70,7 +70,7 @@ var connectionDecoder = newPacketDecoder(
 	func(p gopacket.Packet) proto.Message {
 		return handlePacket(p)
 	},
-	func(decoder *packetDecoder) error {
+	func(decoder *Decoder) error {
 		conns.Lock()
 		for _, f := range conns.Items {
 			f.Lock()
@@ -214,7 +214,7 @@ func handlePacket(p gopacket.Packet) proto.Message {
 }*/
 
 // writeConn writes the connection.
-func (d *packetDecoder) writeConn(conn *types.Connection) {
+func (d *Decoder) writeConn(conn *types.Connection) {
 
 	// calculate duration
 	conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
