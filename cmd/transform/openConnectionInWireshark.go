@@ -79,10 +79,16 @@ func findExecutable(name string) string {
 	if err != nil {
 		// on linux and macOS: search the binary in /usr/local/bin
 		if runtime.GOOS == platformDarwin || runtime.GOOS == platformLinux {
+
+			// search ida binary in /usr/local/bin/ida, as it needs the shared objects in the same folder as the binary
+			if name == "ida64" {
+				name = "ida/ida64"
+			}
+
 			p := filepath.Join("/usr", "local", "bin", name)
 			path, err = exec.LookPath(p)
 			if err != nil {
-				maltego.Die(err.Error(), "executable not found: "+p)
+				maltego.Die(err.Error(), "executable not found: "+p + "\n$PATH = " + os.Getenv("PATH"))
 			}
 		}
 	}

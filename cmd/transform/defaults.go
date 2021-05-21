@@ -13,7 +13,12 @@
 
 package transform
 
-import "strings"
+import (
+	"log"
+	"os/exec"
+	"runtime"
+	"strings"
+)
 
 const (
 	// http content types.
@@ -27,13 +32,30 @@ const (
 	// default macOS command to open files from maltego.
 	defaultOpenCommandDarwin = "open"
 
+	defaultDisasmCommandMacOS = "hopper"
+)
+
+var (
 	// default linux command to open files from maltego
 	// you could also set it to xdg-open.
 	defaultOpenCommandLinux         = "gio"
 	defaultOpenTerminalCommandLinux = "gnome-terminal"
-
-	defaultDisasmCommandMacOS = "hopper"
 )
+
+// update the default linux paths for Kali linux
+func init() {
+	if runtime.GOOS == platformLinux {
+		out, err := exec.Command("uname", "-a").CombinedOutput()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if strings.Contains(string(out), "kali") {
+			defaultOpenCommandLinux = "xdg-open"
+			defaultOpenTerminalCommandLinux = "qterminal"
+		}
+	}
+}
 
 // adds arguments for different programs to the passed in arguments.
 func makeLinuxOpenCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
