@@ -26,5 +26,3 @@ Contact me by mail:
 dreadl0ck [at] protonmail [dot] ch
 ```
 
-
-

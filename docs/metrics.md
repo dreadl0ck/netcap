@@ -87,7 +87,7 @@ $ grafana-server --homepath /usr/local/opt/grafana/share/grafana
 
 Now download the NETCAP Dashboard and import it into Grafana:
 
-{% file src=".gitbook/assets/netcap-1587637598999.json" %}
+{% file src=".gitbook/assets/netcap-1587637598999 \(1\).json" %}
 
 Go to **Settings &gt; Datasources** and a prometheus datasource, either with the default port 9090 or the one you choose in the config.
 
