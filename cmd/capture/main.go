@@ -15,6 +15,8 @@ package capture
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/core"
+	"github.com/dreadl0ck/netcap/decoder/stream"
 	"log"
 	"net/http"
 	"os"
@@ -359,6 +361,60 @@ func generateElasticIndices(elasticAddrs []string) {
 			JSON:    *flagJSON,
 			Name:    d.Layer.String(),
 			Type:    d.Type,
+			Null:    *flagNull,
+			Elastic: *flagElastic,
+			ElasticConfig: io.ElasticConfig{
+				ElasticAddrs:   elasticAddrs,
+				ElasticUser:    *flagElasticUser,
+				ElasticPass:    *flagElasticPass,
+				KibanaEndpoint: *flagKibanaEndpoint,
+				BulkSize:       *flagBulkSizeCustom,
+			},
+			Buffer:        *flagBuffer,
+			Compress:      *flagCompress,
+			Out:           *flagOutDir,
+			Chan:          false,
+			ChanSize:      0,
+			MemBufferSize: *flagMemBufferSize,
+			Version:       netcap.Version,
+			StartTime:     time.Now(),
+		})
+	})
+
+	stream.ApplyActionToStreamDecoders(func(d core.StreamDecoderAPI) {
+		io.CreateElasticIndex(&io.WriterConfig{
+			CSV:     *flagCSV,
+			Proto:   *flagProto,
+			JSON:    *flagJSON,
+			Name:    d.GetName(),
+			Type:    d.GetType(),
+			Null:    *flagNull,
+			Elastic: *flagElastic,
+			ElasticConfig: io.ElasticConfig{
+				ElasticAddrs:   elasticAddrs,
+				ElasticUser:    *flagElasticUser,
+				ElasticPass:    *flagElasticPass,
+				KibanaEndpoint: *flagKibanaEndpoint,
+				BulkSize:       *flagBulkSizeCustom,
+			},
+			Buffer:        *flagBuffer,
+			Compress:      *flagCompress,
+			Out:           *flagOutDir,
+			Chan:          false,
+			ChanSize:      0,
+			MemBufferSize: *flagMemBufferSize,
+			Version:       netcap.Version,
+			StartTime:     time.Now(),
+		})
+	})
+
+	stream.ApplyActionToAbstractDecoders(func(d core.DecoderAPI) {
+		io.CreateElasticIndex(&io.WriterConfig{
+			CSV:     *flagCSV,
+			Proto:   *flagProto,
+			JSON:    *flagJSON,
+			Name:    d.GetName(),
+			Type:    d.GetType(),
 			Null:    *flagNull,
 			Elastic: *flagElastic,
 			ElasticConfig: io.ElasticConfig{
