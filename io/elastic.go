@@ -431,7 +431,7 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 		if res.IsError() {
 			var raw map[string]interface{}
 			if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
-				log.Printf("failure to to parse response body: %s", err)
+				log.Printf("failure to parse response body: %s", err)
 			} else {
 				ioLog.Error("elastic bulk request failed",
 					zap.Int("status", res.StatusCode),
@@ -450,7 +450,7 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 		// a successful response can still contain errors for some documents
 		var blk *bulkResponse
 		if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
-			log.Printf("failure to to parse response body: %s", err)
+			log.Printf("failure to parse response body: %s", err)
 
 			// dump buffer in case of errors
 			ioLog.Debug(w.buf.String())
