@@ -23,7 +23,7 @@ require (
 	github.com/dsoprea/go-exif/v2 v2.0.0-20210131231135-d154f10435cc
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/elastic/go-elasticsearch/v7 v7.11.0
+	github.com/elastic/go-elasticsearch/v7 v7.13.0
 	github.com/evilsocket/islazy v1.10.6
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/felixge/fgprof v0.9.1
