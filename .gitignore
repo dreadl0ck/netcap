@@ -32,3 +32,4 @@ FlameGraph
 Dockerfile
 bin/
 cover.out
+deploy.sh

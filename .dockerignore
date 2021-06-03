@@ -34,3 +34,7 @@ netcap.mtz
 entities.mtz
 transforms.mtz
 mied18.pdf
+test
+overlay2
+deploy.sh
+cover.out
