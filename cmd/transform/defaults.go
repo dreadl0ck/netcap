@@ -20,6 +20,7 @@ import (
 	"strings"
 )
 
+// constant defaults
 const (
 	// http content types.
 	octetStream = "application/octet-stream"
@@ -29,20 +30,21 @@ const (
 	platformWindows = "windows"
 	platformLinux   = "linux"
 
-	// default macOS command to open files from maltego.
-	defaultOpenCommandDarwin = "open"
-
 	defaultDisasmCommandMacOS = "hopper"
 )
 
+// variable defaults - these can be changed during init depending on the detected platform
 var (
+	// default macOS command to open files from maltego.
+	defaultOpenCommandDarwin = "open"
+
 	// default linux command to open files from maltego
 	// you could also set it to xdg-open.
 	defaultOpenCommandLinux         = "gio"
 	defaultOpenTerminalCommandLinux = "gnome-terminal"
 )
 
-// update the default linux paths for Kali linux
+// update the default linux paths for specific OSes
 func init() {
 	if runtime.GOOS == platformLinux {
 		out, err := exec.Command("uname", "-a").CombinedOutput()
@@ -64,13 +66,21 @@ func init() {
 			defaultOpenTerminalCommandLinux = "qterminal"
 		}
 	}
+
+	if runtime.GOOS == platformDarwin {
+		// use visual studio code to open files if its installed
+		if path := findExecutable("code"); path != "" {
+			defaultOpenCommandDarwin = path
+			log.Println("update default darwin open path to: ", path)
+		}
+	}
 }
 
 // adds arguments for different programs to the passed in arguments.
 func makeLinuxOpenCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
 
 	// ensure that links are always opened with gio on linux
-	if strings.HasPrefix(args[0], "https://") || strings.HasPrefix(args[0], "http://"){
+	if strings.HasPrefix(args[0], "https://") || strings.HasPrefix(args[0], "http://") {
 		commandName = "gio"
 	}
 
@@ -90,6 +100,17 @@ func makeWindowsOpenCommand(args []string) (string, []string) { //nolint:gocriti
 			args...,
 		)...,
 	)
+}
+
+// adds arguments for different programs to the passed in arguments.
+func makeDarwinOpenCommand(commandName string, args []string) (string, []string) { //nolint:gocritic //no named results because we want to reuse the values that have been passed in
+
+	// ensure that links are always opened with open on macOS, so the default browser will handle them
+	if strings.HasPrefix(args[0], "https://") || strings.HasPrefix(args[0], "http://") {
+		commandName = "open"
+	}
+
+	return commandName, args
 }
 
 // adjust the arguments for the linux command invocation
