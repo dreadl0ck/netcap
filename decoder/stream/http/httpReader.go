@@ -339,7 +339,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 		}
 
 		// save file to disk
-		return streamutils.SaveFile(h.conversation, source, name, err, body, encoding, ctype, host)
+		return streamutils.SaveFile(h.conversation, source, name, err, body, encoding, host, ctype)
 	}
 
 	return nil
@@ -445,8 +445,8 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 				err,
 				body,
 				req.Header[headerContentEncoding],
-				strings.Join(req.Header[headerContentType], " "),
 				req.Host,
+				strings.Join(req.Header[headerContentType], " "),
 			)
 		}
 	}
