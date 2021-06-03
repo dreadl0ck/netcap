@@ -34,7 +34,7 @@ func createOpenCommand(args []string) (string, []string) {
 		// use the platform defaults
 		switch runtime.GOOS {
 		case platformDarwin:
-			name = defaultOpenCommandDarwin
+			name, args = makeDarwinOpenCommand(defaultOpenCommandDarwin, args)
 		case platformWindows:
 			name, args = makeWindowsOpenCommand(args)
 		case platformLinux:
