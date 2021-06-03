@@ -536,22 +536,23 @@ var typeMapping = map[string]string{
 	"DstPort": "integer",
 	"Port":    "integer",
 
-	"ID":                  "keyword",
-	"User":                "keyword",
-	"Pass":                "keyword",
-	"Protocol":            "keyword",
-	"Name":                "keyword",
-	"Product":             "keyword",
-	"Vendor":              "keyword",
-	"SourceName":          "keyword",
-	"Software.Product":    "keyword",
-	"Software.Vendor":     "keyword",
-	"Software.SourceName": "keyword",
-	"Host":                "keyword",
-	"UserAgent":           "keyword",
-	"Method":              "keyword",
-	"Hostname":            "keyword",
-	"ServerName":          "keyword",
+	// TODO: previously used "keyword" for this, now we use text type and fielddata=true
+	"ID":                  "text",
+	"User":                "text",
+	"Pass":                "text",
+	"Protocol":            "text",
+	"Name":                "text",
+	"Product":             "text",
+	"Vendor":              "text",
+	"SourceName":          "text",
+	"Software.Product":    "text",
+	"Software.Vendor":     "text",
+	"Software.SourceName": "text",
+	"Host":                "text",
+	"UserAgent":           "text",
+	"Method":              "text",
+	"Hostname":            "text",
+	"ServerName":          "text",
 
 	"Answers":   "object",
 	"Questions": "object",
@@ -589,8 +590,18 @@ func generateMapping(t types.Type) []byte {
 
 			// first, check if a custom mapping is provided
 			if m, exists := typeMapping[field.Name]; exists {
+
 				// set the type for the field name
-				mapping.Properties[field.Name] = map[string]string{"type": m}
+				if m == "text" {
+					mapping.Properties[field.Name] = map[string]string{
+						"type": m,
+
+						// set fielddata to true for text types
+						"fielddata": "true",
+					}
+				} else {
+					mapping.Properties[field.Name] = map[string]string{"type": m}
+				}
 
 				continue
 			}
@@ -598,7 +609,12 @@ func generateMapping(t types.Type) []byte {
 			// no custom type provided - make a decision based on the data type.
 			switch field.Type.String() {
 			case "string": // default for strings is text. for keyword, use the mapping table to overwrite
-				mapping.Properties[field.Name] = map[string]string{"type": "text"}
+				mapping.Properties[field.Name] = map[string]string{
+					"type": "text",
+
+					// set fielddata to true for text types
+					"fielddata": "true",
+				}
 			case "int32", "uint32", "int64", "uint64", "uint8", "float64":
 				mapping.Properties[field.Name] = map[string]string{"type": "integer"}
 			case "bool":
