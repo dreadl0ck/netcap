@@ -590,7 +590,11 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		numTotal := len(StreamFactory.streamReaders)
 		StreamFactory.Unlock()
 
+		startFlush := time.Now()
+		fmt.Println("flushTCPStreams", numTotal)
 		flushTCPStreams(numTotal)
+		fmt.Println("flushTCPStreams DONE", time.Since(startFlush))
+
 		udp.FlushUDPStreams()
 	}
 

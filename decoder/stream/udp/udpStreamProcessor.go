@@ -57,7 +57,11 @@ func FlushUDPStreams() {
 	numTotal := Streams.size()
 
 	sp := new(udpStreamProcessor)
-	sp.initWorkers(decoderconfig.Instance.StreamBufferSize)
+	if numTotal < decoderconfig.Instance.NumStreamWorkers {
+		sp.initWorkers(decoderconfig.Instance.StreamBufferSize, numTotal)
+	} else {
+		sp.initWorkers(decoderconfig.Instance.StreamBufferSize, decoderconfig.Instance.NumStreamWorkers)
+	}
 	sp.numTotal = numTotal
 
 	Streams.Lock()
@@ -212,11 +216,9 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 }
 
 // spawn the configured number of workers.
-func (usp *udpStreamProcessor) initWorkers(streamBufferSize int) {
+func (usp *udpStreamProcessor) initWorkers(streamBufferSize int, numStreamWorkers int) {
 	usp.streamBufferSize = streamBufferSize
-
-	// TODO: make configurable
-	usp.workers = make([]chan *udpStream, 1000)
+	usp.workers = make([]chan *udpStream, numStreamWorkers)
 
 	for i := range usp.workers {
 		usp.workers[i] = usp.streamWorker(&usp.wg)

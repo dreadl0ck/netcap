@@ -18,12 +18,14 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"math"
 	"os"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
@@ -158,11 +160,51 @@ func ApplyActionToPacketDecoders(action func(DecoderAPI)) {
 	}
 }
 
+// ApplyActionToPacketDecodersAsync can be used to run custom code for all packet decoders asynchronously.
+func ApplyActionToPacketDecodersAsync(action func(DecoderAPI)) {
+
+	// when debugging, enforce sequential processing so the logs are in order
+	if decoderconfig.Instance.Debug {
+		ApplyActionToPacketDecoders(action)
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	for _, d := range defaultPacketDecoders {
+		wg.Add(1)
+		go func(d DecoderAPI) {
+			action(d)
+			wg.Done()
+		}(d)
+	}
+	wg.Wait()
+}
+
 // ApplyActionToGoPacketDecoders can be used to run custom code for all gopacket decoders.
 func ApplyActionToGoPacketDecoders(action func(*GoPacketDecoder)) {
 	for _, e := range defaultGoPacketDecoders {
 		action(e)
 	}
+}
+
+// ApplyActionToGoPacketDecodersAsync can be used to run custom code for all gopacket decoders asynchronously.
+func ApplyActionToGoPacketDecodersAsync(action func(*GoPacketDecoder)) {
+
+	// when debugging, enforce sequential processing so the logs are in order
+	if decoderconfig.Instance.Debug {
+		ApplyActionToGoPacketDecoders(action)
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	for _, d := range defaultGoPacketDecoders {
+		wg.Add(1)
+		go func(d *GoPacketDecoder) {
+			action(d)
+			wg.Done()
+		}(d)
+	}
+	wg.Wait()
 }
 
 // ShowDecoders will dump all decoders to stdout.

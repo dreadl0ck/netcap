@@ -235,8 +235,11 @@ type Config struct {
 	// Force printing progress to stderr even in quiet mode
 	PrintProgress bool
 
-	// TCPStreamProcessor
+	// TCP/UDP StreamProcessors buffer size for input channel
 	StreamBufferSize int
+
+	// TCP/UDP StreamProcessors number of workers
+	NumStreamWorkers int
 
 	// DisableGenericVersionHarvester will not use the generic version string regex for the software harvester
 	DisableGenericVersionHarvester bool

@@ -60,7 +60,11 @@ func init() {
 
 func flushTCPStreams(numTotal int) {
 	sp := new(tcpStreamProcessor)
-	sp.initWorkers(decoderconfig.Instance.StreamBufferSize)
+	if numTotal < decoderconfig.Instance.NumStreamWorkers {
+		sp.initWorkers(decoderconfig.Instance.StreamBufferSize, numTotal)
+	} else {
+		sp.initWorkers(decoderconfig.Instance.StreamBufferSize, decoderconfig.Instance.NumStreamWorkers)
+	}
 	sp.numTotal = numTotal
 
 	// flush the remaining streams to disk
@@ -182,11 +186,9 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 }
 
 // spawn the configured number of workers.
-func (tsp *tcpStreamProcessor) initWorkers(streamBufferSize int) {
+func (tsp *tcpStreamProcessor) initWorkers(streamBufferSize int, numStreamWorkers int) {
 	tsp.streamBufferSize = streamBufferSize
-
-	// TODO: make configurable
-	tsp.workers = make([]chan streamReader, 1000)
+	tsp.workers = make([]chan streamReader, numStreamWorkers)
 
 	for i := range tsp.workers {
 		tsp.workers[i] = tsp.streamWorker(&tsp.wg)

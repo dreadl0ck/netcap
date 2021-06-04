@@ -15,24 +15,24 @@ package packet
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"log"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/gopacket"
-	"github.com/gogo/protobuf/proto"
-	"github.com/mgutz/ansi"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/gogo/protobuf/proto"
+	"github.com/mgutz/ansi"
+	"github.com/pkg/errors"
 )
 
 var conf *config.Config
@@ -177,58 +177,73 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 		}
 	}
 
+	var (
+		wg sync.WaitGroup
+		mu sync.Mutex
+	)
+
 	// initialize decoders
 	for _, d := range defaultPacketDecoders {
-		w := io.NewAuditRecordWriter(&io.WriterConfig{
-			CSV:     c.CSV,
-			Proto:   c.Proto,
-			JSON:    c.JSON,
-			Name:    d.GetName(),
-			Type:    d.GetType(),
-			Null:    c.Null,
-			Elastic: c.Elastic,
-			ElasticConfig: io.ElasticConfig{
-				ElasticAddrs:   c.ElasticAddrs,
-				ElasticUser:    c.ElasticUser,
-				ElasticPass:    c.ElasticPass,
-				KibanaEndpoint: c.KibanaEndpoint,
-				BulkSize:       c.BulkSizeCustom,
-			},
-			Buffer:               c.Buffer,
-			Compress:             c.Compression,
-			Out:                  c.Out,
-			Chan:                 c.Chan,
-			ChanSize:             c.ChanSize,
-			MemBufferSize:        c.MemBufferSize,
-			Source:               c.Source,
-			Version:              netcap.Version,
-			IncludesPayloads:     c.IncludePayloads,
-			StartTime:            time.Now(),
-			CompressionBlockSize: c.CompressionBlockSize,
-			CompressionLevel:     c.CompressionLevel,
-		})
-		d.SetWriter(w)
 
-		// call postinit func if set
-		err = d.PostInitFunc()
-		if err != nil {
-			if c.IgnoreDecoderInitErrors {
-				fmt.Println("error while initializing", d.GetName(), "packet decoder:", ansi.Red, err, ansi.Reset)
-			} else {
-				return nil, errors.Wrap(err, "postinit failed")
+		wg.Add(1)
+
+		go func(d DecoderAPI) {
+			w := io.NewAuditRecordWriter(&io.WriterConfig{
+				CSV:     c.CSV,
+				Proto:   c.Proto,
+				JSON:    c.JSON,
+				Name:    d.GetName(),
+				Type:    d.GetType(),
+				Null:    c.Null,
+				Elastic: c.Elastic,
+				ElasticConfig: io.ElasticConfig{
+					ElasticAddrs:   c.ElasticAddrs,
+					ElasticUser:    c.ElasticUser,
+					ElasticPass:    c.ElasticPass,
+					KibanaEndpoint: c.KibanaEndpoint,
+					BulkSize:       c.BulkSizeCustom,
+				},
+				Buffer:               c.Buffer,
+				Compress:             c.Compression,
+				Out:                  c.Out,
+				Chan:                 c.Chan,
+				ChanSize:             c.ChanSize,
+				MemBufferSize:        c.MemBufferSize,
+				Source:               c.Source,
+				Version:              netcap.Version,
+				IncludesPayloads:     c.IncludePayloads,
+				StartTime:            time.Now(),
+				CompressionBlockSize: c.CompressionBlockSize,
+				CompressionLevel:     c.CompressionLevel,
+			})
+			d.SetWriter(w)
+
+			// call postinit func if set
+			err = d.PostInitFunc()
+			if err != nil {
+				if c.IgnoreDecoderInitErrors {
+					fmt.Println("error while initializing", d.GetName(), "packet decoder:", ansi.Red, err, ansi.Reset)
+				} else {
+					log.Fatal(errors.Wrap(err, "postinit failed"))
+				}
 			}
-		}
 
-		// write header
-		err = w.WriteHeader(d.GetType())
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to write header for audit record "+d.GetName())
-		}
+			// write header
+			err = w.WriteHeader(d.GetType())
+			if err != nil {
+				log.Fatal(errors.Wrap(err, "failed to write header for audit record "+d.GetName()))
+			}
 
-		// append to packet decoders slice
-		decoders = append(decoders, d)
+			// append to packet decoders slice
+			mu.Lock()
+			decoders = append(decoders, d)
+			mu.Unlock()
+
+			wg.Done()
+		}(d)
 	}
 
+	wg.Wait()
 	decoderLog.Info("initialized packet decoders", zap.Int("total", len(decoders)))
 
 	return decoders, nil
