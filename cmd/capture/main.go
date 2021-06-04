@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"net/http"
 	"os"
@@ -243,6 +244,7 @@ func Run() {
 			StopAfterServiceCategoryMiss:   *flagStopAfterServiceCategoryMiss,
 			CustomRegex:                    *flagCustomCredsRegex,
 			StreamBufferSize:               *flagStreamBufferSize,
+			NumStreamWorkers:               *flagNumStreamWorkers,
 			IgnoreDecoderInitErrors:        *flagIgnoreInitErrs,
 			DisableGenericVersionHarvester: *flagDisableGenericVersionHarvester,
 			RemoveClosedStreams:            *flagRemoveClosedStreams,
@@ -327,113 +329,53 @@ func Run() {
 }
 
 func generateElasticIndices(elasticAddrs []string) {
-	packet.ApplyActionToPacketDecoders(func(d packet.DecoderAPI) {
-		io.CreateElasticIndex(&io.WriterConfig{
-			CSV:     *flagCSV,
-			Proto:   *flagProto,
-			JSON:    *flagJSON,
-			Name:    d.GetName(),
-			Type:    d.GetType(),
-			Null:    *flagNull,
-			Elastic: *flagElastic,
-			ElasticConfig: io.ElasticConfig{
-				ElasticAddrs:   elasticAddrs,
-				ElasticUser:    *flagElasticUser,
-				ElasticPass:    *flagElasticPass,
-				KibanaEndpoint: *flagKibanaEndpoint,
-				BulkSize:       *flagBulkSizeCustom,
-			},
-			Buffer:        *flagBuffer,
-			Compress:      *flagCompress,
-			Out:           *flagOutDir,
-			Chan:          false,
-			ChanSize:      0,
-			MemBufferSize: *flagMemBufferSize,
-			Version:       netcap.Version,
-			StartTime:     time.Now(),
-		})
+
+	start := time.Now()
+
+	packet.ApplyActionToPacketDecodersAsync(func(d packet.DecoderAPI) {
+		io.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
 	})
 
-	packet.ApplyActionToGoPacketDecoders(func(d *packet.GoPacketDecoder) {
-		io.CreateElasticIndex(&io.WriterConfig{
-			CSV:     *flagCSV,
-			Proto:   *flagProto,
-			JSON:    *flagJSON,
-			Name:    d.Layer.String(),
-			Type:    d.Type,
-			Null:    *flagNull,
-			Elastic: *flagElastic,
-			ElasticConfig: io.ElasticConfig{
-				ElasticAddrs:   elasticAddrs,
-				ElasticUser:    *flagElasticUser,
-				ElasticPass:    *flagElasticPass,
-				KibanaEndpoint: *flagKibanaEndpoint,
-				BulkSize:       *flagBulkSizeCustom,
-			},
-			Buffer:        *flagBuffer,
-			Compress:      *flagCompress,
-			Out:           *flagOutDir,
-			Chan:          false,
-			ChanSize:      0,
-			MemBufferSize: *flagMemBufferSize,
-			Version:       netcap.Version,
-			StartTime:     time.Now(),
-		})
+	packet.ApplyActionToGoPacketDecodersAsync(func(d *packet.GoPacketDecoder) {
+		io.CreateElasticIndex(makeWriterConfig(d.Layer.String(), d.Type, elasticAddrs))
 	})
 
-	stream.ApplyActionToStreamDecoders(func(d core.StreamDecoderAPI) {
-		io.CreateElasticIndex(&io.WriterConfig{
-			CSV:     *flagCSV,
-			Proto:   *flagProto,
-			JSON:    *flagJSON,
-			Name:    d.GetName(),
-			Type:    d.GetType(),
-			Null:    *flagNull,
-			Elastic: *flagElastic,
-			ElasticConfig: io.ElasticConfig{
-				ElasticAddrs:   elasticAddrs,
-				ElasticUser:    *flagElasticUser,
-				ElasticPass:    *flagElasticPass,
-				KibanaEndpoint: *flagKibanaEndpoint,
-				BulkSize:       *flagBulkSizeCustom,
-			},
-			Buffer:        *flagBuffer,
-			Compress:      *flagCompress,
-			Out:           *flagOutDir,
-			Chan:          false,
-			ChanSize:      0,
-			MemBufferSize: *flagMemBufferSize,
-			Version:       netcap.Version,
-			StartTime:     time.Now(),
-		})
+	stream.ApplyActionToStreamDecodersAsync(func(d core.StreamDecoderAPI) {
+		io.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
 	})
 
-	stream.ApplyActionToAbstractDecoders(func(d core.DecoderAPI) {
-		io.CreateElasticIndex(&io.WriterConfig{
-			CSV:     *flagCSV,
-			Proto:   *flagProto,
-			JSON:    *flagJSON,
-			Name:    d.GetName(),
-			Type:    d.GetType(),
-			Null:    *flagNull,
-			Elastic: *flagElastic,
-			ElasticConfig: io.ElasticConfig{
-				ElasticAddrs:   elasticAddrs,
-				ElasticUser:    *flagElasticUser,
-				ElasticPass:    *flagElasticPass,
-				KibanaEndpoint: *flagKibanaEndpoint,
-				BulkSize:       *flagBulkSizeCustom,
-			},
-			Buffer:        *flagBuffer,
-			Compress:      *flagCompress,
-			Out:           *flagOutDir,
-			Chan:          false,
-			ChanSize:      0,
-			MemBufferSize: *flagMemBufferSize,
-			Version:       netcap.Version,
-			StartTime:     time.Now(),
-		})
+	stream.ApplyActionToAbstractDecodersAsync(func(d core.DecoderAPI) {
+		io.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
 	})
+
+	fmt.Println("done in", time.Since(start))
+}
+
+func makeWriterConfig(name string, typ types.Type, elasticAddrs []string) *io.WriterConfig {
+	return &io.WriterConfig{
+		CSV:     *flagCSV,
+		Proto:   *flagProto,
+		JSON:    *flagJSON,
+		Name:    name,
+		Type:    typ,
+		Null:    *flagNull,
+		Elastic: *flagElastic,
+		ElasticConfig: io.ElasticConfig{
+			ElasticAddrs:   elasticAddrs,
+			ElasticUser:    *flagElasticUser,
+			ElasticPass:    *flagElasticPass,
+			KibanaEndpoint: *flagKibanaEndpoint,
+			BulkSize:       *flagBulkSizeCustom,
+		},
+		Buffer:        *flagBuffer,
+		Compress:      *flagCompress,
+		Out:           *flagOutDir,
+		Chan:          false,
+		ChanSize:      0,
+		MemBufferSize: *flagMemBufferSize,
+		Version:       netcap.Version,
+		StartTime:     time.Now(),
+	}
 }
 
 func checkArgs() {

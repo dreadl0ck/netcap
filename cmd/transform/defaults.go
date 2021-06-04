@@ -71,7 +71,6 @@ func init() {
 		// use visual studio code to open files if its installed
 		if path := findExecutable("code"); path != "" {
 			defaultOpenCommandDarwin = path
-			log.Println("update default darwin open path to: ", path)
 		}
 	}
 }
