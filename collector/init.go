@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dreadl0ck/netcap/utils"
@@ -48,6 +49,7 @@ func (c *Collector) Init() (err error) {
 	packet.SetConfig(c.config.DecoderConfig)
 
 	decoderconfig.Instance = c.config.DecoderConfig
+	stream.Debug = c.config.DecoderConfig.Debug
 
 	// create state machine options
 	tcp.StreamFactory.FSMOptions = reassembly.TCPSimpleFSMOptions{
@@ -144,22 +146,45 @@ func (c *Collector) Init() (err error) {
 		}
 	}
 
-	start := time.Now()
+	var (
+		start = time.Now()
+		wg sync.WaitGroup
+	)
 
-	// initialize decoders
-	c.goPacketDecoders, err = packet.InitGoPacketDecoders(c.config.DecoderConfig)
-	handleDecoderInitError(err, "gopacket")
+	wg.Add(4)
 
-	c.packetDecoders, err = packet.InitPacketDecoders(c.config.DecoderConfig)
-	handleDecoderInitError(err, "packet")
+	go func(){
+		// initialize decoders
+		var errInit error
+		c.goPacketDecoders, errInit = packet.InitGoPacketDecoders(c.config.DecoderConfig)
+		handleDecoderInitError(errInit, "gopacket")
+		wg.Done()
+	}()
 
-	c.streamDecoders, err = stream.InitDecoders(c.config.DecoderConfig)
-	handleDecoderInitError(err, "stream")
+	go func(){
+		var errInit error
+		c.packetDecoders, errInit = packet.InitPacketDecoders(c.config.DecoderConfig)
+		handleDecoderInitError(errInit, "packet")
+		wg.Done()
+	}()
 
-	c.abstractDecoders, err = stream.InitAbstractDecoders(c.config.DecoderConfig)
-	handleDecoderInitError(err, "abstract")
+	go func(){
+		var errInit error
+		c.streamDecoders, errInit = stream.InitDecoders(c.config.DecoderConfig)
+		handleDecoderInitError(errInit, "stream")
+		wg.Done()
+	}()
 
-	c.log.Info("initialized packet decoders", zap.Int("total", len(c.streamDecoders)))
+	go func(){
+		var errInit error
+		c.abstractDecoders, errInit = stream.InitAbstractDecoders(c.config.DecoderConfig)
+		handleDecoderInitError(errInit, "abstract")
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	c.log.Info("initialized decoders", zap.Int("total", len(c.streamDecoders)))
 
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))

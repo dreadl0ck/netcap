@@ -2,7 +2,9 @@ package stream
 
 import (
 	"fmt"
+	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
@@ -53,6 +55,26 @@ func ApplyActionToAbstractDecoders(action func(api core.DecoderAPI)) {
 	for _, d := range DefaultAbstractDecoders {
 		action(d)
 	}
+}
+
+// ApplyActionToAbstractDecodersAsync can be used to run custom code for all gopacket decoders asynchronously.
+func ApplyActionToAbstractDecodersAsync(action func(api core.DecoderAPI)) {
+
+	// when debugging, enforce sequential processing so the logs are in order
+	if Debug {
+		ApplyActionToAbstractDecoders(action)
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	for _, d := range DefaultAbstractDecoders {
+		wg.Add(1)
+		go func(d core.DecoderAPI) {
+			action(d)
+			wg.Done()
+		}(d)
+	}
+	wg.Wait()
 }
 
 // InitAbstractDecoders initializes all stream decoders.
@@ -112,57 +134,75 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		}
 	}
 
+	var (
+		wg sync.WaitGroup
+		mu sync.Mutex
+	)
+
 	// initialize decoders
 	for _, d := range DefaultAbstractDecoders {
-		w := netio.NewAuditRecordWriter(&netio.WriterConfig{
-			CSV:     c.CSV,
-			Proto:   c.Proto,
-			JSON:    c.JSON,
-			Name:    d.GetName(),
-			Type:    d.GetType(),
-			Null:    c.Null,
-			Elastic: c.Elastic,
-			ElasticConfig: netio.ElasticConfig{
-				ElasticAddrs:   c.ElasticAddrs,
-				ElasticUser:    c.ElasticUser,
-				ElasticPass:    c.ElasticPass,
-				KibanaEndpoint: c.KibanaEndpoint,
-				BulkSize:       c.BulkSizeCustom,
-			},
-			Buffer:               c.Buffer,
-			Compress:             c.Compression,
-			Out:                  c.Out,
-			Chan:                 c.Chan,
-			ChanSize:             c.ChanSize,
-			MemBufferSize:        c.MemBufferSize,
-			Source:               c.Source,
-			Version:              netcap.Version,
-			IncludesPayloads:     c.IncludePayloads,
-			StartTime:            time.Now(),
-			CompressionBlockSize: c.CompressionBlockSize,
-			CompressionLevel:     c.CompressionLevel,
-		})
-		d.SetWriter(w)
 
-		// call postinit func if set
-		err = d.PostInitFunc()
-		if err != nil {
-			if c.IgnoreDecoderInitErrors {
-				fmt.Println("error while initializing", d.GetName(), "abstract decoder:", ansi.Red, err, ansi.Reset)
-			} else {
-				return nil, errors.Wrap(err, "postinit failed")
+		wg.Add(1)
+
+		func(d core.DecoderAPI) {
+			w := netio.NewAuditRecordWriter(&netio.WriterConfig{
+				CSV:     c.CSV,
+				Proto:   c.Proto,
+				JSON:    c.JSON,
+				Name:    d.GetName(),
+				Type:    d.GetType(),
+				Null:    c.Null,
+				Elastic: c.Elastic,
+				ElasticConfig: netio.ElasticConfig{
+					ElasticAddrs:   c.ElasticAddrs,
+					ElasticUser:    c.ElasticUser,
+					ElasticPass:    c.ElasticPass,
+					KibanaEndpoint: c.KibanaEndpoint,
+					BulkSize:       c.BulkSizeCustom,
+				},
+				Buffer:               c.Buffer,
+				Compress:             c.Compression,
+				Out:                  c.Out,
+				Chan:                 c.Chan,
+				ChanSize:             c.ChanSize,
+				MemBufferSize:        c.MemBufferSize,
+				Source:               c.Source,
+				Version:              netcap.Version,
+				IncludesPayloads:     c.IncludePayloads,
+				StartTime:            time.Now(),
+				CompressionBlockSize: c.CompressionBlockSize,
+				CompressionLevel:     c.CompressionLevel,
+			})
+			d.SetWriter(w)
+
+			// call postinit func if set
+			err = d.PostInitFunc()
+			if err != nil {
+				if c.IgnoreDecoderInitErrors {
+					fmt.Println("error while initializing", d.GetName(), "abstract decoder:", ansi.Red, err, ansi.Reset)
+				} else {
+					log.Fatal(errors.Wrap(err, "postinit failed"))
+				}
 			}
-		}
 
-		// write header
-		err = w.WriteHeader(d.GetType())
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to write header for audit record "+d.GetName())
-		}
+			// write header
+			err = w.WriteHeader(d.GetType())
+			if err != nil {
+				log.Fatal(errors.Wrap(err, "failed to write header for audit record "+d.GetName()))
+			}
 
-		// append to packet decoders slice
-		decoders = append(decoders, d)
+			// append to packet decoders slice
+			mu.Lock()
+			decoders = append(decoders, d)
+			mu.Unlock()
+
+			wg.Done()
+		}(d)
 	}
+
+	wg.Wait()
+
+	// TODO: log to decoderLog
 
 	return decoders, nil
 }

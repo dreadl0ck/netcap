@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -142,62 +143,77 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 		}
 	}
 
+	var (
+		wg sync.WaitGroup
+		mu sync.Mutex
+	)
+
 	// initialize decoders
 	for _, e := range defaultGoPacketDecoders { // fmt.Println("init", e.Layer)
-		filename := e.Layer.String()
 
-		// handle inconsistencies in gopacket naming convention
-		// TODO: fix in gopacket and refactor the packet decoders to map to a single decoder instead of an array again
-		switch e.Type {
-		case types.Type_NC_OSPFv2:
-			filename = "OSPFv2"
-		case types.Type_NC_OSPFv3:
-			filename = "OSPFv3"
-		case types.Type_NC_ENIP:
-			filename = "ENIP"
-		}
+		wg.Add(1)
 
-		// hookup writer
-		e.writer = io.NewAuditRecordWriter(&io.WriterConfig{
-			CSV:     c.CSV,
-			Proto:   c.Proto,
-			JSON:    c.JSON,
-			Chan:    c.Chan,
-			Null:    c.Null,
-			Elastic: c.Elastic,
-			ElasticConfig: io.ElasticConfig{
-				ElasticAddrs:   c.ElasticAddrs,
-				ElasticUser:    c.ElasticUser,
-				ElasticPass:    c.ElasticPass,
-				KibanaEndpoint: c.KibanaEndpoint,
-				BulkSize:       c.BulkSizeGoPacket,
-			},
-			Name:                 filename,
-			Buffer:               c.Buffer,
-			Compress:             c.Compression,
-			Out:                  c.Out,
-			MemBufferSize:        c.MemBufferSize,
-			Source:               c.Source,
-			Version:              netcap.Version,
-			IncludesPayloads:     c.IncludePayloads,
-			StartTime:            time.Now(),
-			CompressionBlockSize: c.CompressionBlockSize,
-			CompressionLevel:     c.CompressionLevel,
-		})
+		go func(e *GoPacketDecoder){
+			filename := e.Layer.String()
 
-		// write netcap header
-		err = e.writer.WriteHeader(e.Type)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to write header for audit record "+e.Type.String())
-		}
+			// handle inconsistencies in gopacket naming convention
+			// TODO: fix in gopacket and refactor the packet decoders to map to a single decoder instead of an array again
+			switch e.Type {
+			case types.Type_NC_OSPFv2:
+				filename = "OSPFv2"
+			case types.Type_NC_OSPFv3:
+				filename = "OSPFv3"
+			case types.Type_NC_ENIP:
+				filename = "ENIP"
+			}
 
-		// export metrics?
-		e.export = c.ExportMetrics
+			// hookup writer
+			e.writer = io.NewAuditRecordWriter(&io.WriterConfig{
+				CSV:     c.CSV,
+				Proto:   c.Proto,
+				JSON:    c.JSON,
+				Chan:    c.Chan,
+				Null:    c.Null,
+				Elastic: c.Elastic,
+				ElasticConfig: io.ElasticConfig{
+					ElasticAddrs:   c.ElasticAddrs,
+					ElasticUser:    c.ElasticUser,
+					ElasticPass:    c.ElasticPass,
+					KibanaEndpoint: c.KibanaEndpoint,
+					BulkSize:       c.BulkSizeGoPacket,
+				},
+				Name:                 filename,
+				Buffer:               c.Buffer,
+				Compress:             c.Compression,
+				Out:                  c.Out,
+				MemBufferSize:        c.MemBufferSize,
+				Source:               c.Source,
+				Version:              netcap.Version,
+				IncludesPayloads:     c.IncludePayloads,
+				StartTime:            time.Now(),
+				CompressionBlockSize: c.CompressionBlockSize,
+				CompressionLevel:     c.CompressionLevel,
+			})
 
-		// add to gopacket decoders map
-		decoders[e.Layer] = append(decoders[e.Layer], e)
+			// write netcap header
+			err = e.writer.WriteHeader(e.Type)
+			if err != nil {
+				log.Fatal(errors.Wrap(err, "failed to write header for audit record "+e.Type.String()))
+			}
+
+			// export metrics?
+			e.export = c.ExportMetrics
+
+			// add to gopacket decoders map
+			mu.Lock()
+			decoders[e.Layer] = append(decoders[e.Layer], e)
+			mu.Unlock()
+
+			wg.Done()
+		}(e)
 	}
 
+	wg.Wait()
 	decoderLog.Info("initialized gopacket decoders", zap.Int("total", len(decoders)))
 
 	return decoders, nil
