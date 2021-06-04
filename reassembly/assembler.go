@@ -998,19 +998,18 @@ func (a *Assembler) FlushAll() (closed int) {
 	conns := a.connPool.connections()
 	closed = len(conns)
 
+	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
+	//wg := sync.WaitGroup{}
 	for _, conn := range conns {
-		conn.mu.Lock()
-		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
-			for !half.closed {
-				a.skipFlush(conn, half)
-			}
 
-			if !half.closed {
-				a.closeHalfConnection(conn, half, "force-flushed")
-			}
-		}
-		conn.mu.Unlock()
+		//wg.Add(1)
+		//go func(conn *connection) {
+			a.closeConn(conn)
+			//wg.Done()
+		//}(conn)
 	}
+
+	//wg.Wait()
 
 	return
 }
@@ -1023,23 +1022,35 @@ func (a *Assembler) FlushAllProgress() (closed int) {
 	// create and start new bar
 	bar := pb.StartNew(closed)
 
+	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
+	//wg := sync.WaitGroup{}
+
 	for _, conn := range conns {
-		conn.mu.Lock()
-		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
-			for !half.closed {
-				a.skipFlush(conn, half)
-			}
 
-			if !half.closed {
-				a.closeHalfConnection(conn, half, "force-flushed")
-			}
-		}
-		conn.mu.Unlock()
-
-		bar.Increment()
+		//wg.Add(1)
+		//go func(conn *connection) {
+			a.closeConn(conn)
+			bar.Increment()
+		//	wg.Done()
+		//}(conn)
 	}
 
+	//wg.Wait()
 	bar.Finish()
 
 	return
+}
+
+func (a *Assembler) closeConn(conn *connection) {
+	conn.mu.Lock()
+	for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
+		for !half.closed {
+			a.skipFlush(conn, half)
+		}
+
+		if !half.closed {
+			a.closeHalfConnection(conn, half, "force-flushed")
+		}
+	}
+	conn.mu.Unlock()
 }
