@@ -15,6 +15,7 @@ package capture
 
 import (
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/namsral/flag"
@@ -52,7 +53,7 @@ var (
 	flagInterface    = fs.String("iface", "", "attach to network interface and capture in live mode")
 	flagCompress     = fs.Bool("comp", true, "compress output with gzip")
 	flagBuffer       = fs.Bool("buf", true, "buffer data in memory before writing to disk")
-	flagWorkers      = fs.Int("workers", 1, "number of workers") // runtime.NumCPU()
+	flagWorkers      = fs.Int("workers", runtime.NumCPU()*2, "number of workers") // runtime.NumCPU()
 	flagPacketBuffer = fs.Int("pbuf", defaults.PacketBuffer, "set packet buffer size, for channels that feed data to workers")
 
 	flagCPUProfile    = fs.Bool("cpuprof", false, "create cpu profile")
@@ -139,7 +140,8 @@ var (
 	flagBannerSize          = fs.Int("bsize", 256, "size of the stored service banners in bytes")
 	flagHarvesterBannerSize = fs.Int("hbsize", 256, "size of the data passed to the credential harvesters in bytes")
 	flagCustomCredsRegex    = fs.String("reCustom", "", "possibility of passing a custom regex for harvesting credentials")
-	flagStreamBufferSize    = fs.Int("stream-buffer", 1000, "stream buffer size for tcp stream processor")
+	flagStreamBufferSize    = fs.Int("stream-buffer", 10000, "input channel size for TCP / UDP stream processors")
+	flagNumStreamWorkers    = fs.Int("stream-workers", 10000, "number of TCP / UDP stream workers")
 
 	flagCompressionBlockSize = fs.Int("compression-block-size", defaults.CompressionBlockSize, "block size used for parallel compression")
 	flagCompressionLevel     = fs.String("compression-level", compressionLevelToString(defaults.CompressionLevel), "level of compression")
