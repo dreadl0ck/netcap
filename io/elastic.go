@@ -123,13 +123,17 @@ func CreateElasticIndex(wc *WriterConfig) {
 		log.Fatal(err)
 	}
 
-	// create index identfier and the index
+	// create index identifier and the index
 	index := makeElasticIndexIdent(wc)
 	createElasticIndex(c, index)
+
+	// delete index pattern to ensure all changes on the mappings are applied
+	deleteElasticIndexPattern(index, wc)
 
 	// create buffer for request and add meta data
 	buf := initElasticBuffer(wc, index)
 
+	// TODO: the saved_objects API does not seem to be implemented in the elastic golang client for v7
 	// passing an explicit id to prevent kibana from duplicating patterns when executing the index creation multiple times
 	r, err := http.NewRequest(
 		"POST",
@@ -316,9 +320,9 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 			fmt.Println(string(data))
 		}
 
-		log.Fatalf("error getting the response: %s", err)
+		log.Println("error getting the response for", index, ":", err)
 	} else {
-		fmt.Println("configured index mapping", res)
+		log.Println("configured index mapping for", index, ":", res)
 	}
 
 	_ = res.Body.Close()
@@ -346,7 +350,7 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 	// serialize JSON
 	d, err := json.Marshal(data)
 	if err != nil {
-		fmt.Println("failed to marshal json data:", err)
+		log.Println("failed to marshal json data:", err)
 
 		return
 	}
@@ -364,9 +368,9 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 			fmt.Println(string(d))
 		}
 
-		log.Fatal("failed to put index settings:", err)
+		log.Println("failed to put index settings for", index, ":", err)
 	} else {
-		fmt.Println("put index settings:", res)
+		log.Println("put index settings for", index, ":", res)
 	}
 
 	_ = res.Body.Close()
@@ -444,7 +448,7 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 			ioLog.Debug(w.buf.String())
 			w.buf.Reset()
 
-			return errElasticFailed
+			return fmt.Errorf("%w: %s %s", errElasticFailed, res.Status(), res.String())
 		}
 
 		// a successful response can still contain errors for some documents
@@ -456,7 +460,7 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 			ioLog.Debug(w.buf.String())
 			w.buf.Reset()
 
-			return errElasticFailed
+			return fmt.Errorf("%w: %s", errElasticFailed, err)
 		}
 
 		var hadErrors bool
@@ -643,4 +647,38 @@ func generateMapping(t types.Type) []byte {
 	fmt.Println("mapping for", t, string(j))
 
 	return j
+}
+
+func deleteElasticIndexPattern(index string, wc *WriterConfig) {
+	// TODO: handle http
+	url := "https://" + wc.ElasticConfig.ElasticUser + ":" + wc.ElasticConfig.ElasticPass + "@" + strings.TrimPrefix(wc.ElasticConfig.KibanaEndpoint, "https://") + "/api/saved_objects/index-pattern/" + index
+
+	// delete mapping prior to updating it, some type updates are not possible otherwise
+	req, err := http.NewRequest(
+		http.MethodDelete,
+		url,
+		nil,
+	)
+	if err != nil {
+		log.Println("failed to create DELETE request", err)
+	} else {
+
+		req.Header.Set("kbn-xsrf", "true")
+
+		log.Println("deleting index mapping", index)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Println("deleting mapping", index, "failed:", err)
+		} else {
+			log.Println("deleted mapping", index , ":", resp.Status)
+
+			if resp.StatusCode != http.StatusOK {
+				r, err := ioutil.ReadAll(resp.Body)
+				if err == nil {
+					fmt.Println(string(r))
+				}
+			}
+		}
+	}
 }
