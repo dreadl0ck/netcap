@@ -137,7 +137,7 @@ func (c *Collector) CollectPcapNG(path string) error {
 				break
 			}
 
-			return errors.Wrap(err, "error reading packet data")
+			return errors.Wrap(err, errReadingPacketData + " file: " + path)
 		}
 
 		// increment atomic packet counter

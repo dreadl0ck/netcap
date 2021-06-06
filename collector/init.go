@@ -148,12 +148,12 @@ func (c *Collector) Init() (err error) {
 
 	var (
 		start = time.Now()
-		wg sync.WaitGroup
+		wg    sync.WaitGroup
 	)
 
 	wg.Add(4)
 
-	go func(){
+	go func() {
 		// initialize decoders
 		var errInit error
 		c.goPacketDecoders, errInit = packet.InitGoPacketDecoders(c.config.DecoderConfig)
@@ -161,33 +161,26 @@ func (c *Collector) Init() (err error) {
 		wg.Done()
 	}()
 
-	go func(){
+	go func() {
 		var errInit error
 		c.packetDecoders, errInit = packet.InitPacketDecoders(c.config.DecoderConfig)
 		handleDecoderInitError(errInit, "packet")
 		wg.Done()
 	}()
 
-	go func(){
+	go func() {
 		var errInit error
 		c.streamDecoders, errInit = stream.InitDecoders(c.config.DecoderConfig)
 		handleDecoderInitError(errInit, "stream")
 		wg.Done()
 	}()
 
-	go func(){
+	go func() {
 		var errInit error
 		c.abstractDecoders, errInit = stream.InitAbstractDecoders(c.config.DecoderConfig)
 		handleDecoderInitError(errInit, "abstract")
 		wg.Done()
 	}()
-
-	wg.Wait()
-
-	c.log.Info("initialized decoders", zap.Int("total", len(c.streamDecoders)))
-
-	c.buildProgressString()
-	c.printlnStdOut("done in", time.Since(start))
 
 	// set pointer of collectors atomic counter map in decoder pkg
 	decoderutils.SetErrorMap(c.errorMap)
@@ -198,15 +191,25 @@ func (c *Collector) Init() (err error) {
 		log.Fatal("failed to create pcap file for unknown packets: ", err)
 	}
 
+	// create error pcap file for packets that had an error during processing
 	if err = c.createErrorsPcap(); err != nil {
 		log.Fatal("failed to create pcap decoding errors file: ", err)
 	}
 
+	// start routine to force releasing memory back to the OS in a fixed interval
+	// this is meant for diagnostic purposes and should not be used in production
 	if c.config.FreeOSMem != 0 {
 		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
 
 		go c.freeOSMemory()
 	}
+
+	// wait for decoder init to finish
+	wg.Wait()
+	c.log.Info("initialized decoders", zap.Int("total", len(c.streamDecoders)))
+
+	c.buildProgressString()
+	c.printlnStdOut("done in", time.Since(start))
 
 	return nil
 }
