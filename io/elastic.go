@@ -64,6 +64,7 @@ type ElasticConfig struct {
 	// LimitTotalFields is the maximum number of fields allowed per batch
 	LimitTotalFields int
 
+	// BulkSize controls the number of documents sent to elastic per batch
 	BulkSize int
 }
 
@@ -136,7 +137,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 	// TODO: the saved_objects API does not seem to be implemented in the elastic golang client for v7
 	// passing an explicit id to prevent kibana from duplicating patterns when executing the index creation multiple times
 	r, err := http.NewRequest(
-		"POST",
+		http.MethodPost,
 		wc.KibanaEndpoint+"/api/saved_objects/index-pattern/"+index,
 		&buf,
 	)
@@ -187,9 +188,12 @@ func (w *elasticWriter) WriteHeader(_ types.Type) error {
 
 // Close flushes and closes the writer and the associated file handles.
 func (w *elasticWriter) Close(_ int64) (name string, size int64) {
+
+	ioLog.Info("closing elastic writer", zap.String("index", w.indexName))
+
 	err := w.sendBulk(0, 0)
 	if err != nil {
-		fmt.Println(err)
+		ioLog.Error("failed to flush remaining audit records to elastic", zap.Error(err), zap.String("index", w.indexName))
 	}
 
 	return "", 0
@@ -379,6 +383,7 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 // send a bulk of audit records and metadata to the elastic database daemon.
 func (w *elasticWriter) sendBulk(start, limit int) error {
 	w.processed = 0
+	total := 0
 
 	for _, qmsg := range w.queue[start:] {
 		if qmsg == nil {
@@ -401,11 +406,13 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 			_, _ = w.buf.Write(w.meta)
 			_, _ = w.buf.Write(data)
 
+			total++
+
 			// pass limit = 0 to process the entire queue
 			if limit > 0 && w.processed >= limit {
+
 				w.processed++
 				w.queue = w.queue[w.processed:]
-
 				break
 			}
 		} else {
@@ -441,6 +448,7 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 					zap.Int("status", res.StatusCode),
 					zap.String("type", raw["error"].(map[string]interface{})["type"].(string)),
 					zap.String("reason", raw["error"].(map[string]interface{})["reason"].(string)),
+					zap.String("index", w.indexName),
 				)
 			}
 
@@ -476,6 +484,7 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 					zap.String("reason", d.Index.Error.Reason),
 					zap.String("causeType", d.Index.Error.Cause.Type),
 					zap.String("causeReason", d.Index.Error.Cause.Reason),
+					zap.String("index", w.indexName),
 				)
 			}
 		}
@@ -489,7 +498,7 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 		_ = res.Body.Close()
 
 		ioLog.Info("sent audit records to elastic",
-			zap.Int("total", w.processed),
+			zap.Int("total", total),
 			zap.String("type", w.wc.Name),
 		)
 		w.buf.Reset()
@@ -603,6 +612,7 @@ var typeMapping = map[string]string{
 	"ResponseHeader.Content-Type": "keyword",
 	"Algorithms":                  "keyword",
 	"Ja3":                         "keyword",
+	"Ja3S":                        "keyword",
 	"Random":                      "keyword",
 	"SessionID":                   "keyword",
 	"SNI":                         "keyword",
