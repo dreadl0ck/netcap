@@ -71,7 +71,7 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return errors.Wrap(err, errReadingPacketData + " file: " + path))
+			return errors.Wrap(err, errReadingPacketData + " file: " + path)
 		}
 
 		// increment atomic packet counter
