@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	transformDebug = false
+	transformDebug      = false
 	transformWorkingDir = "/usr/local"
 )
 

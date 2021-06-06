@@ -212,7 +212,7 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 			TimestampFirst: profile.TimestampFirst,
 			TimestampLast:  profile.TimestampLast,
 			Applications:   profile.Applications,
-			Ja3:            profile.Ja3,
+			Ja3Hashes:      profile.Ja3Hashes,
 			Protocols:      profile.Protocols,
 			Bytes:          profile.Bytes,
 			SrcPorts:       profile.SrcPorts,
