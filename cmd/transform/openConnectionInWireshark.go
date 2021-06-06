@@ -101,7 +101,7 @@ func findExecutable(name string) string {
 				path, err = exec.LookPath(p)
 				if err != nil {
 					paths = append(paths, p)
-					maltego.Die("executable not found", "paths tried:\n" + strings.Join(paths, "\n") + "\n$PATH = "+os.Getenv("PATH"))
+					maltego.Die("executable not found", "paths tried:\n"+strings.Join(paths, "\n")+"\n$PATH = "+os.Getenv("PATH"))
 				}
 			}
 		}

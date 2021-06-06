@@ -47,7 +47,7 @@ func addIPProfile(trx *maltego.Transform, profile *types.IPProfile, path string,
 	ent.AddProperty(netmaltego.PropertyIpAddr, "IPAddr", maltego.Strict, profile.Addr)
 	ent.AddDisplayInformation(strings.Join(profile.Applications, "<br>"), "Applications")
 	ent.AddDisplayInformation(strings.Join(profile.DNSNames, "<br>"), "DNS Names")
-	ent.AddDisplayInformation(createJa3TableHTML(profile.Ja3), "JA3")
+	ent.AddDisplayInformation(createJa3TableHTML(profile.Ja3Hashes), "Ja3Hashes")
 	ent.AddDisplayInformation(createSNITableHTML(profile.SNIs), "SNIs")
 	ent.AddDisplayInformation(createProtocolsTableHTML(profile.Protocols), "Protocols")
 	ent.AddDisplayInformation(createPortsTableHTML(profile.SrcPorts), "Source Ports")
