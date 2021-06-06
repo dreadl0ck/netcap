@@ -140,13 +140,13 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 
 		wg.Add(1)
 
-		go func(d core.StreamDecoderAPI) {
+		go func(dec core.StreamDecoderAPI) {
 			w := netio.NewAuditRecordWriter(&netio.WriterConfig{
 				CSV:     c.CSV,
 				Proto:   c.Proto,
 				JSON:    c.JSON,
-				Name:    d.GetName(),
-				Type:    d.GetType(),
+				Name:    dec.GetName(),
+				Type:    dec.GetType(),
 				Null:    c.Null,
 				Elastic: c.Elastic,
 				ElasticConfig: netio.ElasticConfig{
@@ -169,27 +169,27 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 			})
-			d.SetWriter(w)
+			dec.SetWriter(w)
 
 			// call postinit func if set
-			err = d.PostInitFunc()
-			if err != nil {
+			errInit := dec.PostInitFunc()
+			if errInit != nil {
 				if c.IgnoreDecoderInitErrors {
-					fmt.Println("error while initializing", d.GetName(), "stream decoder:", ansi.Red, err, ansi.Reset)
+					fmt.Println("error while initializing", dec.GetName(), "stream decoder:", ansi.Red, errInit, ansi.Reset)
 				} else {
-					log.Fatal(errors.Wrap(err, "postinit failed"))
+					log.Fatal(errors.Wrap(errInit, "postinit failed"))
 				}
 			}
 
 			// write header
-			err = w.WriteHeader(d.GetType())
-			if err != nil {
-				log.Fatal(errors.Wrap(err, "failed to write header for audit record "+d.GetName()))
+			errInit = w.WriteHeader(dec.GetType())
+			if errInit != nil {
+				log.Fatal(errors.Wrap(errInit, "failed to write header for audit record "+dec.GetName()))
 			}
 
 			// append to packet decoders slice
 			mu.Lock()
-			decoders = append(decoders, d)
+			decoders = append(decoders, dec)
 			mu.Unlock()
 
 			wg.Done()

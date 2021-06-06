@@ -153,12 +153,12 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 
 		wg.Add(1)
 
-		go func(e *GoPacketDecoder){
-			filename := e.Layer.String()
+		go func(dec *GoPacketDecoder) {
+			filename := dec.Layer.String()
 
 			// handle inconsistencies in gopacket naming convention
 			// TODO: fix in gopacket and refactor the packet decoders to map to a single decoder instead of an array again
-			switch e.Type {
+			switch dec.Type {
 			case types.Type_NC_OSPFv2:
 				filename = "OSPFv2"
 			case types.Type_NC_OSPFv3:
@@ -168,7 +168,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 			}
 
 			// hookup writer
-			e.writer = io.NewAuditRecordWriter(&io.WriterConfig{
+			dec.writer = io.NewAuditRecordWriter(&io.WriterConfig{
 				CSV:     c.CSV,
 				Proto:   c.Proto,
 				JSON:    c.JSON,
@@ -196,17 +196,17 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 			})
 
 			// write netcap header
-			err = e.writer.WriteHeader(e.Type)
-			if err != nil {
-				log.Fatal(errors.Wrap(err, "failed to write header for audit record "+e.Type.String()))
+			errInit := dec.writer.WriteHeader(dec.Type)
+			if errInit != nil {
+				log.Fatal(errors.Wrap(errInit, "failed to write header for audit record "+dec.Type.String()))
 			}
 
 			// export metrics?
-			e.export = c.ExportMetrics
+			dec.export = c.ExportMetrics
 
 			// add to gopacket decoders map
 			mu.Lock()
-			decoders[e.Layer] = append(decoders[e.Layer], e)
+			decoders[dec.Layer] = append(decoders[dec.Layer], dec)
 			mu.Unlock()
 
 			wg.Done()
@@ -291,5 +291,5 @@ func (cd *GoPacketDecoder) GetChan() <-chan []byte {
 
 // Destroy closes and flushes all writers.
 func (dec *GoPacketDecoder) Destroy() (name string, size int64) {
-	return dec.writer.Close(dec.numRecords)
+	return dec.writer.Close(atomic.LoadInt64(&dec.numRecords))
 }

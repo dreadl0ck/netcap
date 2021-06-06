@@ -91,8 +91,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 	// Finite State Machine
 	if !t.tcpstate.CheckState(tcp, dir) {
 
-		// TODO : unsugar
-		reassemblyLog.Sugar().Info("FSM", fmt.Sprintf("%s: Packet rejected by FSM (state:%s)", t.ident, t.tcpstate.String()), nil)
+		reassemblyLog.Debug("packet rejected by FSM", zap.String("ident", t.ident), zap.String("state", t.tcpstate.String()))
 
 		streamutils.Stats.Lock()
 		streamutils.Stats.RejectFsm++
@@ -111,8 +110,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 	// TCP Options
 	err := t.optchecker.Accept(tcp, dir, nextSeq)
 	if err != nil {
-		// TODO: unsugar
-		reassemblyLog.Sugar().Info("OptionChecker", fmt.Sprintf("%s: packet rejected by OptionChecker", t.ident), err)
+		reassemblyLog.Debug("packet rejected by OptionChecker", zap.String("ident", t.ident), zap.Error(err))
 		streamutils.Stats.Lock()
 		streamutils.Stats.RejectOpt++
 		streamutils.Stats.Unlock()
@@ -128,11 +126,11 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 	if decoderconfig.Instance.Checksum {
 		chk, errChk := tcp.ComputeChecksum()
 		if errChk != nil {
-			reassemblyLog.Sugar().Info("ChecksumCompute", fmt.Sprintf("%s: error computing checksum", t.ident), errChk)
+			reassemblyLog.Debug("error computing checksum", zap.String("ident", t.ident), zap.Error(errChk))
 
 			accept = false
 		} else if chk != 0x0 {
-			reassemblyLog.Sugar().Info("Checksum", fmt.Sprintf("%s: invalid checksum: 0x%x", t.ident, chk), nil)
+			reassemblyLog.Debug("invalid checksum", zap.String("checksum", fmt.Sprintf("0x%x", chk)), zap.String("ident", t.ident))
 
 			accept = false
 		}
@@ -367,6 +365,10 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 }
 
 func (t *tcpConnection) decode() {
+
+	t.Lock()
+	defer t.Unlock()
+
 	// choose the decoder to run against the data stream
 	var (
 		cr, sr = t.client.DataSlice().First(), t.server.DataSlice().First()
@@ -417,6 +419,8 @@ func (t *tcpConnection) decode() {
 		tcpStreamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
 }
+
+var aMu sync.Mutex
 
 // ReassemblePacket takes care of submitting a TCP / UDP packet to the reassembly.
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
@@ -491,9 +495,11 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 
 	// for debugging:
 	// assembleWithContextTimeout(packet, assembler, tcp)
+	aMu.Lock()
 	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
+	aMu.Unlock()
 
 	// TODO: refactor and use a ticker model in a goroutine, similar to progress reporting
 	if decoderconfig.Instance.FlushEvery > 0 {
@@ -504,13 +510,15 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		// flush connections in interval
 		if doFlush {
 			ref := packet.Metadata().CaptureInfo.Timestamp
+			aMu.Lock()
 			flushed, closed := assembler.FlushWithOptions(
 				reassembly.FlushOptions{
 					T:  ref.Add(-decoderconfig.Instance.ClosePendingTimeOut),
 					TC: ref.Add(-decoderconfig.Instance.CloseInactiveTimeOut),
 				},
 			)
-			reassemblyLog.Info("forced flush",
+			aMu.Unlock()
+			reassemblyLog.Debug("forced flush",
 				zap.Int("flushed", flushed),
 				zap.Int("closed", closed),
 				zap.Time("ref", ref),
@@ -527,9 +535,11 @@ func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 	done := make(chan bool, 1)
 
 	go func() {
+		aMu.Lock()
 		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 			CaptureInfo: packet.Metadata().CaptureInfo,
 		})
+		aMu.Unlock()
 		done <- true
 	}()
 
