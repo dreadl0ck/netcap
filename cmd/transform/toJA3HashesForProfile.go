@@ -22,7 +22,7 @@ import (
 func toJA3HashesForProfile() {
 	netmaltego.IPProfileTransform(netmaltego.CountIPPackets, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string) {
 		if profile.Addr == ip {
-			for hash := range profile.Ja3 {
+			for hash := range profile.Ja3Hashes {
 				ent := addEntityWithPath(trx, "netcap.TLSClientHello", hash, path)
 				ent.AddProperty("ip", "IP", maltego.Strict, profile.Addr)
 			}

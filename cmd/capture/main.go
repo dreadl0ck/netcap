@@ -389,7 +389,7 @@ func checkArgs() {
 			expectArg = false
 		} else {
 			args := os.Args[2:]
-			index := i-1
+			index := i - 1
 			if i == 0 {
 				index = 0
 			}

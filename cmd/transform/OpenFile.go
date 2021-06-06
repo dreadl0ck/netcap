@@ -39,7 +39,7 @@ func openFile() {
 
 	out, err := exec.Command(openCommandName, args...).CombinedOutput()
 	if err != nil {
-		maltego.Die(err.Error(), "open file failed: "+string(out) + "\n$PATH = " + os.Getenv("PATH"))
+		maltego.Die(err.Error(), "open file failed: "+string(out)+"\n$PATH = "+os.Getenv("PATH"))
 	}
 
 	log.Println(string(out))
