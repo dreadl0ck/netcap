@@ -288,7 +288,10 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	}
 
 	action = a.handleBytes(bytes, seq, half, t.SYN, t.RST || t.FIN, action, ac)
-	if len(a.ret) > 0 {
+	a.Lock()
+	l := len(a.ret)
+	a.Unlock()
+	if l > 0 {
 		action.nextSeq = a.sendToConnection(conn, half)
 	}
 
@@ -493,15 +496,19 @@ func (a *Assembler) dump(text string, half *halfconnection) {
 
 	log.Printf(" * a.ret\n")
 
+	a.Lock()
 	for i, r := range a.ret {
 		log.Printf("\t%d: %v b:\n%s\n", i, r.captureInfo(), hex.Dump(r.getBytes()))
 	}
+	a.Unlock()
 
 	log.Printf(" * a.cacheSG.all\n")
 
+	a.cacheSG.Lock()
 	for i, r := range a.cacheSG.all {
 		log.Printf("\t%d: %v b:\n%s\n", i, r.captureInfo(), hex.Dump(r.getBytes()))
 	}
+	a.cacheSG.Unlock()
 }
 
 func (a *Assembler) overlapExisting(half *halfconnection, start Sequence, bytes []byte) ([]byte, Sequence) {
@@ -567,7 +574,9 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 		a.cacheLP.bytes, a.cacheLP.seq = a.overlapExisting(half, seq, a.cacheLP.bytes)
 		a.checkOverlap(half, false, ac)
 		if len(a.cacheLP.bytes) != 0 || end || start {
+			a.Lock()
 			a.ret = append(a.ret, &a.cacheLP)
+			a.Unlock()
 		}
 
 		a.dump("handleBytes after no queue", half)
@@ -593,20 +602,50 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	// find if there are skipped bytes
 	skip := -1
 	if half.nextSeq != invalidSequence {
-		skip = half.nextSeq.difference(a.ret[0].getSeq())
+		a.Lock()
+		if len(a.ret) > 0 {
+			s := a.ret[0].getSeq()
+			skip = half.nextSeq.difference(s)
+		}
+		a.Unlock()
 	}
 
 	// TODO: this mechanism needs to be refactored in order to fully support concurrent reassembly
 	// Prepending saved bytes in combination with appending continuous bytes,
 	// leads to potentially flushing combined messages from the client / server to the stream consumers.
 
-	last := a.ret[0].getSeq().add(a.ret[0].length())
+	var (
+		nextSeq Sequence
+		saved   int
+	)
+	a.Lock()
+	l := len(a.ret)
+	if l == 0 {
+		a.Unlock()
+		saved = a.addPending(half, invalidSequence)
+		nextSeq = a.addContiguous(half, invalidSequence)
+		a.Lock()
+	} else {
 
-	// Prepend saved bytes
-	saved := a.addPending(half, a.ret[0].getSeq())
+		s := a.ret[0].getSeq()
+		le := a.ret[0].length()
+		last := s.add(le)
 
-	// Append continuous bytes
-	nextSeq := a.addContiguous(half, last)
+		// Prepend saved bytes
+
+		updatedSeq := a.ret[0].getSeq()
+		a.Unlock()
+
+		// this operation locks
+		saved = a.addPending(half, updatedSeq)
+
+		// Append continuous bytes
+		// this operation locks
+		nextSeq = a.addContiguous(half, last)
+
+		a.Lock()
+	}
+	a.Unlock()
 
 	a.cacheSG.all = a.ret
 	a.cacheSG.Direction = half.dir
@@ -616,7 +655,18 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	a.setStatsToSG(half)
 	a.dump("after buildSG", half)
 
-	return a.ret[len(a.ret)-1].isEnd(), nextSeq
+	var isEnd bool
+
+	a.Lock()
+	l = len(a.ret)
+	if l == 0 {
+		isEnd = true
+	} else {
+		isEnd = a.ret[l-1].isEnd()
+	}
+	a.Unlock()
+
+	return isEnd, nextSeq
 }
 
 func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
@@ -683,6 +733,8 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 
 	saved := new(page)
 
+	// TODO: prevent invalid index access
+	ndx = len(a.cacheSG.all)
 	for _, r := range a.cacheSG.all[ndx:] {
 		first, last, nb := r.convertToPages(a.pc, skip, ac)
 
@@ -696,6 +748,8 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 		saved = last
 		nbKept += nb
 	}
+	//if len(a.cacheSG.all) <= ndx {
+	//}
 
 	if Debug {
 		log.Printf("Remaining %d chunks in SG\n", nbKept)
@@ -719,6 +773,8 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Seq
 	// }
 
 	var ac AssemblerContext
+
+	a.Lock()
 	// use the context from the first non empty bytecontainer
 	for _, data := range a.ret {
 		if data.length() != 0 {
@@ -726,6 +782,7 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Seq
 			break
 		}
 	}
+	a.Unlock()
 
 	half.stream.ReassembledSG(&a.cacheSG, ac)
 	a.cleanSG(half, ac)
@@ -773,7 +830,9 @@ func (a *Assembler) addPending(half *halfconnection, firstSeq Sequence) int {
 		s = 0
 	}
 
+	a.Lock()
 	a.ret = append(ret, a.ret...)
+	a.Unlock()
 
 	return s
 }
@@ -799,7 +858,9 @@ func (a *Assembler) addContiguous(half *halfconnection, lastSeq Sequence) Sequen
 		}
 
 		lastSeq = lastSeq.add(len(firstPage.bytes))
+		a.Lock()
 		a.ret = append(a.ret, firstPage)
+		a.Unlock()
 		half.first = firstPage.next
 
 		if half.first == nil {
@@ -883,7 +944,9 @@ func (a *Assembler) addNextFromConn(conn *halfconnection) {
 		log.Printf("   adding from conn (%v, %v) %v (%d)\n", conn.first.seq, conn.nextSeq, conn.nextSeq-conn.first.seq, len(conn.first.bytes))
 	}
 
+	a.Lock()
 	a.ret = append(a.ret, conn.first)
+	a.Unlock()
 	conn.first = conn.first.next
 
 	if conn.first != nil {
@@ -1004,8 +1067,8 @@ func (a *Assembler) FlushAll() (closed int) {
 
 		//wg.Add(1)
 		//go func(conn *connection) {
-			a.closeConn(conn)
-			//wg.Done()
+		a.closeConn(conn)
+		//wg.Done()
 		//}(conn)
 	}
 
@@ -1023,19 +1086,22 @@ func (a *Assembler) FlushAllProgress() (closed int) {
 	bar := pb.StartNew(closed)
 
 	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
-	//wg := sync.WaitGroup{}
+	wg := sync.WaitGroup{}
+
+	fmt.Println("processing", len(conns))
 
 	for _, conn := range conns {
 
-		//wg.Add(1)
-		//go func(conn *connection) {
-			a.closeConn(conn)
+		wg.Add(1)
+
+		go func(co *connection) {
+			a.closeConn(co)
 			bar.Increment()
-		//	wg.Done()
-		//}(conn)
+			wg.Done()
+		}(conn)
 	}
 
-	//wg.Wait()
+	wg.Wait()
 	bar.Finish()
 
 	return

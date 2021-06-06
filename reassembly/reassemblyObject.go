@@ -1,6 +1,9 @@
 package reassembly
 
-import "github.com/dreadl0ck/gopacket"
+import (
+	"github.com/dreadl0ck/gopacket"
+	"sync"
+)
 
 // Implements a ScatterGather.
 type reassemblyObject struct {
@@ -14,6 +17,8 @@ type reassemblyObject struct {
 	queuedPackets  int
 	overlapBytes   int
 	overlapPackets int
+
+	sync.Mutex
 }
 
 // Lengths returns the lengths for a reassemblyObject.
@@ -28,6 +33,10 @@ func (rl *reassemblyObject) Lengths() (int, int) {
 
 // Fetch returns the available data for a reassemblyObject.
 func (rl *reassemblyObject) Fetch(l int) []byte {
+
+	if len(rl.all) == 0 {
+		return nil
+	}
 	if l <= rl.all[0].length() {
 		return rl.all[0].getBytes()[:l]
 	}
@@ -67,6 +76,9 @@ func (rl *reassemblyObject) CaptureInfo(offset int) gopacket.CaptureInfo {
 
 // Info returns information about the reassemblyObject.
 func (rl *reassemblyObject) Info() (TCPFlowDirection, bool, bool, int) {
+	if len(rl.all) == 0 {
+		return rl.Direction, false, false, rl.Skip
+	}
 	return rl.Direction, rl.all[0].isStart(), rl.all[len(rl.all)-1].isEnd(), rl.Skip
 }
 
