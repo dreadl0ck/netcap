@@ -128,8 +128,8 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 
 		if ja3Hash != "" {
 			// add hash to profile if not already present
-			if _, ok = p.Ja3[ja3Hash]; !ok {
-				p.Ja3[ja3Hash] = resolvers.LookupJa3(ja3Hash)
+			if _, ok = p.Ja3Hashes[ja3Hash]; !ok {
+				p.Ja3Hashes[ja3Hash] = resolvers.LookupJa3(ja3Hash)
 			}
 		}
 
@@ -204,7 +204,7 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 			Geolocation:    loc,
 			DNSNames:       names,
 			TimestampFirst: i.Timestamp,
-			Ja3:            ja3Map,
+			Ja3Hashes:      ja3Map,
 			Protocols:      protos,
 			Bytes:          dataLen,
 			SrcPorts:       srcPorts,

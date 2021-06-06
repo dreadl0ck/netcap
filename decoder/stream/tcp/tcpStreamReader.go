@@ -96,6 +96,7 @@ func (t *tcpStreamReader) Cleanup(f *connectionFactory) {
 }
 
 // DataSlice will return all gathered data fragments.
+// CAUTION: underlying tcpConnection needs to be locked when calling this, and working with the result!
 func (t *tcpStreamReader) DataSlice() core.DataFragments {
 	return t.data
 }

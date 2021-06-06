@@ -253,7 +253,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
 	} else if err != nil {
-		httpLog.Error(
+		httpLog.Debug(
 			"failed to read HTTP response",
 			zap.String("ident", h.conversation.Ident),
 			zap.Error(err),
@@ -264,7 +264,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	body, err := ioutil.ReadAll(res.Body)
 	s := len(body)
 	if err != nil {
-		httpLog.Error(
+		httpLog.Debug(
 			"failed to read HTTP response body",
 			zap.String("ident", h.conversation.Ident),
 			zap.Error(err),

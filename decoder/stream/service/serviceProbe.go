@@ -182,7 +182,7 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 
 	if expectedCategory != "" {
 		if probes, ok := serviceProbes[expectedCategory]; ok {
-			serviceLog.Info("matching probes", zap.String("ident", ident), zap.String("expectedCategory", expectedCategory))
+			serviceLog.Debug("matching probes", zap.String("ident", ident), zap.String("expectedCategory", expectedCategory))
 			found, matched = matchProbes(serv, probes, banner, ident)
 			serviceLogSugared.Info(ident, "found?", found, "at", matched, "of", len(probes), "expected", expectedCategory)
 		}
@@ -207,7 +207,7 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 			}
 		}
 
-		serviceLogSugared.Info(ident, "ALL probes tried, found:", found, "matched", matched)
+		serviceLog.Debug("all probes tried", zap.String("ident", ident), zap.Bool("found", found), zap.Int("matched", matched))
 	}
 }
 
