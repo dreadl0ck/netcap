@@ -28,6 +28,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const errReadingPacketData = "error reading packet data"
+
 // OpenPCAP opens a Packet Capture file.
 func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	// get file handle
@@ -163,7 +165,7 @@ func (c *Collector) CollectPcap(path string) error {
 				break
 			}
 
-			return errors.Wrap(err, "error reading packet data")
+			return errors.Wrap(err, errReadingPacketData + " file: " + path)
 		}
 
 		// increment atomic packet counter

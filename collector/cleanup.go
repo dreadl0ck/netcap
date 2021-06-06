@@ -22,13 +22,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup(force bool) {
-	c.log.Info("cleanup started")
+
+	c.log.Info("cleanup started", zap.Bool("force", force))
+	c.printlnStdOut("\nstopping workers and waiting for collector to finish...")
 
 	_, _ = c.netcapLogFile.WriteString(newMemStats().String())
 
@@ -39,7 +40,10 @@ func (c *Collector) cleanup(force bool) {
 	// Stop all workers.
 	// this will block until all workers are stopped
 	// all packets left in the packet queues will be processed
+	workerStop := time.Now()
+	c.log.Info("stopping workers")
 	c.stopWorkers()
+	c.log.Info("workers completed after", zap.Duration("delta", time.Since(workerStop)))
 
 	waitForCollector := func() chan struct{} {
 		ch := make(chan struct{})
@@ -58,8 +62,8 @@ func (c *Collector) cleanup(force bool) {
 	c.log.Info("waiting for main collector wait group...")
 	select {
 	case <-waitForCollector():
-	case <-time.After(defaults.ReassemblyTimeout):
-		c.log.Info(" timeout after ", zap.Duration("reassemblyTimeout", defaults.ReassemblyTimeout))
+	//case <-time.After(defaults.ReassemblyTimeout):
+	//	c.log.Info(" timeout after ", zap.Duration("reassemblyTimeout", defaults.ReassemblyTimeout))
 	}
 
 	if c.config.ReassembleConnections {
@@ -143,7 +147,7 @@ func (c *Collector) teardown() {
 		c.printErrors()
 	}
 
-	c.printlnStdOut("execution time", time.Since(c.start))
+	c.printlnStdOut("execution time", time.Since(c.start), c.numPackets, c.numPacketsLast)
 
 	// close the log file handles
 	for _, l := range c.logFileHandles {

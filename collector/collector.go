@@ -121,8 +121,9 @@ func (c *Collector) stopWorkers() {
 	for i, w := range c.workers {
 		select {
 		case w <- nil:
-		case <-time.After(5 * time.Second):
-			fmt.Println("worker", i, "seems stuck, skipping...")
+			c.log.Info("worker done", zap.Int("num", i))
+			//case <-time.After(5 * time.Second):
+			//	fmt.Println("worker", i, "seems stuck, skipping...")
 		}
 	}
 	c.mu.Unlock()

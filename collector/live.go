@@ -73,7 +73,7 @@ func (c *Collector) CollectLive(iface, bpf string) error {
 				break
 			}
 
-			return errors.Wrap(err, "error reading packet data")
+			return errors.Wrap(err, errReadingPacketData + " interface: " + iface)
 		}
 
 		// increment atomic packet counter
