@@ -10,8 +10,8 @@ ENV VERSION XXX
 ARG TAGS
 RUN echo "tags: $TAGS"
 
-RUN echo go build -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net -i github.com/dreadl0ck/netcap/cmd
-RUN go build -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net -i github.com/dreadl0ck/netcap/cmd
+RUN echo go build -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+RUN go build -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 RUN ls -la /netcap
 RUN file /netcap/bin/net

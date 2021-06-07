@@ -5,6 +5,6 @@
 VERSION="0.5.13"
 
 
-go build -ldflags "-s -w" -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
+go build -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
 echo "setting capabilities for attaching to a network interface (requires root)..."
 sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
