@@ -48,7 +48,7 @@ func SetLogger(l *zap.Logger) {
 
 // SaveFile TODO: create a structure for passing all the args
 func SaveFile(conv *core.ConversationInfo, source, name string, err error, body []byte, encoding []string, host string, contentType string) error {
-	reassemblyLog.Info("smtpReader.saveFile",
+	reassemblyLog.Info("SaveFile",
 		zap.String("source", source),
 		zap.String("name", name),
 		zap.Error(err),
