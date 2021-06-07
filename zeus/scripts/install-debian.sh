@@ -55,6 +55,6 @@ sudo find / -iname libtrace.h
 # ensure the go compiler can output the binary to /usr/local/bin
 sudo chown -R "$USER" /usr/local/bin
 
-go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
+go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
 
 

@@ -58,15 +58,18 @@ RUN ldconfig /go/*
 #RUN find / -iname libtrace.o
 #RUN find / -iname liblinear.o
 
-RUN go build -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net -i github.com/dreadl0ck/netcap/cmd
+RUN go build -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 RUN ls -la /netcap
 RUN file /netcap/bin/net
 
 FROM alpine:latest
 ARG IPV6_SUPPORT=true
+
 RUN apk add --no-cache ca-certificates iptables libpcap-dev libnetfilter_queue ${IPV6_SUPPORT:+ip6tables}
+
 WORKDIR /
+
 COPY --from=builder /netcap/bin/* /usr/bin/
 COPY --from=builder /usr/lib/* /usr/lib/
 COPY --from=builder /usr/local/lib/* /usr/local/lib/

@@ -15,18 +15,18 @@ ENV VERSION XXX
 ARG TAGS
 RUN echo "tags: $TAGS"
 
-RUN echo go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net -i github.com/dreadl0ck/netcap/cmd
-RUN go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net -i github.com/dreadl0ck/netcap/cmd
+RUN echo go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+RUN go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+
+#RUN ls -la /usr/lib/
 
 FROM ubuntu:18.04
 ARG IPV6_SUPPORT=true
 RUN apt-get update
-RUN apt install -y libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev
+RUN apt install -y libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev git-lfs
 RUN update-ca-certificates
 WORKDIR /netcap
 COPY --from=builder /netcap/bin/* /usr/bin/
-COPY --from=builder /usr/lib/* /usr/lib/
+#COPY --from=builder /usr/lib/* /usr/lib/
 COPY --from=builder /usr/local/lib/* /usr/lib/
-#RUN ls -la
 CMD ["/bin/sh"]
-
