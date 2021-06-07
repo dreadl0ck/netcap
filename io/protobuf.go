@@ -57,7 +57,7 @@ func newProtoWriter(wc *WriterConfig) *protoWriter {
 	} else {
 		w.file = createFile(filepath.Join(wc.Out, wc.Name), defaults.FileExtension)
 	}
-	ioLog.Info("create protoWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)))
+	ioLog.Info("create protoWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)), zap.String("type", wc.Type.String()))
 
 	// buffer data?
 	if wc.Buffer {

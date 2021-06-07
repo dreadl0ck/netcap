@@ -88,6 +88,9 @@ type elasticWriter struct {
 
 // newElasticWriter initializes and configures a new elasticWriter instance.
 func newElasticWriter(wc *WriterConfig) *elasticWriter {
+
+	ioLog.Info("create elasticWriter", zap.String("type", wc.Type.String()))
+
 	// init new client
 	c, err := elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: wc.ElasticAddrs,

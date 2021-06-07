@@ -16,6 +16,7 @@ package io
 import (
 	"bufio"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
@@ -60,6 +61,7 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 	} else {
 		w.file = createFile(filepath.Join(wc.Out, w.wc.Name), ".csv")
 	}
+	ioLog.Info("create csvWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)), zap.String("type", wc.Type.String()))
 
 	if wc.Buffer {
 		w.bWriter = bufio.NewWriterSize(w.file, wc.MemBufferSize)

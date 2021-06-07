@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
@@ -60,6 +61,7 @@ func newJSONWriter(wc *WriterConfig) *jsonWriter {
 	} else {
 		w.file = createFile(filepath.Join(wc.Out, w.wc.Name), ".json")
 	}
+	ioLog.Info("create jsonWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)), zap.String("type", wc.Type.String()))
 
 	if wc.Buffer {
 		w.bWriter = bufio.NewWriterSize(w.file, wc.MemBufferSize)
@@ -141,7 +143,8 @@ func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 type nullWriter struct{}
 
 // newNullWriter initializes and configures a new nullWriter instance.
-func newNullWriter() *nullWriter {
+func newNullWriter(wc *WriterConfig) *nullWriter {
+	ioLog.Info("create nullWriter", zap.String("type", wc.Type.String()))
 	return &nullWriter{}
 }
 

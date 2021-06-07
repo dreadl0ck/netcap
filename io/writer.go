@@ -44,7 +44,7 @@ func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 	case wc.JSON:
 		return newJSONWriter(wc)
 	case wc.Null:
-		return newNullWriter()
+		return newNullWriter(wc)
 	case wc.Elastic:
 		return newElasticWriter(wc)
 

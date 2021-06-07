@@ -14,11 +14,8 @@
 package io
 
 import (
-	"bufio"
-	"compress/gzip"
-	"errors"
 	"fmt"
-	"io"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,7 +80,10 @@ func closeFile(outDir string, file *os.File, typ string, numRecords int64) (name
 
 // removeAuditRecordFileIfEmpty removes the audit record file if it does not contain audit records.
 func removeAuditRecordFileIfEmpty(name string, numRecords int64) (size int64) {
-	if isCSV(name) || isJSON(name) {
+
+	ioLog.Info("remove if empty", zap.String("name", name), zap.Bool("isCSV", isCSV(name)), zap.Int64("numRecords", numRecords))
+
+	if numRecords == 0 && (isCSV(name) || isJSON(name)) {
 		return removeEmptyNewlineDelimitedFile(name)
 	}
 
@@ -117,70 +117,16 @@ func isJSON(name string) bool {
 }
 
 func removeEmptyNewlineDelimitedFile(name string) (size int64) {
-	f, err := os.Open(name)
+	ioLog.Info("removing empty file", zap.String("name", name))
+
+	// remove file
+	err := os.Remove(name)
 	if err != nil {
-		panic(err)
+		fmt.Println("failed to remove file", err)
 	}
 
-	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
-		}
-	}()
-
-	var r *bufio.Reader
-
-	if strings.HasSuffix(name, ".gz") {
-		var gr *gzip.Reader
-
-		gr, err = gzip.NewReader(f)
-		if err != nil {
-			panic(err)
-		}
-
-		r = bufio.NewReader(gr)
-	} else {
-		r = bufio.NewReader(f)
-	}
-
-	count := 0
-
-	for {
-		_, _, err = r.ReadLine()
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-			break
-		} else if err != nil {
-			panic(err)
-		}
-		count++
-
-		if count > 1 {
-			break
-		}
-	}
-
-	if count < 2 {
-		// remove file
-		err = os.Remove(name)
-		if err != nil {
-			fmt.Println("failed to remove file", err)
-		}
-
-		// return file size of zero
-		return 0
-	}
-
-	// dont remove file
-	// return final file size
-	s, err := os.Stat(name)
-	if err != nil {
-		fmt.Println("failed to stat file:", name, err)
-
-		return
-	}
-
-	return s.Size()
+	// return file size of zero
+	return 0
 }
 
 // createFile is a wrapper to create new audit record file.
