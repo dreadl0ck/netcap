@@ -51,7 +51,7 @@ var (
 	flagPrintProtocolOverview = fs.Bool("overview", false, "print a list of all available decoders and fields")
 
 	flagInterface    = fs.String("iface", "", "attach to network interface and capture in live mode")
-	flagCompress     = fs.Bool("comp", true, "compress output with gzip")
+	flagCompress     = fs.Bool("compress", true, "compress output with gzip")
 	flagBuffer       = fs.Bool("buf", true, "buffer data in memory before writing to disk")
 	flagWorkers      = fs.Int("workers", runtime.NumCPU()*2, "number of workers") // runtime.NumCPU()
 	flagPacketBuffer = fs.Int("pbuf", defaults.PacketBuffer, "set packet buffer size, for channels that feed data to workers")
