@@ -52,7 +52,7 @@ var (
 	flagBaseLayer            = fs.String("base", "ethernet", "select base layer")
 	flagDecodeOptions        = fs.String("opts", "lazy", "select decoding options")
 	flagPayload              = fs.Bool("payload", false, "capture payload for supported layers")
-	flagCompress             = fs.Bool("comp", true, "compress output with gzip")
+	flagCompress             = fs.Bool("compress", true, "compress output with gzip")
 	flagBuffer               = fs.Bool("buf", true, "buffer data in memory before writing to disk")
 	flagOutDir               = fs.String("out", "", "specify output directory, will be created if it does not exist")
 	flagBPF                  = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
