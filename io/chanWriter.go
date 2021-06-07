@@ -15,6 +15,7 @@ package io
 
 import (
 	"bufio"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"runtime"
@@ -53,6 +54,7 @@ func newChanWriter(wc *WriterConfig) *chanWriter {
 	if wc.Buffer || wc.Compress {
 		panic("buffering or compression cannot be activated when running using writeChan")
 	}
+	ioLog.Info("create chanWriter", zap.String("type", wc.Type.String()))
 
 	w.cWriter = newChanProtoWriter(wc.ChanSize)
 
