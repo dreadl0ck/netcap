@@ -16,9 +16,8 @@ package packet
 import (
 	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/gogo/protobuf/proto"
-
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/gogo/protobuf/proto"
 )
 
 var arpDecoder = newGoPacketDecoder(
@@ -28,16 +27,16 @@ var arpDecoder = newGoPacketDecoder(
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if arp, ok := layer.(*layers.ARP); ok {
 			return &types.ARP{
-				Timestamp:       timestamp,
-				AddrType:        int32(arp.AddrType),
-				Protocol:        int32(arp.Protocol),
-				HwAddressSize:   int32(arp.HwAddressSize),
-				ProtAddressSize: int32(arp.ProtAddressSize),
-				Operation:       int32(arp.Operation),
-				SrcHwAddress:    arp.SourceHwAddress,
-				SrcProtAddress:  arp.SourceProtAddress,
-				DstHwAddress:    arp.DstHwAddress,
-				DstProtAddress:  arp.DstProtAddress,
+				Timestamp:           timestamp,
+				AddrType:            int32(arp.AddrType),
+				Protocol:            int32(arp.Protocol),
+				HwAddressSize:       int32(arp.HwAddressSize),
+				ProtocolAddressSize: int32(arp.ProtAddressSize),
+				Operation:           int32(arp.Operation),
+				SrcHwAddress:        formatMac(arp.SourceHwAddress),
+				SrcProtocolAddress:  parseIPv4(arp.SourceProtAddress),
+				DstHwAddress:        formatMac(arp.DstHwAddress),
+				DstProtocolAddress:  parseIPv4(arp.DstProtAddress),
 			}
 		}
 

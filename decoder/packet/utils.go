@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/pkg/errors"
 	"math"
 	"os"
 	"reflect"
@@ -303,6 +304,72 @@ func entropy(data []byte) (entropy float64) {
 		}
 	}
 	return entropy
+}
+
+const dot = byte('.')
+
+func parseHexIPv4(ip []byte) string {
+
+	var decoded = make([]byte, 4)
+
+	_, err := hex.Decode(decoded, ip)
+	if err != nil {
+		return errors.Wrap(err, "raw="+hex.EncodeToString(ip)).Error()
+	}
+
+	var out []byte
+	for i, c := range decoded {
+		out = strconv.AppendInt(out, int64(c), 10)
+		if i != 3 {
+			out = append(out, dot)
+		}
+	}
+
+	return string(out)
+}
+
+func parseIPv4(ip []byte) string {
+
+	var out []byte
+	for i, c := range ip {
+		out = strconv.AppendInt(out, int64(c), 10)
+		if i != 3 {
+			out = append(out, dot)
+		}
+	}
+
+	return string(out)
+}
+
+func formatHexMac(mac []byte) string {
+	var (
+		res          strings.Builder
+		lastPosition = len(mac) - 1
+	)
+	for i, c := range mac {
+		res.WriteByte(c)
+		if (i+1)%2 == 0 && i != lastPosition {
+			res.WriteString(":")
+		}
+	}
+
+	return res.String()
+}
+
+func formatMac(mac []byte) string {
+
+	var (
+		encoded = hex.EncodeToString(mac)
+		res     strings.Builder
+	)
+	for i, c := range encoded {
+		res.WriteRune(c)
+		if (i+1)%2 == 0 && i != 11 {
+			res.WriteString(":")
+		}
+	}
+
+	return res.String()
 }
 
 // pad the input up to the given number of space characters.

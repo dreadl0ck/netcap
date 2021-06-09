@@ -147,6 +147,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		func(d core.DecoderAPI) {
 			w := netio.NewAuditRecordWriter(&netio.WriterConfig{
 				CSV:     c.CSV,
+				Encode:  c.Encode,
 				Proto:   c.Proto,
 				JSON:    c.JSON,
 				Name:    d.GetName(),

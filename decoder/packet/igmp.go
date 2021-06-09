@@ -51,7 +51,7 @@ var igmpDecoder = newGoPacketDecoder(
 				Type:                    int32(igmp.Type),
 				MaxResponseTime:         uint64(igmp.MaxResponseTime),
 				Checksum:                int32(igmp.Checksum),
-				GroupAddress:            igmp.GroupAddress,
+				GroupAddress:            parseIPv4(igmp.GroupAddress),
 				SupressRouterProcessing: igmp.SupressRouterProcessing,
 				RobustnessValue:         int32(igmp.RobustnessValue),
 				IntervalTime:            uint64(igmp.IntervalTime),

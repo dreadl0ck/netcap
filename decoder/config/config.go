@@ -159,6 +159,9 @@ type Config struct {
 	// Generate CSV instead of audit records
 	CSV bool
 
+	// Encode values when generating CSV
+	Encode bool
+
 	// Output length delimited protocol buffers
 	Proto bool
 
