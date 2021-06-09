@@ -3,6 +3,7 @@ package collector
 import (
 	"errors"
 	"fmt"
+	"github.com/dreadl0ck/netcap/encoder"
 	"log"
 	"os"
 	"path/filepath"
@@ -145,6 +146,11 @@ func (c *Collector) Init() (err error) {
 			}
 		}
 	}
+
+	encoder.SetConfig(&encoder.Config{
+		//MinMax: true,
+		ZScore: true,
+	})
 
 	var (
 		start = time.Now()
