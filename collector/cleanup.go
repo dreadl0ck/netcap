@@ -62,8 +62,8 @@ func (c *Collector) cleanup(force bool) {
 	c.log.Info("waiting for main collector wait group...")
 	select {
 	case <-waitForCollector():
-	//case <-time.After(defaults.ReassemblyTimeout):
-	//	c.log.Info(" timeout after ", zap.Duration("reassemblyTimeout", defaults.ReassemblyTimeout))
+		//case <-time.After(defaults.ReassemblyTimeout):
+		//	c.log.Info(" timeout after ", zap.Duration("reassemblyTimeout", defaults.ReassemblyTimeout))
 	}
 
 	if c.config.ReassembleConnections {

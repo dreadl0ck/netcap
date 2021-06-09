@@ -61,7 +61,7 @@ func (c *Collector) CollectBPF(path, bpf string) error {
 				break
 			}
 
-			return errors.Wrap(err, errReadingPacketData + " file: " + path)
+			return errors.Wrap(err, errReadingPacketData+" file: "+path)
 		}
 
 		// increment atomic packet counter
