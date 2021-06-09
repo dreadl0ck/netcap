@@ -150,6 +150,7 @@ enum Type {
   NC_Exploit = 100;
   NC_IPProfile = 101;
   NC_Mail = 102;
+  NC_Alert = 103;
 }
 
 //
@@ -247,12 +248,13 @@ message ARP {
   int32 AddrType = 2;
   int32 Protocol = 3;
   int32 HwAddressSize = 4;
-  int32 ProtAddressSize = 5;
+  int32 ProtocolAddressSize = 5;
   int32 Operation = 6;
-  bytes SrcHwAddress = 7;
-  bytes SrcProtAddress = 8;
-  bytes DstHwAddress = 9;
-  bytes DstProtAddress = 10;
+  string SrcHwAddress = 7;
+  // Sender Protocol Address: The IP address of the device sending this message
+  string SrcProtocolAddress = 8;
+  string DstHwAddress = 9;
+  string DstProtocolAddress = 10;
 }
 
 // Dot1Q is the packet layer for 802.1Q VLAN headers.
@@ -829,7 +831,7 @@ message IGMP {
   int32 Type = 2;
   uint64 MaxResponseTime = 3;
   int32 Checksum = 4;
-  bytes GroupAddress = 5;
+  string GroupAddress = 5;
   bool SupressRouterProcessing = 6;
   int32 RobustnessValue = 7;
   uint64 IntervalTime = 8;
@@ -1962,4 +1964,22 @@ message Exploit {
   string Platform = 9;
   string Port = 10;
   Software Software = 11;
+}
+
+// Alert models a user defined event with IP layer and meta information.
+message Alert {
+  int64 Timestamp = 1;
+
+  string Name = 2;
+  string Description = 3;
+  string SrcIP = 4;
+  string SrcPort = 5;
+  string DstIP = 6;
+  string DstPort = 7;
+
+  string MITRE = 8;
+  string IPReputation = 9;
+  string Domain = 10;
+  string Protocol = 11;
+  string Notes = 12;
 }
