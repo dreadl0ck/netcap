@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,14 +22,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldClient    = "Client"
+	fieldServer    = "Server"
+	fieldAuthToken = "AuthToken"
+	fieldPass      = "Pass"
+	fieldNumMails  = "NumMails"
+)
+
 var fieldsPOP3 = []string{
-	"Timestamp",
-	"Client",    // string
-	"Server",    // string
-	"AuthToken", // string
-	"User",      // string
-	"Pass",      // string
-	"NumMails",  // []*Mail
+	fieldTimestamp,
+	fieldClient,    // string
+	fieldServer,    // string
+	fieldAuthToken, // string
+	fieldUser,      // string
+	fieldPass,      // string
+	fieldNumMails,  // []*Mail
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -86,4 +95,24 @@ func (a *POP3) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *POP3) Dst() string {
 	return a.ServerIP
+}
+
+var pop3Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *POP3) Encode() []string {
+	return filter([]string{
+		pop3Encoder.Int64(fieldTimestamp, a.Timestamp),
+		pop3Encoder.String(fieldClientIP, a.ClientIP),   // string
+		pop3Encoder.String(fieldServerIP, a.ServerIP),   // string
+		pop3Encoder.String(fieldAuthToken, a.AuthToken), // string
+		pop3Encoder.String(fieldUser, a.User),           // string
+		pop3Encoder.String(fieldPass, a.Pass),           // string
+		pop3Encoder.Int(fieldNumMails, len(a.MailIDs)),  // []*Mail
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *POP3) Analyze() float64 {
+	return 0
 }

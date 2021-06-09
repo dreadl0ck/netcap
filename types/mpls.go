@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,12 +22,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldLabel       = "Label"
+	fieldStackBottom = "StackBottom"
+)
+
 var fieldsMPLS = []string{
-	"Timestamp",
-	"Label",
-	"TrafficClass",
-	"StackBottom",
-	"TTL",
+	fieldTimestamp,
+	fieldLabel,
+	fieldTrafficClass,
+	fieldStackBottom,
+	fieldTTL,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -82,4 +88,22 @@ func (a *MPLS) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *MPLS) Dst() string {
 	return ""
+}
+
+var mplsEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *MPLS) Encode() []string {
+	return filter([]string{
+		mplsEncoder.Int64(fieldTimestamp, a.Timestamp),
+		mplsEncoder.Int32(fieldLabel, a.Label),               // int32
+		mplsEncoder.Int32(fieldTrafficClass, a.TrafficClass), // int32
+		mplsEncoder.Bool(a.StackBottom),                      // bool
+		mplsEncoder.Int32(fieldTTL, a.TTL),                   // int32
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *MPLS) Analyze() float64 {
+	return 0
 }

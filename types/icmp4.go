@@ -14,20 +14,25 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldTypeCode = "TypeCode"
+)
+
 var fieldsICMPv4 = []string{
-	"Timestamp",
-	"TypeCode", // int32
-	"Checksum", // int32
-	"Id",       // int32
-	"Seq",      // int32
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldTypeCode, // int32
+	fieldChecksum, // int32
+	fieldId,       // int32
+	fieldSeq,      // int32
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -88,4 +93,24 @@ func (i *ICMPv4) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *ICMPv4) Dst() string {
 	return i.DstIP
+}
+
+var icmp4Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *ICMPv4) Encode() []string {
+	return filter([]string{
+		icmp4Encoder.Int64(fieldTimestamp, i.Timestamp),
+		icmp4Encoder.Int32(fieldTypeCode, i.TypeCode),
+		icmp4Encoder.Int32(fieldChecksum, i.Checksum),
+		icmp4Encoder.Int32(fieldId, i.Id),
+		icmp4Encoder.Int32(fieldSeq, i.Seq),
+		icmp4Encoder.String(fieldSrcIP, i.SrcIP),
+		icmp4Encoder.String(fieldDstIP, i.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *ICMPv4) Analyze() float64 {
+	return 0
 }

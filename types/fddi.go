@@ -14,18 +14,23 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldFrameControl = "FrameControl"
+)
+
 var fieldsFDDI = []string{
-	"Timestamp",
-	"FrameControl", //  int32
-	"Priority",     //  int32
-	"SrcMAC",       //  string
-	"DstMAC",       //  string
+	fieldTimestamp,
+	fieldFrameControl, //  int32
+	fieldPriority,     //  int32
+	fieldSrcMAC,       //  string
+	fieldDstMAC,       //  string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -81,4 +86,22 @@ func (a *FDDI) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *FDDI) Dst() string {
 	return a.DstMAC
+}
+
+var fddiEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *FDDI) Encode() []string {
+	return filter([]string{
+		fddiEncoder.Int64(fieldTimestamp, a.Timestamp),
+		fddiEncoder.Int32(fieldFrameControl, a.FrameControl), //  int32
+		fddiEncoder.Int32(fieldPriority, a.Priority),         //  int32
+		fddiEncoder.String(fieldSrcMAC, a.SrcMAC),            //  string
+		fddiEncoder.String(fieldDstMAC, a.DstMAC),            //  string
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *FDDI) Analyze() float64 {
+	return 0
 }

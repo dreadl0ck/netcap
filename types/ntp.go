@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,26 +23,41 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldLeapIndicator      = "LeapIndicator"
+	fieldMode               = "Mode"
+	fieldStratum            = "Stratum"
+	fieldPrecision          = "Precision"
+	fieldRootDelay          = "RootDelay"
+	fieldRootDispersion     = "RootDispersion"
+	fieldReferenceID        = "ReferenceID"
+	fieldReferenceTimestamp = "ReferenceTimestamp"
+	fieldOriginTimestamp    = "OriginTimestamp"
+	fieldReceiveTimestamp   = "ReceiveTimestamp"
+	fieldTransmitTimestamp  = "TransmitTimestamp"
+	fieldExtensionBytes     = "ExtensionBytes"
+)
+
 var fieldsNTP = []string{
-	"Timestamp",
-	"LeapIndicator",
-	"Version",
-	"Mode",
-	"Stratum",
-	"Poll",
-	"Precision",
-	"RootDelay",
-	"RootDispersion",
-	"ReferenceID",
-	"ReferenceTimestamp",
-	"OriginTimestamp",
-	"ReceiveTimestamp",
-	"TransmitTimestamp",
-	"ExtensionBytes",
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldLeapIndicator,
+	fieldVersion,
+	fieldMode,
+	fieldStratum,
+	fieldPoll,
+	fieldPrecision,
+	fieldRootDelay,
+	fieldRootDispersion,
+	fieldReferenceID,
+	fieldReferenceTimestamp,
+	fieldOriginTimestamp,
+	fieldReceiveTimestamp,
+	fieldTransmitTimestamp,
+	fieldExtensionBytes,
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -117,4 +133,36 @@ func (n *NTP) Src() string {
 // Dst returns the destination address of the audit record.
 func (n *NTP) Dst() string {
 	return n.DstIP
+}
+
+var ntpEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (n *NTP) Encode() []string {
+	return filter([]string{
+		ntpEncoder.Int64(fieldTimestamp, n.Timestamp),
+		ntpEncoder.Int32(fieldLeapIndicator, n.LeapIndicator),                        // int32
+		ntpEncoder.Int32(fieldVersion, n.Version),                                    // int32
+		ntpEncoder.Int32(fieldMode, n.Mode),                                          // int32
+		ntpEncoder.Int32(fieldStratum, n.Stratum),                                    // int32
+		ntpEncoder.Int32(fieldPoll, n.Poll),                                          // int32
+		ntpEncoder.Int32(fieldPrecision, n.Precision),                                // int32
+		ntpEncoder.Uint32(fieldRootDelay, n.RootDelay),                               // uint32
+		ntpEncoder.Uint32(fieldRootDispersion, n.RootDispersion),                     // uint32
+		ntpEncoder.Uint32(fieldReferenceID, n.ReferenceID),                           // uint32
+		ntpEncoder.Uint64(fieldReferenceTimestamp, n.ReferenceTimestamp),             // uint64
+		ntpEncoder.Uint64(fieldOriginTimestamp, n.OriginTimestamp),                   // uint64
+		ntpEncoder.Uint64(fieldReceiveTimestamp, n.ReceiveTimestamp),                 // uint64
+		ntpEncoder.Uint64(fieldTransmitTimestamp, n.TransmitTimestamp),               // uint64
+		ntpEncoder.String(fieldExtensionBytes, hex.EncodeToString(n.ExtensionBytes)), // []byte
+		ntpEncoder.String(fieldSrcIP, n.SrcIP),
+		ntpEncoder.String(fieldDstIP, n.DstIP),
+		ntpEncoder.Int32(fieldSrcPort, n.SrcPort),
+		ntpEncoder.Int32(fieldDstPort, n.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (n *NTP) Analyze() float64 {
+	return 0
 }

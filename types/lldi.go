@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,15 +23,23 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldPortDescription = "PortDescription"
+	fieldSysDescription  = "SysDescription"
+	fieldSysCapabilities = "SysCapabilities"
+	fieldMgmtAddress     = "MgmtAddress"
+	fieldOrgTLVs         = "OrgTLVs"
+)
+
 var fieldsLLDI = []string{
-	"Timestamp",
-	"PortDescription",
-	"SysName",
-	"SysDescription",
-	"SysCapabilities",
-	"MgmtAddress",
-	"OrgTLVs",
-	"Unknown",
+	fieldTimestamp,
+	fieldPortDescription,
+	fieldSysName,
+	fieldSysDescription,
+	fieldSysCapabilities,
+	fieldMgmtAddress,
+	fieldOrgTLVs,
+	fieldUnknown,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -172,4 +181,35 @@ func (l *LinkLayerDiscoveryInfo) Src() string {
 // Dst returns the destination address of the audit record.
 func (l *LinkLayerDiscoveryInfo) Dst() string {
 	return ""
+}
+
+var lddiEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (l *LinkLayerDiscoveryInfo) Encode() []string {
+	var (
+		tlvs   = make([]string, len(l.OrgTLVs))
+		values = make([]string, len(l.Unknown))
+	)
+	for i, v := range l.OrgTLVs {
+		tlvs[i] = v.toString()
+	}
+	for i, v := range l.Unknown {
+		values[i] = v.toString()
+	}
+	return filter([]string{
+		lddiEncoder.Int64(fieldTimestamp, l.Timestamp),
+		lddiEncoder.String(fieldPortDescription, l.PortDescription),            // string
+		lddiEncoder.String(fieldSysName, l.SysName),                            // string
+		lddiEncoder.String(fieldSysDescription, l.SysDescription),              // string
+		lddiEncoder.String(fieldSysCapabilities, l.SysCapabilities.toString()), // *LLDPSysCapabilities
+		lddiEncoder.String(fieldMgmtAddress, l.MgmtAddress.toString()),         // *LLDPMgmtAddress
+		lddiEncoder.String(fieldOrgTLVs, strings.Join(tlvs, "")),               // []*LLDPOrgSpecificTLV
+		lddiEncoder.String(fieldValues, strings.Join(values, "")),              // []*LinkLayerDiscoveryValue
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (l *LinkLayerDiscoveryInfo) Analyze() float64 {
+	return 0
 }

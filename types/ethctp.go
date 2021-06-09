@@ -14,15 +14,18 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const fieldSkipCount = "SkipCount"
+
 var fieldsEthernetCTP = []string{
-	"Timestamp",
-	"SkipCount", // int32
+	fieldTimestamp,
+	fieldSkipCount, // int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -76,4 +79,19 @@ func (i *EthernetCTP) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *EthernetCTP) Dst() string {
 	return ""
+}
+
+var ethernetCTPEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *EthernetCTP) Encode() []string {
+	return filter([]string{
+		ethernetCTPEncoder.Int64(fieldTimestamp, i.Timestamp),
+		ethernetCTPEncoder.Int32(fieldSkipCount, i.SkipCount),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *EthernetCTP) Analyze() float64 {
+	return 0
 }

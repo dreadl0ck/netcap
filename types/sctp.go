@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,14 +22,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const fieldVerificationTag = "VerificationTag"
+
 var fieldsSCTP = []string{
-	"Timestamp",
-	"SrcPort",
-	"DstPort",
-	"VerificationTag",
-	"Checksum",
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldSrcPort,
+	fieldDstPort,
+	fieldVerificationTag,
+	fieldChecksum,
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -89,4 +92,24 @@ func (s *SCTP) Src() string {
 // Dst returns the destination address of the audit record.
 func (s *SCTP) Dst() string {
 	return s.DstIP
+}
+
+var sctpEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (s *SCTP) Encode() []string {
+	return filter([]string{
+		sctpEncoder.Int64(fieldTimestamp, s.Timestamp),
+		sctpEncoder.Int32(fieldSrcPort, s.SrcPort),
+		sctpEncoder.Int32(fieldDstPort, s.DstPort),
+		sctpEncoder.Uint32(fieldVerificationTag, s.VerificationTag),
+		sctpEncoder.Uint32(fieldChecksum, s.Checksum),
+		sctpEncoder.String(fieldSrcIP, s.SrcIP),
+		sctpEncoder.String(fieldDstIP, s.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (s *SCTP) Analyze() float64 {
+	return 0
 }

@@ -14,18 +14,23 @@
 package types
 
 import (
-	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldFunction      = "Function"
+	fieldReceiptNumber = "ReceiptNumber"
+)
+
 var fieldsEthernetCTPReply = []string{
-	"Timestamp",
-	"Function",      // int32
-	"ReceiptNumber", // int32
-	"Data",          // bytes
+	fieldTimestamp,
+	fieldFunction,      // int32
+	fieldReceiptNumber, // int32
+	//fieldData,          // bytes
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -39,7 +44,7 @@ func (ectpr *EthernetCTPReply) CSVRecord() []string {
 		formatTimestamp(ectpr.Timestamp),
 		formatInt32(ectpr.Function),
 		formatInt32(ectpr.ReceiptNumber),
-		hex.EncodeToString(ectpr.Data),
+		//hex.EncodeToString(ectpr.Data),
 	})
 }
 
@@ -81,4 +86,20 @@ func (ectpr *EthernetCTPReply) Src() string {
 // Dst returns the destination address of the audit record.
 func (ectpr *EthernetCTPReply) Dst() string {
 	return ""
+}
+
+var ethCTPReplyEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (ectpr *EthernetCTPReply) Encode() []string {
+	return filter([]string{
+		ethCTPReplyEncoder.Int64(fieldTimestamp, ectpr.Timestamp),
+		ethCTPReplyEncoder.Int32(fieldFunction, ectpr.Function),
+		ethCTPReplyEncoder.Int32(fieldReceiptNumber, ectpr.ReceiptNumber),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (ectpr *EthernetCTPReply) Analyze() float64 {
+	return 0
 }

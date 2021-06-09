@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,20 +22,27 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldMagic          = "Magic"
+	fieldTotalFragments = "TotalFragments"
+	fieldChannelName    = "ChannelName"
+	fieldFragmented     = "Fragmented"
+)
+
 var fieldsLCM = []string{
-	"Timestamp",
-	"Magic",          // int32
-	"SequenceNumber", // int32
-	"PayloadSize",    // int32
-	"FragmentOffset", // int32
-	"FragmentNumber", // int32
-	"TotalFragments", // int32
-	"ChannelName",    // string
-	"Fragmented",     // bool
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldMagic,          // int32
+	fieldSequenceNumber, // int32
+	fieldPayloadSize,    // int32
+	fieldFragmentOffset, // int32
+	fieldFragmentNumber, // int32
+	fieldTotalFragments, // int32
+	fieldChannelName,    // string
+	fieldFragmented,     // bool
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -103,4 +111,30 @@ func (a *LCM) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *LCM) Dst() string {
 	return a.DstIP
+}
+
+var lcmEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *LCM) Encode() []string {
+	return filter([]string{
+		lcmEncoder.Int64(fieldTimestamp, a.Timestamp),
+		lcmEncoder.Int32(fieldMagic, a.Magic),                   // int32
+		lcmEncoder.Int32(fieldSequenceNumber, a.SequenceNumber), // int32
+		lcmEncoder.Int32(fieldPayloadSize, a.PayloadSize),       // int32
+		lcmEncoder.Int32(fieldFragmentOffset, a.FragmentOffset), // int32
+		lcmEncoder.Int32(fieldFragmentNumber, a.FragmentNumber), // int32
+		lcmEncoder.Int32(fieldTotalFragments, a.TotalFragments), // int32
+		lcmEncoder.String(fieldChannelName, a.ChannelName),      // string
+		lcmEncoder.Bool(a.Fragmented),                           // bool
+		lcmEncoder.String(fieldSrcIP, a.SrcIP),
+		lcmEncoder.String(fieldDstIP, a.DstIP),
+		lcmEncoder.Int32(fieldSrcPort, a.SrcPort),
+		lcmEncoder.Int32(fieldDstPort, a.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *LCM) Analyze() float64 {
+	return 0
 }

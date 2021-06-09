@@ -14,14 +14,28 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldService  = "Service"
+	fieldFlow     = "Flow"
+	fieldUser     = "User"
+	fieldPassword = "Password"
+	fieldNotes    = "Notes"
+)
+
 var fieldsCredentials = []string{
-	"Timestamp",
+	fieldTimestamp,
+	fieldService,  // string
+	fieldFlow,     // string
+	fieldUser,     // string
+	fieldPassword, // string
+	fieldNotes,    // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -33,6 +47,11 @@ func (c *Credentials) CSVHeader() []string {
 func (c *Credentials) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(c.Timestamp),
+		c.Service,
+		c.Flow,
+		c.User,
+		c.Password,
+		c.Notes,
 	})
 }
 
@@ -75,4 +94,23 @@ func (c *Credentials) Src() string {
 // Dst returns the destination address of the audit record.
 func (c *Credentials) Dst() string {
 	return ""
+}
+
+var credentialsEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (c *Credentials) Encode() []string {
+	return filter([]string{
+		credentialsEncoder.Int64(fieldTimestamp, c.Timestamp),
+		credentialsEncoder.String(fieldService, c.Service),
+		credentialsEncoder.String(fieldFlow, c.Flow),
+		credentialsEncoder.String(fieldUser, c.User),
+		credentialsEncoder.String(fieldPassword, c.Password),
+		credentialsEncoder.String(fieldNotes, c.Notes),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (c *Credentials) Analyze() float64 {
+	return 0
 }

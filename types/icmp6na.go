@@ -14,19 +14,24 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldTargetAddress = "TargetAddress"
+)
+
 var fieldsICMPv6NeighborAdvertisement = []string{
-	"Timestamp",
-	"Flags",         // int32
-	"TargetAddress", // string
-	"Options",       // []*ICMPv6Option
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldFlags,         // int32
+	fieldTargetAddress, // string
+	fieldOptions,       // []*ICMPv6Option
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -91,4 +96,27 @@ func (i *ICMPv6NeighborAdvertisement) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *ICMPv6NeighborAdvertisement) Dst() string {
 	return i.DstIP
+}
+
+var icmp6naEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *ICMPv6NeighborAdvertisement) Encode() []string {
+	var opts []string
+	for _, o := range i.Options {
+		opts = append(opts, o.toString())
+	}
+	return filter([]string{
+		icmp6naEncoder.Int64(fieldTimestamp, i.Timestamp),
+		icmp6naEncoder.Int32(fieldFlags, i.Flags),
+		icmp6naEncoder.String(fieldTargetAddress, i.TargetAddress),
+		icmp6naEncoder.String(fieldOptions, strings.Join(opts, "")),
+		icmp6naEncoder.String(fieldSrcIP, i.SrcIP),
+		icmp6naEncoder.String(fieldDstIP, i.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *ICMPv6NeighborAdvertisement) Analyze() float64 {
+	return 0
 }

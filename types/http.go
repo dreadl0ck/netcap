@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,25 +22,40 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldMethod             = "Method"
+	fieldHost               = "Host"
+	fieldUserAgent          = "UserAgent"
+	fieldReferer            = "Referer"
+	fieldReqCookies         = "ReqCookies"
+	fieldResCookies         = "ResCookies"
+	fieldReqContentLength   = "ReqContentLength"
+	fieldURL                = "URL"
+	fieldResContentLength   = "ResContentLength"
+	fieldStatusCode         = "StatusCode"
+	fieldReqContentEncoding = "ReqContentEncoding"
+	fieldResContentEncoding = "ResContentEncoding"
+)
+
 var fieldsHTTP = []string{
-	"Timestamp",
-	"Proto",
-	"Method",
-	"Host",
-	"UserAgent",
-	"Referer",
-	"ReqCookies",
-	"ResCookies",
-	"ReqContentLength",
-	"URL",
-	"ResContentLength",
-	"ContentType",
-	"StatusCode",
-	"SrcIP",
-	"DstIP",
-	"ReqContentEncoding",
-	"ResContentEncoding",
-	"ServerName",
+	fieldTimestamp,
+	fieldProto,
+	fieldMethod,
+	fieldHost,
+	fieldUserAgent,
+	fieldReferer,
+	//fieldReqCookies,
+	//fieldResCookies,
+	fieldReqContentLength,
+	fieldURL,
+	fieldResContentLength,
+	fieldContentType,
+	fieldStatusCode,
+	fieldSrcIP,
+	fieldDstIP,
+	fieldReqContentEncoding,
+	fieldResContentEncoding,
+	fieldServerName,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -64,8 +80,8 @@ func (h *HTTP) CSVRecord() []string {
 		h.Host,
 		h.UserAgent,
 		h.Referer,
-		join(reqCookies...),
-		join(resCookies...),
+		//join(reqCookies...),
+		//join(resCookies...),
 		formatInt32(h.ReqContentLength),
 		h.URL,
 		formatInt32(h.ResContentLength),
@@ -144,4 +160,36 @@ func (h *HTTP) Src() string {
 // Dst returns the destination address of the audit record.
 func (h *HTTP) Dst() string {
 	return h.DstIP
+}
+
+var httpEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (h *HTTP) Encode() []string {
+	return filter([]string{
+		httpEncoder.Int64(fieldTimestamp, h.Timestamp),
+		httpEncoder.String(fieldProto, h.Proto),
+		httpEncoder.String(fieldMethod, h.Method),
+		httpEncoder.String(fieldHost, h.Host),
+		httpEncoder.String(fieldUserAgent, h.UserAgent),
+		httpEncoder.String(fieldReferer, h.Referer),
+		// TODO: flatten
+		//join(reqCookies...),
+		//join(resCookies...),
+		httpEncoder.Int32(fieldReqContentLength, h.ReqContentLength),
+		httpEncoder.String(fieldURL, h.URL),
+		httpEncoder.Int32(fieldResContentLength, h.ResContentLength),
+		httpEncoder.String(fieldContentType, h.ContentType),
+		httpEncoder.Int32(fieldStatusCode, h.StatusCode),
+		httpEncoder.String(fieldSrcIP, h.SrcIP),
+		httpEncoder.String(fieldDstIP, h.DstIP),
+		httpEncoder.String(fieldReqContentEncoding, h.ReqContentEncoding),
+		httpEncoder.String(fieldResContentEncoding, h.ResContentEncoding),
+		httpEncoder.String(fieldServerName, h.ServerName),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (h *HTTP) Analyze() float64 {
+	return 0
 }

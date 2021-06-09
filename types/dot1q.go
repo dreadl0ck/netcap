@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,12 +22,19 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldPriority       = "Priority"
+	fieldDropEligible   = "DropEligible"
+	fieldVLANIdentifier = "VLANIdentifier"
+	fieldType           = "Type"
+)
+
 var fieldsDot1Q = []string{
-	"Timestamp",
-	"Priority",       //  int32
-	"DropEligible",   //  bool
-	"VLANIdentifier", //  int32
-	"Type",           //  int32
+	fieldTimestamp,
+	fieldPriority,       //  int32
+	fieldDropEligible,   //  bool
+	fieldVLANIdentifier, //  int32
+	fieldType,           //  int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -83,4 +91,22 @@ func (d *Dot1Q) Src() string {
 // Dst returns the destination address of the audit record.
 func (d *Dot1Q) Dst() string {
 	return ""
+}
+
+var dot1qEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (d *Dot1Q) Encode() []string {
+	return filter([]string{
+		dot1qEncoder.Int64(fieldTimestamp, d.Timestamp),
+		dot1qEncoder.Int32(fieldPriority, d.Priority),             //  int32
+		dot1qEncoder.Bool(d.DropEligible),                         //  bool
+		dot1qEncoder.Int32(fieldVLANIdentifier, d.VLANIdentifier), //  int32
+		dot1qEncoder.Int32(fieldType, d.Type),                     //  int32
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (d *Dot1Q) Analyze() float64 {
+	return 0
 }

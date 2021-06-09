@@ -14,19 +14,29 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldTimestamp      = "Timestamp"
+	fieldSrcMAC         = "SrcMAC"
+	fieldDstMAC         = "DstMAC"
+	fieldEthernetType   = "EthernetType"
+	fieldPayloadEntropy = "PayloadEntropy"
+	fieldPayloadSize    = "PayloadSize"
+)
+
 var fieldsEthernet = []string{
-	"Timestamp",
-	"SrcMAC",         // string
-	"DstMAC",         // string
-	"EthernetType",   // int32
-	"PayloadEntropy", // float64
-	"PayloadSize",    // int32
+	fieldTimestamp,
+	fieldSrcMAC,         // string
+	fieldDstMAC,         // string
+	fieldEthernetType,   // int32
+	fieldPayloadEntropy, // float64
+	fieldPayloadSize,    // int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -88,9 +98,9 @@ var (
 )
 
 var fieldsEthernetMetrics = []string{
-	"SrcMAC",       // string
-	"DstMAC",       // string
-	"EthernetType", // int32
+	fieldSrcMAC,       // string
+	fieldDstMAC,       // string
+	fieldEthernetType, // int32
 }
 
 func (eth *Ethernet) metricValues() []string {
@@ -119,4 +129,23 @@ func (eth *Ethernet) Src() string {
 // Dst returns the destination address of the audit record.
 func (eth *Ethernet) Dst() string {
 	return eth.DstMAC
+}
+
+var ethernetEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (eth *Ethernet) Encode() []string {
+	return filter([]string{
+		ethernetEncoder.Int64(fieldTimestamp, eth.Timestamp),
+		ethernetEncoder.String(fieldSrcMAC, eth.SrcMAC),
+		ethernetEncoder.String(fieldDstMAC, eth.DstMAC),
+		ethernetEncoder.Int32(fieldEthernetType, eth.EthernetType),
+		ethernetEncoder.Float64(fieldPayloadEntropy, eth.PayloadEntropy),
+		ethernetEncoder.Int32(fieldPayloadSize, eth.PayloadSize),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (eth *Ethernet) Analyze() float64 {
+	return 0
 }

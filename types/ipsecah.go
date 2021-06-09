@@ -14,21 +14,26 @@
 package types
 
 import (
-	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldReserved           = "Reserved"
+	fieldSPI                = "SPI"
+	fieldAuthenticationData = "AuthenticationData"
+)
+
 var fieldsIPSecAH = []string{
-	"Timestamp",
-	"Reserved",
-	"SPI",
-	"Seq",
-	"AuthenticationData",
-	"SrcIP", // string
-	"DstIP", // string
+	fieldTimestamp,
+	fieldReserved,
+	fieldSPI,
+	fieldSeq,
+	fieldSrcIP, // string
+	fieldDstIP, // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -43,7 +48,6 @@ func (a *IPSecAH) CSVRecord() []string {
 		formatInt32(a.Reserved),
 		formatInt32(a.SPI),
 		formatInt32(a.Seq),
-		hex.EncodeToString(a.AuthenticationData),
 		a.SrcIP,
 		a.DstIP,
 	})
@@ -89,4 +93,23 @@ func (a *IPSecAH) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *IPSecAH) Dst() string {
 	return a.DstIP
+}
+
+var ipsecahEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *IPSecAH) Encode() []string {
+	return filter([]string{
+		ipsecahEncoder.Int64(fieldTimestamp, a.Timestamp),
+		ipsecahEncoder.Int32(fieldReserved, a.Reserved),
+		ipsecahEncoder.Int32(fieldSPI, a.SPI),
+		ipsecahEncoder.Int32(fieldSeq, a.Seq),
+		ipsecahEncoder.String(fieldSrcIP, a.SrcIP),
+		ipsecahEncoder.String(fieldDstIP, a.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *IPSecAH) Analyze() float64 {
+	return 0
 }

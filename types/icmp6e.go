@@ -14,18 +14,24 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldIdentifier = "Identifier"
+	fieldSeqNumber  = "SeqNumber"
+)
+
 var fieldsICMPv6Echo = []string{
-	"Timestamp",
-	"Identifier", //  int32
-	"SeqNumber",  //  int32
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldIdentifier, //  int32
+	fieldSeqNumber,  //  int32
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -84,4 +90,22 @@ func (i *ICMPv6Echo) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *ICMPv6Echo) Dst() string {
 	return i.DstIP
+}
+
+var icmp6eEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *ICMPv6Echo) Encode() []string {
+	return filter([]string{
+		icmp6eEncoder.Int64(fieldTimestamp, i.Timestamp),
+		icmp6eEncoder.Int32(fieldIdentifier, i.Identifier),
+		icmp6eEncoder.Int32(fieldSeqNumber, i.SeqNumber),
+		icmp6eEncoder.String(fieldSrcIP, i.SrcIP),
+		icmp6eEncoder.String(fieldDstIP, i.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *ICMPv6Echo) Analyze() float64 {
+	return 0
 }

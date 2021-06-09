@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
@@ -22,10 +23,10 @@ import (
 )
 
 var fieldsICMPv6RouterSolicitation = []string{
-	"Timestamp",
-	"Options",
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldOptions,
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -99,4 +100,25 @@ func (i *ICMPv6RouterSolicitation) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *ICMPv6RouterSolicitation) Dst() string {
 	return i.DstIP
+}
+
+var icmp6rsEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *ICMPv6RouterSolicitation) Encode() []string {
+	var opts []string
+	for _, o := range i.Options {
+		opts = append(opts, o.toString())
+	}
+	return filter([]string{
+		icmp6rsEncoder.Int64(fieldTimestamp, i.Timestamp),
+		icmp6rsEncoder.String(fieldOptions, strings.Join(opts, "")),
+		icmp6rsEncoder.String(fieldSrcIP, i.SrcIP),
+		icmp6rsEncoder.String(fieldDstIP, i.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *ICMPv6RouterSolicitation) Analyze() float64 {
+	return 0
 }

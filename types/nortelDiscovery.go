@@ -15,20 +15,29 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldIPAddress = "IPAddress"
+	fieldSegmentID = "SegmentID"
+	fieldChassis   = "Chassis"
+	fieldBackplane = "Backplane"
+	fieldNumLinks  = "NumLinks"
+)
+
 var fieldsNortelDiscovery = []string{
-	"Timestamp",
-	"IPAddress", // string
-	"SegmentID", // []byte
-	"Chassis",   // int32
-	"Backplane", // int32
-	"State",     // int32
-	"NumLinks",  // int32
+	fieldTimestamp,
+	fieldIPAddress, // string
+	fieldSegmentID, // []byte
+	fieldChassis,   // int32
+	fieldBackplane, // int32
+	fieldState,     // int32
+	fieldNumLinks,  // int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -87,4 +96,24 @@ func (a *NortelDiscovery) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *NortelDiscovery) Dst() string {
 	return ""
+}
+
+var nortelDiscoveryEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *NortelDiscovery) Encode() []string {
+	return filter([]string{
+		nortelDiscoveryEncoder.Int64(fieldTimestamp, a.Timestamp),
+		nortelDiscoveryEncoder.String(fieldIPAddress, a.IPAddress),                     // string
+		nortelDiscoveryEncoder.String(fieldSegmentID, hex.EncodeToString(a.SegmentID)), // []byte
+		nortelDiscoveryEncoder.Int32(fieldChassis, a.Chassis),                          // int32
+		nortelDiscoveryEncoder.Int32(fieldBackplane, a.Backplane),                      // int32
+		nortelDiscoveryEncoder.Int32(fieldState, a.State),                              // int32
+		nortelDiscoveryEncoder.Int32(fieldNumLinks, a.NumLinks),                        // int32
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *NortelDiscovery) Analyze() float64 {
+	return 0
 }

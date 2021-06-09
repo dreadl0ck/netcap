@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,32 +23,47 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldSeqNum     = "SeqNum"
+	fieldAckNum     = "AckNum"
+	fieldDataOffset = "DataOffset"
+	fieldFIN        = "FIN"
+	fieldSYN        = "SYN"
+	fieldRST        = "RST"
+	fieldPSH        = "PSH"
+	fieldACK        = "ACK"
+	fieldURG        = "URG"
+	fieldECE        = "ECE"
+	fieldCWR        = "CWR"
+	fieldNS         = "NS"
+	fieldWindow     = "Window"
+	fieldUrgent     = "Urgent"
+)
+
 var fieldsTCP = []string{
-	"Timestamp",
-	"SrcPort",
-	"DstPort",
-	"SeqNum",
-	"AckNum",
-	"DataOffset",
-	"FIN",
-	"SYN",
-	"RST",
-	"PSH",
-	"ACK",
-	"URG",
-	"ECE",
-	"CWR",
-	"NS",
-	"Window",
-	"Checksum",
-	"Urgent",
-	"Padding",
-	"Options",
-	"PayloadEntropy",
-	"PayloadSize",
-	"Payload",
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldSrcPort,
+	fieldDstPort,
+	fieldSeqNum,
+	fieldAckNum,
+	fieldDataOffset,
+	fieldFIN,
+	fieldSYN,
+	fieldRST,
+	fieldPSH,
+	fieldACK,
+	fieldURG,
+	fieldECE,
+	fieldCWR,
+	fieldNS,
+	fieldWindow,
+	fieldChecksum,
+	fieldUrgent,
+	fieldOptions,
+	fieldPayloadEntropy,
+	fieldPayloadSize,
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -76,11 +92,9 @@ func (t *TCP) CSVRecord() []string {
 		formatInt32(t.Window),                             // int32
 		formatInt32(t.Checksum),                           // int32
 		formatInt32(t.Urgent),                             // int32
-		string(t.Padding),                                 // []byte
 		t.getOptionString(),                               // []*TCPOption
 		strconv.FormatFloat(t.PayloadEntropy, 'f', 8, 64), // float64
 		formatInt32(t.PayloadSize),                        // int32
-		hex.EncodeToString(t.Payload),
 		t.SrcIP,
 		t.DstIP,
 	})
@@ -206,4 +220,40 @@ func (t *TCP) Src() string {
 // Dst returns the destination address of the audit record.
 func (t *TCP) Dst() string {
 	return t.DstIP
+}
+
+var tcpEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (t *TCP) Encode() []string {
+	return filter([]string{
+		tcpEncoder.Int64(fieldTimestamp, t.Timestamp),             // string
+		tcpEncoder.Int32(fieldSrcPort, t.SrcPort),                 // int32
+		tcpEncoder.Int32(fieldDstPort, t.DstPort),                 // int32
+		tcpEncoder.Uint32(fieldSeqNum, t.SeqNum),                  // uint32
+		tcpEncoder.Uint32(fieldAckNum, t.AckNum),                  // uint32
+		tcpEncoder.Int32(fieldDataOffset, t.DataOffset),           // int32
+		tcpEncoder.Bool(t.FIN),                                    // bool
+		tcpEncoder.Bool(t.SYN),                                    // bool
+		tcpEncoder.Bool(t.RST),                                    // bool
+		tcpEncoder.Bool(t.PSH),                                    // bool
+		tcpEncoder.Bool(t.ACK),                                    // bool
+		tcpEncoder.Bool(t.URG),                                    // bool
+		tcpEncoder.Bool(t.ECE),                                    // bool
+		tcpEncoder.Bool(t.CWR),                                    // bool
+		tcpEncoder.Bool(t.NS),                                     // bool
+		tcpEncoder.Int32(fieldWindow, t.Window),                   // int32
+		tcpEncoder.Int32(fieldChecksum, t.Checksum),               // int32
+		tcpEncoder.Int32(fieldUrgent, t.Urgent),                   // int32
+		tcpEncoder.String(fieldOptions, t.getOptionString()),      // []*TCPOption
+		tcpEncoder.Float64(fieldPayloadEntropy, t.PayloadEntropy), // float64
+		tcpEncoder.Int32(fieldPayloadSize, t.PayloadSize),         // int32
+		tcpEncoder.String(fieldSrcIP, t.SrcIP),
+		tcpEncoder.String(fieldDstIP, t.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (t *TCP) Analyze() float64 {
+	return 0
 }

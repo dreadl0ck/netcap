@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,19 +23,27 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldProtocolID   = "ProtocolID"
+	fieldUnitID       = "UnitID"
+	fieldPayload      = "Payload"
+	fieldException    = "Exception"
+	fieldFunctionCode = "FunctionCode"
+)
+
 var fieldsModbus = []string{
-	"Timestamp",
-	"TransactionID", // int32
-	"ProtocolID",    // int32
-	"Length",        // int32
-	"UnitID",        // int32
-	"Payload",       // []byte
-	"Exception",     // bool
-	"FunctionCode",  // int32
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldTransactionID, // int32
+	fieldProtocolID,    // int32
+	fieldLength,        // int32
+	fieldUnitID,        // int32
+	//fieldPayload,       // []byte
+	fieldException,    // bool
+	fieldFunctionCode, // int32
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -102,4 +111,29 @@ func (a *Modbus) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *Modbus) Dst() string {
 	return a.DstIP
+}
+
+var modbusEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *Modbus) Encode() []string {
+	return filter([]string{
+		modbusEncoder.Int64(fieldTimestamp, a.Timestamp),
+		modbusEncoder.Int32(fieldTransactionID, a.TransactionID), // int32
+		modbusEncoder.Int32(fieldProtocolID, a.ProtocolID),       // int32
+		modbusEncoder.Int32(fieldLength, a.Length),               // int32
+		modbusEncoder.Int32(fieldUnitID, a.UnitID),               // int32
+		//hex.EncodeToString(a.Payload),
+		modbusEncoder.Bool(a.Exception),
+		modbusEncoder.Int32(fieldFunctionCode, a.FunctionCode),
+		modbusEncoder.String(fieldSrcIP, a.SrcIP),
+		modbusEncoder.String(fieldDstIP, a.DstIP),
+		modbusEncoder.Int32(fieldSrcPort, a.SrcPort),
+		modbusEncoder.Int32(fieldDstPort, a.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *Modbus) Analyze() float64 {
+	return 0
 }

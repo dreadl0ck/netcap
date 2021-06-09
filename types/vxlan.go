@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,14 +22,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldValidIDFlag = "ValidIDFlag"
+	fieldGBPExtension = "GBPExtension"
+	fieldGBPDontLearn = "GBPDontLearn"
+	fieldGBPApplied = "GBPApplied"
+	fieldGBPGroupPolicyID = "GBPGroupPolicyID"
+)
+
 var fieldsVXLAN = []string{
-	"Timestamp",
-	"ValidIDFlag",      //  bool
-	"VNI",              //  uint32
-	"GBPExtension",     //  bool
-	"GBPDontLearn",     //  bool
-	"GBPApplied",       //  bool
-	"GBPGroupPolicyID", //  int32
+	fieldTimestamp,
+	fieldValidIDFlag,      //  bool
+	fieldVNI,              //  uint32
+	fieldGBPExtension,     //  bool
+	fieldGBPDontLearn,     //  bool
+	fieldGBPApplied,       //  bool
+	fieldGBPGroupPolicyID, //  int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -88,3 +97,24 @@ func (a *VXLAN) Src() string {
 func (a *VXLAN) Dst() string {
 	return ""
 }
+
+var vxlanEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *VXLAN) Encode() []string {
+	return filter([]string{
+		vxlanEncoder.Int64(fieldTimestamp, a.Timestamp),
+		vxlanEncoder.Bool(a.ValidIDFlag),  //  bool
+		vxlanEncoder.Uint32(fieldVNI, a.VNI),                //  uint32
+		vxlanEncoder.Bool(a.GBPExtension), //  bool
+		vxlanEncoder.Bool(a.GBPDontLearn), //  bool
+		vxlanEncoder.Bool(a.GBPApplied),   //  bool
+		vxlanEncoder.Int32(fieldGBPGroupPolicyID, a.GBPGroupPolicyID),    //  int32
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *VXLAN) Analyze() float64 {
+	return 0
+}
+

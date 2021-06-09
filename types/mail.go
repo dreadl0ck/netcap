@@ -14,30 +14,49 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"time"
 )
 
+const (
+	fieldReturnPath      = "ReturnPath"
+	fieldFrom            = "From"
+	fieldTo              = "To"
+	fieldCC              = "CC"
+	fieldSubject         = "Subject"
+	fieldDate            = "Date"
+	fieldMessageID       = "MessageID"
+	fieldReferences      = "References"
+	fieldInReplyTo       = "InReplyTo"
+	fieldContentLanguage = "ContentLanguage"
+	fieldHasAttachments  = "HasAttachments"
+	fieldXOriginatingIP  = "XOriginatingIP"
+	fieldEnvelopeTo      = "EnvelopeTo"
+	fieldBody            = "Body"
+	fieldServerIP        = "ServerIP"
+)
+
 var fieldsMail = []string{
-	"Timestamp",       // int64
-	"ReturnPath",      // string
-	"From",            // string
-	"To",              // string
-	"CC",              // string
-	"Subject",         // string
-	"Date",            // string
-	"MessageID",       // string
-	"References",      // string
-	"InReplyTo",       // string
-	"ContentLanguage", // string
-	"HasAttachments",  // bool
-	"XOriginatingIP",  // string
-	"ContentType",     // string
-	"EnvelopeTo",      // string
-	//"Body",            // []*MailPart
-	"ClientIP", // string
-	"ServerIP", // string
-	"ID",       // string
+	fieldTimestamp,       // int64
+	fieldReturnPath,      // string
+	fieldFrom,            // string
+	fieldTo,              // string
+	fieldCC,              // string
+	fieldSubject,         // string
+	fieldDate,            // string
+	fieldMessageID,       // string
+	fieldReferences,      // string
+	fieldInReplyTo,       // string
+	fieldContentLanguage, // string
+	fieldHasAttachments,  // bool
+	fieldXOriginatingIP,  // string
+	fieldContentType,     // string
+	fieldEnvelopeTo,      // string
+	//fieldBody,            // []*MailPart
+	fieldClientIP, // string
+	fieldServerIP, // string
+	fieldID,       // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -64,10 +83,9 @@ func (d *Mail) CSVRecord() []string {
 		d.ContentType,                        // string
 		d.EnvelopeTo,                         // string
 		// d.Body,            // []*MailPart
-		formatInt64(d.Timestamp), // int64
-		d.ClientIP,               // string
-		d.ServerIP,               // string
-		d.ID,                     // string
+		d.ClientIP, // string
+		d.ServerIP, // string
+		d.ID,       // string
 	})
 }
 
@@ -98,4 +116,36 @@ func (d *Mail) Src() string {
 // Dst returns the destination address of the audit record.
 func (d *Mail) Dst() string {
 	return d.ServerIP
+}
+
+var mailEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (d *Mail) Encode() []string {
+	return filter([]string{
+		mailEncoder.Int64(fieldTimestamp, d.Timestamp),
+		mailEncoder.String(fieldReturnPath, d.ReturnPath),           // string
+		mailEncoder.String(fieldFrom, d.From),                       // string
+		mailEncoder.String(fieldTo, d.To),                           // string
+		mailEncoder.String(fieldCC, d.CC),                           // string
+		mailEncoder.String(fieldSubject, d.Subject),                 // string
+		mailEncoder.String(fieldDate, d.Date),                       // string
+		mailEncoder.String(fieldMessageID, d.MessageID),             // string
+		mailEncoder.String(fieldReferences, d.References),           // string
+		mailEncoder.String(fieldInReplyTo, d.InReplyTo),             // string
+		mailEncoder.String(fieldContentLanguage, d.ContentLanguage), // string
+		mailEncoder.Bool(d.HasAttachments),                          // bool
+		mailEncoder.String(fieldXOriginatingIP, d.XOriginatingIP),   // string
+		mailEncoder.String(fieldContentType, d.ContentType),         // string
+		mailEncoder.String(fieldEnvelopeTo, d.EnvelopeTo),           // string
+		// d.Body,            // []*MailPart
+		mailEncoder.String(fieldClientIP, d.ClientIP), // string
+		mailEncoder.String(fieldServerIP, d.ServerIP), // string
+		mailEncoder.String(fieldID, d.ID),             // string
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (d *Mail) Analyze() float64 {
+	return 0
 }

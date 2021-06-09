@@ -15,25 +15,33 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldCommand         = "Command"
+	fieldSessionHandle   = "SessionHandle"
+	fieldSenderContext   = "SenderContext"
+	fieldCommandSpecific = "CommandSpecific"
+)
+
 var fieldsENIP = []string{
-	"Timestamp",
-	"Command",         // uint32
-	"Length",          // uint32
-	"SessionHandle",   // uint32
-	"Status",          // uint32
-	"SenderContext",   // []byte
-	"Options",         // uint32
-	"CommandSpecific", // *ENIPCommandSpecificData
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldCommand,       // uint32
+	fieldLength,        // uint32
+	fieldSessionHandle, // uint32
+	fieldStatus,        // uint32
+	fieldSenderContext, // []byte
+	fieldOptions,       // uint32
+	//fieldCommandSpecific, // *ENIPCommandSpecificData
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -51,7 +59,8 @@ func (en *ENIP) CSVRecord() []string {
 		formatUint32(en.Status),              // uint32
 		hex.EncodeToString(en.SenderContext), // []byte
 		formatUint32(en.Options),             // uint32
-		en.CommandSpecific.String(),          // *ENIPCommandSpecificData
+		// TODO: flatten
+		//en.CommandSpecific.String(),          // *ENIPCommandSpecificData
 		en.SrcIP,
 		en.DstIP,
 		formatInt32(en.SrcPort),
@@ -101,4 +110,30 @@ func (en *ENIP) Src() string {
 // Dst returns the destination address of the audit record.
 func (en *ENIP) Dst() string {
 	return en.DstIP
+}
+
+var enipEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (en *ENIP) Encode() []string {
+	return filter([]string{
+		enipEncoder.Int64(fieldTimestamp, en.Timestamp),
+		enipEncoder.Uint32(fieldCommand, en.Command),                                 // uint32
+		enipEncoder.Uint32(fieldLength, en.Length),                                   // uint32
+		enipEncoder.Uint32(fieldSessionHandle, en.SessionHandle),                     // uint32
+		enipEncoder.Uint32(fieldStatus, en.Status),                                   // uint32
+		enipEncoder.String(fieldSenderContext, hex.EncodeToString(en.SenderContext)), // []byte
+		enipEncoder.Uint32(fieldOptions, en.Options),                                 // uint32
+		// TODO: flatten
+		//en.CommandSpecific.String(),          // *ENIPCommandSpecificData
+		enipEncoder.String(fieldSrcIP, en.SrcIP),
+		enipEncoder.String(fieldDstIP, en.DstIP),
+		enipEncoder.Int32(fieldSrcPort, en.SrcPort),
+		enipEncoder.Int32(fieldDstPort, en.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (en *ENIP) Analyze() float64 {
+	return 0
 }

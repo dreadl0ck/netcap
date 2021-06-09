@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,29 +23,49 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldID           = "ID"
+	fieldQR           = "QR"
+	fieldOpCode       = "OpCode"
+	fieldAA           = "AA"
+	fieldTC           = "TC"
+	fieldRD           = "RD"
+	fieldRA           = "RA"
+	fieldZ            = "Z"
+	fieldResponseCode = "ResponseCode"
+	fieldQDCount      = "QDCount"
+	fieldANCount      = "ANCount"
+	fieldNSCount      = "NSCount"
+	fieldARCount      = "ARCount"
+	fieldQuestions    = "Questions"
+	fieldAnswers      = "Answers"
+	fieldAuthorities  = "Authorities"
+	fieldAdditionals  = "Additionals"
+)
+
 var fieldsDNS = []string{
-	"Timestamp",
-	"ID",           // int32
-	"QR",           // bool
-	"OpCode",       // int32
-	"AA",           // bool
-	"TC",           // bool
-	"RD",           // bool
-	"RA",           // bool
-	"Z",            // int32
-	"ResponseCode", // int32
-	"QDCount",      // int32
-	"ANCount",      // int32
-	"NSCount",      // int32
-	"ARCount",      // int32
-	"Questions",    // []*DNSQuestion
-	"Answers",      // []*DNSResourceRecord
-	"Authorities",  // []*DNSResourceRecord
-	"Additionals",  // []*DNSResourceRecord
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldID,           // int32
+	fieldQR,           // bool
+	fieldOpCode,       // int32
+	fieldAA,           // bool
+	fieldTC,           // bool
+	fieldRD,           // bool
+	fieldRA,           // bool
+	fieldZ,            // int32
+	fieldResponseCode, // int32
+	fieldQDCount,      // int32
+	fieldANCount,      // int32
+	fieldNSCount,      // int32
+	fieldARCount,      // int32
+	fieldQuestions,    // []*DNSQuestion
+	fieldAnswers,      // []*DNSResourceRecord
+	fieldAuthorities,  // []*DNSResourceRecord
+	fieldAdditionals,  // []*DNSResourceRecord
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -235,4 +256,59 @@ func (d *DNS) Src() string {
 // Dst returns the destination address of the audit record.
 func (d *DNS) Dst() string {
 	return d.DstIP
+}
+
+var dnsEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (d *DNS) Encode() []string {
+
+	var (
+		questions   = make([]string, len(d.Questions))
+		answers     = make([]string, len(d.Answers))
+		authorities = make([]string, len(d.Authorities))
+		additionals = make([]string, len(d.Additionals))
+	)
+	for _, q := range d.Questions {
+		questions = append(questions, q.toString())
+	}
+	for _, q := range d.Answers {
+		answers = append(questions, q.toString())
+	}
+	for _, q := range d.Authorities {
+		authorities = append(questions, q.toString())
+	}
+	for _, q := range d.Additionals {
+		additionals = append(questions, q.toString())
+	}
+
+	return filter([]string{
+		dnsEncoder.Int64(fieldTimestamp, d.Timestamp),
+		dnsEncoder.Int32(fieldID, d.ID),                                    // int32
+		dnsEncoder.Bool(d.QR),                                              // bool
+		dnsEncoder.Int32(fieldOpCode, d.OpCode),                            // int32
+		dnsEncoder.Bool(d.AA),                                              // bool
+		dnsEncoder.Bool(d.TC),                                              // bool
+		dnsEncoder.Bool(d.RD),                                              // bool
+		dnsEncoder.Bool(d.RA),                                              // bool
+		dnsEncoder.Int32(fieldZ, d.Z),                                      // int32
+		dnsEncoder.Int32(fieldResponseCode, d.ResponseCode),                // int32
+		dnsEncoder.Int32(fieldQDCount, d.QDCount),                          // int32
+		dnsEncoder.Int32(fieldANCount, d.ANCount),                          // int32
+		dnsEncoder.Int32(fieldNSCount, d.NSCount),                          // int32
+		dnsEncoder.Int32(fieldARCount, d.ARCount),                          // int32
+		dnsEncoder.String(fieldQuestions, strings.Join(questions, "")),     // []*DNSQuestion
+		dnsEncoder.String(fieldAnswers, strings.Join(answers, "")),         // []*DNSResourceRecord
+		dnsEncoder.String(fieldAuthorities, strings.Join(authorities, "")), // []*DNSResourceRecord
+		dnsEncoder.String(fieldAdditionals, strings.Join(additionals, "")), // []*DNSResourceRecord
+		dnsEncoder.String(fieldSrcIP, d.SrcIP),
+		dnsEncoder.String(fieldDstIP, d.DstIP),
+		dnsEncoder.Int32(fieldSrcPort, d.SrcPort),
+		dnsEncoder.Int32(fieldDstPort, d.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (d *DNS) Analyze() float64 {
+	return 0
 }

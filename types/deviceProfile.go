@@ -14,18 +14,27 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"time"
 )
 
+const (
+	fieldMacAddr            = "MacAddr"
+	fieldDeviceManufacturer = "DeviceManufacturer"
+	fieldNumDeviceIPs       = "NumDeviceIPs"
+	fieldNumContacts        = "NumContacts"
+	fieldBytes              = "Bytes"
+)
+
 var fieldsDeviceProfile = []string{
-	"Timestamp",
-	"MacAddr",
-	"DeviceManufacturer",
-	"NumDeviceIPs",
-	"NumContacts",
-	"NumPackets",
-	"Bytes",
+	fieldTimestamp,
+	fieldMacAddr,
+	fieldDeviceManufacturer,
+	fieldNumDeviceIPs,
+	fieldNumContacts,
+	fieldNumPackets,
+	fieldBytes,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -73,4 +82,24 @@ func (d *DeviceProfile) Src() string {
 // Dst returns the destination address of the audit record.
 func (d *DeviceProfile) Dst() string {
 	return ""
+}
+
+var deviceProfileEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (d *DeviceProfile) Encode() []string {
+	return filter([]string{
+		deviceProfileEncoder.Int64(fieldTimestamp, d.Timestamp),
+		deviceProfileEncoder.String(fieldMacAddr, d.MacAddr),
+		deviceProfileEncoder.String(fieldDeviceManufacturer, d.DeviceManufacturer),
+		deviceProfileEncoder.Int(fieldNumDeviceIPs, len(d.DeviceIPs)),
+		deviceProfileEncoder.Int(fieldNumContacts, len(d.Contacts)),
+		deviceProfileEncoder.Int64(fieldNumPackets, d.NumPackets),
+		deviceProfileEncoder.Uint64(fieldBytes, d.Bytes),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (d *DeviceProfile) Analyze() float64 {
+	return 0
 }

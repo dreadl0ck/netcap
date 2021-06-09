@@ -14,17 +14,20 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const fieldHASSH = "HASSH"
+
 var fieldsSSH = []string{
-	"Timestamp",
-	"HASSH",
-	"Flow",
-	"Notes",
+	fieldTimestamp,
+	fieldHASSH,
+	fieldFlow,
+	fieldNotes,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -36,6 +39,9 @@ func (a *SSH) CSVHeader() []string {
 func (a *SSH) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
+		a.HASSH,
+		a.Flow,
+		a.Notes,
 	})
 }
 
@@ -53,8 +59,8 @@ func (a *SSH) JSON() (string, error) {
 }
 
 var fieldsSSHMetric = []string{
-	"HASSH",
-	"Flow",
+	fieldHASSH,
+	fieldFlow,
 }
 
 var sshMetric = prometheus.NewCounterVec(
@@ -67,8 +73,8 @@ var sshMetric = prometheus.NewCounterVec(
 
 func (a *SSH) metricValues() []string {
 	return []string{
-		"HASSH",
-		"Flow",
+		fieldHASSH,
+		fieldFlow,
 	}
 }
 
@@ -90,4 +96,21 @@ func (a *SSH) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *SSH) Dst() string {
 	return ""
+}
+
+var sshEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *SSH) Encode() []string {
+	return filter([]string{
+		sshEncoder.Int64(fieldTimestamp, a.Timestamp),
+		sshEncoder.String(fieldHASSH, a.HASSH),
+		sshEncoder.String(fieldFlow, a.Flow),
+		sshEncoder.String(fieldNotes, a.Notes),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *SSH) Analyze() float64 {
+	return 0
 }

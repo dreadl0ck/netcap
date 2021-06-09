@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,24 +23,30 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldIHL        = "IHL"        // int32
+	fieldTOS        = "TOS"        // int32
+	fieldFragOffset = "FragOffset" // int32
+	fieldPadding    = "Padding"    // []byte
+)
+
 var fieldsIPv4 = []string{
-	"Timestamp",
-	"Version",        // int32
-	"IHL",            // int32
-	"TOS",            // int32
-	"Length",         // int32
-	"Id",             // int32
-	"Flags",          // int32
-	"FragOffset",     // int32
-	"TTL",            // int32
-	"Protocol",       // int32
-	"Checksum",       // int32
-	"SrcIP",          // string
-	"DstIP",          // string
-	"Padding",        // []byte
-	"Options",        // []*IPv4Option
-	"PayloadEntropy", // float64
-	"PayloadSize",    // int32
+	fieldTimestamp,
+	fieldVersion,        // int32
+	fieldIHL,            // int32
+	fieldTOS,            // int32
+	fieldLength,         // int32
+	fieldId,             // int32
+	fieldFlags,          // int32
+	fieldFragOffset,     // int32
+	fieldTTL,            // int32
+	fieldProtocol,       // int32
+	fieldChecksum,       // int32
+	fieldSrcIP,          // string
+	fieldDstIP,          // string
+	fieldOptions,        // []*IPv4Option
+	fieldPayloadEntropy, // float64
+	fieldPayloadSize,    // int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -129,17 +136,17 @@ var (
 )
 
 var fieldsIPv4Metrics = []string{
-	"Version", // int32
-	"IHL",     // int32
-	"TOS",     // int32
-	// "Length",  // int32
-	// "Id",         // int32
-	"Flags",      // int32
-	"FragOffset", // int32
-	"TTL",        // int32
-	"Protocol",   // int32
-	"SrcIP",      // string
-	"DstIP",      // string
+	fieldVersion, // int32
+	fieldIHL,     // int32
+	fieldTOS,     // int32
+	//fieldLength,  // int32
+	//fieldId,         // int32
+	fieldFlags,      // int32
+	fieldFragOffset, // int32
+	fieldTTL,        // int32
+	fieldProtocol,   // int32
+	fieldSrcIP,      // string
+	fieldDstIP,      // string
 }
 
 func (i *IPv4) metricValues() []string {
@@ -179,4 +186,37 @@ func (i *IPv4) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *IPv4) Dst() string {
 	return i.DstIP
+}
+
+var ipv4Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *IPv4) Encode() []string {
+	var opts []string
+	for _, o := range i.Options {
+		opts = append(opts, o.toString())
+	}
+	return filter([]string{
+		ipv4Encoder.Int64(fieldTimestamp, i.Timestamp),
+		ipv4Encoder.Int32(fieldVersion, i.Version),                 // int32
+		ipv4Encoder.Int32(fieldIHL, i.IHL),                         // int32
+		ipv4Encoder.Int32(fieldTOS, i.TOS),                         // int32
+		ipv4Encoder.Int32(fieldLength, i.Length),                   // int32
+		ipv4Encoder.Int32(fieldId, i.Id),                           // int32
+		ipv4Encoder.Int32(fieldFlags, i.Flags),                     // int32
+		ipv4Encoder.Int32(fieldFragOffset, i.FragOffset),           // int32
+		ipv4Encoder.Int32(fieldTTL, i.TTL),                         // int32
+		ipv4Encoder.Int32(fieldProtocol, i.Protocol),               // int32
+		ipv4Encoder.Int32(fieldChecksum, i.Checksum),               // int32
+		ipv4Encoder.String(fieldSrcIP, i.SrcIP),                    // string
+		ipv4Encoder.String(fieldDstIP, i.DstIP),                    // string
+		ipv4Encoder.String(fieldOptions, strings.Join(opts, "")),   // []*IPv4Option
+		ipv4Encoder.Float64(fieldPayloadEntropy, i.PayloadEntropy), // float64
+		ipv4Encoder.Int32(fieldPayloadSize, i.PayloadSize),         // int32
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *IPv4) Analyze() float64 {
+	return 0
 }

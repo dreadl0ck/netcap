@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,13 +22,21 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldDSAP    = "DSAP"
+	fieldIG      = "IG"
+	fieldSSAP    = "SSAP"
+	fieldCR      = "CR"
+	fieldControl = "Control"
+)
+
 var fieldsLLC = []string{
-	"Timestamp", // string
-	"DSAP",      // int32
-	"IG",        // bool
-	"SSAP",      // int32
-	"CR",        // bool
-	"Control",   // int32
+	fieldTimestamp, // string
+	fieldDSAP,      // int32
+	fieldIG,        // bool
+	fieldSSAP,      // int32
+	fieldCR,        // bool
+	fieldControl,   // int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -85,4 +94,23 @@ func (l *LLC) Src() string {
 // Dst returns the destination address of the audit record.
 func (l *LLC) Dst() string {
 	return ""
+}
+
+var llcEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (l *LLC) Encode() []string {
+	return filter([]string{
+		ethernetEncoder.Int64(fieldTimestamp, l.Timestamp),
+		llcEncoder.Int32(fieldDSAP, l.DSAP),       // int32
+		llcEncoder.Bool(l.IG),                     // bool
+		llcEncoder.Int32(fieldSSAP, l.SSAP),       // int32
+		llcEncoder.Bool(l.CR),                     // bool
+		llcEncoder.Int32(fieldControl, l.Control), // int32
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (l *LLC) Analyze() float64 {
+	return 0
 }

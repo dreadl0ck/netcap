@@ -14,20 +14,27 @@
 package types
 
 import (
-	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldCode     = "Code"
+	fieldId       = "Id"
+	fieldLength   = "Length"
+	fieldTypeData = "TypeData"
+)
+
 var fieldsEAP = []string{
-	"Timestamp",
-	"Code",     // int32
-	"Id",       // int32
-	"Length",   // int32
-	"Type",     // int32
-	"TypeData", // []byte
+	fieldTimestamp,
+	fieldCode,   // int32
+	fieldId,     // int32
+	fieldLength, // int32
+	fieldType,   // int32
+	//fieldTypeData, // []byte
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -39,11 +46,11 @@ func (a *EAP) CSVHeader() []string {
 func (a *EAP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		formatInt32(a.Code),            // int32
-		formatInt32(a.Id),              // int32
-		formatInt32(a.Length),          // int32
-		formatInt32(a.Type),            // int32
-		hex.EncodeToString(a.TypeData), // []byte
+		formatInt32(a.Code),   // int32
+		formatInt32(a.Id),     // int32
+		formatInt32(a.Length), // int32
+		formatInt32(a.Type),   // int32
+		//hex.EncodeToString(a.TypeData), // []byte
 	})
 }
 
@@ -85,4 +92,23 @@ func (a *EAP) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *EAP) Dst() string {
 	return ""
+}
+
+var eapEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *EAP) Encode() []string {
+	return filter([]string{
+		eapEncoder.Int64(fieldTimestamp, a.Timestamp),
+		eapEncoder.Int32(fieldCode, a.Code),     // int32
+		eapEncoder.Int32(fieldId, a.Id),         // int32
+		eapEncoder.Int32(fieldLength, a.Length), // int32
+		eapEncoder.Int32(fieldType, a.Type),     // int32
+		//hex.EncodeToString(a.TypeData), // []byte
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *EAP) Analyze() float64 {
+	return 0
 }
