@@ -25,12 +25,16 @@ type WriterConfig struct {
 	// Writer Types:
 	// Comma Separated Values writer
 	CSV bool
+
 	// Protobuf writer
 	Proto bool
+
 	// JSON writer
 	JSON bool
+
 	// Channel writer
 	Chan bool
+
 	// ChanSize is the size of chunks sent through the channel
 	ChanSize int
 
@@ -60,4 +64,7 @@ type WriterConfig struct {
 	// compression
 	CompressionBlockSize int
 	CompressionLevel     int
+
+	// Encode data on the fly
+	Encode bool
 }
