@@ -143,6 +143,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		go func(dec core.StreamDecoderAPI) {
 			w := netio.NewAuditRecordWriter(&netio.WriterConfig{
 				CSV:     c.CSV,
+				Encode:  c.Encode,
 				Proto:   c.Proto,
 				JSON:    c.JSON,
 				Name:    dec.GetName(),
