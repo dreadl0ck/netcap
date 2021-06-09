@@ -74,9 +74,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 				panic(errGzipWriter)
 			}
 
-			w.csvWriter = newCSVProtoWriter(w.gWriter)
+			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode)
 		} else {
-			w.csvWriter = newCSVProtoWriter(w.bWriter)
+			w.csvWriter = newCSVProtoWriter(w.bWriter, wc.Encode)
 		}
 	} else {
 		if wc.Compress {
@@ -85,9 +85,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
-			w.csvWriter = newCSVProtoWriter(w.gWriter)
+			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode)
 		} else {
-			w.csvWriter = newCSVProtoWriter(w.file)
+			w.csvWriter = newCSVProtoWriter(w.file, wc.Encode)
 		}
 	}
 
@@ -142,13 +142,15 @@ func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
 // csvProtoWriter implements writing audit records to disk in the CSV format.
 type csvProtoWriter struct {
 	sync.Mutex
-	w io.Writer
+	w      io.Writer
+	encode bool
 }
 
 // newCSVProtoWriter returns a new CSV writer instance.
-func newCSVProtoWriter(w io.Writer) *csvProtoWriter {
+func newCSVProtoWriter(w io.Writer, encode bool) *csvProtoWriter {
 	return &csvProtoWriter{
-		w: w,
+		w:      w,
+		encode: encode,
 	}
 }
 
@@ -176,6 +178,9 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 	defer w.Unlock()
 
 	if csv, ok := msg.(types.AuditRecord); ok {
+		if w.encode {
+			return w.w.Write([]byte(strings.Join(csv.Encode(), ",") + "\n"))
+		}
 		return w.w.Write([]byte(strings.Join(csv.CSVRecord(), ",") + "\n"))
 	}
 
