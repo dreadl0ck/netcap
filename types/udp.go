@@ -14,7 +14,7 @@
 package types
 
 import (
-	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -23,16 +23,16 @@ import (
 )
 
 var fieldsUDP = []string{
-	"Timestamp",
-	"SrcPort",
-	"DstPort",
-	"Length", // redundant: PayloadSize + UDP Header Size = Length, remove field from audit record
-	"Checksum",
-	"PayloadEntropy",
-	"PayloadSize",
-	"Payload",
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldSrcPort,
+	fieldDstPort,
+	fieldLength, // redundant: PayloadSize + UDP Header Size = Length, remove field from audit record
+	fieldChecksum,
+	fieldPayloadEntropy,
+	fieldPayloadSize,
+	//fieldPayload,
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -50,7 +50,6 @@ func (u *UDP) CSVRecord() []string {
 		formatInt32(u.Checksum),                           // int32
 		strconv.FormatFloat(u.PayloadEntropy, 'f', 8, 64), // float64
 		formatInt32(u.PayloadSize),                        // int32
-		hex.EncodeToString(u.Payload),
 		u.SrcIP,
 		u.DstIP,
 	})
@@ -98,8 +97,8 @@ var (
 )
 
 var fieldsUDPMetrics = []string{
-	"SrcPort",
-	"DstPort",
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 func (u *UDP) metricValues() []string {
@@ -130,4 +129,26 @@ func (u *UDP) Src() string {
 // Dst returns the destination address of the audit record.
 func (u *UDP) Dst() string {
 	return u.DstIP
+}
+
+var udpEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (u *UDP) Encode() []string {
+	return filter([]string{
+		udpEncoder.Int64(fieldTimestamp, u.Timestamp),             // int64
+		udpEncoder.Int32(fieldSrcPort, u.SrcPort),                 // int32
+		udpEncoder.Int32(fieldDstPort, u.DstPort),                 // int32
+		udpEncoder.Int32(fieldLength, u.Length),                   // int32
+		udpEncoder.Int32(fieldChecksum, u.Checksum),               // int32
+		udpEncoder.Float64(fieldPayloadEntropy, u.PayloadEntropy), // float64
+		udpEncoder.Int32(fieldPayloadSize, u.PayloadSize),         // int32
+		udpEncoder.String(fieldSrcIP, u.SrcIP),
+		udpEncoder.String(fieldDstIP, u.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (u *UDP) Analyze() float64 {
+	return 0
 }

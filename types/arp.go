@@ -14,24 +14,36 @@
 package types
 
 import (
-	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldAddrType            = "AddrType"
+	fieldProtocol            = "Protocol"
+	fieldHwAddressSize       = "HwAddressSize"
+	fieldProtocolAddressSize = "ProtocolAddressSize"
+	fieldOperation           = "Operation"
+	fieldSrcHwAddress        = "SrcHwAddress"
+	fieldSrcProtocolAddress  = "SrcProtocolAddress"
+	fieldDstHwAddress        = "DstHwAddress"
+	fieldDstProtocolAddress  = "DstProtocolAddress"
+)
+
 var fieldsARP = []string{
-	"Timestamp",
-	"AddrType",        // int32
-	"Protocol",        // int32
-	"HwAddressSize",   // int32
-	"ProtAddressSize", // int32
-	"Operation",       // int32
-	"SrcHwAddress",    // []byte
-	"SrcProtAddress",  // []byte
-	"DstHwAddress",    // []byte
-	"DstProtAddress",  // []byte
+	fieldTimestamp,
+	fieldAddrType,            // int32
+	fieldProtocol,            // int32
+	fieldHwAddressSize,       // int32
+	fieldProtocolAddressSize, // int32
+	fieldOperation,           // int32
+	fieldSrcHwAddress,        // []byte
+	fieldSrcProtocolAddress,  // []byte
+	fieldDstHwAddress,        // []byte
+	fieldDstProtocolAddress,  // []byte
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -43,15 +55,15 @@ func (a *ARP) CSVHeader() []string {
 func (a *ARP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		formatInt32(a.AddrType),              // int32
-		formatInt32(a.Protocol),              // int32
-		formatInt32(a.HwAddressSize),         // int32
-		formatInt32(a.ProtAddressSize),       // int32
-		formatInt32(a.Operation),             // int32
-		hex.EncodeToString(a.SrcHwAddress),   // []byte
-		hex.EncodeToString(a.SrcProtAddress), // []byte
-		hex.EncodeToString(a.DstHwAddress),   // []byte
-		hex.EncodeToString(a.DstProtAddress), // []byte
+		formatInt32(a.AddrType),            // int32
+		formatInt32(a.Protocol),            // int32
+		formatInt32(a.HwAddressSize),       // int32
+		formatInt32(a.ProtocolAddressSize), // int32
+		formatInt32(a.Operation),           // int32
+		a.SrcHwAddress,
+		a.SrcProtocolAddress,
+		a.DstHwAddress,
+		a.DstProtocolAddress,
 	})
 }
 
@@ -94,4 +106,27 @@ func (a *ARP) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *ARP) Dst() string {
 	return ""
+}
+
+var arpEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (arp *ARP) Encode() []string {
+	return filter([]string{
+		arpEncoder.Int64(fieldTimestamp, arp.Timestamp),                     // int64
+		arpEncoder.Int32(fieldAddrType, arp.AddrType),                       // int32
+		arpEncoder.Int32(fieldProtocol, arp.Protocol),                       // int32
+		arpEncoder.Int32(fieldHwAddressSize, arp.HwAddressSize),             // int32
+		arpEncoder.Int32(fieldProtocolAddressSize, arp.ProtocolAddressSize), // int32
+		arpEncoder.Int32(fieldOperation, arp.Operation),                     // int32
+		arpEncoder.String(fieldSrcHwAddress, arp.SrcHwAddress),              // string
+		arpEncoder.String(fieldSrcProtocolAddress, arp.SrcProtocolAddress),  // string
+		arpEncoder.String(fieldDstHwAddress, arp.DstHwAddress),              // string
+		arpEncoder.String(fieldDstProtocolAddress, arp.DstProtocolAddress),  // string
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (arp *ARP) Analyze() float64 {
+	return 0
 }

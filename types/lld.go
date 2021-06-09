@@ -15,18 +15,21 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const fieldChassisID = "ChassisID"
+
 var fieldsLLD = []string{
-	"Timestamp",
-	"ChassisID", // *LLDPChassisID
-	"PortID",    // *LLDPPortID
-	"TTL",       // int32
-	"Values",    // []*LinkLayerDiscoveryValue
+	fieldTimestamp,
+	fieldChassisID, // *LLDPChassisID
+	fieldPortID,    // *LLDPPortID
+	fieldTTL,       // int32
+	fieldValues,    // []*LinkLayerDiscoveryValue
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -95,4 +98,26 @@ func (l *LinkLayerDiscovery) Src() string {
 // Dst returns the destination address of the audit record.
 func (l *LinkLayerDiscovery) Dst() string {
 	return ""
+}
+
+var lldEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (l *LinkLayerDiscovery) Encode() []string {
+	values := make([]string, len(l.Values))
+	for i, v := range l.Values {
+		values[i] = v.toString()
+	}
+	return filter([]string{
+		lldEncoder.Int64(fieldTimestamp, l.Timestamp),
+		lldEncoder.String(fieldChassisID, l.ChassisID.toString()), // *LLDPChassisID
+		lldEncoder.String(fieldPortID, l.PortID.toString()),       // *LLDPPortID
+		lldEncoder.Int32(fieldTTL, l.TTL),                         // int32
+		lldEncoder.String(fieldValues, join(values...)),           // []*LinkLayerDiscoveryValue
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (l *LinkLayerDiscovery) Analyze() float64 {
+	return 0
 }

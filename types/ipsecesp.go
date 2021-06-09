@@ -14,19 +14,22 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const fieldLenEncrypted = "Encrypted"
+
 var fieldsIPSecESP = []string{
-	"Timestamp",
-	"SPI",
-	"Seq",
-	"LenEncrypted",
-	"SrcIP", // string
-	"DstIP", // string
+	fieldTimestamp,
+	fieldSPI,
+	fieldSeq,
+	fieldLenEncrypted,
+	fieldSrcIP, // string
+	fieldDstIP, // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -86,4 +89,23 @@ func (a *IPSecESP) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *IPSecESP) Dst() string {
 	return a.DstIP
+}
+
+var ipsecespEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *IPSecESP) Encode() []string {
+	return filter([]string{
+		ipsecespEncoder.Int64(fieldTimestamp, a.Timestamp),
+		ipsecespEncoder.Int32(fieldSPI, a.SPI),
+		ipsecespEncoder.Int32(fieldSeq, a.Seq),
+		ipsecespEncoder.Int32(fieldLenEncrypted, a.LenEncrypted),
+		ipsecespEncoder.String(fieldSrcIP, a.SrcIP),
+		ipsecespEncoder.String(fieldDstIP, a.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *IPSecESP) Analyze() float64 {
+	return 0
 }

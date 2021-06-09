@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,19 +22,26 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldTrafficClass = "TrafficClass"
+	fieldFlowLabel    = "FlowLabel"
+	fieldNextHeader   = "NextHeader"
+	fieldHopByHop     = "HopByHop"
+)
+
 var fieldsIPv6 = []string{
-	"Timestamp",
-	"Version",        // int32
-	"TrafficClass",   // int32
-	"FlowLabel",      // uint32
-	"Length",         // int32
-	"NextHeader",     // int32
-	"HopLimit",       // int32
-	"SrcIP",          // string
-	"DstIP",          // string
-	"PayloadEntropy", // float64
-	"PayloadSize",    // int32
-	"HopByHop",       // *IPv6HopByHop
+	fieldTimestamp,
+	fieldVersion,        // int32
+	fieldTrafficClass,   // int32
+	fieldFlowLabel,      // uint32
+	fieldLength,         // int32
+	fieldNextHeader,     // int32
+	fieldHopLimit,       // int32
+	fieldSrcIP,          // string
+	fieldDstIP,          // string
+	fieldPayloadEntropy, // float64
+	fieldPayloadSize,    // int32
+	//fieldHopByHop,       // *IPv6HopByHop
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -43,11 +51,6 @@ func (i *IPv6) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (i *IPv6) CSVRecord() []string {
-	var hop string
-	if i.HopByHop != nil {
-		hop = i.HopByHop.toString()
-	}
-
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Version),      // int32
@@ -60,7 +63,7 @@ func (i *IPv6) CSVRecord() []string {
 		i.DstIP,                     // string
 		strconv.FormatFloat(i.PayloadEntropy, 'f', 6, 64), // float64
 		formatInt32(i.PayloadSize),                        // int32
-		hop,                                               // *IPv6HopByHop
+		//hop,                                               // *IPv6HopByHop
 	})
 }
 
@@ -157,4 +160,30 @@ func (i *IPv6) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *IPv6) Dst() string {
 	return i.DstIP
+}
+
+var ipv6Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *IPv6) Encode() []string {
+	return filter([]string{
+		ipv6Encoder.Int64(fieldTimestamp, i.Timestamp),
+		ipv6Encoder.Int32(fieldVersion, i.Version),                 // int32
+		ipv6Encoder.Int32(fieldTrafficClass, i.TrafficClass),       // int32
+		ipv6Encoder.Uint32(fieldFlowLabel, i.FlowLabel),            // uint32
+		ipv6Encoder.Int32(fieldLength, i.Length),                   // int32
+		ipv6Encoder.Int32(fieldNextHeader, i.NextHeader),           // int32
+		ipv6Encoder.Int32(fieldHopLimit, i.HopLimit),               // int32
+		ipv6Encoder.String(fieldSrcIP, i.SrcIP),                    // string
+		ipv6Encoder.String(fieldDstIP, i.DstIP),                    // string
+		ipv6Encoder.Float64(fieldPayloadEntropy, i.PayloadEntropy), // float64
+		ipv6Encoder.Int32(fieldPayloadSize, i.PayloadSize),         // int32
+		// TODO: flatten
+		//hop,                                               // *IPv6HopByHop
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *IPv6) Analyze() float64 {
+	return 0
 }

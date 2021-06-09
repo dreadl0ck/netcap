@@ -14,7 +14,7 @@
 package types
 
 import (
-	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,19 +22,32 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldResponse         = "Response"
+	fieldServiceID        = "ServiceID"
+	fieldClassID          = "ClassID"
+	fieldInstanceID       = "InstanceID"
+	fieldStatus           = "Status"
+	fieldAdditionalStatus = "AdditionalStatus"
+	fieldData             = "Data"
+	fieldSrcIP            = "SrcIP"
+	fieldDstIP            = "DstIP"
+	fieldSrcPort          = "SrcPort"
+	fieldDstPort          = "DstPort"
+)
+
 var fieldsCIP = []string{
-	"Timestamp",
-	"Response",         // bool
-	"ServiceID",        // int32
-	"ClassID",          // uint32
-	"InstanceID",       // uint32
-	"Status",           // int32
-	"AdditionalStatus", // []uint32
-	"Data",             // []byte
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldResponse,         // bool
+	fieldServiceID,        // int32
+	fieldClassID,          // uint32
+	fieldInstanceID,       // uint32
+	fieldStatus,           // int32
+	fieldAdditionalStatus, // []uint32
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -59,8 +72,7 @@ func (c *CIP) CSVRecord() []string {
 		formatUint32(c.ClassID),        // uint32
 		formatUint32(c.InstanceID),     // uint32
 		formatInt32(c.Status),          // int32
-		strings.Join(additional, ""),   // []uint32
-		hex.EncodeToString(c.Data),     // []byte
+		strings.Join(additional, "-"),  // []uint32
 		c.SrcIP,
 		c.DstIP,
 		formatInt32(c.SrcPort),
@@ -110,4 +122,37 @@ func (c *CIP) Src() string {
 // Dst returns the destination address of the audit record.
 func (c *CIP) Dst() string {
 	return c.DstIP
+}
+
+var cipEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (c *CIP) Encode() []string {
+
+	additional := make([]string, len(c.AdditionalStatus))
+
+	if c.Response {
+		for _, v := range c.AdditionalStatus {
+			additional = append(additional, formatUint32(v))
+		}
+	}
+
+	return filter([]string{
+		cipEncoder.Int64(fieldTimestamp, c.Timestamp),
+		cipEncoder.Bool(c.Response),                                             // bool
+		cipEncoder.Int32(fieldServiceID, c.ServiceID),                           // int32
+		cipEncoder.Uint32(fieldClassID, c.ClassID),                              // uint32
+		cipEncoder.Uint32(fieldInstanceID, c.InstanceID),                        // uint32
+		cipEncoder.Int32(fieldStatus, c.Status),                                 // int32
+		cipEncoder.String(fieldAdditionalStatus, strings.Join(additional, "-")), // []uint32
+		cipEncoder.String(fieldSrcIP, c.SrcIP),
+		cipEncoder.String(fieldDstIP, c.DstIP),
+		cipEncoder.Int32(fieldSrcPort, c.SrcPort),
+		cipEncoder.Int32(fieldDstPort, c.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (c *CIP) Analyze() float64 {
+	return 0
 }

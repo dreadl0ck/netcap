@@ -69,6 +69,17 @@ type AuditRecord interface {
 	//  - MUST be implemented on a pointer of an instance
 	//  - the passed in packet context MUST be set on the Context field of the current audit record
 	SetPacketContext(ctx *PacketContext)
+
+	// Encode this audit record into numerical data for processing by machine learning algorithms,
+	// and return the result as CSV.
+	Encode() []string
+
+	// Analyze will feed this audit record to an analyzer.
+	// This could either be a static rule based analyzer, or one that is based on a more complex Anomaly Detector (statistical or ML).
+	// For online algorithms we will likely return a score per record,
+	// for batch algorithms we need an API that can be queried in a certain interval to ask for results.
+	// TODO: define AnomalyDetector interface
+	Analyze() float64
 }
 
 // selectFields returns an array with the indices of the desired fields for selection.

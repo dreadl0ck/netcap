@@ -14,29 +14,35 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldInstance = "Instance"
+	fieldHello    = "Hello"
+)
+
 var fieldsOSPFv3 = []string{
-	"Timestamp",
-	"Version",      // int32
-	"Type",         // int32
-	"PacketLength", // int32
-	"RouterID",     // uint32
-	"AreaID",       // uint32
-	"Checksum",     // int32
-	"Instance",     // int32
-	"Reserved",     // int32
-	"Hello",        // *HelloPkg
-	"DbDesc",       // *DbDescPkg
-	"LSR",          // []*LSReq
-	"LSU",          // *LSUpdate
-	"LSAs",         // []*LSAheader
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldVersion,      // int32
+	fieldType,         // int32
+	fieldPacketLength, // int32
+	fieldRouterID,     // uint32
+	fieldAreaID,       // uint32
+	fieldChecksum,     // int32
+	fieldInstance,     // int32
+	fieldReserved,     // int32
+	fieldHello,        // *HelloPkg
+	fieldDbDesc,       // *DbDescPkg
+	fieldLSR,          // []*LSReq
+	fieldLSU,          // *LSUpdate
+	fieldLSAs,         // []*LSAheader
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -141,4 +147,45 @@ func (a *OSPFv3) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *OSPFv3) Dst() string {
 	return a.DstIP
+}
+
+var ospf3Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *OSPFv3) Encode() []string {
+
+	var (
+		lsas   []string
+		lsreqs []string
+	)
+	for _, l := range a.LSAs {
+		lsas = append(lsas, l.toString())
+	}
+	for _, l := range a.LSR {
+		lsreqs = append(lsreqs, l.toString())
+	}
+
+	return filter([]string{
+		ospf3Encoder.Int64(fieldTimestamp, a.Timestamp),
+		ospf3Encoder.Int32(fieldVersion, a.Version),           // int32
+		ospf3Encoder.Int32(fieldType, a.Type),                 // int32
+		ospf3Encoder.Int32(fieldPacketLength, a.PacketLength), // int32
+		ospf3Encoder.Uint32(fieldRouterID, a.RouterID),        // uint32
+		ospf3Encoder.Uint32(fieldAreaID, a.AreaID),            // uint32
+		ospf3Encoder.Int32(fieldChecksum, a.Checksum),         // int32
+		ospf3Encoder.Int32(fieldInstance, a.Instance),         // int32
+		ospf3Encoder.Int32(fieldReserved, a.Reserved),         // int32
+		ospf3Encoder.String(fieldHello, toString(a.Hello)),    // *HelloPkg
+		ospf3Encoder.String(fieldDbDesc, toString(a.DbDesc)),  // *DbDescPkg
+		ospf3Encoder.String(fieldLSR, join(lsreqs...)),        // []*LSReq
+		ospf3Encoder.String(fieldLSU, toString(a.LSU)),        // *LSUpdate
+		ospf3Encoder.String(fieldLSAs, join(lsas...)),         // []*LSAheader
+		ospf2Encoder.String(fieldSrcIP, a.SrcIP),
+		ospf2Encoder.String(fieldDstIP, a.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *OSPFv3) Analyze() float64 {
+	return 0
 }

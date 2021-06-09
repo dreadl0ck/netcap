@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,28 +23,43 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldChecksumPresent   = "ChecksumPresent"
+	fieldRoutingPresent    = "RoutingPresent"
+	fieldKeyPresent        = "KeyPresent"
+	fieldSeqPresent        = "SeqPresent"
+	fieldStrictSourceRoute = "StrictSourceRoute"
+	fieldAckPresent        = "AckPresent"
+	fieldRecursionControl  = "RecursionControl"
+	fieldOffset            = "Offset"
+	fieldKey               = "Key"
+	fieldSeq               = "Seq"
+	fieldAck               = "Ack"
+	fieldRouting           = "Routing"
+)
+
 var fieldsGRE = []string{
-	"Timestamp",
-	"ChecksumPresent",   // bool
-	"RoutingPresent",    // bool
-	"KeyPresent",        // bool
-	"SeqPresent",        // bool
-	"StrictSourceRoute", // bool
-	"AckPresent",        // bool
-	"RecursionControl",  // int32
-	"Flags",             // int32
-	"Version",           // int32
-	"Protocol",          // int32
-	"Checksum",          // int32
-	"Offset",            // int32
-	"Key",               // uint32
-	"Seq",               // uint32
-	"Ack",               // uint32
-	"Routing",           // *GRERouting
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldChecksumPresent,   // bool
+	fieldRoutingPresent,    // bool
+	fieldKeyPresent,        // bool
+	fieldSeqPresent,        // bool
+	fieldStrictSourceRoute, // bool
+	fieldAckPresent,        // bool
+	fieldRecursionControl,  // int32
+	fieldFlags,             // int32
+	fieldVersion,           // int32
+	fieldProtocol,          // int32
+	fieldChecksum,          // int32
+	fieldOffset,            // int32
+	fieldKey,               // uint32
+	fieldSeq,               // uint32
+	fieldAck,               // uint32
+	fieldRouting,           // *GRERouting
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -138,4 +154,36 @@ func (a *GRE) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *GRE) Dst() string {
 	return a.DstIP
+}
+
+var greEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *GRE) Encode() []string {
+	return filter([]string{
+		greEncoder.Int64(fieldTimestamp, a.Timestamp),               // int64
+		greEncoder.Bool(a.ChecksumPresent),                          // bool
+		greEncoder.Bool(a.RoutingPresent),                           // bool
+		greEncoder.Bool(a.KeyPresent),                               // bool
+		greEncoder.Bool(a.SeqPresent),                               // bool
+		greEncoder.Bool(a.StrictSourceRoute),                        // bool
+		greEncoder.Bool(a.AckPresent),                               // bool
+		greEncoder.Int32(fieldRecursionControl, a.RecursionControl), // int32
+		greEncoder.Int32(fieldFlags, a.Flags),                       // int32
+		greEncoder.Int32(fieldVersion, a.Version),                   // int32
+		greEncoder.Int32(fieldProtocol, a.Protocol),                 // int32
+		greEncoder.Int32(fieldChecksum, a.Checksum),                 // int32
+		greEncoder.Int32(fieldOffset, a.Offset),                     // int32
+		greEncoder.Uint32(fieldKey, a.Key),                          // uint32
+		greEncoder.Uint32(fieldSeq, a.Seq),                          // uint32
+		greEncoder.Uint32(fieldAck, a.Ack),                          // uint32
+		greEncoder.String(fieldRouting, a.Routing.getString()),      // *GRERouting
+		dhcp4Encoder.String(fieldSrcIP, a.SrcIP),
+		dhcp4Encoder.String(fieldDstIP, a.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *GRE) Analyze() float64 {
+	return 0
 }

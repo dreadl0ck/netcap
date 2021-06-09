@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,22 +22,35 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldIP          = "IP"
+	fieldPort        = "Port"
+	fieldBanner      = "Banner"
+	fieldNumFlows    = "NumFlows"
+	fieldProduct     = "Product"
+	fieldVendor      = "Vendor"
+	fieldBytesServer = "BytesServer"
+	fieldBytesClient = "BytesClient"
+	fieldHostname    = "Hostname"
+	fieldOS          = "OS"
+)
+
 var fieldsService = []string{
-	"Timestamp",
-	"IP",          // string
-	"Port",        // int32
-	"Name",        // string
-	"Banner",      // string
-	"Protocol",    // string
-	"Flows",       // []string
-	"Product",     // string
-	"Vendor",      // string
-	"Version",     // string
-	"Notes",       // string
-	"BytesServer", // int32
-	"BytesClient", // int32
-	"Hostname",    // string
-	"OS",          // string
+	fieldTimestamp,
+	fieldIP,          // string
+	fieldPort,        // int32
+	fieldName,        // string
+	fieldBanner,      // string
+	fieldProtocol,    // string
+	fieldNumFlows,    // []string
+	fieldProduct,     // string
+	fieldVendor,      // string
+	fieldVersion,     // string
+	fieldNotes,       // string
+	fieldBytesServer, // int32
+	fieldBytesClient, // int32
+	fieldHostname,    // string
+	fieldOS,          // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -48,19 +62,19 @@ func (a *Service) CSVHeader() []string {
 func (a *Service) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.IP,                       // string
-		formatInt32(a.Port),        // int32
-		a.Name,                     // string
-		a.Banner,                   // string
-		a.Protocol,                 // string
-		join(a.Flows...),           // []string
-		a.Product,                  // string
-		a.Vendor,                   // string
-		a.Version,                  // string
-		formatInt32(a.BytesServer), // int32
-		formatInt32(a.BytesClient), // int32
-		a.Hostname,                 // string
-		a.OS,                       // string
+		a.IP,                                // string
+		formatInt32(a.Port),                 // int32
+		a.Name,                              // string
+		a.Banner,                            // string
+		a.Protocol,                          // string
+		strconv.Itoa(len(join(a.Flows...))), // []string
+		a.Product,                           // string
+		a.Vendor,                            // string
+		a.Version,                           // string
+		formatInt32(a.BytesServer),          // int32
+		formatInt32(a.BytesClient),          // int32
+		a.Hostname,                          // string
+		a.OS,                                // string
 	})
 }
 
@@ -78,18 +92,18 @@ func (a *Service) JSON() (string, error) {
 }
 
 var fieldsServiceMetric = []string{
-	"IP",          // string
-	"Port",        // int32
-	"Name",        // string
-	"Protocol",    // string
-	"NumFlows",    // []string
-	"Product",     // string
-	"Vendor",      // string
-	"Version",     // string
-	"BytesServer", // int32
-	"BytesClient", // int32
-	"Hostname",    // string
-	//"OS",          // string
+	fieldIP,          // string
+	fieldPort,        // int32
+	fieldName,        // string
+	fieldProtocol,    // string
+	fieldNumFlows,    // []string
+	fieldProduct,     // string
+	fieldVendor,      // string
+	fieldVersion,     // string
+	fieldBytesServer, // int32
+	fieldBytesClient, // int32
+	fieldHostname,    // string
+	//fieldOS,          // string
 }
 
 var serviceMetric = prometheus.NewCounterVec(
@@ -133,4 +147,31 @@ func (a *Service) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *Service) Dst() string {
 	return ""
+}
+
+var serviceEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *Service) Encode() []string {
+	return filter([]string{
+		serviceEncoder.Int64(fieldTimestamp, a.Timestamp),
+		serviceEncoder.String(fieldIP, a.IP),                  // string
+		serviceEncoder.Int32(fieldPort, a.Port),               // int32
+		serviceEncoder.String(fieldName, a.Name),              // string
+		serviceEncoder.String(fieldBanner, a.Banner),          // string
+		serviceEncoder.String(fieldProtocol, a.Protocol),      // string
+		serviceEncoder.Int(fieldNumFlows, len(a.Flows)),       // []string
+		serviceEncoder.String(fieldProduct, a.Product),        // string
+		serviceEncoder.String(fieldVendor, a.Vendor),          // string
+		serviceEncoder.String(fieldVersion, a.Version),        // string
+		serviceEncoder.Int32(fieldBytesServer, a.BytesServer), // int32
+		serviceEncoder.Int32(fieldBytesClient, a.BytesClient), // int32
+		serviceEncoder.String(fieldHostname, a.Hostname),      // string
+		serviceEncoder.String(fieldOS, a.OS),                  // string
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *Service) Analyze() float64 {
+	return 0
 }

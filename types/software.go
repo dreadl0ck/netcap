@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,18 +22,26 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldDeviceProfiles = "DeviceProfiles"
+	fieldSourceName     = "SourceName"
+	fieldDPIResults     = "DPIResults"
+	fieldFlows          = "Flows"
+	fieldSourceData     = "SourceData"
+)
+
 var fieldsSoftware = []string{
-	"Timestamp",
-	"Product",
-	"Vendor",
-	"Version",
-	"DeviceProfiles",
-	"SourceName",
-	"DPIResults",
-	"Service",
-	"Flows",
-	"SourceData",
-	"Notes",
+	fieldTimestamp,
+	fieldProduct,
+	fieldVendor,
+	fieldVersion,
+	fieldDeviceProfiles,
+	fieldSourceName,
+	fieldDPIResults,
+	fieldService,
+	fieldFlows,
+	fieldSourceData,
+	fieldNotes,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -118,4 +127,28 @@ func (a *Software) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *Software) Dst() string {
 	return ""
+}
+
+var softwareEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *Software) Encode() []string {
+	return filter([]string{
+		softwareEncoder.Int64(fieldTimestamp, a.Timestamp),
+		softwareEncoder.String(fieldProduct, a.Product),
+		softwareEncoder.String(fieldVendor, a.Vendor),
+		softwareEncoder.String(fieldVersion, a.Version),
+		softwareEncoder.String(fieldDeviceProfiles, join(a.DeviceProfiles...)),
+		softwareEncoder.String(fieldSourceName, a.SourceName),
+		softwareEncoder.String(fieldDPIResults, join(a.DPIResults...)),
+		softwareEncoder.String(fieldService, a.Service),
+		softwareEncoder.String(fieldFlows, join(a.Flows...)),
+		softwareEncoder.String(fieldSourceData, a.SourceData),
+		softwareEncoder.String(fieldNotes, a.Notes),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *Software) Analyze() float64 {
+	return 0
 }

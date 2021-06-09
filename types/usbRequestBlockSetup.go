@@ -14,19 +14,26 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldRequestType = "RequestType"
+	fieldValue = "Value"
+	fieldIndex = "Index"
+)
+
 var fieldsUSBRequestBlockSetup = []string{
-	"Timestamp",
-	"RequestType", // int32
-	"Request",     // int32
-	"Value",       // int32
-	"Index",       // int32
-	"Length",      // int32
+	fieldTimestamp,
+	fieldRequestType, // int32
+	fieldRequest,     // int32
+	fieldValue,       // int32
+	fieldIndex,       // int32
+	fieldLength,      // int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -85,4 +92,23 @@ func (a *USBRequestBlockSetup) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *USBRequestBlockSetup) Dst() string {
 	return ""
+}
+
+var usbRequestBlockSetupEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *USBRequestBlockSetup) Encode() []string {
+	return filter([]string{
+		usbRequestBlockSetupEncoder.Int64(fieldTimestamp, a.Timestamp),
+		usbRequestBlockSetupEncoder.Int32(fieldRequestType, a.RequestType), // int32
+		usbRequestBlockSetupEncoder.Int32(fieldRequest, a.Request),     // int32
+		usbRequestBlockSetupEncoder.Int32(fieldValue, a.Value),       // int32
+		usbRequestBlockSetupEncoder.Int32(fieldIndex, a.Index),       // int32
+		usbRequestBlockSetupEncoder.Int32(fieldLength, a.Length),      // int32
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *USBRequestBlockSetup) Analyze() float64 {
+	return 0
 }

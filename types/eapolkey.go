@@ -14,7 +14,7 @@
 package types
 
 import (
-	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,29 +22,52 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldKeyDescriptorType    = "KeyDescriptorType"
+	fieldKeyDescriptorVersion = "KeyDescriptorVersion"
+	fieldKeyType              = "KeyType"
+	fieldKeyIndex             = "KeyIndex"
+	fieldInstall              = "Install"
+	fieldKeyACK               = "KeyACK"
+	fieldKeyMIC               = "KeyMIC"
+	fieldSecure               = "Secure"
+	fieldMICError             = "MICError"
+	fieldRequest              = "Request"
+	fieldHasEncryptedKeyData  = "HasEncryptedKeyData"
+	fieldSMKMessage           = "SMKMessage"
+	fieldKeyLength            = "KeyLength"
+	fieldReplayCounter        = "ReplayCounter"
+	fieldNonce                = "Nonce"
+	fieldIV                   = "IV"
+	fieldRSC                  = "RSC"
+	fieldMIC                  = "MIC"
+	fieldKeyDataLength        = "KeyDataLength"
+	fieldEncryptedKeyData     = "EncryptedKeyData"
+)
+
 var fieldsEAPOLKey = []string{
-	"Timestamp",
-	"KeyDescriptorType",    // int32
-	"KeyDescriptorVersion", // int32
-	"KeyType",              // int32
-	"KeyIndex",             // int32
-	"Install",              // bool
-	"KeyACK",               // bool
-	"KeyMIC",               // bool
-	"Secure",               // bool
-	"MICError",             // bool
-	"Request",              // bool
-	"HasEncryptedKeyData",  // bool
-	"SMKMessage",           // bool
-	"KeyLength",            // int32
-	"ReplayCounter",        // uint64
-	"Nonce",                // []byte
-	"IV",                   // []byte
-	"RSC",                  // uint64
-	"ID",                   // uint64
-	"MIC",                  // []byte
-	"KeyDataLength",        // int32
-	"EncryptedKeyData",     // []byte
+	fieldTimestamp,
+	fieldKeyDescriptorType,    // int32
+	fieldKeyDescriptorVersion, // int32
+	fieldKeyType,              // int32
+	fieldKeyIndex,             // int32
+	fieldInstall,              // bool
+	fieldKeyACK,               // bool
+	fieldKeyMIC,               // bool
+	fieldSecure,               // bool
+	fieldMICError,             // bool
+	fieldRequest,              // bool
+	fieldHasEncryptedKeyData,  // bool
+	fieldSMKMessage,           // bool
+	fieldKeyLength,            // int32
+	fieldReplayCounter,        // uint64
+	//fieldNonce,                // []byte
+	//fieldIV,                   // []byte
+	fieldRSC, // uint64
+	fieldID,  // uint64
+	//fieldMIC,                  // []byte
+	fieldKeyDataLength, // int32
+	//fieldEncryptedKeyData,     // []byte
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -70,13 +93,13 @@ func (a *EAPOLKey) CSVRecord() []string {
 		strconv.FormatBool(a.SMKMessage),          // bool
 		formatInt32(a.KeyLength),                  // int32
 		formatUint64(a.ReplayCounter),             // uint64
-		hex.EncodeToString(a.Nonce),               // []byte
-		hex.EncodeToString(a.IV),                  // []byte
-		formatUint64(a.RSC),                       // uint64
-		formatUint64(a.ID),                        // uint64
-		hex.EncodeToString(a.MIC),                 // []byte
-		formatInt32(a.KeyDataLength),              // int32
-		hex.EncodeToString(a.EncryptedKeyData),    // []byte
+		//hex.EncodeToString(a.Nonce),               // []byte
+		//hex.EncodeToString(a.IV),                  // []byte
+		formatUint64(a.RSC), // uint64
+		formatUint64(a.ID),  // uint64
+		//hex.EncodeToString(a.MIC),                 // []byte
+		formatInt32(a.KeyDataLength), // int32
+		//hex.EncodeToString(a.EncryptedKeyData),    // []byte
 	})
 }
 
@@ -118,4 +141,39 @@ func (a *EAPOLKey) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *EAPOLKey) Dst() string {
 	return ""
+}
+
+var eapolkeyEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *EAPOLKey) Encode() []string {
+	return filter([]string{
+		eapolkeyEncoder.Int64(fieldTimestamp, a.Timestamp),
+		eapolkeyEncoder.Int32(fieldKeyDescriptorType, a.KeyDescriptorType),       // int32
+		eapolkeyEncoder.Int32(fieldKeyDescriptorVersion, a.KeyDescriptorVersion), // int32
+		eapolkeyEncoder.Int32(fieldKeyType, a.KeyType),                           // int32
+		eapolkeyEncoder.Int32(fieldKeyIndex, a.KeyIndex),                         // int32
+		eapolkeyEncoder.Bool(a.Install),                                          // bool
+		eapolkeyEncoder.Bool(a.KeyACK),                                           // bool
+		eapolkeyEncoder.Bool(a.KeyMIC),                                           // bool
+		eapolkeyEncoder.Bool(a.Secure),                                           // bool
+		eapolkeyEncoder.Bool(a.MICError),                                         // bool
+		eapolkeyEncoder.Bool(a.Request),                                          // bool
+		eapolkeyEncoder.Bool(a.HasEncryptedKeyData),                              // bool
+		eapolkeyEncoder.Bool(a.SMKMessage),                                       // bool
+		eapolkeyEncoder.Int32(fieldKeyLength, a.KeyLength),                       // int32
+		eapolkeyEncoder.Uint64(fieldReplayCounter, a.ReplayCounter),              // uint64
+		//hex.EncodeToString(a.Nonce),               // []byte
+		//hex.EncodeToString(a.IV),                  // []byte
+		eapolkeyEncoder.Uint64(fieldRSC, a.RSC), // uint64
+		eapolkeyEncoder.Uint64(fieldID, a.ID),   // uint64
+		//hex.EncodeToString(a.MIC),                 // []byte
+		eapolkeyEncoder.Int32(fieldKeyDataLength, a.KeyDataLength), // int32
+		//hex.EncodeToString(a.EncryptedKeyData),    // []byte
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *EAPOLKey) Analyze() float64 {
+	return 0
 }

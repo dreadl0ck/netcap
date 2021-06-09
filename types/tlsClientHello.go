@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,34 +23,50 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldHandshakeType    = "HandshakeType"
+	fieldHandshakeLen     = "HandshakeLen"
+	fieldHandshakeVersion = "HandshakeVersion"
+	fieldSessionIDLen     = "SessionIDLen"
+	fieldSessionID        = "SessionID"
+	fieldCipherSuiteLen   = "CipherSuiteLen"
+	fieldExtensionLen     = "ExtensionLen"
+	fieldSNI              = "SNI"
+	fieldOSCP             = "OSCP"
+	fieldCipherSuites     = "CipherSuites"
+	fieldCompressMethods  = "CompressMethods"
+	fieldSignatureAlgs    = "SignatureAlgs"
+	fieldSupportedGroups  = "SupportedGroups"
+	fieldSupportedPoints  = "SupportedPoints"
+	fieldALPNs            = "ALPNs"
+)
+
 var fieldsTLSClientHello = []string{
-	"Timestamp",
-	"Type",
-	"Version",
-	"MessageLen",
-	"HandshakeType",
-	"HandshakeLen",
-	"HandshakeVersion",
-	"Random",
-	"SessionIDLen",
-	"SessionID",
-	"CipherSuiteLen",
-	"ExtensionLen",
-	"SNI",
-	"OSCP",
-	"CipherSuites",
-	"CompressMethods",
-	"SignatureAlgs",
-	"SupportedGroups",
-	"SupportedPoints",
-	"ALPNs",
-	"Ja3",
-	"SrcIP",
-	"DstIP",
-	"SrcMAC",
-	"DstMAC",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldType,
+	fieldVersion,
+	fieldMessageLen,
+	fieldHandshakeType,
+	fieldHandshakeLen,
+	fieldHandshakeVersion,
+	fieldSessionIDLen,
+	fieldCipherSuiteLen,
+	fieldExtensionLen,
+	fieldSNI,
+	fieldOSCP,
+	fieldCipherSuites,
+	fieldCompressMethods,
+	fieldSignatureAlgs,
+	fieldSupportedGroups,
+	fieldSupportedPoints,
+	fieldALPNs,
+	fieldJa3,
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcMAC,
+	fieldDstMAC,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -128,4 +145,42 @@ func (t *TLSClientHello) Src() string {
 // Dst returns the destination address of the audit record.
 func (t *TLSClientHello) Dst() string {
 	return t.DstIP
+}
+
+var tlsClientHelloEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (t *TLSClientHello) Encode() []string {
+	return filter([]string{
+		tlsClientHelloEncoder.Int64(fieldTimestamp, t.Timestamp),
+		tlsClientHelloEncoder.Int32(fieldType, t.Type),
+		tlsClientHelloEncoder.Int32(fieldVersion, t.Version),
+		tlsClientHelloEncoder.Int32(fieldMessageLen, t.MessageLen),
+		tlsClientHelloEncoder.Int32(fieldHandshakeType, t.HandshakeType),
+		tlsClientHelloEncoder.Uint32(fieldHandshakeLen, t.HandshakeLen),
+		tlsClientHelloEncoder.Int32(fieldHandshakeVersion, t.HandshakeVersion),
+		tlsClientHelloEncoder.Uint32(fieldSessionIDLen, t.SessionIDLen),
+		tlsClientHelloEncoder.Int32(fieldCipherSuiteLen, t.CipherSuiteLen),
+		tlsClientHelloEncoder.Int32(fieldExtensionLen, t.ExtensionLen),
+		tlsClientHelloEncoder.String(fieldSNI, t.SNI),
+		tlsClientHelloEncoder.Bool(t.OSCP),
+		tlsClientHelloEncoder.String(fieldCipherSuites, joinInts(t.CipherSuites)),
+		tlsClientHelloEncoder.String(fieldCompressMethods, joinInts(t.CompressMethods)),
+		tlsClientHelloEncoder.String(fieldSignatureAlgs, joinInts(t.SignatureAlgs)),
+		tlsClientHelloEncoder.String(fieldSupportedGroups, joinInts(t.SupportedGroups)),
+		tlsClientHelloEncoder.String(fieldSupportedPoints, joinInts(t.SupportedPoints)),
+		tlsClientHelloEncoder.String(fieldALPNs, join(t.ALPNs...)),
+		tlsClientHelloEncoder.String(fieldJa3, t.Ja3),
+		tlsClientHelloEncoder.String(fieldSrcIP, t.SrcIP),
+		tlsClientHelloEncoder.String(fieldDstIP, t.DstIP),
+		tlsClientHelloEncoder.String(fieldSrcMAC, t.SrcMAC),
+		tlsClientHelloEncoder.String(fieldDstMAC, t.DstMAC),
+		tlsClientHelloEncoder.Int32(fieldSrcPort, t.SrcPort),
+		tlsClientHelloEncoder.Int32(fieldDstPort, t.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (t *TLSClientHello) Analyze() float64 {
+	return 0
 }

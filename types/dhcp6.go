@@ -15,24 +15,33 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldMsgType       = "MsgType"
+	fieldHopCount      = "HopCount"
+	fieldLinkAddr      = "LinkAddr"
+	fieldPeerAddr      = "PeerAddr"
+	fieldTransactionID = "TransactionID"
+)
+
 var fieldsDHCPv6 = []string{
-	"Timestamp",     // string
-	"MsgType",       // int32
-	"HopCount",      // int32
-	"LinkAddr",      // string
-	"PeerAddr",      // string
-	"TransactionID", // []byte
-	"Options",       // []*DHCPv6Option
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,     // string
+	fieldMsgType,       // int32
+	fieldHopCount,      // int32
+	fieldLinkAddr,      // string
+	fieldPeerAddr,      // string
+	fieldTransactionID, // []byte
+	//fieldOptions,       // []*DHCPv6Option
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -54,7 +63,7 @@ func (d *DHCPv6) CSVRecord() []string {
 		d.LinkAddr,                          // string
 		d.PeerAddr,                          // string
 		hex.EncodeToString(d.TransactionID), // []byte
-		strings.Join(opts, ""),              // []*DHCPv6Option
+		//strings.Join(opts, ""),              // []*DHCPv6Option
 		d.SrcIP,
 		d.DstIP,
 		formatInt32(d.SrcPort),
@@ -88,14 +97,14 @@ func (d *DHCPv6) JSON() (string, error) {
 }
 
 var fieldsDHCPv6Metric = []string{
-	"MsgType",  // int32
-	"HopCount", // int32
-	"LinkAddr", // string
-	"PeerAddr", // string
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldMsgType,  // int32
+	fieldHopCount, // int32
+	fieldLinkAddr, // string
+	fieldPeerAddr, // string
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 var dhcp6Metric = prometheus.NewCounterVec(
@@ -140,4 +149,33 @@ func (d *DHCPv6) Src() string {
 // Dst returns the destination address of the audit record.
 func (d *DHCPv6) Dst() string {
 	return d.DstIP
+}
+
+var dhcp6Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (d *DHCPv6) Encode() []string {
+
+	var opts []string
+	for _, o := range d.Options {
+		opts = append(opts, o.toString())
+	}
+
+	return filter([]string{
+		dhcp6Encoder.Int64(fieldTimestamp, d.Timestamp),                              // int64
+		dhcp6Encoder.Int32(fieldMsgType, d.MsgType),                                  // int32
+		dhcp6Encoder.Int32(fieldHopCount, d.HopCount),                                // int32
+		dhcp6Encoder.String(fieldLinkAddr, d.LinkAddr),                               // string
+		dhcp6Encoder.String(fieldPeerAddr, d.PeerAddr),                               // string
+		dhcp4Encoder.String(fieldTransactionID, hex.EncodeToString(d.TransactionID)), // []byte
+		dhcp4Encoder.String(fieldSrcIP, d.SrcIP),
+		dhcp4Encoder.String(fieldDstIP, d.DstIP),
+		dhcp4Encoder.Int32(fieldSrcPort, d.SrcPort),
+		dhcp4Encoder.Int32(fieldDstPort, d.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (d *DHCPv6) Analyze() float64 {
+	return 0
 }

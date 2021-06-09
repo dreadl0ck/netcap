@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,18 +22,24 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldHeaders        = "Headers"
+	fieldIsResponse     = "IsResponse"
+	fieldResponseStatus = "ResponseStatus"
+)
+
 var fieldsSIP = []string{
-	"Timestamp",
-	"Version",
-	"Method",
-	"Headers",
-	"IsResponse",
-	"ResponseCode",
-	"ResponseStatus",
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldVersion,
+	fieldMethod,
+	fieldHeaders,
+	fieldIsResponse,
+	fieldResponseCode,
+	fieldResponseStatus,
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -99,4 +106,28 @@ func (s *SIP) Src() string {
 // Dst returns the destination address of the audit record.
 func (s *SIP) Dst() string {
 	return s.DstIP
+}
+
+var sipEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (s *SIP) Encode() []string {
+	return filter([]string{
+		sipEncoder.Int64(fieldTimestamp, s.Timestamp),
+		sipEncoder.Int32(fieldVersion, s.Version),                //  int32 `protobuf:"varint,2,opt,name=Version,proto3" json:"Version,omitempty"`
+		sipEncoder.Int32(fieldMethod, s.Method),                  //   int32 `protobuf:"varint,3,opt,name=Method,proto3" json:"Method,omitempty"`
+		sipEncoder.String(fieldHeaders, join(s.Headers...)),      //  []string `protobuf:"bytes,4,rep,name=Headers,proto3" json:"Headers,omitempty"`
+		sipEncoder.Bool(s.IsResponse),                            //            bool     `protobuf:"varint,5,opt,name=IsResponse,proto3" json:"IsResponse,omitempty"`
+		sipEncoder.Int32(fieldResponseCode, s.ResponseCode),      //          int32    `protobuf:"varint,6,opt,name=ResponseCode,proto3" json:"ResponseCode,omitempty"`
+		sipEncoder.String(fieldResponseStatus, s.ResponseStatus), //        string   `protobuf
+		sipEncoder.String(fieldSrcIP, s.SrcIP),
+		sipEncoder.String(fieldDstIP, s.DstIP),
+		sipEncoder.Int32(fieldSrcPort, s.SrcPort),
+		sipEncoder.Int32(fieldDstPort, s.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (s *SIP) Analyze() float64 {
+	return 0
 }

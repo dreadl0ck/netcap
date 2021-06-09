@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,21 +22,34 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldProto          = "Proto"
+	fieldDurationID     = "DurationID"
+	fieldAddress1       = "Address1"
+	fieldAddress2       = "Address2"
+	fieldAddress3       = "Address3"
+	fieldAddress4       = "Address4"
+	fieldSequenceNumber = "SequenceNumber"
+	fieldFragmentNumber = "FragmentNumber"
+	fieldQOS            = "QOS"
+	fieldHTControl      = "HTControl"
+)
+
 var fieldsDot11 = []string{
-	"Timestamp",
-	"Type",           // int32
-	"Proto",          // int32
-	"Flags",          // int32
-	"DurationID",     // int32
-	"Address1",       // string
-	"Address2",       // string
-	"Address3",       // string
-	"Address4",       // string
-	"SequenceNumber", // int32
-	"FragmentNumber", // int32
-	"Checksum",       // uint32
-	"QOS",            // *Dot11QOS
-	"HTControl",      // *Dot11HTControl
+	fieldTimestamp,
+	fieldType,           // int32
+	fieldProto,          // int32
+	fieldFlags,          // int32
+	fieldDurationID,     // int32
+	fieldAddress1,       // string
+	fieldAddress2,       // string
+	fieldAddress3,       // string
+	fieldAddress4,       // string
+	fieldSequenceNumber, // int32
+	fieldFragmentNumber, // int32
+	fieldChecksum,       // uint32
+	fieldQOS,            // *Dot11QOS
+	fieldHTControl,      // *Dot11HTControl
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -215,4 +229,32 @@ func (d *Dot11) Src() string {
 // Dst returns the destination address of the audit record.
 func (d *Dot11) Dst() string {
 	return ""
+}
+
+var dot11Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (d *Dot11) Encode() []string {
+	return filter([]string{
+		dot11Encoder.Int64(fieldTimestamp, d.Timestamp),
+		dot11Encoder.Int32(fieldType, d.Type),                     // int32
+		dot11Encoder.Int32(fieldProto, d.Proto),                   // int32
+		dot11Encoder.Int32(fieldFlags, d.Flags),                   // int32
+		dot11Encoder.Int32(fieldDurationID, d.DurationID),         // int32
+		dot11Encoder.String(fieldAddress1, d.Address1),            // string
+		dot11Encoder.String(fieldAddress2, d.Address2),            // string
+		dot11Encoder.String(fieldAddress3, d.Address3),            // string
+		dot11Encoder.String(fieldAddress4, d.Address4),            // string
+		dot11Encoder.Int32(fieldSequenceNumber, d.SequenceNumber), // int32
+		dot11Encoder.Int32(fieldFragmentNumber, d.FragmentNumber), // int32
+		dot11Encoder.Uint32(fieldChecksum, d.Checksum),            // uint32
+		// TODO: flatten
+		dot11Encoder.String(fieldQOS, d.QOS.toString()),             // *Dot11QOS
+		dot11Encoder.String(fieldHTControl, d.HTControl.toString()), // *Dot11HTControl
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (d *Dot11) Analyze() float64 {
+	return 0
 }

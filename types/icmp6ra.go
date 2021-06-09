@@ -14,22 +14,30 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldHopLimit       = "HopLimit"
+	fieldRouterLifetime = "RouterLifetime"
+	fieldReachableTime  = "ReachableTime"
+	fieldRetransTimer   = "RetransTimer"
+)
+
 var fieldsICMPv6RouterAdvertisement = []string{
-	"Timestamp",
-	"HopLimit",       //  int32
-	"Flags",          //  int32
-	"RouterLifetime", //  int32
-	"ReachableTime",  //  uint32
-	"RetransTimer",   //  uint32
-	"Options",        //  []*ICMPv6Option
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldHopLimit,       //  int32
+	fieldFlags,          //  int32
+	fieldRouterLifetime, //  int32
+	fieldReachableTime,  //  uint32
+	fieldRetransTimer,   //  uint32
+	fieldOptions,        //  []*ICMPv6Option
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -97,4 +105,30 @@ func (i *ICMPv6RouterAdvertisement) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *ICMPv6RouterAdvertisement) Dst() string {
 	return i.DstIP
+}
+
+var icmp6raEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *ICMPv6RouterAdvertisement) Encode() []string {
+	var opts []string
+	for _, o := range i.Options {
+		opts = append(opts, o.toString())
+	}
+	return filter([]string{
+		icmp6raEncoder.Int64(fieldTimestamp, i.Timestamp),
+		icmp6raEncoder.Int32(fieldHopLimit, i.HopLimit),             // int32
+		icmp6raEncoder.Int32(fieldFlags, i.Flags),                   // int32
+		icmp6raEncoder.Int32(fieldRouterLifetime, i.RouterLifetime), // int32
+		icmp6raEncoder.Uint32(fieldReachableTime, i.ReachableTime),  // uint32
+		icmp6raEncoder.Uint32(fieldRetransTimer, i.RetransTimer),    // uint32
+		icmp6raEncoder.String(fieldOptions, strings.Join(opts, "")),
+		icmp6raEncoder.String(fieldSrcIP, i.SrcIP),
+		icmp6raEncoder.String(fieldDstIP, i.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *ICMPv6RouterAdvertisement) Analyze() float64 {
+	return 0
 }

@@ -14,25 +14,34 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldName        = "Name"
+	fieldHash        = "Hash"
+	fieldIdent       = "Ident"
+	fieldSource      = "Source"
+	fieldContentType = "ContentType"
+)
+
 var fieldsFile = []string{
-	"Timestamp",
-	"Name",
-	"Length",
-	"Hash",
-	"Location",
-	"Ident",
-	"Source",
-	"ContentType",
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldName,
+	fieldLength,
+	fieldHash,
+	fieldLocation,
+	fieldIdent,
+	fieldSource,
+	fieldContentType,
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -72,17 +81,17 @@ func (a *File) JSON() (string, error) {
 }
 
 var fieldsFileMetric = []string{
-	"Name",
-	"Length",
-	"Hash",
-	"Location",
-	"Ident",
-	"Source",
-	"ContentType",
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldName,
+	fieldLength,
+	fieldHash,
+	fieldLocation,
+	fieldIdent,
+	fieldSource,
+	fieldContentType,
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 var fileMetric = prometheus.NewCounterVec(
@@ -126,4 +135,29 @@ func (a *File) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *File) Dst() string {
 	return a.DstIP
+}
+
+var fileEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *File) Encode() []string {
+	return filter([]string{
+		fileEncoder.Int64(fieldTimestamp, a.Timestamp),
+		fileEncoder.String(fieldName, a.Name),
+		fileEncoder.Int64(fieldLength, a.Length),
+		fileEncoder.String(fieldHash, a.Hash),
+		fileEncoder.String(fieldLocation, a.Location),
+		fileEncoder.String(fieldIdent, a.Ident),
+		fileEncoder.String(fieldSource, a.Source),
+		fileEncoder.String(fieldContentType, a.ContentType),
+		fileEncoder.String(fieldSrcIP, a.SrcIP),
+		fileEncoder.String(fieldDstIP, a.DstIP),
+		fileEncoder.Int32(fieldSrcPort, a.SrcPort),
+		fileEncoder.Int32(fieldDstPort, a.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *File) Analyze() float64 {
+	return 0
 }

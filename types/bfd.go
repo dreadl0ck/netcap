@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,24 +23,43 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldVersion                   = "Version"
+	fieldDiagnostic                = "Diagnostic"
+	fieldState                     = "State"
+	fieldPoll                      = "Poll"
+	fieldFinal                     = "Final"
+	fieldControlPlaneIndependent   = "ControlPlaneIndependent"
+	fieldAuthPresent               = "AuthPresent"
+	fieldDemand                    = "Demand"
+	fieldMultipoint                = "Multipoint"
+	fieldDetectMultiplier          = "DetectMultiplier"
+	fieldMyDiscriminator           = "MyDiscriminator"
+	fieldYourDiscriminator         = "YourDiscriminator"
+	fieldDesiredMinTxInterval      = "DesiredMinTxInterval"
+	fieldRequiredMinRxInterval     = "RequiredMinRxInterval"
+	fieldRequiredMinEchoRxInterval = "RequiredMinEchoRxInterval"
+	fieldAuthHeader                = "AuthHeader"
+)
+
 var fieldsBFD = []string{
-	"Timestamp",
-	"Version",
-	"Diagnostic",
-	"State",
-	"Poll",
-	"Final",
-	"ControlPlaneIndependent",
-	"AuthPresent",
-	"Demand",
-	"Multipoint",
-	"DetectMultiplier",
-	"MyDiscriminator",
-	"YourDiscriminator",
-	"DesiredMinTxInterval",
-	"RequiredMinRxInterval",
-	"RequiredMinEchoRxInterval",
-	"AuthHeader",
+	fieldTimestamp,
+	fieldVersion,
+	fieldDiagnostic,
+	fieldState,
+	fieldPoll,
+	fieldFinal,
+	fieldControlPlaneIndependent,
+	fieldAuthPresent,
+	fieldDemand,
+	fieldMultipoint,
+	fieldDetectMultiplier,
+	fieldMyDiscriminator,
+	fieldYourDiscriminator,
+	fieldDesiredMinTxInterval,
+	fieldRequiredMinRxInterval,
+	fieldRequiredMinEchoRxInterval,
+	fieldAuthHeader,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -123,4 +143,36 @@ func (b *BFD) Src() string {
 // Dst returns the destination address of the audit record.
 func (b *BFD) Dst() string {
 	return ""
+}
+
+var bfdEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (b *BFD) Encode() []string {
+	return filter([]string{
+		bfdEncoder.Int64(fieldTimestamp, b.Timestamp),
+		bfdEncoder.Int32(fieldVersion, b.Version),                                     // int32
+		bfdEncoder.Int32(fieldDiagnostic, b.Diagnostic),                               // int32
+		bfdEncoder.Int32(fieldState, b.State),                                         // int32
+		bfdEncoder.Bool(b.Poll),                                                       // bool
+		bfdEncoder.Bool(b.Final),                                                      // bool
+		bfdEncoder.Bool(b.ControlPlaneIndependent),                                    // bool
+		bfdEncoder.Bool(b.AuthPresent),                                                // bool
+		bfdEncoder.Bool(b.Demand),                                                     // bool
+		bfdEncoder.Bool(b.Multipoint),                                                 // bool
+		bfdEncoder.Int32(fieldDetectMultiplier, b.DetectMultiplier),                   // int32
+		bfdEncoder.Int32(fieldMyDiscriminator, b.MyDiscriminator),                     // int32
+		bfdEncoder.Int32(fieldYourDiscriminator, b.YourDiscriminator),                 // int32
+		bfdEncoder.Int32(fieldDesiredMinTxInterval, b.DesiredMinTxInterval),           // int32
+		bfdEncoder.Int32(fieldRequiredMinRxInterval, b.RequiredMinRxInterval),         // int32
+		bfdEncoder.Int32(fieldRequiredMinEchoRxInterval, b.RequiredMinEchoRxInterval), // int32
+
+		// TODO: flatten as top level fields? also for CSV!
+		// bfdEncoder.Int32(b.AuthHeader.getString()),                      // *BFDAuthHeader
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (b *BFD) Analyze() float64 {
+	return 0
 }

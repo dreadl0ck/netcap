@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,19 +23,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldOptionsLength  = "OptionsLength"
+	fieldOAMPacket      = "OAMPacket"
+	fieldCriticalOption = "CriticalOption"
+	fieldVNI            = "VNI"
+)
+
 var fieldsGeneve = []string{
-	"Timestamp",
-	"Version",        // int32
-	"OptionsLength",  // int32
-	"OAMPacket",      // bool
-	"CriticalOption", // bool
-	"Protocol",       // int32
-	"VNI",            // uint32
-	"Options",        // []*GeneveOption
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldVersion,        // int32
+	fieldOptionsLength,  // int32
+	fieldOAMPacket,      // bool
+	fieldCriticalOption, // bool
+	fieldProtocol,       // int32
+	fieldVNI,            // uint32
+	fieldOptions,        // []*GeneveOption
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -115,4 +119,31 @@ func (i *Geneve) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *Geneve) Dst() string {
 	return ""
+}
+
+var geneveEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *Geneve) Encode() []string {
+
+	var opts []string
+	for _, o := range i.Options {
+		opts = append(opts, o.toString())
+	}
+
+	return filter([]string{
+		geneveEncoder.Int64(fieldTimestamp, i.Timestamp),
+		geneveEncoder.Int32(fieldVersion, i.Version),               // int32
+		geneveEncoder.Int32(fieldOptionsLength, i.OptionsLength),   // int32
+		geneveEncoder.Bool(i.OAMPacket),                            // bool
+		geneveEncoder.Bool(i.CriticalOption),                       // bool
+		geneveEncoder.Int32(fieldProtocol, i.Protocol),             // int32
+		geneveEncoder.Uint32(fieldVNI, i.VNI),                      // uint32
+		geneveEncoder.String(fieldOptions, strings.Join(opts, "")), // []*GeneveOption
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *Geneve) Analyze() float64 {
+	return 0
 }

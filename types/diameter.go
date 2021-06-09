@@ -14,26 +14,36 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldMessageLen    = "MessageLen"
+	fieldCommandCode   = "CommandCode"
+	fieldApplicationID = "ApplicationID"
+	fieldHopByHopID    = "HopByHopID"
+	fieldEndToEndID    = "EndToEndID"
+	fieldAVPs          = "AVPs"
+)
+
 var fieldsDiameter = []string{
-	"Timestamp",
-	"Version",       // uint32
-	"Flags",         // uint32
-	"MessageLen",    // uint32
-	"CommandCode",   // uint32
-	"ApplicationID", // uint32
-	"HopByHopID",    // uint32
-	"EndToEndID",    // uint32
-	"AVPs",          // []*AVP
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldVersion,       // uint32
+	fieldFlags,         // uint32
+	fieldMessageLen,    // uint32
+	fieldCommandCode,   // uint32
+	fieldApplicationID, // uint32
+	fieldHopByHopID,    // uint32
+	fieldEndToEndID,    // uint32
+	//fieldAVPs,          // []*AVP
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -58,7 +68,7 @@ func (d *Diameter) CSVRecord() []string {
 		formatUint32(d.ApplicationID), // uint32
 		formatUint32(d.HopByHopID),    //    uint32
 		formatUint32(d.EndToEndID),    //    uint32
-		join(avps...),                 //     []*AVP
+		//join(avps...),                 //     []*AVP
 		d.SrcIP,
 		d.DstIP,
 		formatInt32(d.SrcPort),
@@ -108,4 +118,31 @@ func (d *Diameter) Src() string {
 // Dst returns the destination address of the audit record.
 func (d *Diameter) Dst() string {
 	return d.DstIP
+}
+
+var diameterEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (d *Diameter) Encode() []string {
+	return filter([]string{
+		diameterEncoder.Int64(fieldTimestamp, d.Timestamp),
+		diameterEncoder.Uint32(fieldVersion, d.Version),             // uint32
+		diameterEncoder.Uint32(fieldFlags, d.Flags),                 // uint32
+		diameterEncoder.Uint32(fieldMessageLen, d.MessageLen),       // uint32
+		diameterEncoder.Uint32(fieldCommandCode, d.CommandCode),     // uint32
+		diameterEncoder.Uint32(fieldApplicationID, d.ApplicationID), // uint32
+		diameterEncoder.Uint32(fieldHopByHopID, d.HopByHopID),       // uint32
+		diameterEncoder.Uint32(fieldEndToEndID, d.EndToEndID),       // uint32
+		// TODO: flatten
+		//join(avps...),                 // []*AVP
+		diameterEncoder.String(fieldSrcIP, d.SrcIP),
+		diameterEncoder.String(fieldDstIP, d.DstIP),
+		diameterEncoder.Int32(fieldSrcPort, d.SrcPort),
+		diameterEncoder.Int32(fieldDstPort, d.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (d *Diameter) Analyze() float64 {
+	return 0
 }

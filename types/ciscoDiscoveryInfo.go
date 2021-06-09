@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,34 +23,62 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldCDPHello         = "CDPHello"
+	fieldDeviceID         = "DeviceID"
+	fieldAddresses        = "Addresses"
+	fieldPortID           = "PortID"
+	fieldCapabilities     = "Capabilities"
+	fieldPlatform         = "Platform"
+	fieldIPPrefixes       = "IPPrefixes"
+	fieldVTPDomain        = "VTPDomain"
+	fieldNativeVLAN       = "NativeVLAN"
+	fieldFullDuplex       = "FullDuplex"
+	fieldVLANReply        = "VLANReply"
+	fieldVLANQuery        = "VLANQuery"
+	fieldPowerConsumption = "PowerConsumption"
+	fieldMTU              = "MTU"
+	fieldExtendedTrust    = "ExtendedTrust"
+	fieldUntrustedCOS     = "UntrustedCOS"
+	fieldSysName          = "SysName"
+	fieldSysOID           = "SysOID"
+	fieldMgmtAddresses    = "MgmtAddresses"
+	fieldLocation         = "Location"
+	fieldPowerRequest     = "PowerRequest"
+	fieldPowerAvailable   = "PowerAvailable"
+	fieldSparePairPoe     = "SparePairPoe"
+	fieldEnergyWise       = "EnergyWise"
+	fieldUnknown          = "Unknown"
+)
+
 var fieldsCiscoDiscoveryInfo = []string{
-	"Timestamp",
-	"CDPHello",         // *CDPHello
-	"DeviceID",         // string
-	"Addresses",        // []string
-	"PortID",           // string
-	"Capabilities",     // *CDPCapabilities
-	"Version",          // string
-	"Platform",         // string
-	"IPPrefixes",       // []*IPNet
-	"VTPDomain",        // string
-	"NativeVLAN",       // int32
-	"FullDuplex",       // bool
-	"VLANReply",        // *CDPVLANDialogue
-	"VLANQuery",        // *CDPVLANDialogue
-	"PowerConsumption", // int32
-	"MTU",              // uint32
-	"ExtendedTrust",    // int32
-	"UntrustedCOS",     // int32
-	"SysName",          // string
-	"SysOID",           // string
-	"MgmtAddresses",    // []string
-	"Location",         // *CDPLocation
-	"PowerRequest",     // *CDPPowerDialogue
-	"PowerAvailable",   // *CDPPowerDialogue
-	"SparePairPoe",     // *CDPSparePairPoE
-	"EnergyWise",       // *CDPEnergyWise
-	"Unknown",          // []*CiscoDiscoveryValue
+	fieldTimestamp,
+	fieldCDPHello,         // *CDPHello
+	fieldDeviceID,         // string
+	fieldAddresses,        // []string
+	fieldPortID,           // string
+	fieldCapabilities,     // *CDPCapabilities
+	fieldVersion,          // string
+	fieldPlatform,         // string
+	fieldIPPrefixes,       // []*IPNet
+	fieldVTPDomain,        // string
+	fieldNativeVLAN,       // int32
+	fieldFullDuplex,       // bool
+	fieldVLANReply,        // *CDPVLANDialogue
+	fieldVLANQuery,        // *CDPVLANDialogue
+	fieldPowerConsumption, // int32
+	fieldMTU,              // uint32
+	fieldExtendedTrust,    // int32
+	fieldUntrustedCOS,     // int32
+	fieldSysName,          // string
+	fieldSysOID,           // string
+	fieldMgmtAddresses,    // []string
+	fieldLocation,         // *CDPLocation
+	fieldPowerRequest,     // *CDPPowerDialogue
+	fieldPowerAvailable,   // *CDPPowerDialogue
+	fieldSparePairPoe,     // *CDPSparePairPoE
+	fieldEnergyWise,       // *CDPEnergyWise
+	fieldUnknown,          // []*CiscoDiscoveryValue
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -312,4 +341,58 @@ func (a *CiscoDiscoveryInfo) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *CiscoDiscoveryInfo) Dst() string {
 	return ""
+}
+
+var ciscoDiscoveryInfoEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *CiscoDiscoveryInfo) Encode() []string {
+
+	var (
+		ipNets []string
+		vals   []string
+	)
+
+	for _, v := range a.IPPrefixes {
+		ipNets = append(ipNets, v.toString())
+	}
+
+	for _, v := range a.Unknown {
+		vals = append(vals, v.toString())
+	}
+
+	return filter([]string{
+		ciscoDiscoveryInfoEncoder.Int64(fieldTimestamp, a.Timestamp),
+		ciscoDiscoveryInfoEncoder.String(fieldCDPHello, a.CDPHello.toString()),             //  *CDPHello
+		ciscoDiscoveryInfoEncoder.String(fieldDeviceID, a.DeviceID),                        //  string
+		ciscoDiscoveryInfoEncoder.String(fieldAddresses, join(a.Addresses...)),             //  []string
+		ciscoDiscoveryInfoEncoder.String(fieldPortID, a.PortID),                            //  string
+		ciscoDiscoveryInfoEncoder.String(fieldCapabilities, a.Capabilities.toString()),     //  *CDPCapabilities
+		ciscoDiscoveryInfoEncoder.String(fieldVersion, a.Version),                          //  string
+		ciscoDiscoveryInfoEncoder.String(fieldPlatform, a.Platform),                        //  string
+		ciscoDiscoveryInfoEncoder.String(fieldIPPrefixes, join(ipNets...)),                 //  []*IPNet
+		ciscoDiscoveryInfoEncoder.String(fieldVTPDomain, a.VTPDomain),                      //  string
+		ciscoDiscoveryInfoEncoder.Int32(fieldNativeVLAN, a.NativeVLAN),                     //  int32
+		ciscoDiscoveryInfoEncoder.Bool(a.FullDuplex),                                       //  bool
+		ciscoDiscoveryInfoEncoder.String(fieldVLANReply, a.VLANReply.toString()),           //  *CDPVLANDialogue
+		ciscoDiscoveryInfoEncoder.String(fieldVLANQuery, a.VLANQuery.toString()),           //  *CDPVLANDialogue
+		ciscoDiscoveryInfoEncoder.Int32(fieldPowerConsumption, a.PowerConsumption),         //  int32
+		ciscoDiscoveryInfoEncoder.Uint32(fieldMTU, a.MTU),                                  //  uint32
+		ciscoDiscoveryInfoEncoder.Int32(fieldExtendedTrust, a.ExtendedTrust),               //  int32
+		ciscoDiscoveryInfoEncoder.Int32(fieldUntrustedCOS, a.UntrustedCOS),                 //  int32
+		ciscoDiscoveryInfoEncoder.String(fieldSysName, a.SysName),                          //  string
+		ciscoDiscoveryInfoEncoder.String(fieldSysOID, a.SysOID),                            //  string
+		ciscoDiscoveryInfoEncoder.String(fieldMgmtAddresses, join(a.MgmtAddresses...)),     //  []string
+		ciscoDiscoveryInfoEncoder.String(fieldLocation, a.Location.toString()),             //  *CDPLocation
+		ciscoDiscoveryInfoEncoder.String(fieldPowerRequest, a.PowerRequest.toString()),     //  *CDPPowerDialogue
+		ciscoDiscoveryInfoEncoder.String(fieldPowerAvailable, a.PowerAvailable.toString()), //  *CDPPowerDialogue
+		ciscoDiscoveryInfoEncoder.String(fieldSparePairPoe, a.SparePairPoe.toString()),     //  *CDPSparePairPoE
+		ciscoDiscoveryInfoEncoder.String(fieldEnergyWise, a.EnergyWise.toString()),         //  *CDPEnergyWise
+		ciscoDiscoveryInfoEncoder.String(fieldUnknown, join(vals...)),                      //  []*CiscoDiscoveryValue
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *CiscoDiscoveryInfo) Analyze() float64 {
+	return 0
 }

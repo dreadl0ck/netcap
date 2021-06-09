@@ -14,7 +14,7 @@
 package types
 
 import (
-	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -22,22 +22,34 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldMaxResponseTime         = "MaxResponseTime"
+	fieldGroupAddress            = "GroupAddress"
+	fieldSupressRouterProcessing = "SupressRouterProcessing"
+	fieldRobustnessValue         = "RobustnessValue"
+	fieldIntervalTime            = "IntervalTime"
+	fieldSourceAddresses         = "SourceAddresses"
+	fieldNumberOfGroupRecords    = "NumberOfGroupRecords"
+	fieldNumberOfSources         = "NumberOfSources"
+	fieldGroupRecords            = "GroupRecords"
+)
+
 var fieldsIGMP = []string{
-	"Timestamp",
-	"Type",                    // int32
-	"MaxResponseTime",         // uint64
-	"Checksum",                // int32
-	"GroupAddress",            // []byte
-	"SupressRouterProcessing", // bool
-	"RobustnessValue",         // int32
-	"IntervalTime",            // uint64
-	"SourceAddresses",         // []string
-	"NumberOfGroupRecords",    // int32
-	"NumberOfSources",         // int32
-	"GroupRecords",            // []*IGMPv3GroupRecord
-	"Version",                 // int32
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldType,                    // int32
+	fieldMaxResponseTime,         // uint64
+	fieldChecksum,                // int32
+	fieldGroupAddress,            // []byte
+	fieldSupressRouterProcessing, // bool
+	fieldRobustnessValue,         // int32
+	fieldIntervalTime,            // uint64
+	fieldSourceAddresses,         // []string
+	fieldNumberOfGroupRecords,    // int32
+	fieldNumberOfSources,         // int32
+	fieldGroupRecords,            // []*IGMPv3GroupRecord
+	fieldVersion,                 // int32
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -57,7 +69,7 @@ func (i *IGMP) CSVRecord() []string {
 		formatInt32(i.Type),                           // int32
 		formatUint64(i.MaxResponseTime),               // uint64
 		formatInt32(i.Checksum),                       // int32
-		hex.EncodeToString(i.GroupAddress),            // []byte
+		i.GroupAddress,                                // string
 		strconv.FormatBool(i.SupressRouterProcessing), // bool
 		formatInt32(i.RobustnessValue),                // int32
 		formatUint64(i.IntervalTime),                  // uint64
@@ -128,4 +140,36 @@ func (i *IGMP) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *IGMP) Dst() string {
 	return i.DstIP
+}
+
+var igmpEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *IGMP) Encode() []string {
+	var records []string
+	for _, r := range i.GroupRecords {
+		records = append(records, r.toString())
+	}
+	return filter([]string{
+		igmpEncoder.Int64(fieldTimestamp, i.Timestamp),
+		igmpEncoder.Int32(fieldType, i.Type),                                 // int32
+		igmpEncoder.Uint64(fieldMaxResponseTime, i.MaxResponseTime),          // uint64
+		igmpEncoder.Int32(fieldChecksum, i.Checksum),                         // int32
+		igmpEncoder.String(fieldGroupAddress, i.GroupAddress),                // string
+		igmpEncoder.Bool(i.SupressRouterProcessing),                          // bool
+		igmpEncoder.Int32(fieldRobustnessValue, i.RobustnessValue),           // int32
+		igmpEncoder.Uint64(fieldIntervalTime, i.IntervalTime),                // uint64
+		igmpEncoder.String(fieldSourceAddresses, join(i.SourceAddresses...)), // []string
+		igmpEncoder.Int32(fieldNumberOfGroupRecords, i.NumberOfGroupRecords), // int32
+		igmpEncoder.Int32(fieldNumberOfSources, i.NumberOfSources),           // int32
+		igmpEncoder.String(fieldGroupRecords, strings.Join(records, "")),     // []*IGMPv3GroupRecord
+		igmpEncoder.Int32(fieldVersion, i.Version),                           // int32
+		igmpEncoder.String(fieldSrcIP, i.SrcIP),
+		igmpEncoder.String(fieldDstIP, i.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *IGMP) Analyze() float64 {
+	return 0
 }

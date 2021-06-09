@@ -15,6 +15,7 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
@@ -22,10 +23,10 @@ import (
 )
 
 var fieldsIPv6HopByHop = []string{
-	"Timestamp",
-	"Options",
-	"SrcIP", // string
-	"DstIP", // string
+	fieldTimestamp,
+	fieldOptions,
+	fieldSrcIP, // string
+	fieldDstIP, // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -104,4 +105,26 @@ func (l *IPv6HopByHop) Src() string {
 // Dst returns the destination address of the audit record.
 func (l *IPv6HopByHop) Dst() string {
 	return l.DstIP
+}
+
+var ip6hopEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (l *IPv6HopByHop) Encode() []string {
+	opts := make([]string, len(l.Options))
+	for i, v := range l.Options {
+		opts[i] = v.toString()
+	}
+
+	return filter([]string{
+		ip6hopEncoder.Int64(fieldTimestamp, l.Timestamp),
+		ip6hopEncoder.String(fieldOptions, strings.Join(opts, "")),
+		ip6hopEncoder.String(fieldSrcIP, l.SrcIP),
+		ip6hopEncoder.String(fieldDstIP, l.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (l *IPv6HopByHop) Analyze() float64 {
+	return 0
 }

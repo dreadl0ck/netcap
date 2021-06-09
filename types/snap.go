@@ -15,16 +15,19 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const fieldOrganizationalCode = "OrganizationalCode"
+
 var fieldsSNAP = []string{
-	"Timestamp",
-	"OrganizationalCode",
-	"Type",
+	fieldTimestamp,
+	fieldOrganizationalCode,
+	fieldType,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -79,4 +82,20 @@ func (s *SNAP) Src() string {
 // Dst returns the destination address of the audit record.
 func (s *SNAP) Dst() string {
 	return ""
+}
+
+var snapEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (s *SNAP) Encode() []string {
+	return filter([]string{
+		snapEncoder.Int64(fieldTimestamp, s.Timestamp),
+		snapEncoder.String(fieldOrganizationalCode, hex.EncodeToString(s.OrganizationalCode)),
+		snapEncoder.Int32(fieldType, s.Type),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (s *SNAP) Analyze() float64 {
+	return 0
 }

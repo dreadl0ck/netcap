@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
@@ -21,11 +22,11 @@ import (
 )
 
 var fieldsICMPv6NeighborSolicitation = []string{
-	"Timestamp",
-	"TargetAddress", // string
-	"Options",       // []*ICMPv6Option
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldTargetAddress, // string
+	fieldOptions,       // []*ICMPv6Option
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -89,4 +90,26 @@ func (i *ICMPv6NeighborSolicitation) Src() string {
 // Dst returns the destination address of the audit record.
 func (i *ICMPv6NeighborSolicitation) Dst() string {
 	return i.DstIP
+}
+
+var icmp6nsEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (i *ICMPv6NeighborSolicitation) Encode() []string {
+	var opts []string
+	for _, o := range i.Options {
+		opts = append(opts, o.toString())
+	}
+	return filter([]string{
+		icmp6nsEncoder.Int64(fieldTimestamp, i.Timestamp),
+		icmp6nsEncoder.String(fieldTargetAddress, i.TargetAddress),
+		icmp6nsEncoder.String(fieldOptions, strings.Join(opts, "")),
+		icmp6nsEncoder.String(fieldSrcIP, i.SrcIP),
+		icmp6nsEncoder.String(fieldDstIP, i.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (i *ICMPv6NeighborSolicitation) Analyze() float64 {
+	return 0
 }

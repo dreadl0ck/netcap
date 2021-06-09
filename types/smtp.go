@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
@@ -21,16 +22,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldIsEncrypted = "IsEncrypted"
+	fieldMailIDs     = "MailIDs"
+	fieldCommands    = "Commands"
+)
+
 var fieldsSMTP = []string{
-	"Timestamp",
-	"IsEncrypted",   // bool
-	"IsResponse",    // bool
-	"ResponseLines", // []*SMTPResponse
-	"Command",       // *SMTPCommand
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,
+	fieldIsEncrypted, // bool
+	fieldIsResponse,  // bool
+	fieldMailIDs,     // []string
+	fieldCommands,    // []string
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -44,12 +51,12 @@ func (a *SMTP) CSVRecord() []string {
 		formatTimestamp(a.Timestamp),
 		strconv.FormatBool(a.IsEncrypted), // bool
 		strconv.FormatBool(a.IsResponse),  // bool
+		join(a.MailIDs...),
+		join(a.Commands...),
 		a.SrcIP,
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
-		join(a.MailIDs...),
-		join(a.Commands...),
 	})
 }
 
@@ -115,4 +122,26 @@ func (a *SMTP) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *SMTP) Dst() string {
 	return a.DstIP
+}
+
+var smtpEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *SMTP) Encode() []string {
+	return filter([]string{
+		smtpEncoder.Int64(fieldTimestamp, a.Timestamp),
+		smtpEncoder.Bool(a.IsEncrypted), // bool
+		smtpEncoder.Bool(a.IsResponse),  // bool
+		smtpEncoder.String(fieldMailIDs, join(a.MailIDs...)),
+		smtpEncoder.String(fieldCommands, join(a.Commands...)),
+		smtpEncoder.String(fieldSrcIP, a.SrcIP),
+		smtpEncoder.String(fieldDstIP, a.DstIP),
+		smtpEncoder.Int32(fieldSrcPort, a.SrcPort),
+		smtpEncoder.Int32(fieldDstPort, a.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *SMTP) Analyze() float64 {
+	return 0
 }

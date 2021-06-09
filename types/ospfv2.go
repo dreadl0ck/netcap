@@ -15,29 +15,43 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldPacketLength   = "PacketLength"
+	fieldRouterID       = "RouterID"
+	fieldAreaID         = "AreaID"
+	fieldAuType         = "AuType"
+	fieldAuthentication = "Authentication"
+	fieldLSAs           = "LSAs"
+	fieldLSU            = "LSU"
+	fieldLSR            = "LSR"
+	fieldDbDesc         = "DbDesc"
+	fieldHelloV2        = "HelloV2"
+)
+
 var fieldsOSPFv2 = []string{
-	"Timestamp",
-	"Version",        // int32
-	"Type",           // int32
-	"PacketLength",   // int32
-	"RouterID",       // uint32
-	"AreaID",         // uint32
-	"Checksum",       // int32
-	"AuType",         // int32
-	"Authentication", // int64
-	"LSAs",           // []*LSAheader
-	"LSU",            // *LSUpdate
-	"LSR",            // []*LSReq
-	"DbDesc",         // *DbDescPkg
-	"HelloV2",        // *HelloPkgV2
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldVersion,        // int32
+	fieldType,           // int32
+	fieldPacketLength,   // int32
+	fieldRouterID,       // uint32
+	fieldAreaID,         // uint32
+	fieldChecksum,       // int32
+	fieldAuType,         // int32
+	fieldAuthentication, // int64
+	fieldLSAs,           // []*LSAheader
+	fieldLSU,            // *LSUpdate
+	fieldLSR,            // []*LSReq
+	fieldDbDesc,         // *DbDescPkg
+	fieldHelloV2,        // *HelloPkgV2
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -474,4 +488,44 @@ func (a *OSPFv2) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *OSPFv2) Dst() string {
 	return a.DstIP
+}
+
+var ospf2Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *OSPFv2) Encode() []string {
+	var (
+		lsas   []string
+		lsreqs []string
+	)
+	for _, l := range a.LSAs {
+		lsas = append(lsas, toString(l))
+	}
+	for _, l := range a.LSR {
+		lsreqs = append(lsreqs, toString(l))
+	}
+
+	return filter([]string{
+		ospf2Encoder.Int64(fieldTimestamp, a.Timestamp),        // int64
+		ospf2Encoder.Int32(fieldVersion, a.Version),            // int32
+		ospf2Encoder.Int32(fieldType, a.Type),                  // int32
+		ospf2Encoder.Int32(fieldPacketLength, a.PacketLength),  // int32
+		ospf2Encoder.Uint32(fieldRouterID, a.RouterID),         // uint32
+		ospf2Encoder.Uint32(fieldAreaID, a.AreaID),             // uint32
+		ospf2Encoder.Int32(fieldChecksum, a.Checksum),          // int32
+		ospf2Encoder.Int32(fieldAuType, a.AuType),              // int32
+		formatInt64(a.Authentication),                          // int64
+		ospf2Encoder.String(fieldLSAs, join(lsas...)),          // []*LSAheader
+		ospf2Encoder.String(fieldLSU, toString(a.LSU)),         // *LSUpdate
+		ospf2Encoder.String(fieldLSR, join(lsreqs...)),         // []*LSReq
+		ospf2Encoder.String(fieldDbDesc, toString(a.DbDesc)),   // *DbDescPkg
+		ospf2Encoder.String(fieldHelloV2, toString(a.HelloV2)), // *HelloPkgV2
+		ospf2Encoder.String(fieldSrcIP, a.SrcIP),
+		ospf2Encoder.String(fieldDstIP, a.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *OSPFv2) Analyze() float64 {
+	return 0
 }

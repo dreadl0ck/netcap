@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
@@ -21,10 +22,10 @@ import (
 )
 
 var fieldsEAPOL = []string{
-	"Timestamp",
-	"Version", //  int32
-	"Type",    //  int32
-	"Length",  //  int32
+	fieldTimestamp,
+	fieldVersion, //  int32
+	fieldType,    //  int32
+	fieldLength,  //  int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -80,4 +81,21 @@ func (a *EAPOL) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *EAPOL) Dst() string {
 	return ""
+}
+
+var eapolEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *EAPOL) Encode() []string {
+	return filter([]string{
+		eapolEncoder.Int64(fieldTimestamp, a.Timestamp),
+		eapolEncoder.Int32(fieldVersion, a.Version), //  int32
+		eapolEncoder.Int32(fieldType, a.Type),       //  int32
+		eapolEncoder.Int32(fieldLength, a.Length),   //  int32
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *EAPOL) Analyze() float64 {
+	return 0
 }

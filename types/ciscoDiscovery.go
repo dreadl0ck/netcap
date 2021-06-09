@@ -15,18 +15,25 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldTTL      = "TTL"
+	fieldChecksum = "Checksum"
+	fieldValues   = "Values"
+)
+
 var fieldsCiscoDiscovery = []string{
-	"Timestamp",
-	"Version",  // int32
-	"TTL",      // int32
-	"Checksum", // int32
-	"Values",   // []*CiscoDiscoveryValue
+	fieldTimestamp,
+	fieldVersion,  // int32
+	fieldTTL,      // int32
+	fieldChecksum, // int32
+	fieldValues,   // []*CiscoDiscoveryValue
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -103,4 +110,24 @@ func (cd *CiscoDiscovery) Src() string {
 // Dst returns the destination address of the audit record.
 func (cd *CiscoDiscovery) Dst() string {
 	return ""
+}
+
+var ciscoDiscoveryEncoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (cd *CiscoDiscovery) Encode() []string {
+	return filter([]string{
+		ciscoDiscoveryEncoder.Int64(fieldTimestamp, cd.Timestamp),
+		ciscoDiscoveryEncoder.Int32(fieldVersion, cd.Version),   // int32
+		ciscoDiscoveryEncoder.Int32(fieldTTL, cd.TTL),           // int32
+		ciscoDiscoveryEncoder.Int32(fieldChecksum, cd.Checksum), // int32
+
+		// TODO: flatten
+		//join(values...),          // []*CiscoDiscoveryValue
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (cd *CiscoDiscovery) Analyze() float64 {
+	return 0
 }

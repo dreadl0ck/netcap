@@ -14,25 +14,34 @@
 package types
 
 import (
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldVirtualRtrID = "VirtualRtrID"
+	fieldCountIPAddr = "CountIPAddr"
+	fieldAuthType = "AuthType"
+	fieldAdverInt = "AdverInt"
+	fieldIPAddresses = "IPAddresses"
+)
+
 var fieldsVRRPv2 = []string{
-	"Timestamp",
-	"Version",      // int32
-	"Type",         // int32
-	"VirtualRtrID", // int32
-	"Priority",     // int32
-	"CountIPAddr",  // int32
-	"AuthType",     // int32
-	"AdverInt",     // int32
-	"Checksum",     // int32
-	"IPAddresses",  // []string
-	"SrcIP",
-	"DstIP",
+	fieldTimestamp,
+	fieldVersion,      // int32
+	fieldType,         // int32
+	fieldVirtualRtrID, // int32
+	fieldPriority,     // int32
+	fieldCountIPAddr,  // int32
+	fieldAuthType,     // int32
+	fieldAdverInt,     // int32
+	fieldChecksum,     // int32
+	fieldIPAddresses,  // []string
+	fieldSrcIP,
+	fieldDstIP,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -98,4 +107,29 @@ func (a *VRRPv2) Src() string {
 // Dst returns the destination address of the audit record.
 func (a *VRRPv2) Dst() string {
 	return a.DstIP
+}
+
+var vrrpv2Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (a *VRRPv2) Encode() []string {
+	return filter([]string{
+		vrrpv2Encoder.Int64(fieldTimestamp, a.Timestamp),
+		vrrpv2Encoder.Int32(fieldVersion, a.Version),      // int32
+		vrrpv2Encoder.Int32(fieldType, a.Type),         // int32
+		vrrpv2Encoder.Int32(fieldVirtualRtrID, a.VirtualRtrID), // int32
+		vrrpv2Encoder.Int32(fieldPriority, a.Priority),     // int32
+		vrrpv2Encoder.Int32(fieldCountIPAddr, a.CountIPAddr),  // int32
+		vrrpv2Encoder.Int32(fieldAuthType, a.AuthType),     // int32
+		vrrpv2Encoder.Int32(fieldAdverInt, a.AdverInt),     // int32
+		vrrpv2Encoder.Int32(fieldChecksum, a.Checksum),     // int32
+		vrrpv2Encoder.String(fieldIPAddresses, join(a.IPAddress...)),        // []string
+		vrrpv2Encoder.String(fieldSrcIP, a.SrcIP),
+		vrrpv2Encoder.String(fieldDstIP, a.DstIP),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (a *VRRPv2) Analyze() float64 {
+	return 0
 }

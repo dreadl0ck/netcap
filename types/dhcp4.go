@@ -15,33 +15,51 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	fieldHardwareType = "HardwareType"
+	fieldHardwareLen  = "HardwareLen"
+	fieldHardwareOpts = "HardwareOpts"
+	fieldXid          = "Xid"
+	fieldSecs         = "Secs"
+	fieldFlags        = "Flags"
+	fieldClientIP     = "ClientIP"
+	fieldYourClientIP = "YourClientIP"
+	fieldNextServerIP = "NextServerIP"
+	fieldRelayAgentIP = "RelayAgentIP"
+	fieldClientHWAddr = "ClientHWAddr"
+	fieldServerName   = "ServerName"
+	fieldFile         = "File"
+	fieldOptions      = "Options"
+)
+
 var fieldsDHCPv4 = []string{
-	"Timestamp",    // string
-	"Operation",    // int32
-	"HardwareType", // int32
-	"HardwareLen",  // int32
-	"HardwareOpts", // int32
-	"Xid",          // uint32
-	"Secs",         // int32
-	"Flags",        // int32
-	"ClientIP",     // string
-	"YourClientIP", // string
-	"NextServerIP", // string
-	"RelayAgentIP", // string
-	"ClientHWAddr", // string
-	"ServerName",   // []byte
-	"File",         // []byte
-	"Options",      // []*DHCPOption
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldTimestamp,    // string
+	fieldOperation,    // int32
+	fieldHardwareType, // int32
+	fieldHardwareLen,  // int32
+	fieldHardwareOpts, // int32
+	fieldXid,          // uint32
+	fieldSecs,         // int32
+	fieldFlags,        // int32
+	fieldClientIP,     // string
+	fieldYourClientIP, // string
+	fieldNextServerIP, // string
+	fieldRelayAgentIP, // string
+	fieldClientHWAddr, // string
+	fieldServerName,   // []byte
+	fieldFile,         // []byte
+	//fieldOptions,      // []*DHCPOption
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -72,7 +90,7 @@ func (d *DHCPv4) CSVRecord() []string {
 		d.ClientHWAddr,                   // string
 		hex.EncodeToString(d.ServerName), // []byte
 		hex.EncodeToString(d.File),       // []byte
-		strings.Join(opts, ""),           // []*DHCPOption
+		//strings.Join(opts, ""),           // []*DHCPOption
 		d.SrcIP,
 		d.DstIP,
 		formatInt32(d.SrcPort),
@@ -106,22 +124,22 @@ func (d *DHCPv4) JSON() (string, error) {
 }
 
 var fieldsDHCPv4Metric = []string{
-	"Operation",    // int32
-	"HardwareType", // int32
-	"HardwareLen",  // int32
-	"HardwareOpts", // int32
-	"Xid",          // uint32
-	"Secs",         // int32
-	"Flags",        // int32
-	"ClientIP",     // string
-	"YourClientIP", // string
-	"NextServerIP", // string
-	"RelayAgentIP", // string
-	"ClientHWAddr", // string
-	"SrcIP",
-	"DstIP",
-	"SrcPort",
-	"DstPort",
+	fieldOperation,    // int32
+	fieldHardwareType, // int32
+	fieldHardwareLen,  // int32
+	fieldHardwareOpts, // int32
+	fieldXid,          // uint32
+	fieldSecs,         // int32
+	fieldFlags,        // int32
+	fieldClientIP,     // string
+	fieldYourClientIP, // string
+	fieldNextServerIP, // string
+	fieldRelayAgentIP, // string
+	fieldClientHWAddr, // string
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 }
 
 var dhcp4Metric = prometheus.NewCounterVec(
@@ -174,4 +192,44 @@ func (d *DHCPv4) Src() string {
 // Dst returns the destination address of the audit record.
 func (d *DHCPv4) Dst() string {
 	return d.DstIP
+}
+
+var dhcp4Encoder = encoder.NewValueEncoder()
+
+// Encode will encode categorical values and normalize according to configuration
+func (d *DHCPv4) Encode() []string {
+
+	var opts []string
+	for _, o := range d.Options {
+		opts = append(opts, o.toString())
+	}
+
+	return filter([]string{
+		dhcp4Encoder.Int64(fieldTimestamp, d.Timestamp),                        // int64
+		dhcp4Encoder.Int32(fieldOperation, d.Operation),                        // int32
+		dhcp4Encoder.Int32(fieldHardwareType, d.HardwareType),                  // int32
+		dhcp4Encoder.Int32(fieldHardwareLen, d.HardwareLen),                    // int32
+		dhcp4Encoder.Int32(fieldHardwareOpts, d.HardwareOpts),                  // int32
+		dhcp4Encoder.Uint32(fieldXid, d.Xid),                                   // uint32
+		dhcp4Encoder.Int32(fieldSecs, d.Secs),                                  // int32
+		dhcp4Encoder.Int32(fieldFlags, d.Flags),                                // int32
+		dhcp4Encoder.String(fieldClientIP, d.ClientIP),                         // string
+		dhcp4Encoder.String(fieldYourClientIP, d.YourClientIP),                 // string
+		dhcp4Encoder.String(fieldNextServerIP, d.NextServerIP),                 // string
+		dhcp4Encoder.String(fieldRelayAgentIP, d.RelayAgentIP),                 // string
+		dhcp4Encoder.String(fieldClientHWAddr, d.ClientHWAddr),                 // string
+		dhcp4Encoder.String(fieldServerName, hex.EncodeToString(d.ServerName)), // []byte
+		dhcp4Encoder.String(fieldFile, hex.EncodeToString(d.File)),             // []byte
+		// TODO: flatten
+		//dhcp4Encoder.String(fieldOptions, strings.Join(opts, "")),              // []*DHCPOption
+		dhcp4Encoder.String(fieldSrcIP, d.SrcIP),
+		dhcp4Encoder.String(fieldDstIP, d.DstIP),
+		dhcp4Encoder.Int32(fieldSrcPort, d.SrcPort),
+		dhcp4Encoder.Int32(fieldDstPort, d.DstPort),
+	})
+}
+
+// Analyze will invoke the configured analyzer for the audit record and return a score.
+func (d *DHCPv4) Analyze() float64 {
+	return 0
 }
