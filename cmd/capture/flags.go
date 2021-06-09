@@ -136,6 +136,7 @@ var (
 	flagIgnoreInitErrs                 = fs.Bool("ignore-init-errors", true, "ignore errors from initializing custom decoders")
 	flagDisableGenericVersionHarvester = fs.Bool("disable-generic-software-harvester", true, "disable the generic software harvester regex")
 	flagRemoveClosedStreams            = fs.Bool("remove-closed-streams", false, "remove tcp streams that receive a FIN or RST packet from the stream pool")
+	flagEncode                         = fs.Bool("encode", false, "encode data written into CSV file")
 
 	flagBannerSize          = fs.Int("bsize", 256, "size of the stored service banners in bytes")
 	flagHarvesterBannerSize = fs.Int("hbsize", 256, "size of the data passed to the credential harvesters in bytes")

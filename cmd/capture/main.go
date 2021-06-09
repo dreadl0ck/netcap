@@ -194,6 +194,7 @@ func Run() {
 			MemBufferSize: *flagMemBufferSize,
 			Compression:   *flagCompress,
 			CSV:           *flagCSV,
+			Encode:        *flagEncode,
 			Null:          *flagNull,
 			Elastic:       *flagElastic,
 			ElasticConfig: io.ElasticConfig{
