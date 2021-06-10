@@ -176,13 +176,13 @@ func merge(results map[string]*fileSummary) map[string]*encoder.ColumnSummary {
 
 			colSums[col] = &encoder.ColumnSummary{
 				UniqueStrings: map[string]int{},
-				Version: version,
-				Col:     col,
-				Typ:     encoder.TypeNumeric,
-				Mean:    mean,
-				Std:     std,
-				Min:     min,
-				Max:     max,
+				Version:       version,
+				Col:           col,
+				Typ:           encoder.TypeNumeric,
+				Mean:          mean,
+				Std:           std,
+				Min:           min,
+				Max:           max,
 			}
 		}
 	}

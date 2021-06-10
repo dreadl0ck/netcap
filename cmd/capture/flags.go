@@ -69,6 +69,7 @@ var (
 	flagPayload       = fs.Bool("payload", false, "capture payload for supported layers")
 
 	flagCSV              = fs.Bool("csv", false, "output data as CSV")
+	flagUNIX             = fs.Bool("unix", false, "output data via unix sockets")
 	flagNull             = fs.Bool("null", false, "write no data to disk")
 	flagElastic          = fs.Bool("elastic", false, "write data to elastic db")
 	flagElasticAddrs     = fs.String("elastic-addrs", "", "elastic db endpoints to write data to")
