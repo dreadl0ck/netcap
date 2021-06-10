@@ -56,6 +56,8 @@ var (
 	flagWorkers      = fs.Int("workers", runtime.NumCPU()*2, "number of workers") // runtime.NumCPU()
 	flagPacketBuffer = fs.Int("pbuf", defaults.PacketBuffer, "set packet buffer size, for channels that feed data to workers")
 
+	flagAnalyzer = fs.String("analyzer", "", "the analyzer to use")
+
 	flagCPUProfile    = fs.Bool("cpuprof", false, "create cpu profile")
 	flagMemProfile    = fs.Bool("memprof", false, "create memory profile")
 	flagIgnoreUnknown = fs.Bool("ignore-unknown", true, "disable writing unknown packets into a pcap file")

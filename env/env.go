@@ -38,4 +38,7 @@ const (
 
 	// GeoLiteAPIKey to download the geolite databases
 	GeoLiteAPIKey = "NETCAP_GEOLITE_API_KEY"
+
+	// AnalyzerDirectory contains external analyzer tools
+	AnalyzerDirectory = "NETCAP_ANALYZER_DIR"
 )

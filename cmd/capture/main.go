@@ -17,10 +17,13 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime/pprof"
 	"strings"
 	"time"
@@ -169,6 +172,35 @@ func Run() {
 		metrics.ServeMetricsAt(*flagMetricsAddr, nil)
 		// TODO: make the packet metrics configurable separately, for performance analysis it is faster to only use the core metrics
 		// exportMetrics = true
+	}
+
+	if *flagAnalyzer != "" {
+
+		go func() {
+
+			// get tool path
+			dir := os.Getenv(env.AnalyzerDirectory)
+
+			// create call: todo: make command configurable
+			cmd := exec.Command("python3", filepath.Join(dir, *flagAnalyzer + ".py"), *flagInclude)
+
+			if *flagDebug {
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+			}
+
+			// start process
+			errCmd := cmd.Start()
+			if errCmd != nil {
+				log.Println(errCmd)
+			}
+
+			// wait for process
+			errCmd = cmd.Wait()
+			if errCmd != nil {
+				log.Println(errCmd)
+			}
+		}()
 	}
 
 	// init collector
