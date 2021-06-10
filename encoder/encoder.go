@@ -83,12 +83,14 @@ func (m *ValueEncoder) String(field string, val string) string {
 
 	sum := m.GetSummary(TypeString, field)
 
+	m.Lock()
 	i, ok := sum.UniqueStrings[val]
 	if !ok {
 		sum.UniqueStrings[val] = sum.Index
 		i = sum.Index
 		sum.Index++
 	}
+	m.Unlock()
 
 	if m.conf.NormalizeCategoricals {
 		if m.conf.ZScore {
@@ -172,15 +174,17 @@ func (m *ValueEncoder) Float64(field string, val float64) string {
 func (m *ValueEncoder) GetSummary(colType ColumnType, field string) *ColumnSummary {
 
 	// get column summary for current field
+	m.Lock()
 	sum, ok := m.columns[field]
 	if !ok {
 		sum = &ColumnSummary{
-			Col: field,
-			Typ: colType,
+			Col:           field,
+			Typ:           colType,
 			UniqueStrings: map[string]float64{},
 		}
 		m.columns[field] = sum
 	}
+	m.Unlock()
 
 	return sum
 }
