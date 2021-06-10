@@ -189,14 +189,15 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 
 		go func(dec DecoderAPI) {
 			w := io.NewAuditRecordWriter(&io.WriterConfig{
-				CSV:     c.CSV,
-				Encode:  c.Encode,
-				Proto:   c.Proto,
-				JSON:    c.JSON,
-				Name:    dec.GetName(),
-				Type:    dec.GetType(),
-				Null:    c.Null,
-				Elastic: c.Elastic,
+				UnixSocket: c.UnixSocket,
+				CSV:        c.CSV,
+				Encode:     c.Encode,
+				Proto:      c.Proto,
+				JSON:       c.JSON,
+				Name:       dec.GetName(),
+				Type:       dec.GetType(),
+				Null:       c.Null,
+				Elastic:    c.Elastic,
 				ElasticConfig: io.ElasticConfig{
 					ElasticAddrs:   c.ElasticAddrs,
 					ElasticUser:    c.ElasticUser,
