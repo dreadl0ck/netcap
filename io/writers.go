@@ -41,6 +41,9 @@ type WriterConfig struct {
 	// Elastic db writer
 	Elastic bool
 
+	// UnixSocket writer
+	UnixSocket bool
+
 	// ElasticConfig allows to overwrite elastic defaults
 	ElasticConfig
 

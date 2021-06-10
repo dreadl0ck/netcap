@@ -139,30 +139,6 @@ func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
 }
 
-// nullWriter is a writer that writes nothing to disk.
-type nullWriter struct{}
-
-// newNullWriter initializes and configures a new nullWriter instance.
-func newNullWriter(wc *WriterConfig) *nullWriter {
-	ioLog.Info("create nullWriter", zap.String("type", wc.Type.String()))
-	return &nullWriter{}
-}
-
-// WriteCSV writes a CSV record.
-func (w *nullWriter) Write(_ proto.Message) error {
-	return nil
-}
-
-// WriteHeader writes a CSV header.
-func (w *nullWriter) WriteHeader(_ types.Type) error {
-	return nil
-}
-
-// Close flushes and closes the writer and the associated file handles.
-func (w *nullWriter) Close(_ int64) (name string, size int64) {
-	return "", 0
-}
-
 // jsonProtoWriter implements writing audit records to disk in the JSON format.
 type jsonProtoWriter struct {
 	sync.Mutex
@@ -196,8 +172,6 @@ func (w *jsonProtoWriter) writeHeader(h *types.Header) (int, error) {
 
 // writeRecord writes a protocol buffer into the JSON writer.
 func (w *jsonProtoWriter) writeRecord(msg proto.Message) (int, error) {
-	w.Lock()
-	defer w.Unlock()
 
 	if j, ok := msg.(types.AuditRecord); ok {
 		js, err := j.JSON()
@@ -205,7 +179,13 @@ func (w *jsonProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			return 0, err
 		}
 
-		return w.w.Write([]byte(js + "\n"))
+		out := []byte(js + "\n")
+
+		w.Lock()
+		n, err := w.w.Write(out)
+		w.Unlock()
+
+		return n, err
 	}
 
 	spew.Dump(msg)
