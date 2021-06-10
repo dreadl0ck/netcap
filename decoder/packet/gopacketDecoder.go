@@ -169,13 +169,14 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 
 			// hookup writer
 			dec.writer = io.NewAuditRecordWriter(&io.WriterConfig{
-				CSV:     c.CSV,
-				Encode:  c.Encode,
-				Proto:   c.Proto,
-				JSON:    c.JSON,
-				Chan:    c.Chan,
-				Null:    c.Null,
-				Elastic: c.Elastic,
+				UnixSocket: c.UnixSocket,
+				CSV:        c.CSV,
+				Encode:     c.Encode,
+				Proto:      c.Proto,
+				JSON:       c.JSON,
+				Chan:       c.Chan,
+				Null:       c.Null,
+				Elastic:    c.Elastic,
 				ElasticConfig: io.ElasticConfig{
 					ElasticAddrs:   c.ElasticAddrs,
 					ElasticUser:    c.ElasticUser,

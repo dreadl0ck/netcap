@@ -159,6 +159,9 @@ type Config struct {
 	// Generate CSV instead of audit records
 	CSV bool
 
+	// UnixSocket will send data over unix sockets
+	UnixSocket bool
+
 	// Encode values when generating CSV
 	Encode bool
 
