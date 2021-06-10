@@ -194,6 +194,7 @@ func Run() {
 			MemBufferSize: *flagMemBufferSize,
 			Compression:   *flagCompress,
 			CSV:           *flagCSV,
+			UnixSocket:    *flagUNIX,
 			Encode:        *flagEncode,
 			Null:          *flagNull,
 			Elastic:       *flagElastic,
@@ -354,13 +355,14 @@ func generateElasticIndices(elasticAddrs []string) {
 
 func makeWriterConfig(name string, typ types.Type, elasticAddrs []string) *io.WriterConfig {
 	return &io.WriterConfig{
-		CSV:     *flagCSV,
-		Proto:   *flagProto,
-		JSON:    *flagJSON,
-		Name:    name,
-		Type:    typ,
-		Null:    *flagNull,
-		Elastic: *flagElastic,
+		UnixSocket: *flagUNIX,
+		CSV:        *flagCSV,
+		Proto:      *flagProto,
+		JSON:       *flagJSON,
+		Name:       name,
+		Type:       typ,
+		Null:       *flagNull,
+		Elastic:    *flagElastic,
 		ElasticConfig: io.ElasticConfig{
 			ElasticAddrs:   elasticAddrs,
 			ElasticUser:    *flagElasticUser,

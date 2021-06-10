@@ -44,6 +44,7 @@ func (c *Collector) cleanup(force bool) {
 	c.log.Info("stopping workers")
 	c.stopWorkers()
 	c.log.Info("workers completed after", zap.Duration("delta", time.Since(workerStop)))
+	c.printlnStdOut("workers completed after", time.Since(workerStop))
 
 	waitForCollector := func() chan struct{} {
 		ch := make(chan struct{})
