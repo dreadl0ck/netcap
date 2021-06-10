@@ -23,10 +23,10 @@ import (
 )
 
 const (
-	fieldValidIDFlag = "ValidIDFlag"
-	fieldGBPExtension = "GBPExtension"
-	fieldGBPDontLearn = "GBPDontLearn"
-	fieldGBPApplied = "GBPApplied"
+	fieldValidIDFlag      = "ValidIDFlag"
+	fieldGBPExtension     = "GBPExtension"
+	fieldGBPDontLearn     = "GBPDontLearn"
+	fieldGBPApplied       = "GBPApplied"
 	fieldGBPGroupPolicyID = "GBPGroupPolicyID"
 )
 
@@ -104,12 +104,12 @@ var vxlanEncoder = encoder.NewValueEncoder()
 func (a *VXLAN) Encode() []string {
 	return filter([]string{
 		vxlanEncoder.Int64(fieldTimestamp, a.Timestamp),
-		vxlanEncoder.Bool(a.ValidIDFlag),  //  bool
-		vxlanEncoder.Uint32(fieldVNI, a.VNI),                //  uint32
-		vxlanEncoder.Bool(a.GBPExtension), //  bool
-		vxlanEncoder.Bool(a.GBPDontLearn), //  bool
-		vxlanEncoder.Bool(a.GBPApplied),   //  bool
-		vxlanEncoder.Int32(fieldGBPGroupPolicyID, a.GBPGroupPolicyID),    //  int32
+		vxlanEncoder.Bool(a.ValidIDFlag),                              //  bool
+		vxlanEncoder.Uint32(fieldVNI, a.VNI),                          //  uint32
+		vxlanEncoder.Bool(a.GBPExtension),                             //  bool
+		vxlanEncoder.Bool(a.GBPDontLearn),                             //  bool
+		vxlanEncoder.Bool(a.GBPApplied),                               //  bool
+		vxlanEncoder.Int32(fieldGBPGroupPolicyID, a.GBPGroupPolicyID), //  int32
 	})
 }
 
@@ -117,4 +117,3 @@ func (a *VXLAN) Encode() []string {
 func (a *VXLAN) Analyze() float64 {
 	return 0
 }
-

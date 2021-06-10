@@ -23,10 +23,10 @@ import (
 
 const (
 	fieldVirtualRtrID = "VirtualRtrID"
-	fieldCountIPAddr = "CountIPAddr"
-	fieldAuthType = "AuthType"
-	fieldAdverInt = "AdverInt"
-	fieldIPAddresses = "IPAddresses"
+	fieldCountIPAddr  = "CountIPAddr"
+	fieldAuthType     = "AuthType"
+	fieldAdverInt     = "AdverInt"
+	fieldIPAddresses  = "IPAddresses"
 )
 
 var fieldsVRRPv2 = []string{
@@ -115,15 +115,15 @@ var vrrpv2Encoder = encoder.NewValueEncoder()
 func (a *VRRPv2) Encode() []string {
 	return filter([]string{
 		vrrpv2Encoder.Int64(fieldTimestamp, a.Timestamp),
-		vrrpv2Encoder.Int32(fieldVersion, a.Version),      // int32
-		vrrpv2Encoder.Int32(fieldType, a.Type),         // int32
-		vrrpv2Encoder.Int32(fieldVirtualRtrID, a.VirtualRtrID), // int32
-		vrrpv2Encoder.Int32(fieldPriority, a.Priority),     // int32
-		vrrpv2Encoder.Int32(fieldCountIPAddr, a.CountIPAddr),  // int32
-		vrrpv2Encoder.Int32(fieldAuthType, a.AuthType),     // int32
-		vrrpv2Encoder.Int32(fieldAdverInt, a.AdverInt),     // int32
-		vrrpv2Encoder.Int32(fieldChecksum, a.Checksum),     // int32
-		vrrpv2Encoder.String(fieldIPAddresses, join(a.IPAddress...)),        // []string
+		vrrpv2Encoder.Int32(fieldVersion, a.Version),                 // int32
+		vrrpv2Encoder.Int32(fieldType, a.Type),                       // int32
+		vrrpv2Encoder.Int32(fieldVirtualRtrID, a.VirtualRtrID),       // int32
+		vrrpv2Encoder.Int32(fieldPriority, a.Priority),               // int32
+		vrrpv2Encoder.Int32(fieldCountIPAddr, a.CountIPAddr),         // int32
+		vrrpv2Encoder.Int32(fieldAuthType, a.AuthType),               // int32
+		vrrpv2Encoder.Int32(fieldAdverInt, a.AdverInt),               // int32
+		vrrpv2Encoder.Int32(fieldChecksum, a.Checksum),               // int32
+		vrrpv2Encoder.String(fieldIPAddresses, join(a.IPAddress...)), // []string
 		vrrpv2Encoder.String(fieldSrcIP, a.SrcIP),
 		vrrpv2Encoder.String(fieldDstIP, a.DstIP),
 	})
