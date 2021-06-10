@@ -23,21 +23,21 @@ import (
 )
 
 const (
-	fieldEventType = "EventType"
-	fieldTransferType = "TransferType"
-	fieldDirection = "Direction"
-	fieldEndpointNumber = "EndpointNumber"
-	fieldDeviceAddress = "DeviceAddress"
-	fieldBusID = "BusID"
-	fieldTimestampSec = "TimestampSec"
-	fieldTimestampUsec = "TimestampUsec"
-	fieldSetup = "Setup"
-	fieldUrbLength = "UrbLength"
-	fieldUrbDataLength = "UrbDataLength"
-	fieldUrbInterval = "UrbInterval"
-	fieldUrbStartFrame = "UrbStartFrame"
+	fieldEventType              = "EventType"
+	fieldTransferType           = "TransferType"
+	fieldDirection              = "Direction"
+	fieldEndpointNumber         = "EndpointNumber"
+	fieldDeviceAddress          = "DeviceAddress"
+	fieldBusID                  = "BusID"
+	fieldTimestampSec           = "TimestampSec"
+	fieldTimestampUsec          = "TimestampUsec"
+	fieldSetup                  = "Setup"
+	fieldUrbLength              = "UrbLength"
+	fieldUrbDataLength          = "UrbDataLength"
+	fieldUrbInterval            = "UrbInterval"
+	fieldUrbStartFrame          = "UrbStartFrame"
 	fieldUrbCopyOfTransferFlags = "UrbCopyOfTransferFlags"
-	fieldIsoNumDesc = "IsoNumDesc"
+	fieldIsoNumDesc             = "IsoNumDesc"
 )
 
 var fieldsUSB = []string{

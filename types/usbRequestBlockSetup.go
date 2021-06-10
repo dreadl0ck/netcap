@@ -23,8 +23,8 @@ import (
 
 const (
 	fieldRequestType = "RequestType"
-	fieldValue = "Value"
-	fieldIndex = "Index"
+	fieldValue       = "Value"
+	fieldIndex       = "Index"
 )
 
 var fieldsUSBRequestBlockSetup = []string{
@@ -101,10 +101,10 @@ func (a *USBRequestBlockSetup) Encode() []string {
 	return filter([]string{
 		usbRequestBlockSetupEncoder.Int64(fieldTimestamp, a.Timestamp),
 		usbRequestBlockSetupEncoder.Int32(fieldRequestType, a.RequestType), // int32
-		usbRequestBlockSetupEncoder.Int32(fieldRequest, a.Request),     // int32
-		usbRequestBlockSetupEncoder.Int32(fieldValue, a.Value),       // int32
-		usbRequestBlockSetupEncoder.Int32(fieldIndex, a.Index),       // int32
-		usbRequestBlockSetupEncoder.Int32(fieldLength, a.Length),      // int32
+		usbRequestBlockSetupEncoder.Int32(fieldRequest, a.Request),         // int32
+		usbRequestBlockSetupEncoder.Int32(fieldValue, a.Value),             // int32
+		usbRequestBlockSetupEncoder.Int32(fieldIndex, a.Index),             // int32
+		usbRequestBlockSetupEncoder.Int32(fieldLength, a.Length),           // int32
 	})
 }
 
