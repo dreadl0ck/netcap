@@ -16,6 +16,8 @@ package io
 import (
 	"fmt"
 	"go.uber.org/zap"
+	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -137,4 +139,61 @@ func createFile(name, ext string) *os.File {
 	}
 
 	return f
+}
+
+const (
+	networkTypeUnix       = "unix"
+	networkTypeUnixgram   = "unixgram"
+	networkTypeUnixpacket = "unixpacket"
+)
+
+// createFile is a wrapper to create new audit record file.
+func createUnixSocket(name string) *net.UnixConn {
+
+	path := filepath.Join("/tmp/" + name + ".sock")
+
+	//if err := os.RemoveAll(path); err != nil {
+	//	log.Fatal(err)
+	//}
+
+	// Create unix socket
+	raddr, err := net.ResolveUnixAddr(networkTypeUnixgram, path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//l, err := net.ListenUnix(networkTypeUnix, raddr)
+	//if err != nil {
+	//	log.Fatal("listen error:", err)
+	//}
+	//
+	//err = l.Close()
+	//if err != nil {
+	//	log.Fatal("listen error:", err)
+	//}
+	//go func () {
+	//	for {
+	//		// Accept new connections, dispatching them to echoServer
+	//		// in a goroutine.
+	//		conn, err := l.Accept()
+	//		if err != nil {
+	//			log.Fatal("accept error:", err)
+	//		}
+	//
+	//		go echoServer(conn)
+	//	}
+	//}()
+
+	// server side
+	//l, err := net.ListenUnix("unix", addr)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	conn, err := net.DialUnix(networkTypeUnixgram, nil, raddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return conn
 }

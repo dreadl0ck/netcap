@@ -37,6 +37,8 @@ type ChannelAuditRecordWriter interface {
 // NewAuditRecordWriter will return a new writer for netcap audit records.
 func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 	switch {
+	case wc.UnixSocket:
+		return newUnixSocketWriter(wc)
 	case wc.CSV:
 		return newCSVWriter(wc)
 	case wc.Chan:

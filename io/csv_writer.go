@@ -15,29 +15,20 @@ package io
 
 import (
 	"bufio"
-	"fmt"
+	"github.com/gogo/protobuf/proto"
+	"github.com/klauspost/pgzip"
 	"go.uber.org/zap"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
-	"sync"
-
-	"github.com/davecgh/go-spew/spew"
-	"github.com/gogo/protobuf/proto"
-	"github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // csvWriter is a structure that supports writing CSV audit records to disk.
 type csvWriter struct {
-	mu sync.Mutex
-
 	bWriter   *bufio.Writer
 	gWriter   *pgzip.Writer
 	csvWriter *csvProtoWriter
@@ -105,8 +96,6 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 
 // WriteCSV writes a CSV record.
 func (w *csvWriter) Write(msg proto.Message) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
 
 	_, err := w.csvWriter.writeRecord(msg)
 
@@ -115,8 +104,6 @@ func (w *csvWriter) Write(msg proto.Message) error {
 
 // WriteHeader writes a CSV header.
 func (w *csvWriter) WriteHeader(t types.Type) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
 
 	_, err := w.csvWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime), InitRecord(t))
 
@@ -125,8 +112,6 @@ func (w *csvWriter) WriteHeader(t types.Type) error {
 
 // Close flushes and closes the writer and the associated file handles.
 func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
 
 	if w.wc.Buffer {
 		flushWriters(w.bWriter)
@@ -137,53 +122,4 @@ func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
 	}
 
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
-}
-
-// csvProtoWriter implements writing audit records to disk in the CSV format.
-type csvProtoWriter struct {
-	sync.Mutex
-	w      io.Writer
-	encode bool
-}
-
-// newCSVProtoWriter returns a new CSV writer instance.
-func newCSVProtoWriter(w io.Writer, encode bool) *csvProtoWriter {
-	return &csvProtoWriter{
-		w:      w,
-		encode: encode,
-	}
-}
-
-// writeHeader writes the CSV header to the underlying file.
-func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, error) {
-	w.Lock()
-	defer w.Unlock()
-
-	n, err := w.w.Write([]byte(fmt.Sprintf("# Type: %s, Created: %s, Source: %s, ContainsPayloads: %t\n", h.Type.String(), utils.UnixTimeToUTC(h.Created), h.InputSource, h.ContainsPayloads)))
-	if err != nil {
-		return n, err
-	}
-
-	if csv, ok := msg.(types.AuditRecord); ok {
-		return w.w.Write([]byte(strings.Join(csv.CSVHeader(), ",") + "\n"))
-	}
-
-	spew.Dump(msg)
-	panic("protocol buffer does not implement the types.AuditRecord interface")
-}
-
-// writeRecord writes a protocol buffer into the CSV writer.
-func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
-	w.Lock()
-	defer w.Unlock()
-
-	if csv, ok := msg.(types.AuditRecord); ok {
-		if w.encode {
-			return w.w.Write([]byte(strings.Join(csv.Encode(), ",") + "\n"))
-		}
-		return w.w.Write([]byte(strings.Join(csv.CSVRecord(), ",") + "\n"))
-	}
-
-	spew.Dump(msg)
-	panic("can not write as CSV")
 }
