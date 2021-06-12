@@ -182,7 +182,7 @@ func Run() {
 			dir := os.Getenv(env.AnalyzerDirectory)
 
 			// create call: todo: make command configurable
-			cmd := exec.Command("python3", filepath.Join(dir, *flagAnalyzer + ".py"), *flagInclude)
+			cmd := exec.Command("python3", filepath.Join(dir, *flagAnalyzer+".py"), *flagInclude)
 
 			if *flagDebug {
 				cmd.Stdout = os.Stdout
@@ -219,6 +219,7 @@ func Run() {
 		NoPrompt:              *flagNoPrompt,
 		HTTPShutdownEndpoint:  *flagHTTPShutdown,
 		Timeout:               *flagTimeout,
+		Labels:                *flagLabels,
 		DecoderConfig: &config.Config{
 			Quiet:         *flagQuiet,
 			PrintProgress: *flagPrintProgress,
@@ -228,6 +229,7 @@ func Run() {
 			CSV:           *flagCSV,
 			UnixSocket:    *flagUNIX,
 			Encode:        *flagEncode,
+			Label:         *flagLabels != "",
 			Null:          *flagNull,
 			Elastic:       *flagElastic,
 			ElasticConfig: io.ElasticConfig{

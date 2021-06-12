@@ -120,4 +120,8 @@ type Config struct {
 	//   to allow more packets to arrive and to read multiple packets from the OS
 	//   kernel in one operation.
 	Timeout time.Duration
+
+	// Labels is a filesystem path to the labels file on disk
+	// that contains the attack mappings
+	Labels string
 }

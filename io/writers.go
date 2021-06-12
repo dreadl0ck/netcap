@@ -70,4 +70,7 @@ type WriterConfig struct {
 
 	// Encode data on the fly
 	Encode bool
+
+	// Label data on the fly
+	Label bool
 }

@@ -172,6 +172,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 				UnixSocket: c.UnixSocket,
 				CSV:        c.CSV,
 				Encode:     c.Encode,
+				Label:      c.Label,
 				Proto:      c.Proto,
 				JSON:       c.JSON,
 				Chan:       c.Chan,
