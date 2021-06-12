@@ -57,10 +57,6 @@ type AttackInfo struct {
 	Start string `csv:"start" yaml:"start"`
 	End   string `csv:"end" yaml:"end"`
 
-	// Separate victims and attacks, flag any traffic BETWEEN the specified IPs.
-	Victims   []string `csv:"victims" yaml:"victims"`
-	Attackers []string `csv:"attackers" yaml:"attackers"`
-
 	// any traffic going from and towards the specified IPs in the given timeframe
 	// the field value from parsed CSV is going to be split by ";"
 	IPs []string `csv:"ips" yaml:"ips"`
@@ -79,15 +75,19 @@ type AttackInfo struct {
 
 	// Day of Attack
 	Date string `yaml:"date" yaml:"date"`
+
+	// Separate victims and attacks, flag any traffic BETWEEN the specified IPs.
+	Victims   []string `csv:"victims" yaml:"victims"`
+	Attackers []string `csv:"attackers" yaml:"attackers"`
 }
 
 // CustomLabels uses info from a csv file to label the data.
 func CustomLabels(pathMappingInfo, outputPath, separator, selection string) error {
 	var (
-		start     = time.Now()
+		start  = time.Now()
 		labels []*attackInfo
 	)
-	if strings.HasSuffix(pathMappingInfo, ".csv"){
+	if strings.HasSuffix(pathMappingInfo, ".csv") {
 		_, labels = parseAttackInfosCSV(pathMappingInfo)
 	} else {
 		_, labels = parseAttackInfosYAML(pathMappingInfo)
@@ -187,10 +187,6 @@ type attackInfo struct {
 	Start time.Time `csv:"start" yaml:"start"`
 	End   time.Time `csv:"end" yaml:"end"`
 
-	// Separate victims and attacks, flag any traffic BETWEEN the specified IPs.
-	Victims   []string `csv:"victims" yaml:"victims"`
-	Attackers []string `csv:"attackers" yaml:"attackers"`
-
 	// any traffic going from and towards the specified IPs in the given timeframe
 	// the field value from parsed CSV is going to be split by ";"
 	IPs []string `csv:"ips" yaml:"ips"`
@@ -209,6 +205,10 @@ type attackInfo struct {
 
 	// Day of Attack
 	Date time.Time `yaml:"date" yaml:"date"`
+
+	// Separate victims and attacks, flag any traffic BETWEEN the specified IPs.
+	Victims   []string `csv:"victims" yaml:"victims"`
+	Attackers []string `csv:"attackers" yaml:"attackers"`
 }
 
 func parseAttackInfosYAML(path string) (labelMap map[string]*attackInfo, labels []*attackInfo) {
@@ -245,7 +245,7 @@ func parseAttackInfosYAML(path string) (labelMap map[string]*attackInfo, labels 
 		// example: "2006/1/2 15:04:05"
 		// from dataset: Friday-02-03-2018
 		// TODO: make ts layout configurable
-		date, errParseDate := time.Parse("Monday-02-01-06", a.Date)
+		date, errParseDate := time.Parse("Monday-02-01-2006", a.Date)
 		if errParseDate != nil {
 			log.Fatal(errParseDate)
 		}
@@ -338,7 +338,7 @@ func parseAttackInfosCSV(path string) (labelMap map[string]*attackInfo, labels [
 		// example: "2006/1/2 15:04:05"
 		// from dataset: Friday-02-03-2018
 		// TODO: make configurable
-		date, errParseDate := time.Parse("Monday-02-01-06", record[8])
+		date, errParseDate := time.Parse("2006/1/2", record[9])
 		if errParseDate != nil {
 			log.Fatal(errParseDate)
 		}
@@ -348,16 +348,18 @@ func parseAttackInfosCSV(path string) (labelMap map[string]*attackInfo, labels [
 		}
 
 		custom := &attackInfo{
-			Num:      num,              // int
-			Start:    start,            // time.Time
-			End:      end,              // time.Time
-			IPs:      toArr(record[4]), // []string
-			Name:     record[1],        // string
-			Proto:    record[5],        // string
-			Notes:    record[6],        // string
-			Category: record[7],        // string
-			Date:     date,
-			MITRE: record[9],
+			Num:       num,              // int
+			Start:     start,            // time.Time
+			End:       end,              // time.Time
+			IPs:       toArr(record[4]), // []string
+			Name:      record[1],        // string
+			Proto:     record[5],        // string
+			Notes:     record[6],        // string
+			Category:  record[7],        // string
+			Date:      date,
+			MITRE:     record[8],
+			Victims:   toArr(record[10]),
+			Attackers: toArr(record[11]),
 		}
 
 		// ensure no alerts with empty name are collected
