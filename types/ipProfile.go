@@ -117,6 +117,9 @@ func (d *IPProfile) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (d *IPProfile) Analyze() float64 {
-	return 0
+func (d *IPProfile) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (d *IPProfile) NetcapType() Type {
+	return Type_NC_IPProfile
 }

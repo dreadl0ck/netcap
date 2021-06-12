@@ -176,6 +176,10 @@ func (d *DHCPv6) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (d *DHCPv6) Analyze() float64 {
-	return 0
+func (d *DHCPv6) Analyze() {
+}
+
+// NetcapType returns the type of the current audit record
+func (d *DHCPv6) NetcapType() Type {
+	return Type_NC_DHCPv6
 }

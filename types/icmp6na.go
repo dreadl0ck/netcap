@@ -117,6 +117,9 @@ func (i *ICMPv6NeighborAdvertisement) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (i *ICMPv6NeighborAdvertisement) Analyze() float64 {
-	return 0
+func (i *ICMPv6NeighborAdvertisement) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (i *ICMPv6NeighborAdvertisement) NetcapType() Type {
+	return Type_NC_ICMPv6NeighborAdvertisement
 }

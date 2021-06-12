@@ -144,6 +144,9 @@ func (i *Geneve) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (i *Geneve) Analyze() float64 {
-	return 0
+func (i *Geneve) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (i *Geneve) NetcapType() Type {
+	return Type_NC_Geneve
 }

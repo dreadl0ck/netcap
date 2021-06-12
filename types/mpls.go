@@ -104,6 +104,9 @@ func (a *MPLS) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *MPLS) Analyze() float64 {
-	return 0
+func (a *MPLS) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (a *MPLS) NetcapType() Type {
+	return Type_NC_MPLS
 }

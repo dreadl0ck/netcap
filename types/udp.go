@@ -149,6 +149,11 @@ func (u *UDP) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (u *UDP) Analyze() float64 {
-	return 0
+func (u *UDP) Analyze()  {
+
+}
+
+// NetcapType returns the type of the current audit record
+func (u *UDP) NetcapType() Type {
+	return Type_NC_UDP
 }

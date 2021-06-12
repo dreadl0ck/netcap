@@ -210,6 +210,9 @@ func (l *LinkLayerDiscoveryInfo) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (l *LinkLayerDiscoveryInfo) Analyze() float64 {
-	return 0
+func (l *LinkLayerDiscoveryInfo) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (l *LinkLayerDiscoveryInfo) NetcapType() Type {
+	return Type_NC_LinkLayerDiscoveryInfo
 }

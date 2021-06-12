@@ -146,6 +146,9 @@ func (d *Mail) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (d *Mail) Analyze() float64 {
-	return 0
+func (d *Mail) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (d *Mail) NetcapType() Type {
+	return Type_NC_Mail
 }

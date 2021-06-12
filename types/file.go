@@ -158,6 +158,9 @@ func (a *File) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *File) Analyze() float64 {
-	return 0
+func (a *File) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (a *File) NetcapType() Type {
+	return Type_NC_File
 }

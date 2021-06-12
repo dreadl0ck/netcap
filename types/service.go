@@ -172,6 +172,9 @@ func (a *Service) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *Service) Analyze() float64 {
-	return 0
+func (a *Service) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (a *Service) NetcapType() Type {
+	return Type_NC_Service
 }
