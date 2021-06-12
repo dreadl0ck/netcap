@@ -17,6 +17,8 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"github.com/evilsocket/islazy/tui"
+	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -29,7 +31,6 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb"
-	"github.com/evilsocket/islazy/tui"
 	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -38,115 +39,59 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-type attackInfo struct {
-	Num      int       `csv:"num"`
-	Name     string    `csv:"name"`
-	Start    time.Time `csv:"start"`
-	End      time.Time `csv:"end"`
-	IPs      []string  `csv:"ips"`
-	Proto    string    `csv:"proto"`
-	Notes    string    `csv:"notes"`
-	Category string    `csv:"category"`
+type attacks struct {
+	Attacks []*AttackInfo `yaml:"attacks"`
 }
 
-func parseAttackInfos(path string) (labelMap map[string]*attackInfo, labels []*attackInfo) {
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
-		}
-	}()
+// AttackInfo models an attack and contains meta information.
+// Timestamps are provided as strings to support custom time formats.
+type AttackInfo struct {
 
-	r := csv.NewReader(f)
+	// Attack instance number
+	Num int `csv:"num" yaml:"num"`
 
-	records, err := r.ReadAll()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Attack Name
+	Name string `csv:"name" yaml:"name"`
 
-	// alerts that have a duplicate timestamp
-	var duplicates []*attackInfo
+	// Attack timeframe
+	Start string `csv:"start" yaml:"start"`
+	End   string `csv:"end" yaml:"end"`
 
-	// ts:alert
-	labelMap = make(map[string]*attackInfo)
+	// Separate victims and attacks, flag any traffic BETWEEN the specified IPs.
+	Victims   []string `csv:"victims" yaml:"victims"`
+	Attackers []string `csv:"attackers" yaml:"attackers"`
 
-	for _, record := range records[1:] {
-		num, errConvert := strconv.Atoi(record[0])
-		if errConvert != nil {
-			log.Fatal(errConvert)
-		}
+	// any traffic going from and towards the specified IPs in the given timeframe
+	// the field value from parsed CSV is going to be split by ";"
+	IPs []string `csv:"ips" yaml:"ips"`
 
-		start, errParseStart := time.Parse("2006/1/2 15:04:05", record[2])
-		if errParseStart != nil {
-			log.Fatal(errParseStart)
-		}
+	// Underlying Protocol(s)
+	Proto string `csv:"proto" yaml:"proto"`
 
-		end, errParseEnd := time.Parse("2006/1/2 15:04:05", record[3])
-		if errParseEnd != nil {
-			log.Fatal(errParseEnd)
-		}
+	// Additional notes
+	Notes string `csv:"notes" yaml:"notes"`
 
-		//duration, err := time.ParseDuration(record[4])
-		//if err != nil {
-		//	log.Fatal(err)
-		//}
+	// Associated category
+	Category string `csv:"category" yaml:"category"`
 
-		toArr := func(input string) []string {
-			return strings.Split(strings.Trim(input, "\""), ";")
-		}
+	// MITRE Tactic or Technique Name
+	MITRE string `csv:"mitre" yaml:"mitre"`
 
-		custom := &attackInfo{
-			Num:      num,              // int
-			Start:    start,            // time.Time
-			End:      end,              // time.Time
-			IPs:      toArr(record[4]), // []string
-			Name:     record[1],        // string
-			Proto:    record[5],        // string
-			Notes:    record[6],        // string
-			Category: record[7],        // string
-		}
-
-		// ensure no alerts with empty name are collected
-		if custom.Name == "" || custom.Name == " " {
-			fmt.Println("skipping entry with empty name", custom)
-
-			continue
-		}
-
-		// count total occurrences of classification
-		classificationMap[custom.Name]++
-
-		// check if excluded
-		if !excluded[custom.Name] { // append to collected alerts
-			labels = append(labels, custom)
-
-			startTSString := strconv.FormatInt(custom.Start.Unix(), 10)
-
-			// add to label map
-			if _, ok := labelMap[startTSString]; ok {
-				// an alert for this timestamp already exists
-				// if configured the execution will stop
-				// for now the first seen alert for a timestamp will be kept
-				duplicates = append(duplicates, custom)
-			} else {
-				labelMap[startTSString] = custom
-			}
-		}
-	}
-
-	return
+	// Day of Attack
+	Date string `yaml:"date" yaml:"date"`
 }
 
 // CustomLabels uses info from a csv file to label the data.
 func CustomLabels(pathMappingInfo, outputPath, separator, selection string) error {
 	var (
 		start     = time.Now()
-		_, labels = parseAttackInfos(pathMappingInfo)
+		labels []*attackInfo
 	)
+	if strings.HasSuffix(pathMappingInfo, ".csv"){
+		_, labels = parseAttackInfosCSV(pathMappingInfo)
+	} else {
+		_, labels = parseAttackInfosYAML(pathMappingInfo)
+	}
 	if len(labels) == 0 {
 		fmt.Println("no labels found.")
 		os.Exit(0)
@@ -225,6 +170,225 @@ func CustomLabels(pathMappingInfo, outputPath, separator, selection string) erro
 
 	fmt.Println("\ndone in", time.Since(start))
 	return nil
+}
+
+// private
+
+// internal attackInfo with parsed timestamps
+type attackInfo struct {
+
+	// Attack instance number
+	Num int `csv:"num" yaml:"num"`
+
+	// Attack Name
+	Name string `csv:"name" yaml:"name"`
+
+	// Attack timeframe
+	Start time.Time `csv:"start" yaml:"start"`
+	End   time.Time `csv:"end" yaml:"end"`
+
+	// Separate victims and attacks, flag any traffic BETWEEN the specified IPs.
+	Victims   []string `csv:"victims" yaml:"victims"`
+	Attackers []string `csv:"attackers" yaml:"attackers"`
+
+	// any traffic going from and towards the specified IPs in the given timeframe
+	// the field value from parsed CSV is going to be split by ";"
+	IPs []string `csv:"ips" yaml:"ips"`
+
+	// Underlying Protocol(s)
+	Proto string `csv:"proto" yaml:"proto"`
+
+	// Additional notes
+	Notes string `csv:"notes" yaml:"notes"`
+
+	// Associated category
+	Category string `csv:"category" yaml:"category"`
+
+	// MITRE Tactic or Technique Name
+	MITRE string `csv:"mitre" yaml:"mitre"`
+
+	// Day of Attack
+	Date time.Time `yaml:"date" yaml:"date"`
+}
+
+func parseAttackInfosYAML(path string) (labelMap map[string]*attackInfo, labels []*attackInfo) {
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var atks = &attacks{}
+	err = yaml.UnmarshalStrict(data, &atks)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// alerts that have a duplicate timestamp
+	var duplicates []*attackInfo
+
+	// ts:alert
+	labelMap = make(map[string]*attackInfo)
+
+	for i, a := range atks.Attacks {
+
+		start, errParseStart := time.Parse("15:04", a.Start)
+		if errParseStart != nil {
+			log.Fatal(errParseStart)
+		}
+
+		end, errParseEnd := time.Parse("15:04", a.End)
+		if errParseEnd != nil {
+			log.Fatal(errParseEnd)
+		}
+
+		// example: "2006/1/2 15:04:05"
+		// from dataset: Friday-02-03-2018
+		// TODO: make ts layout configurable
+		date, errParseDate := time.Parse("Monday-02-01-06", a.Date)
+		if errParseDate != nil {
+			log.Fatal(errParseDate)
+		}
+
+		custom := &attackInfo{
+			Num:       i,     // int
+			Start:     start, // time.Time
+			End:       end,   // time.Time
+			Victims:   a.Victims,
+			Attackers: a.Attackers,
+			Date:      date,
+			Name:      a.Name,     // string
+			Proto:     a.Proto,    // string
+			Notes:     a.Notes,    // string
+			Category:  a.Category, // string
+		}
+
+		// ensure no alerts with empty name are collected
+		if custom.Name == "" || custom.Name == " " {
+			fmt.Println("skipping entry with empty name", custom)
+
+			continue
+		}
+
+		// count total occurrences of classification
+		classificationMap[custom.Name]++
+
+		// check if excluded
+		if !excluded[custom.Name] { // append to collected alerts
+			labels = append(labels, custom)
+
+			startTSString := strconv.FormatInt(custom.Start.Unix(), 10)
+
+			// add to label map
+			if _, ok := labelMap[startTSString]; ok {
+				// an alert for this timestamp already exists
+				// if configured the execution will stop
+				// for now the first seen alert for a timestamp will be kept
+				duplicates = append(duplicates, custom)
+			} else {
+				labelMap[startTSString] = custom
+			}
+		}
+	}
+
+	return
+}
+
+func parseAttackInfosCSV(path string) (labelMap map[string]*attackInfo, labels []*attackInfo) {
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil && !errors.Is(errClose, io.EOF) {
+			fmt.Println(errClose)
+		}
+	}()
+
+	r := csv.NewReader(f)
+
+	records, err := r.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// alerts that have a duplicate timestamp
+	var duplicates []*attackInfo
+
+	// ts:alert
+	labelMap = make(map[string]*attackInfo)
+
+	for _, record := range records[1:] {
+		num, errConvert := strconv.Atoi(record[0])
+		if errConvert != nil {
+			log.Fatal(errConvert)
+		}
+
+		start, errParseStart := time.Parse("2006/1/2 15:04:05", record[2])
+		if errParseStart != nil {
+			log.Fatal(errParseStart)
+		}
+
+		end, errParseEnd := time.Parse("2006/1/2 15:04:05", record[3])
+		if errParseEnd != nil {
+			log.Fatal(errParseEnd)
+		}
+
+		// example: "2006/1/2 15:04:05"
+		// from dataset: Friday-02-03-2018
+		// TODO: make configurable
+		date, errParseDate := time.Parse("Monday-02-01-06", record[8])
+		if errParseDate != nil {
+			log.Fatal(errParseDate)
+		}
+
+		toArr := func(input string) []string {
+			return strings.Split(strings.Trim(input, "\""), ";")
+		}
+
+		custom := &attackInfo{
+			Num:      num,              // int
+			Start:    start,            // time.Time
+			End:      end,              // time.Time
+			IPs:      toArr(record[4]), // []string
+			Name:     record[1],        // string
+			Proto:    record[5],        // string
+			Notes:    record[6],        // string
+			Category: record[7],        // string
+			Date:     date,
+			MITRE: record[9],
+		}
+
+		// ensure no alerts with empty name are collected
+		if custom.Name == "" || custom.Name == " " {
+			fmt.Println("skipping entry with empty name", custom)
+
+			continue
+		}
+
+		// count total occurrences of classification
+		classificationMap[custom.Name]++
+
+		// check if excluded
+		if !excluded[custom.Name] { // append to collected alerts
+			labels = append(labels, custom)
+
+			startTSString := strconv.FormatInt(custom.Start.Unix(), 10)
+
+			// add to label map
+			if _, ok := labelMap[startTSString]; ok {
+				// an alert for this timestamp already exists
+				// if configured the execution will stop
+				// for now the first seen alert for a timestamp will be kept
+				duplicates = append(duplicates, custom)
+			} else {
+				labelMap[startTSString] = custom
+			}
+		}
+	}
+
+	return
 }
 
 // customMap uses info from a csv file to label the data
@@ -310,11 +474,36 @@ func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 
 				// check if any of the addresses from the labeling info
 				// is either source or destination of the current audit record
-				for _, addr := range l.IPs {
-					if p.Src() == addr || p.Dst() == addr {
-						numMatches++
+				if len(l.IPs) > 0 {
+					for _, addr := range l.IPs {
+						if p.Src() == addr || p.Dst() == addr {
+							numMatches++
+						}
+					}
+				} else {
+					// for each attacker IP
+					for _, addr := range l.Attackers {
+
+						// check if src or dst of packet is from an attacker
+						if p.Src() == addr || p.Dst() == addr {
+
+							numMatches++
+
+							// for each victim
+							for _, victimAddr := range l.Victims {
+
+								// if either the src or dst addr of the packet is a victim
+								if p.Src() == victimAddr || p.Dst() == victimAddr {
+									numMatches++
+
+									// TODO: break from outer loop as well
+									break
+								}
+							}
+						}
 					}
 				}
+
 				if numMatches != 2 {
 					// label as normal
 					_, _ = gzipWriter.Write([]byte(strings.Join(p.CSVRecord(), separator) + separator + "normal\n"))
@@ -325,6 +514,7 @@ func customMap(wg *sync.WaitGroup, file, typ string, labels []*attackInfo, outDi
 				// verify time interval of audit record is within the attack period
 				auditRecordTime := time.Unix(0, p.Time()).UTC().Add(8 * time.Hour)
 
+				// TODO: move this check up? likely the fastest check
 				// if the audit record has a timestamp in the attack period
 				if (l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime)) ||
 
