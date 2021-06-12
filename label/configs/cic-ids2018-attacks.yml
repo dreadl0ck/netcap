@@ -1,0 +1,380 @@
+# CIC IDS 2018 dataset
+# https://www.unb.ca/cic/datasets/ids-2018.html
+
+attacks:
+  - name: FTP-BruteForce
+    date: Wednesday-14-02-2018
+    victims:
+      - 172.31.69.25
+      - 18.217.21.148
+    attackers:
+      - 18.221.219.4
+      - 172.31.70.4
+    start: 10:32
+    end: 12:09
+    proto: FTP
+    category: bruteforce
+    mitre: T1110
+
+  - name: SSH-Bruteforce
+    date: Wednesday-14-02-2018
+    victims:
+      - 18.217.21.148
+      - 172.31.69.25
+    attackers:
+      - 172.31.70.6
+      - 13.58.98.64
+    start: 14:01
+    end: 15:31
+    proto: SSH
+    category: bruteforce
+    mitre: T1110
+
+  - name: DoS-GoldenEye
+    date: Thursday-15-02-2018
+    victims:
+      - 18.217.21.148
+      - 172.31.69.25
+    attackers:
+      - 172.31.70.46
+      - 18.219.211.138
+    start: 9:26
+    end: 10:09
+    proto: HTTP
+    category: denial-of-service
+    mitre: T1498
+
+  - name: DoS-Slowloris
+    date: Thursday-15-02-2018
+    victims:
+      - 18.217.21.148
+      - 172.31.69.25
+    attackers:
+      - 172.31.70.8
+      - 18.217.165.70
+    start: 10:59
+    end: 11:40
+    proto: HTTP
+    category: denial-of-service
+    mitre: T1498
+
+  - name: DoS-SlowHTTPTest
+    date: Friday-16-02-2018
+    victims:
+      - 18.217.21.148
+      - 172.31.69.25
+    attackers:
+      - 172.31.70.23
+      - 13.59.126.31
+    start: 10:12
+    end: 11:08
+    proto: HTTP
+    category: denial-of-service
+    mitre: T1498
+
+  - name: DoS-Hulk
+    date: Friday-16-02-2018
+    victims:
+      - 18.217.21.148
+      - 172.31.69.25
+    attackers:
+      - 172.31.70.16
+      - 18.219.193.20
+    start: 13:45
+    end: 14:19
+    proto: HTTP
+    category: denial-of-service
+    mitre: T1498
+
+  - name: DDoS attacks-LOIC-HTTP
+    date: Tuesday-20-02-2018
+    victims:
+      - 18.216.24.42
+      - 18.217.21.148
+      - 172.31.69.25
+    attackers:
+      - 18.218.115.60
+      - 18.219.9.1
+      - 18.219.32.43
+      - 18.218.55.126
+      - 52.14.136.135
+      - 18.219.5.43
+      - 18.216.200.189
+      - 18.218.229.235
+      - 18.218.11.51
+    start: 10:12
+    end: 11:17
+    proto: HTTP
+    category: denial-of-service
+    mitre: T1498
+
+  - name: DDoS-LOIC-UDP
+    date: Tuesday-20-02-2018
+    victims:
+      - 18.216.24.42
+      - 18.217.21.148
+      - 172.31.69.25
+    attackers:
+      - 18.218.115.60
+      - 18.219.9.1
+      - 18.219.32.43
+      - 18.218.55.126
+      - 52.14.136.135
+      - 18.219.5.43
+      - 18.216.200.189
+      - 18.218.229.235
+      - 18.218.11.51
+    start: 13:13
+    end: 13:32
+    proto: UDP
+    category: denial-of-service
+    mitre: T1498
+
+  - name: DDOS-LOIC-UDP
+    date: Wednesday-21-02-2018
+    victims:
+      - 18.216.24.42
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+      - 18.219.9.1
+      - 18.219.32.43
+      - 18.218.55.126
+      - 52.14.136.135
+      - 18.219.5.43
+      - 18.216.200.189
+      - 18.218.229.235
+      - 18.218.11.51
+    start: 10:09
+    end: 10:43
+    proto: UDP
+    category: denial-of-service
+    mitre: T1498
+
+  - name: DDOS-HOIC
+    date: Wednesday-21-02-2018
+    victims:
+      - 18.216.24.42
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+      - 18.219.9.1
+      - 18.219.32.43
+      - 18.218.55.126
+      - 52.14.136.135
+      - 18.219.5.43
+      - 18.216.200.189
+      - 18.218.229.235
+      - 18.218.11.51
+    start: 14:05
+    end: 15:05
+    proto: HTTP
+    category: denial-of-service
+    mitre: T1498
+
+  - name: Brute Force Web
+    date: Thursday-22-02-2018
+    victims:
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+    start: 10:17
+    end: 11:24
+    proto: HTTP
+    category: bruteforce
+    mitre: T1110
+
+  - name: Brute Force XSS
+    date: Thursday-22-02-2018
+    victims:
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+    start: 13:50
+    end: 14:29
+    proto: HTTP
+    category: bruteforce
+    mitre: T1110
+
+  - name: SQL Injection
+    date: Thursday-22-02-2018
+    victims:
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+    start: 16:15
+    end: 16:29
+    proto: HTTP
+    category: injection
+    mitre: T1190
+
+  - name: Brute Force Web
+    date: Friday-23-02-2018
+    victims:
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+    start: 10:03
+    end: 11:03
+    proto: HTTP
+    category: bruteforce
+    mitre: T1110
+
+  - name: Brute Force XSS
+    date: Friday-23-02-2018
+    victims:
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+    start: 13:00
+    end: 14:10
+    proto: HTTP
+    category: bruteforce
+    mitre: T1110
+
+  - name: SQL Injection
+    date: Friday-23-02-2018
+    victims:
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+    start: 15:05
+    end: 15:18
+    proto: HTTP
+    category: injection
+    mitre: T1190
+
+  - name: Infiltration
+    date: Wednesday-28-02-2018
+    victims:
+      - 18.221.148.137
+      - 172.31.69.24
+    attackers:
+      - 13.58.225.34
+    start: 10:50
+    end: 12:05
+    proto: Unknown
+    category: infiltration
+    mitre: TA0008
+
+  - name: Infiltration
+    date: Wednesday-28-02-2018
+    victims:
+      - 18.221.148.137
+      - 172.31.69.24
+    attackers:
+      - 13.58.225.34
+    start: 13:42
+    end: 14:40
+    proto: Unknown
+    category: infiltration
+    mitre: TA0008
+
+  - name: Infiltration
+    date: Thursday-01-03-2018
+    victims:
+      - 18.216.254.154
+      - 172.31.69.13
+    attackers:
+      - 13.58.225.34
+    start: 9:57
+    end: 10:55
+    proto: Unknown
+    category: infiltration
+    mitre: TA0008
+
+  - name: Infiltration
+    date: Thursday-01-03-2018
+    victims:
+      - 18.216.254.154
+      - 172.31.69.13
+    attackers:
+      - 13.58.225.34
+    start: 14:00
+    end: 15:37
+    proto: Unknown
+    category: infiltration
+    mitre: TA0008
+
+  - name: Infiltration
+    date: Thursday-01-03-2018
+    victims:
+      - 18.216.254.154
+      - 172.31.69.13
+    attackers:
+      - 13.58.225.34
+    start: 14:00
+    end: 15:37
+    proto: Unknown
+    category: infiltration
+    mitre: TA0008
+
+  - name: Bot
+    date: Friday-02-03-2018
+    victims:
+      - 18.217.218.111
+      - 172.31.69.23
+      - 18.222.10.237
+      - 172.31.69.17
+      - 18.222.86.193
+      - 172.31.69.14
+      - 18.222.62.221
+      - 172.31.69.12
+      - 13.59.9.106
+      - 172.31.69.10
+      - 18.222.102.2
+      - 172.31.69.8
+      - 18.219.212.0
+      - 172.31.69.6
+      - 18.216.105.13
+      - 172.31.69.26
+      - 18.219.163.126
+      - 172.31.69.29
+      - 18.216.164.12
+      - 172.31.69.30
+    attackers:
+      - 18.219.211.138
+    start: 10:11
+    end: 11:34
+    proto: Unknown
+    category: botnet
+    mitre: T1583.005
+
+  - name: Bot
+    date: Friday-02-03-2018
+    victims:
+      - 18.217.218.111
+      - 172.31.69.23
+      - 18.222.10.237
+      - 172.31.69.17
+      - 18.222.86.193
+      - 172.31.69.14
+      - 18.222.62.221
+      - 172.31.69.12
+      - 13.59.9.106
+      - 172.31.69.10
+      - 18.222.102.2
+      - 172.31.69.8
+      - 18.219.212.0
+      - 172.31.69.6
+      - 18.216.105.13
+      - 172.31.69.26
+      - 18.219.163.126
+      - 172.31.69.29
+      - 18.216.164.12
+      - 172.31.69.30
+    attackers:
+      - 18.219.211.138
+    start: 14:24
+    end: 15:55
+    proto: Unknown
+    category: botnet
+    mitre: T1583.005

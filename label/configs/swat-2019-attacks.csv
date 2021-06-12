@@ -1,0 +1,11 @@
+Num,Name,Start,End,IPs,Proto,Notes,Category
+1,Data Exfiltration 1,2019/12/6 10:30:00,2019/12/6 10:35:00,192.168.1.201;192.168.1.181,TCP,Sends process data to a server in the DMZ via X11,Data Exfiltration
+2,Data Exfiltration 2,2019/12/6 10:45:00,2019/12/6 10:50:00,192.168.1.201;192.168.1.181,TCP,Sends process data to a server in the DMZ via X11,Data Exfiltration
+3,Data Exfiltration 3,2019/12/6 11:00:00,2019/12/6 11:05:00,192.168.1.201;192.168.1.181,TCP,Sends process data to a server in the DMZ via X11,Data Exfiltration
+4,Data Exfiltration 4,2019/12/6 11:15:00,2019/12/6 11:20:00,192.168.1.201;192.168.1.181,TCP,Sends process data to a server in the DMZ via X11,Data Exfiltration
+5,Malware Download from C2 Server,2019/12/6 12:30:00,2019/12/6 12:50:00,192.168.1.201;192.168.1.181,TCP,Infected workstation fetches a malicious DOS executable via X11,Malware Download
+6,Process Disruption 1,2019/12/6 12:30:00,2019/12/6 12:33:00,192.168.1.201;192.168.1.10,CIP,Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC,Process Disruption
+7,Process Disruption 2,2019/12/6 12:43:00,2019/12/6 12:46:00,192.168.1.201;192.168.1.10,CIP,Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC,Process Disruption
+8,Process Disruption 3,2019/12/6 12:56:00,2019/12/6 12:59:00,192.168.1.201;192.168.1.10,CIP,Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC,Process Disruption
+9,Process Disruption 4,2019/12/6 13:09:00,2019/12/6 13:12:00,192.168.1.201;192.168.1.10,CIP,Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC,Process Disruption
+10,Process Disruption 5,2019/12/6 13:22:00,2019/12/6 13:25:00,192.168.1.201;192.168.1.10,CIP,Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC,Process Disruption
