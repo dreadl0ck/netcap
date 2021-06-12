@@ -254,6 +254,10 @@ func (t *TCP) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (t *TCP) Analyze() float64 {
-	return 0
+func (t *TCP) Analyze()  {
+}
+
+// NetcapType returns the type of the current audit record
+func (t *TCP) NetcapType() Type {
+	return Type_NC_TCP
 }

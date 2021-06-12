@@ -217,6 +217,9 @@ func (i *IPv4) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (i *IPv4) Analyze() float64 {
-	return 0
+func (i *IPv4) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (i *IPv4) NetcapType() Type {
+	return Type_NC_IPv4
 }

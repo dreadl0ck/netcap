@@ -100,6 +100,9 @@ func (ectpr *EthernetCTPReply) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (ectpr *EthernetCTPReply) Analyze() float64 {
-	return 0
+func (ectpr *EthernetCTPReply) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (ectpr *EthernetCTPReply) NetcapType() Type {
+	return Type_NC_EthernetCTPReply
 }

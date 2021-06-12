@@ -113,6 +113,9 @@ func (a *POP3) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *POP3) Analyze() float64 {
-	return 0
+func (a *POP3) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (a *POP3) NetcapType() Type {
+	return Type_NC_POP3
 }

@@ -128,6 +128,10 @@ func (cd *CiscoDiscovery) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (cd *CiscoDiscovery) Analyze() float64 {
-	return 0
+func (cd *CiscoDiscovery) Analyze() {
+}
+
+// NetcapType returns the type of the current audit record
+func (cd *CiscoDiscovery) NetcapType() Type {
+	return Type_NC_CiscoDiscovery
 }

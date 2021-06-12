@@ -111,6 +111,9 @@ func (i *ICMPv4) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (i *ICMPv4) Analyze() float64 {
-	return 0
+func (i *ICMPv4) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (i *ICMPv4) NetcapType() Type {
+	return Type_NC_ICMPv4
 }

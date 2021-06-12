@@ -163,6 +163,9 @@ func (n *NTP) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (n *NTP) Analyze() float64 {
-	return 0
+func (n *NTP) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (n *NTP) NetcapType() Type {
+	return Type_NC_NTP
 }

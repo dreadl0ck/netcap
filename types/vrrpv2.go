@@ -130,6 +130,10 @@ func (a *VRRPv2) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *VRRPv2) Analyze() float64 {
-	return 0
+func (a *VRRPv2) Analyze()  {
+}
+
+// NetcapType returns the type of the current audit record
+func (a *VRRPv2) NetcapType() Type {
+	return Type_NC_VRRPv2
 }

@@ -186,6 +186,9 @@ func (a *OSPFv3) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *OSPFv3) Analyze() float64 {
-	return 0
+func (a *OSPFv3) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (a *OSPFv3) NetcapType() Type {
+	return Type_NC_OSPFv3
 }

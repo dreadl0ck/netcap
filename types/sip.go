@@ -128,6 +128,9 @@ func (s *SIP) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (s *SIP) Analyze() float64 {
-	return 0
+func (s *SIP) Analyze() {}
+
+// NetcapType returns the type of the current audit record
+func (s *SIP) NetcapType() Type {
+	return Type_NC_SIP
 }

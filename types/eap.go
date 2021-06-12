@@ -108,7 +108,11 @@ func (a *EAP) Encode() []string {
 	})
 }
 
-// Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *EAP) Analyze() float64 {
-	return 0
+// Analyze will invoke the configured analyzer(s) for the audit record and return a score.
+func (a *EAP) Analyze() {
+}
+
+// NetcapType returns the type of the current audit record
+func (a *EAP) NetcapType() Type {
+	return Type_NC_EAP
 }

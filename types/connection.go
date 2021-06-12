@@ -215,6 +215,11 @@ func (c *Connection) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (c *Connection) Analyze() float64 {
-	return 0
+func (c *Connection) Analyze() {
+
+}
+
+// NetcapType returns the type of the current audit record
+func (c *Connection) NetcapType() Type {
+	return Type_NC_Connection
 }

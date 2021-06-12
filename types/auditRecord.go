@@ -76,10 +76,11 @@ type AuditRecord interface {
 
 	// Analyze will feed this audit record to an analyzer.
 	// This could either be a static rule based analyzer, or one that is based on a more complex Anomaly Detector (statistical or ML).
-	// For online algorithms we will likely return a score per record,
-	// for batch algorithms we need an API that can be queried in a certain interval to ask for results.
 	// TODO: define AnomalyDetector interface
-	Analyze() float64
+	Analyze()
+
+	// NetcapType returns the audit record type
+	NetcapType() Type
 }
 
 // selectFields returns an array with the indices of the desired fields for selection.
