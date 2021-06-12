@@ -16,17 +16,15 @@ package label
 
 import (
 	"fmt"
+	"github.com/cheggaaa/pb"
+	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/cheggaaa/pb"
-
-	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (
@@ -66,6 +64,10 @@ func SetExcluded(arg string) {
 	}
 }
 
+func die(err string, msg string) {
+	log.Fatal(err, msg)
+}
+
 func finish(wg *sync.WaitGroup, r *io.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) {
 	if UseProgressBars {
 		progress.Finish()
@@ -99,8 +101,4 @@ func finish(wg *sync.WaitGroup, r *io.Reader, f *os.File, labelsTotal int, outFi
 	}
 
 	wg.Done()
-}
-
-func die(err string, msg string) {
-	log.Fatal(err, msg)
 }

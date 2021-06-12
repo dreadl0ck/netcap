@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/io"
 	"log"
 	"os"
 	"path/filepath"
@@ -51,6 +52,7 @@ func (c *Collector) Init() (err error) {
 
 	decoderconfig.Instance = c.config.DecoderConfig
 	stream.Debug = c.config.DecoderConfig.Debug
+	io.InitLabelManager(c.config.Labels)
 
 	// create state machine options
 	tcp.StreamFactory.FSMOptions = reassembly.TCPSimpleFSMOptions{

@@ -191,6 +191,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 			w := io.NewAuditRecordWriter(&io.WriterConfig{
 				UnixSocket: c.UnixSocket,
 				CSV:        c.CSV,
+				Label:      c.Label,
 				Encode:     c.Encode,
 				Proto:      c.Proto,
 				JSON:       c.JSON,

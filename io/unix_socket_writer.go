@@ -63,9 +63,9 @@ func newUnixSocketWriter(wc *WriterConfig) *unixSocketWriter {
 				panic(errGzipWriter)
 			}
 
-			w.unixSocketWriter = newCSVProtoWriter(w.gWriter, wc.Encode)
+			w.unixSocketWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label)
 		} else {
-			w.unixSocketWriter = newCSVProtoWriter(w.bWriter, wc.Encode)
+			w.unixSocketWriter = newCSVProtoWriter(w.bWriter, wc.Encode, wc.Label)
 		}
 	} else {
 		if wc.Compress {
@@ -74,9 +74,9 @@ func newUnixSocketWriter(wc *WriterConfig) *unixSocketWriter {
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
-			w.unixSocketWriter = newCSVProtoWriter(w.gWriter, wc.Encode)
+			w.unixSocketWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label)
 		} else {
-			w.unixSocketWriter = newCSVProtoWriter(w.conn, wc.Encode)
+			w.unixSocketWriter = newCSVProtoWriter(w.conn, wc.Encode, wc.Label)
 		}
 	}
 

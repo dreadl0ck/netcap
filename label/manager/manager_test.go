@@ -11,7 +11,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package label
+package manager
 
 import (
 	"fmt"
@@ -20,7 +20,8 @@ import (
 )
 
 func TestReadIDS2018Labels(t *testing.T) {
-	labelMap, labels := parseAttackInfosYAML("configs/cic-ids2018-attacks.yml")
+	m := &LabelManager{}
+	labelMap, labels := m.parseAttackInfosYAML("configs/cic-ids2018-attacks.yml")
 
 	fmt.Println("=== labelMap")
 	spew.Dump(labelMap)
@@ -30,7 +31,8 @@ func TestReadIDS2018Labels(t *testing.T) {
 }
 
 func TestReadSWAT2019Labels(t *testing.T) {
-	labelMap, labels := parseAttackInfosCSV("configs/swat-2019-attacks.csv")
+	m := &LabelManager{}
+	labelMap, labels := m.parseAttackInfosCSV("configs/swat-2019-attacks.csv")
 
 	fmt.Println("=== labelMap")
 	spew.Dump(labelMap)

@@ -165,6 +165,9 @@ type Config struct {
 	// Encode values when generating CSV
 	Encode bool
 
+	// Label values when generating CSV
+	Label bool
+
 	// Output length delimited protocol buffers
 	Proto bool
 
