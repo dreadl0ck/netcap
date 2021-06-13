@@ -45,18 +45,19 @@ func (m *LabelManager) Init(pathMappingInfo string) {
 	}
 	if len(m.labels) == 0 {
 		fmt.Println("no labels found.")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	fmt.Println("got", len(m.labels), "labels")
 
 	var rows [][]string
 	for i, c := range m.labels {
-		rows = append(rows, []string{strconv.Itoa(i + 1), c.Name})
+		y, m, d := c.Date.Date()
+		rows = append(rows, []string{strconv.Itoa(i + 1), c.Name, fmt.Sprintf("%d-%d-%d", y, m, d), strconv.Itoa(len(c.Victims)), strconv.Itoa(len(c.Attackers)), c.MITRE, c.Category})
 	}
 
 	// print alert summary
-	tui.Table(os.Stdout, []string{"Num", "AttackName"}, rows)
+	tui.Table(os.Stdout, []string{"Num", "AttackName", "Date", "Victims", "NumAttackers", "MITRE", "category"}, rows)
 	fmt.Println()
 }
 
@@ -77,16 +78,17 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 
 			// or matches exactly the one on the audit record
 			l.Start.Equal(auditRecordTime) || l.End.Equal(auditRecordTime) {
-			if m.debug {
-				fmt.Println("-----------------------", record.NetcapType(), l.Name, l.Category)
-				fmt.Println("flow:", record.Src(), "->", record.Dst(), "addr:", "attack ips:", l.IPs)
-				fmt.Println("start", l.Start)
-				fmt.Println("end", l.End)
-				fmt.Println("auditRecordTime", auditRecordTime)
-				fmt.Println("(l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))", l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))
-				fmt.Println("l.Start.Equal(auditRecordTime)", l.Start.Equal(auditRecordTime))
-				fmt.Println("l.End.Equal(auditRecordTime))", l.End.Equal(auditRecordTime))
-			}
+			//if m.debug {
+			//	fmt.Println("-----------------------", record.NetcapType(), l.Name, l.Category)
+			//	fmt.Println("flow:", record.Src(), "->", record.Dst(), "addr:", "IPs:", l.IPs)
+			//	fmt.Println("victims", l.Victims, "attackers", l.Attackers)
+			//	fmt.Println("start", l.Start)
+			//	fmt.Println("end", l.End)
+			//	fmt.Println("auditRecordTime", auditRecordTime)
+			//	fmt.Println("(l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))", l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))
+			//	fmt.Println("l.Start.Equal(auditRecordTime)", l.Start.Equal(auditRecordTime))
+			//	fmt.Println("l.End.Equal(auditRecordTime))", l.End.Equal(auditRecordTime))
+			//}
 
 			var numMatches int
 
@@ -105,6 +107,8 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 					// check if src or dst of packet is from an attacker
 					if record.Src() == addr || record.Dst() == addr {
 
+						fmt.Println("FOUND AN ATTACKER !!!!!!!!!!!!")
+
 						numMatches++
 
 						// for each victim
@@ -122,6 +126,8 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 				}
 			}
 
+			//fmt.Println(">>>>>>>>>>> numMatches", numMatches)
+
 			if numMatches != 2 {
 				continue
 			}
@@ -137,5 +143,11 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 		}
 	}
 
+	if label == "" {
+		return labelNormal
+	}
+
 	return label
 }
+
+const labelNormal = "normal"

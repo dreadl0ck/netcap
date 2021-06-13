@@ -134,6 +134,9 @@ func (m *LabelManager) parseAttackInfosYAML(path string) (labelMap map[string]*a
 			log.Fatal(errParseDate)
 		}
 
+		start = start.AddDate(date.Year(), int(date.Month())-1, date.Day()-1)
+		end = end.AddDate(date.Year(), int(date.Month())-1, date.Day()-1)
+
 		custom := &attackInfo{
 			Num:       i,     // int
 			Start:     start, // time.Time
@@ -145,6 +148,7 @@ func (m *LabelManager) parseAttackInfosYAML(path string) (labelMap map[string]*a
 			Proto:     a.Proto,    // string
 			Notes:     a.Notes,    // string
 			Category:  a.Category, // string
+			MITRE:     a.MITRE,
 		}
 
 		// ensure no alerts with empty name are collected
