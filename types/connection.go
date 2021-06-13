@@ -14,9 +14,10 @@
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -52,7 +53,7 @@ var fieldsConnection = []string{
 	fieldTotalSize,
 	fieldAppPayloadSize,
 	fieldNumPackets,
-	fieldUID,
+	//fieldUID,
 	fieldDuration,
 	fieldTimestampLast,
 	fieldBytesClientToServer,
@@ -81,7 +82,7 @@ func (c *Connection) CSVRecord() []string {
 		formatInt32(c.TotalSize),
 		formatInt32(c.AppPayloadSize),
 		formatInt32(c.NumPackets),
-		c.UID,
+		//c.UID,
 		formatInt64(c.Duration),
 		formatTimestamp(c.TimestampLast),
 		formatInt64(c.BytesClientToServer),
@@ -208,13 +209,13 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.Uint64(fieldSrcMAC, macToUint64(c.SrcMAC)),
 		connectionEncoder.Uint64(fieldDstMAC, macToUint64(c.DstMAC)),
 		connectionEncoder.Int64(fieldSrcIP, ipToInt64(c.SrcIP)),
-		connectionEncoder.String(fieldSrcPort, c.SrcPort),
+		connectionEncoder.Int(fieldSrcPort, portToInt(c.SrcPort)),
 		connectionEncoder.Int64(fieldDstIP, ipToInt64(c.DstIP)),
-		connectionEncoder.String(fieldDstPort, c.DstPort),
+		connectionEncoder.Int(fieldDstPort, portToInt(c.DstPort)),
 		connectionEncoder.Int32(fieldTotalSize, c.TotalSize),
 		connectionEncoder.Int32(fieldAppPayloadSize, c.AppPayloadSize),
 		connectionEncoder.Int32(fieldNumPackets, c.NumPackets),
-		connectionEncoder.String(fieldUID, c.UID),
+		//connectionEncoder.String(fieldUID, c.UID),
 		connectionEncoder.Int64(fieldDuration, c.Duration),
 		connectionEncoder.Int64(fieldTimestampLast, c.TimestampLast),
 		connectionEncoder.Int64(fieldBytesClientToServer, c.BytesClientToServer),

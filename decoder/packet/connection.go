@@ -14,6 +14,7 @@
 package packet
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"sync"
@@ -72,11 +73,18 @@ var connectionDecoder = newPacketDecoder(
 		return handlePacket(p)
 	},
 	func(decoder *Decoder) error {
+		// TODO: add worker pool to use multiple processors...
 		conns.Lock()
+		fmt.Println("conns.Items", len(conns.Items))
+		var count int
 		for _, f := range conns.Items {
 			f.Lock()
 			decoder.writeConn(f.Connection, f.clientIP)
 			f.Unlock()
+			count++
+			if count%10000 == 0 {
+				fmt.Println(count, "/", len(conns.Items))
+			}
 		}
 		conns.Unlock()
 
@@ -129,6 +137,7 @@ func handlePacket(p gopacket.Packet) proto.Message {
 			}
 
 			if tl != nil {
+				// TODO: change field type to int and use binary.LittleEndian.Uint16(...Src().Raw())
 				conn.SrcPort = tl.TransportFlow().Src().String()
 				conn.DstPort = tl.TransportFlow().Dst().String()
 			}
