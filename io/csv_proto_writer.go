@@ -2,16 +2,17 @@ package io
 
 import (
 	"fmt"
+	"io"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
 	"go.uber.org/zap"
-	"io"
-	"strings"
-	"sync"
-	"time"
 )
 
 // csvProtoWriter implements writing audit records to disk in the CSV format.
@@ -63,11 +64,12 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 }
 
 // TODO: make configurable
-var labelManager = manager.NewLabelManager(false, true, false)
+var labelManager = manager.NewLabelManager(false, false, false)
 
 // InitLabelManager can be invoked to configure the labels
-func InitLabelManager(pathMappingInfo string) {
+func InitLabelManager(pathMappingInfo string, debug bool) {
 	labelManager.Init(pathMappingInfo)
+	labelManager.Debug = debug
 }
 
 // writeRecord writes a protocol buffer into the CSV writer.

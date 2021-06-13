@@ -3,8 +3,6 @@ package manager
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type attacks struct {
@@ -95,6 +96,10 @@ type attackInfo struct {
 	Attackers []string `csv:"attackers" yaml:"attackers"`
 }
 
+// TODO: make configurable via cli flags
+//var Location = time.Local
+var Location, _ = time.LoadLocation("Canada/Atlantic")
+
 func (m *LabelManager) parseAttackInfosYAML(path string) (labelMap map[string]*attackInfo, labels []*attackInfo) {
 
 	data, err := ioutil.ReadFile(path)
@@ -116,20 +121,20 @@ func (m *LabelManager) parseAttackInfosYAML(path string) (labelMap map[string]*a
 
 	for i, a := range atks.Attacks {
 
-		start, errParseStart := time.Parse("15:04", a.Start)
+		start, errParseStart := time.ParseInLocation("15:04", a.Start, Location)
 		if errParseStart != nil {
 			log.Fatal(errParseStart)
 		}
 
-		end, errParseEnd := time.Parse("15:04", a.End)
+		end, errParseEnd := time.ParseInLocation("15:04", a.End, Location)
 		if errParseEnd != nil {
 			log.Fatal(errParseEnd)
 		}
 
 		// example: "2006/1/2 15:04:05"
 		// from dataset: Friday-02-03-2018
-		// TODO: make ts layout configurable
-		date, errParseDate := time.Parse("Monday-02-01-2006", a.Date)
+		// TODO: make ts layout configurable via cli flags
+		date, errParseDate := time.ParseInLocation("Monday-02-01-2006", a.Date, Location)
 		if errParseDate != nil {
 			log.Fatal(errParseDate)
 		}
