@@ -217,6 +217,8 @@ message Connection {
   string UID = 15;
   int64 TimestampLast = 16;
   int64 Duration = 17;
+  int64 BytesServerToClient = 18;
+  int64 BytesClientToServer = 19;
 }
 
 //
