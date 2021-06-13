@@ -3,8 +3,6 @@ package collector
 import (
 	"errors"
 	"fmt"
-	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/dreadl0ck/netcap/io"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,6 +10,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/io"
 
 	"github.com/dreadl0ck/netcap/utils"
 
@@ -53,7 +54,7 @@ func (c *Collector) Init() (err error) {
 	decoderconfig.Instance = c.config.DecoderConfig
 	stream.Debug = c.config.DecoderConfig.Debug
 	if c.config.Labels != "" {
-		io.InitLabelManager(c.config.Labels)
+		io.InitLabelManager(c.config.Labels, c.config.DecoderConfig.Debug)
 	}
 
 	// create state machine options

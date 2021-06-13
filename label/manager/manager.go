@@ -2,12 +2,13 @@ package manager
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/types"
-	"github.com/evilsocket/islazy/tui"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/evilsocket/islazy/tui"
 )
 
 // LabelManager keeps track of attack information that shall be mapped onto the audit records.
@@ -20,7 +21,7 @@ type LabelManager struct {
 	excluded          map[string]bool
 
 	// debug mode
-	debug bool
+	Debug bool
 
 	removeFilesWithoutMatches bool
 }
@@ -31,7 +32,7 @@ func NewLabelManager(progress bool, debug bool, removeFilesWithoutMatches bool) 
 		progress:          progress,
 		classificationMap: make(map[string]int),
 		excluded:          make(map[string]bool),
-		debug:             debug,
+		Debug:             debug,
 	}
 }
 
@@ -61,35 +62,45 @@ func (m *LabelManager) Init(pathMappingInfo string) {
 	fmt.Println()
 }
 
+// TODO: make configurable via cli flags
+var location, _ = time.LoadLocation("Canada/Atlantic")
+
 // Label returns the label for the current audit record according to the loaded label mapping.
 func (m *LabelManager) Label(record types.AuditRecord) string {
 
 	var label string
 
+	// verify time interval of audit record is within the attack period
+	// TODO: add simple option to increment or decrement UTC instead of using named timezone
+	//auditRecordTime := time.Unix(0, record.Time()).UTC().Add(-4 * time.Hour)
+
+	auditRecordTime := time.Unix(0, record.Time()).In(location)
+
+	//fmt.Println("LABEL", auditRecordTime, "------------------", time.Unix(0, record.Time()).In(location))
+
 	// check if flow has a source or destination address matching an alert
 	// if not label it as normal
 	for _, l := range m.labels {
 
-		// verify time interval of audit record is within the attack period
-		auditRecordTime := time.Unix(0, record.Time()).UTC().Add(8 * time.Hour)
+		//fmt.Println(l.Start, "-", l.End)
 
 		// if the audit record has a timestamp in the attack period
 		if (l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime)) ||
 
 			// or matches exactly the one on the audit record
 			l.Start.Equal(auditRecordTime) || l.End.Equal(auditRecordTime) {
-			//if m.debug {
-			//	fmt.Println("-----------------------", record.NetcapType(), l.Name, l.Category)
-			//	fmt.Println("flow:", record.Src(), "->", record.Dst(), "addr:", "IPs:", l.IPs)
-			//	fmt.Println("victims", l.Victims, "attackers", l.Attackers)
-			//	fmt.Println("start", l.Start)
-			//	fmt.Println("end", l.End)
-			//	fmt.Println("auditRecordTime", auditRecordTime)
-			//	fmt.Println("(l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))", l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))
-			//	fmt.Println("l.Start.Equal(auditRecordTime)", l.Start.Equal(auditRecordTime))
-			//	fmt.Println("l.End.Equal(auditRecordTime))", l.End.Equal(auditRecordTime))
-			//}
 
+			if m.Debug {
+				fmt.Println("-----------------------", record.NetcapType(), l.Name, l.Category)
+				fmt.Println("flow:", record.Src(), "->", record.Dst(), "addr:", "IPs:", l.IPs)
+				fmt.Println("victims", l.Victims, "attackers", l.Attackers)
+				fmt.Println("start", l.Start)
+				fmt.Println("end", l.End)
+				fmt.Println("auditRecordTime", auditRecordTime)
+				fmt.Println("(l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))", l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))
+				fmt.Println("l.Start.Equal(auditRecordTime)", l.Start.Equal(auditRecordTime))
+				fmt.Println("l.End.Equal(auditRecordTime))", l.End.Equal(auditRecordTime))
+			}
 			var numMatches int
 
 			// check if any of the addresses from the labeling info
@@ -107,8 +118,6 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 					// check if src or dst of packet is from an attacker
 					if record.Src() == addr || record.Dst() == addr {
 
-						fmt.Println("FOUND AN ATTACKER !!!!!!!!!!!!")
-
 						numMatches++
 
 						// for each victim
@@ -118,15 +127,14 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 							if record.Src() == victimAddr || record.Dst() == victimAddr {
 								numMatches++
 
-								// TODO: break from outer loop as well
+								// break from this loop and process the next attack
+								// TODO: make configurable to stop after first match
 								break
 							}
 						}
 					}
 				}
 			}
-
-			//fmt.Println(">>>>>>>>>>> numMatches", numMatches)
 
 			if numMatches != 2 {
 				continue
