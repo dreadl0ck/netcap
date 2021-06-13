@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -72,6 +73,8 @@ func InitLabelManager(pathMappingInfo string, debug bool) {
 	labelManager.Debug = debug
 }
 
+var labelEncoder = encoder.NewValueEncoder()
+
 // writeRecord writes a protocol buffer into the CSV writer.
 func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 
@@ -95,8 +98,7 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			// encode values to numeric format and normalize
 			w.values = w.record.Encode()
 			if w.label {
-				// TODO: encode label
-				w.values = append(w.values, labelManager.Label(w.record))
+				w.values = append(w.values, labelEncoder.String("Label", labelManager.Label(w.record)))
 			}
 			w.out = []byte(strings.Join(w.values, ","))
 		} else {
