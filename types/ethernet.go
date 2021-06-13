@@ -152,4 +152,3 @@ func (eth *Ethernet) Analyze() {}
 func (eth *Ethernet) NetcapType() Type {
 	return Type_NC_Ethernet
 }
-

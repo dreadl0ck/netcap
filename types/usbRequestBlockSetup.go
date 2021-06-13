@@ -109,7 +109,7 @@ func (a *USBRequestBlockSetup) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *USBRequestBlockSetup) Analyze()  {
+func (a *USBRequestBlockSetup) Analyze() {
 }
 
 // NetcapType returns the type of the current audit record

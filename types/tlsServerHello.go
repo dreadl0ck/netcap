@@ -185,7 +185,7 @@ func (t *TLSServerHello) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (t *TLSServerHello) Analyze()  {
+func (t *TLSServerHello) Analyze() {
 }
 
 // NetcapType returns the type of the current audit record

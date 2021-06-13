@@ -149,7 +149,7 @@ func (u *UDP) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (u *UDP) Analyze()  {
+func (u *UDP) Analyze() {
 
 }
 
