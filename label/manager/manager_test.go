@@ -20,8 +20,8 @@ import (
 )
 
 func TestReadIDS2018Labels(t *testing.T) {
-	m := &LabelManager{}
-	labelMap, labels := m.parseAttackInfosYAML("configs/cic-ids2018-attacks.yml")
+	m := NewLabelManager(false, false, false)
+	labelMap, labels := m.parseAttackInfosYAML("../configs/cic-ids2018-attacks.yml")
 
 	fmt.Println("=== labelMap")
 	spew.Dump(labelMap)
@@ -31,8 +31,8 @@ func TestReadIDS2018Labels(t *testing.T) {
 }
 
 func TestReadSWAT2019Labels(t *testing.T) {
-	m := &LabelManager{}
-	labelMap, labels := m.parseAttackInfosCSV("configs/swat-2019-attacks.csv")
+	m := NewLabelManager(false, false, false)
+	labelMap, labels := m.parseAttackInfosCSV("../configs/swat-2019-attacks.csv")
 
 	fmt.Println("=== labelMap")
 	spew.Dump(labelMap)

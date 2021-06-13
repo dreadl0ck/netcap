@@ -7,6 +7,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
+	"go.uber.org/zap"
 	"io"
 	"strings"
 	"sync"
@@ -62,7 +63,7 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 }
 
 // TODO: make configurable
-var labelManager = manager.NewLabelManager(false, false, false)
+var labelManager = manager.NewLabelManager(false, true, false)
 
 // InitLabelManager can be invoked to configure the labels
 func InitLabelManager(pathMappingInfo string) {
@@ -72,11 +73,19 @@ func InitLabelManager(pathMappingInfo string) {
 // writeRecord writes a protocol buffer into the CSV writer.
 func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 
+	w.Lock()
+
+	// TODO: we have two options:
+	// 1) lock while encoding and normalizing the record, but reuse variable on writer to reduce allocs
+	// 	  - less memory usage but every write blocks until worker is done
+	// 2) avoid lock during processing and only lock for write, but alloc temp variables for record, values, out etc
+	//    - likely better, since invoking analyzers and / or encoding takes time..
 	if w.record, w.ok = msg.(types.AuditRecord); w.ok {
 
 		// pass audit record to analyzer
-		// TODO: invoke this in a different place?
 		if w.analyze {
+			// TODO: change Encode() signature so that it returns a []float64 vector
+			// and calculate it only once, passing it to analyze when configured.
 			w.record.Analyze()
 		}
 
@@ -84,6 +93,7 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			// encode values to numeric format and normalize
 			w.values = w.record.Encode()
 			if w.label {
+				// TODO: encode label
 				w.values = append(w.values, labelManager.Label(w.record))
 			}
 			w.out = []byte(strings.Join(w.values, ","))
@@ -98,15 +108,13 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 
 	again:
 
-		w.Lock()
 		n, err := w.w.Write(w.out)
-		w.Unlock()
-
 		if err != nil {
-			//log.Println(err)
-			time.Sleep(10 * time.Millisecond)
+			ioLog.Error("failed to write into unix socket, back off and retry", zap.Error(err))
+			time.Sleep(5 * time.Millisecond)
 			goto again
 		}
+		w.Unlock()
 
 		return n, err
 	}

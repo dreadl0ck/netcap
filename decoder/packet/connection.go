@@ -42,6 +42,7 @@ func (c connectionID) String() string {
 type connection struct {
 	sync.Mutex
 	*types.Connection
+	clientIP string
 }
 
 // atomicConnMap contains all connections and provides synchronized access.
@@ -74,7 +75,7 @@ var connectionDecoder = newPacketDecoder(
 		conns.Lock()
 		for _, f := range conns.Items {
 			f.Lock()
-			decoder.writeConn(f.Connection)
+			decoder.writeConn(f.Connection, f.clientIP)
 			f.Unlock()
 		}
 		conns.Unlock()
@@ -86,19 +87,22 @@ var connectionDecoder = newPacketDecoder(
 func handlePacket(p gopacket.Packet) proto.Message {
 	// assemble connectionID
 	connID := connectionID{}
-	if ll := p.LinkLayer(); ll != nil {
+	ll := p.LinkLayer()
+	if ll != nil {
 		connID.LinkFlowID = ll.LinkFlow().FastHash()
 	}
 
-	if nl := p.NetworkLayer(); nl != nil {
+	nl := p.NetworkLayer()
+	if nl != nil {
 		connID.NetworkFlowID = nl.NetworkFlow().FastHash()
 	}
 
-	if tl := p.TransportLayer(); tl != nil {
+	tl := p.TransportLayer()
+	if tl != nil {
 		connID.TransportFlowID = tl.TransportFlow().FastHash()
 	}
 
-	// lookup flow
+	// lookup connection
 	conns.Lock()
 
 	if conn, ok := conns.Items[connID.String()]; ok {
@@ -106,7 +110,7 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		conn.Lock()
 
 		// check if received packet from the same connection
-		// was captured BEFORE the connections first seen timestamp
+		// was captured BEFORE the connections FIRST seen timestamp
 		if p.Metadata().Timestamp.Before(time.Unix(0, conn.TimestampFirst).UTC()) {
 
 			// rewrite timestamp
@@ -114,35 +118,46 @@ func handlePacket(p gopacket.Packet) proto.Message {
 
 			// rewrite source and destination parameters
 			// since the first packet decides about the connection direction
-			if ll := p.LinkLayer(); ll != nil {
+			if ll != nil {
 				conn.SrcMAC = ll.LinkFlow().Src().String()
 				conn.DstMAC = ll.LinkFlow().Dst().String()
 			}
 
-			if nl := p.NetworkLayer(); nl != nil {
+			if nl != nil {
 				conn.SrcIP = nl.NetworkFlow().Src().String()
 				conn.DstIP = nl.NetworkFlow().Dst().String()
 			}
 
-			if tl := p.TransportLayer(); tl != nil {
+			if tl != nil {
 				conn.SrcPort = tl.TransportFlow().Src().String()
 				conn.DstPort = tl.TransportFlow().Dst().String()
 			}
 		}
 
+		// track amount of transferred bytes
 		if al := p.ApplicationLayer(); al != nil {
-			conn.AppPayloadSize += int32(len(al.Payload()))
+			conn.AppPayloadSize += int32(len(al.LayerPayload()))
 		}
 
-		// check if last timestamp was before the current packet
+		if nl != nil {
+			if conn.clientIP == nl.NetworkFlow().Src().String() {
+				conn.BytesClientToServer += int64(p.Metadata().Length)
+			} else {
+				conn.BytesServerToClient += int64(p.Metadata().Length)
+			}
+		}
+		conn.NumPackets++
+		conn.TotalSize += int32(p.Metadata().Length)
+
+		// check if LAST timestamp was before the current packet
 		if conn.TimestampLast < p.Metadata().Timestamp.UnixNano() {
 			// current packet is newer
 			// update last seen timestamp
 			conn.TimestampLast = p.Metadata().Timestamp.UnixNano()
-		} // else: do nothing, timestamp is still the oldest one
 
-		conn.NumPackets++
-		conn.TotalSize += int32(p.Metadata().Length)
+			// the duration will be calculated once the connection is written to the audit record writer
+			// so there is no need to calculate it in real-time
+		} // else: do nothing, timestamp is still the oldest one
 
 		conn.Unlock()
 	} else { // create a new Connection
@@ -153,28 +168,32 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		co.TotalSize = int32(p.Metadata().Length)
 		co.NumPackets = 1
 
-		if ll := p.LinkLayer(); ll != nil {
+		if ll != nil {
 			co.LinkProto = ll.LayerType().String()
 			co.SrcMAC = ll.LinkFlow().Src().String()
 			co.DstMAC = ll.LinkFlow().Dst().String()
 		}
-		if nl := p.NetworkLayer(); nl != nil {
+		if nl != nil {
 			co.NetworkProto = nl.LayerType().String()
 			co.SrcIP = nl.NetworkFlow().Src().String()
 			co.DstIP = nl.NetworkFlow().Dst().String()
 		}
-		if tl := p.TransportLayer(); tl != nil {
+		if tl != nil {
 			co.TransportProto = tl.LayerType().String()
 			co.SrcPort = tl.TransportFlow().Src().String()
 			co.DstPort = tl.TransportFlow().Dst().String()
 		}
 		if al := p.ApplicationLayer(); al != nil {
 			co.ApplicationProto = al.LayerType().String()
-			co.AppPayloadSize = int32(len(al.Payload()))
+			co.AppPayloadSize = int32(len(al.LayerPayload()))
 		}
+
+		// track amount of transferred bytes
+		co.BytesClientToServer += int64(p.Metadata().Length)
 
 		conns.Items[connID.String()] = &connection{
 			Connection: co,
+			clientIP:   co.SrcIP,
 		}
 
 		// TODO: add dedicated stats structure for decoder pkg
@@ -214,10 +233,20 @@ func handlePacket(p gopacket.Packet) proto.Message {
 }*/
 
 // writeConn writes the connection.
-func (d *Decoder) writeConn(conn *types.Connection) {
+func (d *Decoder) writeConn(conn *types.Connection, clientIP string) {
 
 	// calculate duration
 	conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
+
+	// check if client IP for connection is still correct
+	if clientIP != conn.SrcIP {
+
+		// update client address
+		clientIP = conn.SrcIP
+
+		// swap num bytes tracked
+		conn.BytesClientToServer, conn.BytesServerToClient = conn.BytesServerToClient, conn.BytesClientToServer
+	}
 
 	if conf.ExportMetrics {
 		conn.Inc()

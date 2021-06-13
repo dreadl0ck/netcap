@@ -52,7 +52,9 @@ func (c *Collector) Init() (err error) {
 
 	decoderconfig.Instance = c.config.DecoderConfig
 	stream.Debug = c.config.DecoderConfig.Debug
-	io.InitLabelManager(c.config.Labels)
+	if c.config.Labels != "" {
+		io.InitLabelManager(c.config.Labels)
+	}
 
 	// create state machine options
 	tcp.StreamFactory.FSMOptions = reassembly.TCPSimpleFSMOptions{
