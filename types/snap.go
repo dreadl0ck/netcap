@@ -96,7 +96,7 @@ func (s *SNAP) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (s *SNAP) Analyze()  {
+func (s *SNAP) Analyze() {
 }
 
 // NetcapType returns the type of the current audit record

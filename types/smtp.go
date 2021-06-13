@@ -142,7 +142,7 @@ func (a *SMTP) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *SMTP) Analyze()  {
+func (a *SMTP) Analyze() {
 }
 
 // NetcapType returns the type of the current audit record

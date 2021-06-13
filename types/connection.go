@@ -22,17 +22,19 @@ import (
 )
 
 const (
-	fieldTimestampFirst   = "TimestampFirst"
-	fieldLinkProto        = "LinkProto"
-	fieldNetworkProto     = "NetworkProto"
-	fieldTransportProto   = "TransportProto"
-	fieldApplicationProto = "ApplicationProto"
-	fieldTotalSize        = "TotalSize"
-	fieldAppPayloadSize   = "AppPayloadSize"
-	fieldNumPackets       = "NumPackets"
-	fieldUID              = "UID"
-	fieldDuration         = "Duration"
-	fieldTimestampLast    = "TimestampLast"
+	fieldTimestampFirst      = "TimestampFirst"
+	fieldLinkProto           = "LinkProto"
+	fieldNetworkProto        = "NetworkProto"
+	fieldTransportProto      = "TransportProto"
+	fieldApplicationProto    = "ApplicationProto"
+	fieldTotalSize           = "TotalSize"
+	fieldAppPayloadSize      = "AppPayloadSize"
+	fieldNumPackets          = "NumPackets"
+	fieldUID                 = "UID"
+	fieldDuration            = "Duration"
+	fieldTimestampLast       = "TimestampLast"
+	fieldBytesClientToServer = "BytesClientToServer"
+	fieldBytesServerToClient = "BytesServerToClient"
 )
 
 var fieldsConnection = []string{
@@ -53,6 +55,8 @@ var fieldsConnection = []string{
 	fieldUID,
 	fieldDuration,
 	fieldTimestampLast,
+	fieldBytesClientToServer,
+	fieldBytesServerToClient,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -80,6 +84,8 @@ func (c *Connection) CSVRecord() []string {
 		c.UID,
 		formatInt64(c.Duration),
 		formatTimestamp(c.TimestampLast),
+		formatInt64(c.BytesClientToServer),
+		formatInt64(c.BytesServerToClient),
 	})
 }
 
@@ -211,6 +217,8 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.String(fieldUID, c.UID),
 		connectionEncoder.Int64(fieldDuration, c.Duration),
 		connectionEncoder.Int64(fieldTimestampLast, c.TimestampLast),
+		connectionEncoder.Int64(fieldBytesClientToServer, c.BytesClientToServer),
+		connectionEncoder.Int64(fieldBytesServerToClient, c.BytesServerToClient),
 	})
 }
 

@@ -149,11 +149,10 @@ func (a *Software) Encode() []string {
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (a *Software) Analyze()  {
+func (a *Software) Analyze() {
 }
 
 // NetcapType returns the type of the current audit record
 func (a *Software) NetcapType() Type {
 	return Type_NC_Software
 }
-
