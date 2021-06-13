@@ -11,10 +11,10 @@ import (
 )
 
 type attacks struct {
-	Location string `yaml:"location"`
-	TimeFormat string `yaml:"timeFormat"`
-	DateFormat string `yaml:"dateFormat"`
-	Attacks []*AttackInfo `yaml:"attacks"`
+	Location   string        `yaml:"location"`
+	TimeFormat string        `yaml:"timeFormat"`
+	DateFormat string        `yaml:"dateFormat"`
+	Attacks    []*AttackInfo `yaml:"attacks"`
 }
 
 // AttackInfo models an attack and contains meta information.
