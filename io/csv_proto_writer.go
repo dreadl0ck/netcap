@@ -31,10 +31,10 @@ type csvProtoWriter struct {
 	label   bool
 
 	// avoid allocations by reusing these variables
-	values []string
-	out    []byte
-	record types.AuditRecord
-	ok     bool
+	//values []string
+	//out    []byte
+	//record types.AuditRecord
+	//ok     bool
 }
 
 // newCSVProtoWriter returns a new CSV writer instance.
@@ -78,47 +78,51 @@ var labelEncoder = encoder.NewValueEncoder()
 // writeRecord writes a protocol buffer into the CSV writer.
 func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 
-	w.Lock()
-
 	// TODO: we have two options:
 	// 1) lock while encoding and normalizing the record, but reuse variable on writer to reduce allocs
 	// 	  - less memory usage but every write blocks until worker is done
 	// 2) avoid lock during processing and only lock for write, but alloc temp variables for record, values, out etc
 	//    - likely better, since invoking analyzers and / or encoding takes time..
-	if w.record, w.ok = msg.(types.AuditRecord); w.ok {
+	if record, ok := msg.(types.AuditRecord); ok {
 
 		// pass audit record to analyzer
 		if w.analyze {
 			// TODO: change Encode() signature so that it returns a []float64 vector
 			// and calculate it only once, passing it to analyze when configured.
-			w.record.Analyze()
+			record.Analyze()
 		}
 
+		var (
+			values []string
+			out    []byte
+		)
 		if w.encode {
 			// encode values to numeric format and normalize
-			w.values = w.record.Encode()
+			values = record.Encode()
 			if w.label {
-				w.values = append(w.values, labelEncoder.String("Label", labelManager.Label(w.record)))
+				values = append(values, labelEncoder.String("Label", labelManager.Label(record)))
 			}
-			w.out = []byte(strings.Join(w.values, ","))
+			out = []byte(strings.Join(values, ","))
 		} else {
 			// use raw values
-			w.values = w.record.CSVRecord()
+			values = record.CSVRecord()
 			if w.label {
-				w.values = append(w.values, labelManager.Label(w.record))
+				values = append(values, labelManager.Label(record))
 			}
-			w.out = []byte(strings.Join(w.values, ",") + "\n")
+			out = []byte(strings.Join(values, ",") + "\n")
 		}
 
 	again:
 
-		n, err := w.w.Write(w.out)
+		w.Lock()
+		n, err := w.w.Write(out)
+		w.Unlock()
+
 		if err != nil {
 			ioLog.Error("failed to write into unix socket, back off and retry", zap.Error(err))
 			time.Sleep(5 * time.Millisecond)
 			goto again
 		}
-		w.Unlock()
 
 		return n, err
 	}
