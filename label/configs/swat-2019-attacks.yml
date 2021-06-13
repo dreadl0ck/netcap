@@ -1,0 +1,120 @@
+# Secure Water Treatment (SWaT) 2019 Dataset
+# https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/
+
+location: "Asia/Singapore"
+timeFormat: "2006/1/2 15:04:05"
+dateFormat: "2006/1/2"
+
+attacks:
+  - name: Data Exfiltration 1
+    start: 2019/12/6 10:30:00
+    end: 2019/12/6 10:35:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.181
+    proto: TCP
+    notes: Sends process data to a server in the DMZ via X11
+    category: Data Exfiltration
+    mitre: Collection
+    date: 2019/12/6
+  - name: Data Exfiltration 2
+    start: 2019/12/6 10:45:00
+    end: 2019/12/6 10:50:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.181
+    proto: TCP
+    notes: Sends process data to a server in the DMZ via X11
+    category: Data Exfiltration
+    mitre: Collection
+    date: 2019/12/6
+  - name: Data Exfiltration 3
+    start: 2019/12/6 11:00:00
+    end: 2019/12/6 11:05:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.181
+    proto: TCP
+    notes: Sends process data to a server in the DMZ via X11
+    category: Data Exfiltration
+    mitre: Collection
+    date: 2019/12/6
+  - name: Data Exfiltration 4
+    start: 2019/12/6 11:15:00
+    end: 2019/12/6 11:20:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.181
+    proto: TCP
+    notes: Sends process data to a server in the DMZ via X11
+    category: Data Exfiltration
+    mitre: Collection
+    date: 2019/12/6
+
+  - name: Malware Download from C2 Server
+    start: 2019/12/6 12:30:00
+    end: 2019/12/6 12:50:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.181
+    proto: TCP
+    notes: Infected workstation fetches a malicious DOS executable via X11
+    category: Malware Download
+    mitre: Execution
+    date: 2019/12/6
+
+  - name: Process Disruption 1
+    start: 2019/12/6 12:30:00
+    end: 2019/12/6 12:33:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.10
+    proto: CIP
+    notes: Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC
+    category: Process Disruption
+    mitre: Impact
+    date: 2019/12/6
+  - name: Process Disruption 2
+    start: 2019/12/6 12:43:00
+    end: 2019/12/6 12:46:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.10
+    proto: CIP
+    notes: Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC
+    category: Process Disruption
+    mitre: Impact
+    date: 2019/12/6
+  - name: Process Disruption 3
+    start: 2019/12/6 12:56:00
+    end: 2019/12/6 12:59:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.10
+    proto: CIP
+    notes: Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC
+    category: Process Disruption
+    mitre: Impact
+    date:  019/12/6
+  - name: Process Disruption 4
+    start: 2019/12/6 13:09:00
+    end: 2019/12/6 13:12:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.10
+    proto: CIP
+    notes: Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC
+    category: Process Disruption
+    mitre: Impact
+    date: 2019/12/6
+  - name: Process Disruption 5
+    start: 2019/12/6 13:22:00
+    end: 2019/12/6 13:25:00
+    ips:
+      - 192.168.1.201
+      - 192.168.1.10
+    proto: CIP
+    notes: Workstation manipulates valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC
+    category: Process Disruption
+    mitre: Impact
+    date: 2019/12/6

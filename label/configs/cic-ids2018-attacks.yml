@@ -1,6 +1,10 @@
 # CIC IDS 2018 dataset
 # https://www.unb.ca/cic/datasets/ids-2018.html
 
+location: "Canada/Atlantic"
+timeFormat: "15:04"
+dateFormat: "Monday-02-01-2006"
+
 attacks:
   - name: FTP-BruteForce
     date: Wednesday-14-02-2018

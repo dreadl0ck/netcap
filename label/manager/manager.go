@@ -11,6 +11,8 @@ import (
 	"github.com/evilsocket/islazy/tui"
 )
 
+var Location = time.Local
+
 // LabelManager keeps track of attack information that shall be mapped onto the audit records.
 type LabelManager struct {
 	labels   []*attackInfo
@@ -39,11 +41,7 @@ func NewLabelManager(progress bool, debug bool, removeFilesWithoutMatches bool) 
 // Init will load the attack information from disk.
 func (m *LabelManager) Init(pathMappingInfo string) {
 
-	if strings.HasSuffix(pathMappingInfo, ".csv") {
-		_, m.labels = m.parseAttackInfosCSV(pathMappingInfo)
-	} else {
-		_, m.labels = m.parseAttackInfosYAML(pathMappingInfo)
-	}
+	_, m.labels = m.parseAttackInfosYAML(pathMappingInfo)
 	if len(m.labels) == 0 {
 		fmt.Println("no labels found.")
 		os.Exit(1)
@@ -62,9 +60,6 @@ func (m *LabelManager) Init(pathMappingInfo string) {
 	fmt.Println()
 }
 
-// TODO: make configurable via cli flags
-var location, _ = time.LoadLocation("Canada/Atlantic")
-
 // Label returns the label for the current audit record according to the loaded label mapping.
 func (m *LabelManager) Label(record types.AuditRecord) string {
 
@@ -74,7 +69,7 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 	// TODO: add simple option to increment or decrement UTC instead of using named timezone
 	//auditRecordTime := time.Unix(0, record.Time()).UTC().Add(-4 * time.Hour)
 
-	auditRecordTime := time.Unix(0, record.Time()).In(location)
+	auditRecordTime := time.Unix(0, record.Time()).In(Location)
 
 	//fmt.Println("LABEL", auditRecordTime, "------------------", time.Unix(0, record.Time()).In(location))
 
