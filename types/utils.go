@@ -14,6 +14,8 @@
 package types
 
 import (
+	"math/big"
+	"net"
 	"reflect"
 	"strconv"
 	"strings"
@@ -154,3 +156,36 @@ func formatUint64(v uint64) string {
 func formatFloat64(v float64) string {
 	return strconv.FormatFloat(v, 'f', 6, 64)
 }
+
+func ipToInt64(addr string) int64 {
+
+	ip := net.ParseIP(addr)
+
+	n := big.NewInt(0)
+	if ip.To4() != nil {
+		n.SetBytes(ip.To4())
+	} else {
+		n.SetBytes(ip.To16())
+	}
+
+	// TODO: IPv6, first half of the address will be ignored...
+	return n.Int64()
+}
+
+func macToUint64(addr string) uint64 {
+
+	var mac uint64
+	for j, b := range strings.ReplaceAll(addr, ":", "") {
+		if j >= 12 {
+			break
+		}
+		mac <<= 12
+		mac += uint64(b)
+	}
+
+	return mac
+}
+
+//func IP4ToUint32(ip string) uint32 {
+//	return binary.LittleEndian.Uint32(net.ParseIP(ip).To4())
+//}
