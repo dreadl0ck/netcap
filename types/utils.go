@@ -186,6 +186,11 @@ func macToUint64(addr string) uint64 {
 	return mac
 }
 
+func portToInt(p string) int {
+	n, _ := strconv.Atoi(p)
+	return n
+}
+
 //func IP4ToUint32(ip string) uint32 {
 //	return binary.LittleEndian.Uint32(net.ParseIP(ip).To4())
 //}

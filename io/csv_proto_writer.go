@@ -70,7 +70,7 @@ var labelManager = manager.NewLabelManager(false, false, false)
 // InitLabelManager can be invoked to configure the labels
 func InitLabelManager(pathMappingInfo string, debug bool) {
 	labelManager.Init(pathMappingInfo)
-	labelManager.Debug = debug
+	//labelManager.Debug = debug
 }
 
 var labelEncoder = encoder.NewValueEncoder()
