@@ -198,7 +198,7 @@ func Run() {
 		analyzers := strings.Split(*flagAnalyzer, ",")
 		for _, a := range analyzers {
 
-			conf := analyze.ParseConfig(filepath.Join(dir, a + ".yml"))
+			conf := analyze.ParseConfig(filepath.Join(dir, a+".yml"))
 			if conf.WorkDir != "" {
 
 				if strings.Contains(conf.WorkDir, "~") || strings.Contains(conf.WorkDir, "$HOME") {
