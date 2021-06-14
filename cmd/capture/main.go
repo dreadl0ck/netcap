@@ -15,6 +15,7 @@ package capture
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/analyze"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/env"
@@ -176,18 +177,70 @@ func Run() {
 
 	if *flagAnalyzer != "" {
 
-		go func() {
+		// update config for plugins
+		*flagCompress = false
+		*flagBuffer = false
+		*flagCSV = true
+		*flagUNIX = true
 
-			// get tool path
-			dir := os.Getenv(env.AnalyzerDirectory)
+		*flagReassembleConnections = false
+		*flagSaveConns = false
+		*flagFileStorage = ""
 
-			// create call: todo: make command configurable
-			cmd := exec.Command("python3", filepath.Join(dir, *flagAnalyzer+".py"), *flagInclude)
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// get config path
+		dir := os.Getenv(env.AnalyzerDirectory)
+
+		analyzers := strings.Split(*flagAnalyzer, ",")
+		for _, a := range analyzers {
+
+			conf := analyze.ParseConfig(filepath.Join(dir, a + ".yml"))
+			if conf.WorkDir != "" {
+
+				if strings.Contains(conf.WorkDir, "~") || strings.Contains(conf.WorkDir, "$HOME") {
+					dirname, err := os.UserHomeDir()
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					conf.WorkDir = strings.Replace(conf.WorkDir, "~", dirname, 1)
+					conf.WorkDir = strings.Replace(conf.WorkDir, "$HOME", dirname, 1)
+				}
+
+				err = os.Chdir(conf.WorkDir)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+
+			logPath := "/tmp/" + a + ".log"
+			logfile, err := os.Create(logPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// TODO: close on signals etc
+			defer logfile.Close()
+
+			fmt.Println("logfile for analyzer:", logPath)
+
+			// create call
+			cmd := exec.Command(conf.Command, conf.Args...)
 
 			if *flagDebug {
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
+			} else {
+				cmd.Stdout = logfile
+				cmd.Stderr = logfile
 			}
+
+			// TODO: handle audit records from config.
+			// For now it must be manually configured via CLI flags which audit records get product
 
 			// start process
 			errCmd := cmd.Start()
@@ -195,12 +248,20 @@ func Run() {
 				log.Println(errCmd)
 			}
 
-			// wait for process
-			errCmd = cmd.Wait()
-			if errCmd != nil {
-				log.Println(errCmd)
-			}
-		}()
+			go func() {
+				// wait for process
+				errCmd = cmd.Wait()
+				if errCmd != nil {
+					log.Println(errCmd)
+				}
+			}()
+		}
+
+		// switch back to current dir
+		err = os.Chdir(wd)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// init collector
