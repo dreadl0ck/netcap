@@ -162,34 +162,6 @@ func createUnixSocket(name string) *net.UnixConn {
 		log.Fatal(err)
 	}
 
-	//l, err := net.ListenUnix(networkTypeUnix, raddr)
-	//if err != nil {
-	//	log.Fatal("listen error:", err)
-	//}
-	//
-	//err = l.Close()
-	//if err != nil {
-	//	log.Fatal("listen error:", err)
-	//}
-	//go func () {
-	//	for {
-	//		// Accept new connections, dispatching them to echoServer
-	//		// in a goroutine.
-	//		conn, err := l.Accept()
-	//		if err != nil {
-	//			log.Fatal("accept error:", err)
-	//		}
-	//
-	//		go echoServer(conn)
-	//	}
-	//}()
-
-	// server side
-	//l, err := net.ListenUnix("unix", addr)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-
 	conn, err := net.DialUnix(networkTypeUnixgram, nil, raddr)
 	if err != nil {
 		log.Fatal(err)
