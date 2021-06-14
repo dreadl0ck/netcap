@@ -13,6 +13,8 @@
 
 package encoder
 
+import "sync"
+
 // ColumnSummary collects statistical information about a column in the dataset.
 type ColumnSummary struct {
 	Version string `json:"version"`
@@ -43,4 +45,6 @@ type ColumnSummary struct {
 
 	NumValues int
 	MaxValues int
+
+	sync.Mutex
 }
