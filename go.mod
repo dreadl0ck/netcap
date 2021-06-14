@@ -20,7 +20,6 @@ require (
 	github.com/dreadl0ck/maltego v0.0.2
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
 	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
-	github.com/dreadl0ck/zeus v0.9.8 // indirect
 	github.com/dsoprea/go-exif/v2 v2.0.0-20210131231135-d154f10435cc
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.0
@@ -28,12 +27,14 @@ require (
 	github.com/evilsocket/islazy v1.10.6
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/felixge/fgprof v0.9.1
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/glycerine/go-unsnap-stream v0.0.0-20210130063903-47dfef350d96 // indirect
 	github.com/go-errors/errors v1.1.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/pprof v0.0.0-20210208152844-1612e9be7af6 // indirect
+	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/klauspost/compress v1.11.7 // indirect
@@ -43,6 +44,8 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/namsral/flag v1.7.4-pre
 	github.com/nyaruka/phonenumbers v1.0.66
+	github.com/onsi/ginkgo v1.11.0 // indirect
+	github.com/onsi/gomega v1.8.1 // indirect
 	github.com/oschwald/maxminddb-golang v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
