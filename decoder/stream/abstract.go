@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
@@ -40,6 +41,7 @@ var DefaultAbstractDecoders = []core.DecoderAPI{
 	software.Decoder,
 	vulnerability.Decoder,
 	credentials.Decoder,
+	alert.Decoder,
 } // contains all available abstract decoders
 
 // package level init.
