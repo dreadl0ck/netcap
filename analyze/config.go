@@ -8,9 +8,9 @@ import (
 
 // Config structure for analyzer plugins.
 type Config struct {
-	WorkDir string `yaml:"workDir"`
-	Command string `yaml:"command"`
-	Args []string `yaml:"args"`
+	WorkDir string   `yaml:"workDir"`
+	Command string   `yaml:"command"`
+	Args    []string `yaml:"args"`
 
 	// TODO: handle
 	AuditRecords []string `yaml:"auditRecords"`
