@@ -3,6 +3,7 @@ package io
 import (
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
-	"go.uber.org/zap"
 )
 
 // csvProtoWriter implements writing audit records to disk in the CSV format.
@@ -112,16 +112,21 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			out = []byte(strings.Join(values, ",") + "\n")
 		}
 
-	again:
+	//again:
 
 		w.Lock()
 		n, err := w.w.Write(out)
 		w.Unlock()
 
 		if err != nil {
-			ioLog.Error("failed to write into unix socket, back off and retry", zap.Error(err))
+			//ioLog.Error("failed to write into unix socket, back off and retry", zap.Error(err))
+			log.Println(string(out), "failed to write", err)
 			time.Sleep(5 * time.Millisecond)
-			goto again
+
+			w.Lock()
+			n, err = w.w.Write(out)
+			w.Unlock()
+			//goto again
 		}
 
 		return n, err

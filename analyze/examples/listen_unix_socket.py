@@ -57,8 +57,22 @@ def create_unix_socket(name):
         datagram = sock.recv(buf_size)
         if datagram:
             print(datagram)
+            send_alert()
 
     logging.info("Thread %s: finishing", name)
+
+#alert_socket_name = "/tmp/Alert.sock"
+
+# if os.path.exists(alert_socket_name):
+#     os.remove(alert_socket_name)
+
+#alert_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+#alert_socket.connect(alert_socket_name)
+
+def send_alert():
+    print("send_alert")
+    #global alert_socket
+    #alert_socket.send(b'Hello alert')
 
 if __name__ == "__main__":
 
