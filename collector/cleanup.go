@@ -16,6 +16,7 @@ package collector
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -118,16 +119,6 @@ func (c *Collector) teardown() {
 
 	resolvers.SaveFingerprintDB()
 
-	c.log.Info("decoder teardown complete, closing logfiles")
-
-	// sync the logs
-	for _, l := range c.zapLoggers {
-		err := l.Sync()
-		if err != nil {
-			fmt.Println("failed to sync zap logger:", err)
-		}
-	}
-
 	c.mu.Lock()
 	if c.isLive {
 		c.statMutex.Lock()
@@ -150,6 +141,16 @@ func (c *Collector) teardown() {
 
 	c.printlnStdOut("execution time", time.Since(c.start), c.numPackets, c.numPacketsLast)
 
+	c.log.Info("decoder teardown complete, closing logfiles")
+
+	// sync the logs
+	for _, l := range c.zapLoggers {
+		err := l.Sync()
+		if err != nil {
+			fmt.Println("failed to sync zap logger:", err)
+		}
+	}
+
 	// close the log file handles
 	for _, l := range c.logFileHandles {
 		if l != nil {
@@ -159,4 +160,6 @@ func (c *Collector) teardown() {
 			}
 		}
 	}
+
+	os.Exit(0)
 }
