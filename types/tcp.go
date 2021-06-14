@@ -15,10 +15,11 @@ package types
 
 import (
 	"encoding/hex"
-	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -59,7 +60,7 @@ var fieldsTCP = []string{
 	fieldWindow,
 	fieldChecksum,
 	fieldUrgent,
-	fieldOptions,
+	//fieldOptions,
 	fieldPayloadEntropy,
 	fieldPayloadSize,
 	fieldSrcIP,
@@ -74,7 +75,7 @@ func (t *TCP) CSVHeader() []string {
 // CSVRecord returns the CSV record for the audit record.
 func (t *TCP) CSVRecord() []string {
 	return filter([]string{
-		formatTimestamp(t.Timestamp),                      // string
+		formatTimestamp(t.Timestamp),                      // int64
 		formatInt32(t.SrcPort),                            // int32
 		formatInt32(t.DstPort),                            // int32
 		strconv.FormatUint(uint64(t.SeqNum), 10),          // uint32
@@ -156,24 +157,24 @@ var (
 )
 
 var fieldsTCPMetrics = []string{
-	"SrcPort",
-	"DstPort",
-	// "SeqNum",
-	// "AckNum",
-	"DataOffset",
-	"FIN",
-	"SYN",
-	"RST",
-	"PSH",
-	"ACK",
-	"URG",
-	"ECE",
-	"CWR",
-	"NS",
-	// "Window",
-	"Urgent",
-	// "Padding",
-	// "Options",
+	fieldSrcPort,
+	fieldDstPort,
+	// fieldSeqNum,
+	// fieldAckNum,
+	fieldDataOffset,
+	fieldFIN,
+	fieldSYN,
+	fieldRST,
+	fieldPSH,
+	fieldACK,
+	fieldURG,
+	fieldECE,
+	fieldCWR,
+	fieldNS,
+	// fieldWindow,
+	fieldUrgent,
+	// fieldPadding,
+	// fieldOptions,
 }
 
 func (t *TCP) metricValues() []string {
@@ -227,29 +228,29 @@ var tcpEncoder = encoder.NewValueEncoder()
 // Encode will encode categorical values and normalize according to configuration
 func (t *TCP) Encode() []string {
 	return filter([]string{
-		tcpEncoder.Int64(fieldTimestamp, t.Timestamp),             // string
-		tcpEncoder.Int32(fieldSrcPort, t.SrcPort),                 // int32
-		tcpEncoder.Int32(fieldDstPort, t.DstPort),                 // int32
-		tcpEncoder.Uint32(fieldSeqNum, t.SeqNum),                  // uint32
-		tcpEncoder.Uint32(fieldAckNum, t.AckNum),                  // uint32
-		tcpEncoder.Int32(fieldDataOffset, t.DataOffset),           // int32
-		tcpEncoder.Bool(t.FIN),                                    // bool
-		tcpEncoder.Bool(t.SYN),                                    // bool
-		tcpEncoder.Bool(t.RST),                                    // bool
-		tcpEncoder.Bool(t.PSH),                                    // bool
-		tcpEncoder.Bool(t.ACK),                                    // bool
-		tcpEncoder.Bool(t.URG),                                    // bool
-		tcpEncoder.Bool(t.ECE),                                    // bool
-		tcpEncoder.Bool(t.CWR),                                    // bool
-		tcpEncoder.Bool(t.NS),                                     // bool
-		tcpEncoder.Int32(fieldWindow, t.Window),                   // int32
-		tcpEncoder.Int32(fieldChecksum, t.Checksum),               // int32
-		tcpEncoder.Int32(fieldUrgent, t.Urgent),                   // int32
-		tcpEncoder.String(fieldOptions, t.getOptionString()),      // []*TCPOption
+		tcpEncoder.Int64(fieldTimestamp, t.Timestamp),   // int64
+		tcpEncoder.Int32(fieldSrcPort, t.SrcPort),       // int32
+		tcpEncoder.Int32(fieldDstPort, t.DstPort),       // int32
+		tcpEncoder.Uint32(fieldSeqNum, t.SeqNum),        // uint32
+		tcpEncoder.Uint32(fieldAckNum, t.AckNum),        // uint32
+		tcpEncoder.Int32(fieldDataOffset, t.DataOffset), // int32
+		tcpEncoder.Bool(t.FIN),                          // bool
+		tcpEncoder.Bool(t.SYN),                          // bool
+		tcpEncoder.Bool(t.RST),                          // bool
+		tcpEncoder.Bool(t.PSH),                          // bool
+		tcpEncoder.Bool(t.ACK),                          // bool
+		tcpEncoder.Bool(t.URG),                          // bool
+		tcpEncoder.Bool(t.ECE),                          // bool
+		tcpEncoder.Bool(t.CWR),                          // bool
+		tcpEncoder.Bool(t.NS),                           // bool
+		tcpEncoder.Int32(fieldWindow, t.Window),         // int32
+		tcpEncoder.Int32(fieldChecksum, t.Checksum),     // int32
+		tcpEncoder.Int32(fieldUrgent, t.Urgent),         // int32
+		//tcpEncoder.String(fieldOptions, t.getOptionString()),      // []*TCPOption
 		tcpEncoder.Float64(fieldPayloadEntropy, t.PayloadEntropy), // float64
 		tcpEncoder.Int32(fieldPayloadSize, t.PayloadSize),         // int32
-		tcpEncoder.String(fieldSrcIP, t.SrcIP),
-		tcpEncoder.String(fieldDstIP, t.DstIP),
+		tcpEncoder.Int64(fieldSrcIP, ipToInt64(t.SrcIP)),
+		tcpEncoder.Int64(fieldDstIP, ipToInt64(t.DstIP)),
 	})
 }
 

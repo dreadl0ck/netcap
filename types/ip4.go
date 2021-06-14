@@ -15,10 +15,11 @@ package types
 
 import (
 	"encoding/hex"
-	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -32,19 +33,19 @@ const (
 
 var fieldsIPv4 = []string{
 	fieldTimestamp,
-	fieldVersion,        // int32
-	fieldIHL,            // int32
-	fieldTOS,            // int32
-	fieldLength,         // int32
-	fieldId,             // int32
-	fieldFlags,          // int32
-	fieldFragOffset,     // int32
-	fieldTTL,            // int32
-	fieldProtocol,       // int32
-	fieldChecksum,       // int32
-	fieldSrcIP,          // string
-	fieldDstIP,          // string
-	fieldOptions,        // []*IPv4Option
+	fieldVersion,    // int32
+	fieldIHL,        // int32
+	fieldTOS,        // int32
+	fieldLength,     // int32
+	fieldId,         // int32
+	fieldFlags,      // int32
+	fieldFragOffset, // int32
+	fieldTTL,        // int32
+	fieldProtocol,   // int32
+	fieldChecksum,   // int32
+	fieldSrcIP,      // string
+	fieldDstIP,      // string
+	//fieldOptions,        // []*IPv4Option
 	fieldPayloadEntropy, // float64
 	fieldPayloadSize,    // int32
 }
@@ -56,10 +57,10 @@ func (i *IPv4) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (i *IPv4) CSVRecord() []string {
-	var opts []string
-	for _, o := range i.Options {
-		opts = append(opts, o.toString())
-	}
+	// var opts []string
+	// for _, o := range i.Options {
+	// 	opts = append(opts, o.toString())
+	// }
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.Version),        // int32
@@ -75,7 +76,7 @@ func (i *IPv4) CSVRecord() []string {
 		i.SrcIP,                       // string
 		i.DstIP,                       // string
 		hex.EncodeToString(i.Padding), // []byte
-		strings.Join(opts, ""),        // []*IPv4Option
+		//strings.Join(opts, ""),        // []*IPv4Option
 		strconv.FormatFloat(i.PayloadEntropy, 'f', 6, 64), // float64
 		formatInt32(i.PayloadSize),                        // int32
 	})
@@ -192,25 +193,25 @@ var ipv4Encoder = encoder.NewValueEncoder()
 
 // Encode will encode categorical values and normalize according to configuration
 func (i *IPv4) Encode() []string {
-	var opts []string
-	for _, o := range i.Options {
-		opts = append(opts, o.toString())
-	}
+	// var opts []string
+	// for _, o := range i.Options {
+	// 	opts = append(opts, o.toString())
+	// }
 	return filter([]string{
 		ipv4Encoder.Int64(fieldTimestamp, i.Timestamp),
-		ipv4Encoder.Int32(fieldVersion, i.Version),                 // int32
-		ipv4Encoder.Int32(fieldIHL, i.IHL),                         // int32
-		ipv4Encoder.Int32(fieldTOS, i.TOS),                         // int32
-		ipv4Encoder.Int32(fieldLength, i.Length),                   // int32
-		ipv4Encoder.Int32(fieldId, i.Id),                           // int32
-		ipv4Encoder.Int32(fieldFlags, i.Flags),                     // int32
-		ipv4Encoder.Int32(fieldFragOffset, i.FragOffset),           // int32
-		ipv4Encoder.Int32(fieldTTL, i.TTL),                         // int32
-		ipv4Encoder.Int32(fieldProtocol, i.Protocol),               // int32
-		ipv4Encoder.Int32(fieldChecksum, i.Checksum),               // int32
-		ipv4Encoder.String(fieldSrcIP, i.SrcIP),                    // string
-		ipv4Encoder.String(fieldDstIP, i.DstIP),                    // string
-		ipv4Encoder.String(fieldOptions, strings.Join(opts, "")),   // []*IPv4Option
+		ipv4Encoder.Int32(fieldVersion, i.Version),        // int32
+		ipv4Encoder.Int32(fieldIHL, i.IHL),                // int32
+		ipv4Encoder.Int32(fieldTOS, i.TOS),                // int32
+		ipv4Encoder.Int32(fieldLength, i.Length),          // int32
+		ipv4Encoder.Int32(fieldId, i.Id),                  // int32
+		ipv4Encoder.Int32(fieldFlags, i.Flags),            // int32
+		ipv4Encoder.Int32(fieldFragOffset, i.FragOffset),  // int32
+		ipv4Encoder.Int32(fieldTTL, i.TTL),                // int32
+		ipv4Encoder.Int32(fieldProtocol, i.Protocol),      // int32
+		ipv4Encoder.Int32(fieldChecksum, i.Checksum),      // int32
+		ipv4Encoder.Int64(fieldSrcIP, ipToInt64(i.SrcIP)), // string
+		ipv4Encoder.Int64(fieldDstIP, ipToInt64(i.DstIP)), // string
+		//ipv4Encoder.String(fieldOptions, strings.Join(opts, "")),   // []*IPv4Option
 		ipv4Encoder.Float64(fieldPayloadEntropy, i.PayloadEntropy), // float64
 		ipv4Encoder.Int32(fieldPayloadSize, i.PayloadSize),         // int32
 	})

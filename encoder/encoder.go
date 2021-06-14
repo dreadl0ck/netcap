@@ -152,6 +152,7 @@ func (m *ValueEncoder) Float64(field string, val float64) string {
 		sum    = m.GetSummary(TypeNumeric, field)
 	)
 
+	sum.Lock()
 	// calculate new stats and collect value
 	if sum.NumValues > sum.MaxValues {
 		sum.Values = sum.Values[len(sum.Values)/2:]
@@ -172,6 +173,7 @@ func (m *ValueEncoder) Float64(field string, val float64) string {
 		spew.Dump(m.conf)
 		log.Fatal("invalid config: no normalization strategy")
 	}
+	sum.Unlock()
 
 	return result
 }

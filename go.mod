@@ -20,6 +20,7 @@ require (
 	github.com/dreadl0ck/maltego v0.0.2
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
 	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
+	github.com/dreadl0ck/zeus v0.9.8 // indirect
 	github.com/dsoprea/go-exif/v2 v2.0.0-20210131231135-d154f10435cc
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.0
