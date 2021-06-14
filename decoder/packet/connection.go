@@ -15,6 +15,9 @@ package packet
 
 import (
 	"fmt"
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
+
+	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"strconv"
 	"sync"
@@ -44,6 +47,10 @@ type connection struct {
 	sync.Mutex
 	*types.Connection
 	clientIP string
+
+	// to break the initialization loop when accessing the connectionDecoder variable within the connection processor
+	// we simply set a reference to it when passing connections to the workers.
+	decoder *Decoder
 }
 
 // atomicConnMap contains all connections and provides synchronized access.
@@ -73,18 +80,15 @@ var connectionDecoder = newPacketDecoder(
 		return handlePacket(p)
 	},
 	func(decoder *Decoder) error {
-		// TODO: add worker pool to use multiple processors...
+
+		cp := connectionProcessor{}
+		cp.initWorkers(decoderconfig.Instance.StreamBufferSize, decoderconfig.Instance.NumStreamWorkers)
+
 		conns.Lock()
-		fmt.Println("conns.Items", len(conns.Items))
-		var count int
-		for _, f := range conns.Items {
-			f.Lock()
-			decoder.writeConn(f.Connection, f.clientIP)
-			f.Unlock()
-			count++
-			if count%10000 == 0 {
-				fmt.Println(count, "/", len(conns.Items))
-			}
+		cp.numTotal = len(conns.Items)
+		for _, conn := range conns.Items {
+			conn.decoder = decoder
+			cp.handleConnection(conn)
 		}
 		conns.Unlock()
 
@@ -267,4 +271,85 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP string) {
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}
+}
+
+// internal data structure to parallelize processing of Connection audit records
+// when the core engine is stopped and the stored connections are processed.
+type connectionProcessor struct {
+	sync.Mutex
+	workers    []chan *connection
+	numWorkers int
+	next       int
+	wg         sync.WaitGroup
+	numDone    int
+	numTotal   int
+	bufferSize int
+}
+
+// to process the streams in parallel
+// they are passed to several worker goroutines in round robin style.
+func (cp *connectionProcessor) handleConnection(conn *connection) {
+	cp.wg.Add(1)
+
+	// send the packetInfo to the decoder routine
+	cp.workers[cp.next] <- conn
+
+	// increment or reset next
+	if cp.numWorkers == cp.next+1 {
+		// reset
+		cp.next = 0
+	} else {
+		cp.next++
+	}
+}
+
+// worker spawns a new worker goroutine
+// and returns a channel for receiving input connections.
+// the wait group has already been incremented for each non-nil connection,
+// so wg.Done() must be called before returning for each item.
+func (cp *connectionProcessor) connectionWorker(wg *sync.WaitGroup) chan *connection {
+
+	// init channel to receive input connections
+	chanInput := make(chan *connection, cp.bufferSize)
+
+	// start worker
+	go func() {
+		for conn := range chanInput {
+			// nil conn is used to exit the loop,
+			// the processing logic will never send a streamReader in here that is nil
+			if conn == nil {
+				return
+			}
+
+			conn.Lock()
+			conn.decoder.writeConn(conn.Connection, conn.clientIP)
+			conn.Unlock()
+
+			cp.Lock()
+			cp.numDone++
+
+			if !decoderconfig.Instance.Quiet {
+				utils.ClearLine()
+				fmt.Print("processing remaining Connection audit records... ", "(", cp.numDone, "/", cp.numTotal, ")")
+			}
+
+			cp.Unlock()
+			wg.Done()
+		}
+	}()
+
+	// return input channel
+	return chanInput
+}
+
+// spawn the configured number of workers.
+func (cp *connectionProcessor) initWorkers(bufferSize int, numStreamWorkers int) {
+	cp.bufferSize = bufferSize
+	cp.workers = make([]chan *connection, numStreamWorkers)
+
+	for i := range cp.workers {
+		cp.workers[i] = cp.connectionWorker(&cp.wg)
+	}
+
+	cp.numWorkers = len(cp.workers)
 }
