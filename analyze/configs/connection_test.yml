@@ -1,0 +1,9 @@
+workDir: ~/go/src/github.com/dreadl0ck/netcap/analyze/examples
+
+command: python3
+args:
+  - listen_unix_socket.py
+  - Connection
+
+auditRecords:
+  - Connection

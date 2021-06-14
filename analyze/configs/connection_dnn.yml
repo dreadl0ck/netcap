@@ -1,0 +1,9 @@
+workDir: ~/go/src/github.com/dreadl0ck/netcap/analyze/dnn
+
+command: python3
+args:
+  - train.py
+
+auditRecords:
+  - Connection
+
