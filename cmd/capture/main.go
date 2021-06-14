@@ -18,6 +18,7 @@ import (
 	"github.com/dreadl0ck/netcap/analyze"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/types"
 	"log"
@@ -177,15 +178,16 @@ func Run() {
 
 	if *flagAnalyzer != "" {
 
+		alert.InitSocket()
+
 		// update config for plugins
 		*flagCompress = false
 		*flagBuffer = false
 		*flagCSV = true
 		*flagUNIX = true
 
+		// disable reassembly for now.
 		*flagReassembleConnections = false
-		*flagSaveConns = false
-		*flagFileStorage = ""
 
 		wd, err := os.Getwd()
 		if err != nil {
