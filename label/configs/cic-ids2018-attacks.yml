@@ -281,6 +281,7 @@ attacks:
     proto: Unknown
     category: infiltration
     mitre: TA0008
+    flagVictimTraffic: true
 
   - name: Infiltration
     date: Thursday-01-03-2018
@@ -294,6 +295,7 @@ attacks:
     proto: Unknown
     category: infiltration
     mitre: TA0008
+    flagVictimTraffic: true
 
   - name: Infiltration
     date: Thursday-01-03-2018
@@ -307,6 +309,7 @@ attacks:
     proto: Unknown
     category: infiltration
     mitre: TA0008
+    flagVictimTraffic: true
 
   - name: Infiltration
     date: Thursday-01-03-2018
@@ -320,6 +323,7 @@ attacks:
     proto: Unknown
     category: infiltration
     mitre: TA0008
+    flagVictimTraffic: true
 
   - name: Bot
     date: Friday-02-03-2018

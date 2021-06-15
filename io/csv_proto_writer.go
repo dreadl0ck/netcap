@@ -70,7 +70,7 @@ var labelManager = manager.NewLabelManager(false, false, false)
 // InitLabelManager can be invoked to configure the labels
 func InitLabelManager(pathMappingInfo string, debug bool) {
 	labelManager.Init(pathMappingInfo)
-	//labelManager.Debug = debug
+	labelManager.Debug = debug
 }
 
 var labelEncoder = encoder.NewValueEncoder()
@@ -112,7 +112,7 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			out = []byte(strings.Join(values, ",") + "\n")
 		}
 
-	fails := 0
+		fails := 0
 	again:
 
 		w.Lock()

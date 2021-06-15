@@ -46,7 +46,7 @@ func TestUNIXSocket(t *testing.T) {
 	count := 0
 	expected := 1000
 
-	go func () {
+	go func() {
 		for {
 			var buf = make([]byte, 1024)
 			_, err := l.Read(buf)
@@ -58,7 +58,7 @@ func TestUNIXSocket(t *testing.T) {
 
 			count++
 			if count == expected {
-				done<-true
+				done <- true
 			}
 
 		}
@@ -69,8 +69,8 @@ func TestUNIXSocket(t *testing.T) {
 	// connect as client to socket
 	s := createUnixSocket("test")
 
-	for i:=0;i<1000;i++{
-		again:
+	for i := 0; i < 1000; i++ {
+	again:
 		_, err := s.Write([]byte("test"))
 		if err != nil {
 			goto again
