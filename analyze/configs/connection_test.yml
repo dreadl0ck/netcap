@@ -2,7 +2,8 @@ workDir: ~/go/src/github.com/dreadl0ck/netcap/analyze/examples
 
 command: python3
 args:
-  - listen_unix_socket.py
+  - -u # ensure the stdout of the python program is unbuffered - otherwise the log file produced by netcap might miss data.
+  - listen_unix_socket_simple.py
   - Connection
 
 auditRecords:
