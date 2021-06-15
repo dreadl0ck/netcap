@@ -176,6 +176,7 @@ func Run() {
 		// exportMetrics = true
 	}
 
+	var analyzerLogFileHandles []*os.File
 	if *flagAnalyzer != "" {
 
 		alert.InitSocket()
@@ -224,9 +225,7 @@ func Run() {
 			if err != nil {
 				log.Fatal(err)
 			}
-
-			// TODO: close on signals etc
-			defer logfile.Close()
+			analyzerLogFileHandles = append(analyzerLogFileHandles, logfile)
 
 			fmt.Println("logfile for analyzer:", logPath)
 
@@ -256,6 +255,8 @@ func Run() {
 				if errCmd != nil {
 					log.Println(errCmd)
 				}
+
+				fmt.Println("process finished", cmd.Args)
 			}()
 		}
 
@@ -359,6 +360,12 @@ func Run() {
 			GeolocationDB: *flagGeolocationDB,
 		},
 	})
+
+	if len(analyzerLogFileHandles) > 0 {
+		for _, f := range analyzerLogFileHandles {
+			c.CloseFileHandleOnShutdown(f)
+		}
+	}
 
 	c.PrintConfiguration()
 
