@@ -22,6 +22,7 @@ import (
 	"github.com/evilsocket/islazy/tui"
 )
 
+// Location is the location to use for timestamp parsing and comparison.
 var Location = time.Local
 
 // LabelManager keeps track of attack information that shall be mapped onto the audit records.
