@@ -49,6 +49,9 @@ func WriteAlert(f *types.Alert) {
 
 const networkTypeUnixgram = "unixgram"
 
+// SocketConn contains a pointer to the used socket at runtime.
+var SocketConn *net.UnixConn
+
 // InitSocket initializes the socket for incoming alerts.
 func InitSocket() {
 
@@ -68,20 +71,19 @@ func InitSocket() {
 	if err != nil {
 		log.Fatal("listen error:", err)
 	}
-
-	// TODO: close on signals etc
-	// defer l.Close()
+	SocketConn = l
 
 	fmt.Println("listening for incoming alerts on UNIX socket at", path)
 
 	go func () {
 		for {
+			// TODO: reuse buffer?
 			var buf = make([]byte, 1024)
 			n, err := l.Read(buf)
 			if err != nil {
-				log.Fatal("accept error:", err)
-			}
-			if err != nil {
+				if err != net.ErrClosed {
+					return
+				}
 				log.Println("failed to read from UNIX socket", err)
 				return
 			}

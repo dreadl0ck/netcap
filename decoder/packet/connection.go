@@ -16,7 +16,6 @@ package packet
 import (
 	"fmt"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-
 	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"strconv"
@@ -91,6 +90,7 @@ var connectionDecoder = newPacketDecoder(
 			cp.handleConnection(conn)
 		}
 		conns.Unlock()
+		cp.wg.Wait()
 
 		return nil
 	},
@@ -321,9 +321,7 @@ func (cp *connectionProcessor) connectionWorker(wg *sync.WaitGroup) chan *connec
 				return
 			}
 
-			conn.Lock()
 			conn.decoder.writeConn(conn.Connection, conn.clientIP)
-			conn.Unlock()
 
 			cp.Lock()
 			cp.numDone++
