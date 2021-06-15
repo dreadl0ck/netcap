@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	"log"
 	"os"
 	"time"
@@ -117,6 +118,15 @@ func (c *Collector) teardown() {
 		}
 	}
 
+	if alert.SocketConn != nil {
+		err := alert.SocketConn.Close()
+		if err != nil {
+			log.Println("failed to close alert socket", err)
+		}
+		c.log.Debug("closing alert socket connection", zap.Error(err))
+		alert.SocketConn = nil
+	}
+
 	resolvers.SaveFingerprintDB()
 
 	c.mu.Lock()
@@ -154,7 +164,11 @@ func (c *Collector) teardown() {
 	// close the log file handles
 	for _, l := range c.logFileHandles {
 		if l != nil {
-			err := l.Close()
+			err := l.Sync()
+			if err != nil {
+				fmt.Println("failed to sync logfile:", err)
+			}
+			err = l.Close()
 			if err != nil {
 				fmt.Println("failed to close logfile handle:", err)
 			}
@@ -162,4 +176,9 @@ func (c *Collector) teardown() {
 	}
 
 	os.Exit(0)
+}
+
+// CloseFileHandleOnShutdown allows to register file handles for close on shutdown.
+func (c *Collector) CloseFileHandleOnShutdown(f *os.File) {
+	c.logFileHandles = append(c.logFileHandles, f)
 }
