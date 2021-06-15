@@ -2,8 +2,8 @@ package io
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"io"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -112,21 +112,22 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			out = []byte(strings.Join(values, ",") + "\n")
 		}
 
-	//again:
+	fails := 0
+	again:
 
 		w.Lock()
 		n, err := w.w.Write(out)
 		w.Unlock()
 
 		if err != nil {
-			//ioLog.Error("failed to write into unix socket, back off and retry", zap.Error(err))
-			log.Println(string(out), "failed to write", err)
-			time.Sleep(5 * time.Millisecond)
+			fails++
 
-			w.Lock()
-			n, err = w.w.Write(out)
-			w.Unlock()
-			//goto again
+			// TODO: add configurable limit for number of allowed fails before stopping
+			ioLog.Error("failed to write into unix socket, back off and retry", zap.Error(err), zap.Int("fails", fails))
+
+			// TODO: make configurable
+			time.Sleep(15 * time.Millisecond)
+			goto again
 		}
 
 		return n, err
